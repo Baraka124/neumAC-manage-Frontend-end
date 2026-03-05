@@ -5,7 +5,21 @@
    Font: DM Sans (body) + DM Mono (data)
 ================================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+/* ----------------------------------------------------------------
+   TYPOGRAPHY SYSTEM — Clinical Editorial
+   Display:  Instrument Serif  — authoritative, medical-journal weight
+   Body:     DM Sans           — clean, clinical, highly legible
+   Data:     DM Mono           — precise, unambiguous numerics
+   
+   Scale philosophy:
+     Labels   →  10–11px  CAPS  600  wide tracking  muted
+     Meta     →  12px          500  default tracking secondary
+     Body     →  13.5px        400  comfortable reading
+     Emphasis →  13.5px        700  same size, heavier — not louder
+     Values   →  DM Mono       500  numbers always mono
+     Headers  →  15–22px  Serif 700  editorial authority
+---------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap');
 
 /* ----------------------------------------------------------------
    TOKENS
@@ -41,6 +55,32 @@
   --purple:  #7c3aed; --purple-lt: #ede9fe;
   --gray:    #64748b; --gray-lt:   #f1f5f9;
 
+  /* Typography */
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
+
+  /* Type scale */
+  --text-label:   10.5px;  /* CAPS labels, table headers */
+  --text-meta:    12px;    /* secondary info, timestamps */
+  --text-sm:      12.5px;  /* compact UI, badges */
+  --text-base:    13.5px;  /* body, table cells */
+  --text-md:      14.5px;  /* card titles, modal titles */
+  --text-lg:      16px;    /* section headers */
+  --text-xl:      19px;    /* page titles, stat values */
+  --text-2xl:     26px;    /* large stat numbers */
+  --text-3xl:     34px;    /* hero numbers */
+
+  /* Leading */
+  --leading-tight:   1.2;
+  --leading-snug:    1.35;
+  --leading-normal:  1.55;
+  --leading-relaxed: 1.7;
+
+  /* Tracking */
+  --tracking-wide:  0.06em;
+  --tracking-wider: 0.09em;
+
   /* Structure */
   --sidebar-w:       260px;
   --sidebar-w-sm:    64px;
@@ -73,21 +113,32 @@
 html { font-size: 14px; scroll-behavior: smooth; }
 
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: var(--font-body);
   background: var(--canvas);
   color: var(--text-primary);
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  font-feature-settings: "kern" 1, "liga" 1;
 }
 
-h1,h2,h3,h4,h5,h6 {
+/* Serif display headings for section/card titles */
+h1, h2 {
+  font-family: var(--font-display);
+  font-weight: 400;  /* Serif reads heavier at same weight */
+  line-height: var(--leading-tight);
+  color: var(--text-primary);
+  font-style: italic;
+}
+h3, h4, h5, h6 {
+  font-family: var(--font-body);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--leading-snug);
   color: var(--text-primary);
 }
 
-p { color: var(--text-secondary); line-height: 1.6; }
+p { color: var(--text-secondary); line-height: var(--leading-relaxed); font-size: var(--text-base); }
 
 a { color: var(--blue-600); text-decoration: none; }
 a:hover { color: var(--blue-700); }
@@ -174,12 +225,12 @@ input, select, textarea { font-family: inherit; }
 .sidebar-section { margin-bottom: 6px; }
 
 .sidebar-section-title {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--text-label);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: rgba(255,255,255,.35);
-  padding: 12px 10px 4px;
+  letter-spacing: var(--tracking-wider);
+  color: rgba(255,255,255,.3);
+  padding: 14px 10px 4px;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -192,9 +243,10 @@ input, select, textarea { font-family: inherit; }
   gap: 10px;
   padding: 9px 10px;
   border-radius: var(--radius-sm);
-  color: rgba(255,255,255,.65);
-  font-size: 13.5px;
+  color: rgba(255,255,255,.6);
+  font-size: var(--text-sm);
   font-weight: 500;
+  letter-spacing: 0.01em;
   transition: var(--transition);
   white-space: nowrap;
   overflow: hidden;
@@ -319,15 +371,18 @@ input, select, textarea { font-family: inherit; }
 }
 
 .navbar-title {
-  font-size: 15px;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .navbar-subtitle {
-  font-size: 12px;
+  font-size: var(--text-meta);
   color: var(--text-muted);
   margin-left: 6px;
+  font-weight: 400;
 }
 
 .mobile-menu-toggle {
@@ -460,16 +515,17 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   padding: 9px 16px;
   border: none;
   border-radius: var(--radius);
-  font-family: inherit;
-  font-size: 13.5px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
   transition: var(--transition);
   white-space: nowrap;
   line-height: 1;
 }
 .btn:disabled { opacity: .5; cursor: not-allowed; pointer-events: none; }
-.btn i { font-size: 13px; }
+.btn i { font-size: 12px; }
 
 .btn-primary {
   background: var(--blue-600);
@@ -536,10 +592,12 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
 .card-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14.5px;
+  gap: 9px;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 .card-title i { color: var(--blue-500); font-size: 15px; }
 
@@ -584,10 +642,10 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   margin-bottom: 14px;
 }
 .stat-header h3 {
-  font-size: 12.5px;
+  font-size: var(--text-label);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .5px;
+  letter-spacing: var(--tracking-wider);
   color: var(--text-muted);
   margin: 0;
 }
@@ -601,12 +659,13 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
 }
 
 .stat-main-value {
-  font-size: 32px;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xl);
+  font-weight: 500;
   color: var(--text-primary);
   line-height: 1;
-  margin-bottom: 14px;
-  font-family: 'DM Mono', monospace;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
 }
 
 .stat-breakdown { display: flex; flex-direction: column; gap: 0; }
@@ -617,11 +676,21 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   justify-content: space-between;
   padding: 7px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
 }
 .breakdown-item:last-child { border-bottom: none; padding-bottom: 0; }
-.breakdown-item .label { color: var(--text-secondary); }
-.breakdown-item .value { font-weight: 700; color: var(--text-primary); font-family: 'DM Mono', monospace; }
+.breakdown-item .label {
+  color: var(--text-secondary);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.breakdown-item .value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
 
 /* ----------------------------------------------------------------
    TABLES
@@ -635,17 +704,18 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: var(--text-base);
 }
 
 .table thead th {
   background: var(--surface-2);
-  padding: 11px 16px;
+  padding: 10px 16px;
   text-align: left;
-  font-size: 11px;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .6px;
+  letter-spacing: var(--tracking-wider);
   color: var(--text-muted);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
@@ -662,14 +732,32 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
 .table-striped tbody tr:nth-child(even):hover { background: var(--blue-50); }
 
 .table tbody td {
-  padding: 12px 16px;
+  padding: 13px 16px;
   color: var(--text-primary);
   vertical-align: middle;
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
 }
 
-.table tbody td .font-medium { font-weight: 600; }
-.table tbody td .text-xs { font-size: 11.5px; color: var(--text-muted); }
-.table tbody td .text-blue-600 { color: var(--blue-600); font-weight: 500; }
+/* Primary name/title in a cell — slightly heavier, full contrast */
+.table tbody td .font-medium { font-weight: 600; font-size: var(--text-base); color: var(--text-primary); }
+
+/* Secondary line beneath name — meta information */
+.table tbody td .text-xs {
+  font-size: var(--text-meta);
+  color: var(--text-muted);
+  line-height: var(--leading-snug);
+  margin-top: 1px;
+  display: block;
+}
+
+/* Tertiary annotation — e.g. PGY year */
+.table tbody td .text-blue-600 {
+  color: var(--blue-600);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
 
 /* ----------------------------------------------------------------
    BADGES
@@ -678,10 +766,13 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
 }
 
 .badge-primary   { background: var(--blue-100); color: var(--blue-800); }
@@ -706,10 +797,13 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
 }
 
 .status-active    { background: var(--amber-lt); color: #92400e; }
@@ -764,12 +858,13 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
 }
 
 .training-unit-title {
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: -0.01em;
 }
 .training-unit-title i { color: var(--teal); }
 
@@ -781,19 +876,27 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   align-items: center;
   padding: 5px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
 }
 .training-unit-stat-row:last-child { border-bottom: none; }
-.training-unit-stat-label { color: var(--text-muted); }
+.training-unit-stat-label {
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+}
 
 .training-unit-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .training-unit-tag {
   background: var(--teal-lt);
   color: var(--teal);
   padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
+  border-radius: 4px;
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
 }
 
 .training-unit-actions { display: flex; gap: 8px; }
@@ -831,10 +934,11 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   border-bottom: 1px solid var(--border);
 }
 .department-title {
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--text-primary);
   display: flex; align-items: center; gap: 8px;
+  letter-spacing: -0.01em;
 }
 .department-title i { color: var(--blue-500); }
 
@@ -845,21 +949,35 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   align-items: center;
   padding: 5px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
 }
 .department-info-row:last-child { border-bottom: none; }
-.department-info-label { color: var(--text-muted); }
+.department-info-label {
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+}
 
-.department-units-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+.department-units-label {
+  font-size: var(--text-label);
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 6px;
+}
 .department-units-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .department-unit-tag {
   background: var(--blue-50);
   color: var(--blue-700);
   border: 1px solid var(--blue-100);
   padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 500;
+  border-radius: 4px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .department-actions { display: flex; gap: 8px; }
@@ -879,8 +997,18 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   display: block;
   margin-bottom: 14px;
 }
-.empty-state-title { font-size: 15px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
-.empty-state-description { font-size: 13px; color: var(--text-muted); }
+.empty-state-title {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+.empty-state-description {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 400;
+}
 
 /* ----------------------------------------------------------------
    MODALS
@@ -930,12 +1058,14 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 15px;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 .modal-title i { color: var(--blue-500); font-size: 16px; }
-.modal-subtitle { font-size: 12px; color: var(--text-muted); font-weight: 400; margin-top: 1px; }
+.modal-subtitle { font-size: var(--text-meta); color: var(--text-muted); font-weight: 400; margin-top: 2px; }
 
 .modal-close {
   background: var(--surface-2);
@@ -981,8 +1111,10 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   background: none;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
   font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--text-secondary);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -998,10 +1130,12 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
 
 .form-label {
   display: block;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 5px;
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-secondary);
+  margin-bottom: 6px;
 }
 
 .form-control,
@@ -1010,12 +1144,14 @@ nav[aria-label="Breadcrumb"] span.text-blue-600 {
   padding: 9px 12px;
   border: 1px solid var(--border-2);
   border-radius: var(--radius);
-  font-family: inherit;
-  font-size: 13.5px;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 400;
   color: var(--text-primary);
   background: var(--surface);
   transition: var(--transition);
   -webkit-appearance: none;
+  line-height: var(--leading-snug);
 }
 .form-control:focus,
 .form-select:focus {
@@ -1059,19 +1195,42 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   box-shadow: var(--shadow-md);
 }
 
-.profile-name { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
-.profile-title { font-size: 13.5px; color: var(--text-muted); margin-bottom: 8px; }
-.profile-meta-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
-.profile-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--text-muted); }
-.profile-meta-item i { color: var(--blue-500); font-size: 12px; }
+.profile-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  line-height: var(--leading-tight);
+  margin-bottom: 3px;
+  color: var(--text-primary);
+}
+.profile-title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 10px;
+}
+.profile-meta-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.profile-meta-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: var(--text-meta);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.profile-meta-item i { color: var(--blue-500); font-size: 11px; }
 .profile-status-row { display: flex; gap: 8px; align-items: center; }
 .profile-department-badge {
   background: var(--blue-50);
   color: var(--blue-700);
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
   border: 1px solid var(--blue-100);
 }
 
@@ -1087,8 +1246,19 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   gap: 12px;
 }
 .education-item { display: flex; flex-direction: column; gap: 2px; }
-.education-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
-.education-value { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.education-label {
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-muted);
+}
+.education-value {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
 
 .dynamic-status-grid {
   display: grid;
@@ -1722,9 +1892,12 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 
 /* The big reading — this is the hero number */
 .metric-value {
-  font-family: 'DM Mono', monospace;
-  font-size: 30px; font-weight: 500; line-height: 1;
-  margin-bottom: 8px; letter-spacing: -0.5px;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xl);
+  font-weight: 400;
+  line-height: 1;
+  margin-bottom: 8px;
+  letter-spacing: -0.03em;
 }
 .metric-card:nth-child(1) .metric-value { color: var(--p-blue);  }
 .metric-card:nth-child(2) .metric-value { color: var(--p-green); }
@@ -1790,9 +1963,11 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   font-family: 'DM Mono', monospace;
 }
 .availability-count {
-  font-family: 'DM Mono', monospace;
-  font-size: 22px; font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 400;
   color: var(--p-text); line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 .availability-status {
   font-size: 9px; font-weight: 700;
@@ -2177,3 +2352,929 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   .card { box-shadow: none; border: 1px solid #ddd; }
   .table-responsive { box-shadow: none; overflow: visible; }
 }
+
+/* ================================================================
+   TYPOGRAPHY & INFORMATION HIERARCHY SYSTEM  v3.0
+   ─────────────────────────────────────────────────────────────────
+   Philosophy: Every piece of data has ONE job. The eye should
+   land on what matters first, every time, without effort.
+
+   Scale (optical, not mechanical):
+     --t-2xs  9px   / labels, legal, timestamps
+     --t-xs  10.5px / table sub-info, badges
+     --t-sm  12px   / secondary data, muted text
+     --t-base 13.5px/ body, form inputs (already set)
+     --t-md  15px   / card titles, modal headings
+     --t-lg  18px   / section headings
+     --t-xl  24px   / stat values (small context)
+     --t-2xl 32px   / hero stat numbers
+     --t-3xl 42px   / dashboard primary KPI (future)
+
+   Weight rhythm: 400 body · 500 medium · 600 semibold · 700 bold
+   Spacing rhythm: 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48
+================================================================ */
+
+:root {
+  --t-2xs:  9px;
+  --t-xs:   10.5px;
+  --t-sm:   12px;
+  --t-base: 13.5px;
+  --t-md:   15px;
+  --t-lg:   18px;
+  --t-xl:   24px;
+  --t-2xl:  34px;
+
+  /* Refined spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Letter spacing */
+  --ls-tight:  -0.02em;
+  --ls-normal:  0;
+  --ls-wide:    0.04em;
+  --ls-wider:   0.08em;
+  --ls-widest:  0.12em;
+
+  /* Line height */
+  --lh-tight:  1.2;
+  --lh-snug:   1.35;
+  --lh-normal: 1.5;
+  --lh-relaxed:1.65;
+}
+
+/* ── Canvas & base ────────────────────────────────────────── */
+html { font-size: 14px; }
+
+body {
+  font-size: var(--t-base);
+  line-height: var(--lh-normal);
+  letter-spacing: -0.005em; /* micro-tightening for DM Sans */
+}
+
+/* ── Navbar typography ────────────────────────────────────── */
+.navbar-title {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+  color: var(--text-primary);
+}
+
+.navbar-subtitle {
+  font-size: var(--t-sm);
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  margin-left: 8px;
+}
+
+/* ── Card titles ──────────────────────────────────────────── */
+.card-title {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-tight);
+}
+
+/* ── Stat cards ───────────────────────────────────────────── */
+.stat-header h3 {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-widest);
+  color: var(--text-muted);
+}
+
+/* Hero number — the one thing you should read in 0.2s */
+.stat-main-value {
+  font-size: var(--t-2xl);
+  font-weight: 300;         /* light weight on large size = refined */
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--text-primary);
+  font-family: 'DM Mono', monospace;
+  margin-bottom: var(--sp-4);
+}
+
+/* Breakdown rows — secondary info, clearly subordinate */
+.breakdown-item {
+  font-size: var(--t-sm);
+  padding: 6px 0;
+}
+.breakdown-item .label {
+  font-size: var(--t-sm);
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+.breakdown-item .value {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: -0.01em;
+}
+.status-indicator.status-active,
+.status-indicator.status-busy,
+.status-indicator.status-oncall {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+/* ── Table typography ─────────────────────────────────────── */
+/* Headers: instrument-grade label */
+.table thead th {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-widest);
+  color: var(--text-muted);
+  padding: 10px 16px 10px;
+  background: var(--surface-2);
+}
+
+/* Primary cell — the NAME, the main thing */
+.table tbody td {
+  font-size: var(--t-base);
+  padding: 14px 16px;
+  line-height: var(--lh-snug);
+}
+
+/* Name line inside table cells */
+.table tbody td .font-medium {
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: var(--ls-tight);
+  line-height: 1.3;
+}
+
+/* Sub-info line — email, role, year */
+.table tbody td .text-xs {
+  font-size: var(--t-xs);
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4;
+  letter-spacing: 0;
+  margin-top: 1px;
+  display: block;
+}
+
+/* Resident year badge inside table */
+.table tbody td .text-blue-600 {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: var(--ls-wide);
+}
+
+/* Badge text */
+.badge {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  padding: 3px 8px;
+}
+
+/* Status indicators */
+.status-indicator {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  padding: 3px 8px;
+}
+
+/* ── Dashboard on-call table — physician name deserves presence */
+.table .flex.items-center.gap-3 .font-medium {
+  font-size: var(--t-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ── Section labels (inside cards, filters) ───────────────── */
+/* The category label above filter rows */
+.sidebar-section-title {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-widest);
+  color: rgba(255,255,255,.3);
+  padding: 14px 10px 5px;
+}
+
+/* Sidebar nav links */
+.sidebar-menu-link {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* ── Profile modal ────────────────────────────────────────── */
+.profile-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+
+.profile-title {
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  margin-bottom: var(--sp-3);
+}
+
+.profile-meta-item {
+  font-size: var(--t-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* Education block labels */
+.education-label {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-widest);
+  color: var(--text-muted);
+}
+
+.education-value {
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: var(--ls-tight);
+}
+
+/* Dynamic status cards inside profile */
+.dynamic-status-header h4 {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.status-data-label {
+  font-size: var(--t-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+.status-data-value {
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: var(--ls-tight);
+}
+
+.status-data-value-large {
+  font-size: var(--t-xl);
+  font-weight: 300;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: -0.04em;
+  color: var(--blue-600);
+}
+
+/* Assignment items */
+.assignment-details {
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.assignment-time {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: -0.01em;
+  color: var(--blue-600);
+}
+
+/* ── Training Unit cards ──────────────────────────────────── */
+.training-unit-title {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-snug);
+}
+
+.training-unit-stat-label {
+  font-size: var(--t-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+}
+
+.training-unit-stat-row {
+  font-size: var(--t-sm);
+  padding: 6px 0;
+}
+
+/* The data value in stat rows — bold and readable */
+.training-unit-stat-row span:last-child {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.training-unit-tag {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  padding: 3px 9px;
+}
+
+/* ── Department cards ─────────────────────────────────────── */
+.department-title {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+}
+
+.department-info-label {
+  font-size: var(--t-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+}
+
+.department-info-row {
+  font-size: var(--t-sm);
+  padding: 6px 0;
+}
+
+.department-units-label {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-widest);
+  color: var(--text-muted);
+}
+
+.department-unit-tag {
+  font-size: var(--t-2xs);
+  font-weight: 600;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+/* ── Modal typography ─────────────────────────────────────── */
+.modal-title {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+}
+
+.modal-subtitle {
+  font-size: var(--t-xs);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.modal-tab {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: var(--ls-wide);
+}
+
+/* Form labels — clear but not heavy */
+.form-label {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wider);
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-2);
+}
+
+.form-control,
+.form-select {
+  font-size: var(--t-base);
+  font-weight: 400;
+  line-height: var(--lh-snug);
+  letter-spacing: -0.005em;
+}
+
+/* ── Sidebar user block ───────────────────────────────────── */
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: var(--ls-tight);
+}
+
+.user-role {
+  font-size: var(--t-2xs);
+  font-weight: 500;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+}
+
+/* ── Breadcrumb ───────────────────────────────────────────── */
+nav[aria-label="Breadcrumb"] {
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: var(--ls-wide);
+}
+nav[aria-label="Breadcrumb"] span.text-blue-600 {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+/* ── Quick actions bar ────────────────────────────────────── */
+.action-btn {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  padding: 7px 14px;
+}
+.action-btn i { font-size: 11px; }
+
+/* ── Button refinements ───────────────────────────────────── */
+.btn {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+}
+.btn-sm {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+}
+.btn-lg {
+  font-size: var(--t-base);
+  letter-spacing: var(--ls-wide);
+}
+
+/* ── Empty states ─────────────────────────────────────────── */
+.empty-state-title {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-2);
+}
+.empty-state-description {
+  font-size: var(--t-sm);
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* ── Communications preview ───────────────────────────────── */
+.preview-title {
+  font-size: var(--t-md);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-snug);
+}
+.preview-text {
+  font-size: var(--t-sm);
+  line-height: var(--lh-relaxed);
+}
+.preview-footer {
+  font-size: var(--t-xs);
+  font-weight: 500;
+}
+
+/* ── Toast ────────────────────────────────────────────────── */
+.toast-title {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+}
+.toast-message {
+  font-size: var(--t-xs);
+  font-weight: 400;
+  line-height: var(--lh-relaxed);
+}
+
+/* ── Today's schedule table (dashboard) ──────────────────── */
+/* Time cells in on-call table */
+.table td:first-child {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── Absence view — staff name prominence ─────────────────── */
+/* Coverage text */
+.table .text-sm.text-green-600,
+.table .text-sm.text-blue-600,
+.table .text-sm.text-gray-500 {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Duration value — should read clearly as a number */
+.table td:nth-child(6) {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ── Live status panel text refinements ───────────────────── */
+.panel-label h4 {
+  font-size: var(--t-2xs);
+  letter-spacing: var(--ls-widest);
+}
+
+.status-location {
+  font-size: var(--t-base);
+  font-weight: 700;
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-snug);
+}
+
+.status-text {
+  font-size: var(--t-sm);
+  line-height: var(--lh-relaxed);
+}
+
+.status-footer {
+  font-size: var(--t-xs);
+}
+
+.metric-title {
+  font-size: var(--t-2xs);
+  letter-spacing: var(--ls-widest);
+}
+
+.metric-value {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.detail-label {
+  font-size: var(--t-xs);
+  letter-spacing: 0;
+}
+.detail-value {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.availability-role {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+}
+
+.availability-count {
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.availability-status {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+/* ── Login ────────────────────────────────────────────────── */
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+.login-subtitle {
+  font-size: var(--t-sm);
+  font-weight: 400;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Specific data contexts — numbers are always mono ─────── */
+/* Any time a pure number is shown next to a label */
+.breakdown-item .value,
+.detail-value,
+.metric-value,
+.stat-main-value,
+.availability-count,
+.status-data-value-large,
+.expiry-timer,
+.dashboard-time,
+.assignment-time {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ── Comms modal ──────────────────────────────────────────── */
+.comms-tab {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+.quick-status h4,
+.update-form h4,
+.form-section h4 {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wider);
+  color: var(--text-muted);
+}
+
+.status-desc {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-widest);
+  text-transform: uppercase;
+}
+
+/* Type option buttons */
+.type-option {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wide);
+}
+
+/* ── Hover row enhancement ────────────────────────────────── */
+/* Ensure hovered rows don't lose name legibility */
+.table tbody tr:hover td .font-medium {
+  color: var(--blue-700);
+}
+
+/* ── Spacing improvements ─────────────────────────────────── */
+
+/* Stat cards — more breathing room inside */
+.stat-card { padding: 22px; }
+
+/* Card header has too little breathing room */
+.card-header {
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+/* Table rows — slightly more padding for easier scanning */
+.table tbody td { padding: 13px 16px; }
+
+/* Training unit cards */
+.training-unit-card { padding: 20px; gap: 14px; }
+
+/* Department cards */
+.department-card { padding: 20px; gap: 14px; }
+
+/* Modal body */
+.modal-body { padding: 24px; }
+
+/* Profile header breathing room */
+.profile-header { padding-bottom: 22px; margin-bottom: 22px; }
+.profile-avatar-large {
+  width: 72px; height: 72px;
+  font-size: 24px;
+}
+
+/* Education section */
+.education-section { padding: 16px 18px; margin-bottom: 20px; }
+
+/* ── Final micro-polish ───────────────────────────────────── */
+
+/* Reduce distracting striping — subtle is better */
+.table-striped tbody tr:nth-child(even) {
+  background: rgba(248,250,252,.6);
+}
+
+/* Status form section in panel — clean up tailwind classes */
+.status-form-section {
+  padding: 18px;
+  background: rgba(255,255,255,.03);
+  border-top: 1px solid var(--p-border);
+}
+.status-form-section textarea {
+  width: 100%;
+  padding: 11px 13px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--p-border-2);
+  border-radius: var(--radius);
+  color: var(--p-text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--t-sm);
+  resize: none;
+  line-height: var(--lh-relaxed);
+}
+.status-form-section textarea:focus {
+  outline: none;
+  border-color: var(--p-blue);
+  box-shadow: 0 0 0 3px rgba(61,154,255,.12);
+}
+.status-form-section textarea::placeholder {
+  color: var(--p-muted);
+  font-size: var(--t-xs);
+}
+
+/* Grid inside dark form */
+.status-form-section .grid.grid-cols-2 label {
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  letter-spacing: var(--ls-wider);
+  text-transform: uppercase;
+  color: var(--p-muted);
+  display: block;
+  margin-bottom: var(--sp-1);
+}
+.status-form-section select {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--p-border-2);
+  border-radius: var(--radius-sm);
+  color: var(--p-text);
+  font-size: var(--t-sm);
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+
+/* ================================================================
+   TYPOGRAPHY FINESSE — Details that make it exceptional
+   Applied on top of the base type system.
+================================================================ */
+
+/* ── All data numbers use tabular figures ── */
+.font-mono, [class*="DM Mono"],
+.breakdown-item .value,
+.detail-value, .metric-value, .stat-main-value,
+.availability-count, .expiry-timer, .availability-total,
+.dashboard-time, .assignment-time, .status-data-value-large {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ── Section dividers — subtle rule above section group labels ── */
+.sidebar-section + .sidebar-section .sidebar-section-title {
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 16px;
+}
+
+/* ── Table: name+role cell — canonical pattern ── */
+.table tbody td .staff-name {
+  font-weight: 700;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  display: block;
+}
+.table tbody td .staff-role {
+  font-size: var(--text-meta);
+  color: var(--text-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 1px;
+}
+
+/* ── Quick actions bar labels ── */
+.action-btn {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ── Breadcrumb ── */
+nav[aria-label="Breadcrumb"] {
+  font-size: var(--text-meta);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+nav[aria-label="Breadcrumb"] span.text-blue-600 {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* ── Stat card header number — breathing room ── */
+.stat-card .stat-main-value { letter-spacing: -0.03em; }
+
+/* ── Sidebar logo — slightly looser ── */
+.sidebar-logo {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── User name + role in sidebar ── */
+.user-name { font-size: var(--text-sm); font-weight: 600; letter-spacing: 0; }
+.user-role  { font-size: var(--text-label); letter-spacing: 0.01em; }
+
+/* ── Smooth paragraph rhythm in communications view ── */
+.announcement-content p,
+.status-text,
+.newStatusText {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+
+/* ── Dynamic status card data labels ── */
+.status-data-label {
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+}
+.status-data-value {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── Timeline header in dark panel ── */
+.panel-label h4,
+.availability-role,
+.metric-title {
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+/* ── Ensure all placeholder text uses meta size ── */
+input::placeholder, textarea::placeholder {
+  font-size: var(--text-base);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ── Chart/graph labels if any ── */
+.chart-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ── Toast notifications ── */
+.toast-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.toast-message {
+  font-size: var(--text-meta);
+  color: var(--text-secondary);
+  line-height: var(--leading-normal);
+  margin-top: 1px;
+}
+
+/* ── Login screen ── */
+.login-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.login-subtitle {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Fine-tune btn sizes ── */
+.btn-xs  { font-size: var(--text-label); padding: 4px 9px; letter-spacing: var(--tracking-wide); }
+.btn-sm  { font-size: var(--text-sm);    padding: 7px 13px; }
+.btn-lg  { font-size: var(--text-base);  padding: 11px 22px; }
+
+/* ── End of typography finesse ── */
