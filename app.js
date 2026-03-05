@@ -2553,6 +2553,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 rotationModal,
                                 onCallModal,
                                 absenceModal,
+                                 unitResidentsModal,
                                 communicationsModal,
                                 staffProfileModal,
                                 userProfileModal,
