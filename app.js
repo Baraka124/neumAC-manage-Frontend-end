@@ -286,29 +286,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            // ===== ROTATIONS =====
-            async getRotations() {
-                const data = await this.request('/api/rotations');
-                return data?.data || [];
-            }
-            
-            async createRotation(rotationData) {
-                return await this.request('/api/rotations', {
-                    method: 'POST',
-                    body: rotationData
-                });
-            }
-            
-            async updateRotation(id, rotationData) {
-                return await this.request(`/api/rotations/${id}`, {
-                    method: 'PUT',
-                    body: rotationData
-                });
-            }
-            
-            async deleteRotation(id) {
-                return await this.request(`/api/rotations/${id}`, { method: 'DELETE' });
-            }
+         // ===== ROTATIONS =====
+async getRotations() {
+    try {
+        const data = await this.request('/api/rotations');
+        return data?.data || [];
+    } catch (error) {
+        console.error('Failed to fetch rotations:', error);
+        return [];
+    }
+}
+
+async createRotation(rotationData) {
+    try {
+        const response = await this.request('/api/rotations', {
+            method: 'POST',
+            body: rotationData
+        });
+        return response;
+    } catch (error) {
+        console.error('Create rotation error:', error);
+        throw error; // Re-throw to be caught by saveRotation
+    }
+}
+
+async updateRotation(id, rotationData) {
+    try {
+        const response = await this.request(`/api/rotations/${id}`, {
+            method: 'PUT',
+            body: rotationData
+        });
+        return response;
+    } catch (error) {
+        console.error('Update rotation error:', error);
+        throw error;
+    }
+}
+
+async deleteRotation(id) {
+    return await this.request(`/api/rotations/${id}`, { 
+        method: 'DELETE' 
+    });
+}
             
             // ===== ON-CALL =====
             async getOnCallSchedule() {
@@ -1523,55 +1542,91 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 };
                 
-                const saveRotation = async () => {
-                    if (!rotationModal.form.resident_id || !rotationModal.form.training_unit_id) {
-                        showToast('Error', 'Please select resident and unit', 'error');
-                        return;
-                    }
-                    
-                    if (!rotationModal.form.start_date || !rotationModal.form.end_date) {
-                        showToast('Error', 'Please select dates', 'error');
-                        return;
-                    }
-                    
-                    if (new Date(rotationModal.form.end_date) <= new Date(rotationModal.form.start_date)) {
-                        showToast('Error', 'End date must be after start date', 'error');
-                        return;
-                    }
-                    
-                    saving.value = true;
-                    try {
-                        const rotationData = {
-                            ...rotationModal.form,
-                            start_date: rotationModal.form.start_date,
-                            end_date: rotationModal.form.end_date,
-                            supervising_attending_id: rotationModal.form.supervising_attending_id || null
-                        };
-                        
-                        if (rotationModal.mode === 'add') {
-                            const result = await API.createRotation(rotationData);
-                            rotations.value.unshift(result);
-                            showToast('Success', 'Rotation scheduled', 'success');
-                        } else {
-                            const result = await API.updateRotation(rotationModal.form.id, rotationData);
-                            const index = rotations.value.findIndex(r => r.id === result.id);
-                            if (index !== -1) rotations.value[index] = result;
-                            showToast('Success', 'Rotation updated', 'success');
-                        }
-                        
-                        rotationModal.show = false;
-                        await loadRotations();
-                        
-                    } catch (error) {
-                        if (error.message.includes('overlap')) {
-                            showToast('Scheduling Conflict', 'Rotation dates overlap with existing rotation', 'error');
-                        } else {
-                            showToast('Error', error.message, 'error');
-                        }
-                    } finally {
-                        saving.value = false;
-                    }
-                };
+// ============ 20. SAVE FUNCTIONS ============
+
+const saveRotation = async () => {
+    if (!rotationModal.form.resident_id || !rotationModal.form.training_unit_id) {
+        showToast('Error', 'Please select resident and unit', 'error');
+        return;
+    }
+    
+    if (!rotationModal.form.start_date || !rotationModal.form.end_date) {
+        showToast('Error', 'Please select dates', 'error');
+        return;
+    }
+    
+    // Validate dates
+    const startDate = new Date(rotationModal.form.start_date);
+    const endDate = new Date(rotationModal.form.end_date);
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        showToast('Error', 'Invalid date format', 'error');
+        return;
+    }
+    
+    if (endDate <= startDate) {
+        showToast('Error', 'End date must be after start date', 'error');
+        return;
+    }
+    
+    saving.value = true;
+    try {
+        // Prepare data exactly as backend expects
+        const rotationData = {
+            resident_id: rotationModal.form.resident_id,
+            training_unit_id: rotationModal.form.training_unit_id,
+            start_date: rotationModal.form.start_date,
+            end_date: rotationModal.form.end_date,
+            rotation_status: rotationModal.form.rotation_status || 'scheduled',
+            rotation_category: rotationModal.form.rotation_category || 'clinical_rotation',
+            supervising_attending_id: rotationModal.form.supervising_attending_id || null,
+            rotation_id: rotationModal.form.rotation_id || Utils.generateId('ROT')
+        };
+        
+        console.log('📤 Sending rotation data:', rotationData);
+        
+        if (rotationModal.mode === 'add') {
+            const result = await API.createRotation(rotationData);
+            console.log('✅ Rotation created:', result);
+            
+            // Add to local array
+            rotations.value.unshift(result);
+            showToast('Success', 'Rotation scheduled successfully', 'success');
+        } else {
+            const result = await API.updateRotation(rotationModal.form.id, rotationData);
+            console.log('✅ Rotation updated:', result);
+            
+            // Update in local array
+            const index = rotations.value.findIndex(r => r.id === result.id);
+            if (index !== -1) rotations.value[index] = result;
+            showToast('Success', 'Rotation updated successfully', 'success');
+        }
+        
+        rotationModal.show = false;
+        
+        // Refresh rotations to get latest data
+        await loadRotations();
+        await loadSystemStats();
+        
+    } catch (error) {
+        console.error('❌ Rotation save error:', error);
+        
+        // Handle specific error messages from backend
+        if (error.message.includes('overlap') || error.message.includes('conflict')) {
+            showToast('Scheduling Conflict', 
+                'This rotation conflicts with an existing rotation. Please adjust dates.', 
+                'error');
+        } else if (error.message.includes('resident_id')) {
+            showToast('Error', 'Invalid resident selected', 'error');
+        } else if (error.message.includes('training_unit_id')) {
+            showToast('Error', 'Invalid training unit selected', 'error');
+        } else {
+            showToast('Error', error.message || 'Failed to save rotation', 'error');
+        }
+    } finally {
+        saving.value = false;
+    }
+};
                 
                 const saveOnCallSchedule = async () => {
                     if (!onCallModal.form.primary_physician_id || !onCallModal.form.duty_date) {
