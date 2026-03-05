@@ -812,7 +812,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     return map[status] || status;
                 };
-                
+                const getCurrentViewSubtitle = () => {
+    const map = {
+        'dashboard': 'Real-time department overview and analytics',
+        'medical_staff': 'Manage physicians, residents, and clinical staff',
+        'oncall_schedule': 'View and manage on-call physician schedules',
+        'resident_rotations': 'Track and manage resident training rotations',
+        'training_units': 'Clinical training units and resident assignments',
+        'staff_absence': 'Track staff absences and coverage assignments',
+        'department_management': 'Organizational structure and clinical units',
+        'communications': 'Department announcements and capacity updates'
+    };
+    return map[currentView.value] || 'Hospital Management System';
+};
                 const getUserRoleDisplay = (role) => {
                     const map = {
                         'system_admin': 'System Administrator',
@@ -2138,6 +2150,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     deleteOnCallSchedule,
                     deleteAbsence,
                     deleteAnnouncement,
+                        getCurrentViewSubtitle,  
                     
                     // Permission
                     hasPermission,
