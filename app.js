@@ -589,7 +589,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     unit: null,
                     rotations: []
                 });
-                
+                const unitResidentsModal = reactive({
+    show: false,
+    unit: null,
+    rotations: []
+});
                 const medicalStaffModal = reactive({
                     show: false,
                     mode: 'add',
