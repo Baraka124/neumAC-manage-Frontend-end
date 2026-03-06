@@ -637,10 +637,11 @@ const getUpcomingOnCall = (staffId) => {
 };
 
 // Get upcoming leave for a staff member
+// Get upcoming leave for a staff member
 const getUpcomingLeave = (staffId) => {
     if (!staffId) return [];
     const today = new Date().toISOString().split('T')[0];
-    return absenceRecords.value.filter(a => 
+    return absences.value.filter(a =>   // ← CHANGED: absenceRecords → absences
         a.staff_member_id === staffId && 
         a.start_date > today &&
         a.current_status !== 'cancelled'
