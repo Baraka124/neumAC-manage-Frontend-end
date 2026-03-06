@@ -519,17 +519,31 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-header"><i class="fas fa-hospital"></i><h3>Department Status</h3></div>
-                            <div class="stat-main-value" :class="{'text-green-600': systemStats.departmentStatus === 'normal', 'text-red-600': systemStats.departmentStatus === 'busy'}">
-                                {{ systemStats.departmentStatus === 'normal' ? 'Normal' : 'Busy' }}
-                            </div>
-                            <div class="stat-breakdown">
-                                <div class="breakdown-item"><span class="label">Active Patients</span><span class="value">{{ systemStats.activePatients || 0 }}</span></div>
-                                <div class="breakdown-item"><span class="label">ICU Occupancy</span><span class="value">{{ systemStats.icuOccupancy || '0' }}%</span></div>
-                                <div class="breakdown-item"><span class="label">Ward Occupancy</span><span class="value">{{ systemStats.wardOccupancy || '0' }}%</span></div>
-                            </div>
-                        </div>
+                       <div class="stat-card">
+    <div class="stat-header">
+        <i class="fas fa-flask"></i>
+        <h3>Research Activity</h3>
+        <button class="btn btn-sm btn-outline" @click="switchView('research_lines')">View All</button>
+    </div>
+    <div class="stat-main-value">{{ researchLines.length || 0 }}</div>
+    <div class="stat-breakdown">
+        <div class="breakdown-item">
+            <span class="label">Research Lines</span>
+            <span class="value">{{ researchLines.length || 0 }}</span>
+        </div>
+        <div class="breakdown-item">
+            <span class="label">Clinical Trials</span>
+            <span class="value">{{ clinicalTrials.length || 0 }}</span>
+            <span v-if="clinicalTrials.length > 0" class="status-indicator status-active">
+                {{ Math.round((clinicalTrials.filter(t => t.status === 'Activo' || t.status === 'Reclutando').length / clinicalTrials.length) * 100) }}% active
+            </span>
+        </div>
+        <div class="breakdown-item">
+            <span class="label">Innovation Projects</span>
+            <span class="value">{{ innovationProjects.length || 0 }}</span>
+        </div>
+    </div>
+</div>
                     </div>
                     <div class="card">
                         <div class="card-header">
