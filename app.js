@@ -2435,6 +2435,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!clinicalStatus.value) return 0;
                     return localStorage.getItem('lastSeenStatusId') !== clinicalStatus.value.id ? 1 : 0;
                 });
+
+                // Add with other computed properties
+const activeTrialsCount = computed(() => {
+    if (!clinicalTrials.value.length) return 0;
+    return clinicalTrials.value.filter(t => 
+        t.status === 'Activo' || t.status === 'Reclutando'
+    ).length;
+});
+
+const activeTrialsPercentage = computed(() => {
+    if (!clinicalTrials.value.length) return 0;
+    const active = activeTrialsCount.value;
+    const total = clinicalTrials.value.length;
+    return Math.round((active / total) * 100);
+});
+
+                
                 const formattedExpiry = computed(() => {
                     if (!clinicalStatus.value?.expires_at) return '';
                     const diffHours = Math.ceil((new Date(clinicalStatus.value.expires_at) - new Date()) / (1000 * 60 * 60));
