@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue;
 
         // ============ 1. CONFIGURATION ============
-const CONFIG = {
+        const CONFIG = {
     API_BASE_URL: window.location.hostname.includes('localhost') 
         ? 'http://localhost:3000' 
-        : 'https://neumac.up.railway.app',  // ← Changed from neumac-manage-back-end-production.up.railway.app
+        : 'https://neumac-manage-back-end-production.up.railway.app',  // This should be correct
     TOKEN_KEY: 'neumocare_token',
     USER_KEY: 'neumocare_user',
     APP_VERSION: '8.2',
