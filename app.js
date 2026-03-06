@@ -305,6 +305,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const app = createApp({
             setup() {
+                // ── Count-up animation utility ─────────────────────────────────────
+const animateCountUp = (targetRef, endValue, duration = 600) => {
+    if (!endValue || endValue === 0) return;
+    const start = 0;
+    const startTime = performance.now();
+    const step = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        targetRef.value = Math.round(start + (endValue - start) * eased);
+        if (progress < 1) requestAnimationFrame(step);
+        else targetRef.value = endValue;
+    };
+    requestAnimationFrame(step);
+};
 
                 // \u2500\u2500 State \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
                 const currentUser = ref(null);
@@ -1242,12 +1258,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     } catch {}
                 };
 
-                const updateDashboardStats = () => {
-                    systemStats.value.totalStaff = medicalStaff.value.length;
-                    systemStats.value.activeAttending = medicalStaff.value.filter(s =>
-                        s.staff_type === 'attending_physician' && s.employment_status === 'active').length;
-                    systemStats.value.activeResidents = medicalStaff.value.filter(s =>
-                        s.staff_type === 'medical_resident' && s.employment_status === 'active').length;
+               const updateDashboardStats = () => {
+    const newTotalStaff = medicalStaff.value.length;
+    const newAttending = medicalStaff.value.filter(s =>
+        s.staff_type === 'attending_physician' && s.employment_status === 'active').length;
+    const newResidents = medicalStaff.value.filter(s =>
+        s.staff_type === 'medical_resident' && s.employment_status === 'active').length;
+
+    // Animate only on first load (when previous value was 0)
+    if (systemStats.value.totalStaff === 0 && newTotalStaff > 0) {
+        const totalRef = { value: 0 };
+        const attendingRef = { value: 0 };
+        const residentsRef = { value: 0 };
+        animateCountUp(totalRef,    newTotalStaff, 700);
+        animateCountUp(attendingRef, newAttending,  600);
+        animateCountUp(residentsRef, newResidents,  650);
+        // Sync back to systemStats reactively via watchers on the temp refs
+        const syncInterval = setInterval(() => {
+            systemStats.value.totalStaff     = totalRef.value;
+            systemStats.value.activeAttending = attendingRef.value;
+            systemStats.value.activeResidents = residentsRef.value;
+            if (totalRef.value >= newTotalStaff) clearInterval(syncInterval);
+        }, 16);
+    } else {
+        systemStats.value.totalStaff     = newTotalStaff;
+        systemStats.value.activeAttending = newAttending;
+        systemStats.value.activeResidents = newResidents;
+    }
 
                     const today = new Date().toISOString().split('T')[0];
                     systemStats.value.onLeaveStaff = absences.value.filter(absence => {
