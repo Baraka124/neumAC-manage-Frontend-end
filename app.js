@@ -1811,6 +1811,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (onCallFilters.coverageArea) filtered = filtered.filter(s => s.coverage_area === onCallFilters.coverageArea);
                     return filtered;
                 });
+                // Add these computed/helper functions:
+
+const hasProfessionalCredentials = (staff) => {
+    return staff.academic_degree || staff.specialization || staff.training_year || 
+           staff.clinical_certificate || staff.medical_license;
+};
+
+const getUpcomingOnCall = (staffId) => {
+    const today = new Date().toISOString().split('T')[0];
+    return onCallSchedule.value.filter(s => 
+        (s.primary_physician_id === staffId || s.backup_physician_id === staffId) &&
+        s.duty_date > today
+    ).sort((a, b) => a.duty_date.localeCompare(b.duty_date));
+};
+
+const getUpcomingLeave = (staffId) => {
+    const today = new Date().toISOString().split('T')[0];
+    return absenceRecords.value.filter(a => 
+        a.staff_member_id === staffId && 
+        a.start_date > today &&
+        a.current_status !== 'cancelled'
+    ).sort((a, b) => a.start_date.localeCompare(b.start_date));
+};
+
+const getRotationHistory = (staffId) => {
+    return rotations.value.filter(r => 
+        r.resident_id === staffId && 
+        r.rotation_status !== 'active'
+    ).sort((a, b) => new Date(b.end_date) - new Date(a.end_date));
+};
 
                 const filteredRotations = computed(() => {
                     let filtered = rotations.value;
