@@ -615,7 +615,46 @@ document.addEventListener('DOMContentLoaded', function() {
                         (r.rotation_status === 'active' || r.rotation_status === 'scheduled')
                     ).length;
                 };
+// Add these helper functions in your app.js (around line 600-700, with other helper functions)
 
+// Check if staff has any professional credentials to display
+const hasProfessionalCredentials = (staff) => {
+    return staff?.academic_degree || 
+           staff?.specialization || 
+           staff?.training_year || 
+           staff?.clinical_certificate || 
+           staff?.medical_license;
+};
+
+// Get upcoming on-call shifts for a staff member
+const getUpcomingOnCall = (staffId) => {
+    if (!staffId) return [];
+    const today = new Date().toISOString().split('T')[0];
+    return onCallSchedule.value.filter(s => 
+        (s.primary_physician_id === staffId || s.backup_physician_id === staffId) &&
+        s.duty_date > today
+    ).sort((a, b) => a.duty_date.localeCompare(b.duty_date));
+};
+
+// Get upcoming leave for a staff member
+const getUpcomingLeave = (staffId) => {
+    if (!staffId) return [];
+    const today = new Date().toISOString().split('T')[0];
+    return absenceRecords.value.filter(a => 
+        a.staff_member_id === staffId && 
+        a.start_date > today &&
+        a.current_status !== 'cancelled'
+    ).sort((a, b) => a.start_date.localeCompare(b.start_date));
+};
+
+// Get rotation history for a resident
+const getRotationHistory = (staffId) => {
+    if (!staffId) return [];
+    return rotations.value.filter(r => 
+        r.resident_id === staffId && 
+        r.rotation_status !== 'active'
+    ).sort((a, b) => new Date(b.end_date) - new Date(a.end_date));
+};
                 const getDaysRemaining = (endDate) => {
                     if (!endDate) return 0;
                     const end = new Date(endDate);
@@ -1813,35 +1852,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 // Add these computed/helper functions:
 
-const hasProfessionalCredentials = (staff) => {
-    return staff.academic_degree || staff.specialization || staff.training_year || 
-           staff.clinical_certificate || staff.medical_license;
-};
-
-const getUpcomingOnCall = (staffId) => {
-    const today = new Date().toISOString().split('T')[0];
-    return onCallSchedule.value.filter(s => 
-        (s.primary_physician_id === staffId || s.backup_physician_id === staffId) &&
-        s.duty_date > today
-    ).sort((a, b) => a.duty_date.localeCompare(b.duty_date));
-};
-
-const getUpcomingLeave = (staffId) => {
-    const today = new Date().toISOString().split('T')[0];
-    return absenceRecords.value.filter(a => 
-        a.staff_member_id === staffId && 
-        a.start_date > today &&
-        a.current_status !== 'cancelled'
-    ).sort((a, b) => a.start_date.localeCompare(b.start_date));
-};
-
-const getRotationHistory = (staffId) => {
-    return rotations.value.filter(r => 
-        r.resident_id === staffId && 
-        r.rotation_status !== 'active'
-    ).sort((a, b) => new Date(b.end_date) - new Date(a.end_date));
-};
-
                 const filteredRotations = computed(() => {
                     let filtered = rotations.value;
                     if (rotationFilters.resident) filtered = filtered.filter(r => r.resident_id === rotationFilters.resident);
@@ -1944,9 +1954,10 @@ const getRotationHistory = (staffId) => {
                     getShiftStatusClass, isCurrentShift, getStaffTypeIcon, calculateCapacityPercent,
                     getCapacityDotClass, getMeterFillClass, getAbsenceReasonIcon, getScheduleIcon,
                     // Profile
-                    getCurrentUnit, getCurrentWard, getCurrentActivityStatus,
-                    isOnCallToday, getOnCallShiftTime, getOnCallCoverage,
-                    getRotationSupervisor, getRotationDaysLeft, formatTimeAgo,
+getCurrentUnit, getCurrentWard, getCurrentActivityStatus,
+isOnCallToday, getOnCallShiftTime, getOnCallCoverage,
+getRotationSupervisor, getRotationDaysLeft, formatTimeAgo,
+hasProfessionalCredentials, getUpcomingOnCall, getUpcomingLeave, getRotationHistory,
                     // Status
                     getStatusBadgeClass, calculateTimeRemaining, refreshStatus, setQuickStatus,
                     formatAudience, getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
