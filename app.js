@@ -1,6 +1,6 @@
 // ============ NEUMOCARE HOSPITAL MANAGEMENT SYSTEM v9.0 ============
 // Frontend Application - Vue.js - COMPLETE WITH FULL CRUD OPERATIONS
-// ===================================================================
+// =====================================================/==============
 
 document.addEventListener('DOMContentLoaded', function() {
 
