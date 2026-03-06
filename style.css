@@ -250,7 +250,552 @@ a { color: var(--blue); text-decoration: none; }
   margin-bottom: 1px;
   position: relative;
 }
+/* ----------------------------------------------------------------
+   RESEARCH LINES — New styles for research functionality
+---------------------------------------------------------------- */
 
+/* Research Lines Grid */
+.research-lines-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.research-line-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--t-md);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.research-line-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.research-line-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--blue), var(--teal));
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+
+.research-line-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.research-line-number {
+    background: var(--blue-lt);
+    color: var(--blue);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+}
+
+.research-line-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.research-line-actions .btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--t);
+}
+
+.research-line-actions .btn-icon:hover {
+    background: var(--blue-lt);
+    border-color: var(--blue-mid);
+    color: var(--blue);
+}
+
+/* IMPROVEMENT 1: Serif research line name */
+.research-line-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text-1);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+}
+
+.research-line-description {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.6;
+}
+
+/* Coordinator Section */
+.research-coordinator-section {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px;
+    margin: 8px 0 4px;
+}
+
+.coordinator-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+    margin-bottom: 10px;
+}
+
+.coordinator-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.coordinator-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--teal));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: 0 4px 12px rgba(45,122,255,0.25);
+}
+
+.coordinator-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-1);
+    letter-spacing: -0.01em;
+}
+
+.coordinator-email {
+    font-size: 12px;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+}
+
+.coordinator-empty {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-3);
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* Capabilities */
+.research-capabilities {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--blue);
+    background: var(--blue-lt);
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    border-left: 3px solid var(--blue);
+    margin-top: 4px;
+}
+
+.capabilities-label {
+    display: block;
+}
+
+/* Keywords/Tags */
+.research-keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.keyword-tag {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    letter-spacing: 0.3px;
+    transition: var(--t);
+}
+
+.keyword-tag:hover {
+    background: var(--blue-lt);
+    border-color: var(--blue-mid);
+    color: var(--blue);
+}
+
+/* Clinical Trials Table Enhancements */
+.trials-note {
+    margin: 16px 24px 24px;
+    padding: 12px 16px;
+    background: var(--blue-lt);
+    border-radius: var(--r);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--blue);
+    border: 1px solid var(--blue-mid);
+}
+
+.trials-note i {
+    font-size: 16px;
+    color: var(--blue);
+}
+
+.trials-note a {
+    color: var(--blue);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: var(--t);
+}
+
+.trials-note a:hover {
+    color: #1a66f0;
+}
+
+/* Innovation Projects Grid */
+.innovation-projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.innovation-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--t-md);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.innovation-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.innovation-category {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+    align-self: flex-start;
+}
+
+.innovation-category.dispositivo {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #b8d0ff;
+}
+
+.innovation-category.salud-digital {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.innovation-category.ia-ml {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #d8b4fe;
+}
+
+.innovation-category.tecnología-quirúrgica {
+    background: #fff1f2;
+    color: #9f1239;
+    border: 1px solid #fecdd3;
+}
+
+/* IMPROVEMENT 1: Serif innovation title */
+.innovation-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text-1);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+
+.innovation-stage {
+    margin: 4px 0 8px;
+}
+
+.stage-badge {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    letter-spacing: 0.3px;
+}
+
+.innovation-description {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.innovation-research-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--blue);
+    font-weight: 500;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.innovation-research-line i {
+    font-size: 12px;
+    color: var(--blue);
+}
+
+.innovation-needs {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 16px;
+    margin: 8px 0;
+}
+
+.needs-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-3);
+    margin-bottom: 10px;
+}
+
+.needs-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.need-tag {
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    color: var(--text-2);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    transition: var(--t);
+}
+
+.need-tag:hover {
+    background: var(--blue-lt);
+    border-color: var(--blue-mid);
+    color: var(--blue);
+}
+
+.innovation-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+/* Research Line Items in Profile */
+.research-line-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: var(--t);
+}
+
+.research-line-item:last-child {
+    border-bottom: none;
+}
+
+.research-line-item:hover {
+    background: var(--blue-lt);
+}
+
+.research-line-marker {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--blue-lt), var(--teal-lt));
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: var(--font-mono);
+    border: 1px solid var(--blue-mid);
+    flex-shrink: 0;
+}
+
+.research-line-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.research-line-role {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.research-line-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    line-height: 1.4;
+}
+
+/* Assign Coordinator Modal enhancements */
+.modal-sm .form-group select {
+    margin-top: 8px;
+}
+
+.modal-sm p.mb-4 {
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.5;
+}
+
+.modal-sm p.mb-4 strong {
+    color: var(--blue);
+    font-weight: 700;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .research-lines-grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+    }
+    
+    .innovation-projects-grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+    }
+    
+    .research-line-card,
+    .innovation-card {
+        padding: 16px;
+    }
+    
+    .coordinator-info {
+        flex-wrap: wrap;
+    }
+    
+    .trials-note {
+        margin: 12px 16px 16px;
+        flex-wrap: wrap;
+    }
+}
+
+/* Animation for new cards */
+.research-line-card,
+.innovation-card {
+    animation: cardFadeIn 0.4s ease both;
+}
+
+.research-line-card:nth-child(1) { animation-delay: 0.05s; }
+.research-line-card:nth-child(2) { animation-delay: 0.10s; }
+.research-line-card:nth-child(3) { animation-delay: 0.15s; }
+.research-line-card:nth-child(4) { animation-delay: 0.20s; }
+.research-line-card:nth-child(5) { animation-delay: 0.25s; }
+.research-line-card:nth-child(6) { animation-delay: 0.30s; }
+
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Empty state refinements for research sections */
+.empty-state .btn-primary {
+    margin-top: 12px;
+}
+
+/* Research lines in dark sidebar (live stats) - optional enhancement */
+.live-stats-sidebar .research-line-item {
+    background: var(--p-surface);
+    border-color: var(--p-border);
+}
+
+.live-stats-sidebar .research-line-marker {
+    background: rgba(77,154,255,0.15);
+    color: var(--p-blue);
+    border-color: rgba(77,154,255,0.3);
+}
+
+.live-stats-sidebar .research-line-role {
+    color: var(--p-blue);
+}
+
+.live-stats-sidebar .research-line-name {
+    color: var(--p-text);
+}
 .sidebar-menu-link i {
   font-size: 13px; width: 17px; text-align: center;
   flex-shrink: 0;
