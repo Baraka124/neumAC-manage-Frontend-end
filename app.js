@@ -1020,6 +1020,64 @@ document.addEventListener('DOMContentLoaded', function () {
                     };
                     return map[view] ? map[view]() : [];
                 };
+                const formatResidentCategorySimple = (category) => {
+    const map = {
+        'department_internal': 'Internal',
+        'rotating_other_dept': 'Rotating',
+        'external_resident': 'External'
+    };
+    return map[category] || category;
+};
+
+// Format detailed description with institution/home dept
+const formatResidentCategoryDetailed = (staff) => {
+    if (!staff.resident_category) return 'Not specified';
+    
+    switch(staff.resident_category) {
+        case 'department_internal':
+            return 'Internal Resident';
+        case 'rotating_other_dept':
+            return staff.home_department 
+                ? `Rotating from ${staff.home_department}` 
+                : 'Rotating Resident';
+        case 'external_resident':
+            return staff.external_institution 
+                ? `External (${staff.external_institution})` 
+                : 'External Resident';
+        default:
+            return staff.resident_category;
+    }
+};
+
+// Get icon for resident category
+const getResidentCategoryIcon = (category) => {
+    const map = {
+        'department_internal': 'fa-user-md',
+        'rotating_other_dept': 'fa-sync-alt',
+        'external_resident': 'fa-globe'
+    };
+    return map[category] || 'fa-user';
+};
+
+// Get tooltip text for resident badge
+const getResidentCategoryTooltip = (staff) => {
+    if (!staff.resident_category) return '';
+    
+    switch(staff.resident_category) {
+        case 'department_internal':
+            return 'Department internal resident';
+        case 'rotating_other_dept':
+            return staff.home_department 
+                ? `Rotating from ${staff.home_department}` 
+                : 'Resident from another department';
+        case 'external_resident':
+            return staff.external_institution 
+                ? `External resident from ${staff.external_institution}` 
+                : 'External resident from another institution';
+        default:
+            return '';
+    }
+};
 
                 // ============ INLINE VALIDATION ============
                 const fieldErrors = reactive({
@@ -1146,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 };
 
                 // ============ FILTERS ============
-                const staffFilters = reactive({ search: '', staffType: '', department: '', status: '' });
+                const staffFilters = reactive({ search: '', staffType: '', department: '', status: '', residentCategory: '' });
                 const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' });
                 const rotationFilters = reactive({ resident: '', status: '', trainingUnit: '', supervisor: '', search: '' });
                 const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '' });
@@ -3296,7 +3354,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Actions
                     contactPhysician, viewAnnouncement, requestFullDossier,
-                    saveCoordinatorAssignment,
+                    saveCoordinatorAssignment,formatResidentCategorySimple,
+    formatResidentCategoryDetailed,
+    getResidentCategoryIcon,
+    getResidentCategoryTooltip,
 
                     // Save
                     saveMedicalStaff, saveDepartment, saveTrainingUnit, saveRotation,
