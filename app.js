@@ -1331,79 +1331,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 6.4 useOnCall (keep existing)
-    function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
-      const onCallSchedule = ref([])
-      const todaysOnCall = ref([])
-      const loadingSchedule = ref(false)
-      const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
-      const onCallModal = reactive({
-        show: false, mode: 'add',
-        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '08:00', end_time: '17:00', primary_physician_id: '', backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '' }
-      })
-
-      const validateOnCall = (form) => {
-        clearAll('oncall'); let ok = true
-        if (!form.duty_date) { setErr('oncall', 'duty_date', 'Date is required'); ok = false }
-        if (!form.primary_physician_id) { setErr('oncall', 'primary_physician_id', 'Please select a physician'); ok = false }
-        if (!form.start_time) { setErr('oncall', 'start_time', 'Start time is required'); ok = false }
-        if (!form.end_time) { setErr('oncall', 'end_time', 'End time is required'); ok = false }
-        return ok
-      }
-
-      const getPhysicianName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
-      const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
-
-      const filteredOnCallAll = computed(() => {
-        let f = onCallSchedule.value
-        if (onCallFilters.date) f = f.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
-        if (onCallFilters.shiftType) f = f.filter(s => s.shift_type === onCallFilters.shiftType)
-        if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
-        if (onCallFilters.coverageArea) f = f.filter(s => s.coverage_area === onCallFilters.coverageArea)
-        if (onCallFilters.search) {
-          const q = onCallFilters.search.toLowerCase()
-          f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_area || '').toLowerCase().includes(q))
-        }
-        return applySort(f, 'oncall')
-      })
-      const filteredOnCallSchedules = computed(() => paginate(filteredOnCallAll.value, 'oncall'))
-      const oncallTotalPages = computed(() => totalPages(filteredOnCallAll.value, 'oncall'))
-      const todaysOnCallCount = computed(() => todaysOnCall.value.length)
-
-      watch(onCallFilters, () => resetPage('oncall'), { deep: true })
-
-      const loadOnCallSchedule = async () => {
-        loadingSchedule.value = true
-        try {
-          const raw = await API.getOnCallSchedule()
-          onCallSchedule.value = raw.map(s => ({ ...s, duty_date: Utils.normalizeDate(s.duty_date) }))
-        } catch { showToast('Error', 'Failed to load on-call schedule', 'error') }
-        finally { loadingSchedule.value = false }
-      }
-
-      const loadTodaysOnCall = async () => {
-        try {
-          const data = await API.getOnCallToday()
-          todaysOnCall.value = data.map(item => {
-            const startTime = item.start_time?.substring(0, 5) || 'N/A'
-            const endTime = item.end_time?.substring(0, 5) || 'N/A'
-            const isPrimary = ['primary_call', 'primary'].includes(item.shift_type || '')
-            const matchingStaff = medicalStaff.value.find(s => s.id === item.primary_physician_id)
-            return {
-              id: item.id, startTime, endTime,
-              physicianName: item.primary_physician?.full_name || 'Unknown Physician',
-              shiftTypeDisplay: isPrimary ? 'Primary' : 'Backup',
-              shiftTypeClass: isPrimary ? 'badge-primary' : 'badge-secondary',
-              shiftType: isPrimary ? 'Primary' : 'Backup',
-              staffType: matchingStaff ? formatStaffType(matchingStaff.staff_type) : 'Physician',
-              coverageArea: item.coverage_area || 'General Coverage',
-              backupPhysician: item.backup_physician?.full_name || null,
-              contactInfo: item.primary_physician?.professional_email || 'No contact info',
-              raw: item
-            }
-          })
-        } catch { todaysOnCall.value = [] }
-      }
 // 6.4 useOnCall - manages on-call schedules
 function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
   const onCallSchedule = ref([])
@@ -1640,6 +1567,7 @@ function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPag
     else
       showToast('No Contact Info', `No contact info for ${shift.physicianName}`, 'warning')
   }
+
 
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
