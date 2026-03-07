@@ -1938,18 +1938,26 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         postponeAllActivations,
         initAutoCheck,
         forceActivationCheck: () => checkAndUpdateRotations(true),
+
         quickActivate: (rotation) => updateRotationStatus(rotation.id, 'active', {
-          activated_at: new Date().toISOString(),
-          activated_by: currentUser?.value?.full_name || 'manual',
-          notes: 'Manually activated'
-        }),
-        quickComplete: (rotation) => updateRotationStatus(rotation.id, 'completed', {
-          completed_at: new Date().toISOString(),
-          completed_by: currentUser?.value?.full_name || 'manual',
-          notes: 'Manually completed'
-        })
-      }
-    }
+  activated_at: new Date().toISOString(),
+  activated_by: currentUser?.value?.full_name || 'manual',
+  notes: 'Manually activated',
+  // Ensure all string fields are present
+  clinical_notes: rotation.clinical_notes || '',
+  supervisor_evaluation: rotation.supervisor_evaluation || '',
+  goals: rotation.goals || ''
+}),
+
+quickComplete: (rotation) => updateRotationStatus(rotation.id, 'completed', {
+  completed_at: new Date().toISOString(),
+  completed_by: currentUser?.value?.full_name || 'manual',
+  notes: 'Manually completed',
+  // Ensure all string fields are present
+  clinical_notes: rotation.clinical_notes || '',
+  supervisor_evaluation: rotation.supervisor_evaluation || '',
+  goals: rotation.goals || ''
+})
 
     // 6.6 useAbsences (keep existing)
     function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
