@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  try {  // ← ADD THIS LINE
+  try {  // ← Opening try at the top level
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')
 
   const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
@@ -2338,22 +2338,18 @@ return {
       }
     }
   })
-      
-
   app.mount('#app')
-  
-} catch (error) {  // ← This catch should be here, at the same level as the try
-  document.body.innerHTML = `
-    <div style="padding:40px;text-align:center;margin-top:100px;color:#333;font-family:Arial,sans-serif;">
-      <h2 style="color:#dc3545;">⚠️ Application Error</h2>
-      <p style="margin:20px 0;color:#666;">The application failed to load. Please refresh the page.</p>
-      <button onclick="window.location.reload()"
-              style="padding:12px 24px;background:#007bff;color:white;border:none;border-radius:6px;cursor:pointer;">
-        🔄 Refresh Page
-      </button>
-    </div>`;
-  throw error;
-}
-}); 
 
-    
+  } catch (error) {  // ← This catch should be here, at the same level as the try
+    document.body.innerHTML = `
+      <div style="padding:40px;text-align:center;margin-top:100px;color:#333;font-family:Arial,sans-serif;">
+        <h2 style="color:#dc3545;">⚠️ Application Error</h2>
+        <p style="margin:20px 0;color:#666;">The application failed to load. Please refresh the page.</p>
+        <button onclick="window.location.reload()"
+                style="padding:12px 24px;background:#007bff;color:white;border:none;border-radius:6px;cursor:pointer;">
+          🔄 Refresh Page
+        </button>
+      </div>`;
+    throw error;
+  }
+});
