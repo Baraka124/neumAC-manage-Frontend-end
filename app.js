@@ -1939,25 +1939,25 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         initAutoCheck,
         forceActivationCheck: () => checkAndUpdateRotations(true),
 
-        quickActivate: (rotation) => updateRotationStatus(rotation.id, 'active', {
-  activated_at: new Date().toISOString(),
-  activated_by: currentUser?.value?.full_name || 'manual',
-  notes: 'Manually activated',
-  // Ensure all string fields are present
-  clinical_notes: rotation.clinical_notes || '',
-  supervisor_evaluation: rotation.supervisor_evaluation || '',
-  goals: rotation.goals || ''
-}),
+      quickActivate: (rotation) => updateRotationStatus(rotation.id, 'active', {
+          activated_at: new Date().toISOString(),
+          activated_by: currentUser?.value?.full_name || 'manual',
+          notes: 'Manually activated',
+          clinical_notes: rotation.clinical_notes || '',
+          supervisor_evaluation: rotation.supervisor_evaluation || '',
+          goals: rotation.goals || ''
+        }),
 
-quickComplete: (rotation) => updateRotationStatus(rotation.id, 'completed', {
-  completed_at: new Date().toISOString(),
-  completed_by: currentUser?.value?.full_name || 'manual',
-  notes: 'Manually completed',
-  // Ensure all string fields are present
-  clinical_notes: rotation.clinical_notes || '',
-  supervisor_evaluation: rotation.supervisor_evaluation || '',
-  goals: rotation.goals || ''
-})
+        quickComplete: (rotation) => updateRotationStatus(rotation.id, 'completed', {
+          completed_at: new Date().toISOString(),
+          completed_by: currentUser?.value?.full_name || 'manual',
+          notes: 'Manually completed',
+          clinical_notes: rotation.clinical_notes || '',
+          supervisor_evaluation: rotation.supervisor_evaluation || '',
+          goals: rotation.goals || ''
+        })
+      } // ← THIS CLOSES THE useRotations RETURN OBJECT
+    } // ← THIS CLOSES THE useRotations FUNCTION
 
     // 6.6 useAbsences (keep existing)
     function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
