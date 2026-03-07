@@ -1012,14 +1012,14 @@
     <div style="display: flex; gap: 8px;">
         <!-- Check Pending button - shows count of pending rotations -->
         <button class="btn btn-outline-primary" 
-                @click="rotationOps.forceActivationCheck" 
+                @click="forceActivationCheck"   <!-- REMOVED rotationOps. -->
                 v-if="hasPermission('resident_rotations', 'update')"
                 style="position: relative;">
             <i class="fas fa-sync-alt"></i> Check Pending
             <!-- Show badge if there are pending rotations -->
-            <span v-if="rotationOps.pendingActivations?.length > 0" 
+            <span v-if="pendingActivations?.length > 0"   <!-- REMOVED rotationOps. -->
                   style="position: absolute; top: -8px; right: -8px; background: var(--red); color: white; border-radius: 50%; min-width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; padding: 0 4px;">
-                {{ rotationOps.pendingActivations.length }}
+                {{ pendingActivations.length }}   <!-- REMOVED rotationOps. -->
             </span>
         </button>
         
