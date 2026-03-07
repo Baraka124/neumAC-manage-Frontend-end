@@ -745,7 +745,86 @@ const filteredMedicalStaffAll = computed(() => {
         showToast('Success', 'Staff deleted', 'success')
       }
     })
+    // Check if a department role is taken
+    const isRoleTaken = (role) => {
+        if (!medicalStaff.value) return false;
+        
+        const currentHolder = medicalStaff.value.find(staff => {
+            switch(role) {
+                case 'chief_of_department': return staff.is_chief_of_department;
+                case 'research_coordinator': return staff.is_research_coordinator;
+                case 'resident_manager': return staff.is_resident_manager;
+                case 'oncall_manager': return staff.is_oncall_manager;
+                default: return false;
+            }
+        });
+        
+        return currentHolder && currentHolder.id !== medicalStaffModal.form.id;
+    };
 
+    // Get current role holder
+    const getCurrentRoleHolder = (role) => {
+        if (!medicalStaff.value) return null;
+        
+        return medicalStaff.value.find(staff => {
+            switch(role) {
+                case 'chief_of_department': return staff.is_chief_of_department;
+                case 'research_coordinator': return staff.is_research_coordinator;
+                case 'resident_manager': return staff.is_resident_manager;
+                case 'oncall_manager': return staff.is_oncall_manager;
+                default: return false;
+            }
+        }) || null;
+    };
+
+    // Handle role assignment (warn about replacing)
+    const handleRoleAssignment = (role, checked) => {
+        if (!checked) return;
+        
+        const currentHolder = getCurrentRoleHolder(role);
+        if (currentHolder && currentHolder.id !== medicalStaffModal.form.id) {
+            showConfirmation({
+                title: 'Replace Role Holder',
+                message: `${currentHolder.full_name} currently holds this role.`,
+                details: `Are you sure you want to reassign it to ${medicalStaffModal.form.full_name}?`,
+                icon: 'fa-exchange-alt',
+                confirmButtonText: 'Yes, Reassign',
+                confirmButtonClass: 'btn-warning',
+                onConfirm: () => {
+                    // Clear the role from previous holder
+                    const idx = medicalStaff.value.findIndex(s => s.id === currentHolder.id);
+                    if (idx !== -1) {
+                        medicalStaff.value[idx][`is_${role}`] = false;
+                    }
+                    // Will be set to true when form saves
+                }
+            });
+        }
+    };
+
+    // Toggle certificate
+    const toggleCertificate = (cert) => {
+        if (!medicalStaffModal.form.clinical_study_certificates) {
+            medicalStaffModal.form.clinical_study_certificates = [];
+        }
+        
+        const idx = medicalStaffModal.form.clinical_study_certificates.indexOf(cert);
+        if (idx === -1) {
+            medicalStaffModal.form.clinical_study_certificates.push(cert);
+        } else {
+            medicalStaffModal.form.clinical_study_certificates.splice(idx, 1);
+        }
+    };
+
+    // Available certificates
+    const availableCertificates = [
+        'GCP - Good Clinical Practice',
+        'ICH Guidelines',
+        'Clinical Research Coordinator',
+        'CITI Program',
+        'HIPAA Certification',
+        'Responsible Conduct of Research'
+    ];
 return {
   medicalStaff, 
   staffFilters, 
@@ -2287,6 +2366,12 @@ return {
         getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
         getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
         getCurrentRotationSupervisor, hasProfessionalCredentials,
+        // NEW: Department role methods
+  isRoleTaken,
+  getCurrentRoleHolder,
+  handleRoleAssignment,
+  toggleCertificate,
+  availableCertificates,
 
         // Formatters
         formatStaffType, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
