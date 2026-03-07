@@ -1404,76 +1404,242 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         } catch { todaysOnCall.value = [] }
       }
+// 6.4 useOnCall - manages on-call schedules
+function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
+  const onCallSchedule = ref([])
+  const todaysOnCall = ref([])
+  const loadingSchedule = ref(false)
+  const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
+  const onCallModal = reactive({
+    show: false, mode: 'add',
+    form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '08:00', end_time: '17:00', primary_physician_id: '', backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '' }
+  })
 
-      const showAddOnCallModal = () => {
-        clearAll('oncall')
-        onCallModal.mode = 'add'
-        Object.assign(onCallModal.form, {
-          duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
-          start_time: '08:00', end_time: '17:00', primary_physician_id: '',
-          backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '',
-          schedule_id: `SCH-${Date.now().toString().slice(-6)}`
-        })
-        onCallModal.show = true
-      }
+  // ============ HELPER FUNCTIONS ============
+  const getPhysicianName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
+  const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
 
-      const editOnCallSchedule = (schedule) => {
-        clearAll('oncall')
-        onCallModal.mode = 'edit'
-        const raw = schedule.shift_type || 'primary_call'
-        onCallModal.form = {
-          ...schedule,
-          duty_date: Utils.normalizeDate(schedule.duty_date),
-          shift_type: ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
-          coverage_area: schedule.coverage_area || 'emergency',
-          coverage_notes: schedule.coverage_notes || ''
-        }
-        onCallModal.show = true
-      }
+  // ============ VALIDATION ============
+  const validateOnCall = (form) => {
+    clearAll('oncall'); let ok = true
+    if (!form.duty_date) { setErr('oncall', 'duty_date', 'Date is required'); ok = false }
+    if (!form.primary_physician_id) { setErr('oncall', 'primary_physician_id', 'Please select a physician'); ok = false }
+    if (!form.start_time) { setErr('oncall', 'start_time', 'Start time is required'); ok = false }
+    if (!form.end_time) { setErr('oncall', 'end_time', 'End time is required'); ok = false }
+    return ok
+  }
 
-      const saveOnCallSchedule = async (saving) => {
-        if (!validateOnCall(onCallModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
-        saving.value = true
-        try {
-          const f = onCallModal.form
-          const data = {
-            duty_date: Utils.normalizeDate(f.duty_date), shift_type: f.shift_type || 'primary_call',
-            start_time: f.start_time || '08:00', end_time: f.end_time || '17:00',
-            primary_physician_id: f.primary_physician_id, backup_physician_id: f.backup_physician_id || null,
-            coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH')
-          }
-          if (onCallModal.mode === 'add') {
-            onCallSchedule.value.unshift({ ...(await API.createOnCall(data)), duty_date: Utils.normalizeDate(data.duty_date), coverage_area: f.coverage_area })
-            showToast('Success', 'On-call scheduled', 'success')
-          } else {
-            const result = await API.updateOnCall(f.id, data)
-            const idx = onCallSchedule.value.findIndex(s => s.id === result.id)
-            if (idx !== -1) onCallSchedule.value[idx] = { ...result, duty_date: Utils.normalizeDate(result.duty_date), coverage_area: f.coverage_area }
-            showToast('Success', 'On-call updated', 'success')
-          }
-          onCallModal.show = false; clearAll('oncall'); await loadTodaysOnCall()
-        } catch (e) { showToast('Error', e.message || 'Failed to save on-call', 'error') }
-        finally { saving.value = false }
-      }
+  // ============ DUPLICATE CHECK ============
+  const checkExistingSchedule = async (date, shiftType, excludeId = null) => {
+    try {
+      const schedules = await API.getOnCallSchedule({ 
+        start_date: date, 
+        end_date: date
+      });
+      // Filter by shift type and exclude current schedule if editing
+      return schedules.filter(s => 
+        s.shift_type === shiftType && 
+        (!excludeId || s.id !== excludeId)
+      ).length > 0;
+    } catch (error) {
+      console.error('Failed to check existing schedule:', error);
+      return false;
+    }
+  };
 
-      const deleteOnCallSchedule = (schedule) => showConfirmation({
-        title: 'Delete On-Call', message: 'Delete this on-call schedule?',
-        icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger',
-        details: `Physician: ${getPhysicianName(schedule.primary_physician_id)}`,
-        onConfirm: async () => {
-          await API.deleteOnCall(schedule.id)
-          onCallSchedule.value = onCallSchedule.value.filter(s => s.id !== schedule.id)
-          showToast('Success', 'Schedule deleted', 'success')
-          loadTodaysOnCall()
+  // ============ FILTERED COMPUTED ============
+  const filteredOnCallAll = computed(() => {
+    let f = onCallSchedule.value
+    if (onCallFilters.date) f = f.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
+    if (onCallFilters.shiftType) f = f.filter(s => s.shift_type === onCallFilters.shiftType)
+    if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
+    if (onCallFilters.coverageArea) f = f.filter(s => s.coverage_area === onCallFilters.coverageArea)
+    if (onCallFilters.search) {
+      const q = onCallFilters.search.toLowerCase()
+      f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_area || '').toLowerCase().includes(q))
+    }
+    return applySort(f, 'oncall')
+  })
+  const filteredOnCallSchedules = computed(() => paginate(filteredOnCallAll.value, 'oncall'))
+  const oncallTotalPages = computed(() => totalPages(filteredOnCallAll.value, 'oncall'))
+  const todaysOnCallCount = computed(() => todaysOnCall.value.length)
+
+  watch(onCallFilters, () => resetPage('oncall'), { deep: true })
+
+  // ============ LOAD FUNCTIONS ============
+  const loadOnCallSchedule = async () => {
+    loadingSchedule.value = true
+    try {
+      const raw = await API.getOnCallSchedule()
+      onCallSchedule.value = raw.map(s => ({ ...s, duty_date: Utils.normalizeDate(s.duty_date) }))
+    } catch { showToast('Error', 'Failed to load on-call schedule', 'error') }
+    finally { loadingSchedule.value = false }
+  }
+
+  const loadTodaysOnCall = async () => {
+    try {
+      const data = await API.getOnCallToday()
+      todaysOnCall.value = data.map(item => {
+        const startTime = item.start_time?.substring(0, 5) || 'N/A'
+        const endTime = item.end_time?.substring(0, 5) || 'N/A'
+        const isPrimary = ['primary_call', 'primary'].includes(item.shift_type || '')
+        const matchingStaff = medicalStaff.value.find(s => s.id === item.primary_physician_id)
+        return {
+          id: item.id, startTime, endTime,
+          physicianName: item.primary_physician?.full_name || 'Unknown Physician',
+          shiftTypeDisplay: isPrimary ? 'Primary' : 'Backup',
+          shiftTypeClass: isPrimary ? 'badge-primary' : 'badge-secondary',
+          shiftType: isPrimary ? 'Primary' : 'Backup',
+          staffType: matchingStaff ? formatStaffType(matchingStaff.staff_type) : 'Physician',
+          coverageArea: item.coverage_area || 'General Coverage',
+          backupPhysician: item.backup_physician?.full_name || null,
+          contactInfo: item.primary_physician?.professional_email || 'No contact info',
+          raw: item
         }
       })
+    } catch { todaysOnCall.value = [] }
+  }
 
-      const contactPhysician = (shift) => {
-        if (shift.contactInfo && shift.contactInfo !== 'No contact info')
-          showToast('Contact Physician', `Contact ${shift.physicianName}: ${shift.contactInfo}`, 'info')
-        else
-          showToast('No Contact Info', `No contact info for ${shift.physicianName}`, 'warning')
+  // ============ MODAL FUNCTIONS ============
+  const showAddOnCallModal = () => {
+    clearAll('oncall')
+    onCallModal.mode = 'add'
+    Object.assign(onCallModal.form, {
+      duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
+      start_time: '08:00', end_time: '17:00', primary_physician_id: '',
+      backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '',
+      schedule_id: `SCH-${Date.now().toString().slice(-6)}`
+    })
+    onCallModal.show = true
+  }
+
+  const editOnCallSchedule = (schedule) => {
+    clearAll('oncall')
+    onCallModal.mode = 'edit'
+    const raw = schedule.shift_type || 'primary_call'
+    onCallModal.form = {
+      ...schedule,
+      duty_date: Utils.normalizeDate(schedule.duty_date),
+      shift_type: ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
+      coverage_area: schedule.coverage_area || 'emergency',
+      coverage_notes: schedule.coverage_notes || ''
+    }
+    onCallModal.show = true
+  }
+
+  // ============ SAVE FUNCTION WITH DUPLICATE CHECK ============
+  const saveOnCallSchedule = async (saving) => {
+    if (!validateOnCall(onCallModal.form)) { 
+      showToast('Validation Error', 'Please fix the highlighted fields', 'error'); 
+      return 
+    }
+    
+    saving.value = true
+    
+    try {
+      const f = onCallModal.form
+      const data = {
+        duty_date: Utils.normalizeDate(f.duty_date), 
+        shift_type: f.shift_type || 'primary_call',
+        start_time: f.start_time || '08:00', 
+        end_time: f.end_time || '17:00',
+        primary_physician_id: f.primary_physician_id, 
+        backup_physician_id: f.backup_physician_id || null,
+        coverage_notes: f.coverage_notes || '', 
+        schedule_id: f.schedule_id || Utils.generateId('SCH')
       }
+
+      // CHECK FOR DUPLICATE SCHEDULE
+      if (onCallModal.mode === 'add') {
+        const exists = await checkExistingSchedule(data.duty_date, data.shift_type);
+        
+        if (exists) {
+          showToast(
+            'Duplicate Schedule', 
+            `A ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 
+            'warning'
+          );
+          saving.value = false;
+          return;
+        }
+      }
+
+      // For edit mode, check excluding current schedule
+      if (onCallModal.mode === 'edit') {
+        const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id);
+        
+        if (exists) {
+          showToast(
+            'Duplicate Schedule', 
+            `Another ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 
+            'warning'
+          );
+          saving.value = false;
+          return;
+        }
+      }
+
+      // PROCEED WITH SAVE
+      if (onCallModal.mode === 'add') {
+        const result = await API.createOnCall(data);
+        onCallSchedule.value.unshift({ 
+          ...result, 
+          duty_date: Utils.normalizeDate(result.duty_date), 
+          coverage_area: f.coverage_area 
+        });
+        showToast('Success', 'On-call scheduled', 'success');
+      } else {
+        const result = await API.updateOnCall(f.id, data);
+        const idx = onCallSchedule.value.findIndex(s => s.id === result.id);
+        if (idx !== -1) {
+          onCallSchedule.value[idx] = { 
+            ...result, 
+            duty_date: Utils.normalizeDate(result.duty_date), 
+            coverage_area: f.coverage_area 
+          };
+        }
+        showToast('Success', 'On-call updated', 'success');
+      }
+      
+      onCallModal.show = false; 
+      clearAll('oncall'); 
+      await loadTodaysOnCall();
+      
+    } catch (e) { 
+      // Handle database constraint error as fallback
+      if (e.message && e.message.includes('duplicate key')) {
+        showToast('Error', 'A schedule for this shift type already exists on this date', 'error');
+      } else {
+        showToast('Error', e.message || 'Failed to save on-call', 'error');
+      }
+    } finally { 
+      saving.value = false 
+    }
+  }
+
+  // ============ DELETE FUNCTION ============
+  const deleteOnCallSchedule = (schedule) => showConfirmation({
+    title: 'Delete On-Call', 
+    message: 'Delete this on-call schedule?',
+    icon: 'fa-trash', 
+    confirmButtonText: 'Delete', 
+    confirmButtonClass: 'btn-danger',
+    details: `Physician: ${getPhysicianName(schedule.primary_physician_id)}`,
+    onConfirm: async () => {
+      await API.deleteOnCall(schedule.id)
+      onCallSchedule.value = onCallSchedule.value.filter(s => s.id !== schedule.id)
+      showToast('Success', 'Schedule deleted', 'success')
+      loadTodaysOnCall()
+    }
+  })
+
+  // ============ CONTACT FUNCTION ============
+  const contactPhysician = (shift) => {
+    if (shift.contactInfo && shift.contactInfo !== 'No contact info')
+      showToast('Contact Physician', `Contact ${shift.physicianName}: ${shift.contactInfo}`, 'info')
+    else
+      showToast('No Contact Info', `No contact info for ${shift.physicianName}`, 'warning')
+  }
 
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
