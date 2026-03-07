@@ -843,19 +843,27 @@ return {
   formatResidentCategorySimple: Utils.formatResidentCategorySimple,
   formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed,
   getResidentCategoryIcon: Utils.getResidentCategoryIcon,
-  getResidentCategoryTooltip: Utils.getResidentCategoryTooltip
+  getResidentCategoryTooltip: Utils.getResidentCategoryTooltip,
+  
+  // NEW: Department role methods (ADD THESE 5 LINES)
+  isRoleTaken,
+  getCurrentRoleHolder,
+  handleRoleAssignment,
+  toggleCertificate,
+  availableCertificates
 }
-} 
-  function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
-    const onCallSchedule = ref([])
-    const todaysOnCall   = ref([])
-    const loadingSchedule = ref(false)
-    const onCallFilters  = reactive({ date:'', shiftType:'', physician:'', coverageArea:'', search:'' })
-    const onCallModal    = reactive({
-      show:false, mode:'add',
-      form:{ duty_date:Utils.normalizeDate(new Date()), shift_type:'primary_call', start_time:'08:00', end_time:'17:00', primary_physician_id:'', backup_physician_id:'', coverage_area:'emergency', coverage_notes:'' }
-    })
+}  // ← This closes the useStaff function
 
+// The useOnCall function starts here
+function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
+  const onCallSchedule = ref([])
+  const todaysOnCall   = ref([])
+  const loadingSchedule = ref(false)
+  const onCallFilters  = reactive({ date:'', shiftType:'', physician:'', coverageArea:'', search:'' })
+  const onCallModal    = reactive({
+    show:false, mode:'add',
+    form:{ duty_date:Utils.normalizeDate(new Date()), shift_type:'primary_call', start_time:'08:00', end_time:'17:00', primary_physician_id:'', backup_physician_id:'', coverage_area:'emergency', coverage_notes:'' }
+  })
     const validateOnCall = (form) => {
       clearAll('oncall'); let ok = true
       if (!form.duty_date)            { setErr('oncall','duty_date','Date is required'); ok = false }
@@ -2366,12 +2374,6 @@ return {
         getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
         getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
         getCurrentRotationSupervisor, hasProfessionalCredentials,
-        // NEW: Department role methods
-  isRoleTaken,
-  getCurrentRoleHolder,
-  handleRoleAssignment,
-  toggleCertificate,
-  availableCertificates,
 
         // Formatters
         formatStaffType, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
