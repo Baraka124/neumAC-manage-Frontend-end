@@ -1012,7 +1012,7 @@ function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPag
       show:false, mode:'add',
       form:{ rotation_id:'', resident_id:'', training_unit_id:'', start_date:Utils.normalizeDate(new Date()), end_date:Utils.normalizeDate(new Date(Date.now()+30*86400000)), rotation_status:'scheduled', rotation_category:'clinical_rotation', supervising_attending_id:'' }
     })
-     Track pending activations that need user validation
+      //Track pending activations that need user validation
   const pendingActivations = ref([])
   const activationModal = reactive({
     show: false,
