@@ -1012,6 +1012,230 @@ function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPag
       show:false, mode:'add',
       form:{ rotation_id:'', resident_id:'', training_unit_id:'', start_date:Utils.normalizeDate(new Date()), end_date:Utils.normalizeDate(new Date(Date.now()+30*86400000)), rotation_status:'scheduled', rotation_category:'clinical_rotation', supervising_attending_id:'' }
     })
+     Track pending activations that need user validation
+  const pendingActivations = ref([])
+  const activationModal = reactive({
+    show: false,
+    rotations: [],
+    selectedRotation: null,
+    notes: '',
+    action: 'activate' // 'activate' or 'complete'
+  })
+
+  // NEW: Check and update rotation statuses based on dates
+  const checkAndUpdateRotations = async (requireValidation = true) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const todayStr = Utils.normalizeDate(today)
+    const updates = []
+    const pending = []
+
+    rotations.value.forEach(rotation => {
+      const startDate = new Date(Utils.normalizeDate(rotation.start_date) + 'T00:00:00')
+      const endDate = new Date(Utils.normalizeDate(rotation.end_date) + 'T23:59:59')
+      
+      // Case 1: Scheduled rotations that should start today
+      if (rotation.rotation_status === 'scheduled' && 
+          Utils.normalizeDate(startDate) <= todayStr) {
+        
+        if (requireValidation) {
+          // Queue for user validation
+          pending.push({
+            ...rotation,
+            action: 'activate',
+            message: `Rotation for ${getResidentName(rotation.resident_id)} at ${getTrainingUnitName(rotation.training_unit_id)} should start today.`
+          })
+        } else {
+          // Auto-activate without validation
+          updates.push(updateRotationStatus(rotation.id, 'active', {
+            activated_at: new Date().toISOString(),
+            activated_by: 'system',
+            notes: 'Auto-activated on start date'
+          }))
+        }
+      }
+      
+      // Case 2: Active rotations that should end today
+      if (rotation.rotation_status === 'active' && 
+          Utils.normalizeDate(endDate) < todayStr) {
+        
+        if (requireValidation) {
+          // Queue for user validation
+          pending.push({
+            ...rotation,
+            action: 'complete',
+            message: `Rotation for ${getResidentName(rotation.resident_id)} at ${getTrainingUnitName(rotation.training_unit_id)} ended yesterday and should be completed.`
+          })
+        } else {
+          // Auto-complete without validation
+          updates.push(updateRotationStatus(rotation.id, 'completed', {
+            completed_at: new Date().toISOString(),
+            completed_by: 'system',
+            notes: 'Auto-completed after end date'
+          }))
+        }
+      }
+    })
+
+    // Store pending activations for user validation
+    if (pending.length > 0 && requireValidation) {
+      pendingActivations.value = pending
+      showActivationModal()
+    }
+
+    // Apply auto-updates if any
+    if (updates.length > 0) {
+      await Promise.all(updates)
+      await loadRotations() // Reload to get updated data
+      showToast(
+        'Rotations Updated', 
+        `${updates.length} rotation(s) automatically updated based on dates.`, 
+        'info'
+      )
+    }
+
+    return { updates: updates.length, pending: pending.length }
+  }
+
+  // NEW: Update single rotation status with metadata
+  const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
+    const rotation = rotations.value.find(r => r.id === rotationId)
+    if (!rotation) return
+
+    try {
+      const updateData = {
+        ...rotation,
+        rotation_status: newStatus,
+        ...metadata
+      }
+
+      const result = await API.updateRotation(rotationId, updateData)
+      
+      // Update local data
+      const idx = rotations.value.findIndex(r => r.id === rotationId)
+      if (idx !== -1) {
+        rotations.value[idx] = {
+          ...result,
+          start_date: Utils.normalizeDate(result.start_date),
+          end_date: Utils.normalizeDate(result.end_date)
+        }
+      }
+
+      return result
+    } catch (error) {
+      console.error('Failed to update rotation status:', error)
+      throw error
+    }
+  }
+
+  // NEW: Show activation modal for pending rotations
+  const showActivationModal = () => {
+    if (pendingActivations.value.length === 0) return
+    
+    activationModal.rotations = [...pendingActivations.value]
+    activationModal.selectedRotation = activationModal.rotations[0]
+    activationModal.notes = ''
+    activationModal.show = true
+  }
+
+  // NEW: Process next pending activation
+  const processNextPending = async () => {
+    if (activationModal.rotations.length === 0) {
+      activationModal.show = false
+      pendingActivations.value = []
+      showToast('All Done', 'All rotation statuses have been updated.', 'success')
+      return
+    }
+
+    const current = activationModal.rotations[0]
+    activationModal.selectedRotation = current
+    activationModal.action = current.action
+  }
+
+  // NEW: Confirm current pending activation
+  const confirmPendingActivation = async () => {
+    if (!activationModal.selectedRotation) return
+
+    const rotation = activationModal.selectedRotation
+    const newStatus = rotation.action === 'activate' ? 'active' : 'completed'
+    
+    try {
+      await updateRotationStatus(rotation.id, newStatus, {
+        [`${newStatus}_at`]: new Date().toISOString(),
+        [`${newStatus}_by`]: currentUser.value?.full_name || 'system',
+        activation_notes: activationModal.notes || null,
+        validated_by: currentUser.value?.full_name || 'system',
+        validated_at: new Date().toISOString()
+      })
+
+      // Remove from pending list
+      activationModal.rotations = activationModal.rotations.slice(1)
+      pendingActivations.value = pendingActivations.value.filter(r => r.id !== rotation.id)
+      
+      // Show success message
+      showToast(
+        'Rotation Updated', 
+        `${rotation.action === 'activate' ? 'Activated' : 'Completed'} rotation for ${getResidentName(rotation.resident_id)}`, 
+        'success'
+      )
+
+      // Process next
+      await processNextPending()
+    } catch (error) {
+      showToast('Error', 'Failed to update rotation status', 'error')
+    }
+  }
+
+  // NEW: Skip current pending activation
+  const skipPendingActivation = () => {
+    if (!activationModal.selectedRotation) return
+
+    // Keep in pending but move to end of queue
+    const current = activationModal.rotations[0]
+    activationModal.rotations = [...activationModal.rotations.slice(1), current]
+    processNextPending()
+    
+    showToast(
+      'Skipped', 
+      'Rotation status update postponed. Will remind again later.', 
+      'warning'
+    )
+  }
+
+  // NEW: Postpone all and set reminder
+  const postponeAllActivations = () => {
+    activationModal.show = false
+    showToast(
+      'Reminder Set', 
+      'Will check again in 4 hours. You can also manually update rotation statuses.', 
+      'info'
+    )
+    
+    // Store timestamp for next check
+    localStorage.setItem('last_rotation_check', new Date().toISOString())
+  }
+
+  // NEW: Initialize auto-check on mount and set interval
+  const initAutoCheck = () => {
+    // Check immediately on mount
+    setTimeout(() => checkAndUpdateRotations(true), 2000)
+    
+    // Set up interval to check every 4 hours
+    const interval = setInterval(() => {
+      const lastCheck = localStorage.getItem('last_rotation_check')
+      const now = new Date()
+      
+      // Only check if last check was more than 4 hours ago
+      if (!lastCheck || (now - new Date(lastCheck)) > 4 * 60 * 60 * 1000) {
+        checkAndUpdateRotations(true)
+        localStorage.setItem('last_rotation_check', now.toISOString())
+      }
+    }, 60 * 60 * 1000) // Check every hour but respect 4-hour threshold
+    
+    return interval
+  }
+
 
     const getResidentName     = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
     const getTrainingUnitName = (id) => trainingUnits.value.find(u => u.id === id)?.unit_name || 'Not assigned'
@@ -2290,35 +2514,51 @@ const handleLogin = async () => {
       watch([medicalStaff, rotations, trainingUnits, absences], () => updateDashboardStats(), { deep:true })
 
       // — Lifecycle —
-      onMounted(() => {
-        const token = localStorage.getItem(CONFIG.TOKEN_KEY)
-        const user  = localStorage.getItem(CONFIG.USER_KEY)
-        if (token && user) {
-          try { currentUser.value = JSON.parse(user); loadAllData(); currentView.value = 'dashboard' }
-          catch { currentView.value = 'login' }
-        } else { currentView.value = 'login' }
+      // — Lifecycle —
+onMounted(() => {
+  const token = localStorage.getItem(CONFIG.TOKEN_KEY)
+  const user  = localStorage.getItem(CONFIG.USER_KEY)
+  if (token && user) {
+    try { 
+      currentUser.value = JSON.parse(user); 
+      loadAllData(); 
+      currentView.value = 'dashboard' 
+    }
+    catch { currentView.value = 'login' }
+  } else { currentView.value = 'login' }
 
-        const statusInterval = setInterval(() => {
-          if (currentUser.value && !liveOps.isLoadingStatus.value) liveOps.loadClinicalStatus()
-        }, 60000)
+  const statusInterval = setInterval(() => {
+    if (currentUser.value && !liveOps.isLoadingStatus.value) liveOps.loadClinicalStatus()
+  }, 60000)
 
-        const timeInterval = setInterval(() => { dashOps.currentTime.value = new Date() }, 60000)
+  const timeInterval = setInterval(() => { dashOps.currentTime.value = new Date() }, 60000)
 
-        document.addEventListener('keydown', (e) => {
-          if (e.key !== 'Escape') return
-          const modals = [
-            staffOps.medicalStaffModal, staffOps.staffProfileModal, departmentModal,
-            trainingUnitModal, unitResidentsModal, rotationOps.rotationModal,
-            onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal,
-            userProfileModal, ui.confirmationModal, researchOps.researchLineModal,
-            researchOps.clinicalTrialModal, researchOps.innovationProjectModal,
-            researchOps.assignCoordinatorModal, analyticsOps.exportModal
-          ]
-          modals.forEach(m => { if (m.show) m.show = false })
-        })
+  // Initialize rotation auto-check
+  let rotationCheckInterval = null
+  if (rotationOps.initAutoCheck) {
+    rotationCheckInterval = rotationOps.initAutoCheck()
+  }
 
-        onUnmounted(() => { clearInterval(statusInterval); clearInterval(timeInterval) })
-      })
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return
+    const modals = [
+      staffOps.medicalStaffModal, staffOps.staffProfileModal, departmentModal,
+      trainingUnitModal, unitResidentsModal, rotationOps.rotationModal,
+      onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal,
+      userProfileModal, ui.confirmationModal, researchOps.researchLineModal,
+      researchOps.clinicalTrialModal, researchOps.innovationProjectModal,
+      researchOps.assignCoordinatorModal, analyticsOps.exportModal,
+      rotationOps.activationModal // Add the new activation modal
+    ]
+    modals.forEach(m => { if (m.show) m.show = false })
+  })
+
+  onUnmounted(() => { 
+    clearInterval(statusInterval); 
+    clearInterval(timeInterval);
+    if (rotationCheckInterval) clearInterval(rotationCheckInterval);
+  })
+})
 
       // — Return everything the template needs —
       return {
@@ -2434,6 +2674,31 @@ handleForgotPassword,
         getPhaseColor:     Utils.getPhaseColor,
         getStageColor:     Utils.getStageColor,
         formatPercentage:  Utils.formatPercentage,
+            // NEW: Auto-activation features
+    pendingActivations,
+    activationModal,
+    checkAndUpdateRotations,
+    updateRotationStatus,
+    confirmPendingActivation,
+    skipPendingActivation,
+    postponeAllActivations,
+    initAutoCheck,
+    
+    // NEW: Manual triggers
+    forceActivationCheck: () => checkAndUpdateRotations(true),
+    quickActivate: (rotation) => updateRotationStatus(rotation.id, 'active', {
+      activated_at: new Date().toISOString(),
+      activated_by: currentUser.value?.full_name || 'manual',
+      notes: 'Manually activated'
+    }),
+    quickComplete: (rotation) => updateRotationStatus(rotation.id, 'completed', {
+      completed_at: new Date().toISOString(),
+      completed_by: currentUser.value?.full_name || 'manual',
+      notes: 'Manually completed'
+    })
+  }
+}
+
 
         // Computed lists
         availablePhysicians, availableResidents, availableAttendings,
