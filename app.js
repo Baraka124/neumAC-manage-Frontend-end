@@ -2006,6 +2006,20 @@ function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPag
       const saving  = ref(false)
 
       // — Auth —
+      // ============ LOGIN IMPROVEMENTS ============
+const showPassword = ref(false)
+const loginError = ref('')
+const loginFieldErrors = reactive({ email: '', password: '' })
+
+const clearLoginError = (field) => {
+    if (field === 'email') loginFieldErrors.email = ''
+    if (field === 'password') loginFieldErrors.password = ''
+    loginError.value = ''
+}
+
+const handleForgotPassword = () => {
+    showToast('Info', 'Password reset link sent', 'info')
+}
       const auth = useAuth()
       const { currentUser, loginForm, loginLoading, hasPermission } = auth
 
@@ -2187,19 +2201,32 @@ function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPag
       }
 
       // — Auth actions —
-      const handleLogin = async () => {
-        if (!loginForm.email || !loginForm.password) { showToast('Error', 'Email and password are required', 'error'); return }
-        loginLoading.value = true
-        try {
-          const response = await API.login(loginForm.email, loginForm.password)
-          currentUser.value = response.user
-          localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
-          showToast('Success', `Welcome, ${response.user.full_name}!`, 'success')
-          await loadAllData()
-          currentView.value = 'dashboard'
-        } catch (e) { showToast('Error', e.message||'Login failed', 'error') }
-        finally { loginLoading.value = false }
-      }
+const handleLogin = async () => {
+    loginFieldErrors.email = !loginForm.email ? 'Email required' : ''
+    loginFieldErrors.password = !loginForm.password ? 'Password required' : ''
+    
+    if (loginFieldErrors.email || loginFieldErrors.password) {
+        loginError.value = 'Please fill all required fields'
+        return
+    }
+    
+    loginLoading.value = true
+    loginError.value = ''
+    
+    try {
+        const response = await API.login(loginForm.email, loginForm.password)
+        currentUser.value = response.user
+        localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
+        showToast('Success', `Welcome, ${response.user.full_name}!`, 'success')
+        await loadAllData()
+        currentView.value = 'dashboard'
+    } catch (e) { 
+        loginError.value = e.message || 'Invalid email or password'
+        showToast('Error', 'Login failed', 'error')
+    } finally { 
+        loginLoading.value = false 
+    }
+}
 
       const handleLogout = () => showConfirmation({
         title:'Logout', message:'Are you sure you want to logout?',
@@ -2379,6 +2406,11 @@ function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPag
         formatStaffType, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
         formatRotationStatus, getUserRoleDisplay, formatAudience,
         getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
+        showPassword,
+loginError,
+loginFieldErrors,
+clearLoginError,
+handleForgotPassword,
 
         // Date helpers (template-exposed)
         normalizeDate:    (d) => Utils.normalizeDate(d),
