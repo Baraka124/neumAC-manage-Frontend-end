@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>neuMAC | Pulmonology Management</title>
+    <title>neuMAC | Pulmonology Management System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -167,7 +167,7 @@
                     </ul>
                 </div>
                 
-                <!-- ============ NEW: RESEARCH SECTION ============ -->
+                <!-- Research Section -->
                 <div class="sidebar-section">
                     <div class="sidebar-section-title" v-if="!sidebarCollapsed">Research</div>
                     <ul class="sidebar-menu">
@@ -196,6 +196,40 @@
                                :aria-current="currentView === 'innovation_projects' ? 'page' : null">
                                 <i class="fas fa-microscope"></i>
                                 <span v-if="!sidebarCollapsed">Innovation Projects</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- ============ NEW: ANALYTICS SECTION ============ -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title" v-if="!sidebarCollapsed">Analytics</div>
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-menu-item">
+                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'analytics_dashboard' }"
+                               @click.prevent="switchView('analytics_dashboard'); mobileMenuOpen = false"
+                               v-if="hasPermission('analytics', 'read')"
+                               :aria-current="currentView === 'analytics_dashboard' ? 'page' : null">
+                                <i class="fas fa-chart-pie"></i>
+                                <span v-if="!sidebarCollapsed">Research Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'analytics_performance' }"
+                               @click.prevent="switchView('analytics_performance'); mobileMenuOpen = false"
+                               v-if="hasPermission('analytics', 'read')"
+                               :aria-current="currentView === 'analytics_performance' ? 'page' : null">
+                                <i class="fas fa-chart-line"></i>
+                                <span v-if="!sidebarCollapsed">Lines Performance</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'analytics_partners' }"
+                               @click.prevent="switchView('analytics_partners'); mobileMenuOpen = false"
+                               v-if="hasPermission('analytics', 'read')"
+                               :aria-current="currentView === 'analytics_partners' ? 'page' : null">
+                                <i class="fas fa-handshake"></i>
+                                <span v-if="!sidebarCollapsed">Partner Collaborations</span>
                             </a>
                         </li>
                     </ul>
@@ -519,31 +553,31 @@
                                 </div>
                             </div>
                         </div>
-                       <div class="stat-card">
-    <div class="stat-header">
-        <i class="fas fa-flask"></i>
-        <h3>Research Activity</h3>
-        <button class="btn btn-sm btn-outline" @click="switchView('research_lines')">View All</button>
-    </div>
-    <div class="stat-main-value">{{ researchLines.length || 0 }}</div>
-    <div class="stat-breakdown">
-        <div class="breakdown-item">
-            <span class="label">Research Lines</span>
-            <span class="value">{{ researchLines.length || 0 }}</span>
-        </div>
-        <div class="breakdown-item">
-            <span class="label">Clinical Trials</span>
-            <span class="value">{{ clinicalTrials.length || 0 }}</span>
-            <span v-if="clinicalTrials.length > 0" class="status-indicator status-active">
-                {{ Math.round((clinicalTrials.filter(t => t.status === 'Activo' || t.status === 'Reclutando').length / clinicalTrials.length) * 100) }}% active
-            </span>
-        </div>
-        <div class="breakdown-item">
-            <span class="label">Innovation Projects</span>
-            <span class="value">{{ innovationProjects.length || 0 }}</span>
-        </div>
-    </div>
-</div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <i class="fas fa-flask"></i>
+                                <h3>Research Activity</h3>
+                                <button class="btn btn-sm btn-outline" @click="switchView('analytics_dashboard')">Analytics</button>
+                            </div>
+                            <div class="stat-main-value">{{ analyticsSummary?.researchLines || researchLines.length || 0 }}</div>
+                            <div class="stat-breakdown">
+                                <div class="breakdown-item">
+                                    <span class="label">Research Lines</span>
+                                    <span class="value">{{ analyticsSummary?.researchLines || researchLines.length || 0 }}</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="label">Clinical Trials</span>
+                                    <span class="value">{{ analyticsSummary?.clinicalTrials?.total || clinicalTrials.length || 0 }}</span>
+                                    <span v-if="analyticsSummary?.clinicalTrials?.total > 0" class="status-indicator status-active">
+                                        {{ formatPercentage(analyticsSummary?.clinicalTrials?.active, analyticsSummary?.clinicalTrials?.total) }} active
+                                    </span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="label">Innovation Projects</span>
+                                    <span class="value">{{ analyticsSummary?.innovationProjects?.total || innovationProjects.length || 0 }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="card">
                         <div class="card-header">
@@ -562,16 +596,15 @@
                                         <td colspan="6" class="text-center py-8"><i class="fas fa-spinner fa-spin"></i></td>
                                     </tr>
                                     <tr v-else-if="todaysOnCall.length === 0">
-    <td colspan="6" class="empty-state">
-        <i class="fas fa-phone-slash empty-state-icon"></i>
-        <div class="empty-state-title">No on-call scheduled today</div>
-        <div class="empty-state-description">No physicians are scheduled for on-call coverage</div>
-        <button class="btn btn-primary btn-sm" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')">
-            <i class="fas fa-plus"></i> Schedule First Shift
-        </button>
-    </td>
-</tr>
-                               
+                                        <td colspan="6" class="empty-state">
+                                            <i class="fas fa-phone-slash empty-state-icon"></i>
+                                            <div class="empty-state-title">No on-call scheduled today</div>
+                                            <div class="empty-state-description">No physicians are scheduled for on-call coverage</div>
+                                            <button class="btn btn-primary btn-sm" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')">
+                                                <i class="fas fa-plus"></i> Schedule First Shift
+                                            </button>
+                                        </td>
+                                    </tr>
                                     <tr v-else v-for="shift in todaysOnCall" :key="shift.id" :class="'row-active'">
                                         <td>
                                             <div class="oncall-shift-cell">
@@ -644,18 +677,24 @@
                             <table class="table table-striped table-staff">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Type</th>
+                                        <th @click="sortBy('medical_staff', 'full_name')">
+                                            Name <i class="fas" :class="sortIcon('medical_staff', 'full_name')"></i>
+                                        </th>
+                                        <th @click="sortBy('medical_staff', 'staff_type')">
+                                            Type <i class="fas" :class="sortIcon('medical_staff', 'staff_type')"></i>
+                                        </th>
                                         <th>Department</th>
                                         <th>Current Rotation</th>
-                                        <th>Status</th>
+                                        <th @click="sortBy('medical_staff', 'employment_status')">
+                                            Status <i class="fas" :class="sortIcon('medical_staff', 'employment_status')"></i>
+                                        </th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                   <tr v-for="staff in filteredMedicalStaff" :key="staff.id"
-    :class="'row-' + staff.employment_status"
-    @click="viewStaffDetails(staff)">
+                                    <tr v-for="staff in filteredMedicalStaff" :key="staff.id"
+                                        :class="'row-' + staff.employment_status"
+                                        @click="viewStaffDetails(staff)">
                                         <td>
                                             <div class="font-medium">{{ staff.full_name }}</div>
                                             <div class="text-xs text-gray-500">{{ staff.professional_email }}</div>
@@ -667,7 +706,6 @@
                                             <span v-else class="na-value">NA</span>
                                         </td>
                                         <td>
-                                            <!-- Attendings never have rotations -->
                                             <span v-if="staff.staff_type === 'attending_physician'" class="na-value">N/A</span>
                                             <span v-else-if="getCurrentRotationForStaff(staff.id)">{{ getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) }}</span>
                                             <span v-else class="na-value">NA</span>
@@ -681,23 +719,34 @@
                                         </td>
                                     </tr>
                                     <tr v-if="filteredMedicalStaff.length === 0">
-    <td colspan="6" class="empty-state">
-        <i class="fas fa-user-md empty-state-icon"></i>
-        <div class="empty-state-title">No medical staff found</div>
-        <div class="empty-state-description">
-            <span v-if="staffFilters.search || staffFilters.staffType || staffFilters.department || staffFilters.status">
-                No results match your filters — try clearing them
-            </span>
-            <span v-else>Add your first staff member to get started</span>
-        </div>
-        <button v-if="!staffFilters.search && !staffFilters.staffType && !staffFilters.department && !staffFilters.status && hasPermission('medical_staff', 'create')"
-                class="btn btn-primary btn-sm" @click="showAddMedicalStaffModal">
-            <i class="fas fa-user-plus"></i> Add First Staff Member
-        </button>
-    </td>
-</tr>
+                                        <td colspan="6" class="empty-state">
+                                            <i class="fas fa-user-md empty-state-icon"></i>
+                                            <div class="empty-state-title">No medical staff found</div>
+                                            <div class="empty-state-description">
+                                                <span v-if="staffFilters.search || staffFilters.staffType || staffFilters.department || staffFilters.status">
+                                                    No results match your filters — try clearing them
+                                                </span>
+                                                <span v-else>Add your first staff member to get started</span>
+                                            </div>
+                                            <button v-if="!staffFilters.search && !staffFilters.staffType && !staffFilters.department && !staffFilters.status && hasPermission('medical_staff', 'create')"
+                                                    class="btn btn-primary btn-sm" @click="showAddMedicalStaffModal">
+                                                <i class="fas fa-user-plus"></i> Add First Staff Member
+                                            </button>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
+                            
+                            <!-- Pagination -->
+                            <div class="pagination" v-if="staffTotalPages > 1">
+                                <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page - 1)" :disabled="pagination.medical_staff.page === 1">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="pagination-info">Page {{ pagination.medical_staff.page }} of {{ staffTotalPages }}</span>
+                                <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page + 1)" :disabled="pagination.medical_staff.page === staffTotalPages">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -715,31 +764,33 @@
                             <input type="date" class="form-control" v-model="onCallFilters.date">
                             <select class="form-select" v-model="onCallFilters.shiftType">
                                 <option value="">All Shift Types</option>
-                                <option value="primary">Primary</option>
-                                <option value="backup">Backup</option>
+                                <option value="primary_call">Primary</option>
+                                <option value="backup_call">Backup</option>
                             </select>
                             <select class="form-select" v-model="onCallFilters.physician">
                                 <option value="">All Physicians</option>
                                 <option v-for="p in availablePhysicians" :key="p.id" :value="p.id">{{ p.full_name }}</option>
                             </select>
-                            <select class="form-select" v-model="onCallFilters.coverageArea">
-                                <option value="">All Areas</option>
-                                <option value="emergency">Emergency</option>
-                                <option value="icu">ICU</option>
-                                <option value="ward">Ward</option>
-                                <option value="consultation">Consultation</option>
-                            </select>
+                            <input type="text" class="form-control" v-model="onCallFilters.search" placeholder="Search...">
                         </div>
                         <div class="table-responsive">
                             <table class="table table-striped">
                                 <thead>
-                                    <tr><th>Shift Period</th><th>Physician</th><th>Type</th><th>Coverage Area</th><th>Backup</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th @click="sortBy('oncall', 'duty_date')">
+                                            Shift Period <i class="fas" :class="sortIcon('oncall', 'duty_date')"></i>
+                                        </th>
+                                        <th @click="sortBy('oncall', 'primary_physician_id')">
+                                            Physician <i class="fas" :class="sortIcon('oncall', 'primary_physician_id')"></i>
+                                        </th>
+                                        <th>Type</th>
+                                        <th>Coverage Area</th>
+                                        <th>Backup</th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="schedule in filteredOnCallSchedules" :key="schedule.id" class="row-active"
-    @click="editOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule', 'update')">
-<tr v-for="schedule in filteredOnCallSchedules" :key="schedule.id" class="row-active"
-    v-else>
+                                    <tr v-for="schedule in filteredOnCallSchedules" :key="schedule.id" class="row-active">
                                         <td>
                                             <div class="oncall-shift-cell">
                                                 <div class="oncall-shift-start">
@@ -758,7 +809,7 @@
                                         <td>
                                             <div class="font-medium">{{ getPhysicianName(schedule.primary_physician_id) }}</div>
                                         </td>
-                                        <td><span class="badge" :class="schedule.shift_type === 'primary' ? 'badge-primary' : 'badge-secondary'">{{ schedule.shift_type === 'primary' ? 'Primary' : 'Backup' }}</span></td>
+                                        <td><span class="badge" :class="schedule.shift_type === 'primary_call' ? 'badge-primary' : 'badge-secondary'">{{ schedule.shift_type === 'primary_call' ? 'Primary' : 'Backup' }}</span></td>
                                         <td>{{ schedule.coverage_area || 'NA' }}</td>
                                         <td>
                                             <span v-if="schedule.backup_physician_id">{{ getPhysicianName(schedule.backup_physician_id) }}</span>
@@ -770,24 +821,35 @@
                                             </button>
                                         </td>
                                     </tr>
-                                   <tr v-if="filteredOnCallSchedules.length === 0">
-    <td colspan="6" class="empty-state">
-        <i class="fas fa-phone-medical empty-state-icon"></i>
-        <div class="empty-state-title">No schedules found</div>
-        <div class="empty-state-description">
-            <span v-if="onCallFilters.date || onCallFilters.shiftType || onCallFilters.physician || onCallFilters.coverageArea">
-                No results match your filters
-            </span>
-            <span v-else>No on-call shifts have been scheduled yet</span>
-        </div>
-        <button v-if="!onCallFilters.date && !onCallFilters.shiftType && !onCallFilters.physician && !onCallFilters.coverageArea && hasPermission('oncall_schedule', 'create')"
-                class="btn btn-primary btn-sm" @click="showAddOnCallModal">
-            <i class="fas fa-plus"></i> Schedule First Shift
-        </button>
-    </td>
-</tr>
+                                    <tr v-if="filteredOnCallSchedules.length === 0">
+                                        <td colspan="6" class="empty-state">
+                                            <i class="fas fa-phone-medical empty-state-icon"></i>
+                                            <div class="empty-state-title">No schedules found</div>
+                                            <div class="empty-state-description">
+                                                <span v-if="onCallFilters.date || onCallFilters.shiftType || onCallFilters.physician || onCallFilters.coverageArea">
+                                                    No results match your filters
+                                                </span>
+                                                <span v-else>No on-call shifts have been scheduled yet</span>
+                                            </div>
+                                            <button v-if="!onCallFilters.date && !onCallFilters.shiftType && !onCallFilters.physician && !onCallFilters.coverageArea && hasPermission('oncall_schedule', 'create')"
+                                                    class="btn btn-primary btn-sm" @click="showAddOnCallModal">
+                                                <i class="fas fa-plus"></i> Schedule First Shift
+                                            </button>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
+                            
+                            <!-- Pagination -->
+                            <div class="pagination" v-if="oncallTotalPages > 1">
+                                <button class="btn-pill" @click="goToPage('oncall', pagination.oncall.page - 1)" :disabled="pagination.oncall.page === 1">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="pagination-info">Page {{ pagination.oncall.page }} of {{ oncallTotalPages }}</span>
+                                <button class="btn-pill" @click="goToPage('oncall', pagination.oncall.page + 1)" :disabled="pagination.oncall.page === oncallTotalPages">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -808,8 +870,8 @@
                             </select>
                             <select class="form-select" v-model="rotationFilters.status">
                                 <option value="">All Status</option>
+                                <option value="scheduled">Scheduled</option>
                                 <option value="active">Active</option>
-                                <option value="upcoming">Upcoming</option>
                                 <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
@@ -817,20 +879,33 @@
                                 <option value="">All Units</option>
                                 <option v-for="u in trainingUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
                             </select>
-                            <select class="form-select" v-model="rotationFilters.supervisor">
-                                <option value="">All Supervisors</option>
-                                <option v-for="s in availableAttendings" :key="s.id" :value="s.id">{{ s.full_name }}</option>
-                            </select>
+                            <input type="text" class="form-control" v-model="rotationFilters.search" placeholder="Search...">
                         </div>
                         <div class="table-responsive">
                             <table class="table table-striped">
                                 <thead>
-                                    <tr><th>Resident</th><th>Training Unit</th><th>Period</th><th>Days Left</th><th>Status</th><th>Supervisor</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th @click="sortBy('rotations', 'resident_id')">
+                                            Resident <i class="fas" :class="sortIcon('rotations', 'resident_id')"></i>
+                                        </th>
+                                        <th @click="sortBy('rotations', 'training_unit_id')">
+                                            Training Unit <i class="fas" :class="sortIcon('rotations', 'training_unit_id')"></i>
+                                        </th>
+                                        <th @click="sortBy('rotations', 'start_date')">
+                                            Period <i class="fas" :class="sortIcon('rotations', 'start_date')"></i>
+                                        </th>
+                                        <th>Days Left</th>
+                                        <th @click="sortBy('rotations', 'rotation_status')">
+                                            Status <i class="fas" :class="sortIcon('rotations', 'rotation_status')"></i>
+                                        </th>
+                                        <th>Supervisor</th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="rotation in filteredRotations" :key="rotation.id"
-    :class="'row-' + rotation.rotation_status"
-    @click="hasPermission('resident_rotations', 'update') && editRotation(rotation)">
+                                        :class="'row-' + rotation.rotation_status"
+                                        @click="hasPermission('resident_rotations', 'update') && editRotation(rotation)">
                                         <td><div class="font-medium">{{ getResidentName(rotation.resident_id) }}</div></td>
                                         <td>{{ getTrainingUnitName(rotation.training_unit_id) }}</td>
                                         <td>
@@ -841,10 +916,10 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <span v-if="rotation.rotation_status === 'active'" class="days-pill">
+                                            <span v-if="rotation.rotation_status === 'active'" class="days-pill" :class="getDaysRemaining(rotation.end_date) <= 7 ? 'days-urgent' : ''">
                                                 {{ getDaysRemaining(rotation.end_date) > 0 ? getDaysRemaining(rotation.end_date) + ' days' : 'Ending' }}
                                             </span>
-                                            <span v-else-if="rotation.rotation_status === 'scheduled'" class="days-pill" style="background:var(--blue-50);color:var(--blue-700);border-color:var(--blue-100);">
+                                            <span v-else-if="rotation.rotation_status === 'scheduled'" class="days-pill days-future">
                                                 in {{ getDaysUntilStart(rotation.start_date) }} days
                                             </span>
                                             <span v-else class="na-value">—</span>
@@ -860,24 +935,35 @@
                                             </button>
                                         </td>
                                     </tr>
-                                  <tr v-if="filteredRotations.length === 0">
-    <td colspan="7" class="empty-state">
-        <i class="fas fa-calendar-alt empty-state-icon"></i>
-        <div class="empty-state-title">No rotations found</div>
-        <div class="empty-state-description">
-            <span v-if="rotationFilters.resident || rotationFilters.status || rotationFilters.trainingUnit || rotationFilters.supervisor">
-                No results match your filters
-            </span>
-            <span v-else>No resident rotations have been assigned yet</span>
-        </div>
-        <button v-if="!rotationFilters.resident && !rotationFilters.status && !rotationFilters.trainingUnit && !rotationFilters.supervisor && hasPermission('resident_rotations', 'create')"
-                class="btn btn-primary btn-sm" @click="showAddRotationModal">
-            <i class="fas fa-plus"></i> Add First Rotation
-        </button>
-    </td>
-</tr>
+                                    <tr v-if="filteredRotations.length === 0">
+                                        <td colspan="7" class="empty-state">
+                                            <i class="fas fa-calendar-alt empty-state-icon"></i>
+                                            <div class="empty-state-title">No rotations found</div>
+                                            <div class="empty-state-description">
+                                                <span v-if="rotationFilters.resident || rotationFilters.status || rotationFilters.trainingUnit || rotationFilters.supervisor">
+                                                    No results match your filters
+                                                </span>
+                                                <span v-else>No resident rotations have been assigned yet</span>
+                                            </div>
+                                            <button v-if="!rotationFilters.resident && !rotationFilters.status && !rotationFilters.trainingUnit && !rotationFilters.supervisor && hasPermission('resident_rotations', 'create')"
+                                                    class="btn btn-primary btn-sm" @click="showAddRotationModal">
+                                                <i class="fas fa-plus"></i> Add First Rotation
+                                            </button>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
+                            
+                            <!-- Pagination -->
+                            <div class="pagination" v-if="rotationTotalPages > 1">
+                                <button class="btn-pill" @click="goToPage('rotations', pagination.rotations.page - 1)" :disabled="pagination.rotations.page === 1">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="pagination-info">Page {{ pagination.rotations.page }} of {{ rotationTotalPages }}</span>
+                                <button class="btn-pill" @click="goToPage('rotations', pagination.rotations.page + 1)" :disabled="pagination.rotations.page === rotationTotalPages">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -891,8 +977,20 @@
                                 <i class="fas fa-plus"></i> Add Unit
                             </button>
                         </div>
+                        <div class="filter-bar">
+                            <input type="text" class="form-control" v-model="trainingUnitFilters.search" placeholder="Search units...">
+                            <select class="form-select" v-model="trainingUnitFilters.department">
+                                <option value="">All Departments</option>
+                                <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                            </select>
+                            <select class="form-select" v-model="trainingUnitFilters.status">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
                         <div class="training-units-grid">
-                            <div v-for="unit in trainingUnits" :key="unit.id" class="training-unit-card">
+                            <div v-for="unit in filteredTrainingUnits" :key="unit.id" class="training-unit-card">
                                 <div class="training-unit-header">
                                     <div class="training-unit-title"><i class="fas fa-clinic-medical"></i>{{ unit.unit_name }}</div>
                                     <span class="status-indicator" :class="'status-' + unit.unit_status">{{ unit.unit_status }}</span>
@@ -908,7 +1006,7 @@
                                     </div>
                                     <div class="training-unit-stat-row">
                                         <span class="training-unit-stat-label">Supervisor</span>
-                                        <span>{{ getSupervisorName(unit.supervising_attending_id) || 'NA' }}</span>
+                                        <span>{{ getSupervisorName(unit.supervisor_id) || 'NA' }}</span>
                                     </div>
                                     <div class="training-unit-stat-row" v-if="unit.specialty">
                                         <span class="training-unit-stat-label">Specialty</span>
@@ -925,14 +1023,14 @@
                                     </button>
                                 </div>
                             </div>
-                      <div v-if="trainingUnits.length === 0" class="col-span-full empty-state">
-    <i class="fas fa-hospital-user empty-state-icon"></i>
-    <div class="empty-state-title">No training units found</div>
-    <div class="empty-state-description">Training units are the clinical areas where residents rotate</div>
-    <button class="btn btn-primary btn-sm" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')">
-        <i class="fas fa-plus"></i> Add First Unit
-    </button>
-</div>
+                            <div v-if="filteredTrainingUnits.length === 0" class="col-span-full empty-state">
+                                <i class="fas fa-hospital-user empty-state-icon"></i>
+                                <div class="empty-state-title">No training units found</div>
+                                <div class="empty-state-description">Training units are the clinical areas where residents rotate</div>
+                                <button class="btn btn-primary btn-sm" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')">
+                                    <i class="fas fa-plus"></i> Add First Unit
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -961,16 +1059,32 @@
                                 <option value="other">Other</option>
                             </select>
                             <input type="date" class="form-control" v-model="absenceFilters.startDate">
+                            <input type="text" class="form-control" v-model="absenceFilters.search" placeholder="Search...">
                         </div>
                         <div class="table-responsive">
                             <table class="table table-striped">
                                 <thead>
-                                    <tr><th>Staff Member</th><th>Reason</th><th>Type</th><th>From</th><th>Until</th><th>Duration</th><th>Coverage</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th @click="sortBy('absences', 'staff_member_id')">
+                                            Staff Member <i class="fas" :class="sortIcon('absences', 'staff_member_id')"></i>
+                                        </th>
+                                        <th>Reason</th>
+                                        <th>Type</th>
+                                        <th @click="sortBy('absences', 'start_date')">
+                                            From <i class="fas" :class="sortIcon('absences', 'start_date')"></i>
+                                        </th>
+                                        <th @click="sortBy('absences', 'end_date')">
+                                            Until <i class="fas" :class="sortIcon('absences', 'end_date')"></i>
+                                        </th>
+                                        <th>Duration</th>
+                                        <th>Coverage</th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="absence in filteredAbsences" :key="absence.id"
-    :class="absence.absence_type === 'unplanned' ? 'row-on_leave' : 'row-active'"
-    @click="hasPermission('staff_absence', 'update') && editAbsence(absence)">
+                                        :class="absence.absence_type === 'unplanned' ? 'row-on_leave' : 'row-active'"
+                                        @click="hasPermission('staff_absence', 'update') && editAbsence(absence)">
                                         <td>
                                             <div class="font-medium">{{ getStaffName(absence.staff_member_id) }}</div>
                                         </td>
@@ -1009,24 +1123,35 @@
                                             </div>
                                         </td>
                                     </tr>
-                                <tr v-if="filteredAbsences.length === 0">
-    <td colspan="8" class="empty-state">
-        <i class="fas fa-user-clock empty-state-icon"></i>
-        <div class="empty-state-title">No absences found</div>
-        <div class="empty-state-description">
-            <span v-if="absenceFilters.staff || absenceFilters.reason || absenceFilters.startDate">
-                No results match your filters
-            </span>
-            <span v-else>No absence records have been logged</span>
-        </div>
-        <button v-if="!absenceFilters.staff && !absenceFilters.reason && !absenceFilters.startDate && hasPermission('staff_absence', 'create')"
-                class="btn btn-primary btn-sm" @click="showAddAbsenceModal">
-            <i class="fas fa-plus"></i> Record First Absence
-        </button>
-    </td>
-</tr>
+                                    <tr v-if="filteredAbsences.length === 0">
+                                        <td colspan="8" class="empty-state">
+                                            <i class="fas fa-user-clock empty-state-icon"></i>
+                                            <div class="empty-state-title">No absences found</div>
+                                            <div class="empty-state-description">
+                                                <span v-if="absenceFilters.staff || absenceFilters.reason || absenceFilters.startDate">
+                                                    No results match your filters
+                                                </span>
+                                                <span v-else>No absence records have been logged</span>
+                                            </div>
+                                            <button v-if="!absenceFilters.staff && !absenceFilters.reason && !absenceFilters.startDate && hasPermission('staff_absence', 'create')"
+                                                    class="btn btn-primary btn-sm" @click="showAddAbsenceModal">
+                                                <i class="fas fa-plus"></i> Record First Absence
+                                            </button>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
+                            
+                            <!-- Pagination -->
+                            <div class="pagination" v-if="absenceTotalPages > 1">
+                                <button class="btn-pill" @click="goToPage('absences', pagination.absences.page - 1)" :disabled="pagination.absences.page === 1">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="pagination-info">Page {{ pagination.absences.page }} of {{ absenceTotalPages }}</span>
+                                <button class="btn-pill" @click="goToPage('absences', pagination.absences.page + 1)" :disabled="pagination.absences.page === absenceTotalPages">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1040,8 +1165,16 @@
                                 <i class="fas fa-plus"></i> Add Department
                             </button>
                         </div>
+                        <div class="filter-bar">
+                            <input type="text" class="form-control" v-model="departmentFilters.search" placeholder="Search departments...">
+                            <select class="form-select" v-model="departmentFilters.status">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
                         <div class="departments-grid">
-                            <div v-for="department in departments" :key="department.id" class="department-card">
+                            <div v-for="department in filteredDepartments" :key="department.id" class="department-card">
                                 <div class="department-header">
                                     <div class="department-title"><i class="fas fa-hospital"></i>{{ department.name }}</div>
                                     <span class="status-indicator" :class="'status-' + department.status">{{ department.status }}</span>
@@ -1073,14 +1206,14 @@
                                     </button>
                                 </div>
                             </div>
-                            <div v-if="departments.length === 0" class="col-span-full empty-state">
-    <i class="fas fa-sitemap empty-state-icon"></i>
-    <div class="empty-state-title">No departments found</div>
-    <div class="empty-state-description">Departments group your clinical staff and training units</div>
-    <button class="btn btn-primary btn-sm" @click="showAddDepartmentModal" v-if="hasPermission('system', 'manage_departments')">
-        <i class="fas fa-plus"></i> Add First Department
-    </button>
-</div>
+                            <div v-if="filteredDepartments.length === 0" class="col-span-full empty-state">
+                                <i class="fas fa-sitemap empty-state-icon"></i>
+                                <div class="empty-state-title">No departments found</div>
+                                <div class="empty-state-description">Departments group your clinical staff and training units</div>
+                                <button class="btn btn-primary btn-sm" @click="showAddDepartmentModal" v-if="hasPermission('system', 'manage_departments')">
+                                    <i class="fas fa-plus"></i> Add First Department
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1093,6 +1226,15 @@
                             <button class="btn btn-primary" @click="showCommunicationsModal" v-if="hasPermission('communications', 'create')">
                                 <i class="fas fa-plus"></i> New Communication
                             </button>
+                        </div>
+                        <div class="filter-bar">
+                            <input type="text" class="form-control" v-model="communicationsFilters.search" placeholder="Search announcements...">
+                            <select class="form-select" v-model="communicationsFilters.priority">
+                                <option value="">All Priorities</option>
+                                <option value="normal">Normal</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
                         </div>
                         <div class="space-y-4">
                             <div v-for="announcement in recentAnnouncements" :key="announcement.id" class="announcement-card">
@@ -1114,18 +1256,18 @@
                                 </div>
                             </div>
                             <div v-if="recentAnnouncements.length === 0" class="empty-state">
-    <i class="fas fa-bullhorn empty-state-icon"></i>
-    <div class="empty-state-title">No communications found</div>
-    <div class="empty-state-description">Keep your department informed with announcements</div>
-    <button class="btn btn-primary btn-sm" @click="showCommunicationsModal" v-if="hasPermission('communications', 'create')">
-        <i class="fas fa-plus"></i> Post First Announcement
-    </button>
-</div>
+                                <i class="fas fa-bullhorn empty-state-icon"></i>
+                                <div class="empty-state-title">No communications found</div>
+                                <div class="empty-state-description">Keep your department informed with announcements</div>
+                                <button class="btn btn-primary btn-sm" @click="showCommunicationsModal" v-if="hasPermission('communications', 'create')">
+                                    <i class="fas fa-plus"></i> Post First Announcement
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ============ NEW: RESEARCH LINES VIEW ============ -->
+                <!-- ============ RESEARCH LINES VIEW ============ -->
                 <div v-if="currentView === 'research_lines'">
                     <div class="card mb-6">
                         <div class="card-header">
@@ -1135,9 +1277,19 @@
                             </button>
                         </div>
                         
+                        <!-- Filters -->
+                        <div class="filter-bar">
+                            <input type="text" class="form-control" v-model="researchLineFilters.search" placeholder="Search research lines...">
+                            <select class="form-select" v-model="researchLineFilters.active">
+                                <option value="">All Status</option>
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                        
                         <!-- Research Lines Grid -->
                         <div class="research-lines-grid">
-                            <div v-for="line in researchLines" :key="line.id" class="research-line-card">
+                            <div v-for="line in filteredResearchLines" :key="line.id" class="research-line-card">
                                 <div class="research-line-header">
                                     <div class="research-line-number">Línea {{ line.line_number }}</div>
                                     <div class="research-line-actions">
@@ -1179,7 +1331,7 @@
                             </div>
                             
                             <!-- Empty State -->
-                            <div v-if="researchLines.length === 0" class="col-span-full empty-state">
+                            <div v-if="filteredResearchLines.length === 0" class="col-span-full empty-state">
                                 <i class="fas fa-flask empty-state-icon"></i>
                                 <div class="empty-state-title">No research lines found</div>
                                 <div class="empty-state-description">Research lines organize your department's scientific focus areas</div>
@@ -1191,7 +1343,7 @@
                     </div>
                 </div>
 
-                <!-- ============ NEW: CLINICAL TRIALS VIEW ============ -->
+                <!-- ============ CLINICAL TRIALS VIEW ============ -->
                 <div v-if="currentView === 'clinical_trials'">
                     <div class="card mb-6">
                         <div class="card-header">
@@ -1227,7 +1379,22 @@
                         <div class="table-responsive">
                             <table class="table table-striped">
                                 <thead>
-                                    <tr><th>Protocolo</th><th>Título del Estudio</th><th>Línea</th><th>Fase</th><th>Estado</th><th>Actions</th></tr>
+                                    <tr>
+                                        <th @click="sortBy('trials', 'protocol_id')">
+                                            Protocolo <i class="fas" :class="sortIcon('trials', 'protocol_id')"></i>
+                                        </th>
+                                        <th @click="sortBy('trials', 'title')">
+                                            Título del Estudio <i class="fas" :class="sortIcon('trials', 'title')"></i>
+                                        </th>
+                                        <th>Línea</th>
+                                        <th @click="sortBy('trials', 'phase')">
+                                            Fase <i class="fas" :class="sortIcon('trials', 'phase')"></i>
+                                        </th>
+                                        <th @click="sortBy('trials', 'status')">
+                                            Estado <i class="fas" :class="sortIcon('trials', 'status')"></i>
+                                        </th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="trial in filteredTrials" :key="trial.id">
@@ -1250,6 +1417,17 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            
+                            <!-- Pagination -->
+                            <div class="pagination" v-if="trialTotalPages > 1">
+                                <button class="btn-pill" @click="goToPage('trials', pagination.trials.page - 1)" :disabled="pagination.trials.page === 1">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="pagination-info">Page {{ pagination.trials.page }} of {{ trialTotalPages }}</span>
+                                <button class="btn-pill" @click="goToPage('trials', pagination.trials.page + 1)" :disabled="pagination.trials.page === trialTotalPages">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Note about full database -->
@@ -1260,7 +1438,7 @@
                     </div>
                 </div>
 
-                <!-- ============ NEW: INNOVATION PROJECTS VIEW ============ -->
+                <!-- ============ INNOVATION PROJECTS VIEW ============ -->
                 <div v-if="currentView === 'innovation_projects'">
                     <div class="card mb-6">
                         <div class="card-header">
@@ -1270,9 +1448,25 @@
                             </button>
                         </div>
                         
+                        <!-- Filters -->
+                        <div class="filter-bar">
+                            <select class="form-select" v-model="projectFilters.research_line_id">
+                                <option value="">All Lines</option>
+                                <option v-for="line in researchLines" :key="line.id" :value="line.id">{{ line.research_line_name || line.name }}</option>
+                            </select>
+                            <select class="form-select" v-model="projectFilters.category">
+                                <option value="">All Categories</option>
+                                <option value="Dispositivo">Dispositivo</option>
+                                <option value="Salud Digital">Salud Digital</option>
+                                <option value="IA / ML">IA / ML</option>
+                                <option value="Tecnología Quirúrgica">Tecnología Quirúrgica</option>
+                            </select>
+                            <input type="text" class="form-control" v-model="projectFilters.search" placeholder="Search projects...">
+                        </div>
+                        
                         <!-- Projects Grid -->
                         <div class="innovation-projects-grid">
-                            <div v-for="project in innovationProjects" :key="project.id" class="innovation-card">
+                            <div v-for="project in filteredProjects" :key="project.id" class="innovation-card">
                                 <div class="innovation-category" :class="project.category.toLowerCase().replace(' ', '-')">
                                     {{ project.category }}
                                 </div>
@@ -1301,7 +1495,7 @@
                                 </div>
                             </div>
                             
-                            <div v-if="innovationProjects.length === 0" class="col-span-full empty-state">
+                            <div v-if="filteredProjects.length === 0" class="col-span-full empty-state">
                                 <i class="fas fa-microscope empty-state-icon"></i>
                                 <div class="empty-state-title">No innovation projects found</div>
                                 <div class="empty-state-description">Innovation projects showcase your department's cutting-edge research</div>
@@ -1310,6 +1504,299 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ============ NEW: ANALYTICS DASHBOARD VIEW ============ -->
+                <div v-if="currentView === 'analytics_dashboard'">
+                    <div class="dashboard-header">
+                        <h2><i class="fas fa-chart-pie"></i> Research Analytics Dashboard</h2>
+                        <div class="dashboard-actions">
+                            <button class="btn btn-outline" @click="loadResearchDashboard(true)" :disabled="loadingAnalytics">
+                                <i class="fas fa-sync-alt" :class="{ 'fa-spin': loadingAnalytics }"></i> Refresh
+                            </button>
+                            <button class="btn btn-primary" @click="showExportModal" v-if="hasPermission('analytics', 'export')">
+                                <i class="fas fa-download"></i> Export Report
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div v-if="loadingAnalytics" class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i> Loading analytics data...
+                    </div>
+                    
+                    <!-- Dashboard Content -->
+                    <template v-else-if="researchDashboard">
+                        <!-- Summary KPI Cards -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-header"><i class="fas fa-flask"></i><h3>Research Lines</h3></div>
+                                <div class="stat-main-value">{{ researchDashboard.summary?.totalResearchLines || 0 }}</div>
+                                <div class="stat-breakdown">
+                                    <div class="breakdown-item">
+                                        <span class="label">Active</span>
+                                        <span class="value">{{ researchDashboard.summary?.activeResearchLines || 0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-header"><i class="fas fa-vial"></i><h3>Clinical Trials</h3></div>
+                                <div class="stat-main-value">{{ researchDashboard.summary?.totalTrials || 0 }}</div>
+                                <div class="stat-breakdown">
+                                    <div class="breakdown-item">
+                                        <span class="label">Active</span>
+                                        <span class="value">{{ researchDashboard.summary?.activeTrials || 0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-header"><i class="fas fa-microscope"></i><h3>Innovation Projects</h3></div>
+                                <div class="stat-main-value">{{ researchDashboard.summary?.totalProjects || 0 }}</div>
+                                <div class="stat-breakdown">
+                                    <div class="breakdown-item">
+                                        <span class="label">Active</span>
+                                        <span class="value">{{ researchDashboard.summary?.activeProjects || 0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Research Lines Table -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title"><i class="fas fa-flask"></i> Research Lines Overview</div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Line</th>
+                                            <th>Name</th>
+                                            <th>Coordinator</th>
+                                            <th>Trials</th>
+                                            <th>Projects</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="line in researchDashboard.researchLines" :key="line.id" class="row-active">
+                                            <td>Línea {{ line.line_number }}</td>
+                                            <td>{{ line.name }}</td>
+                                            <td>{{ getStaffName(line.coordinator_id) || 'Not assigned' }}</td>
+                                            <td><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></td>
+                                            <td><span class="badge badge-success">{{ line.projectsCount || 0 }}</span></td>
+                                            <td><span class="status-indicator" :class="line.active ? 'status-active' : 'status-inactive'">{{ line.active ? 'Active' : 'Inactive' }}</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Charts Grid -->
+                        <div class="charts-grid">
+                            <!-- Trials by Phase -->
+                            <div class="chart-card">
+                                <h4><i class="fas fa-chart-pie"></i> Trials by Phase</h4>
+                                <div class="chart-bars">
+                                    <div v-for="(count, phase) in researchDashboard.clinicalTrials?.byPhase" :key="phase" class="chart-bar-item" v-if="count > 0">
+                                        <span class="bar-label">{{ phase }}</span>
+                                        <div class="bar-container">
+                                            <div class="bar-fill" :style="{ width: (count / researchDashboard.summary?.totalTrials * 100) + '%', background: getPhaseColor(phase) }"></div>
+                                        </div>
+                                        <span class="bar-value">{{ count }}</span>
+                                    </div>
+                                    <div v-if="Object.keys(researchDashboard.clinicalTrials?.byPhase || {}).length === 0" class="empty-chart">
+                                        No trial data available
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Projects by Stage -->
+                            <div class="chart-card">
+                                <h4><i class="fas fa-chart-bar"></i> Projects by Stage</h4>
+                                <div class="chart-bars">
+                                    <div v-for="(count, stage) in researchDashboard.innovationProjects?.byStage" :key="stage" class="chart-bar-item" v-if="count > 0">
+                                        <span class="bar-label">{{ stage }}</span>
+                                        <div class="bar-container">
+                                            <div class="bar-fill" :style="{ width: (count / researchDashboard.summary?.totalProjects * 100) + '%', background: getStageColor(stage) }"></div>
+                                        </div>
+                                        <span class="bar-value">{{ count }}</span>
+                                    </div>
+                                    <div v-if="Object.keys(researchDashboard.innovationProjects?.byStage || {}).length === 0" class="empty-chart">
+                                        No project data available
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Partner Needs Cloud -->
+                        <div class="card" v-if="researchDashboard.innovationProjects?.partnerNeeds?.length">
+                            <div class="card-header">
+                                <div class="card-title"><i class="fas fa-handshake"></i> Top Partner Needs</div>
+                            </div>
+                            <div class="tags-cloud">
+                                <span v-for="need in researchDashboard.innovationProjects.partnerNeeds.slice(0, 15)" 
+                                      :key="need.name" 
+                                      class="need-tag" 
+                                      :style="{ fontSize: (12 + Math.min(need.count * 2, 20)) + 'px' }">
+                                    {{ need.name }} ({{ need.count }})
+                                </span>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <!-- Empty State -->
+                    <div v-else class="empty-state">
+                        <i class="fas fa-chart-pie empty-state-icon"></i>
+                        <div class="empty-state-title">No analytics data available</div>
+                        <div class="empty-state-description">Unable to load research dashboard data</div>
+                        <button class="btn btn-primary btn-sm" @click="loadResearchDashboard(true)">
+                            <i class="fas fa-sync-alt"></i> Retry
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ============ NEW: RESEARCH LINES PERFORMANCE VIEW ============ -->
+                <div v-if="currentView === 'analytics_performance'">
+                    <div class="dashboard-header">
+                        <h2><i class="fas fa-chart-line"></i> Research Lines Performance</h2>
+                        <button class="btn btn-outline" @click="loadResearchLinesPerformance(true)" :disabled="loadingAnalytics">
+                            <i class="fas fa-sync-alt" :class="{ 'fa-spin': loadingAnalytics }"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div v-if="loadingAnalytics" class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i> Loading performance data...
+                    </div>
+                    
+                    <!-- Performance Table -->
+                    <div v-else-if="researchLinesPerformance.length > 0" class="card">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Research Line</th>
+                                        <th>Coordinator</th>
+                                        <th>Total Trials</th>
+                                        <th>Active Trials</th>
+                                        <th>Completed Trials</th>
+                                        <th>Total Projects</th>
+                                        <th>Active Projects</th>
+                                        <th>Commercialized</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="line in researchLinesPerformance" :key="line.id" class="row-active">
+                                        <td>
+                                            <div class="font-medium">Línea {{ line.line_number }}: {{ line.name }}</div>
+                                        </td>
+                                        <td>{{ line.coordinator || 'Not assigned' }}</td>
+                                        <td class="text-center">{{ line.stats?.totalTrials || 0 }}</td>
+                                        <td class="text-center"><span class="badge badge-success">{{ line.stats?.activeTrials || 0 }}</span></td>
+                                        <td class="text-center">{{ line.stats?.completedTrials || 0 }}</td>
+                                        <td class="text-center">{{ line.stats?.totalProjects || 0 }}</td>
+                                        <td class="text-center">{{ line.stats?.activeProjects || 0 }}</td>
+                                        <td class="text-center"><span class="badge badge-primary">{{ line.stats?.commercialized || 0 }}</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div v-else class="empty-state">
+                        <i class="fas fa-chart-line empty-state-icon"></i>
+                        <div class="empty-state-title">No performance data available</div>
+                    </div>
+                </div>
+
+                <!-- ============ NEW: PARTNER COLLABORATIONS VIEW ============ -->
+                <div v-if="currentView === 'analytics_partners'">
+                    <div class="dashboard-header">
+                        <h2><i class="fas fa-handshake"></i> Partner Collaborations</h2>
+                        <button class="btn btn-outline" @click="loadPartnerCollaborations(true)" :disabled="loadingAnalytics">
+                            <i class="fas fa-sync-alt" :class="{ 'fa-spin': loadingAnalytics }"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div v-if="loadingAnalytics" class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i> Loading partner data...
+                    </div>
+                    
+                    <!-- Partner Stats -->
+                    <div v-else-if="partnerCollaborations" class="space-y-4">
+                        <!-- Summary Cards -->
+                        <div class="stats-grid mini">
+                            <div class="stat-card mini">
+                                <div class="stat-header"><i class="fas fa-project-diagram"></i><h3>Projects with Partners</h3></div>
+                                <div class="stat-value">{{ partnerCollaborations.totalProjectsWithPartners || 0 }}</div>
+                            </div>
+                            <div class="stat-card mini">
+                                <div class="stat-header"><i class="fas fa-handshake"></i><h3>Total Collaborations</h3></div>
+                                <div class="stat-value">{{ partnerCollaborations.totalPartnerNeeds || 0 }}</div>
+                            </div>
+                            <div class="stat-card mini">
+                                <div class="stat-header"><i class="fas fa-tags"></i><h3>Unique Partner Types</h3></div>
+                                <div class="stat-value">{{ partnerCollaborations.uniquePartnerNeeds || 0 }}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Collaborations by Type -->
+                        <div class="card" v-if="partnerCollaborations.needsByType?.length">
+                            <div class="card-header">
+                                <div class="card-title"><i class="fas fa-chart-pie"></i> Collaborations by Type</div>
+                            </div>
+                            <div class="chart-bars">
+                                <div v-for="item in partnerCollaborations.needsByType" :key="item.type" class="chart-bar-item">
+                                    <span class="bar-label">{{ item.type }}</span>
+                                    <div class="bar-container">
+                                        <div class="bar-fill" :style="{ width: (item.count / partnerCollaborations.totalPartnerNeeds * 100) + '%', background: getPhaseColor(item.type) }"></div>
+                                    </div>
+                                    <span class="bar-value">{{ item.count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Partner Needs List -->
+                        <div class="card" v-if="partnerCollaborations.partnerNeeds?.length">
+                            <div class="card-header">
+                                <div class="card-title"><i class="fas fa-list"></i> Partner Needs</div>
+                            </div>
+                            <div class="needs-grid">
+                                <div v-for="need in partnerCollaborations.partnerNeeds.slice(0, 20)" :key="need.name" class="need-item">
+                                    <span class="need-name">{{ need.name }}</span>
+                                    <span class="need-count">{{ need.count }}</span>
+                                    <div class="need-bar">
+                                        <div class="need-fill" :style="{ width: (need.count / partnerCollaborations.partnerNeeds[0].count * 100) + '%' }"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Needs by Category (if available) -->
+                        <div class="card" v-if="partnerCollaborations.needsByCategory && Object.keys(partnerCollaborations.needsByCategory).length">
+                            <div class="card-header">
+                                <div class="card-title"><i class="fas fa-tags"></i> Needs by Category</div>
+                            </div>
+                            <div class="category-grid">
+                                <div v-for="(needs, category) in partnerCollaborations.needsByCategory" :key="category" class="category-card">
+                                    <h5>{{ category }}</h5>
+                                    <div v-for="(count, need) in needs" :key="need" class="category-item">
+                                        <span>{{ need }}</span>
+                                        <span class="badge badge-info">{{ count }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div v-else class="empty-state">
+                        <i class="fas fa-handshake empty-state-icon"></i>
+                        <div class="empty-state-title">No partner collaboration data available</div>
                     </div>
                 </div>
 
@@ -1367,14 +1854,6 @@
                                 <span class="pcr-key">License</span>
                                 <span :class="['pcr-val', !staffProfileModal.staff.medical_license && 'pcr-na']">{{ staffProfileModal.staff.medical_license || 'NA' }}</span>
                             </div>
-                            <div class="profile-cred-row">
-                                <span class="pcr-key">Certificate</span>
-                                <span class="pcr-val" v-if="staffProfileModal.staff.clinical_certificate">
-                                    {{ staffProfileModal.staff.clinical_certificate }}
-                                    <span :class="['cert-status', staffProfileModal.staff.certificate_status]">{{ staffProfileModal.staff.certificate_status || 'NA' }}</span>
-                                </span>
-                                <span class="pcr-val pcr-na" v-else>NA</span>
-                            </div>
                         </div>
 
                         <div class="profile-contact">
@@ -1393,155 +1872,243 @@
 
                     <!-- RIGHT: Dynamic activity — DB dependent -->
                     <div class="profile-right">
+                        <!-- Tabs -->
+                        <div class="modal-tabs">
+                            <button class="modal-tab" :class="{ active: staffProfileModal.activeTab === 'assignments' }" @click="staffProfileModal.activeTab = 'assignments'">
+                                <i class="fas fa-calendar"></i> Assignments
+                            </button>
+                            <button class="modal-tab" :class="{ active: staffProfileModal.activeTab === 'research' }" @click="staffProfileModal.activeTab = 'research'; loadStaffResearchProfile(staffProfileModal.staff.id)" v-if="hasPermission('analytics', 'read')">
+                                <i class="fas fa-flask"></i> Research
+                            </button>
+                        </div>
 
-                        <!-- ── CURRENT ROTATION — RESIDENTS ONLY ── -->
-                        <div class="profile-section" v-if="staffProfileModal.staff.staff_type === 'medical_resident'">
-                            <div class="profile-section-head">
-                                <div class="psh-left"><i class="fas fa-clinic-medical"></i><h4>Current Rotation</h4></div>
-                                <span v-if="getCurrentRotationForStaff(staffProfileModal.staff.id)" class="sec-chip chip-active">Active</span>
-                                <span v-else class="sec-chip chip-none">None Assigned</span>
+                        <!-- Assignments Tab -->
+                        <div v-if="staffProfileModal.activeTab === 'assignments'">
+                            <!-- Current Rotation — Residents Only -->
+                            <div class="profile-section" v-if="staffProfileModal.staff.staff_type === 'medical_resident'">
+                                <div class="profile-section-head">
+                                    <div class="psh-left"><i class="fas fa-clinic-medical"></i><h4>Current Rotation</h4></div>
+                                    <span v-if="getCurrentRotationForStaff(staffProfileModal.staff.id)" class="sec-chip chip-active">Active</span>
+                                    <span v-else class="sec-chip chip-none">None Assigned</span>
+                                </div>
+                                <template v-if="getCurrentRotationForStaff(staffProfileModal.staff.id)">
+                                    <div class="rotation-unit-name">{{ getTrainingUnitName(getCurrentRotationForStaff(staffProfileModal.staff.id).training_unit_id) }}</div>
+                                    <div class="profile-data-grid">
+                                        <div class="pdc">
+                                            <span class="pdc-key">Started</span>
+                                            <span class="pdc-val mono">{{ formatDate(getCurrentRotationForStaff(staffProfileModal.staff.id).start_date) }}</span>
+                                        </div>
+                                        <div class="pdc">
+                                            <span class="pdc-key">Ends</span>
+                                            <span class="pdc-val mono">{{ formatDate(getCurrentRotationForStaff(staffProfileModal.staff.id).end_date) }}</span>
+                                        </div>
+                                        <div class="pdc">
+                                            <span class="pdc-key">Remaining</span>
+                                            <span class="pdc-val accent">
+                                                {{ getRotationDaysLeft(staffProfileModal.staff.id) > 0 ? getRotationDaysLeft(staffProfileModal.staff.id) + ' days' : 'Ending today' }}
+                                            </span>
+                                        </div>
+                                        <div class="pdc">
+                                            <span class="pdc-key">Supervisor</span>
+                                            <span :class="['pdc-val', !getCurrentRotationForStaff(staffProfileModal.staff.id).supervising_attending_id && 'pdc-na']">
+                                                {{ getCurrentRotationForStaff(staffProfileModal.staff.id).supervising_attending_id ? getSupervisorName(getCurrentRotationForStaff(staffProfileModal.staff.id).supervising_attending_id) : 'NA' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div class="pdc pdc-full" v-else>
+                                    <span class="pdc-key">Status</span>
+                                    <span class="pdc-val pdc-na">No active rotation assigned</span>
+                                </div>
                             </div>
-                            <template v-if="getCurrentRotationForStaff(staffProfileModal.staff.id)">
-                                <div class="rotation-unit-name">{{ getTrainingUnitName(getCurrentRotationForStaff(staffProfileModal.staff.id).training_unit_id) }}</div>
-                                <div class="profile-data-grid">
-                                    <div class="pdc">
-                                        <span class="pdc-key">Started</span>
-                                        <span class="pdc-val mono">{{ formatDate(getCurrentRotationForStaff(staffProfileModal.staff.id).start_date) }}</span>
+
+                            <!-- On-Call Shifts — Both residents and attendings -->
+                            <div class="profile-section">
+                                <div class="profile-section-head">
+                                    <div class="psh-left"><i class="fas fa-phone-medical"></i><h4>Upcoming On-Call Shifts</h4></div>
+                                    <span v-if="isOnCallToday(staffProfileModal.staff.id)" class="sec-chip chip-live">On Call Now</span>
+                                    <span v-else-if="getUpcomingOnCall(staffProfileModal.staff.id).length" class="sec-chip chip-upcoming">Scheduled</span>
+                                    <span v-else class="sec-chip chip-none">None Scheduled</span>
+                                </div>
+                                <template v-if="getUpcomingOnCall(staffProfileModal.staff.id).length > 0">
+                                    <div v-for="shift in getUpcomingOnCall(staffProfileModal.staff.id).slice(0, 4)" :key="shift.id" class="shift-block">
+                                        <div class="shift-ep">
+                                            <span class="shift-ep-label">From</span>
+                                            <span class="shift-ep-date">{{ formatDate(shift.duty_date) }}</span>
+                                            <span class="shift-ep-time">{{ shift.start_time }}</span>
+                                        </div>
+                                        <div class="shift-arrow"><i class="fas fa-long-arrow-alt-right"></i></div>
+                                        <div class="shift-ep">
+                                            <span class="shift-ep-label">Until</span>
+                                            <span class="shift-ep-date">{{ shift.end_time < shift.start_time ? formatDatePlusDays(shift.duty_date, 1) : formatDate(shift.duty_date) }}</span>
+                                            <span class="shift-ep-time">{{ shift.end_time }}</span>
+                                        </div>
+                                        <div class="shift-meta">
+                                            <span class="badge badge-primary">{{ shift.shift_type === 'primary_call' ? 'Primary' : 'Backup' }}</span>
+                                            <span class="na-value" style="font-size:10px;">{{ shift.coverage_area || 'Area NA' }}</span>
+                                        </div>
                                     </div>
-                                    <div class="pdc">
-                                        <span class="pdc-key">Ends</span>
-                                        <span class="pdc-val mono">{{ formatDate(getCurrentRotationForStaff(staffProfileModal.staff.id).end_date) }}</span>
+                                </template>
+                                <div class="pdc pdc-full" v-else>
+                                    <span class="pdc-key">Upcoming shifts</span>
+                                    <span class="pdc-val pdc-na">No on-call shifts scheduled</span>
+                                </div>
+                            </div>
+
+                            <!-- Planned Leave -->
+                            <div class="profile-section">
+                                <div class="profile-section-head">
+                                    <div class="psh-left"><i class="fas fa-calendar-minus"></i><h4>Leave & Absence</h4></div>
+                                    <span v-if="staffProfileModal.staff.employment_status === 'on_leave'" class="sec-chip chip-live" style="background:var(--amber);">On Leave Now</span>
+                                    <span v-else-if="getUpcomingLeave(staffProfileModal.staff.id).length" class="sec-chip chip-upcoming">Planned</span>
+                                    <span v-else class="sec-chip chip-none">None on Record</span>
+                                </div>
+                                <template v-if="getUpcomingLeave(staffProfileModal.staff.id).length > 0">
+                                    <div v-for="leave in getUpcomingLeave(staffProfileModal.staff.id)" :key="leave.id" class="shift-block">
+                                        <div class="shift-ep">
+                                            <span class="shift-ep-label">From</span>
+                                            <span class="shift-ep-date">—</span>
+                                            <span class="shift-ep-time" style="font-size:13px;">{{ formatDate(leave.start_date) }}</span>
+                                        </div>
+                                        <div class="shift-arrow"><i class="fas fa-long-arrow-alt-right"></i></div>
+                                        <div class="shift-ep">
+                                            <span class="shift-ep-label">Until</span>
+                                            <span class="shift-ep-date">—</span>
+                                            <span class="shift-ep-time" style="font-size:13px;">{{ formatDate(leave.end_date) }}</span>
+                                        </div>
+                                        <div class="shift-meta">
+                                            <span class="badge badge-warning">{{ formatAbsenceReason(leave.absence_reason) }}</span>
+                                            <span class="days-pill">{{ calculateAbsenceDuration(leave.start_date, leave.end_date) }} days</span>
+                                        </div>
                                     </div>
-                                    <div class="pdc">
-                                        <span class="pdc-key">Remaining</span>
-                                        <span class="pdc-val accent">
-                                            {{ getRotationDaysLeft(staffProfileModal.staff.id) > 0 ? getRotationDaysLeft(staffProfileModal.staff.id) + ' days' : 'Ending today' }}
+                                </template>
+                                <div class="pdc pdc-full" v-else>
+                                    <span class="pdc-key">Planned leave</span>
+                                    <span class="pdc-val pdc-na">None on record</span>
+                                </div>
+                            </div>
+
+                            <!-- Rotation History — Residents Only -->
+                            <div class="profile-section" v-if="staffProfileModal.staff.staff_type === 'medical_resident'">
+                                <div class="profile-section-head">
+                                    <div class="psh-left"><i class="fas fa-history"></i><h4>Rotation History</h4></div>
+                                    <span class="sec-chip chip-none">{{ getRotationHistory(staffProfileModal.staff.id).length }} records</span>
+                                </div>
+                                <template v-if="getRotationHistory(staffProfileModal.staff.id).length > 0">
+                                    <div v-for="rot in getRotationHistory(staffProfileModal.staff.id).slice(0, 5)" :key="rot.id" class="history-row">
+                                        <span class="hr-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
+                                        <span class="hr-dates">{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</span>
+                                        <span class="status-indicator" :class="'status-' + rot.rotation_status" style="font-size:9px;padding:2px 6px;">{{ formatRotationStatus(rot.rotation_status) }}</span>
+                                    </div>
+                                </template>
+                                <div class="pdc pdc-full" v-else>
+                                    <span class="pdc-key">History</span>
+                                    <span class="pdc-val pdc-na">No completed rotations on record</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Research Tab (NEW) -->
+                        <div v-if="staffProfileModal.activeTab === 'research'" class="profile-research-tab">
+                            <!-- Loading State -->
+                            <div v-if="staffProfileModal.loadingResearch" class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i> Loading research data...
+                            </div>
+                            
+                            <!-- Research Profile -->
+                            <div v-else-if="staffProfileModal.researchProfile" class="research-profile">
+                                <!-- Research Lines -->
+                                <div class="profile-section" v-if="staffProfileModal.researchProfile.researchLines?.length">
+                                    <div class="profile-section-head">
+                                        <div class="psh-left"><i class="fas fa-flask"></i><h4>Research Lines Coordinated</h4></div>
+                                    </div>
+                                    <div class="research-lines-list">
+                                        <div v-for="line in staffProfileModal.researchProfile.researchLines" :key="line.id" class="research-line-item">
+                                            <span class="line-badge">L{{ line.line_number }}</span>
+                                            <span class="line-name">{{ line.name }}</span>
+                                            <span class="line-stats">{{ line.trialsCount }} trials · {{ line.projectsCount }} projects</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Trials Stats -->
+                                <div class="profile-section">
+                                    <div class="profile-section-head">
+                                        <div class="psh-left"><i class="fas fa-vial"></i><h4>Clinical Trials</h4></div>
+                                    </div>
+                                    <div class="stats-grid mini">
+                                        <div class="stat-card mini">
+                                            <div class="stat-value">{{ staffProfileModal.researchProfile.trials.asPI }}</div>
+                                            <div class="stat-label">As PI</div>
+                                        </div>
+                                        <div class="stat-card mini">
+                                            <div class="stat-value">{{ staffProfileModal.researchProfile.trials.asCoI }}</div>
+                                            <div class="stat-label">As Co-I</div>
+                                        </div>
+                                        <div class="stat-card mini">
+                                            <div class="stat-value">{{ staffProfileModal.researchProfile.trials.active }}</div>
+                                            <div class="stat-label">Active</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Trials by Phase -->
+                                    <div class="mini-chart" v-if="Object.keys(staffProfileModal.researchProfile.trials.byPhase).length">
+                                        <div v-for="(count, phase) in staffProfileModal.researchProfile.trials.byPhase" :key="phase" class="chart-row" v-if="count > 0">
+                                            <span class="chart-label">{{ phase }}</span>
+                                            <div class="chart-bar">
+                                                <div class="bar-fill" :style="{ width: (count / staffProfileModal.researchProfile.trials.asPI * 100) + '%', background: getPhaseColor(phase) }"></div>
+                                            </div>
+                                            <span class="chart-value">{{ count }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Recent Trials -->
+                                    <div class="recent-list" v-if="staffProfileModal.researchProfile.trials.list?.length">
+                                        <div class="list-header">Recent Trials</div>
+                                        <div v-for="trial in staffProfileModal.researchProfile.trials.list" :key="trial.id" class="list-item">
+                                            <span class="item-title">{{ trial.title }}</span>
+                                            <span class="badge" :class="trial.status === 'Activo' ? 'badge-success' : 'badge-info'">{{ trial.status }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Projects Stats -->
+                                <div class="profile-section">
+                                    <div class="profile-section-head">
+                                        <div class="psh-left"><i class="fas fa-microscope"></i><h4>Innovation Projects</h4></div>
+                                    </div>
+                                    <div class="stat-value large">{{ staffProfileModal.researchProfile.projects.asLead }}</div>
+                                    <div class="stat-label">Projects as Lead</div>
+                                    
+                                    <!-- Recent Projects -->
+                                    <div class="recent-list" v-if="staffProfileModal.researchProfile.projects.list?.length">
+                                        <div v-for="project in staffProfileModal.researchProfile.projects.list" :key="project.id" class="list-item">
+                                            <span class="item-title">{{ project.title }}</span>
+                                            <span class="badge badge-info">{{ project.current_stage || project.development_stage }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Partner Needs -->
+                                <div class="profile-section" v-if="staffProfileModal.researchProfile.partnerNeeds?.length">
+                                    <div class="profile-section-head">
+                                        <div class="psh-left"><i class="fas fa-handshake"></i><h4>Partner Needs Addressed</h4></div>
+                                    </div>
+                                    <div class="tags-cloud small">
+                                        <span v-for="need in staffProfileModal.researchProfile.partnerNeeds" :key="need.name" class="need-tag">
+                                            {{ need.name }} ({{ need.count }})
                                         </span>
                                     </div>
-                                    <div class="pdc">
-                                        <span class="pdc-key">Supervisor</span>
-                                        <span :class="['pdc-val', !getCurrentRotationForStaff(staffProfileModal.staff.id).supervising_attending_id && 'pdc-na']">
-                                            {{ getCurrentRotationForStaff(staffProfileModal.staff.id).supervising_attending_id ? getSupervisorName(getCurrentRotationForStaff(staffProfileModal.staff.id).supervising_attending_id) : 'NA' }}
-                                        </span>
-                                    </div>
-                                    <div class="pdc">
-                                        <span class="pdc-key">Category</span>
-                                        <span :class="['pdc-val', !getCurrentRotationForStaff(staffProfileModal.staff.id).rotation_category && 'pdc-na']">
-                                            {{ getCurrentRotationForStaff(staffProfileModal.staff.id).rotation_category || 'NA' }}
-                                        </span>
-                                    </div>
-                                    <div class="pdc">
-                                        <span class="pdc-key">Department</span>
-                                        <span class="pdc-val">{{ getDepartmentName(staffProfileModal.staff.department_id) || 'NA' }}</span>
-                                    </div>
-                                </div>
-                            </template>
-                            <div class="pdc pdc-full" v-else>
-                                <span class="pdc-key">Status</span>
-                                <span class="pdc-val pdc-na">No active rotation assigned</span>
-                            </div>
-                        </div>
-
-                        <!-- ── NEW: RESEARCH LINES (for all clinicians) ── -->
-                        <div class="profile-section" v-if="getClinicianResearchLines(staffProfileModal.staff.id).length">
-                            <div class="profile-section-head">
-                                <div class="psh-left"><i class="fas fa-flask"></i><h4>Research Lines</h4></div>
-                                <span class="sec-chip chip-active">{{ getClinicianResearchLines(staffProfileModal.staff.id).length }} líneas</span>
-                            </div>
-                            <div v-for="item in getClinicianResearchLines(staffProfileModal.staff.id)" :key="item.line_number" class="research-line-item">
-                                <div class="research-line-marker">L{{ item.line_number }}</div>
-                                <div class="research-line-details">
-                                    <span class="research-line-role">{{ item.role }}</span>
-                                    <span class="research-line-name">{{ item.name }}</span>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- ── ON-CALL SHIFTS — BOTH residents and attendings ── -->
-                        <div class="profile-section">
-                            <div class="profile-section-head">
-                                <div class="psh-left"><i class="fas fa-phone-medical"></i><h4>Upcoming On-Call Shifts</h4></div>
-                                <span v-if="isOnCallToday(staffProfileModal.staff.id)" class="sec-chip chip-live">On Call Now</span>
-                                <span v-else-if="getUpcomingOnCall(staffProfileModal.staff.id).length" class="sec-chip chip-upcoming">Scheduled</span>
-                                <span v-else class="sec-chip chip-none">None Scheduled</span>
-                            </div>
-                            <template v-if="getUpcomingOnCall(staffProfileModal.staff.id).length > 0">
-                                <div v-for="shift in getUpcomingOnCall(staffProfileModal.staff.id).slice(0, 4)" :key="shift.id" class="shift-block">
-                                    <div class="shift-ep">
-                                        <span class="shift-ep-label">From</span>
-                                        <span class="shift-ep-date">{{ formatDate(shift.duty_date) }}</span>
-                                        <span class="shift-ep-time">{{ shift.start_time }}</span>
-                                    </div>
-                                    <div class="shift-arrow"><i class="fas fa-long-arrow-alt-right"></i></div>
-                                    <div class="shift-ep">
-                                        <span class="shift-ep-label">Until</span>
-                                        <span class="shift-ep-date">{{ shift.end_time < shift.start_time ? formatDatePlusDays(shift.duty_date, 1) : formatDate(shift.duty_date) }}</span>
-                                        <span class="shift-ep-time">{{ shift.end_time }}</span>
-                                    </div>
-                                    <div class="shift-meta">
-                                        <span class="badge badge-primary">{{ shift.shift_type === 'primary_call' ? 'Primary' : 'Backup' }}</span>
-                                        <span class="na-value" style="font-size:10px;">{{ shift.coverage_area || 'Area NA' }}</span>
-                                    </div>
-                                </div>
-                            </template>
-                            <div class="pdc pdc-full" v-else>
-                                <span class="pdc-key">Upcoming shifts</span>
-                                <span class="pdc-val pdc-na">No on-call shifts scheduled</span>
+                            
+                            <!-- No Research Data -->
+                            <div v-else class="empty-state">
+                                <i class="fas fa-flask empty-state-icon"></i>
+                                <div class="empty-state-title">No research activity found</div>
+                                <div class="empty-state-description">This staff member has no research involvement yet</div>
                             </div>
                         </div>
-
-                        <!-- ── PLANNED LEAVE ── -->
-                        <div class="profile-section">
-                            <div class="profile-section-head">
-                                <div class="psh-left"><i class="fas fa-calendar-minus"></i><h4>Leave & Absence</h4></div>
-                                <span v-if="staffProfileModal.staff.employment_status === 'on_leave'" class="sec-chip chip-live" style="background:var(--amber);">On Leave Now</span>
-                                <span v-else-if="getUpcomingLeave(staffProfileModal.staff.id).length" class="sec-chip chip-upcoming">Planned</span>
-                                <span v-else class="sec-chip chip-none">None on Record</span>
-                            </div>
-                            <template v-if="getUpcomingLeave(staffProfileModal.staff.id).length > 0">
-                                <div v-for="leave in getUpcomingLeave(staffProfileModal.staff.id)" :key="leave.id" class="shift-block">
-                                    <div class="shift-ep">
-                                        <span class="shift-ep-label">From</span>
-                                        <span class="shift-ep-date">—</span>
-                                        <span class="shift-ep-time" style="font-size:13px;">{{ formatDate(leave.start_date) }}</span>
-                                    </div>
-                                    <div class="shift-arrow"><i class="fas fa-long-arrow-alt-right"></i></div>
-                                    <div class="shift-ep">
-                                        <span class="shift-ep-label">Until</span>
-                                        <span class="shift-ep-date">—</span>
-                                        <span class="shift-ep-time" style="font-size:13px;">{{ formatDate(leave.end_date) }}</span>
-                                    </div>
-                                    <div class="shift-meta">
-                                        <span class="badge badge-warning">{{ formatAbsenceReason(leave.absence_reason) }}</span>
-                                        <span class="days-pill">{{ calculateAbsenceDuration(leave.start_date, leave.end_date) }} days</span>
-                                    </div>
-                                </div>
-                            </template>
-                            <div class="pdc pdc-full" v-else>
-                                <span class="pdc-key">Planned leave</span>
-                                <span class="pdc-val pdc-na">None on record</span>
-                            </div>
-                        </div>
-
-                        <!-- ── ROTATION HISTORY — RESIDENTS ONLY ── -->
-                        <div class="profile-section" v-if="staffProfileModal.staff.staff_type === 'medical_resident'">
-                            <div class="profile-section-head">
-                                <div class="psh-left"><i class="fas fa-history"></i><h4>Rotation History</h4></div>
-                                <span class="sec-chip chip-none">{{ getRotationHistory(staffProfileModal.staff.id).length }} records</span>
-                            </div>
-                            <template v-if="getRotationHistory(staffProfileModal.staff.id).length > 0">
-                                <div v-for="rot in getRotationHistory(staffProfileModal.staff.id).slice(0, 5)" :key="rot.id" class="history-row">
-                                    <span class="hr-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
-                                    <span class="hr-dates">{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</span>
-                                    <span class="status-indicator" :class="'status-' + rot.rotation_status" style="font-size:9px;padding:2px 6px;">{{ formatRotationStatus(rot.rotation_status) }}</span>
-                                </div>
-                            </template>
-                            <div class="pdc pdc-full" v-else>
-                                <span class="pdc-key">History</span>
-                                <span class="pdc-val pdc-na">No completed rotations on record</span>
-                            </div>
-                        </div>
-
                     </div><!-- /profile-right -->
                 </div><!-- /profile-layout -->
 
@@ -1590,7 +2157,7 @@
                         </div>
                         <div class="umc">
                             <span class="umc-key">Unit Supervisor</span>
-                            <span :class="['umc-val', !unitResidentsModal.unit.supervising_attending_id && 'umc-na']">{{ unitResidentsModal.unit.supervising_attending_id ? getSupervisorName(unitResidentsModal.unit.supervising_attending_id) : 'NA' }}</span>
+                            <span :class="['umc-val', !unitResidentsModal.unit.supervisor_id && 'umc-na']">{{ unitResidentsModal.unit.supervisor_id ? getSupervisorName(unitResidentsModal.unit.supervisor_id) : 'NA' }}</span>
                         </div>
                         <div class="umc">
                             <span class="umc-key">Specialty</span>
@@ -1675,8 +2242,13 @@
                     </div>
                     <div v-if="medicalStaffModal.activeTab === 'basic'" class="mt-6">
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group"><label class="form-label">Full Name *</label><input type="text" class="form-control" v-model="medicalStaffModal.form.full_name" required></div>
-                            <div class="form-group"><label class="form-label">Staff Type *</label>
+                            <div class="form-group" :class="{ 'has-error': fieldErrors.staff?.full_name }">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" class="form-control" v-model="medicalStaffModal.form.full_name" required @input="clearFieldError('staff', 'full_name')">
+                                <small v-if="fieldErrors.staff?.full_name" class="error-text">{{ fieldErrors.staff.full_name }}</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Staff Type *</label>
                                 <select class="form-select" v-model="medicalStaffModal.form.staff_type" required>
                                     <option value="medical_resident">Medical Resident</option>
                                     <option value="attending_physician">Attending Physician</option>
@@ -1684,14 +2256,19 @@
                                     <option value="nurse_practitioner">Nurse Practitioner</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label class="form-label">Employment Status</label>
+                            <div class="form-group">
+                                <label class="form-label">Employment Status</label>
                                 <select class="form-select" v-model="medicalStaffModal.form.employment_status">
                                     <option value="active">Active</option>
                                     <option value="on_leave">On Leave</option>
                                     <option value="inactive">Inactive</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label class="form-label">Professional Email *</label><input type="email" class="form-control" v-model="medicalStaffModal.form.professional_email" required></div>
+                            <div class="form-group" :class="{ 'has-error': fieldErrors.staff?.professional_email }">
+                                <label class="form-label">Professional Email *</label>
+                                <input type="email" class="form-control" v-model="medicalStaffModal.form.professional_email" required @input="clearFieldError('staff', 'professional_email')">
+                                <small v-if="fieldErrors.staff?.professional_email" class="error-text">{{ fieldErrors.staff.professional_email }}</small>
+                            </div>
                         </div>
                     </div>
                     <div v-if="medicalStaffModal.activeTab === 'professional'" class="mt-6">
@@ -1726,7 +2303,10 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="medicalStaffModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveMedicalStaff"><i class="fas fa-save"></i> {{ medicalStaffModal.mode === 'add' ? 'Add Staff' : 'Save Changes' }}</button>
+                    <button class="btn btn-primary" @click="saveMedicalStaff" :disabled="saving">
+                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i> 
+                        {{ saving ? 'Saving...' : (medicalStaffModal.mode === 'add' ? 'Add Staff' : 'Save Changes') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -1740,17 +2320,23 @@
                 </div>
                 <div class="modal-body">
                     <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group"><label class="form-label">Date *</label><input type="date" class="form-control" v-model="onCallModal.form.duty_date" required></div>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.oncall?.duty_date }">
+                            <label class="form-label">Date *</label>
+                            <input type="date" class="form-control" v-model="onCallModal.form.duty_date" required @input="clearFieldError('oncall', 'duty_date')">
+                            <small v-if="fieldErrors.oncall?.duty_date" class="error-text">{{ fieldErrors.oncall.duty_date }}</small>
+                        </div>
                         <div class="form-group"><label class="form-label">Shift Type *</label>
                             <select class="form-select" v-model="onCallModal.form.shift_type">
                                 <option value="primary_call">Primary Call</option><option value="backup_call">Backup Call</option>
                             </select>
                         </div>
-                        <div class="form-group"><label class="form-label">Primary Physician *</label>
-                            <select class="form-select" v-model="onCallModal.form.primary_physician_id" required>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.oncall?.primary_physician_id }">
+                            <label class="form-label">Primary Physician *</label>
+                            <select class="form-select" v-model="onCallModal.form.primary_physician_id" required @change="clearFieldError('oncall', 'primary_physician_id')">
                                 <option value="">Select Physician</option>
                                 <option v-for="p in availablePhysicians" :key="p.id" :value="p.id">{{ p.full_name }}</option>
                             </select>
+                            <small v-if="fieldErrors.oncall?.primary_physician_id" class="error-text">{{ fieldErrors.oncall.primary_physician_id }}</small>
                         </div>
                         <div class="form-group"><label class="form-label">Backup Physician</label>
                             <select class="form-select" v-model="onCallModal.form.backup_physician_id">
@@ -1758,8 +2344,16 @@
                                 <option v-for="p in availablePhysicians" :key="p.id" :value="p.id">{{ p.full_name }}</option>
                             </select>
                         </div>
-                        <div class="form-group"><label class="form-label">Start Time *</label><input type="time" class="form-control" v-model="onCallModal.form.start_time" required></div>
-                        <div class="form-group"><label class="form-label">End Time *</label><input type="time" class="form-control" v-model="onCallModal.form.end_time" required></div>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.oncall?.start_time }">
+                            <label class="form-label">Start Time *</label>
+                            <input type="time" class="form-control" v-model="onCallModal.form.start_time" required @input="clearFieldError('oncall', 'start_time')">
+                            <small v-if="fieldErrors.oncall?.start_time" class="error-text">{{ fieldErrors.oncall.start_time }}</small>
+                        </div>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.oncall?.end_time }">
+                            <label class="form-label">End Time *</label>
+                            <input type="time" class="form-control" v-model="onCallModal.form.end_time" required @input="clearFieldError('oncall', 'end_time')">
+                            <small v-if="fieldErrors.oncall?.end_time" class="error-text">{{ fieldErrors.oncall.end_time }}</small>
+                        </div>
                         <div class="form-group col-span-2"><label class="form-label">Coverage Area</label>
                             <select class="form-select" v-model="onCallModal.form.coverage_area">
                                 <option value="emergency">Emergency Department</option><option value="icu">ICU</option><option value="ward">General Ward</option><option value="consultation">Consultations</option><option value="all">All Areas</option>
@@ -1769,7 +2363,10 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="onCallModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveOnCallSchedule"><i class="fas fa-save"></i> {{ onCallModal.mode === 'add' ? 'Schedule' : 'Save' }}</button>
+                    <button class="btn btn-primary" @click="saveOnCallSchedule" :disabled="saving">
+                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i> 
+                        {{ saving ? 'Saving...' : (onCallModal.mode === 'add' ? 'Schedule' : 'Save') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -1793,20 +2390,32 @@
                                 <option value="clinical_rotation">Clinical Rotation</option><option value="elective_rotation">Elective</option><option value="research_rotation">Research</option><option value="vacation_rotation">Vacation</option>
                             </select>
                         </div>
-                        <div class="form-group"><label class="form-label">Resident *</label>
-                            <select class="form-select" v-model="rotationModal.form.resident_id" required>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.resident_id }">
+                            <label class="form-label">Resident *</label>
+                            <select class="form-select" v-model="rotationModal.form.resident_id" required @change="clearFieldError('rotation', 'resident_id')">
                                 <option value="">Select Resident</option>
                                 <option v-for="r in availableResidents" :key="r.id" :value="r.id">{{ r.full_name }}</option>
                             </select>
+                            <small v-if="fieldErrors.rotation?.resident_id" class="error-text">{{ fieldErrors.rotation.resident_id }}</small>
                         </div>
-                        <div class="form-group"><label class="form-label">Training Unit *</label>
-                            <select class="form-select" v-model="rotationModal.form.training_unit_id" required>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.training_unit_id }">
+                            <label class="form-label">Training Unit *</label>
+                            <select class="form-select" v-model="rotationModal.form.training_unit_id" required @change="clearFieldError('rotation', 'training_unit_id')">
                                 <option value="">Select Unit</option>
                                 <option v-for="u in trainingUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
                             </select>
+                            <small v-if="fieldErrors.rotation?.training_unit_id" class="error-text">{{ fieldErrors.rotation.training_unit_id }}</small>
                         </div>
-                        <div class="form-group"><label class="form-label">Start Date *</label><input type="date" class="form-control" v-model="rotationModal.form.start_date" required></div>
-                        <div class="form-group"><label class="form-label">End Date *</label><input type="date" class="form-control" v-model="rotationModal.form.end_date" required></div>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.start_date }">
+                            <label class="form-label">Start Date *</label>
+                            <input type="date" class="form-control" v-model="rotationModal.form.start_date" required @input="clearFieldError('rotation', 'start_date')">
+                            <small v-if="fieldErrors.rotation?.start_date" class="error-text">{{ fieldErrors.rotation.start_date }}</small>
+                        </div>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.end_date }">
+                            <label class="form-label">End Date *</label>
+                            <input type="date" class="form-control" v-model="rotationModal.form.end_date" required @input="clearFieldError('rotation', 'end_date')">
+                            <small v-if="fieldErrors.rotation?.end_date" class="error-text">{{ fieldErrors.rotation.end_date }}</small>
+                        </div>
                         <div class="form-group col-span-2"><label class="form-label">Supervising Attending</label>
                             <select class="form-select" v-model="rotationModal.form.supervising_attending_id">
                                 <option value="">Select Supervisor</option>
@@ -1817,7 +2426,10 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="rotationModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveRotation"><i class="fas fa-save"></i> {{ rotationModal.mode === 'add' ? 'Add Rotation' : 'Save' }}</button>
+                    <button class="btn btn-primary" @click="saveRotation" :disabled="saving">
+                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i> 
+                        {{ saving ? 'Saving...' : (rotationModal.mode === 'add' ? 'Add Rotation' : 'Save') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -1856,7 +2468,10 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="trainingUnitModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveTrainingUnit"><i class="fas fa-save"></i> {{ trainingUnitModal.mode === 'add' ? 'Add Unit' : 'Save' }}</button>
+                    <button class="btn btn-primary" @click="saveTrainingUnit" :disabled="saving">
+                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i> 
+                        {{ saving ? 'Saving...' : (trainingUnitModal.mode === 'add' ? 'Add Unit' : 'Save') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -1870,11 +2485,13 @@
                 </div>
                 <div class="modal-body">
                     <div class="space-y-4">
-                        <div class="form-group"><label class="form-label">Staff Member *</label>
-                            <select class="form-select" v-model="absenceModal.form.staff_member_id" required>
+                        <div class="form-group" :class="{ 'has-error': fieldErrors.absence?.staff_member_id }">
+                            <label class="form-label">Staff Member *</label>
+                            <select class="form-select" v-model="absenceModal.form.staff_member_id" required @change="clearFieldError('absence', 'staff_member_id')">
                                 <option value="">Select Staff Member</option>
                                 <option v-for="s in medicalStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                             </select>
+                            <small v-if="fieldErrors.absence?.staff_member_id" class="error-text">{{ fieldErrors.absence.staff_member_id }}</small>
                         </div>
                         <div class="form-group"><label class="form-label">Leave Type *</label>
                             <div class="toggle-row">
@@ -1883,8 +2500,16 @@
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group"><label class="form-label">Start Date *</label><input type="date" class="form-control" v-model="absenceModal.form.start_date" required></div>
-                            <div class="form-group"><label class="form-label">End Date *</label><input type="date" class="form-control" v-model="absenceModal.form.end_date" required></div>
+                            <div class="form-group" :class="{ 'has-error': fieldErrors.absence?.start_date }">
+                                <label class="form-label">Start Date *</label>
+                                <input type="date" class="form-control" v-model="absenceModal.form.start_date" required @input="clearFieldError('absence', 'start_date')">
+                                <small v-if="fieldErrors.absence?.start_date" class="error-text">{{ fieldErrors.absence.start_date }}</small>
+                            </div>
+                            <div class="form-group" :class="{ 'has-error': fieldErrors.absence?.end_date }">
+                                <label class="form-label">End Date *</label>
+                                <input type="date" class="form-control" v-model="absenceModal.form.end_date" required @input="clearFieldError('absence', 'end_date')">
+                                <small v-if="fieldErrors.absence?.end_date" class="error-text">{{ fieldErrors.absence.end_date }}</small>
+                            </div>
                         </div>
                         <div v-if="absenceModal.form.start_date && absenceModal.form.end_date" class="duration-preview">
                             <span class="dp-label">Duration</span>
@@ -1918,7 +2543,10 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="absenceModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveAbsence" :disabled="!absenceModal.form.staff_member_id || !absenceModal.form.start_date"><i class="fas fa-save"></i> {{ absenceModal.mode === 'add' ? 'Record' : 'Save' }}</button>
+                    <button class="btn btn-primary" @click="saveAbsence" :disabled="saving">
+                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i> 
+                        {{ saving ? 'Saving...' : (absenceModal.mode === 'add' ? 'Record' : 'Save') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -1949,7 +2577,10 @@
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="departmentModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveDepartment"><i class="fas fa-save"></i> {{ departmentModal.mode === 'add' ? 'Add' : 'Save' }}</button>
+                    <button class="btn btn-primary" @click="saveDepartment" :disabled="saving">
+                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i> 
+                        {{ saving ? 'Saving...' : (departmentModal.mode === 'add' ? 'Add' : 'Save') }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -2066,7 +2697,7 @@
             </div>
         </div>
 
-        <!-- NEW: ASSIGN COORDINATOR MODAL -->
+        <!-- MODAL: Assign Coordinator -->
         <div v-if="assignCoordinatorModal.show" class="modal-overlay">
             <div class="modal-container modal-sm">
                 <div class="modal-header">
@@ -2089,6 +2720,41 @@
                     <button class="btn btn-secondary" @click="assignCoordinatorModal.show = false">Cancel</button>
                     <button class="btn btn-primary" @click="saveCoordinatorAssignment">
                         <i class="fas fa-save"></i> Assign
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW MODAL: Export -->
+        <div v-if="exportModal.show" class="modal-overlay">
+            <div class="modal-container modal-sm">
+                <div class="modal-header">
+                    <div class="modal-title"><i class="fas fa-download"></i> Export Data</div>
+                    <button class="modal-close" @click="exportModal.show = false"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Export Type</label>
+                        <select class="form-select" v-model="exportModal.type">
+                            <option value="clinical-trials">Clinical Trials</option>
+                            <option value="innovation-projects">Innovation Projects</option>
+                            <option value="research-lines">Research Lines</option>
+                            <option value="research-performance">Research Performance</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Format</label>
+                        <select class="form-select" v-model="exportModal.format" disabled>
+                            <option value="csv">CSV</option>
+                        </select>
+                        <small class="form-help">CSV format only (Excel compatible)</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="exportModal.show = false">Cancel</button>
+                    <button class="btn btn-primary" @click="handleExport" :disabled="exportModal.loading">
+                        <i class="fas" :class="exportModal.loading ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+                        {{ exportModal.loading ? 'Exporting...' : 'Export' }}
                     </button>
                 </div>
             </div>
