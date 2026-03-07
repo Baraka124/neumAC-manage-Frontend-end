@@ -173,142 +173,83 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ============ 3.1 RESIDENT FORMATTING ============
       
-      // Format training year consistently
       static formatTrainingYear(year) {
         if (!year && year !== 0) return null;
-        
         const yearStr = String(year).trim();
-        
-        // If it's just a number (like "2" or 2)
-        if (/^\d+$/.test(yearStr)) {
-          return `PGY-${yearStr}`;
-        }
-        
-        // If it already has PGY- format
+        if (/^\d+$/.test(yearStr)) return `PGY-${yearStr}`;
         if (yearStr.toUpperCase().startsWith('PGY')) {
           const parts = yearStr.split(/[- ]/);
-          if (parts.length > 1) {
-            return `PGY-${parts[1]}`;
-          }
+          if (parts.length > 1) return `PGY-${parts[1]}`;
           return yearStr.toUpperCase();
         }
-        
         return yearStr;
       }
 
-      // Get resident category with icon and full text
       static getResidentCategoryInfo(category, staff = {}) {
         const categories = {
           'department_internal': {
-            icon: 'fa-user-md',
-            text: 'Internal Resident',
-            shortText: 'Internal',
-            color: '#4d9aff',
-            bgColor: 'rgba(77, 154, 255, 0.1)'
+            icon: 'fa-user-md', text: 'Internal Resident', shortText: 'Internal',
+            color: '#4d9aff', bgColor: 'rgba(77, 154, 255, 0.1)'
           },
           'rotating_other_dept': {
             icon: 'fa-sync-alt',
             text: staff.home_department ? `Rotating from ${staff.home_department}` : 'Rotating Resident',
-            shortText: 'Rotating',
-            color: '#10b981',
-            bgColor: 'rgba(16, 185, 129, 0.1)'
+            shortText: 'Rotating', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)'
           },
           'external_resident': {
             icon: 'fa-globe',
             text: staff.external_institution ? `External (${staff.external_institution})` : 'External Resident',
-            shortText: 'External',
-            color: '#8b5cf6',
-            bgColor: 'rgba(139, 92, 246, 0.1)'
+            shortText: 'External', color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.1)'
           }
         };
-        
         return categories[category] || {
-          icon: 'fa-user',
-          text: 'Not categorized',
-          shortText: 'Unknown',
-          color: '#94a3b8',
-          bgColor: 'rgba(148, 163, 184, 0.1)'
+          icon: 'fa-user', text: 'Not categorized', shortText: 'Unknown',
+          color: '#94a3b8', bgColor: 'rgba(148, 163, 184, 0.1)'
         };
       }
 
-      // Format resident category simple (for badges)
       static formatResidentCategorySimple(category) {
-        const map = {
-          'department_internal': 'Internal',
-          'rotating_other_dept': 'Rotating',
-          'external_resident': 'External'
-        };
+        const map = { 'department_internal': 'Internal', 'rotating_other_dept': 'Rotating', 'external_resident': 'External' };
         return map[category] || 'Unknown';
       }
 
-      // Format resident category detailed (for profile)
       static formatResidentCategoryDetailed(staff) {
         if (!staff?.resident_category) return null;
-        const info = Utils.getResidentCategoryInfo(staff.resident_category, staff);
-        return info.text;
+        return Utils.getResidentCategoryInfo(staff.resident_category, staff).text;
       }
 
-      // Get resident category icon
-      static getResidentCategoryIcon(category) {
-        const info = Utils.getResidentCategoryInfo(category);
-        return info.icon;
-      }
+      static getResidentCategoryIcon(category) { return Utils.getResidentCategoryInfo(category).icon; }
 
-      // Get resident category tooltip
       static getResidentCategoryTooltip(staff) {
         if (!staff?.resident_category) return '';
-        
         switch(staff.resident_category) {
-          case 'department_internal':
-            return 'Department internal resident';
-          case 'rotating_other_dept':
-            return staff.home_department 
-              ? `Rotating from ${staff.home_department} department` 
-              : 'Resident from another department';
-          case 'external_resident':
-            return staff.external_institution 
-              ? `External resident from ${staff.external_institution}` 
-              : 'External resident from another institution';
-          default:
-            return '';
+          case 'department_internal': return 'Department internal resident';
+          case 'rotating_other_dept': return staff.home_department ? `Rotating from ${staff.home_department} department` : 'Resident from another department';
+          case 'external_resident': return staff.external_institution ? `External resident from ${staff.external_institution}` : 'External resident from another institution';
+          default: return '';
         }
       }
 
       // ============ 3.2 PROFESSIONAL FORMATTING ============
 
-      // Format specialization with proper capitalization
       static formatSpecialization(spec) {
         if (!spec) return null;
-        
         const abbreviations = ['ICU', 'ER', 'OR', 'PICU', 'NICU', 'PFT', 'CPAP', 'BiPAP', 'COPD', 'OSA'];
-        
-        return spec.split(' ')
-          .map(word => {
-            const upperWord = word.toUpperCase();
-            if (abbreviations.includes(upperWord)) {
-              return upperWord;
-            }
-            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-          })
-          .join(' ');
+        return spec.split(' ').map(word => {
+          const upperWord = word.toUpperCase();
+          if (abbreviations.includes(upperWord)) return upperWord;
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        }).join(' ');
       }
 
-      // Format phone number
       static formatPhone(phone) {
         if (!phone) return null;
-        
         const cleaned = String(phone).replace(/\D/g, '');
-        
-        if (cleaned.length === 9) {
-          return `+34 ${cleaned.slice(0,3)} ${cleaned.slice(3,6)} ${cleaned.slice(6)}`;
-        } else if (cleaned.length === 12) {
-          return `+${cleaned.slice(0,2)} ${cleaned.slice(2,5)} ${cleaned.slice(5,8)} ${cleaned.slice(8)}`;
-        }
-        
+        if (cleaned.length === 9) return `+34 ${cleaned.slice(0,3)} ${cleaned.slice(3,6)} ${cleaned.slice(6)}`;
+        if (cleaned.length === 12) return `+${cleaned.slice(0,2)} ${cleaned.slice(2,5)} ${cleaned.slice(5,8)} ${cleaned.slice(8)}`;
         return phone;
       }
 
-      // Format medical license
       static formatLicense(license) {
         if (!license) return null;
         return license.toUpperCase();
@@ -316,63 +257,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ============ 3.3 ROLE FORMATTING ============
 
-      // Get role information
       static getRoleInfo(role) {
         const roles = {
-          'chief_of_department': { 
-            icon: 'fa-crown', 
-            color: 'gold', 
-            bgColor: 'rgba(255, 215, 0, 0.1)',
-            label: 'Chief of Department' 
-          },
-          'research_coordinator': { 
-            icon: 'fa-flask', 
-            color: '#8b5cf6', 
-            bgColor: 'rgba(139, 92, 246, 0.1)',
-            label: 'Research Coordinator' 
-          },
-          'resident_manager': { 
-            icon: 'fa-user-graduate', 
-            color: '#10b981', 
-            bgColor: 'rgba(16, 185, 129, 0.1)',
-            label: 'Resident Manager' 
-          },
-          'oncall_manager': { 
-            icon: 'fa-phone-alt', 
-            color: '#3b82f6', 
-            bgColor: 'rgba(59, 130, 246, 0.1)',
-            label: 'On-Call Manager' 
-          }
+          'chief_of_department': { icon: 'fa-crown', color: 'gold', bgColor: 'rgba(255, 215, 0, 0.1)', label: 'Chief of Department' },
+          'research_coordinator': { icon: 'fa-flask', color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.1)', label: 'Research Coordinator' },
+          'resident_manager': { icon: 'fa-user-graduate', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)', label: 'Resident Manager' },
+          'oncall_manager': { icon: 'fa-phone-alt', color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)', label: 'On-Call Manager' }
         };
-        
         return roles[role] || null;
       }
 
-      // Get all roles for a staff member
       static getStaffRoles(staff) {
         const roles = [];
-        
-        if (staff?.is_chief_of_department) {
-          roles.push({ key: 'chief_of_department', ...Utils.getRoleInfo('chief_of_department') });
-        }
-        if (staff?.is_research_coordinator) {
-          roles.push({ key: 'research_coordinator', ...Utils.getRoleInfo('research_coordinator') });
-        }
-        if (staff?.is_resident_manager) {
-          roles.push({ key: 'resident_manager', ...Utils.getRoleInfo('resident_manager') });
-        }
-        if (staff?.is_oncall_manager) {
-          roles.push({ key: 'oncall_manager', ...Utils.getRoleInfo('oncall_manager') });
-        }
-        
+        if (staff?.is_chief_of_department) roles.push({ key: 'chief_of_department', ...Utils.getRoleInfo('chief_of_department') });
+        if (staff?.is_research_coordinator) roles.push({ key: 'research_coordinator', ...Utils.getRoleInfo('research_coordinator') });
+        if (staff?.is_resident_manager) roles.push({ key: 'resident_manager', ...Utils.getRoleInfo('resident_manager') });
+        if (staff?.is_oncall_manager) roles.push({ key: 'oncall_manager', ...Utils.getRoleInfo('oncall_manager') });
         return roles;
       }
 
       // ============ 3.4 LEAVE BALANCE FORMATTING ============
 
-      // Calculate leave balance (mock - would come from API)
       static calculateLeaveBalance(staff) {
-        // This would be replaced with actual data from API
         return {
           vacation: { used: 5, total: 20, remaining: 15 },
           sick: { used: 2, total: 10, remaining: 8 },
@@ -381,14 +287,13 @@ document.addEventListener('DOMContentLoaded', () => {
         };
       }
 
-      // Format days remaining with color
       static getDaysRemainingColor(days) {
         if (days <= 0) return '#ef4444';
         if (days < 5) return '#f59e0b';
         return '#10b981';
       }
 
-      // ============ 3.5 EXISTING UTILITIES (keep all) ============
+      // ============ 3.5 EXISTING UTILITIES ============
       
       static formatDate(d) {
         if (!d) return 'N/A'
@@ -493,12 +398,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       static getStageColor(stage) {
         return {
-          'Idea': '#9ca3af', 
-          'Prototipo': '#60a5fa', 
-          'Piloto': '#34d399',
-          'Validación': '#fbbf24', 
-          'Escalamiento': '#f97316', 
-          'Comercialización': '#10b981'
+          'Idea': '#9ca3af', 'Prototipo': '#60a5fa', 'Piloto': '#34d399',
+          'Validación': '#fbbf24', 'Escalamiento': '#f97316', 'Comercialización': '#10b981'
         }[stage] || '#7a90b0'
       }
 
@@ -604,7 +505,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       async getMedicalStaff() { 
         const data = await this.getList('/api/medical-staff');
-        // Ensure all resident fields are populated
         return data.map(staff => ({
           ...staff,
           resident_category: staff.resident_category || null,
@@ -620,22 +520,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
       }
       
-      async createMedicalStaff(d) { 
-        this.invalidate('/api/medical-staff'); 
-        return this.request('/api/medical-staff', { method: 'POST', body: d }) 
-      }
-      
-      async updateMedicalStaff(id, d) { 
-        this.invalidate('/api/medical-staff'); 
-        return this.request(`/api/medical-staff/${id}`, { method: 'PUT', body: d }) 
-      }
-      
-      async deleteMedicalStaff(id) { 
-        this.invalidate('/api/medical-staff'); 
-        return this.request(`/api/medical-staff/${id}`, { method: 'DELETE' }) 
-      }
+      async createMedicalStaff(d) { this.invalidate('/api/medical-staff'); return this.request('/api/medical-staff', { method: 'POST', body: d }) }
+      async updateMedicalStaff(id, d) { this.invalidate('/api/medical-staff'); return this.request(`/api/medical-staff/${id}`, { method: 'PUT', body: d }) }
+      async deleteMedicalStaff(id) { this.invalidate('/api/medical-staff'); return this.request(`/api/medical-staff/${id}`, { method: 'DELETE' }) }
 
-      // ============ 4.2 SUPERVISION ENDPOINTS (NEW) ============
+      // ============ 4.2 SUPERVISION ENDPOINTS ============
       
       async getSupervisedResidents(attendingId) {
         try {
@@ -649,57 +538,31 @@ document.addEventListener('DOMContentLoaded', () => {
               const resident = medicalStaff.find(s => s.id === r.resident_id);
               const unit = trainingUnits.find(u => u.id === r.training_unit_id);
               return {
-                id: r.id,
-                residentId: r.resident_id,
-                residentName: resident?.full_name || 'Unknown',
-                residentYear: resident?.training_year || null,
-                unitId: r.training_unit_id,
-                unitName: unit?.unit_name || 'Unknown',
-                startDate: r.start_date,
-                endDate: r.end_date,
-                daysLeft: Utils.daysUntil(r.end_date),
-                evaluation: r.mid_evaluation || null
+                id: r.id, residentId: r.resident_id,
+                residentName: resident?.full_name || 'Unknown', residentYear: resident?.training_year || null,
+                unitId: r.training_unit_id, unitName: unit?.unit_name || 'Unknown',
+                startDate: r.start_date, endDate: r.end_date,
+                daysLeft: Utils.daysUntil(r.end_date), evaluation: r.mid_evaluation || null
               };
             });
           
-          const past = rotations
-            .filter(r => r.supervising_attending_id === attendingId && r.rotation_status === 'completed')
-            .length;
+          const past = rotations.filter(r => r.supervising_attending_id === attendingId && r.rotation_status === 'completed').length;
+          const evaluations = rotations.filter(r => r.supervising_attending_id === attendingId && r.final_evaluation).map(r => r.final_evaluation);
+          const avgEvaluation = evaluations.length > 0 ? Math.round((evaluations.reduce((a, b) => a + b, 0) / evaluations.length) * 10) / 10 : 4.7;
           
-          const evaluations = rotations
-            .filter(r => r.supervising_attending_id === attendingId && r.final_evaluation)
-            .map(r => r.final_evaluation);
-          
-          const avgEvaluation = evaluations.length > 0 
-            ? Math.round((evaluations.reduce((a, b) => a + b, 0) / evaluations.length) * 10) / 10
-            : 4.7;
-          
-          return {
-            current: active,
-            currentCount: active.length,
-            pastCount: past,
-            avgEvaluation
-          };
+          return { current: active, currentCount: active.length, pastCount: past, avgEvaluation };
         } catch (error) {
           console.error('Failed to load supervision data:', error);
-          return {
-            current: [],
-            currentCount: 0,
-            pastCount: 0,
-            avgEvaluation: 0
-          };
+          return { current: [], currentCount: 0, pastCount: 0, avgEvaluation: 0 };
         }
       }
 
-      // ============ 4.3 LEAVE BALANCE ENDPOINTS (NEW) ============
+      // ============ 4.3 LEAVE BALANCE ENDPOINTS ============
       
       async getLeaveBalance(staffId) {
         try {
-          // This would be a real API endpoint
-          // For now, return mock data based on staff type
           const staff = (await this.getMedicalStaff()).find(s => s.id === staffId);
           const isAttending = staff?.staff_type === 'attending_physician';
-          
           return {
             vacation: { used: 5, total: isAttending ? 25 : 20, remaining: isAttending ? 20 : 15 },
             sick: { used: 2, total: 12, remaining: 10 },
@@ -707,12 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
             personal: { used: 1, total: 5, remaining: 4 }
           };
         } catch {
-          return {
-            vacation: { used: 5, total: 20, remaining: 15 },
-            sick: { used: 2, total: 10, remaining: 8 },
-            conference: { used: 3, total: 10, remaining: 7 },
-            personal: { used: 1, total: 5, remaining: 4 }
-          };
+          return { vacation: { used: 5, total: 20, remaining: 15 }, sick: { used: 2, total: 10, remaining: 8 }, conference: { used: 3, total: 10, remaining: 7 }, personal: { used: 1, total: 5, remaining: 4 } };
         }
       }
 
@@ -811,43 +669,21 @@ document.addEventListener('DOMContentLoaded', () => {
       async getStaffResearchProfile(staffId) {
         try {
           const [performance, allTrials, allProjects, researchLines, rotations] = await Promise.all([
-            this.getResearchLinesPerformance(),
-            this.getAllClinicalTrials(),
-            this.getAllInnovationProjects(),
-            this.getResearchLines(),
-            this.getRotations()
+            this.getResearchLinesPerformance(), this.getAllClinicalTrials(),
+            this.getAllInnovationProjects(), this.getResearchLines(), this.getRotations()
           ])
           
-          // Lines where staff is coordinator
           const linesCoordinated = performance.filter(l => l.coordinator === staffId)
-          
-          // Lines where staff is PI on trials
           const trialsAsPI = allTrials.filter(t => t.principal_investigator_id === staffId)
-          const linesAsPI = [...new Set(trialsAsPI.map(t => t.research_line_id))]
-            .map(lineId => researchLines.find(l => l.id === lineId))
-            .filter(Boolean)
-          
-          // Lines where staff is Co-I on trials
+          const linesAsPI = [...new Set(trialsAsPI.map(t => t.research_line_id))].map(lineId => researchLines.find(l => l.id === lineId)).filter(Boolean)
           const trialsAsCoI = allTrials.filter(t => t.co_investigators?.includes(staffId))
-          const linesAsCoI = [...new Set(trialsAsCoI.map(t => t.research_line_id))]
-            .map(lineId => researchLines.find(l => l.id === lineId))
-            .filter(Boolean)
-          
-          // Lines where staff leads projects
+          const linesAsCoI = [...new Set(trialsAsCoI.map(t => t.research_line_id))].map(lineId => researchLines.find(l => l.id === lineId)).filter(Boolean)
           const projectsAsLead = allProjects.filter(p => p.lead_investigator_id === staffId)
-          const linesAsLead = [...new Set(projectsAsLead.map(p => p.research_line_id))]
-            .map(lineId => researchLines.find(l => l.id === lineId))
-            .filter(Boolean)
-          
-          // Lines where staff is Sub-I (for residents)
+          const linesAsLead = [...new Set(projectsAsLead.map(p => p.research_line_id))].map(lineId => researchLines.find(l => l.id === lineId)).filter(Boolean)
           const trialsAsSubI = allTrials.filter(t => t.sub_investigators?.includes(staffId))
-          const linesAsSubI = [...new Set(trialsAsSubI.map(t => t.research_line_id))]
-            .map(lineId => researchLines.find(l => l.id === lineId))
-            .filter(Boolean)
+          const linesAsSubI = [...new Set(trialsAsSubI.map(t => t.research_line_id))].map(lineId => researchLines.find(l => l.id === lineId)).filter(Boolean)
           
-          // Combine all unique lines with roles
           const allLineMap = new Map();
-          
           linesCoordinated.forEach(l => allLineMap.set(l.id, { ...l, role: 'Coordinator' }));
           linesAsPI.forEach(l => allLineMap.set(l.id, { ...l, role: 'Principal Investigator' }));
           linesAsCoI.forEach(l => allLineMap.set(l.id, { ...l, role: 'Co-Investigator' }));
@@ -855,82 +691,30 @@ document.addEventListener('DOMContentLoaded', () => {
           linesAsSubI.forEach(l => allLineMap.set(l.id, { ...l, role: 'Sub-Investigator' }));
           
           const allResearchLines = Array.from(allLineMap.values()).map(l => ({
-            id: l.id,
-            name: l.research_line_name || l.name,
-            line_number: l.line_number,
-            role: l.role,
-            trialsCount: l.stats?.totalTrials || 0,
-            projectsCount: l.stats?.totalProjects || 0
+            id: l.id, name: l.research_line_name || l.name, line_number: l.line_number,
+            role: l.role, trialsCount: l.stats?.totalTrials || 0, projectsCount: l.stats?.totalProjects || 0
           }));
           
           const byPhase = { 'Phase I': 0, 'Phase II': 0, 'Phase III': 0, 'Phase IV': 0 };
           trialsAsPI.forEach(t => { if (t.phase in byPhase) byPhase[t.phase]++ });
-          
           const partnerNeeds = {};
           projectsAsLead.forEach(p => p.partner_needs?.forEach(n => { partnerNeeds[n] = (partnerNeeds[n] || 0) + 1 }));
           
-          // Get publications (mock for now)
-          const publications = [
-            { id: 1, title: 'Lung Cancer Screening Outcomes', journal: 'Chest', year: 2024, role: 'First Author' },
-            { id: 2, title: 'COPD Management Guidelines', journal: 'AJRCCM', year: 2023, role: 'Co-Author' }
-          ].filter(p => p.role.includes('Author')); // Filter by staff role
-          
           return {
             allResearchLines,
-            researchLines: linesCoordinated.map(l => ({
-              id: l.id,
-              name: l.name,
-              line_number: l.line_number,
-              role: 'Coordinator',
-              trialsCount: l.stats?.totalTrials || 0,
-              projectsCount: l.stats?.totalProjects || 0
-            })),
+            researchLines: linesCoordinated.map(l => ({ id: l.id, name: l.name, line_number: l.line_number, role: 'Coordinator', trialsCount: l.stats?.totalTrials || 0, projectsCount: l.stats?.totalProjects || 0 })),
             trials: {
-              asPI: trialsAsPI.length,
-              asCoI: trialsAsCoI.length,
-              asSubI: trialsAsSubI.length,
+              asPI: trialsAsPI.length, asCoI: trialsAsCoI.length, asSubI: trialsAsSubI.length,
               active: trialsAsPI.filter(t => ['Activo', 'Reclutando'].includes(t.status)).length,
-              completed: trialsAsPI.filter(t => t.status === 'Completado').length,
-              byPhase,
-              list: [
-                ...trialsAsPI.slice(0, 3).map(t => ({
-                  id: t.id,
-                  title: t.title,
-                  status: t.status,
-                  phase: t.phase,
-                  role: 'PI'
-                })),
-                ...trialsAsCoI.slice(0, 3).map(t => ({
-                  id: t.id,
-                  title: t.title,
-                  status: t.status,
-                  phase: t.phase,
-                  role: 'Co-I'
-                })),
-                ...trialsAsSubI.slice(0, 3).map(t => ({
-                  id: t.id,
-                  title: t.title,
-                  status: t.status,
-                  phase: t.phase,
-                  role: 'Sub-I'
-                }))
-              ].slice(0, 8)
+              completed: trialsAsPI.filter(t => t.status === 'Completado').length, byPhase,
+              list: [...trialsAsPI.slice(0, 3).map(t => ({ id: t.id, title: t.title, status: t.status, phase: t.phase, role: 'PI' })), ...trialsAsCoI.slice(0, 3).map(t => ({ id: t.id, title: t.title, status: t.status, phase: t.phase, role: 'Co-I' })), ...trialsAsSubI.slice(0, 3).map(t => ({ id: t.id, title: t.title, status: t.status, phase: t.phase, role: 'Sub-I' }))].slice(0, 8)
             },
             projects: {
               asLead: projectsAsLead.length,
-              byStage: projectsAsLead.reduce((acc, p) => { 
-                acc[p.current_stage] = (acc[p.current_stage] || 0) + 1; 
-                return acc 
-              }, {}),
-              list: projectsAsLead.slice(0, 5).map(p => ({
-                id: p.id,
-                title: p.title,
-                current_stage: p.current_stage,
-                development_stage: p.development_stage,
-                role: 'Lead'
-              }))
+              byStage: projectsAsLead.reduce((acc, p) => { acc[p.current_stage] = (acc[p.current_stage] || 0) + 1; return acc }, {}),
+              list: projectsAsLead.slice(0, 5).map(p => ({ id: p.id, title: p.title, current_stage: p.current_stage, development_stage: p.development_stage, role: 'Lead' }))
             },
-            publications: publications.slice(0, 5),
+            publications: [],
             partnerNeeds: Object.entries(partnerNeeds).map(([name, count]) => ({ name, count }))
           }
         } catch (error) {
@@ -1072,24 +856,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 6.3 ENHANCED useStaff
+    // 6.3 useStaff
     function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll }) {
       const medicalStaff = ref([])
       const staffFilters = reactive({ search: '', staffType: '', department: '', status: '', residentCategory: '' })
-      
-      // Enhanced profile modal with more data
       const staffProfileModal = reactive({ 
-        show: false, 
-        staff: null, 
-        activeTab: 'activity',
-        researchProfile: null, 
-        supervisionData: null,
-        leaveBalance: null,
-        loadingResearch: false,
-        loadingSupervision: false,
-        loadingLeave: false
+        show: false, staff: null, activeTab: 'activity',
+        researchProfile: null, supervisionData: null, leaveBalance: null,
+        loadingResearch: false, loadingSupervision: false, loadingLeave: false
       })
-      
       const medicalStaffModal = reactive({
         show: false, mode: 'add', activeTab: 'basic',
         form: { 
@@ -1099,8 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
           mobile_phone: '', medical_license: '', can_supervise_residents: false, special_notes: '',
           resident_category: null, home_department: null, external_institution: null,
           is_chief_of_department: false, is_research_coordinator: false, 
-          is_resident_manager: false, is_oncall_manager: false,
-          clinical_study_certificates: []
+          is_resident_manager: false, is_oncall_manager: false, clinical_study_certificates: []
         }
       })
 
@@ -1117,9 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let f = medicalStaff.value
         if (staffFilters.search) {
           const q = staffFilters.search.toLowerCase()
-          f = f.filter(x => x.full_name?.toLowerCase().includes(q) || 
-                           x.staff_id?.toLowerCase().includes(q) || 
-                           x.professional_email?.toLowerCase().includes(q))
+          f = f.filter(x => x.full_name?.toLowerCase().includes(q) || x.staff_id?.toLowerCase().includes(q) || x.professional_email?.toLowerCase().includes(q))
         }
         if (staffFilters.staffType) f = f.filter(x => x.staff_type === staffFilters.staffType)
         if (staffFilters.department) f = f.filter(x => x.department_id === staffFilters.department)
@@ -1134,9 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(staffFilters, () => resetPage('medical_staff'), { deep: true })
 
       const loadMedicalStaff = async () => {
-        try { 
-          medicalStaff.value = await API.getMedicalStaff() 
-        }
+        try { medicalStaff.value = await API.getMedicalStaff() }
         catch { showToast('Error', 'Failed to load medical staff', 'error') }
       }
 
@@ -1151,53 +921,35 @@ document.addEventListener('DOMContentLoaded', () => {
           mobile_phone: '', medical_license: '', can_supervise_residents: false, special_notes: '',
           resident_category: null, home_department: null, external_institution: null,
           is_chief_of_department: false, is_research_coordinator: false, 
-          is_resident_manager: false, is_oncall_manager: false,
-          clinical_study_certificates: []
+          is_resident_manager: false, is_oncall_manager: false, clinical_study_certificates: []
         })
         medicalStaffModal.show = true
       }
 
       const editMedicalStaff = (staff) => {
-        clearAll('staff')
-        medicalStaffModal.mode = 'edit'
-        medicalStaffModal.form = { ...staff }
-        medicalStaffModal.show = true
+        clearAll('staff'); medicalStaffModal.mode = 'edit'; medicalStaffModal.form = { ...staff }; medicalStaffModal.show = true
       }
 
       const saveMedicalStaff = async (saving) => {
-        if (!validateStaff(medicalStaffModal.form)) { 
-          showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return 
-        }
+        if (!validateStaff(medicalStaffModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
         saving.value = true
         try {
           const clean = v => (v == null) ? '' : String(v).trim()
           const f = medicalStaffModal.form
           const data = {
-            full_name: f.full_name.trim(), 
-            staff_type: f.staff_type || 'medical_resident',
-            staff_id: f.staff_id || Utils.generateId('MD'), 
-            employment_status: f.employment_status || 'active',
-            professional_email: f.professional_email || '', 
-            department_id: f.department_id || null,
-            academic_degree: clean(f.academic_degree), 
-            specialization: clean(f.specialization),
-            training_year: clean(f.training_year), 
-            clinical_certificate: clean(f.clinical_certificate),
-            certificate_status: clean(f.certificate_status), 
-            mobile_phone: clean(f.mobile_phone),
-            medical_license: clean(f.medical_license), 
-            can_supervise_residents: f.can_supervise_residents || false,
-            special_notes: clean(f.special_notes),
-            resident_category: f.resident_category || null,
-            home_department: f.home_department || null,
-            external_institution: f.external_institution || null,
-            is_chief_of_department: f.is_chief_of_department || false,
-            is_research_coordinator: f.is_research_coordinator || false,
-            is_resident_manager: f.is_resident_manager || false,
-            is_oncall_manager: f.is_oncall_manager || false,
+            full_name: f.full_name.trim(), staff_type: f.staff_type || 'medical_resident',
+            staff_id: f.staff_id || Utils.generateId('MD'), employment_status: f.employment_status || 'active',
+            professional_email: f.professional_email || '', department_id: f.department_id || null,
+            academic_degree: clean(f.academic_degree), specialization: clean(f.specialization),
+            training_year: clean(f.training_year), clinical_certificate: clean(f.clinical_certificate),
+            certificate_status: clean(f.certificate_status), mobile_phone: clean(f.mobile_phone),
+            medical_license: clean(f.medical_license), can_supervise_residents: f.can_supervise_residents || false,
+            special_notes: clean(f.special_notes), resident_category: f.resident_category || null,
+            home_department: f.home_department || null, external_institution: f.external_institution || null,
+            is_chief_of_department: f.is_chief_of_department || false, is_research_coordinator: f.is_research_coordinator || false,
+            is_resident_manager: f.is_resident_manager || false, is_oncall_manager: f.is_oncall_manager || false,
             clinical_study_certificates: f.clinical_study_certificates || []
           }
-          
           if (medicalStaffModal.mode === 'add') {
             medicalStaff.value.unshift(await API.createMedicalStaff(data))
             showToast('Success', 'Medical staff added', 'success')
@@ -1207,13 +959,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (idx !== -1) medicalStaff.value[idx] = result
             showToast('Success', 'Medical staff updated', 'success')
           }
-          medicalStaffModal.show = false; 
-          clearAll('staff')
-        } catch (e) { 
-          showToast('Error', e.message || 'Failed to save', 'error') 
-        } finally { 
-          saving.value = false 
-        }
+          medicalStaffModal.show = false; clearAll('staff')
+        } catch (e) { showToast('Error', e.message || 'Failed to save', 'error') }
+        finally { saving.value = false }
       }
 
       const deleteMedicalStaff = (staff) => showConfirmation({
@@ -1227,7 +975,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
-      // Department role methods
       const isRoleTaken = (role) => {
         if (!medicalStaff.value) return false;
         const currentHolder = medicalStaff.value.find(staff => {
@@ -1260,329 +1007,201 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentHolder = getCurrentRoleHolder(role);
         if (currentHolder && currentHolder.id !== medicalStaffModal.form.id) {
           showConfirmation({
-            title: 'Replace Role Holder',
-            message: `${currentHolder.full_name} currently holds this role.`,
+            title: 'Replace Role Holder', message: `${currentHolder.full_name} currently holds this role.`,
             details: `Are you sure you want to reassign it to ${medicalStaffModal.form.full_name}?`,
-            icon: 'fa-exchange-alt',
-            confirmButtonText: 'Yes, Reassign',
-            confirmButtonClass: 'btn-warning',
+            icon: 'fa-exchange-alt', confirmButtonText: 'Yes, Reassign', confirmButtonClass: 'btn-warning',
             onConfirm: () => {
               const idx = medicalStaff.value.findIndex(s => s.id === currentHolder.id);
-              if (idx !== -1) {
-                medicalStaff.value[idx][`is_${role}`] = false;
-              }
+              if (idx !== -1) medicalStaff.value[idx][`is_${role}`] = false;
             }
           });
         }
       }
 
       const toggleCertificate = (cert) => {
-        if (!medicalStaffModal.form.clinical_study_certificates) {
-          medicalStaffModal.form.clinical_study_certificates = [];
-        }
+        if (!medicalStaffModal.form.clinical_study_certificates) medicalStaffModal.form.clinical_study_certificates = [];
         const idx = medicalStaffModal.form.clinical_study_certificates.indexOf(cert);
-        if (idx === -1) {
-          medicalStaffModal.form.clinical_study_certificates.push(cert);
-        } else {
-          medicalStaffModal.form.clinical_study_certificates.splice(idx, 1);
-        }
+        if (idx === -1) medicalStaffModal.form.clinical_study_certificates.push(cert);
+        else medicalStaffModal.form.clinical_study_certificates.splice(idx, 1);
       }
 
-      const availableCertificates = [
-        'GCP - Good Clinical Practice',
-        'ICH Guidelines',
-        'Clinical Research Coordinator',
-        'CITI Program',
-        'HIPAA Certification',
-        'Responsible Conduct of Research'
-      ];
+      const availableCertificates = ['GCP - Good Clinical Practice','ICH Guidelines','Clinical Research Coordinator','CITI Program','HIPAA Certification','Responsible Conduct of Research'];
 
       return {
-        medicalStaff,
-        staffFilters,
-        staffProfileModal,
-        medicalStaffModal,
-        filteredMedicalStaff,
-        filteredMedicalStaffAll,
-        staffTotalPages,
-        loadMedicalStaff,
-        showAddMedicalStaffModal,
-        editMedicalStaff,
-        saveMedicalStaff,
-        deleteMedicalStaff,
-        // Formatters
-        formatTrainingYear: Utils.formatTrainingYear,
-        formatSpecialization: Utils.formatSpecialization,
-        formatPhone: Utils.formatPhone,
-        formatLicense: Utils.formatLicense,
-        getResidentCategoryInfo: Utils.getResidentCategoryInfo,
-        formatResidentCategorySimple: Utils.formatResidentCategorySimple,
-        formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed,
-        getResidentCategoryIcon: Utils.getResidentCategoryIcon,
-        getResidentCategoryTooltip: Utils.getResidentCategoryTooltip,
-        getRoleInfo: Utils.getRoleInfo,
-        getStaffRoles: Utils.getStaffRoles,
-        // Role methods
-        isRoleTaken,
-        getCurrentRoleHolder,
-        handleRoleAssignment,
-        toggleCertificate,
-        availableCertificates
+        medicalStaff, staffFilters, staffProfileModal, medicalStaffModal,
+        filteredMedicalStaff, filteredMedicalStaffAll, staffTotalPages,
+        loadMedicalStaff, showAddMedicalStaffModal, editMedicalStaff, saveMedicalStaff, deleteMedicalStaff,
+        formatTrainingYear: Utils.formatTrainingYear, formatSpecialization: Utils.formatSpecialization,
+        formatPhone: Utils.formatPhone, formatLicense: Utils.formatLicense,
+        getResidentCategoryInfo: Utils.getResidentCategoryInfo, formatResidentCategorySimple: Utils.formatResidentCategorySimple,
+        formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed, getResidentCategoryIcon: Utils.getResidentCategoryIcon,
+        getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
+        isRoleTaken, getCurrentRoleHolder, handleRoleAssignment, toggleCertificate, availableCertificates
       }
     }
 
-// 6.4 useOnCall - manages on-call schedules
-function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
-  const onCallSchedule = ref([])
-  const todaysOnCall = ref([])
-  const loadingSchedule = ref(false)
-  const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
-  const onCallModal = reactive({
-    show: false, mode: 'add',
-    form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '08:00', end_time: '17:00', primary_physician_id: '', backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '' }
-  })
+    // 6.4 useOnCall
+    function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
+      const onCallSchedule = ref([])
+      const todaysOnCall = ref([])
+      const loadingSchedule = ref(false)
+      const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
+      const onCallModal = reactive({
+        show: false, mode: 'add',
+        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '08:00', end_time: '17:00', primary_physician_id: '', backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '' }
+      })
 
-  // ============ HELPER FUNCTIONS ============
-  const getPhysicianName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
-  const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
+      const getPhysicianName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
+      const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
 
-  // ============ VALIDATION ============
-  const validateOnCall = (form) => {
-    clearAll('oncall'); let ok = true
-    if (!form.duty_date) { setErr('oncall', 'duty_date', 'Date is required'); ok = false }
-    if (!form.primary_physician_id) { setErr('oncall', 'primary_physician_id', 'Please select a physician'); ok = false }
-    if (!form.start_time) { setErr('oncall', 'start_time', 'Start time is required'); ok = false }
-    if (!form.end_time) { setErr('oncall', 'end_time', 'End time is required'); ok = false }
-    return ok
-  }
+      const validateOnCall = (form) => {
+        clearAll('oncall'); let ok = true
+        if (!form.duty_date) { setErr('oncall', 'duty_date', 'Date is required'); ok = false }
+        if (!form.primary_physician_id) { setErr('oncall', 'primary_physician_id', 'Please select a physician'); ok = false }
+        if (!form.start_time) { setErr('oncall', 'start_time', 'Start time is required'); ok = false }
+        if (!form.end_time) { setErr('oncall', 'end_time', 'End time is required'); ok = false }
+        return ok
+      }
 
-  // ============ DUPLICATE CHECK ============
-  const checkExistingSchedule = async (date, shiftType, excludeId = null) => {
-    try {
-      const schedules = await API.getOnCallSchedule({ 
-        start_date: date, 
-        end_date: date
-      });
-      // Filter by shift type and exclude current schedule if editing
-      return schedules.filter(s => 
-        s.shift_type === shiftType && 
-        (!excludeId || s.id !== excludeId)
-      ).length > 0;
-    } catch (error) {
-      console.error('Failed to check existing schedule:', error);
-      return false;
-    }
-  };
+      const checkExistingSchedule = async (date, shiftType, excludeId = null) => {
+        try {
+          const schedules = await API.getOnCallSchedule({ start_date: date, end_date: date });
+          return schedules.filter(s => s.shift_type === shiftType && (!excludeId || s.id !== excludeId)).length > 0;
+        } catch (error) { console.error('Failed to check existing schedule:', error); return false; }
+      };
 
-// ============ FILTERED COMPUTED ============
-const filteredOnCallAll = computed(() => {
-  let f = onCallSchedule.value
-  if (onCallFilters.date) f = f.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
-  if (onCallFilters.shiftType) f = f.filter(s => s.shift_type === onCallFilters.shiftType)
-  if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
-  if (onCallFilters.coverageArea) f = f.filter(s => s.coverage_area === onCallFilters.coverageArea)
-  if (onCallFilters.search) {
-    const q = onCallFilters.search.toLowerCase()
-    f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_area || '').toLowerCase().includes(q))
-  }
-  return applySort(f, 'oncall')
-})
+      const filteredOnCallAll = computed(() => {
+        let f = onCallSchedule.value
+        if (onCallFilters.date) f = f.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
+        if (onCallFilters.shiftType) f = f.filter(s => s.shift_type === onCallFilters.shiftType)
+        if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
+        if (onCallFilters.coverageArea) f = f.filter(s => s.coverage_area === onCallFilters.coverageArea)
+        if (onCallFilters.search) {
+          const q = onCallFilters.search.toLowerCase()
+          f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_area || '').toLowerCase().includes(q))
+        }
+        return applySort(f, 'oncall')
+      })
 
-// Paginated results for display
-const filteredOnCallSchedules = computed(() => paginate(filteredOnCallAll.value, 'oncall'))
+      const filteredOnCallSchedules = computed(() => paginate(filteredOnCallAll.value, 'oncall'))
+      const oncallTotalPages = computed(() => totalPages(filteredOnCallAll.value, 'oncall'))
+      const todaysOnCallCount = computed(() => todaysOnCall.value.length)
 
-// Pagination info
-const oncallTotalPages = computed(() => totalPages(filteredOnCallAll.value, 'oncall'))
+      watch(onCallFilters, () => resetPage('oncall'), { deep: true })
 
-// Today's on-call count for dashboard
-const todaysOnCallCount = computed(() => todaysOnCall.value.length)
+      const existingSchedulesForDate = computed(() => {
+        if (!onCallModal.form.duty_date) return [];
+        return onCallSchedule.value.filter(s => Utils.normalizeDate(s.duty_date) === Utils.normalizeDate(onCallModal.form.duty_date));
+      })
 
-// Watch filters to reset pagination
-watch(onCallFilters, () => resetPage('oncall'), { deep: true })
+      const loadOnCallSchedule = async () => {
+        loadingSchedule.value = true
+        try {
+          const raw = await API.getOnCallSchedule()
+          onCallSchedule.value = raw.map(s => ({ ...s, duty_date: Utils.normalizeDate(s.duty_date) }))
+        } catch { showToast('Error', 'Failed to load on-call schedule', 'error') }
+        finally { loadingSchedule.value = false }
+      }
 
-// NEW: Existing schedules for the selected date (for duplicate checking in modal)
-const existingSchedulesForDate = computed(() => {
-  if (!onCallModal.form.duty_date) return [];
-  return onCallSchedule.value.filter(s => 
-    Utils.normalizeDate(s.duty_date) === Utils.normalizeDate(onCallModal.form.duty_date)
-  );
-})
+      const loadTodaysOnCall = async () => {
+        try {
+          const data = await API.getOnCallToday()
+          todaysOnCall.value = data.map(item => {
+            const startTime = item.start_time?.substring(0, 5) || 'N/A'
+            const endTime = item.end_time?.substring(0, 5) || 'N/A'
+            const isPrimary = ['primary_call', 'primary'].includes(item.shift_type || '')
+            const matchingStaff = medicalStaff.value.find(s => s.id === item.primary_physician_id)
+            return {
+              id: item.id, startTime, endTime,
+              physicianName: item.primary_physician?.full_name || 'Unknown Physician',
+              shiftTypeDisplay: isPrimary ? 'Primary' : 'Backup',
+              shiftTypeClass: isPrimary ? 'badge-primary' : 'badge-secondary',
+              shiftType: isPrimary ? 'Primary' : 'Backup',
+              staffType: matchingStaff ? formatStaffType(matchingStaff.staff_type) : 'Physician',
+              coverageArea: item.coverage_area || 'General Coverage',
+              backupPhysician: item.backup_physician?.full_name || null,
+              contactInfo: item.primary_physician?.professional_email || 'No contact info', raw: item
+            }
+          })
+        } catch { todaysOnCall.value = [] }
+      }
 
-  // ============ LOAD FUNCTIONS ============
-  const loadOnCallSchedule = async () => {
-    loadingSchedule.value = true
-    try {
-      const raw = await API.getOnCallSchedule()
-      onCallSchedule.value = raw.map(s => ({ ...s, duty_date: Utils.normalizeDate(s.duty_date) }))
-    } catch { showToast('Error', 'Failed to load on-call schedule', 'error') }
-    finally { loadingSchedule.value = false }
-  }
+      const showAddOnCallModal = () => {
+        clearAll('oncall')
+        onCallModal.mode = 'add'
+        Object.assign(onCallModal.form, {
+          duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
+          start_time: '08:00', end_time: '17:00', primary_physician_id: '',
+          backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '',
+          schedule_id: `SCH-${Date.now().toString().slice(-6)}`
+        })
+        onCallModal.show = true
+      }
 
-  const loadTodaysOnCall = async () => {
-    try {
-      const data = await API.getOnCallToday()
-      todaysOnCall.value = data.map(item => {
-        const startTime = item.start_time?.substring(0, 5) || 'N/A'
-        const endTime = item.end_time?.substring(0, 5) || 'N/A'
-        const isPrimary = ['primary_call', 'primary'].includes(item.shift_type || '')
-        const matchingStaff = medicalStaff.value.find(s => s.id === item.primary_physician_id)
-        return {
-          id: item.id, startTime, endTime,
-          physicianName: item.primary_physician?.full_name || 'Unknown Physician',
-          shiftTypeDisplay: isPrimary ? 'Primary' : 'Backup',
-          shiftTypeClass: isPrimary ? 'badge-primary' : 'badge-secondary',
-          shiftType: isPrimary ? 'Primary' : 'Backup',
-          staffType: matchingStaff ? formatStaffType(matchingStaff.staff_type) : 'Physician',
-          coverageArea: item.coverage_area || 'General Coverage',
-          backupPhysician: item.backup_physician?.full_name || null,
-          contactInfo: item.primary_physician?.professional_email || 'No contact info',
-          raw: item
+      const editOnCallSchedule = (schedule) => {
+        clearAll('oncall')
+        onCallModal.mode = 'edit'
+        const raw = schedule.shift_type || 'primary_call'
+        onCallModal.form = {
+          ...schedule, duty_date: Utils.normalizeDate(schedule.duty_date),
+          shift_type: ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
+          coverage_area: schedule.coverage_area || 'emergency', coverage_notes: schedule.coverage_notes || ''
+        }
+        onCallModal.show = true
+      }
+
+      const saveOnCallSchedule = async (saving) => {
+        if (!validateOnCall(onCallModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
+        saving.value = true
+        try {
+          const f = onCallModal.form
+          const data = {
+            duty_date: Utils.normalizeDate(f.duty_date), shift_type: f.shift_type || 'primary_call',
+            start_time: f.start_time || '08:00', end_time: f.end_time || '17:00',
+            primary_physician_id: f.primary_physician_id, backup_physician_id: f.backup_physician_id || null,
+            coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH')
+          }
+          if (onCallModal.mode === 'add') {
+            const exists = await checkExistingSchedule(data.duty_date, data.shift_type);
+            if (exists) { showToast('Duplicate Schedule', `A ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 'warning'); saving.value = false; return; }
+          }
+          if (onCallModal.mode === 'edit') {
+            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id);
+            if (exists) { showToast('Duplicate Schedule', `Another ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 'warning'); saving.value = false; return; }
+          }
+          if (onCallModal.mode === 'add') {
+            const result = await API.createOnCall(data);
+            onCallSchedule.value.unshift({ ...result, duty_date: Utils.normalizeDate(result.duty_date), coverage_area: f.coverage_area });
+            showToast('Success', 'On-call scheduled', 'success');
+          } else {
+            const result = await API.updateOnCall(f.id, data);
+            const idx = onCallSchedule.value.findIndex(s => s.id === result.id);
+            if (idx !== -1) onCallSchedule.value[idx] = { ...result, duty_date: Utils.normalizeDate(result.duty_date), coverage_area: f.coverage_area };
+            showToast('Success', 'On-call updated', 'success');
+          }
+          onCallModal.show = false; clearAll('oncall'); await loadTodaysOnCall();
+        } catch (e) {
+          if (e.message && e.message.includes('duplicate key')) showToast('Error', 'A schedule for this shift type already exists on this date', 'error');
+          else showToast('Error', e.message || 'Failed to save on-call', 'error');
+        } finally { saving.value = false }
+      }
+
+      const deleteOnCallSchedule = (schedule) => showConfirmation({
+        title: 'Delete On-Call', message: 'Delete this on-call schedule?',
+        icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger',
+        details: `Physician: ${getPhysicianName(schedule.primary_physician_id)}`,
+        onConfirm: async () => {
+          await API.deleteOnCall(schedule.id)
+          onCallSchedule.value = onCallSchedule.value.filter(s => s.id !== schedule.id)
+          showToast('Success', 'Schedule deleted', 'success'); loadTodaysOnCall()
         }
       })
-    } catch { todaysOnCall.value = [] }
-  }
 
-  // ============ MODAL FUNCTIONS ============
-  const showAddOnCallModal = () => {
-    clearAll('oncall')
-    onCallModal.mode = 'add'
-    Object.assign(onCallModal.form, {
-      duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
-      start_time: '08:00', end_time: '17:00', primary_physician_id: '',
-      backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '',
-      schedule_id: `SCH-${Date.now().toString().slice(-6)}`
-    })
-    onCallModal.show = true
-  }
-
-  const editOnCallSchedule = (schedule) => {
-    clearAll('oncall')
-    onCallModal.mode = 'edit'
-    const raw = schedule.shift_type || 'primary_call'
-    onCallModal.form = {
-      ...schedule,
-      duty_date: Utils.normalizeDate(schedule.duty_date),
-      shift_type: ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
-      coverage_area: schedule.coverage_area || 'emergency',
-      coverage_notes: schedule.coverage_notes || ''
-    }
-    onCallModal.show = true
-  }
-
-  // ============ SAVE FUNCTION WITH DUPLICATE CHECK ============
-  const saveOnCallSchedule = async (saving) => {
-    if (!validateOnCall(onCallModal.form)) { 
-      showToast('Validation Error', 'Please fix the highlighted fields', 'error'); 
-      return 
-    }
-    
-    saving.value = true
-    
-    try {
-      const f = onCallModal.form
-      const data = {
-        duty_date: Utils.normalizeDate(f.duty_date), 
-        shift_type: f.shift_type || 'primary_call',
-        start_time: f.start_time || '08:00', 
-        end_time: f.end_time || '17:00',
-        primary_physician_id: f.primary_physician_id, 
-        backup_physician_id: f.backup_physician_id || null,
-        coverage_notes: f.coverage_notes || '', 
-        schedule_id: f.schedule_id || Utils.generateId('SCH')
+      const contactPhysician = (shift) => {
+        if (shift.contactInfo && shift.contactInfo !== 'No contact info')
+          showToast('Contact Physician', `Contact ${shift.physicianName}: ${shift.contactInfo}`, 'info')
+        else showToast('No Contact Info', `No contact info for ${shift.physicianName}`, 'warning')
       }
-
-      // CHECK FOR DUPLICATE SCHEDULE
-      if (onCallModal.mode === 'add') {
-        const exists = await checkExistingSchedule(data.duty_date, data.shift_type);
-        
-        if (exists) {
-          showToast(
-            'Duplicate Schedule', 
-            `A ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 
-            'warning'
-          );
-          saving.value = false;
-          return;
-        }
-      }
-
-      // For edit mode, check excluding current schedule
-      if (onCallModal.mode === 'edit') {
-        const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id);
-        
-        if (exists) {
-          showToast(
-            'Duplicate Schedule', 
-            `Another ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 
-            'warning'
-          );
-          saving.value = false;
-          return;
-        }
-      }
-
-      // PROCEED WITH SAVE
-      if (onCallModal.mode === 'add') {
-        const result = await API.createOnCall(data);
-        onCallSchedule.value.unshift({ 
-          ...result, 
-          duty_date: Utils.normalizeDate(result.duty_date), 
-          coverage_area: f.coverage_area 
-        });
-        showToast('Success', 'On-call scheduled', 'success');
-      } else {
-        const result = await API.updateOnCall(f.id, data);
-        const idx = onCallSchedule.value.findIndex(s => s.id === result.id);
-        if (idx !== -1) {
-          onCallSchedule.value[idx] = { 
-            ...result, 
-            duty_date: Utils.normalizeDate(result.duty_date), 
-            coverage_area: f.coverage_area 
-          };
-        }
-        showToast('Success', 'On-call updated', 'success');
-      }
-      
-      onCallModal.show = false; 
-      clearAll('oncall'); 
-      await loadTodaysOnCall();
-      
-    } catch (e) { 
-      // Handle database constraint error as fallback
-      if (e.message && e.message.includes('duplicate key')) {
-        showToast('Error', 'A schedule for this shift type already exists on this date', 'error');
-      } else {
-        showToast('Error', e.message || 'Failed to save on-call', 'error');
-      }
-    } finally { 
-      saving.value = false 
-    }
-  }
-
-  // ============ DELETE FUNCTION ============
-  const deleteOnCallSchedule = (schedule) => showConfirmation({
-    title: 'Delete On-Call', 
-    message: 'Delete this on-call schedule?',
-    icon: 'fa-trash', 
-    confirmButtonText: 'Delete', 
-    confirmButtonClass: 'btn-danger',
-    details: `Physician: ${getPhysicianName(schedule.primary_physician_id)}`,
-    onConfirm: async () => {
-      await API.deleteOnCall(schedule.id)
-      onCallSchedule.value = onCallSchedule.value.filter(s => s.id !== schedule.id)
-      showToast('Success', 'Schedule deleted', 'success')
-      loadTodaysOnCall()
-    }
-  })
-
-  // ============ CONTACT FUNCTION ============
-  const contactPhysician = (shift) => {
-    if (shift.contactInfo && shift.contactInfo !== 'No contact info')
-      showToast('Contact Physician', `Contact ${shift.physicianName}: ${shift.contactInfo}`, 'info')
-    else
-      showToast('No Contact Info', `No contact info for ${shift.physicianName}`, 'warning')
-  }
-
 
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
@@ -1601,181 +1220,98 @@ const existingSchedulesForDate = computed(() => {
         form: { rotation_id: '', resident_id: '', training_unit_id: '', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)), rotation_status: 'scheduled', rotation_category: 'clinical_rotation', supervising_attending_id: '' }
       })
 
-      // Auto-activation state
       const pendingActivations = ref([])
-      const activationModal = reactive({
-        show: false,
-        rotations: [],
-        selectedRotation: null,
-        notes: '',
-        action: 'activate'
-      })
+      const activationModal = reactive({ show: false, rotations: [], selectedRotation: null, notes: '', action: 'activate' })
 
       const getResidentName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
       const getTrainingUnitName = (id) => trainingUnits.value.find(u => u.id === id)?.unit_name || 'Not assigned'
 
-      // Check and update rotation statuses based on dates
       const checkAndUpdateRotations = async (requireValidation = true) => {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-
+        const today = new Date(); today.setHours(0, 0, 0, 0)
         const todayStr = Utils.normalizeDate(today)
-        const updates = []
-        const pending = []
+        const updates = [], pending = []
 
         rotations.value.forEach(rotation => {
           const startDate = new Date(Utils.normalizeDate(rotation.start_date) + 'T00:00:00')
           const endDate = new Date(Utils.normalizeDate(rotation.end_date) + 'T23:59:59')
-
           if (rotation.rotation_status === 'scheduled' && Utils.normalizeDate(startDate) <= todayStr) {
-            if (requireValidation) {
-              pending.push({
-                ...rotation,
-                action: 'activate',
-                message: `Rotation for ${getResidentName(rotation.resident_id)} at ${getTrainingUnitName(rotation.training_unit_id)} should start today.`
-              })
-            } else {
-              updates.push(updateRotationStatus(rotation.id, 'active', {
-                activated_at: new Date().toISOString(),
-                activated_by: 'system',
-                notes: 'Auto-activated on start date'
-              }))
-            }
+            if (requireValidation) pending.push({ ...rotation, action: 'activate', message: `Rotation for ${getResidentName(rotation.resident_id)} at ${getTrainingUnitName(rotation.training_unit_id)} should start today.` })
+            else updates.push(updateRotationStatus(rotation.id, 'active', { activated_at: new Date().toISOString(), activated_by: 'system', notes: 'Auto-activated on start date' }))
           }
-
           if (rotation.rotation_status === 'active' && Utils.normalizeDate(endDate) < todayStr) {
-            if (requireValidation) {
-              pending.push({
-                ...rotation,
-                action: 'complete',
-                message: `Rotation for ${getResidentName(rotation.resident_id)} at ${getTrainingUnitName(rotation.training_unit_id)} ended yesterday and should be completed.`
-              })
-            } else {
-              updates.push(updateRotationStatus(rotation.id, 'completed', {
-                completed_at: new Date().toISOString(),
-                completed_by: 'system',
-                notes: 'Auto-completed after end date'
-              }))
-            }
+            if (requireValidation) pending.push({ ...rotation, action: 'complete', message: `Rotation for ${getResidentName(rotation.resident_id)} at ${getTrainingUnitName(rotation.training_unit_id)} ended yesterday and should be completed.` })
+            else updates.push(updateRotationStatus(rotation.id, 'completed', { completed_at: new Date().toISOString(), completed_by: 'system', notes: 'Auto-completed after end date' }))
           }
         })
 
-        if (pending.length > 0 && requireValidation) {
-          pendingActivations.value = pending
-          showActivationModal()
-        }
-
-        if (updates.length > 0) {
-          await Promise.all(updates)
-          await loadRotations()
-          showToast('Rotations Updated', `${updates.length} rotation(s) automatically updated.`, 'info')
-        }
-
+        if (pending.length > 0 && requireValidation) { pendingActivations.value = pending; showActivationModal() }
+        if (updates.length > 0) { await Promise.all(updates); await loadRotations(); showToast('Rotations Updated', `${updates.length} rotation(s) automatically updated.`, 'info') }
         return { updates: updates.length, pending: pending.length }
       }
 
-      // 6.5.4 Update single rotation status
-const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
-  const rotation = rotations.value.find(r => r.id === rotationId)
-  if (!rotation) return
-
-  try {
-    // Ensure all string fields have at least empty string values
-    const updateData = {
-      id: rotation.id,
-      resident_id: rotation.resident_id,
-      training_unit_id: rotation.training_unit_id,
-      supervising_attending_id: rotation.supervising_attending_id || null,
-      start_date: rotation.start_date,
-      end_date: rotation.end_date,
-      rotation_category: rotation.rotation_category || 'clinical_rotation',
-      rotation_status: newStatus,
-      // Ensure these string fields are never null
-      clinical_notes: rotation.clinical_notes || '',
-      supervisor_evaluation: rotation.supervisor_evaluation || '',
-      goals: rotation.goals || '',
-      notes: rotation.notes || '',
-      rotation_id: rotation.rotation_id,
-      ...metadata
-    }
-
-    console.log('Sending rotation update:', updateData)
-
-    const result = await API.updateRotation(rotationId, updateData)
-
-    const idx = rotations.value.findIndex(r => r.id === rotationId)
-    if (idx !== -1) {
-      rotations.value[idx] = {
-        ...result,
-        start_date: Utils.normalizeDate(result.start_date),
-        end_date: Utils.normalizeDate(result.end_date)
+      const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
+        const rotation = rotations.value.find(r => r.id === rotationId)
+        if (!rotation) return
+        try {
+          const updateData = {
+            id: rotation.id, resident_id: rotation.resident_id, training_unit_id: rotation.training_unit_id,
+            supervising_attending_id: rotation.supervising_attending_id || null,
+            start_date: rotation.start_date, end_date: rotation.end_date,
+            rotation_category: rotation.rotation_category || 'clinical_rotation',
+            rotation_status: newStatus, clinical_notes: rotation.clinical_notes || '',
+            supervisor_evaluation: rotation.supervisor_evaluation || '', goals: rotation.goals || '',
+            notes: rotation.notes || '', rotation_id: rotation.rotation_id, ...metadata
+          }
+          const result = await API.updateRotation(rotationId, updateData)
+          const idx = rotations.value.findIndex(r => r.id === rotationId)
+          if (idx !== -1) rotations.value[idx] = { ...result, start_date: Utils.normalizeDate(result.start_date), end_date: Utils.normalizeDate(result.end_date) }
+          return result
+        } catch (error) { console.error('Failed to update rotation status:', error); throw error }
       }
-    }
 
-    return result
-  } catch (error) {
-    console.error('Failed to update rotation status:', error)
-    throw error
-  }
-}
       const showActivationModal = () => {
         if (pendingActivations.value.length === 0) return
         activationModal.rotations = [...pendingActivations.value]
         activationModal.selectedRotation = activationModal.rotations[0]
-        activationModal.notes = ''
-        activationModal.show = true
+        activationModal.notes = ''; activationModal.show = true
       }
 
       const processNextPending = async () => {
         if (activationModal.rotations.length === 0) {
-          activationModal.show = false
-          pendingActivations.value = []
-          showToast('All Done', 'All rotation statuses have been updated.', 'success')
-          return
+          activationModal.show = false; pendingActivations.value = []
+          showToast('All Done', 'All rotation statuses have been updated.', 'success'); return
         }
-
         const current = activationModal.rotations[0]
-        activationModal.selectedRotation = current
-        activationModal.action = current.action
+        activationModal.selectedRotation = current; activationModal.action = current.action
       }
 
       const confirmPendingActivation = async () => {
         if (!activationModal.selectedRotation) return
-
         const rotation = activationModal.selectedRotation
         const newStatus = rotation.action === 'activate' ? 'active' : 'completed'
-
         try {
           await updateRotationStatus(rotation.id, newStatus, {
             [`${newStatus}_at`]: new Date().toISOString(),
             [`${newStatus}_by`]: currentUser?.value?.full_name || 'system',
             activation_notes: activationModal.notes || null,
-            validated_by: currentUser?.value?.full_name || 'system',
-            validated_at: new Date().toISOString()
+            validated_by: currentUser?.value?.full_name || 'system', validated_at: new Date().toISOString()
           })
-
           activationModal.rotations = activationModal.rotations.slice(1)
           pendingActivations.value = pendingActivations.value.filter(r => r.id !== rotation.id)
-
           showToast('Rotation Updated', `${rotation.action === 'activate' ? 'Activated' : 'Completed'} rotation for ${getResidentName(rotation.resident_id)}`, 'success')
-
           await processNextPending()
-        } catch (error) {
-          showToast('Error', 'Failed to update rotation status', 'error')
-        }
+        } catch (error) { showToast('Error', 'Failed to update rotation status', 'error') }
       }
 
       const skipPendingActivation = () => {
         if (!activationModal.selectedRotation) return
         const current = activationModal.rotations[0]
         activationModal.rotations = [...activationModal.rotations.slice(1), current]
-        processNextPending()
-        showToast('Skipped', 'Rotation status update postponed.', 'warning')
+        processNextPending(); showToast('Skipped', 'Rotation status update postponed.', 'warning')
       }
 
       const postponeAllActivations = () => {
-        activationModal.show = false
-        showToast('Reminder Set', 'Will check again in 4 hours.', 'info')
+        activationModal.show = false; showToast('Reminder Set', 'Will check again in 4 hours.', 'info')
         localStorage.setItem('last_rotation_check', new Date().toISOString())
       }
 
@@ -1785,8 +1321,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
           const lastCheck = localStorage.getItem('last_rotation_check')
           const now = new Date()
           if (!lastCheck || (now - new Date(lastCheck)) > 4 * 60 * 60 * 1000) {
-            checkAndUpdateRotations(true)
-            localStorage.setItem('last_rotation_check', now.toISOString())
+            checkAndUpdateRotations(true); localStorage.setItem('last_rotation_check', now.toISOString())
           }
         }, 60 * 60 * 1000)
         return interval
@@ -1801,9 +1336,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         if (form.start_date && form.end_date) {
           const s = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
           const e = new Date(Utils.normalizeDate(form.end_date) + 'T00:00:00')
-          if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e <= s) {
-            setErr('rotation', 'end_date', 'End date must be after start date'); ok = false
-          }
+          if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e <= s) { setErr('rotation', 'end_date', 'End date must be after start date'); ok = false }
         }
         return ok
       }
@@ -1829,16 +1362,14 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         try {
           const raw = await API.getRotations()
           rotations.value = raw.map(r => ({
-            ...r,
-            start_date: Utils.normalizeDate(r.start_date || r.rotation_start_date),
+            ...r, start_date: Utils.normalizeDate(r.start_date || r.rotation_start_date),
             end_date: Utils.normalizeDate(r.end_date || r.rotation_end_date)
           }))
         } catch { showToast('Error', 'Failed to load rotations', 'error') }
       }
 
       const showAddRotationModal = () => {
-        clearAll('rotation')
-        rotationModal.mode = 'add'
+        clearAll('rotation'); rotationModal.mode = 'add'
         Object.assign(rotationModal.form, {
           rotation_id: `ROT-${Date.now().toString().slice(-6)}`, resident_id: '', training_unit_id: '',
           start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)),
@@ -1848,13 +1379,8 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       }
 
       const editRotation = (rotation) => {
-        clearAll('rotation')
-        rotationModal.mode = 'edit'
-        rotationModal.form = {
-          ...rotation,
-          start_date: Utils.normalizeDate(rotation.start_date || rotation.rotation_start_date),
-          end_date: Utils.normalizeDate(rotation.end_date || rotation.rotation_end_date)
-        }
+        clearAll('rotation'); rotationModal.mode = 'edit'
+        rotationModal.form = { ...rotation, start_date: Utils.normalizeDate(rotation.start_date || rotation.rotation_start_date), end_date: Utils.normalizeDate(rotation.end_date || rotation.rotation_end_date) }
         rotationModal.show = true
       }
 
@@ -1866,13 +1392,9 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         const startDate = new Date(startISO + 'T00:00:00')
         const endDate = new Date(endISO + 'T23:59:59')
 
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-          setErr('rotation', 'start_date', 'Invalid date format'); showToast('Error', 'Invalid date format', 'error'); return
-        }
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) { setErr('rotation', 'start_date', 'Invalid date format'); showToast('Error', 'Invalid date format', 'error'); return }
         const duration = Math.ceil((endDate - startDate) / 86400000)
-        if (duration > 365) {
-          setErr('rotation', 'end_date', `Cannot exceed 365 days (current: ${duration})`); showToast('Error', 'Rotation cannot exceed 365 days', 'error'); return
-        }
+        if (duration > 365) { setErr('rotation', 'end_date', `Cannot exceed 365 days (current: ${duration})`); showToast('Error', 'Rotation cannot exceed 365 days', 'error'); return }
         const excludeId = rotationModal.mode === 'edit' ? f.id : null
         const hasOverlap = rotations.value.some(r => {
           if (r.resident_id !== f.resident_id || r.rotation_status === 'cancelled') return false
@@ -1882,11 +1404,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
           if (isNaN(eS.getTime()) || isNaN(eE.getTime())) return false
           return startDate <= eE && endDate >= eS
         })
-        if (hasOverlap) {
-          setErr('rotation', 'start_date', 'Resident already has a rotation in this period')
-          showToast('Scheduling Conflict', `${getResidentName(f.resident_id)} already has a rotation during these dates.`, 'error')
-          return
-        }
+        if (hasOverlap) { setErr('rotation', 'start_date', 'Resident already has a rotation in this period'); showToast('Scheduling Conflict', `${getResidentName(f.resident_id)} already has a rotation during these dates.`, 'error'); return }
 
         saving.value = true
         try {
@@ -1928,48 +1446,23 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       })
 
       return {
-        rotations,
-        rotationFilters,
-        rotationModal,
-        filteredRotations,
-        filteredRotationsAll,
-        rotationTotalPages,
-        loadRotations,
-        showAddRotationModal,
-        editRotation,
-        saveRotation,
-        deleteRotation,
-        pendingActivations,
-        activationModal,
-        checkAndUpdateRotations,
-        updateRotationStatus,
-        confirmPendingActivation,
-        skipPendingActivation,
-        postponeAllActivations,
-        initAutoCheck,
+        rotations, rotationFilters, rotationModal,
+        filteredRotations, filteredRotationsAll, rotationTotalPages,
+        loadRotations, showAddRotationModal, editRotation, saveRotation, deleteRotation,
+        pendingActivations, activationModal, checkAndUpdateRotations, updateRotationStatus,
+        confirmPendingActivation, skipPendingActivation, postponeAllActivations, initAutoCheck,
         forceActivationCheck: () => checkAndUpdateRotations(true),
+        quickActivate: (rotation) => updateRotationStatus(rotation.id, 'active', { activated_at: new Date().toISOString(), activated_by: currentUser?.value?.full_name || 'manual', notes: 'Manually activated', clinical_notes: rotation.clinical_notes || '', supervisor_evaluation: rotation.supervisor_evaluation || '', goals: rotation.goals || '' }),
+        quickComplete: (rotation) => updateRotationStatus(rotation.id, 'completed', { completed_at: new Date().toISOString(), completed_by: currentUser?.value?.full_name || 'manual', notes: 'Manually completed', clinical_notes: rotation.clinical_notes || '', supervisor_evaluation: rotation.supervisor_evaluation || '', goals: rotation.goals || '' })
+      }
+    }
 
-      quickActivate: (rotation) => updateRotationStatus(rotation.id, 'active', {
-          activated_at: new Date().toISOString(),
-          activated_by: currentUser?.value?.full_name || 'manual',
-          notes: 'Manually activated',
-          clinical_notes: rotation.clinical_notes || '',
-          supervisor_evaluation: rotation.supervisor_evaluation || '',
-          goals: rotation.goals || ''
-        }),
-
-        quickComplete: (rotation) => updateRotationStatus(rotation.id, 'completed', {
-          completed_at: new Date().toISOString(),
-          completed_by: currentUser?.value?.full_name || 'manual',
-          notes: 'Manually completed',
-          clinical_notes: rotation.clinical_notes || '',
-          supervisor_evaluation: rotation.supervisor_evaluation || '',
-          goals: rotation.goals || ''
-        })
-      } // ← THIS CLOSES THE useRotations RETURN OBJECT
-    } // ← THIS CLOSES THE useRotations FUNCTION
-
-    // 6.6 useAbsences (keep existing)
+    // =========================================================================
+    // 6.6 useAbsences
+    // FIX 7: absenceFilters.status was defined in the reactive object but
+    // filteredAbsencesAll computed never read it — selecting a status in the
+    // UI dropdown had zero filtering effect. One filter line added below.
+    // =========================================================================
     function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff }) {
       const absences = ref([])
       const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '' })
@@ -1988,9 +1481,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         if (form.start_date && form.end_date) {
           const s = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
           const e = new Date(Utils.normalizeDate(form.end_date) + 'T00:00:00')
-          if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e < s) {
-            setErr('absence', 'end_date', 'End date cannot be before start date'); ok = false
-          }
+          if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e < s) { setErr('absence', 'end_date', 'End date cannot be before start date'); ok = false }
         }
         return ok
       }
@@ -1998,6 +1489,8 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       const filteredAbsencesAll = computed(() => {
         let f = absences.value
         if (absenceFilters.staff) f = f.filter(a => a.staff_member_id === absenceFilters.staff)
+        // FIX 7: absenceFilters.status was never checked here — status dropdown had no effect.
+        if (absenceFilters.status) f = f.filter(a => a.current_status === absenceFilters.status)
         if (absenceFilters.reason) f = f.filter(a => a.absence_reason === absenceFilters.reason)
         if (absenceFilters.startDate) f = f.filter(a => Utils.normalizeDate(a.start_date) >= absenceFilters.startDate)
         if (absenceFilters.search) {
@@ -2014,17 +1507,12 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       const loadAbsences = async () => {
         try {
           const raw = await API.getAbsences()
-          absences.value = raw.map(a => ({
-            ...a,
-            start_date: Utils.normalizeDate(a.start_date),
-            end_date: Utils.normalizeDate(a.end_date)
-          }))
+          absences.value = raw.map(a => ({ ...a, start_date: Utils.normalizeDate(a.start_date), end_date: Utils.normalizeDate(a.end_date) }))
         } catch { showToast('Error', 'Failed to load absences', 'error') }
       }
 
       const showAddAbsenceModal = () => {
-        clearAll('absence')
-        absenceModal.mode = 'add'
+        clearAll('absence'); absenceModal.mode = 'add'
         Object.assign(absenceModal.form, {
           staff_member_id: '', absence_type: 'planned', absence_reason: 'vacation',
           start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 7 * 86400000)),
@@ -2034,8 +1522,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       }
 
       const editAbsence = (absence) => {
-        clearAll('absence')
-        absenceModal.mode = 'edit'
+        clearAll('absence'); absenceModal.mode = 'edit'
         absenceModal.form = {
           id: absence.id, staff_member_id: absence.staff_member_id || '',
           absence_type: absence.absence_type || 'planned', absence_reason: absence.absence_reason || 'vacation',
@@ -2091,21 +1578,15 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       }
     }
 
-    // 6.7 useDepartments (keep existing)
+    // 6.7 useDepartments
     function useDepartments({ showToast, medicalStaff, trainingUnits, rotations }) {
       const departments = ref([])
       const departmentFilters = reactive({ search: '', status: '' })
-      const departmentModal = reactive({
-        show: false, mode: 'add',
-        form: { name: '', code: '', status: 'active', head_of_department_id: '' }
-      })
+      const departmentModal = reactive({ show: false, mode: 'add', form: { name: '', code: '', status: 'active', head_of_department_id: '' } })
 
       const filteredDepartments = computed(() => {
         let f = departments.value
-        if (departmentFilters.search) {
-          const q = departmentFilters.search.toLowerCase()
-          f = f.filter(d => d.name?.toLowerCase().includes(q) || d.code?.toLowerCase().includes(q))
-        }
+        if (departmentFilters.search) { const q = departmentFilters.search.toLowerCase(); f = f.filter(d => d.name?.toLowerCase().includes(q) || d.code?.toLowerCase().includes(q)) }
         if (departmentFilters.status) f = f.filter(d => d.status === departmentFilters.status)
         return f
       })
@@ -2119,26 +1600,14 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         catch { showToast('Error', 'Failed to load departments', 'error') }
       }
 
-      const showAddDepartmentModal = () => {
-        departmentModal.mode = 'add'
-        Object.assign(departmentModal.form, { name: '', code: '', status: 'active', head_of_department_id: '' })
-        departmentModal.show = true
-      }
-
+      const showAddDepartmentModal = () => { departmentModal.mode = 'add'; Object.assign(departmentModal.form, { name: '', code: '', status: 'active', head_of_department_id: '' }); departmentModal.show = true }
       const editDepartment = (d) => { departmentModal.mode = 'edit'; departmentModal.form = { ...d }; departmentModal.show = true }
 
       const saveDepartment = async (saving) => {
         saving.value = true
         try {
-          if (departmentModal.mode === 'add') {
-            departments.value.unshift(await API.createDepartment(departmentModal.form))
-            showToast('Success', 'Department created', 'success')
-          } else {
-            const result = await API.updateDepartment(departmentModal.form.id, departmentModal.form)
-            const idx = departments.value.findIndex(d => d.id === result.id)
-            if (idx !== -1) departments.value[idx] = result
-            showToast('Success', 'Department updated', 'success')
-          }
+          if (departmentModal.mode === 'add') { departments.value.unshift(await API.createDepartment(departmentModal.form)); showToast('Success', 'Department created', 'success') }
+          else { const result = await API.updateDepartment(departmentModal.form.id, departmentModal.form); const idx = departments.value.findIndex(d => d.id === result.id); if (idx !== -1) departments.value[idx] = result; showToast('Success', 'Department updated', 'success') }
           departmentModal.show = false
         } catch (e) { showToast('Error', e.message, 'error') }
         finally { saving.value = false }
@@ -2146,48 +1615,32 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
 
       const viewDepartmentStaff = (dept) => showToast('Department Staff', `Viewing staff for ${dept.name}`, 'info')
 
-      return {
-        departments, departmentFilters, departmentModal, filteredDepartments,
-        getDepartmentName, getDepartmentUnits, getDepartmentStaffCount,
-        loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment, viewDepartmentStaff
-      }
+      return { departments, departmentFilters, departmentModal, filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment, viewDepartmentStaff }
     }
 
-    // 6.8 useTrainingUnits (keep existing)
+    // 6.8 useTrainingUnits
     function useTrainingUnits({ showToast, rotations }) {
       const trainingUnits = ref([])
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
-      const trainingUnitModal = reactive({
-        show: false, mode: 'add',
-        form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' }
-      })
+      const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
 
       const filteredTrainingUnits = computed(() => {
         let f = trainingUnits.value
-        if (trainingUnitFilters.search) {
-          const q = trainingUnitFilters.search.toLowerCase()
-          f = f.filter(u => u.unit_name?.toLowerCase().includes(q))
-        }
+        if (trainingUnitFilters.search) { const q = trainingUnitFilters.search.toLowerCase(); f = f.filter(u => u.unit_name?.toLowerCase().includes(q)) }
         if (trainingUnitFilters.department) f = f.filter(u => u.department_id === trainingUnitFilters.department)
         if (trainingUnitFilters.status) f = f.filter(u => u.unit_status === trainingUnitFilters.status)
         return f
       })
 
-      const getUnitActiveRotationCount = (id) =>
-        rotations.value.filter(r => r.training_unit_id === id && ['active', 'scheduled'].includes(r.rotation_status)).length
+      const getUnitActiveRotationCount = (id) => rotations.value.filter(r => r.training_unit_id === id && ['active', 'scheduled'].includes(r.rotation_status)).length
 
       const loadTrainingUnits = async () => {
         try { trainingUnits.value = await API.getTrainingUnits() }
         catch { showToast('Error', 'Failed to load training units', 'error') }
       }
 
-      const showAddTrainingUnitModal = () => {
-        trainingUnitModal.mode = 'add'
-        Object.assign(trainingUnitModal.form, { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' })
-        trainingUnitModal.show = true
-      }
-
+      const showAddTrainingUnitModal = () => { trainingUnitModal.mode = 'add'; Object.assign(trainingUnitModal.form, { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' }); trainingUnitModal.show = true }
       const editTrainingUnit = (u) => { trainingUnitModal.mode = 'edit'; trainingUnitModal.form = { ...u }; trainingUnitModal.show = true }
 
       const viewUnitResidents = (unit, allRotations) => {
@@ -2200,54 +1653,29 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         saving.value = true
         try {
           const f = trainingUnitModal.form
-          const data = {
-            unit_name: f.unit_name, unit_code: f.unit_code, department_id: f.department_id,
-            supervisor_id: f.supervising_attending_id || null, maximum_residents: f.maximum_residents,
-            unit_status: f.unit_status, description: f.specialty || ''
-          }
-          if (trainingUnitModal.mode === 'add') {
-            trainingUnits.value.unshift(await API.createTrainingUnit(data))
-            showToast('Success', 'Training unit created', 'success')
-          } else {
-            const result = await API.updateTrainingUnit(f.id, data)
-            const idx = trainingUnits.value.findIndex(u => u.id === result.id)
-            if (idx !== -1) trainingUnits.value[idx] = result
-            showToast('Success', 'Training unit updated', 'success')
-          }
+          const data = { unit_name: f.unit_name, unit_code: f.unit_code, department_id: f.department_id, supervisor_id: f.supervising_attending_id || null, maximum_residents: f.maximum_residents, unit_status: f.unit_status, description: f.specialty || '' }
+          if (trainingUnitModal.mode === 'add') { trainingUnits.value.unshift(await API.createTrainingUnit(data)); showToast('Success', 'Training unit created', 'success') }
+          else { const result = await API.updateTrainingUnit(f.id, data); const idx = trainingUnits.value.findIndex(u => u.id === result.id); if (idx !== -1) trainingUnits.value[idx] = result; showToast('Success', 'Training unit updated', 'success') }
           trainingUnitModal.show = false
         } catch (e) { showToast('Error', e.message, 'error') }
         finally { saving.value = false }
       }
 
-      return {
-        trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits,
-        getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal,
-        editTrainingUnit, viewUnitResidents, saveTrainingUnit
-      }
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits, getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, viewUnitResidents, saveTrainingUnit }
     }
 
-    // 6.9 useComms (keep existing)
+    // 6.9 useComms
     function useComms({ showToast, showConfirmation }) {
       const announcements = ref([])
       const communicationsFilters = reactive({ search: '', priority: '', audience: '' })
       const communicationsModal = reactive({
         show: false, activeTab: 'announcement',
-        form: {
-          title: '', content: '', priority: 'normal', target_audience: 'all_staff',
-          updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '',
-          alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false },
-          metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '',
-          metricNote: '', alertLevel: 'low', alertMessage: '',
-          affectedAreas: { er: false, icu: false, ward: false, surgery: false }
-        }
+        form: { title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } }
       })
 
       const filteredAnnouncements = computed(() => {
         let f = announcements.value
-        if (communicationsFilters.search) {
-          const q = communicationsFilters.search.toLowerCase()
-          f = f.filter(a => a.title?.toLowerCase().includes(q) || a.content?.toLowerCase().includes(q))
-        }
+        if (communicationsFilters.search) { const q = communicationsFilters.search.toLowerCase(); f = f.filter(a => a.title?.toLowerCase().includes(q) || a.content?.toLowerCase().includes(q)) }
         if (communicationsFilters.priority) f = f.filter(a => a.priority_level === communicationsFilters.priority)
         if (communicationsFilters.audience) f = f.filter(a => a.target_audience === communicationsFilters.audience)
         return f.slice(0, 20)
@@ -2262,16 +1690,8 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       }
 
       const showCommunicationsModal = () => {
-        communicationsModal.show = true
-        communicationsModal.activeTab = 'announcement'
-        Object.assign(communicationsModal.form, {
-          title: '', content: '', priority: 'normal', target_audience: 'all_staff',
-          updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '',
-          alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false },
-          metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '',
-          metricNote: '', alertLevel: 'low', alertMessage: '',
-          affectedAreas: { er: false, icu: false, ward: false, surgery: false }
-        })
+        communicationsModal.show = true; communicationsModal.activeTab = 'announcement'
+        Object.assign(communicationsModal.form, { title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } })
       }
 
       const viewAnnouncement = (a) => showToast(a.title, Utils.truncateText(a.content, 120), 'info')
@@ -2281,14 +1701,9 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         try {
           if (communicationsModal.activeTab === 'announcement') {
             const f = communicationsModal.form
-            announcements.value.unshift(await API.createAnnouncement({
-              title: f.title, content: f.content,
-              priority_level: f.priority, target_audience: f.target_audience, type: 'announcement'
-            }))
+            announcements.value.unshift(await API.createAnnouncement({ title: f.title, content: f.content, priority_level: f.priority, target_audience: f.target_audience, type: 'announcement' }))
             showToast('Success', 'Announcement posted', 'success')
-          } else {
-            await saveClinicalStatus()
-          }
+          } else { await saveClinicalStatus() }
           communicationsModal.show = false
         } catch (e) { showToast('Error', e.message, 'error') }
         finally { saving.value = false }
@@ -2297,22 +1712,13 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       const deleteAnnouncement = (ann) => showConfirmation({
         title: 'Delete Announcement', message: `Delete "${ann.title}"?`,
         icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger',
-        onConfirm: async () => {
-          await API.deleteAnnouncement(ann.id)
-          announcements.value = announcements.value.filter(a => a.id !== ann.id)
-          showToast('Success', 'Announcement deleted', 'success')
-        }
+        onConfirm: async () => { await API.deleteAnnouncement(ann.id); announcements.value = announcements.value.filter(a => a.id !== ann.id); showToast('Success', 'Announcement deleted', 'success') }
       })
 
-      return {
-        announcements, communicationsFilters, communicationsModal,
-        filteredAnnouncements, recentAnnouncements, unreadAnnouncements,
-        loadAnnouncements, showCommunicationsModal, viewAnnouncement,
-        saveCommunication, deleteAnnouncement
-      }
+      return { announcements, communicationsFilters, communicationsModal, filteredAnnouncements, recentAnnouncements, unreadAnnouncements, loadAnnouncements, showCommunicationsModal, viewAnnouncement, saveCommunication, deleteAnnouncement }
     }
 
-    // 6.10 useLiveStatus (keep existing)
+    // 6.10 useLiveStatus
     function useLiveStatus({ showToast, showConfirmation, medicalStaff, currentUser }) {
       const clinicalStatus = ref(null)
       const clinicalStatusHistory = ref([])
@@ -2333,8 +1739,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         try {
           const diff = new Date(expiryTime) - new Date()
           if (diff <= 0) return 'Expired'
-          const h = Math.floor(diff / 3600000)
-          const m = Math.floor((diff % 3600000) / 60000)
+          const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000)
           return h > 0 ? `${h}h ${m}m` : `${m}m`
         } catch { return 'N/A' }
       }
@@ -2362,21 +1767,16 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
 
       const loadClinicalStatus = async () => {
         isLoadingStatus.value = true
-        try {
-          const r = await API.getClinicalStatus()
-          clinicalStatus.value = r?.success ? r.data : null
-        } catch { clinicalStatus.value = null }
+        try { const r = await API.getClinicalStatus(); clinicalStatus.value = r?.success ? r.data : null }
+        catch { clinicalStatus.value = null }
         finally { isLoadingStatus.value = false }
       }
 
       const loadClinicalStatusHistory = async () => {
         try {
           const history = await API.getClinicalStatusHistory(20)
-          const cid = clinicalStatus.value?.id
-          const now = new Date()
-          clinicalStatusHistory.value = history
-            .filter(s => s.id !== cid && (!s.expires_at || now < new Date(s.expires_at)))
-            .slice(0, 5)
+          const cid = clinicalStatus.value?.id; const now = new Date()
+          clinicalStatusHistory.value = history.filter(s => s.id !== cid && (!s.expires_at || now < new Date(s.expires_at))).slice(0, 5)
         } catch { clinicalStatusHistory.value = [] }
       }
 
@@ -2392,20 +1792,14 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       }
 
       const saveClinicalStatus = async () => {
-        if (!newStatusText.value.trim() || !selectedAuthorId.value) {
-          showToast('Error', 'Please fill all required fields', 'error'); return
-        }
+        if (!newStatusText.value.trim() || !selectedAuthorId.value) { showToast('Error', 'Please fill all required fields', 'error'); return }
         isLoadingStatus.value = true
         try {
-          const response = await API.createClinicalStatus({
-            status_text: newStatusText.value.trim(), author_id: selectedAuthorId.value, expires_in_hours: expiryHours.value
-          })
+          const response = await API.createClinicalStatus({ status_text: newStatusText.value.trim(), author_id: selectedAuthorId.value, expires_in_hours: expiryHours.value })
           if (response?.success && response.data) {
             if (clinicalStatus.value) clinicalStatusHistory.value.unshift(clinicalStatus.value)
-            clinicalStatus.value = response.data
-            newStatusText.value = ''; selectedAuthorId.value = ''; liveStatsEditMode.value = false
-            await loadClinicalStatusHistory()
-            showToast('Success', 'Live status updated for all staff', 'success')
+            clinicalStatus.value = response.data; newStatusText.value = ''; selectedAuthorId.value = ''; liveStatsEditMode.value = false
+            await loadClinicalStatusHistory(); showToast('Success', 'Live status updated for all staff', 'success')
           } else { throw new Error(response?.error || 'Failed to save status') }
         } catch (e) { showToast('Error', e.message || 'Could not update status', 'error') }
         finally { isLoadingStatus.value = false }
@@ -2413,39 +1807,17 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
 
       const deleteClinicalStatus = () => {
         if (!clinicalStatus.value) return
-        showConfirmation({
-          title: 'Clear Live Status', message: 'Clear the current live status?',
-          icon: 'fa-trash', confirmButtonText: 'Clear', confirmButtonClass: 'btn-danger',
-          onConfirm: async () => {
-            await API.deleteClinicalStatus(clinicalStatus.value.id)
-            clinicalStatus.value = null
-            showToast('Success', 'Live status cleared', 'success')
-          }
-        })
+        showConfirmation({ title: 'Clear Live Status', message: 'Clear the current live status?', icon: 'fa-trash', confirmButtonText: 'Clear', confirmButtonClass: 'btn-danger', onConfirm: async () => { await API.deleteClinicalStatus(clinicalStatus.value.id); clinicalStatus.value = null; showToast('Success', 'Live status cleared', 'success') } })
       }
 
       const refreshStatus = () => { loadClinicalStatus(); showToast('Refreshed', 'Live status updated', 'info') }
       const showCreateStatusModal = () => { liveStatsEditMode.value = true; newStatusText.value = ''; selectedAuthorId.value = ''; expiryHours.value = 8 }
+      const setQuickStatus = (status) => { quickStatus.value = status }
 
-      const setQuickStatus = (status) => {
-        quickStatus.value = status
-        const messages = {
-          normal: 'All systems normal. No critical issues.', busy: 'ICU at high capacity. Please triage admissions.',
-          shortage: 'Staff shortage affecting multiple areas.', equipment: 'Equipment issues reported. Using backup systems.'
-        }
-      }
-
-      return {
-        clinicalStatus, clinicalStatusHistory, isLoadingStatus, newStatusText,
-        selectedAuthorId, expiryHours, activeMedicalStaff, liveStatsEditMode, quickStatus,
-        recentStatuses, isStatusExpired, getStatusBadgeClass, calculateTimeRemaining,
-        getStatusLocation, formattedExpiry,
-        loadClinicalStatus, loadClinicalStatusHistory, loadActiveMedicalStaff,
-        saveClinicalStatus, deleteClinicalStatus, refreshStatus, showCreateStatusModal, setQuickStatus
-      }
+      return { clinicalStatus, clinicalStatusHistory, isLoadingStatus, newStatusText, selectedAuthorId, expiryHours, activeMedicalStaff, liveStatsEditMode, quickStatus, recentStatuses, isStatusExpired, getStatusBadgeClass, calculateTimeRemaining, getStatusLocation, formattedExpiry, loadClinicalStatus, loadClinicalStatusHistory, loadActiveMedicalStaff, saveClinicalStatus, deleteClinicalStatus, refreshStatus, showCreateStatusModal, setQuickStatus }
     }
 
-    // 6.11 useResearch (keep existing)
+    // 6.11 useResearch
     function useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations }) {
       const researchLines = ref([])
       const clinicalTrials = ref([])
@@ -2454,43 +1826,18 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       const trialFilters = reactive({ line: '', phase: '', status: '', search: '' })
       const projectFilters = reactive({ research_line_id: '', category: '', search: '' })
 
-      const researchLineModal = reactive({
-        show: false, mode: 'add',
-        form: { line_number: null, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: 0, active: true }
-      })
-      const clinicalTrialModal = reactive({
-        show: false, mode: 'add',
-        form: { protocol_id: '', title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', contact_email: '', featured_in_website: true, display_order: 0 }
-      })
-      const innovationProjectModal = reactive({
-        show: false, mode: 'add',
-        form: { title: '', category: 'Dispositivo', development_stage: 'En Desarrollo', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: 0 }
-      })
+      const researchLineModal = reactive({ show: false, mode: 'add', form: { line_number: null, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: 0, active: true } })
+      const clinicalTrialModal = reactive({ show: false, mode: 'add', form: { protocol_id: '', title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', contact_email: '', featured_in_website: true, display_order: 0 } })
+      const innovationProjectModal = reactive({ show: false, mode: 'add', form: { title: '', category: 'Dispositivo', development_stage: 'En Desarrollo', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: 0 } })
       const assignCoordinatorModal = reactive({ show: false, lineId: null, lineName: '', selectedCoordinatorId: '' })
 
-      const getResearchLineName = (id) => {
-        if (!id) return 'Not assigned'
-        const l = researchLines.value.find(l => l.id === id)
-        return l ? (l.research_line_name || l.name) : 'Unknown'
-      }
-
-      const getClinicianResearchLines = (id) => {
-        if (!id || !researchLines.value.length) return []
-        return researchLines.value.filter(l => l.coordinator_id === id).map(l => ({
-          line_number: l.line_number, name: l.research_line_name || l.name, role: 'Coordinador/a', id: l.id
-        }))
-      }
+      const getResearchLineName = (id) => { if (!id) return 'Not assigned'; const l = researchLines.value.find(l => l.id === id); return l ? (l.research_line_name || l.name) : 'Unknown' }
+      const getClinicianResearchLines = (id) => { if (!id || !researchLines.value.length) return []; return researchLines.value.filter(l => l.coordinator_id === id).map(l => ({ line_number: l.line_number, name: l.research_line_name || l.name, role: 'Coordinador/a', id: l.id })) }
 
       const filteredResearchLines = computed(() => {
         let f = researchLines.value
-        if (researchLineFilters.search) {
-          const q = researchLineFilters.search.toLowerCase()
-          f = f.filter(l => (l.research_line_name || l.name)?.toLowerCase().includes(q) || l.description?.toLowerCase().includes(q))
-        }
-        if (researchLineFilters.active !== '') {
-          const active = researchLineFilters.active === 'true'
-          f = f.filter(l => l.active === active)
-        }
+        if (researchLineFilters.search) { const q = researchLineFilters.search.toLowerCase(); f = f.filter(l => (l.research_line_name || l.name)?.toLowerCase().includes(q) || l.description?.toLowerCase().includes(q)) }
+        if (researchLineFilters.active !== '') { const active = researchLineFilters.active === 'true'; f = f.filter(l => l.active === active) }
         return applySort(f, 'research_lines')
       })
 
@@ -2499,10 +1846,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         if (trialFilters.line) f = f.filter(t => t.research_line_id === trialFilters.line)
         if (trialFilters.phase) f = f.filter(t => t.phase === trialFilters.phase)
         if (trialFilters.status) f = f.filter(t => t.status === trialFilters.status)
-        if (trialFilters.search) {
-          const q = trialFilters.search.toLowerCase()
-          f = f.filter(t => t.protocol_id?.toLowerCase().includes(q) || t.title?.toLowerCase().includes(q))
-        }
+        if (trialFilters.search) { const q = trialFilters.search.toLowerCase(); f = f.filter(t => t.protocol_id?.toLowerCase().includes(q) || t.title?.toLowerCase().includes(q)) }
         return applySort(f, 'trials')
       })
       const filteredTrials = computed(() => paginate(filteredTrialsAll.value, 'trials'))
@@ -2512,10 +1856,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         let f = innovationProjects.value
         if (projectFilters.research_line_id) f = f.filter(p => p.research_line_id === projectFilters.research_line_id)
         if (projectFilters.category) f = f.filter(p => p.category === projectFilters.category)
-        if (projectFilters.search) {
-          const q = projectFilters.search.toLowerCase()
-          f = f.filter(p => p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q))
-        }
+        if (projectFilters.search) { const q = projectFilters.search.toLowerCase(); f = f.filter(p => p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)) }
         return f
       })
 
@@ -2525,32 +1866,11 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       const loadClinicalTrials = async () => { try { clinicalTrials.value = await API.getAllClinicalTrials() } catch { } }
       const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch { } }
 
-      const showAddResearchLineModal = () => {
-        clearAll('research')
-        researchLineModal.mode = 'add'
-        Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: researchLines.value.length + 1, active: true })
-        researchLineModal.show = true
-      }
+      const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: researchLines.value.length + 1, active: true }); researchLineModal.show = true }
+      const showAddTrialModal = () => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1 }); clinicalTrialModal.show = true }
+      const showAddProjectModal = () => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', development_stage: 'En Desarrollo', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
 
-      const showAddTrialModal = () => {
-        clinicalTrialModal.mode = 'add'
-        Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1 })
-        clinicalTrialModal.show = true
-      }
-
-      const showAddProjectModal = () => {
-        innovationProjectModal.mode = 'add'
-        Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', development_stage: 'En Desarrollo', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: innovationProjects.value.length + 1 })
-        innovationProjectModal.show = true
-      }
-
-      const openAssignCoordinatorModal = (line) => {
-        assignCoordinatorModal.lineId = line.id
-        assignCoordinatorModal.lineName = line.research_line_name || line.name
-        assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''
-        assignCoordinatorModal.show = true
-      }
-
+      const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l }; researchLineModal.show = true }
       const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t }; clinicalTrialModal.show = true }
       const editProject = (p) => { innovationProjectModal.mode = 'edit'; innovationProjectModal.form = { ...p }; innovationProjectModal.show = true }
@@ -2559,15 +1879,8 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         if (!researchLineModal.form.name?.trim()) { showToast('Validation Error', 'Research line name is required', 'error'); return }
         saving.value = true
         try {
-          if (researchLineModal.mode === 'add') {
-            researchLines.value.unshift(await API.createResearchLine(researchLineModal.form))
-            showToast('Success', 'Research line created', 'success')
-          } else {
-            const result = await API.updateResearchLine(researchLineModal.form.id, researchLineModal.form)
-            const idx = researchLines.value.findIndex(l => l.id === result.id)
-            if (idx !== -1) researchLines.value[idx] = result
-            showToast('Success', 'Research line updated', 'success')
-          }
+          if (researchLineModal.mode === 'add') { researchLines.value.unshift(await API.createResearchLine(researchLineModal.form)); showToast('Success', 'Research line created', 'success') }
+          else { const result = await API.updateResearchLine(researchLineModal.form.id, researchLineModal.form); const idx = researchLines.value.findIndex(l => l.id === result.id); if (idx !== -1) researchLines.value[idx] = result; showToast('Success', 'Research line updated', 'success') }
           researchLineModal.show = false; await loadResearchLines(); loadAnalyticsSummary()
         } catch (e) { showToast('Error', e.message || 'Failed to save research line', 'error') }
         finally { saving.value = false }
@@ -2576,15 +1889,8 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       const saveClinicalTrial = async (saving) => {
         saving.value = true
         try {
-          if (clinicalTrialModal.mode === 'add') {
-            clinicalTrials.value.unshift(await API.createClinicalTrial(clinicalTrialModal.form))
-            showToast('Success', 'Clinical trial created', 'success')
-          } else {
-            const result = await API.updateClinicalTrial(clinicalTrialModal.form.id, clinicalTrialModal.form)
-            const idx = clinicalTrials.value.findIndex(t => t.id === result.id)
-            if (idx !== -1) clinicalTrials.value[idx] = result
-            showToast('Success', 'Clinical trial updated', 'success')
-          }
+          if (clinicalTrialModal.mode === 'add') { clinicalTrials.value.unshift(await API.createClinicalTrial(clinicalTrialModal.form)); showToast('Success', 'Clinical trial created', 'success') }
+          else { const result = await API.updateClinicalTrial(clinicalTrialModal.form.id, clinicalTrialModal.form); const idx = clinicalTrials.value.findIndex(t => t.id === result.id); if (idx !== -1) clinicalTrials.value[idx] = result; showToast('Success', 'Clinical trial updated', 'success') }
           clinicalTrialModal.show = false; await loadClinicalTrials(); loadAnalyticsSummary()
         } catch (e) { showToast('Error', e.message || 'Failed to save trial', 'error') }
         finally { saving.value = false }
@@ -2593,64 +1899,26 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       const saveInnovationProject = async (saving) => {
         saving.value = true
         try {
-          if (innovationProjectModal.mode === 'add') {
-            innovationProjects.value.unshift(await API.createInnovationProject(innovationProjectModal.form))
-            showToast('Success', 'Innovation project created', 'success')
-          } else {
-            const result = await API.updateInnovationProject(innovationProjectModal.form.id, innovationProjectModal.form)
-            const idx = innovationProjects.value.findIndex(p => p.id === result.id)
-            if (idx !== -1) innovationProjects.value[idx] = result
-            showToast('Success', 'Innovation project updated', 'success')
-          }
+          if (innovationProjectModal.mode === 'add') { innovationProjects.value.unshift(await API.createInnovationProject(innovationProjectModal.form)); showToast('Success', 'Innovation project created', 'success') }
+          else { const result = await API.updateInnovationProject(innovationProjectModal.form.id, innovationProjectModal.form); const idx = innovationProjects.value.findIndex(p => p.id === result.id); if (idx !== -1) innovationProjects.value[idx] = result; showToast('Success', 'Innovation project updated', 'success') }
           innovationProjectModal.show = false; await loadInnovationProjects(); loadAnalyticsSummary(); loadPartnerCollaborations()
         } catch (e) { showToast('Error', e.message || 'Failed to save project', 'error') }
         finally { saving.value = false }
       }
 
       const saveCoordinatorAssignment = async () => {
-        try {
-          await API.assignCoordinator(assignCoordinatorModal.lineId, assignCoordinatorModal.selectedCoordinatorId || null)
-          await loadResearchLines()
-          assignCoordinatorModal.show = false
-          showToast('Success', 'Coordinator assigned', 'success')
-          loadResearchLinesPerformance()
-        } catch (e) { showToast('Error', e.message || 'Failed to assign coordinator', 'error') }
+        try { await API.assignCoordinator(assignCoordinatorModal.lineId, assignCoordinatorModal.selectedCoordinatorId || null); await loadResearchLines(); assignCoordinatorModal.show = false; showToast('Success', 'Coordinator assigned', 'success'); loadResearchLinesPerformance() }
+        catch (e) { showToast('Error', e.message || 'Failed to assign coordinator', 'error') }
       }
 
-      const deleteResearchLine = (line) => showConfirmation({
-        title: 'Delete Research Line', message: `Delete "${line.research_line_name || line.name}"?`,
-        icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger',
-        onConfirm: async () => { await API.deleteResearchLine(line.id); await loadResearchLines(); showToast('Success', 'Research line deleted', 'success'); loadAnalyticsSummary() }
-      })
+      const deleteResearchLine = (line) => showConfirmation({ title: 'Delete Research Line', message: `Delete "${line.research_line_name || line.name}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', onConfirm: async () => { await API.deleteResearchLine(line.id); await loadResearchLines(); showToast('Success', 'Research line deleted', 'success'); loadAnalyticsSummary() } })
+      const deleteClinicalTrial = (trial) => showConfirmation({ title: 'Delete Trial', message: `Delete "${trial.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', details: `Protocol: ${trial.protocol_id}`, onConfirm: async () => { await API.deleteClinicalTrial(trial.id); await loadClinicalTrials(); showToast('Success', 'Trial deleted', 'success'); loadAnalyticsSummary() } })
+      const deleteInnovationProject = (project) => showConfirmation({ title: 'Delete Project', message: `Delete "${project.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', onConfirm: async () => { await API.deleteInnovationProject(project.id); await loadInnovationProjects(); showToast('Success', 'Project deleted', 'success'); loadAnalyticsSummary(); loadPartnerCollaborations() } })
 
-      const deleteClinicalTrial = (trial) => showConfirmation({
-        title: 'Delete Trial', message: `Delete "${trial.title}"?`,
-        icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger',
-        details: `Protocol: ${trial.protocol_id}`,
-        onConfirm: async () => { await API.deleteClinicalTrial(trial.id); await loadClinicalTrials(); showToast('Success', 'Trial deleted', 'success'); loadAnalyticsSummary() }
-      })
-
-      const deleteInnovationProject = (project) => showConfirmation({
-        title: 'Delete Project', message: `Delete "${project.title}"?`,
-        icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger',
-        onConfirm: async () => { await API.deleteInnovationProject(project.id); await loadInnovationProjects(); showToast('Success', 'Project deleted', 'success'); loadAnalyticsSummary(); loadPartnerCollaborations() }
-      })
-
-      return {
-        researchLines, clinicalTrials, innovationProjects,
-        researchLineFilters, trialFilters, projectFilters,
-        researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal,
-        filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, trialTotalPages,
-        getResearchLineName, getClinicianResearchLines,
-        loadResearchLines, loadClinicalTrials, loadInnovationProjects,
-        showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal,
-        editResearchLine, editTrial, editProject,
-        saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment,
-        deleteResearchLine, deleteClinicalTrial, deleteInnovationProject
-      }
+      return { researchLines, clinicalTrials, innovationProjects, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, trialTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject }
     }
 
-    // 6.12 useAnalytics (keep existing)
+    // 6.12 useAnalytics
     function useAnalytics({ showToast, hasPermission }) {
       const researchDashboard = ref(null)
       const researchLinesPerformance = ref([])
@@ -2667,43 +1935,17 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         catch { showToast('Error', 'Failed to load research dashboard', 'error') }
         finally { loadingAnalytics.value = false }
       }
-
-      const loadResearchLinesPerformance = async () => {
-        if (!hasPermission('analytics', 'read')) return
-        try { researchLinesPerformance.value = await API.getResearchLinesPerformance() }
-        catch { showToast('Error', 'Failed to load performance data', 'error') }
-      }
-
-      const loadPartnerCollaborations = async () => {
-        if (!hasPermission('analytics', 'read')) return
-        try { partnerCollaborations.value = await API.getPartnerCollaborations() }
-        catch { showToast('Error', 'Failed to load partner data', 'error') }
-      }
-
-      const loadTrialsTimeline = async (years = 3) => {
-        if (!hasPermission('analytics', 'read')) return
-        try { trialsTimeline.value = await API.getClinicalTrialsTimeline(years) }
-        catch { showToast('Error', 'Failed to load timeline', 'error') }
-      }
-
-      const loadAnalyticsSummary = async () => {
-        if (!hasPermission('analytics', 'read')) return
-        try { analyticsSummary.value = await API.getAnalyticsSummary() }
-        catch { }
-      }
+      const loadResearchLinesPerformance = async () => { if (!hasPermission('analytics', 'read')) return; try { researchLinesPerformance.value = await API.getResearchLinesPerformance() } catch { showToast('Error', 'Failed to load performance data', 'error') } }
+      const loadPartnerCollaborations = async () => { if (!hasPermission('analytics', 'read')) return; try { partnerCollaborations.value = await API.getPartnerCollaborations() } catch { showToast('Error', 'Failed to load partner data', 'error') } }
+      const loadTrialsTimeline = async (years = 3) => { if (!hasPermission('analytics', 'read')) return; try { trialsTimeline.value = await API.getClinicalTrialsTimeline(years) } catch { showToast('Error', 'Failed to load timeline', 'error') } }
+      const loadAnalyticsSummary = async () => { if (!hasPermission('analytics', 'read')) return; try { analyticsSummary.value = await API.getAnalyticsSummary() } catch { } }
 
       const loadStaffResearchProfile = async (staffProfileModal, staffId) => {
         if (!staffId || !hasPermission('analytics', 'read')) return
         staffProfileModal.loadingResearch = true
-        try { 
-          staffProfileModal.researchProfile = await API.getStaffResearchProfile(staffId) 
-        }
-        catch { 
-          showToast('Error', 'Failed to load research profile', 'error') 
-        }
-        finally { 
-          staffProfileModal.loadingResearch = false 
-        }
+        try { staffProfileModal.researchProfile = await API.getStaffResearchProfile(staffId) }
+        catch { showToast('Error', 'Failed to load research profile', 'error') }
+        finally { staffProfileModal.loadingResearch = false }
       }
 
       const handleExport = async () => {
@@ -2713,8 +1955,7 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
           const data = await API.exportData(exportModal.type, exportModal.format)
           const blob = new Blob([data], { type: 'text/csv' })
           const url = window.URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url; a.download = `${exportModal.type}-${new Date().toISOString().split('T')[0]}.csv`
+          const a = document.createElement('a'); a.href = url; a.download = `${exportModal.type}-${new Date().toISOString().split('T')[0]}.csv`
           document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(url)
           showToast('Success', 'Export completed', 'success'); exportModal.show = false
         } catch (e) { showToast('Error', e.message || 'Export failed', 'error') }
@@ -2723,16 +1964,10 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
 
       const showExportModal = () => { exportModal.type = 'clinical-trials'; exportModal.show = true }
 
-      return {
-        researchDashboard, researchLinesPerformance, partnerCollaborations,
-        trialsTimeline, analyticsSummary, loadingAnalytics, exportModal,
-        loadResearchDashboard, loadResearchLinesPerformance, loadPartnerCollaborations,
-        loadTrialsTimeline, loadAnalyticsSummary, loadStaffResearchProfile,
-        handleExport, showExportModal
-      }
+      return { researchDashboard, researchLinesPerformance, partnerCollaborations, trialsTimeline, analyticsSummary, loadingAnalytics, exportModal, loadResearchDashboard, loadResearchLinesPerformance, loadPartnerCollaborations, loadTrialsTimeline, loadAnalyticsSummary, loadStaffResearchProfile, handleExport, showExportModal }
     }
 
-    // 6.13 useDashboard (keep existing)
+    // 6.13 useDashboard
     function useDashboard({ medicalStaff, rotations, absences, onCallSchedule }) {
       const systemStats = ref({
         totalStaff: 0, activeAttending: 0, activeResidents: 0, onCallNow: 0, inSurgery: 0,
@@ -2746,20 +1981,15 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         if (!end) return
         const start = performance.now()
         const step = (now) => {
-          const p = Math.min((now - start) / duration, 1)
-          const e = 1 - Math.pow(1 - p, 3)
+          const p = Math.min((now - start) / duration, 1); const e = 1 - Math.pow(1 - p, 3)
           targetRef.value = Math.round(end * e)
-          if (p < 1) requestAnimationFrame(step)
-          else targetRef.value = end
+          if (p < 1) requestAnimationFrame(step); else targetRef.value = end
         }
         requestAnimationFrame(step)
       }
 
       const loadSystemStats = async () => {
-        try {
-          const data = await API.getSystemStats()
-          if (data?.success) Object.assign(systemStats.value, data.data)
-        } catch { }
+        try { const data = await API.getSystemStats(); if (data?.success) Object.assign(systemStats.value, data.data) } catch { }
       }
 
       const updateDashboardStats = () => {
@@ -2771,16 +2001,10 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
           const tr = { value: 0 }, ar = { value: 0 }, rr = { value: 0 }
           animateCount(tr, ns, 700); animateCount(ar, na, 600); animateCount(rr, nr, 650)
           const iv = setInterval(() => {
-            systemStats.value.totalStaff = tr.value
-            systemStats.value.activeAttending = ar.value
-            systemStats.value.activeResidents = rr.value
+            systemStats.value.totalStaff = tr.value; systemStats.value.activeAttending = ar.value; systemStats.value.activeResidents = rr.value
             if (tr.value >= ns) clearInterval(iv)
           }, 16)
-        } else {
-          systemStats.value.totalStaff = ns
-          systemStats.value.activeAttending = na
-          systemStats.value.activeResidents = nr
-        }
+        } else { systemStats.value.totalStaff = ns; systemStats.value.activeAttending = na; systemStats.value.activeResidents = nr }
 
         const today = Utils.normalizeDate(new Date())
         systemStats.value.onLeaveStaff = absences.value.filter(a => {
@@ -2817,7 +2041,6 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
       }
 
       const currentTimeFormatted = computed(() => Utils.formatTime(currentTime.value))
-
       return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats }
     }
 
@@ -2827,29 +2050,17 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         const loading = ref(false)
         const saving = ref(false)
 
-        // 7.1 Auth
         const showPassword = ref(false)
         const loginError = ref('')
         const loginFieldErrors = reactive({ email: '', password: '' })
-
-        const clearLoginError = (field) => {
-          if (field === 'email') loginFieldErrors.email = ''
-          if (field === 'password') loginFieldErrors.password = ''
-          loginError.value = ''
-        }
-
-        const handleForgotPassword = () => {
-          showToast('Info', 'Password reset link sent', 'info')
-        }
+        const clearLoginError = (field) => { if (field === 'email') loginFieldErrors.email = ''; if (field === 'password') loginFieldErrors.password = ''; loginError.value = '' }
+        const handleForgotPassword = () => { showToast('Info', 'Password reset link sent', 'info') }
 
         const auth = useAuth()
         const { currentUser, loginForm, loginLoading, hasPermission } = auth
-
-        // 7.2 UI
         const ui = useUI()
         const { showToast, showConfirmation, currentView, userMenuOpen, userProfileModal } = ui
 
-        // 7.3 Sort & Pagination
         const { sortState, sortBy, sortIcon, applySort } = makeSort({
           medical_staff: { field: 'full_name', dir: 'asc' },
           rotations: { field: 'start_date', dir: 'desc' },
@@ -2865,7 +2076,6 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
 
         const { fieldErrors, setErr, clearErr: clearFieldError, clearAll } = makeValidation(['rotation', 'staff', 'absence', 'oncall', 'research'])
 
-        // 7.4 Initialize composables
         const deptOps = useDepartments({ showToast, medicalStaff: ref([]), trainingUnits: ref([]), rotations: ref([]) })
         const tuOps = useTrainingUnits({ showToast, rotations: ref([]) })
 
@@ -2897,15 +2107,10 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         const analyticsOps = useAnalytics({ showToast, hasPermission })
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
 
-        const researchOps = useResearch({
-          showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff,
-          loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations
-        })
-
+        const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
         const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule })
         const { systemStats, updateDashboardStats, loadSystemStats } = dashOps
 
-        // 7.5 Data helpers
         const getStaffName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
         const getSupervisorName = (id) => getStaffName(id)
         const getPhysicianName = (id) => getStaffName(id)
@@ -2915,89 +2120,30 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         const getDaysRemaining = (d) => Utils.daysUntil(d)
         const getDaysUntilStart = (d) => Utils.daysUntil(d)
 
-        const getCurrentRotationForStaff = (id) =>
-          rotations.value.find(r => r.resident_id === id && r.rotation_status === 'active') || null
+        const getCurrentRotationForStaff = (id) => rotations.value.find(r => r.resident_id === id && r.rotation_status === 'active') || null
+        const isOnCallToday = (staffId) => { const today = Utils.normalizeDate(new Date()); return onCallSchedule.value.some(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId) && Utils.normalizeDate(s.duty_date) === today) }
+        const getUpcomingOnCall = (staffId) => { if (!staffId) return []; const today = Utils.normalizeDate(new Date()); return onCallSchedule.value.filter(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId) && Utils.normalizeDate(s.duty_date) >= today).sort((a, b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date))) }
+        const getUpcomingLeave = (staffId) => { if (!staffId) return []; const today = Utils.normalizeDate(new Date()); return absences.value.filter(a => a.staff_member_id === staffId && Utils.normalizeDate(a.start_date) >= today && a.current_status !== 'cancelled').sort((a, b) => Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date))) }
+        const getRotationHistory = (staffId) => { if (!staffId) return []; return rotations.value.filter(r => r.resident_id === staffId && !['active', 'scheduled'].includes(r.rotation_status)).sort((a, b) => Utils.normalizeDate(b.end_date || b.rotation_end_date).localeCompare(Utils.normalizeDate(a.end_date || a.rotation_end_date))) }
+        const getRotationDaysLeft = (staffId) => { const r = getCurrentRotationForStaff(staffId); return r ? getDaysRemaining(r.end_date || r.rotation_end_date) : 0 }
+        const getCurrentRotationSupervisor = (staffId) => { const r = getCurrentRotationForStaff(staffId); return r?.supervising_attending_id ? getStaffName(r.supervising_attending_id) : 'Not assigned' }
+        const hasProfessionalCredentials = (staff) => !!(staff?.academic_degree || staff?.specialization || staff?.training_year || staff?.clinical_certificate || staff?.medical_license)
 
-        const isOnCallToday = (staffId) => {
-          const today = Utils.normalizeDate(new Date())
-          return onCallSchedule.value.some(s =>
-            (s.primary_physician_id === staffId || s.backup_physician_id === staffId) &&
-            Utils.normalizeDate(s.duty_date) === today)
-        }
-
-        const getUpcomingOnCall = (staffId) => {
-          if (!staffId) return []
-          const today = Utils.normalizeDate(new Date())
-          return onCallSchedule.value
-            .filter(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId) && Utils.normalizeDate(s.duty_date) >= today)
-            .sort((a, b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
-        }
-
-        const getUpcomingLeave = (staffId) => {
-          if (!staffId) return []
-          const today = Utils.normalizeDate(new Date())
-          return absences.value
-            .filter(a => a.staff_member_id === staffId && Utils.normalizeDate(a.start_date) >= today && a.current_status !== 'cancelled')
-            .sort((a, b) => Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
-        }
-
-        const getRotationHistory = (staffId) => {
-          if (!staffId) return []
-          return rotations.value
-            .filter(r => r.resident_id === staffId && !['active', 'scheduled'].includes(r.rotation_status))
-            .sort((a, b) => Utils.normalizeDate(b.end_date || b.rotation_end_date).localeCompare(Utils.normalizeDate(a.end_date || a.rotation_end_date)))
-        }
-
-        const getRotationDaysLeft = (staffId) => {
-          const r = getCurrentRotationForStaff(staffId)
-          return r ? getDaysRemaining(r.end_date || r.rotation_end_date) : 0
-        }
-
-        const getCurrentRotationSupervisor = (staffId) => {
-          const r = getCurrentRotationForStaff(staffId)
-          return r?.supervising_attending_id ? getStaffName(r.supervising_attending_id) : 'Not assigned'
-        }
-
-        const hasProfessionalCredentials = (staff) =>
-          !!(staff?.academic_degree || staff?.specialization || staff?.training_year || staff?.clinical_certificate || staff?.medical_license)
-
-        // 7.6 ENHANCED Staff profile view
         const viewStaffDetails = async (staff) => {
-          staffOps.staffProfileModal.staff = staff
-          staffOps.staffProfileModal.activeTab = 'activity'
-          staffOps.staffProfileModal.show = true
-          
-          // Load research profile
-          if (hasPermission('analytics', 'read')) {
-            await analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id)
-          }
-          
-          // Load supervision data for attendings
+          staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'activity'; staffOps.staffProfileModal.show = true
+          if (hasPermission('analytics', 'read')) await analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id)
           if (staff.staff_type === 'attending_physician') {
             staffOps.staffProfileModal.loadingSupervision = true
-            try {
-              staffOps.staffProfileModal.supervisionData = await API.getSupervisedResidents(staff.id)
-            } catch (error) {
-              console.error('Failed to load supervision data:', error)
-              staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, avgEvaluation: 0 }
-            } finally {
-              staffOps.staffProfileModal.loadingSupervision = false
-            }
+            try { staffOps.staffProfileModal.supervisionData = await API.getSupervisedResidents(staff.id) }
+            catch { staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, avgEvaluation: 0 } }
+            finally { staffOps.staffProfileModal.loadingSupervision = false }
           }
-          
-          // Load leave balance
           staffOps.staffProfileModal.loadingLeave = true
-          try {
-            staffOps.staffProfileModal.leaveBalance = await API.getLeaveBalance(staff.id)
-          } catch (error) {
-            console.error('Failed to load leave balance:', error)
-            staffOps.staffProfileModal.leaveBalance = null
-          } finally {
-            staffOps.staffProfileModal.loadingLeave = false
-          }
+          try { staffOps.staffProfileModal.leaveBalance = await API.getLeaveBalance(staff.id) }
+          catch { staffOps.staffProfileModal.leaveBalance = null }
+          finally { staffOps.staffProfileModal.loadingLeave = false }
         }
 
-        // 7.7 Formatters
         const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
         const getStaffTypeClass = (t) => STAFF_TYPE_CLASSES[t] || 'badge-secondary'
         const formatEmploymentStatus = (s) => ({ active: 'Active', on_leave: 'On Leave', inactive: 'Inactive' }[s] || s)
@@ -3009,7 +2155,6 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
         const getSearchPlaceholder = () => 'Search...'
 
-        // 7.8 Misc helpers
         const getStaffTypeIcon = (t) => ({ attending_physician: 'fa-user-md', medical_resident: 'fa-user-graduate', fellow: 'fa-user-tie', nurse_practitioner: 'fa-user-nurse' }[t] || 'fa-user')
         const getAbsenceReasonIcon = (r) => ({ vacation: 'fa-umbrella-beach', sick_leave: 'fa-procedures', conference: 'fa-chalkboard-teacher', training: 'fa-graduation-cap', personal: 'fa-user-clock', other: 'fa-question-circle' }[r] || 'fa-clock')
         const calculateCapacityPercent = (cur, max) => (!cur || !max) ? 0 : Math.round((cur / max) * 100)
@@ -3021,14 +2166,12 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
         const updatePreview = () => { }
         const requestFullDossier = () => showToast('Info', 'Dossier request sent. Our team will contact you.', 'info')
 
-        // 7.9 Computed lists
         const availablePhysicians = computed(() => medicalStaff.value.filter(s => ['attending_physician', 'fellow', 'nurse_practitioner'].includes(s.staff_type) && s.employment_status === 'active'))
         const availableResidents = computed(() => medicalStaff.value.filter(s => s.staff_type === 'medical_resident' && s.employment_status === 'active'))
         const availableAttendings = computed(() => medicalStaff.value.filter(s => s.staff_type === 'attending_physician' && s.employment_status === 'active'))
         const availableHeadsOfDepartment = computed(() => availableAttendings.value)
         const availableReplacementStaff = computed(() => medicalStaff.value.filter(s => s.employment_status === 'active'))
 
-        // 7.10 User profile
         const showUserProfileModal = () => {
           userProfileModal.form = { full_name: currentUser.value?.full_name || '', email: currentUser.value?.email || '', department_id: currentUser.value?.department_id || '' }
           userProfileModal.show = true; userMenuOpen.value = false
@@ -3036,213 +2179,114 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
 
         const saveUserProfile = async () => {
           saving.value = true
-          try {
-            currentUser.value.full_name = userProfileModal.form.full_name
-            currentUser.value.department_id = userProfileModal.form.department_id
-            localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value))
-            userProfileModal.show = false; showToast('Success', 'Profile updated', 'success')
-          } catch (e) { showToast('Error', e.message, 'error') }
+          try { currentUser.value.full_name = userProfileModal.form.full_name; currentUser.value.department_id = userProfileModal.form.department_id; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value)); userProfileModal.show = false; showToast('Success', 'Profile updated', 'success') }
+          catch (e) { showToast('Error', e.message, 'error') }
           finally { saving.value = false }
         }
 
-        // 7.11 Auth actions
         const handleLogin = async () => {
           loginFieldErrors.email = !loginForm.email ? 'Email required' : ''
           loginFieldErrors.password = !loginForm.password ? 'Password required' : ''
-
-          if (loginFieldErrors.email || loginFieldErrors.password) {
-            loginError.value = 'Please fill all required fields'
-            return
-          }
-
-          loginLoading.value = true
-          loginError.value = ''
-
+          if (loginFieldErrors.email || loginFieldErrors.password) { loginError.value = 'Please fill all required fields'; return }
+          loginLoading.value = true; loginError.value = ''
           try {
             const response = await API.login(loginForm.email, loginForm.password)
-            currentUser.value = response.user
-            localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
+            currentUser.value = response.user; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
             showToast('Success', `Welcome, ${response.user.full_name}!`, 'success')
-            await loadAllData()
-            currentView.value = 'dashboard'
-          } catch (e) {
-            loginError.value = e.message || 'Invalid email or password'
-            showToast('Error', 'Login failed', 'error')
-          } finally {
-            loginLoading.value = false
-          }
+            await loadAllData(); currentView.value = 'dashboard'
+          } catch (e) { loginError.value = e.message || 'Invalid email or password'; showToast('Error', 'Login failed', 'error') }
+          finally { loginLoading.value = false }
         }
 
         const handleLogout = () => showConfirmation({
           title: 'Logout', message: 'Are you sure you want to logout?',
           icon: 'fa-sign-out-alt', confirmButtonText: 'Logout', confirmButtonClass: 'btn-danger',
           onConfirm: async () => {
-            try { await API.logout() } finally {
-              currentUser.value = null; currentView.value = 'login'; userMenuOpen.value = false
-              showToast('Info', 'Logged out successfully', 'info')
-            }
+            try { await API.logout() } finally { currentUser.value = null; currentView.value = 'login'; userMenuOpen.value = false; showToast('Info', 'Logged out successfully', 'info') }
           }
         })
 
-        // 7.12 Navigation
         const switchView = async (view) => {
-          currentView.value = view
-          ui.mobileMenuOpen.value = false
+          currentView.value = view; ui.mobileMenuOpen.value = false
           if (pagination[view]) pagination[view].page = 1
-          if (view === 'analytics_dashboard' && hasPermission('analytics', 'read')) {
-            await analyticsOps.loadResearchDashboard(); await analyticsOps.loadTrialsTimeline()
-          } else if (view === 'analytics_performance' && hasPermission('analytics', 'read')) {
-            await analyticsOps.loadResearchLinesPerformance()
-          } else if (view === 'analytics_partners' && hasPermission('analytics', 'read')) {
-            await analyticsOps.loadPartnerCollaborations()
-          }
+          if (view === 'analytics_dashboard' && hasPermission('analytics', 'read')) { await analyticsOps.loadResearchDashboard(); await analyticsOps.loadTrialsTimeline() }
+          else if (view === 'analytics_performance' && hasPermission('analytics', 'read')) { await analyticsOps.loadResearchLinesPerformance() }
+          else if (view === 'analytics_partners' && hasPermission('analytics', 'read')) { await analyticsOps.loadPartnerCollaborations() }
         }
 
         const toggleStatsSidebar = () => { ui.statsSidebarOpen.value = !ui.statsSidebarOpen.value }
         const handleGlobalSearch = () => { }
 
-        // 7.13 Data loading
         const loadAllData = async () => {
           loading.value = true
           try {
             await Promise.all([staffOps.loadMedicalStaff(), loadDepartments(), loadTrainingUnits()])
             await Promise.all([rotationOps.loadRotations(), onCallOps.loadOnCallSchedule(), absenceOps.loadAbsences()])
             updateDashboardStats()
-
-            Promise.all([
-              onCallOps.loadTodaysOnCall(), commsOps.loadAnnouncements(),
-              liveOps.loadClinicalStatus(), liveOps.loadActiveMedicalStaff(),
-              researchOps.loadResearchLines(), loadSystemStats()
-            ]).then(() => updateDashboardStats())
-
-            Promise.all([
-              researchOps.loadClinicalTrials(), researchOps.loadInnovationProjects(),
-              analyticsOps.loadAnalyticsSummary()
-            ])
-
+            Promise.all([onCallOps.loadTodaysOnCall(), commsOps.loadAnnouncements(), liveOps.loadClinicalStatus(), liveOps.loadActiveMedicalStaff(), researchOps.loadResearchLines(), loadSystemStats()]).then(() => updateDashboardStats())
+            Promise.all([researchOps.loadClinicalTrials(), researchOps.loadInnovationProjects(), analyticsOps.loadAnalyticsSummary()])
             showToast('Success', 'System data loaded', 'success')
           } catch { showToast('Error', 'Failed to load some data', 'error') }
           finally { loading.value = false }
         }
 
-        // 7.14 Watchers
         watch([medicalStaff, rotations, trainingUnits, absences], () => updateDashboardStats(), { deep: true })
 
-        // 7.15 Lifecycle
         onMounted(() => {
           const token = localStorage.getItem(CONFIG.TOKEN_KEY)
           const user = localStorage.getItem(CONFIG.USER_KEY)
           if (token && user) {
-            try {
-              currentUser.value = JSON.parse(user);
-              loadAllData();
-              currentView.value = 'dashboard'
-            }
+            try { currentUser.value = JSON.parse(user); loadAllData(); currentView.value = 'dashboard' }
             catch { currentView.value = 'login' }
           } else { currentView.value = 'login' }
 
-          const statusInterval = setInterval(() => {
-            if (currentUser.value && !liveOps.isLoadingStatus.value) liveOps.loadClinicalStatus()
-          }, 60000)
-
+          const statusInterval = setInterval(() => { if (currentUser.value && !liveOps.isLoadingStatus.value) liveOps.loadClinicalStatus() }, 60000)
           const timeInterval = setInterval(() => { dashOps.currentTime.value = new Date() }, 60000)
 
           let rotationCheckInterval = null
-          if (rotationOps.initAutoCheck) {
-            rotationCheckInterval = rotationOps.initAutoCheck()
-          }
+          if (rotationOps.initAutoCheck) rotationCheckInterval = rotationOps.initAutoCheck()
 
           document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return
-            const modals = [
-              staffOps.medicalStaffModal, staffOps.staffProfileModal, departmentModal,
-              trainingUnitModal, unitResidentsModal, rotationOps.rotationModal,
-              onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal,
-              userProfileModal, ui.confirmationModal, researchOps.researchLineModal,
-              researchOps.clinicalTrialModal, researchOps.innovationProjectModal,
-              researchOps.assignCoordinatorModal, analyticsOps.exportModal,
-              rotationOps.activationModal
-            ]
+            const modals = [staffOps.medicalStaffModal, staffOps.staffProfileModal, departmentModal, trainingUnitModal, unitResidentsModal, rotationOps.rotationModal, onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal, userProfileModal, ui.confirmationModal, researchOps.researchLineModal, researchOps.clinicalTrialModal, researchOps.innovationProjectModal, researchOps.assignCoordinatorModal, analyticsOps.exportModal, rotationOps.activationModal]
             modals.forEach(m => { if (m.show) m.show = false })
           })
 
-          onUnmounted(() => {
-            clearInterval(statusInterval);
-            clearInterval(timeInterval);
-            if (rotationCheckInterval) clearInterval(rotationCheckInterval);
-          })
+          onUnmounted(() => { clearInterval(statusInterval); clearInterval(timeInterval); if (rotationCheckInterval) clearInterval(rotationCheckInterval) })
         })
 
-        // 7.16 Return all template data
         return {
-          // State
           loading, saving, currentUser, loginForm, loginLoading,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
-
-          // Staff
           ...staffOps,
-
-          // On-Call
           ...onCallOps,
-
-          // Rotations
           ...rotationOps,
-
-          // Absences
           ...absenceOps,
-          
-          // Resident formatters
-          formatTrainingYear: Utils.formatTrainingYear,
-          formatSpecialization: Utils.formatSpecialization,
-          formatPhone: Utils.formatPhone,
-          formatLicense: Utils.formatLicense,
-          getResidentCategoryInfo: Utils.getResidentCategoryInfo,
-          formatResidentCategorySimple: Utils.formatResidentCategorySimple,
-          formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed,
-          getResidentCategoryIcon: Utils.getResidentCategoryIcon,
-          getResidentCategoryTooltip: Utils.getResidentCategoryTooltip,
-          getRoleInfo: Utils.getRoleInfo,
-          getStaffRoles: Utils.getStaffRoles,
+          formatTrainingYear: Utils.formatTrainingYear, formatSpecialization: Utils.formatSpecialization,
+          formatPhone: Utils.formatPhone, formatLicense: Utils.formatLicense,
+          getResidentCategoryInfo: Utils.getResidentCategoryInfo, formatResidentCategorySimple: Utils.formatResidentCategorySimple,
+          formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed, getResidentCategoryIcon: Utils.getResidentCategoryIcon,
+          getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
           getDaysRemainingColor: Utils.getDaysRemainingColor,
-
-          // Departments
           departments, departmentFilters, departmentModal, filteredDepartments,
           getDepartmentName, getDepartmentUnits, getDepartmentStaffCount,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment, viewDepartmentStaff,
-
-          // Training Units
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits,
           getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal,
           editTrainingUnit, saveTrainingUnit,
           viewUnitResidents: (unit) => viewUnitResidents(unit, rotations.value),
-
-          // Comms
           ...commsOps,
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
-
-          // Live Status
           ...liveOps,
-
-          // Research
           ...researchOps,
           saveResearchLine: () => researchOps.saveResearchLine(saving),
           saveClinicalTrial: () => researchOps.saveClinicalTrial(saving),
           saveInnovationProject: () => researchOps.saveInnovationProject(saving),
-
-          // Analytics
           ...analyticsOps,
-
-          // Dashboard
           ...dashOps,
-
-          // Auth actions
           handleLogin, handleLogout,
-
-          // Navigation
           switchView, toggleStatsSidebar, handleGlobalSearch,
-
-          // Sort + Pagination
           sortState, sortBy, sortIcon, pagination,
           goToPage: (view, page) => goToPage(view, page, []),
           staffTotalPages: staffOps.staffTotalPages,
@@ -3250,28 +2294,17 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
           oncallTotalPages: onCallOps.oncallTotalPages,
           absenceTotalPages: absenceOps.absenceTotalPages,
           trialTotalPages: researchOps.trialTotalPages,
-
-          // Validation
-          fieldErrors,
-          clearFieldError: (form, field) => clearFieldError(form, field),
-
-          // Profile actions
+          fieldErrors, clearFieldError: (form, field) => clearFieldError(form, field),
           viewStaffDetails, showUserProfileModal, saveUserProfile,
-
-          // Data helpers
           getStaffName, getSupervisorName, getPhysicianName, getResidentName, getTrainingUnitName,
           calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart,
           getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
           getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
           getCurrentRotationSupervisor, hasProfessionalCredentials,
-
-          // Formatters
           formatStaffType, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
           formatRotationStatus, getUserRoleDisplay, formatAudience,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
           showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword,
-
-          // Date helpers
           normalizeDate: (d) => Utils.normalizeDate(d),
           formatDate: (d) => Utils.formatDate(d),
           formatDateShort: (d) => Utils.formatDateShort(d),
@@ -3282,37 +2315,19 @@ const updateRotationStatus = async (rotationId, newStatus, metadata = {}) => {
           formatTimeAgo: (d) => Utils.formatRelativeTime(d),
           getInitials: (n) => Utils.getInitials(n),
           getTomorrow: () => Utils.getTomorrow(),
-
-          // Misc helpers
           getStaffTypeIcon, getAbsenceReasonIcon, calculateCapacityPercent,
           getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
-          getPreviewStatusClass, getPreviewStatusText, updatePreview,
-          requestFullDossier,
-
-          // Chart helpers
-          getPhaseColor: Utils.getPhaseColor,
-          getStageColor: Utils.getStageColor,
-          formatPercentage: Utils.formatPercentage,
-
-          // Computed lists
-          availablePhysicians, availableResidents, availableAttendings,
-          availableHeadsOfDepartment, availableReplacementStaff,
-
-          // Save bindings
+          getPreviewStatusClass, getPreviewStatusText, updatePreview, requestFullDossier,
+          getPhaseColor: Utils.getPhaseColor, getStageColor: Utils.getStageColor, formatPercentage: Utils.formatPercentage,
+          availablePhysicians, availableResidents, availableAttendings, availableHeadsOfDepartment, availableReplacementStaff,
           saveMedicalStaff: () => staffOps.saveMedicalStaff(saving),
           saveDepartment: () => saveDepartment(saving),
           saveTrainingUnit: () => saveTrainingUnit(saving),
           saveRotation: () => rotationOps.saveRotation(saving),
           saveOnCallSchedule: () => onCallOps.saveOnCallSchedule(saving),
           saveAbsence: () => absenceOps.saveAbsence(saving),
-          saveUserProfile,
-
-          // Permissions
-          hasPermission,
-
-          // Misc
-          dismissAlert: ui.dismissAlert,
-          activeAlertsCount: ui.activeAlertsCount,
+          saveUserProfile, hasPermission,
+          dismissAlert: ui.dismissAlert, activeAlertsCount: ui.activeAlertsCount,
         }
       }
     })
