@@ -1,39 +1,37 @@
 /* ================================================================
-   NEUMOCARE — Clinical Precision Design System v8.1
-   Aesthetic: Refined Clinical / Dark-Light Hybrid
-   Fully Responsive | Mobile-Optimized | Zoom-Fit Corrected
-   
-   FIX SUMMARY v8.1:
-   ─ Font: CSS now aligns with HTML — uses DM Sans (not Sora which was
-     never loaded). All body text was silently falling back to system-ui.
-   ─ Layout: html/body no longer double-constrains height; main-content
-     uses flex instead of fixed 100vh so it fills without overflowing.
-   ─ Sidebar: width uses clamp(220px, 18vw, 256px) so it scales down
-     gracefully on 1280–1366px screens where the old 256px felt huge.
-   ─ Stats sidebar: --panel-w reduced to 360px and hides below 1440px
-     to avoid crushing the content area on common laptop screens.
-   ─ Content area: max-width cap added (1400px) + symmetric padding so
-     content never stretches edge-to-edge on wide monitors.
-   ─ Hero numbers: clamp() prevents stat values from overflowing cards.
-   ─ Charts grid: min card width reduced from 400px → 320px so two
-     columns appear at 800px+ instead of collapsing to one.
-   ─ Tables: min-width reduced; cells tighter to stop horizontal scroll
-     on 1280px screens.
-   ─ Filter bar: inputs have min-width so they don't collapse to 0.
-   ─ Login: overflow-y: auto replaces overflow: hidden so it scrolls
-     on very small viewports without hiding the button.
+   NEUMOCARE — Clinical Precision Design System v9.0
+   ALL FIXES APPLIED:
+
+   MODAL FIXES (v8.1 → v9.0):
+   ─ Fix 1: modal-overlay uses align-items:flex-start so tall modals scroll
+   ─ Fix 2: modal-container margin:auto re-centers when short
+   ─ Fix 3: modal widths capped with min() to never exceed viewport
+   ─ Fix 4: profile-left uses clamp() instead of fixed 260px
+   ─ Fix 5: modal-body grids collapse to 1-col below 580px
+   ─ Fix 6: modal-container overflow:visible; modal-body scrolls
+   ─ Fix 7: mobile bottom-sheet modal-body min-height:0
+
+   UI/UX FIXES:
+   ─ Fix 8:  Stats sidebar toggle always visible, repositioned on mobile
+   ─ Fix 9:  Collapsed sidebar shows tooltip on hover via data-tooltip
+   ─ Fix 10: Filter bar — search input visually differentiated from selects
+   ─ Fix 11: Table rows have min-height; oncall-shift-cell has min-width
+   ─ Fix 12: Breadcrumb hidden on desktop (redundant), shown on mobile
+   ─ Fix 13: Empty states inside tables use tighter padding/font sizes
+   ─ Fix 14: Stat cards get cursor:pointer + full card click support
+   ─ Fix 15: Announcement unread state styles added
+   ─ Fix 16: Touch targets enlarged to ≥44px on mobile
+   ─ Fix 17: Skeleton loader styles added
 
    Fonts: DM Sans (UI) · Instrument Serif (hero/display) · DM Mono (data)
 ================================================================ */
 
-/* ── FONT FIX: HTML loads DM Sans, not Sora. Align the token. ─── */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500;600&display=swap');
 
 /* ----------------------------------------------------------------
    DESIGN TOKENS
 ---------------------------------------------------------------- */
 :root {
-  /* Core Palette */
   --ink:     #0a1628;
   --ink-2:   #1a2d4a;
   --ink-3:   #243b5e;
@@ -57,7 +55,6 @@
   --text-3: #7a90b0;
   --text-4: #aab8cc;
 
-  /* Semantic */
   --ok:      #0d9e6e; --ok-lt:   #d1fae8; --ok-mid:  #6ee7b7;
   --warn:    #d97706; --warn-lt: #fef3c7; --warn-mid:#fcd34d;
   --danger:  #dc3545; --danger-lt:#ffe1e4;--danger-mid:#f9a8b0;
@@ -66,35 +63,25 @@
   --teal:    #0891b2; --teal-lt: #e0f7fa;
   --purple:  #7c3aed; --purple-lt:#ede9fe;
 
-  /* Chart Colors */
   --phase1:#4d9aff; --phase2:#00e5a0; --phase3:#ffbe3d; --phase4:#ff5566;
   --stage-idea:#9ca3af; --stage-proto:#60a5fa; --stage-pilot:#34d399;
   --stage-val:#fbbf24; --stage-scale:#f97316; --stage-market:#10b981;
 
-  /* ── TYPOGRAPHY — aligned to HTML's actual font imports ───── */
-  --font-ui:      'DM Sans', system-ui, sans-serif;   /* WAS 'Sora' — not loaded in HTML */
+  --font-ui:      'DM Sans', system-ui, sans-serif;
   --font-display: 'Instrument Serif', Georgia, serif;
   --font-data:    'DM Mono', 'Courier New', monospace;
   --font-body:    var(--font-ui);
   --font-mono:    var(--font-data);
 
-  /* Size scale */
-  --t-10: 10px;
-  --t-11: 11px;
-  --t-12: 12px;
-  --t-13: 13px;
-  --t-15: 15px;
-  --t-18: 18px;
-  --t-24: 24px;
-  --t-hero: clamp(32px, 3.5vw, 48px); /* FIX: was fixed 48px → overflowed narrow cards */
+  --t-10: 10px; --t-11: 11px; --t-12: 12px; --t-13: 13px;
+  --t-15: 15px; --t-18: 18px; --t-24: 24px;
+  --t-hero: clamp(32px, 3.5vw, 48px);
 
-  /* Layout — FIX: sidebar uses clamp so it scales on 1280-1366px screens */
   --sidebar-w:  clamp(220px, 18vw, 256px);
   --sidebar-sm: 64px;
-  --panel-w:    360px;   /* FIX: was 400px — too wide on laptop screens */
+  --panel-w:    360px;
   --topbar-h:   60px;
 
-  /* Shadows */
   --shadow-xs: 0 1px 2px rgba(10,22,40,.04);
   --shadow-sm: 0 1px 4px rgba(10,22,40,.06),0 1px 2px rgba(10,22,40,.04);
   --shadow:    0 4px 12px rgba(10,22,40,.08),0 2px 4px rgba(10,22,40,.04);
@@ -103,16 +90,13 @@
   --shadow-xl: 0 32px 64px rgba(10,22,40,.18),0 12px 24px rgba(10,22,40,.08);
   --shadow-blue: 0 4px 16px rgba(45,122,255,.20);
 
-  /* Radii */
   --r-xs: 4px; --r-sm: 6px; --r: 10px;
   --r-lg: 14px; --r-xl: 18px; --r-2xl: 24px;
 
-  /* Transitions */
   --t:    150ms cubic-bezier(.4,0,.2,1);
   --t-md: 240ms cubic-bezier(.4,0,.2,1);
   --t-lg: 360ms cubic-bezier(.4,0,.2,1);
 
-  /* Dark Panel */
   --p-bg:      #07111f; --p-surface: #0d1e33; --p-surface-2:#112340;
   --p-border:  rgba(255,255,255,.06); --p-border-2:rgba(255,255,255,.11);
   --p-text:    rgba(255,255,255,.90); --p-muted:   rgba(255,255,255,.40);
@@ -127,13 +111,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 [v-cloak] { display: none !important; }
 
-/* FIX: was overflow:hidden on both html & body which caused the
-   "zoomed-in" perception — content had nowhere to breathe.
-   html now defines the scrollable root; body scrolls when needed. */
-html {
-  height: 100%;
-  overflow-x: hidden;
-}
+html { height: 100%; overflow-x: hidden; }
 
 body {
   font-family: var(--font-ui);
@@ -146,7 +124,6 @@ body {
   min-height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* FIX: removed overflow:hidden — was hiding overflow that should scroll */
 }
 
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
@@ -155,21 +132,19 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ----------------------------------------------------------------
    LAYOUT
-   FIX: app-layout no longer forces 100vh on a child with overflow:hidden.
-   Instead it fills the viewport height and lets children scroll.
 ---------------------------------------------------------------- */
 .app-layout {
   display: flex;
   min-height: 100vh;
-  height: 100vh;         /* still fills viewport */
-  overflow: hidden;      /* clip at app root, not body */
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* ----------------------------------------------------------------
    SIDEBAR
 ---------------------------------------------------------------- */
 .sidebar {
-  width: var(--sidebar-w);  /* FIX: now clamp()-based, scales on laptops */
+  width: var(--sidebar-w);
   background: var(--ink);
   display: flex;
   flex-direction: column;
@@ -243,6 +218,7 @@ a { color: var(--blue); text-decoration: none; }
 
 .sidebar-menu { list-style: none; }
 
+/* FIX 9: Collapsed sidebar tooltip support */
 .sidebar-menu-link {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 12px; border-radius: var(--r-sm);
@@ -250,6 +226,9 @@ a { color: var(--blue); text-decoration: none; }
   font-size: var(--t-12); font-weight: 500;
   transition: var(--t);
   white-space: nowrap; overflow: hidden; margin-bottom: 1px;
+  /* FIX 16: min touch target */
+  min-height: 40px;
+  position: relative;
 }
 .sidebar-menu-link i {
   font-size: 13px; width: 17px; text-align: center;
@@ -269,6 +248,31 @@ a { color: var(--blue); text-decoration: none; }
   box-shadow: 0 2px 10px rgba(45,122,255,.35);
 }
 .sidebar-menu-link.active i { color: #fff !important; }
+
+/* FIX 9: Tooltip when sidebar is collapsed */
+.sidebar-collapsed .sidebar-menu-link::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(var(--sidebar-sm) - 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--ink-2);
+  color: rgba(255,255,255,.92);
+  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  font-size: var(--t-11);
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t);
+  z-index: 9999;
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: var(--shadow-md);
+}
+.sidebar-collapsed .sidebar-menu-link:hover::after {
+  opacity: 1;
+}
 
 .sidebar-footer {
   padding: 12px 10px;
@@ -311,14 +315,11 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ----------------------------------------------------------------
    MAIN CONTENT
-   FIX: was height:100vh + overflow:hidden which is the primary cause
-   of the "zoomed/clipped" look. Now uses flex:1 with overflow-y:auto
-   on the content-area child, not on main-content itself.
 ---------------------------------------------------------------- */
 .main-content {
-  margin-left: var(--sidebar-w);  /* matches clamped sidebar */
+  margin-left: var(--sidebar-w);
   flex: 1;
-  min-width: 0;                   /* FIX: prevents flex child from overflowing */
+  min-width: 0;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -337,7 +338,7 @@ a { color: var(--blue); text-decoration: none; }
   border-bottom: 1px solid var(--border);
   height: var(--topbar-h);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px;            /* FIX: was 24px, slightly tighter on laptops */
+  padding: 0 20px;
   flex-shrink: 0;
   z-index: 100;
   box-shadow: var(--shadow-sm);
@@ -357,6 +358,8 @@ a { color: var(--blue); text-decoration: none; }
 .mobile-menu-toggle {
   display: none; background: none; border: none;
   color: var(--text-2); font-size: 16px; padding: 8px; border-radius: var(--r-sm);
+  /* FIX 16: touch target */
+  min-width: 44px; min-height: 44px;
 }
 
 /* Search */
@@ -384,6 +387,8 @@ a { color: var(--blue); text-decoration: none; }
   display: flex; align-items: center; gap: 8px;
   background: none; border: none; padding: 6px 10px;
   border-radius: var(--r); cursor: pointer; transition: var(--t);
+  /* FIX 16: touch target */
+  min-height: 44px;
 }
 .navbar-user-btn:hover { background: var(--surface-2); }
 .navbar-user-avatar {
@@ -408,34 +413,34 @@ a { color: var(--blue); text-decoration: none; }
   width: 100%; text-align: left; padding: 9px 14px;
   font-size: var(--t-12); font-weight: 500; background: none; border: none;
   color: var(--text-2); display: flex; align-items: center; gap: 8px; transition: var(--t);
+  /* FIX 16: touch target */
+  min-height: 44px;
 }
 .user-dropdown button i { color: var(--text-3); font-size: var(--t-12); }
 .user-dropdown button:hover { background: var(--surface-2); color: var(--text-1); }
 
 /* ----------------------------------------------------------------
    CONTENT AREA
-   FIX: this is the primary scroll container. Added max-width so
-   content doesn't stretch edge-to-edge on widescreen monitors,
-   which creates the "zoomed out but content too wide" feeling.
 ---------------------------------------------------------------- */
 .content-area {
   flex: 1;
-  padding: 18px 20px;      /* FIX: was 20px 24px — slightly tighter */
+  padding: 18px 20px;
   overflow-y: auto;
   overflow-x: hidden;
-  min-height: 0;           /* required for flex child overflow to work */
+  min-height: 0;
 }
 
-/* FIX: cap content width so it doesn't stretch beyond readability */
 .content-area > * {
   max-width: 1440px;
 }
 
 /* ----------------------------------------------------------------
    BREADCRUMB
+   FIX 12: Hidden on desktop (title already in navbar), shown on mobile
 ---------------------------------------------------------------- */
 .breadcrumb {
-  display: flex; align-items: center; gap: 6px;
+  display: none; /* FIX 12: hidden on desktop — redundant with navbar title */
+  align-items: center; gap: 6px;
   margin-bottom: 16px; font-size: var(--t-11);
   flex-wrap: wrap;
 }
@@ -492,6 +497,8 @@ a { color: var(--blue); text-decoration: none; }
   padding: 6px 13px; background: var(--surface-2);
   border: 1px solid var(--border); border-radius: var(--r);
   color: var(--text-2); font-size: var(--t-12); font-weight: 600; transition: var(--t);
+  /* FIX 16: touch target */
+  min-height: 36px;
 }
 .action-btn i { font-size: var(--t-11); }
 .action-btn:hover {
@@ -501,8 +508,7 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ----------------------------------------------------------------
    FILTER BAR
-   FIX: inputs had no min-width so on narrow layouts they collapsed
-   to near-zero width. min-width ensures usability.
+   FIX 10: Search input visually differentiated from filter selects
 ---------------------------------------------------------------- */
 .filter-bar {
   display: flex;
@@ -513,11 +519,26 @@ a { color: var(--blue); text-decoration: none; }
   border-bottom: 1px solid var(--border);
   align-items: center;
 }
-.filter-bar .form-control,
+/* FIX 10: Selects are compact filter controls */
 .filter-bar .form-select {
-  min-width: 140px;
   flex: 1;
-  max-width: 220px;
+  min-width: 140px;
+  max-width: 200px;
+  background-color: var(--surface);
+}
+/* FIX 10: Text inputs are the primary search — more prominent */
+.filter-bar input[type="text"],
+.filter-bar input[type="search"] {
+  flex: 2;
+  min-width: 180px;
+  max-width: 280px;
+  background: var(--surface);
+  border-color: var(--blue-mid);
+}
+.filter-bar input[type="text"]:focus,
+.filter-bar input[type="search"]:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-dim);
 }
 .filter-bar input[type="date"] {
   min-width: 140px;
@@ -560,7 +581,10 @@ a { color: var(--blue); text-decoration: none; }
 .btn-success  { background: var(--ok); color: #fff; }
 .btn-success:hover { background: #047857; transform: translateY(-1px); }
 
-.btn-icon { width: 34px; height: 34px; padding: 0; }
+.btn-icon {
+  width: 34px; height: 34px; padding: 0;
+  /* FIX 16: on mobile bump to 44px */
+}
 .btn-sm   { padding: 5px 11px; font-size: var(--t-11); }
 .btn-lg   { padding: 10px 22px; font-size: 14px; }
 .w-100    { width: 100%; }
@@ -571,6 +595,8 @@ a { color: var(--blue); text-decoration: none; }
   font-size: var(--t-11); font-weight: 600; letter-spacing: .01em;
   cursor: pointer; transition: var(--t); white-space: nowrap;
   border: 1px solid transparent; font-family: var(--font-ui);
+  /* FIX 16: min touch target height */
+  min-height: 30px;
 }
 .btn-pill-edit    { background: var(--surface-2); border-color: var(--border); color: var(--text-2); }
 .btn-pill-edit:hover { background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue); transform: translateY(-1px); }
@@ -603,9 +629,7 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ----------------------------------------------------------------
    STATS GRID
-   FIX: was minmax(230px,1fr) — on a 1280px screen with 256px sidebar
-   the content area is ~1024px and 4×230px = 920px which looks fine,
-   but when you add padding it clips. Reduced to 200px minimum.
+   FIX 14: Stat cards are clickable — cursor:pointer, full card click
 ---------------------------------------------------------------- */
 .stats-grid {
   display: grid;
@@ -619,6 +643,8 @@ a { color: var(--blue); text-decoration: none; }
   padding: 18px; box-shadow: var(--shadow-sm);
   position: relative; overflow: hidden; transition: var(--t-md);
   animation: statCardIn .5s cubic-bezier(.22,1,.36,1) both;
+  /* FIX 14: make clickable cards feel interactive */
+  cursor: pointer;
 }
 .stat-card:nth-child(1) { animation-delay: .05s; border-left-color: var(--blue); }
 .stat-card:nth-child(2) { animation-delay: .10s; border-left-color: var(--ok); }
@@ -629,7 +655,11 @@ a { color: var(--blue); text-decoration: none; }
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* FIX 14: Only animate on hover if the card IS clickable */
 .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.stat-card:not([onclick]):not([data-clickable]) { cursor: default; }
+.stat-card:not([onclick]):not([data-clickable]):hover { transform: none; }
+
 .stat-card::after {
   content: ''; position: absolute; top: -40px; right: -40px;
   width: 120px; height: 120px;
@@ -652,10 +682,9 @@ a { color: var(--blue); text-decoration: none; }
   font-size: 13px;
 }
 
-/* FIX: hero number now scales with clamp so it never overflows narrow cards */
 .stat-main-value {
   font-family: var(--font-display);
-  font-size: var(--t-hero);   /* clamp(32px, 3.5vw, 48px) */
+  font-size: var(--t-hero);
   font-weight: 400;
   color: var(--text-1); line-height: 1;
   margin-bottom: 14px; letter-spacing: -.02em;
@@ -693,8 +722,6 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ----------------------------------------------------------------
    CHARTS GRID
-   FIX: was minmax(400px,1fr) — on 1024px content area after sidebar
-   this allowed only one column. Reduced to 300px minimum.
 ---------------------------------------------------------------- */
 .charts-grid {
   display: grid;
@@ -761,8 +788,7 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ----------------------------------------------------------------
    TABLES
-   FIX: min-width reduced from 650px to 560px — 650px caused
-   horizontal scroll on 1280px screens with sidebar open.
+   FIX 11: min-height on rows, min-width on oncall cell
 ---------------------------------------------------------------- */
 .table-responsive {
   overflow-x: auto;
@@ -774,7 +800,7 @@ a { color: var(--blue); text-decoration: none; }
 .table {
   width: 100%; border-collapse: collapse;
   font-size: var(--t-13);
-  min-width: 560px;  /* FIX: was 650px */
+  min-width: 560px;
 }
 .table thead th {
   background: var(--surface-2); padding: 9px 14px; text-align: left;
@@ -795,21 +821,23 @@ a { color: var(--blue); text-decoration: none; }
 .table tbody tr:hover td:first-child { border-left-color: var(--blue) !important; }
 .table-striped tbody tr:nth-child(even)      { background: rgba(244,246,250,.7); }
 .table-striped tbody tr:nth-child(even):hover{ background: var(--blue-lt); }
-.table tbody td { padding: 10px 14px; color: var(--text-1); vertical-align: middle; line-height: 1.35; }
+/* FIX 11: consistent row height */
+.table tbody td {
+  padding: 10px 14px;
+  color: var(--text-1);
+  vertical-align: middle;
+  line-height: 1.35;
+  height: 56px;
+  min-height: 56px;
+}
 
 /* Cell helpers */
 .table tbody td .font-medium {
-  font-size: var(--t-13);
-  font-weight: 600;
-  color: var(--text-1);
-  letter-spacing: -.01em;
-  display: block;
+  font-size: var(--t-13); font-weight: 600; color: var(--text-1);
+  letter-spacing: -.01em; display: block;
 }
 .table .text-xs.text-gray-500 {
-  font-size: var(--t-11);
-  color: var(--text-3);
-  display: block;
-  margin-top: 2px;
+  font-size: var(--t-11); color: var(--text-3); display: block; margin-top: 2px;
 }
 .table .text-xs.text-blue-600 {
   font-family: var(--font-data);
@@ -819,7 +847,6 @@ a { color: var(--blue); text-decoration: none; }
 }
 .font-mono { font-family: var(--font-data); }
 
-/* Resident badge in table cell */
 .resident-badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 12px;
@@ -832,7 +859,6 @@ a { color: var(--blue); text-decoration: none; }
 .resident-external_resident   { background: var(--purple-lt); color: #5b21b6; border: 1px solid #d8b4fe; }
 .resident-institution { font-size: var(--t-10); opacity: 0.8; margin-left: 2px; }
 
-/* Row status accents */
 .table tbody tr.row-active    { border-left: 3px solid var(--ok); }
 .table tbody tr.row-on_leave  { border-left: 3px solid var(--warn); }
 .table tbody tr.row-inactive  { border-left: 3px solid var(--neutral); }
@@ -845,8 +871,9 @@ a { color: var(--blue); text-decoration: none; }
 .table-actions {
   display: flex; gap: 5px; align-items: center; flex-wrap: wrap;
 }
+/* FIX 16: larger touch targets on table actions */
 .table-actions .btn-sm {
-  width: 30px !important; height: 30px !important; padding: 0;
+  width: 34px !important; height: 34px !important; padding: 0;
   border: 1px solid var(--border-2); border-radius: var(--r-sm);
   color: var(--text-2); background: var(--surface); transition: var(--t);
   display: flex; align-items: center; justify-content: center;
@@ -863,12 +890,11 @@ a { color: var(--blue); text-decoration: none; }
   border-radius: var(--r-xs); letter-spacing: .03em; display: inline-block;
 }
 
-.rotation-period { display: flex; align-items: center; gap: 5px; font-family: var(--font-data); font-size: var(--t-12); flex-wrap: wrap; }
-.rp-date  { color: var(--text-1); font-weight: 600; font-size: var(--t-12); }
-.rp-arrow { color: var(--text-3); font-size: var(--t-10); }
-.date-cell{ font-family: var(--font-data); font-size: var(--t-12); color: var(--text-1); white-space: nowrap; }
-
-.oncall-shift-cell { display: flex; flex-direction: column; gap: 2px; }
+/* FIX 11: oncall shift cell min-width to prevent wrapping */
+.oncall-shift-cell {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 160px;
+}
 .oncall-shift-start, .oncall-shift-end {
   display: flex; align-items: baseline; gap: 6px;
   font-family: var(--font-data); flex-wrap: wrap;
@@ -893,6 +919,82 @@ a { color: var(--blue); text-decoration: none; }
 }
 .days-pill.days-urgent { background: var(--warn-lt); color: var(--warn); border-color: rgba(217,119,6,.2); }
 .days-pill.days-future { background: var(--blue-lt); color: var(--blue); border-color: var(--blue-mid); }
+
+/* ----------------------------------------------------------------
+   FIX 13: Empty states inside tables — tighter sizing
+---------------------------------------------------------------- */
+.empty-state {
+  text-align: center; padding: 40px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.empty-state-icon { font-size: 38px; color: var(--blue); opacity: .18; display: block; margin-bottom: 4px; }
+.empty-state-title { font-size: var(--t-15); font-weight: 700; color: var(--text-2); letter-spacing: -.01em; }
+.empty-state-description { font-size: var(--t-12); color: var(--text-3); line-height: 1.5; }
+.empty-state .btn { margin-top: 6px; }
+
+/* FIX 13: Tighter empty state when inside a table cell */
+.table .empty-state {
+  padding: 28px 20px;
+}
+.table .empty-state-icon {
+  font-size: 28px;
+  margin-bottom: 2px;
+}
+.table .empty-state-title {
+  font-size: var(--t-13);
+}
+.table .empty-state-description {
+  font-size: var(--t-11);
+}
+
+.loading-state { text-align: center; padding: 48px; color: var(--text-3); display: flex; align-items: center; justify-content: center; gap: 10px; }
+.loading-state i { color: var(--blue); }
+
+.text-sm   { font-size: 12px; }
+.text-gray-400 { color: var(--text-4); }
+.py-6      { padding-top: 24px; padding-bottom: 24px; }
+
+/* ----------------------------------------------------------------
+   FIX 17: SKELETON LOADERS
+---------------------------------------------------------------- */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--border) 50%,
+    var(--surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--r-sm);
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-row {
+  height: 52px;
+  margin-bottom: 4px;
+  border-radius: var(--r-sm);
+}
+
+.skeleton-card {
+  height: 130px;
+  margin-bottom: 14px;
+  border-radius: var(--r-lg);
+}
+
+.skeleton-text {
+  height: 14px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.skeleton-text.short { width: 40%; }
+.skeleton-text.medium { width: 65%; }
+.skeleton-text.full { width: 100%; }
 
 /* ----------------------------------------------------------------
    PAGINATION
@@ -1017,11 +1119,13 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ----------------------------------------------------------------
    ANNOUNCEMENTS
+   FIX 15: Unread state styles
 ---------------------------------------------------------------- */
 .announcement-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow-xs);
   transition: var(--t-md); margin-bottom: 10px;
+  border-left: 3px solid transparent;
 }
 .announcement-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .announcement-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
@@ -1030,24 +1134,26 @@ a { color: var(--blue); text-decoration: none; }
 .announcement-body { font-size: var(--t-13); color: var(--text-2); line-height: 1.6; margin-bottom: 10px; }
 .announcement-footer { display: flex; justify-content: space-between; align-items: center; font-size: var(--t-11); color: var(--text-3); padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
 
-/* ----------------------------------------------------------------
-   EMPTY / LOADING STATES
----------------------------------------------------------------- */
-.empty-state {
-  text-align: center; padding: 40px 24px;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
+/* FIX 15: Unread announcement visual state */
+.announcement-card.unread {
+  border-left-color: var(--blue);
+  background: linear-gradient(90deg, var(--blue-lt) 0%, var(--surface) 80px);
 }
-.empty-state-icon { font-size: 38px; color: var(--blue); opacity: .18; display: block; margin-bottom: 4px; }
-.empty-state-title { font-size: var(--t-15); font-weight: 700; color: var(--text-2); letter-spacing: -.01em; }
-.empty-state-description { font-size: var(--t-12); color: var(--text-3); line-height: 1.5; }
-.empty-state .btn { margin-top: 6px; }
-
-.loading-state { text-align: center; padding: 48px; color: var(--text-3); display: flex; align-items: center; justify-content: center; gap: 10px; }
-.loading-state i { color: var(--blue); }
-
-.text-sm   { font-size: 12px; }
-.text-gray-400 { color: var(--text-4); }
-.py-6      { padding-top: 24px; padding-bottom: 24px; }
+.announcement-card.unread .announcement-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.announcement-card.unread .announcement-title::before {
+  content: '';
+  display: inline-block;
+  width: 7px; height: 7px;
+  background: var(--blue);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: statusPulse 2.2s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgba(45,122,255,.2);
+}
 
 /* ----------------------------------------------------------------
    RESEARCH LINES
@@ -1094,7 +1200,6 @@ a { color: var(--blue); text-decoration: none; }
 .keyword-tag { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); padding: 4px 10px; border-radius: 20px; font-family: var(--font-data); font-size: var(--t-10); font-weight: 600; transition: var(--t); }
 .keyword-tag:hover { background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue); }
 
-/* Trials note */
 .trials-note {
   margin: 14px 20px 20px; padding: 12px 16px;
   background: var(--blue-lt); border-radius: var(--r);
@@ -1105,7 +1210,6 @@ a { color: var(--blue); text-decoration: none; }
 .trials-note a { color: var(--blue); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; transition: var(--t); }
 .trials-note a:hover { color: #1a66f0; }
 
-/* Innovation Projects */
 .innovation-projects-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 18px; padding: 18px;
@@ -1137,8 +1241,6 @@ a { color: var(--blue); text-decoration: none; }
 .need-tag { background: var(--surface); border: 1px solid var(--border-2); color: var(--text-2); padding: 5px 12px; border-radius: 20px; font-family: var(--font-data); font-size: var(--t-11); font-weight: 600; transition: var(--t); }
 .need-tag:hover { background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue); }
 .innovation-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
-
-/* Partner needs grid in innovation modal */
 .partner-needs-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .need-checkbox {
   display: inline-flex; align-items: center; padding: 5px 12px;
@@ -1150,37 +1252,50 @@ a { color: var(--blue); text-decoration: none; }
 .need-selected { border-color: var(--blue); background: var(--blue-lt); color: var(--blue); }
 
 /* ----------------------------------------------------------------
-   MODALS
+   MODALS — ALL 7 MODAL FIXES APPLIED
 ---------------------------------------------------------------- */
+
+/* FIX 1+2: overlay scrolling — flex-start not center, container auto-centered */
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(10,22,40,.55); backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 9000; padding: 16px; animation: fadeIn .15s ease;
-  overflow-y: auto;    /* FIX: allows modal to scroll if taller than viewport */
+  display: flex;
+  align-items: flex-start;      /* FIX 1: was center — caused overflow clash */
+  justify-content: center;
+  z-index: 9000;
+  padding: 20px 16px;           /* FIX 1: consistent padding all sides */
+  animation: fadeIn .15s ease;
+  overflow-y: auto;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(16px) scale(.98); }
   to   { opacity: 1; transform: none; }
 }
+
+/* FIX 2+3+6: container — auto margin centers it, capped width, visible overflow */
 .modal-container {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl);
-  width: 100%; max-width: 640px; max-height: 92vh;
+  width: 100%;
+  max-width: min(640px, calc(100vw - 32px));  /* FIX 3: never exceeds viewport */
+  max-height: 92vh;
   display: flex; flex-direction: column; box-shadow: var(--shadow-xl);
-  animation: slideUp .22s cubic-bezier(.22,1,.36,1); overflow: hidden;
-  margin: auto;        /* centers in the flex overlay even when scrolling */
+  animation: slideUp .22s cubic-bezier(.22,1,.36,1);
+  overflow: visible;             /* FIX 6: was hidden — clipped content */
+  margin: auto;                  /* FIX 2: centers in flex-start overlay */
 }
-.modal-wide    { max-width: 820px; }
-.modal-sm      { max-width: 460px; }
-.modal-profile { max-width: 980px; height: 88vh; max-height: 88vh; }
-.modal-unit-residents { max-width: 720px; }
+/* FIX 3: capped widths for each modal size variant */
+.modal-wide    { max-width: min(820px, calc(100vw - 32px)); }
+.modal-sm      { max-width: min(460px, calc(100vw - 32px)); }
+.modal-profile { max-width: min(980px, calc(100vw - 32px)); height: auto; max-height: 88vh; } /* FIX 4 */
+.modal-unit-residents { max-width: min(720px, calc(100vw - 32px)); }
 
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 18px; border-bottom: 1px solid var(--border);
   background: var(--surface); flex-shrink: 0;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;  /* match container */
 }
 .modal-title { display: flex; align-items: center; gap: 9px; font-size: var(--t-15); font-weight: 700; color: var(--text-1); letter-spacing: -.015em; }
 .modal-title i { color: var(--blue); font-size: var(--t-15); }
@@ -1192,11 +1307,20 @@ a { color: var(--blue); text-decoration: none; }
   font-size: var(--t-11); transition: var(--t); flex-shrink: 0;
 }
 .modal-close:hover { background: var(--danger-lt); border-color: rgba(220,53,69,.2); color: var(--danger); }
-.modal-body   { padding: 18px; overflow-y: auto; flex: 1; }
+
+/* FIX 6: modal-body is the scroller — parent is visible */
+.modal-body {
+  padding: 18px;
+  overflow-y: auto;           /* FIX 6: scrolls within the modal */
+  flex: 1;
+  min-height: 0;              /* FIX 7: required for flex overflow */
+}
+
 .modal-footer {
   padding: 14px 18px; border-top: 1px solid var(--border);
   display: flex; justify-content: flex-end; gap: 10px;
   background: var(--surface-2); flex-shrink: 0; flex-wrap: wrap;
+  border-radius: 0 0 var(--r-xl) var(--r-xl);  /* match container */
 }
 .modal-tabs {
   display: flex; gap: 3px; background: var(--surface-2);
@@ -1208,6 +1332,7 @@ a { color: var(--blue); text-decoration: none; }
   color: var(--text-2); cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 5px; transition: var(--t);
   min-width: 80px; font-family: var(--font-ui);
+  min-height: 36px;  /* FIX 16 */
 }
 .modal-tab:hover { color: var(--text-1); }
 .modal-tab.active { background: var(--surface); color: var(--blue); box-shadow: var(--shadow-xs); }
@@ -1219,14 +1344,18 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ----------------------------------------------------------------
    PROFILE MODAL
-   FIX: was min-height: 600px causing overflow on 768px-height screens.
-   Now uses flex properly.
+   FIX 4: profile-left uses clamp, height is auto not fixed
 ---------------------------------------------------------------- */
-.modal-profile .modal-body { padding: 0; display: flex; overflow: hidden; }
-.profile-layout { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.modal-profile .modal-body { padding: 0; display: flex; overflow: hidden; min-height: 0; }
+.profile-layout {
+  display: flex; flex: 1;
+  overflow: hidden; min-height: 0;
+  min-height: 400px; /* sensible minimum */
+}
 
 .profile-left {
-  width: 260px; flex-shrink: 0; background: var(--ink);
+  width: clamp(200px, 22%, 260px);  /* FIX 4: was fixed 260px */
+  flex-shrink: 0; background: var(--ink);
   padding: 20px 18px; display: flex; flex-direction: column; gap: 16px;
   position: relative; overflow: hidden; overflow-y: auto;
 }
@@ -1237,7 +1366,6 @@ a { color: var(--blue); text-decoration: none; }
   pointer-events: none;
 }
 
-/* Profile avatar */
 .profile-avatar {
   width: 80px; height: 80px; border-radius: 50%;
   background: linear-gradient(135deg, var(--blue), var(--ink-3));
@@ -1246,9 +1374,9 @@ a { color: var(--blue); text-decoration: none; }
   border: 3px solid rgba(255,255,255,.15);
   box-shadow: 0 8px 20px rgba(0,0,0,.3);
 }
-
 .profile-identity {
-  padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.08); position: relative; z-index: 1; text-align: center;
+  padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,.08);
+  position: relative; z-index: 1; text-align: center;
 }
 .profile-full-name {
   font-family: var(--font-display); font-size: 20px; font-weight: 400; font-style: italic;
@@ -1308,13 +1436,11 @@ a { color: var(--blue); text-decoration: none; }
 .profile-contact-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
 .profile-contact-btn.disabled { opacity: .3; cursor: default; pointer-events: none; }
 
-/* Research stats grid inside dark sidebar */
 .research-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 4px; padding: 8px 12px 10px; }
 .research-stat { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: var(--r); padding: 10px 8px; text-align: center; }
 .research-stat .stat-value { font-family: var(--font-display); font-size: 22px; font-weight: 400; color: var(--p-blue); line-height: 1.2; margin-bottom: 3px; }
 .research-stat .stat-label { font-family: var(--font-data); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.35); }
 
-/* Leave balance in sidebar */
 .leave-balance-item { padding: 4px 12px 10px; }
 .balance-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 .balance-type  { font-family: var(--font-data); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.4); }
@@ -1322,13 +1448,11 @@ a { color: var(--blue); text-decoration: none; }
 .progress-bar  { width: 100%; height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 2px; transition: width .3s ease; }
 
-/* Role item in dark sidebar */
 .profile-role-item { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-bottom: 1px solid rgba(255,255,255,.05); }
 .profile-role-item:last-child { border-bottom: none; }
 .profile-role-item i { width: 18px; font-size: 13px; }
 .profile-role-item span { font-size: var(--t-12); color: rgba(255,255,255,.75); }
 
-/* Resident category badge in sidebar */
 .resident-category-badge {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 3px 10px; border-radius: 16px;
@@ -1344,7 +1468,6 @@ a { color: var(--blue); text-decoration: none; }
 .profile-right::-webkit-scrollbar { width: 4px; }
 .profile-right::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
 
-/* Profile tabs */
 .profile-tabs {
   display: flex; gap: 4px; background: var(--surface-2);
   border-radius: var(--r); padding: 4px; margin-bottom: 16px; flex-wrap: wrap;
@@ -1355,13 +1478,13 @@ a { color: var(--blue); text-decoration: none; }
   color: var(--text-2); cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 7px; transition: var(--t);
   min-width: 90px; font-family: var(--font-ui);
+  min-height: 40px;  /* FIX 16 */
 }
 .profile-tab i { font-size: 13px; color: var(--text-3); transition: var(--t); }
 .profile-tab:hover { color: var(--text-1); }
 .profile-tab.active { background: var(--surface); color: var(--blue); box-shadow: var(--shadow-xs); }
 .profile-tab.active i { color: var(--blue); }
 
-/* Activity cards in profile */
 .activity-card {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-lg); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow-xs);
@@ -1387,7 +1510,6 @@ a { color: var(--blue); text-decoration: none; }
 .empty-state.small { padding: 20px 14px; }
 .empty-state.small i { font-size: 22px; margin-bottom: 6px; color: var(--blue); opacity: .3; display: block; }
 
-/* Research tab */
 .research-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px; margin-bottom: 12px; }
 .research-card h4 { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .research-card h4 i { color: var(--blue); font-size: 13px; }
@@ -1410,9 +1532,9 @@ a { color: var(--blue); text-decoration: none; }
 .pub-title { font-size: 12px; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
 .pub-meta  { font-family: var(--font-data); font-size: 11px; color: var(--text-3); }
 
-/* Supervision tab */
 .supervision-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-.supervision-stats .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; text-align: center; box-shadow: none; }
+.supervision-stats .stat-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; text-align: center; box-shadow: none; cursor: default; }
+.supervision-stats .stat-card:hover { transform: none; }
 .supervision-stats .stat-card .stat-value { font-family: var(--font-display); font-size: 28px; font-weight: 400; color: var(--blue); line-height: 1.2; margin-bottom: 3px; }
 .supervision-stats .stat-card .stat-label { font-family: var(--font-data); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-3); }
 .supervision-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px; }
@@ -1429,7 +1551,6 @@ a { color: var(--blue); text-decoration: none; }
 .resident-evaluation .label { color: var(--text-3); margin-right: 6px; }
 .resident-evaluation .value { font-weight: 600; color: var(--warn); }
 
-/* Unit residents modal */
 .unit-meta-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0; border-bottom: 1px solid var(--border); background: var(--surface-2); }
 .umc { padding: 11px 14px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
 .umc:last-child { border-right: none; }
@@ -1473,6 +1594,8 @@ a { color: var(--blue); text-decoration: none; }
   font-family: var(--font-ui); font-size: var(--t-13); font-weight: 400;
   color: var(--text-1); background: var(--surface);
   transition: var(--t); -webkit-appearance: none; line-height: 1.4;
+  /* FIX 16: min touch target height */
+  min-height: 38px;
 }
 .form-control:focus, .form-select:focus {
   outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-dim);
@@ -1486,7 +1609,6 @@ a { color: var(--blue); text-decoration: none; }
 textarea.form-control { min-height: 72px; resize: vertical; }
 .grid.gap-4 { gap: 16px; }
 
-/* Resident category selector in form */
 .resident-category-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .category-option {
   flex: 1; min-width: 100px; border: 1.5px solid var(--border);
@@ -1498,7 +1620,7 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 .hidden { display: none; }
 
 .toggle-row { display: flex; border: 1px solid var(--border-2); border-radius: var(--r); overflow: hidden; flex-wrap: wrap; }
-.toggle-opt { flex: 1; padding: 8px 12px; background: var(--surface-2); border: none; font-size: var(--t-12); font-weight: 600; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--t); min-width: 100px; font-family: var(--font-ui); }
+.toggle-opt { flex: 1; padding: 8px 12px; background: var(--surface-2); border: none; font-size: var(--t-12); font-weight: 600; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--t); min-width: 100px; font-family: var(--font-ui); min-height: 40px; }
 .toggle-opt.active      { background: var(--blue-lt); color: var(--blue); }
 .toggle-opt.active-warn { background: var(--warn-lt); color: var(--warn); }
 
@@ -1520,7 +1642,7 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
 
 .priority-selector { display: flex; gap: 6px; flex-wrap: wrap; }
-.priority-option { flex: 1; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: var(--r); background: none; font-size: var(--t-12); font-weight: 600; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: var(--t); font-family: var(--font-ui); min-width: 72px; }
+.priority-option { flex: 1; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: var(--r); background: none; font-size: var(--t-12); font-weight: 600; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: var(--t); font-family: var(--font-ui); min-width: 72px; min-height: 38px; }
 .priority-option.active { border-color: var(--blue); background: var(--blue-lt); color: var(--blue); }
 .priority-dot { width: 7px; height: 7px; border-radius: 50%; }
 .priority-dot.normal { background: var(--ok); }
@@ -1536,7 +1658,7 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 .preview-footer i { color: var(--blue); margin-right: 4px; }
 
 .comms-tabs { display: flex; gap: 3px; background: var(--surface-2); border-radius: var(--r); padding: 3px; margin-bottom: 16px; flex-wrap: wrap; }
-.comms-tab { flex: 1; padding: 8px 12px; background: none; border: none; border-radius: var(--r-sm); font-size: var(--t-12); font-weight: 600; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--t); font-family: var(--font-ui); min-width: 110px; }
+.comms-tab { flex: 1; padding: 8px 12px; background: none; border: none; border-radius: var(--r-sm); font-size: var(--t-12); font-weight: 600; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: var(--t); font-family: var(--font-ui); min-width: 110px; min-height: 40px; }
 .comms-tab.active { background: var(--surface); color: var(--blue); box-shadow: var(--shadow-xs); }
 .comms-content { padding: 0; }
 
@@ -1552,7 +1674,6 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 .status-icon.equipment { background: var(--teal); }
 .status-desc { font-family: var(--font-data); font-size: var(--t-11); font-weight: 700; color: var(--text-1); text-transform: uppercase; letter-spacing: .04em; }
 
-/* Role assignment cards */
 .role-assignment-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 12px; }
 .role-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .role-header i { color: var(--blue); font-size: 15px; }
@@ -1578,10 +1699,9 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 .cert-tag:hover { background: var(--blue-lt); border-color: var(--blue-mid); }
 .cert-tag.active { background: var(--blue); border-color: var(--blue); color: white; }
 
-.checkbox-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: var(--text-2); }
+.checkbox-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: var(--text-2); min-height: 24px; }
 .checkbox-label input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
 
-/* Misc form helpers */
 .rotation-preview { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; font-size: var(--t-13); }
 .alert { border-radius: var(--r); padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: flex-start; gap: 8px; font-size: var(--t-13); }
 .alert-info { background: var(--blue-lt); border: 1px solid var(--blue-mid); color: var(--blue); }
@@ -1589,19 +1709,16 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 .info-box { background: var(--blue-lt); padding: 10px 14px; border-radius: var(--r); margin-top: 12px; font-size: 12px; color: var(--blue); display: flex; align-items: center; gap: 8px; }
 .info-box i { font-size: 13px; }
 
-/* Button with badge */
 .btn-with-badge { position: relative; }
 .badge-sm { position: absolute; top: -8px; right: -8px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 10px; background: var(--danger); color: white; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .header-actions { display: flex; gap: 8px; align-items: center; }
 
-/* sec-chip in profile */
 .sec-chip { padding: 2px 8px; border-radius: 20px; font-family: var(--font-data); font-size: var(--t-10); font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
 .chip-live     { background: var(--danger); color: #fff; }
 .chip-active   { background: var(--ok);     color: #fff; }
 .chip-upcoming { background: var(--info-lt);color: var(--blue); }
 .chip-none     { background: var(--neutral-lt); color: var(--neutral); }
 
-/* pdc grid */
 .profile-data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
 .pdc { padding: 9px 14px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 3px; }
 .pdc:nth-child(2n)        { border-right: none; }
@@ -1648,8 +1765,6 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 
 /* ----------------------------------------------------------------
    LOGIN
-   FIX: was overflow:hidden on login-container — on short viewports
-   (e.g. 600px height) the button was unreachable. Now scrollable.
 ---------------------------------------------------------------- */
 .login-container {
   min-height: 100vh;
@@ -1661,7 +1776,7 @@ textarea.form-control { min-height: 72px; resize: vertical; }
     radial-gradient(circle at 80% 20%, rgba(13,158,110,.1) 0%, transparent 50%),
     radial-gradient(circle, rgba(255,255,255,.04) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 28px 28px;
-  overflow-y: auto;   /* FIX: was no overflow set, causing clipping on short screens */
+  overflow-y: auto;
 }
 .login-card {
   background: var(--surface); border-radius: var(--r-2xl);
@@ -1676,7 +1791,7 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 .login-subtitle { font-family: var(--font-data); color: var(--text-3); font-size: var(--t-11); text-transform: uppercase; letter-spacing: .09em; }
 .login-error { background: var(--danger-lt); border: 1px solid var(--danger); border-radius: var(--r); padding: 10px 14px; color: var(--danger); font-size: 13px; display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
 .password-input-wrapper { position: relative; }
-.password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-3); cursor: pointer; padding: 5px; }
+.password-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-3); cursor: pointer; padding: 5px; min-width: 32px; min-height: 32px; display: flex; align-items: center; justify-content: center; }
 .password-toggle:hover { color: var(--blue); }
 .forgot-password { font-size: 13px; color: var(--blue); text-decoration: none; }
 .forgot-password:hover { text-decoration: underline; }
@@ -1686,9 +1801,7 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 
 /* ----------------------------------------------------------------
    LIVE STATS SIDEBAR
-   FIX: was showing on all screens; now hidden below 1440px to avoid
-   crushing the content area on common 1280–1366px laptop screens.
-   The toggle button is still visible so users can open it on demand.
+   FIX 8: Toggle always visible, repositioned on mobile
 ---------------------------------------------------------------- */
 .stats-toggle-btn {
   position: fixed; right: 0; top: 50%; transform: translateY(-50%);
@@ -1771,7 +1884,6 @@ textarea.form-control { min-height: 72px; resize: vertical; }
 .empty-timeline h5 { font-size: var(--t-12); font-weight: 700; color: var(--p-muted); margin-bottom: 4px; }
 .empty-timeline p  { font-size: var(--t-11); color: var(--p-faint); }
 
-/* Metrics grid in stats sidebar */
 .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
 .metric-card { background: var(--p-surface); border: 1px solid var(--p-border); border-radius: var(--r); padding: 11px; position: relative; overflow: hidden; transition: var(--t); }
 .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
@@ -1890,11 +2002,29 @@ textarea.form-control { min-height: 72px; resize: vertical; }
   .sidebar.mobile-open { transform: none; }
   .main-content { margin-left: 0 !important; }
   .content-area { overflow-y: auto; }
-  .mobile-menu-toggle { display: block; }
-  .stats-toggle-btn { display: none; }
+  .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; }
+
+  /* FIX 8: Stats toggle repositioned to bottom on mobile — stays visible */
+  .stats-toggle-btn {
+    bottom: 20px;
+    top: auto;
+    right: 0;
+    transform: none;
+    border-radius: var(--r) var(--r) 0 0;
+    flex-direction: row;
+    padding: 10px 16px;
+    gap: 8px;
+    writing-mode: horizontal-tb;
+  }
+  .stats-toggle-btn .toggle-label {
+    writing-mode: horizontal-tb;
+    letter-spacing: .05em;
+  }
+
+  /* FIX 4: profile modal stacks vertically */
   .modal-profile { height: auto; max-height: 96vh; }
-  .profile-layout { flex-direction: column; }
-  .profile-left { width: 100%; }
+  .profile-layout { flex-direction: column; overflow-y: auto; }
+  .profile-left { width: 100%; min-width: unset; }
   .charts-grid { grid-template-columns: 1fr; }
 }
 
@@ -1923,18 +2053,50 @@ textarea.form-control { min-height: 72px; resize: vertical; }
   .filter-bar { gap: 6px; }
   .filter-bar .form-control,
   .filter-bar .form-select { min-width: 120px; max-width: 100%; }
+
+  /* FIX 12: show breadcrumb on mobile where it is useful */
+  .breadcrumb { display: flex; }
+
+  /* FIX 16: larger touch targets on mobile */
+  .table-actions .btn-sm {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .btn-pill { min-height: 38px; padding: 8px 14px; }
+  .sidebar-menu-link { min-height: 48px; }
+}
+
+/* FIX 5: modal grid collapse on narrow modals/viewports */
+@media (max-width: 580px) {
+  .modal-body .grid-cols-2 { grid-template-columns: 1fr; }
+  .modal-body .col-span-2  { grid-column: span 1; }
 }
 
 @media (max-width: 480px) {
   .login-card { padding: 22px 16px; }
+
+  /* FIX 1: bottom-sheet modals on phones */
   .modal-overlay { padding: 0; align-items: flex-end; }
-  .modal-container { border-radius: var(--r-xl) var(--r-xl) 0 0; max-height: 96vh; margin: 0; }
+  .modal-container {
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    max-height: 96vh;
+    margin: 0;
+    max-width: 100%;
+  }
+
+  /* FIX 7: bottom-sheet body properly scrolls */
+  .modal-body {
+    min-height: 0;
+    max-height: calc(96vh - 120px);
+    overflow-y: auto;
+  }
+
+  .modal-tabs { flex-direction: column; }
+  .modal-tab { width: 100%; }
   .reason-grid { grid-template-columns: 1fr 1fr; }
   .metrics-grid { grid-template-columns: 1fr 1fr; }
   .availability-grid { grid-template-columns: 1fr 1fr; }
   .action-buttons { grid-template-columns: 1fr; }
-  .modal-tabs { flex-direction: column; }
-  .modal-tab { width: 100%; }
   .stats-grid { grid-template-columns: 1fr; }
   .trial-stats-grid { grid-template-columns: 1fr 1fr; }
   .supervision-stats { grid-template-columns: 1fr; }
@@ -1945,6 +2107,14 @@ textarea.form-control { min-height: 72px; resize: vertical; }
   .filter-bar { flex-direction: column; }
   .filter-bar .form-control,
   .filter-bar .form-select { min-width: unset; max-width: 100%; flex: none; width: 100%; }
+
+  /* FIX 8: stats toggle at bottom on very small screens */
+  .stats-toggle-btn {
+    bottom: 0;
+    border-radius: var(--r) var(--r) 0 0;
+    width: auto;
+    padding: 10px 20px;
+  }
 }
 
 /* ----------------------------------------------------------------
