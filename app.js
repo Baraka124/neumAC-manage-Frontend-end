@@ -2118,6 +2118,146 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule })
         const { systemStats, updateDashboardStats, loadSystemStats } = dashOps
 
+        // ============ NEW COMPACT VIEW STATE ============
+        const rotationView = ref('detailed') // 'compact', 'detailed', or 'week'
+        const onCallView = ref('detailed') // 'compact' or 'detailed'
+
+        // ============ NEW COMPACT VIEW COMPUTED PROPERTIES ============
+        
+        // Group residents with their rotations for compact view
+        const residentsWithRotations = computed(() => {
+          const residents = availableResidents.value
+          
+          return residents.map(resident => {
+            const allResidentRotations = rotations.value.filter(r => r.resident_id === resident.id)
+            
+            // Sort rotations by date
+            const sortedRotations = [...allResidentRotations].sort((a, b) => {
+              return new Date(a.start_date) - new Date(b.start_date)
+            })
+            
+            const pastRotations = sortedRotations.filter(r => 
+              r.rotation_status === 'completed' || 
+              (r.rotation_status !== 'active' && new Date(r.end_date) < new Date())
+            )
+            
+            const currentRotation = sortedRotations.find(r => r.rotation_status === 'active')
+            
+            const upcomingRotations = sortedRotations.filter(r => 
+              r.rotation_status === 'scheduled' && 
+              (!currentRotation || new Date(r.start_date) > new Date(currentRotation.end_date))
+            )
+            
+            // Calculate empty slots (assuming max 8 rotations per resident over program)
+            const maxRotations = 8
+            const totalRotations = sortedRotations.length
+            const emptySlots = Math.max(0, maxRotations - totalRotations)
+            
+            return {
+              ...resident,
+              allRotations: sortedRotations,
+              pastRotations: pastRotations.map(r => ({
+                ...r,
+                unitName: getTrainingUnitName(r.training_unit_id)
+              })),
+              currentRotation: currentRotation ? {
+                ...currentRotation,
+                unitName: getTrainingUnitName(currentRotation.training_unit_id)
+              } : null,
+              upcomingRotations: upcomingRotations.map(r => ({
+                ...r,
+                unitName: getTrainingUnitName(r.training_unit_id)
+              })),
+              totalRotations: sortedRotations.length,
+              emptySlots
+            }
+          }).filter(r => 
+            // Apply filters
+            (!rotationFilters.value.resident || r.id === rotationFilters.value.resident) &&
+            (!rotationFilters.value.trainingUnit || r.allRotations.some(rot => rot.training_unit_id === rotationFilters.value.trainingUnit)) &&
+            (!rotationFilters.value.status || r.allRotations.some(rot => rot.rotation_status === rotationFilters.value.status)) &&
+            (!rotationFilters.value.search || r.full_name.toLowerCase().includes(rotationFilters.value.search.toLowerCase()))
+          )
+        })
+
+        // Group on-call schedules by date for compact view
+        const groupedOnCallSchedules = computed(() => {
+          const groups = {}
+          
+          onCallSchedule.value.forEach(shift => {
+            const date = Utils.normalizeDate(shift.duty_date)
+            if (!groups[date]) {
+              groups[date] = {
+                date,
+                dayOfWeek: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }),
+                shifts: []
+              }
+            }
+            
+            // Apply filters
+            if (onCallFilters.value.date && date !== onCallFilters.value.date) return
+            if (onCallFilters.value.shiftType && shift.shift_type !== onCallFilters.value.shiftType) return
+            if (onCallFilters.value.physician && shift.primary_physician_id !== onCallFilters.value.physician && 
+                shift.backup_physician_id !== onCallFilters.value.physician) return
+            if (onCallFilters.value.search) {
+              const physicianName = getPhysicianName(shift.primary_physician_id).toLowerCase()
+              if (!physicianName.includes(onCallFilters.value.search.toLowerCase())) return
+            }
+            
+            groups[date].shifts.push(shift)
+          })
+          
+          // Sort by date
+          return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
+        })
+
+        // Week days for grid view
+        const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+        // Helper for week grid
+        const getRotationsForDay = (resident, dayIndex) => {
+          const today = new Date()
+          const startOfWeek = new Date(today)
+          startOfWeek.setDate(today.getDate() - today.getDay() + 1) // Monday
+          
+          const targetDate = new Date(startOfWeek)
+          targetDate.setDate(startOfWeek.getDate() + dayIndex - 1)
+          const targetDateStr = Utils.normalizeDate(targetDate)
+          
+          return resident.allRotations?.filter(r => {
+            const start = Utils.normalizeDate(r.start_date)
+            const end = Utils.normalizeDate(r.end_date)
+            return targetDateStr >= start && targetDateStr <= end
+          }) || []
+        }
+
+        const isRotationActive = (rotation) => {
+          return rotation.rotation_status === 'active'
+        }
+
+        const isShiftActive = (shift) => {
+          if (!shift.duty_date) return false
+          const today = Utils.normalizeDate(new Date())
+          const shiftDate = Utils.normalizeDate(shift.duty_date)
+          
+          if (shiftDate !== today) return false
+          
+          const now = new Date()
+          const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+          
+          return currentTime >= shift.start_time && currentTime <= shift.end_time
+        }
+
+        const viewRotationDetails = (rotation) => {
+          // Find the resident and open their profile
+          const resident = medicalStaff.value.find(s => s.id === rotation.resident_id)
+          if (resident) {
+            viewStaffDetails(resident)
+            // Could also set active tab to rotations
+          }
+        }
+
+        // ============ EXISTING COMPUTED PROPERTIES ============
         const getStaffName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
         const getSupervisorName = (id) => getStaffName(id)
         const getPhysicianName = (id) => getStaffName(id)
@@ -2263,6 +2403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         return {
+          // Existing returns
           loading, saving, currentUser, loginForm, loginLoading,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
@@ -2344,6 +2485,17 @@ document.addEventListener('DOMContentLoaded', () => {
           saveAbsence: () => absenceOps.saveAbsence(saving),
           saveUserProfile, hasPermission,
           dismissAlert: ui.dismissAlert, activeAlertsCount: ui.activeAlertsCount,
+          
+          // NEW: Compact view properties
+          rotationView,
+          onCallView,
+          residentsWithRotations,
+          groupedOnCallSchedules,
+          weekDays,
+          getRotationsForDay,
+          isRotationActive,
+          isShiftActive,
+          viewRotationDetails
         }
       }
     })
