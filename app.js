@@ -2125,91 +2125,92 @@ document.addEventListener('DOMContentLoaded', () => {
         // ============ NEW COMPACT VIEW COMPUTED PROPERTIES ============
         
         // Group residents with their rotations for compact view
-        const residentsWithRotations = computed(() => {
-          const residents = availableResidents.value
-          
-          return residents.map(resident => {
-            const allResidentRotations = rotations.value.filter(r => r.resident_id === resident.id)
-            
-            // Sort rotations by date
-            const sortedRotations = [...allResidentRotations].sort((a, b) => {
-              return new Date(a.start_date) - new Date(b.start_date)
-            })
-            
-            const pastRotations = sortedRotations.filter(r => 
-              r.rotation_status === 'completed' || 
-              (r.rotation_status !== 'active' && new Date(r.end_date) < new Date())
-            )
-            
-            const currentRotation = sortedRotations.find(r => r.rotation_status === 'active')
-            
-            const upcomingRotations = sortedRotations.filter(r => 
-              r.rotation_status === 'scheduled' && 
-              (!currentRotation || new Date(r.start_date) > new Date(currentRotation.end_date))
-            )
-            
-            // Calculate empty slots (assuming max 8 rotations per resident over program)
-            const maxRotations = 8
-            const totalRotations = sortedRotations.length
-            const emptySlots = Math.max(0, maxRotations - totalRotations)
-            
-            return {
-              ...resident,
-              allRotations: sortedRotations,
-              pastRotations: pastRotations.map(r => ({
-                ...r,
-                unitName: getTrainingUnitName(r.training_unit_id)
-              })),
-              currentRotation: currentRotation ? {
-                ...currentRotation,
-                unitName: getTrainingUnitName(currentRotation.training_unit_id)
-              } : null,
-              upcomingRotations: upcomingRotations.map(r => ({
-                ...r,
-                unitName: getTrainingUnitName(r.training_unit_id)
-              })),
-              totalRotations: sortedRotations.length,
-              emptySlots
-            }
-          }).filter(r => 
-            // Apply filters
-            (!rotationFilters.value.resident || r.id === rotationFilters.value.resident) &&
-            (!rotationFilters.value.trainingUnit || r.allRotations.some(rot => rot.training_unit_id === rotationFilters.value.trainingUnit)) &&
-            (!rotationFilters.value.status || r.allRotations.some(rot => rot.rotation_status === rotationFilters.value.status)) &&
-            (!rotationFilters.value.search || r.full_name.toLowerCase().includes(rotationFilters.value.search.toLowerCase()))
-          )
-        })
+const residentsWithRotations = computed(() => {
+  const residents = availableResidents.value
+  
+  return residents.map(resident => {
+    const allResidentRotations = rotations.value.filter(r => r.resident_id === resident.id)
+    
+    // Sort rotations by date
+    const sortedRotations = [...allResidentRotations].sort((a, b) => {
+      return new Date(a.start_date) - new Date(b.start_date)
+    })
+    
+    const pastRotations = sortedRotations.filter(r => 
+      r.rotation_status === 'completed' || 
+      (r.rotation_status !== 'active' && new Date(r.end_date) < new Date())
+    )
+    
+    const currentRotation = sortedRotations.find(r => r.rotation_status === 'active')
+    
+    const upcomingRotations = sortedRotations.filter(r => 
+      r.rotation_status === 'scheduled' && 
+      (!currentRotation || new Date(r.start_date) > new Date(currentRotation.end_date))
+    )
+    
+    // Calculate empty slots (assuming max 8 rotations per resident over program)
+    const maxRotations = 8
+    const totalRotations = sortedRotations.length
+    const emptySlots = Math.max(0, maxRotations - totalRotations)
+    
+    return {
+      ...resident,
+      allRotations: sortedRotations,
+      pastRotations: pastRotations.map(r => ({
+        ...r,
+        unitName: getTrainingUnitName(r.training_unit_id)
+      })),
+      currentRotation: currentRotation ? {
+        ...currentRotation,
+        unitName: getTrainingUnitName(currentRotation.training_unit_id)
+      } : null,
+      upcomingRotations: upcomingRotations.map(r => ({
+        ...r,
+        unitName: getTrainingUnitName(r.training_unit_id)
+      })),
+      totalRotations: sortedRotations.length,
+      emptySlots
+    }
+  }).filter(r => 
+    // Apply filters - FIX: use rotationFilters (object, not ref) and access properties directly
+    (!rotationFilters.resident || r.id === rotationFilters.resident) &&
+    (!rotationFilters.trainingUnit || r.allRotations.some(rot => rot.training_unit_id === rotationFilters.trainingUnit)) &&
+    (!rotationFilters.status || r.allRotations.some(rot => rot.rotation_status === rotationFilters.status)) &&
+    (!rotationFilters.search || r.full_name.toLowerCase().includes(rotationFilters.search.toLowerCase()))
+  )
+})
 
         // Group on-call schedules by date for compact view
-        const groupedOnCallSchedules = computed(() => {
-          const groups = {}
-          
-          onCallSchedule.value.forEach(shift => {
-            const date = Utils.normalizeDate(shift.duty_date)
-            if (!groups[date]) {
-              groups[date] = {
-                date,
-                dayOfWeek: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }),
-                shifts: []
-              }
-            }
-            
-            // Apply filters
-            if (onCallFilters.value.date && date !== onCallFilters.value.date) return
-            if (onCallFilters.value.shiftType && shift.shift_type !== onCallFilters.value.shiftType) return
-            if (onCallFilters.value.physician && shift.primary_physician_id !== onCallFilters.value.physician && 
-                shift.backup_physician_id !== onCallFilters.value.physician) return
-            if (onCallFilters.value.search) {
-              const physicianName = getPhysicianName(shift.primary_physician_id).toLowerCase()
-              if (!physicianName.includes(onCallFilters.value.search.toLowerCase())) return
-            }
-            
-            groups[date].shifts.push(shift)
-          })
-          
-          // Sort by date
-          return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
-        })
+    // Group on-call schedules by date for compact view
+const groupedOnCallSchedules = computed(() => {
+  const groups = {}
+  
+  onCallSchedule.value.forEach(shift => {
+    const date = Utils.normalizeDate(shift.duty_date)
+    if (!groups[date]) {
+      groups[date] = {
+        date,
+        dayOfWeek: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }),
+        shifts: []
+      }
+    }
+    
+    // Apply filters - FIX: use onCallFilters (object, not ref) and access properties directly
+    if (onCallFilters.date && date !== onCallFilters.date) return
+    if (onCallFilters.shiftType && shift.shift_type !== onCallFilters.shiftType) return
+    if (onCallFilters.physician && shift.primary_physician_id !== onCallFilters.physician && 
+        shift.backup_physician_id !== onCallFilters.physician) return
+    if (onCallFilters.search) {
+      const physicianName = getPhysicianName(shift.primary_physician_id).toLowerCase()
+      if (!physicianName.includes(onCallFilters.search.toLowerCase())) return
+    }
+    
+    groups[date].shifts.push(shift)
+  })
+  
+  // Sort by date
+  return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
+})
 
         // Week days for grid view
         const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
