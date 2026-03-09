@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER ========-=== -->
+    <!-- ============ TOAST CONTAINER =========== -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -1536,9 +1536,13 @@
                         <div class="research-lines-grid">
                             <div v-for="line in filteredResearchLines" :key="line.id" class="research-line-card">
                                 <div class="research-line-header">
-                                    <div class="research-line-number">Línea {{ line.line_number }}</div>
+                                    <div class="rline-header-left">
+                                        <div class="research-line-number">Línea {{ line.line_number }}</div>
+                                        <span v-if="!line.active" class="rline-inactive-badge"><i class="fas fa-pause-circle"></i> Inactive</span>
+                                    </div>
                                     <div class="research-line-actions">
-                                        <button class="btn-icon" @click="editResearchLine(line)" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-edit"></i></button>
+                                        <button class="btn-icon" @click="editResearchLine(line)" v-if="hasPermission('research_lines', 'update')" title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button class="btn-icon btn-icon--danger" @click="deleteResearchLine(line)" v-if="hasPermission('research_lines', 'delete')" title="Delete"><i class="fas fa-trash"></i></button>
                                     </div>
                                 </div>
                                 <h3 class="research-line-name">{{ line.research_line_name || line.name }}</h3>
@@ -1547,6 +1551,7 @@
                                     <div class="coordinator-label">Coordinador/a</div>
                                     <div class="coordinator-info" v-if="line.coordinator_id">
                                         <div class="coordinator-chip"><i class="fas fa-user-tie"></i><div><div class="coordinator-name">{{ line.coordinator_name }}</div><div class="coordinator-email" v-if="line.coordinator_email">{{ line.coordinator_email }}</div></div></div>
+                                        <button class="btn btn-sm btn-outline coordinator-change-btn" @click="openAssignCoordinatorModal(line)" v-if="hasPermission('research_lines', 'update')" title="Change coordinator"><i class="fas fa-exchange-alt"></i> Change</button>
                                     </div>
                                     <div v-else class="coordinator-empty">
                                         <span>No asignado</span>
@@ -1602,6 +1607,7 @@
                                         <th @click="sortBy('trials', 'protocol_id')">Protocolo <i class="fas" :class="sortIcon('trials', 'protocol_id')"></i></th>
                                         <th @click="sortBy('trials', 'title')">Título del Estudio <i class="fas" :class="sortIcon('trials', 'title')"></i></th>
                                         <th>Línea</th>
+                                        <th>PI</th>
                                         <th @click="sortBy('trials', 'phase')">Fase <i class="fas" :class="sortIcon('trials', 'phase')"></i></th>
                                         <th @click="sortBy('trials', 'status')">Estado <i class="fas" :class="sortIcon('trials', 'status')"></i></th>
                                         <th>Actions</th>
@@ -1612,12 +1618,16 @@
                                         <td class="font-mono">{{ trial.protocol_id }}</td>
                                         <td>{{ trial.title }}</td>
                                         <td>{{ getResearchLineName(trial.research_line_id) }}</td>
+                                        <td><span v-if="trial.principal_investigator_id" class="trial-pi-name"><i class="fas fa-user-md"></i> {{ getStaffName(trial.principal_investigator_id) }}</span><span v-else class="text-muted-sm">—</span></td>
                                         <td><span class="badge badge-info">{{ trial.phase }}</span></td>
                                         <td><span class="status-indicator" :class="trial.status === 'Reclutando' ? 'status-active' : 'status-completed'">{{ trial.status }}</span></td>
-                                        <td><button class="btn-pill btn-pill-edit" @click="editTrial(trial)" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-edit"></i></button></td>
+                                        <td class="table-actions-cell">
+                                            <button class="btn-pill btn-pill-edit" @click="editTrial(trial)" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-edit"></i></button>
+                                            <button class="btn-pill btn-pill-delete" @click="deleteClinicalTrial(trial)" v-if="hasPermission('research_lines', 'delete')"><i class="fas fa-trash"></i></button>
+                                        </td>
                                     </tr>
                                     <tr v-if="filteredTrials.length === 0">
-                                        <td colspan="6" class="empty-state">
+                                        <td colspan="7" class="empty-state">
                                             <i class="fas fa-vial empty-state-icon"></i>
                                             <div class="empty-state-title">No clinical trials found</div>
                                         </td>
@@ -1671,8 +1681,14 @@
                                         <span v-for="need in project.partner_needs" :key="need" class="need-tag">{{ need }}</span>
                                     </div>
                                 </div>
+                                <div v-if="project.lead_investigator_id" class="innovation-lead">
+                                    <i class="fas fa-user-md"></i>
+                                    <span>{{ getStaffName(project.lead_investigator_id) }}</span>
+                                    <span class="innovation-lead-role">Project Lead</span>
+                                </div>
                                 <div class="innovation-actions">
                                     <button class="btn-pill btn-pill-edit" @click="editProject(project)" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="btn-pill btn-pill-delete" @click="deleteInnovationProject(project)" v-if="hasPermission('research_lines', 'delete')"><i class="fas fa-trash"></i> Delete</button>
                                 </div>
                             </div>
                             <div v-if="filteredProjects.length === 0" class="col-span-full empty-state">
@@ -3365,6 +3381,10 @@
                     <button class="modal-close" @click="researchLineModal.show = false"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body">
+                    <div v-if="researchLineModal.mode === 'edit'" class="modal-edit-context">
+                        <i class="fas fa-flask"></i>
+                        <span>Editing: <strong>{{ researchLineModal.form.research_line_name || researchLineModal.form.name }}</strong></span>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="form-group" :class="{ 'has-error': fieldErrors.researchLine?.line_number }">
                             <label class="form-label">Line Number *</label>
@@ -3441,6 +3461,10 @@
                     <button class="modal-close" @click="clinicalTrialModal.show = false"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body">
+                    <div v-if="clinicalTrialModal.mode === 'edit'" class="modal-edit-context">
+                        <i class="fas fa-vial"></i>
+                        <span>Editing: <strong>{{ clinicalTrialModal.form.protocol_id }}</strong> — {{ clinicalTrialModal.form.title }}</span>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="form-group" :class="{ 'has-error': fieldErrors.trial?.protocol_id }">
                             <label class="form-label">Protocol ID *</label>
@@ -3499,15 +3523,15 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="form-group col-span-2">
-    <label class="form-label">Co-Investigators (Co-I)</label>
-    <select class="form-select" multiple size="4" v-model="clinicalTrialModal.form.co_investigators">
-        <option v-for="staff in availablePhysicians" :key="staff.id" :value="staff.id">
-            {{ staff.full_name }}
-        </option>
-    </select>
-    <small class="form-help">Hold Ctrl/Cmd to select multiple investigators</small>
-</div>
+                        <div class="form-group">
+                            <label class="form-label">Co-Investigator (Co-I)</label>
+                            <select class="form-select" v-model="clinicalTrialModal.form.co_investigator_id">
+                                <option value="">Select Co-I</option>
+                                <option v-for="staff in availablePhysicians" :key="staff.id" :value="staff.id">
+                                    {{ staff.full_name }}
+                                </option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Sub-Investigator (Sub-I)</label>
                             <select class="form-select" v-model="clinicalTrialModal.form.sub_investigator_id">
@@ -3548,6 +3572,10 @@
                     <button class="modal-close" @click="innovationProjectModal.show = false"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body">
+                    <div v-if="innovationProjectModal.mode === 'edit'" class="modal-edit-context">
+                        <i class="fas fa-microscope"></i>
+                        <span>Editing: <strong>{{ innovationProjectModal.form.title }}</strong></span>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="form-group col-span-2" :class="{ 'has-error': fieldErrors.project?.title }">
                             <label class="form-label">Project Title *</label>
