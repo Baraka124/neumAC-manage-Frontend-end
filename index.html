@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ==========-== TOAST CONTAINER =========== -->
+    <!-- ============ TOAST CONTAINER =========== -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -3043,4 +3043,12 @@
                         {{ saving ? 'Saving...' : (innovationProjectModal.mode === 'add' ? 'Add Project' : 'Save Changes') }}
                     </button>
                 </div>
-            <
+            </div>
+        </div>
+        <!-- End Modals -->
+
+    </div><!-- end app-layout -->
+
+    <script src="/app.js"></script>
+</body>
+</html>
