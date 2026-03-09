@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       CACHE_TTL: 300000
     }
 
-    // ============ 2. CONSTANTS =====-=======
+    // ============ 2. CONSTANTS ============
     const ROLES = {
       ADMIN: 'system_admin',
       HEAD: 'department_head',
@@ -62,19 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
         research_lines: ['read'], 
         clinical_trials: ['read'],
         innovation_projects: ['read'], 
-        analytics: ['read']
-      },
-      resident_manager: {
-        medical_staff: ['read'],
-        oncall_schedule: ['create', 'read', 'update', 'delete'],
-        resident_rotations: ['create', 'read', 'update', 'delete'],
-        training_units: ['create', 'read', 'update'],
-        staff_absence: ['create', 'read', 'update'],
-        department_management: ['read'],
-        communications: ['create', 'read'],
-        research_lines: ['read'],
-        clinical_trials: ['read'],
-        innovation_projects: ['read'],
         analytics: ['read']
       },
       medical_resident: {
@@ -377,37 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { return 0 }
       }
 
-      // Clinical duration: speaks the language clinicians use
-      static formatClinicalDuration(startDate, endDate) {
-        if (!startDate || !endDate) return '?'
-        try {
-          const s = new Date(Utils.normalizeDate(startDate) + 'T00:00:00')
-          const e = new Date(Utils.normalizeDate(endDate) + 'T00:00:00')
-          const days = Math.round((e - s) / 86400000) + 1
-          if (days <= 0) return '?'
-          // If rotation is entirely within a single calendar month
-          if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
-            const monthName = s.toLocaleDateString('en-GB', { month: 'short' })
-            if (days >= 25) return monthName  // "Mar"
-            if (days >= 14) return `${Math.round(days/7)}w·${monthName}` // "2w·Mar"
-          }
-          // Multi-month spans
-          const months = Math.round(days / 30.4)
-          if (days >= 56) return `${months}mo`   // "2mo"
-          if (days >= 28) return '1mo'
-          if (days >= 21) return '3w'
-          if (days >= 14) return '2w'
-          if (days >= 7)  return '1w'
-          return `${days}d`
-        } catch { return '?' }
-      }
-
-      // Initials for avatar chips
-      static getInitials(name) {
-        if (!name) return '?'
-        return name.split(' ').filter(Boolean).slice(0, 2).map(n => n[0].toUpperCase()).join('')
-      }
-
       static daysUntil(d) {
         if (!d) return 0
         const date = new Date(Utils.normalizeDate(d) + 'T00:00:00')
@@ -509,21 +465,12 @@ document.addEventListener('DOMContentLoaded', () => {
               localStorage.removeItem(CONFIG.USER_KEY)
               throw new Error('Session expired. Please login again.')
             }
-            let errMsg = `HTTP ${res.status}`
-            try {
-              const errText = await res.text()
-              try {
-                const errJson = JSON.parse(errText)
-                // Extract human-readable message from backend JSON error responses
-                errMsg = errJson.message || errJson.error || errText
-              } catch { errMsg = errText || errMsg }
-            } catch { /* keep HTTP status */ }
-            throw new Error(errMsg)
+            const err = await res.text().catch(() => `HTTP ${res.status}`)
+            throw new Error(err)
           }
           const ct = res.headers.get('content-type')
           const result = ct?.includes('application/json') ? await res.json() : await res.text()
           if (isGet && !options.skipCache) this.setCached(cacheKey, result)
-          else if (isGet && options.skipCache) this.cache.delete(cacheKey) // bust stale entry
           return result
         } catch (e) {
           if (e.message.includes('fetch') || e.message.includes('NetworkError'))
@@ -636,20 +583,13 @@ document.addEventListener('DOMContentLoaded', () => {
       async getTrainingUnits() { return this.getList('/api/training-units') }
       async createTrainingUnit(d) { this.invalidate('/api/training-units'); return this.request('/api/training-units', { method: 'POST', body: d }) }
       async updateTrainingUnit(id, d) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'PUT', body: d }) }
-      async deleteTrainingUnit(id) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'DELETE' }) }
 
       async getRotations() { return this.getList('/api/rotations') }
       async createRotation(d) { this.invalidate('/api/rotations'); return this.request('/api/rotations', { method: 'POST', body: d }) }
       async updateRotation(id, d) { this.invalidate('/api/rotations'); return this.request(`/api/rotations/${id}`, { method: 'PUT', body: d }) }
       async deleteRotation(id) { this.invalidate('/api/rotations'); return this.request(`/api/rotations/${id}`, { method: 'DELETE' }) }
 
-      async getOnCallSchedule(params) {
-        if (params && Object.keys(params).length) {
-          const qs = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([,v]) => v != null))).toString()
-          return this.getList(`/api/oncall${qs ? '?' + qs : ''}`)
-        }
-        return this.getList('/api/oncall')
-      }
+      async getOnCallSchedule() { return this.getList('/api/oncall') }
       async getOnCallToday() { return this.getList('/api/oncall/today') }
       async createOnCall(d) { this.invalidate('/api/oncall'); return this.request('/api/oncall', { method: 'POST', body: d }) }
       async updateOnCall(id, d) { this.invalidate('/api/oncall'); return this.request(`/api/oncall/${id}`, { method: 'PUT', body: d }) }
@@ -1132,13 +1072,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const checkExistingSchedule = async (date, shiftType, excludeId = null) => {
         try {
-          // Fetch fresh (skip cache) so we don't get false positives from stale data
-          const schedules = await API.request(`/api/oncall?start_date=${date}&end_date=${date}`, { skipCache: true });
-          const list = Array.isArray(schedules) ? schedules : (schedules?.data || []);
-          return list.filter(s => {
-            const sDate = Utils.normalizeDate(s.duty_date);
-            return sDate === date && s.shift_type === shiftType && (!excludeId || s.id !== excludeId);
-          }).length > 0;
+          const schedules = await API.getOnCallSchedule({ start_date: date, end_date: date });
+          return schedules.filter(s => s.shift_type === shiftType && (!excludeId || s.id !== excludeId)).length > 0;
         } catch (error) { console.error('Failed to check existing schedule:', error); return false; }
       };
 
@@ -1233,15 +1168,13 @@ document.addEventListener('DOMContentLoaded', () => {
             primary_physician_id: f.primary_physician_id, backup_physician_id: f.backup_physician_id || null,
             coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH')
           }
-          // Duplicate check: only enforce uniqueness for primary_call (one per day is a hard rule)
-          // float_physician, backup_call, weekend_coverage can legitimately have multiple per day
-          if (data.shift_type === 'primary_call') {
-            const excludeId = onCallModal.mode === 'edit' ? f.id : null
-            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, excludeId);
-            if (exists) {
-              showToast('Duplicate Primary Call', `A primary on-call is already scheduled for ${Utils.formatDateShort(data.duty_date)}. Change the shift type or choose a different date.`, 'warning');
-              saving.value = false; return;
-            }
+          if (onCallModal.mode === 'add') {
+            const exists = await checkExistingSchedule(data.duty_date, data.shift_type);
+            if (exists) { showToast('Duplicate Schedule', `A ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 'warning'); saving.value = false; return; }
+          }
+          if (onCallModal.mode === 'edit') {
+            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id);
+            if (exists) { showToast('Duplicate Schedule', `Another ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 'warning'); saving.value = false; return; }
           }
           if (onCallModal.mode === 'add') {
             const result = await API.createOnCall(data);
@@ -1307,45 +1240,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
       })
 
-      // Physician-per-row on-call orb view
-      const staffWithOnCallOrbs = computed(() => {
-        const today = Utils.normalizeDate(new Date())
-        const physicianMap = {}
-
-        // Build filtered schedule
-        let shifts = onCallSchedule.value
-        if (onCallFilters.shiftType) shifts = shifts.filter(s => s.shift_type === onCallFilters.shiftType)
-        if (onCallFilters.date) shifts = shifts.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
-        if (onCallFilters.search) {
-          const q = onCallFilters.search.toLowerCase()
-          shifts = shifts.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q))
-        }
-
-        shifts.forEach(shift => {
-          const pid = shift.primary_physician_id
-          if (!pid) return
-          if (onCallFilters.physician && pid !== onCallFilters.physician) return
-          if (!physicianMap[pid]) {
-            physicianMap[pid] = { id: pid, name: getPhysicianName(pid), shifts: [] }
-          }
-          const shiftDate = Utils.normalizeDate(shift.duty_date)
-          const isToday = shiftDate === today
-          const isPast = shiftDate < today
-          physicianMap[pid].shifts.push({
-            ...shift,
-            shiftDate,
-            isToday,
-            isPast,
-            dayLabel: new Date(shiftDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short' }),
-            dateLabel: new Date(shiftDate + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-          })
-        })
-
-        return Object.values(physicianMap)
-          .map(p => ({ ...p, shifts: p.shifts.sort((a, b) => a.shiftDate.localeCompare(b.shiftDate)) }))
-          .sort((a, b) => a.name.localeCompare(b.name))
-      })
-
       const isShiftActive = (shift) => {
         if (!shift.duty_date) return false
         const today = Utils.normalizeDate(new Date())
@@ -1366,7 +1260,6 @@ document.addEventListener('DOMContentLoaded', () => {
         editOnCallSchedule, saveOnCallSchedule, deleteOnCallSchedule, contactPhysician,
         // NEW compact view properties
         groupedOnCallSchedules,
-        staffWithOnCallOrbs,
         isShiftActive
       }
     }
@@ -1380,25 +1273,18 @@ document.addEventListener('DOMContentLoaded', () => {
         form: { rotation_id: '', resident_id: '', training_unit_id: '', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)), rotation_status: 'scheduled', rotation_category: 'clinical_rotation', supervising_attending_id: '' }
       })
 
-      // Read-only rotation detail sheet (click on orb to view, separate from edit form)
-      const rotationViewModal = reactive({ show: false, rotation: null })
-
-      // Week navigator offset (0 = current week, -1 = last week, +1 = next week, etc.)
-      const weekOffset = ref(0)
-
       const pendingActivations = ref([])
       const activationModal = reactive({ show: false, rotations: [], selectedRotation: null, notes: '', action: 'activate' })
 
       const getResidentName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
       const getTrainingUnitName = (id) => trainingUnits.value.find(u => u.id === id)?.unit_name || 'Not assigned'
 
-      // Capacity info for the rotation modal — reactive to selected unit
+      // Capacity info for rotation modal — reactive to selected unit
       const selectedUnitCapacity = computed(() => {
         const unitId = rotationModal.form.training_unit_id
         if (!unitId) return null
         const unit = trainingUnits.value.find(u => u.id === unitId)
         if (!unit) return null
-        // Count only active/scheduled rotations (not the one being edited)
         const editId = rotationModal.mode === 'edit' ? rotationModal.form.id : null
         const current = rotations.value.filter(r =>
           r.training_unit_id === unitId &&
@@ -1579,11 +1465,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const duration = Math.ceil((endDate - startDate) / 86400000)
         if (duration > 365) { setErr('rotation', 'end_date', `Cannot exceed 365 days (current: ${duration})`); showToast('Error', 'Rotation cannot exceed 365 days', 'error'); return }
 
-        // Lock the button immediately — prevents double-submit during the async refresh below
+        // Lock button immediately — prevents double-submit during async refresh below
         saving.value = true
 
-        // Refresh rotations from server before doing local overlap check
-        // This prevents false conflicts from 5-min stale cache
+        // Refresh from server before overlap check to avoid stale-cache false conflicts
         API.invalidate('/api/rotations')
         try {
           const fresh = await API.request('/api/rotations', { skipCache: true })
@@ -1592,8 +1477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { /* proceed with cached data */ }
 
         const excludeId = rotationModal.mode === 'edit' ? f.id : null
-        // Only active/scheduled rotations block new ones
-        // completed, terminated_early, cancelled do NOT block (allow backdated entries, re-use of slots)
+        // Only scheduled/active/extended block new slots — completed/cancelled do NOT
         const BLOCKING_STATUSES = ['scheduled', 'active', 'extended']
         const hasOverlap = rotations.value.some(r => {
           if (r.resident_id !== f.resident_id) return false
@@ -1616,7 +1500,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const conflictDates = conflicting ? `${Utils.formatDateShort(conflicting.start_date)} – ${Utils.formatDateShort(conflicting.end_date)}` : ''
           setErr('rotation', 'start_date', 'Dates overlap with an active or scheduled rotation')
           showToast('Scheduling Conflict', `${getResidentName(f.resident_id)} already has a ${conflicting?.rotation_status || ''} rotation at ${conflictUnit} (${conflictDates}).`, 'error')
-          return
+          saving.value = false; return
         }
 
         try {
@@ -1639,12 +1523,10 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           rotationModal.show = false; clearAll('rotation')
         } catch (e) {
-          const msg = e.message || 'Failed to save rotation'
-          if (msg.toLowerCase().includes('scheduling conflict') || msg.toLowerCase().includes('already has a rotation')) {
-            showToast('Scheduling Conflict', msg, 'error')
-          } else {
-            showToast('Error', msg, 'error')
-          }
+          let msg = e.message || 'Failed to save rotation'
+          if (msg.includes('overlapping')) msg = 'Dates conflict with an existing rotation.'
+          if (msg.includes('date')) msg = 'Invalid date — check start and end dates.'
+          showToast('Error', msg, 'error')
         } finally { saving.value = false }
       }
 
@@ -1722,12 +1604,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const getRotationsForDay = (resident, dayIndex) => {
         const today = new Date()
         const startOfWeek = new Date(today)
-        startOfWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset.value * 7) // Monday of offset week
-
+        startOfWeek.setDate(today.getDate() - today.getDay() + 1) // Monday
+        
         const targetDate = new Date(startOfWeek)
         targetDate.setDate(startOfWeek.getDate() + dayIndex - 1)
         const targetDateStr = Utils.normalizeDate(targetDate)
-
+        
         return resident.allRotations?.filter(r => {
           const start = Utils.normalizeDate(r.start_date)
           const end = Utils.normalizeDate(r.end_date)
@@ -1735,55 +1617,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }) || []
       }
 
-      // Get the actual date for a day column in the current week view
-      const getWeekDayDate = (dayIndex) => {
-        const today = new Date()
-        const startOfWeek = new Date(today)
-        startOfWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset.value * 7)
-        const d = new Date(startOfWeek)
-        d.setDate(startOfWeek.getDate() + dayIndex - 1)
-        return d
-      }
-
-      const getWeekDayLabel = (dayIndex) => {
-        const d = getWeekDayDate(dayIndex)
-        const today = new Date()
-        const isToday = Utils.normalizeDate(d) === Utils.normalizeDate(today)
-        const dayName = d.toLocaleDateString('en-GB', { weekday: 'short' })
-        const dayNum = d.getDate()
-        return { dayName, dayNum, isToday, dateStr: Utils.normalizeDate(d) }
-      }
-
-      const getWeekRangeLabel = () => {
-        const mon = getWeekDayDate(1)
-        const sun = getWeekDayDate(7)
-        const monStr = mon.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-        const sunStr = sun.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-        return `${monStr} – ${sunStr}`
-      }
-
-      const isFirstDayOfRotation = (rotation, dayIndex) => {
-        const d = getWeekDayDate(dayIndex)
-        return Utils.normalizeDate(d) === Utils.normalizeDate(rotation.start_date)
-      }
-
-      const isLastDayOfRotation = (rotation, dayIndex) => {
-        const d = getWeekDayDate(dayIndex)
-        return Utils.normalizeDate(d) === Utils.normalizeDate(rotation.end_date)
-      }
-
       const viewRotationDetails = (rotation) => {
-        // Enrich with computed names before showing
-        rotationViewModal.rotation = {
-          ...rotation,
-          residentName: getResidentName(rotation.resident_id),
-          unitName: rotation.unitName || getTrainingUnitName(rotation.training_unit_id),
-          supervisorName: rotation.supervising_attending_id ? medicalStaff.value.find(s => s.id === rotation.supervising_attending_id)?.full_name || '—' : '—',
-          daysTotal: Math.max(1, Math.round((new Date(Utils.normalizeDate(rotation.end_date) + 'T00:00:00') - new Date(Utils.normalizeDate(rotation.start_date) + 'T00:00:00')) / 86400000) + 1),
-          daysLeft: Utils.daysUntil(rotation.end_date),
-          clinicalDuration: Utils.formatClinicalDuration(rotation.start_date, rotation.end_date),
+        // Find the resident and open their profile
+        const resident = medicalStaff.value.find(s => s.id === rotation.resident_id)
+        if (resident && window.viewStaffDetails) {
+          window.viewStaffDetails(resident)
+        } else {
+          console.log('View rotation for:', rotation)
         }
-        rotationViewModal.show = true
       }
 
       return {
@@ -1799,14 +1640,7 @@ document.addEventListener('DOMContentLoaded', () => {
         residentsWithRotations,
         isRotationActive,
         getRotationsForDay,
-        viewRotationDetails,
-        // Week view helpers
-        rotationViewModal,
-        weekOffset,
-        getWeekDayLabel,
-        getWeekRangeLabel,
-        isFirstDayOfRotation,
-        isLastDayOfRotation,
+        viewRotationDetails
       }
     }
 
@@ -1834,7 +1668,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return ok
       }
 
-      // Detect if selected staff member already has an overlapping absence record
+      // Warn if this staff member already has a non-cancelled overlapping absence
       const absenceOverlapWarning = computed(() => {
         const f = absenceModal.form
         if (!f.staff_member_id || !f.start_date || !f.end_date) return null
@@ -1928,11 +1762,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Success', 'Absence updated', 'success')
           }
           absenceModal.show = false; clearAll('absence'); await loadAbsences()
-        } catch (e) {
-          let msg = e.message || 'Failed to save absence'
-          if (msg.includes('not found') && msg.includes('app_users')) msg = 'Your user account is not registered in the staff directory. Contact the system administrator.'
-          showToast('Error', msg, 'error')
-        }
+        } catch (e) { showToast('Error', e.message || 'Failed to save absence', 'error') }
         finally { saving.value = false }
       }
 
@@ -2000,7 +1830,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
-      const unitCliniciansModal = reactive({ show: false, unit: null, clinicians: [], supervisorId: '', allStaff: [] })
 
       const filteredTrainingUnits = computed(() => {
         let f = trainingUnits.value
@@ -2020,64 +1849,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const showAddTrainingUnitModal = () => { trainingUnitModal.mode = 'add'; Object.assign(trainingUnitModal.form, { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' }); trainingUnitModal.show = true }
       const editTrainingUnit = (u) => { trainingUnitModal.mode = 'edit'; trainingUnitModal.form = { ...u }; trainingUnitModal.show = true }
 
-      const deleteTrainingUnit = (unit) => showConfirmation({
-        title: 'Delete Training Unit', icon: 'fa-trash',
-        message: `Delete "${unit.unit_name}"? All rotation assignments to this unit will be affected.`,
-        confirmButtonText: 'Delete Unit', confirmButtonClass: 'btn-danger',
-        onConfirm: async () => {
-          await API.deleteTrainingUnit(unit.id)
-          trainingUnits.value = trainingUnits.value.filter(u => u.id !== unit.id)
-          showToast('Deleted', `${unit.unit_name} removed`, 'success')
-        }
-      })
-
-      const openUnitClinicians = (unit, allStaff) => {
-        unitCliniciansModal.unit = unit
-        unitCliniciansModal.clinicians = (unit.clinician_ids || []).slice()
-        unitCliniciansModal.supervisorId = unit.supervising_attending_id || ''
-        unitCliniciansModal.allStaff = allStaff.filter(s => ['attending_physician','fellow'].includes(s.staff_type))
-        unitCliniciansModal.show = true
-      }
-
-      const saveUnitClinicians = async () => {
-        const u = unitCliniciansModal.unit
-        // Backend Joi schema for trainingUnit only accepts these exact fields:
-        // unit_name (req), unit_code (req), department_id (req),
-        // supervising_attending_id (optional uuid), maximum_residents, unit_status,
-        // specialty / location_building / location_floor (optional — NO empty strings allowed)
-        // stripUnknown:true means anything else (clinician_ids, supervisor_id etc) is silently dropped.
-        // Clinician assignment is NOT supported by the current backend schema — we save supervisor only.
-        const payload = {
-          unit_name: u.unit_name,
-          unit_code: u.unit_code,
-          department_id: u.department_id,
-          maximum_residents: u.maximum_residents || 5,
-          unit_status: u.unit_status || 'active',
-        }
-        // supervising_attending_id: only send if it's a real UUID (not empty string)
-        if (unitCliniciansModal.supervisorId) {
-          payload.supervising_attending_id = unitCliniciansModal.supervisorId
-        }
-        // optional string fields: only include when non-empty (Joi rejects empty strings)
-        if (u.specialty)          payload.specialty          = u.specialty
-        if (u.location_building)  payload.location_building  = u.location_building
-        if (u.location_floor)     payload.location_floor     = u.location_floor
-
-        await API.updateTrainingUnit(u.id, payload)
-
-        // Update local state — track supervisor change immediately
-        const idx = trainingUnits.value.findIndex(x => x.id === u.id)
-        if (idx !== -1) {
-          trainingUnits.value[idx] = {
-            ...trainingUnits.value[idx],
-            supervising_attending_id: unitCliniciansModal.supervisorId || null,
-            supervisor_id: unitCliniciansModal.supervisorId || null,
-          }
-        }
-        unitCliniciansModal.show = false
-        showToast('Saved', 'Supervisor assignment updated', 'success')
-      }
-
       const viewUnitResidents = (unit, allRotations) => {
         unitResidentsModal.unit = unit
         unitResidentsModal.rotations = allRotations.filter(r => r.training_unit_id === unit.id && ['active', 'scheduled'].includes(r.rotation_status))
@@ -2088,20 +1859,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saving.value = true
         try {
           const f = trainingUnitModal.form
-          // Exact fields from backend Joi trainingUnit schema — nothing more, nothing less
-          // supervisor_id / description are NOT in schema (stripped by stripUnknown:true)
-          // supervising_attending_id IS in schema and maps to supervisor_id in POST handler
-          const data = {
-            unit_name: f.unit_name,
-            unit_code: f.unit_code,
-            department_id: f.department_id,
-            maximum_residents: f.maximum_residents || 5,
-            unit_status: f.unit_status || 'active',
-          }
-          if (f.supervising_attending_id) data.supervising_attending_id = f.supervising_attending_id
-          if (f.specialty)         data.specialty         = f.specialty
-          if (f.location_building) data.location_building = f.location_building
-          if (f.location_floor)    data.location_floor    = f.location_floor
+          const data = { unit_name: f.unit_name, unit_code: f.unit_code, department_id: f.department_id, supervisor_id: f.supervising_attending_id || null, maximum_residents: f.maximum_residents, unit_status: f.unit_status, description: f.specialty || '' }
           if (trainingUnitModal.mode === 'add') { trainingUnits.value.unshift(await API.createTrainingUnit(data)); showToast('Success', 'Training unit created', 'success') }
           else { const result = await API.updateTrainingUnit(f.id, data); const idx = trainingUnits.value.findIndex(u => u.id === result.id); if (idx !== -1) trainingUnits.value[idx] = result; showToast('Success', 'Training unit updated', 'success') }
           trainingUnitModal.show = false
@@ -2109,7 +1867,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, viewUnitResidents, saveTrainingUnit, openUnitClinicians, saveUnitClinicians }
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits, getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, viewUnitResidents, saveTrainingUnit }
     }
 
     // ============ 6.9 useComms ============
@@ -2315,51 +2073,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch { } }
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: researchLines.value.length + 1, active: true }); researchLineModal.show = true }
-      const showAddTrialModal = () => { 
-    clinicalTrialModal.mode = 'add'; 
-    Object.assign(clinicalTrialModal.form, { 
-        protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, 
-        title: '', 
-        research_line_id: '', 
-        phase: 'Phase III', 
-        status: 'Reclutando', 
-        description: '', 
-        inclusion_criteria: '', 
-        exclusion_criteria: '', 
-        principal_investigator_id: '', 
-        co_investigators: [], // Changed from co_investigator_id
-        // sub_investigator_id removed
-        contact_email: '', 
-        featured_in_website: true, 
-        display_order: clinicalTrials.value.length + 1,
-        start_date: '',
-        end_date: ''
-    }); 
-    clinicalTrialModal.show = true 
-}
-
+      const showAddTrialModal = () => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1 }); clinicalTrialModal.show = true }
       const showAddProjectModal = () => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', development_stage: 'En Desarrollo', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l }; researchLineModal.show = true }
-      const editTrial = (t) => { 
-    clinicalTrialModal.mode = 'edit'; 
-    clinicalTrialModal.form = { 
-        ...t, 
-        co_investigators: t.co_investigators || [] // Ensure array exists
-    }; 
-    clinicalTrialModal.show = true 
-}
+      const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t }; clinicalTrialModal.show = true }
       const editProject = (p) => { innovationProjectModal.mode = 'edit'; innovationProjectModal.form = { ...p }; innovationProjectModal.show = true }
 
       const saveResearchLine = async (saving) => {
-        if (!researchLineModal.form.name?.trim()) { showToast('Validation Error', 'Research line name is required', 'error'); return }
+        // Normalise: HTML form uses research_line_name, JS defaults use name — backend DB stores 'name'
+        const f = researchLineModal.form
+        const lineName = (f.research_line_name || f.name || '').trim()
+        if (!lineName) { showToast('Validation Error', 'Research line name is required', 'error'); return }
         saving.value = true
         try {
-          if (researchLineModal.mode === 'add') { researchLines.value.unshift(await API.createResearchLine(researchLineModal.form)); showToast('Success', 'Research line created', 'success') }
-          else { const result = await API.updateResearchLine(researchLineModal.form.id, researchLineModal.form); const idx = researchLines.value.findIndex(l => l.id === result.id); if (idx !== -1) researchLines.value[idx] = result; showToast('Success', 'Research line updated', 'success') }
+          const payload = { ...f, name: lineName }
+          delete payload.research_line_name // backend only knows 'name'
+          if (researchLineModal.mode === 'add') { researchLines.value.unshift(await API.createResearchLine(payload)); showToast('Success', 'Research line created', 'success') }
+          else { const result = await API.updateResearchLine(f.id, payload); const idx = researchLines.value.findIndex(l => l.id === result.id); if (idx !== -1) researchLines.value[idx] = result; showToast('Success', 'Research line updated', 'success') }
           researchLineModal.show = false; await loadResearchLines(); loadAnalyticsSummary()
-        } catch (e) { showToast('Error', e.message || 'Failed to save research line', 'error') }
+        } catch (e) { showToast('Error', e?.message || 'An unexpected error occurred', 'error') }
         finally { saving.value = false }
       }
 
@@ -2566,7 +2300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         const { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits,
-          getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, viewUnitResidents, saveTrainingUnit, unitCliniciansModal, openUnitClinicians, saveUnitClinicians } = useTrainingUnits({
+          getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, viewUnitResidents, saveTrainingUnit } = useTrainingUnits({
           showToast, rotations: ref([])
         })
 
@@ -2614,9 +2348,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const viewStaffDetails = async (staff) => {
           staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'activity'; staffOps.staffProfileModal.show = true
-          staffOps.staffProfileModal.collapsed = { credentials: false, resident: false, roles: false, research: false, leave: false, contact: false }
-          // Prevent body scroll while drawer is open
-          document.body.style.overflow = 'hidden'
           if (hasPermission('analytics', 'read')) await analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id)
           if (staff.staff_type === 'attending_physician') {
             staffOps.staffProfileModal.loadingSupervision = true
@@ -2636,11 +2367,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatAbsenceReason = (r) => ABSENCE_REASON_LABELS[r] || r
         const formatRotationStatus = (s) => ROTATION_STATUS_LABELS[s] || s
         const getUserRoleDisplay = (r) => USER_ROLE_LABELS[r] || r
-        const toggleProfileSection = (key) => {
-          if (!staffOps.staffProfileModal.collapsed) staffOps.staffProfileModal.collapsed = {}
-          staffOps.staffProfileModal.collapsed[key] = !staffOps.staffProfileModal.collapsed[key]
-        }
-
         const formatAudience = (a) => ({ all_staff: 'All Staff', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attending Physicians' }[a] || a)
         const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'NeumoCare Dashboard'
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
@@ -2723,11 +2449,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         watch([medicalStaff, rotations, trainingUnits, absences], () => updateDashboardStats(), { deep: true })
 
-        // Restore body scroll when profile drawer closes
-        watch(() => staffOps.staffProfileModal.show, (val) => {
-          document.body.style.overflow = val ? 'hidden' : ''
-        })
-
         onMounted(() => {
           const token = localStorage.getItem(CONFIG.TOKEN_KEY)
           const user = localStorage.getItem(CONFIG.USER_KEY)
@@ -2744,7 +2465,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return
-            const modals = [staffOps.medicalStaffModal, staffOps.staffProfileModal, departmentModal, trainingUnitModal, unitResidentsModal, unitCliniciansModal, rotationOps.rotationModal, onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal, userProfileModal, ui.confirmationModal, researchOps.researchLineModal, researchOps.clinicalTrialModal, researchOps.innovationProjectModal, researchOps.assignCoordinatorModal, analyticsOps.exportModal, rotationOps.activationModal]
+            const modals = [staffOps.medicalStaffModal, staffOps.staffProfileModal, departmentModal, trainingUnitModal, unitResidentsModal, rotationOps.rotationModal, onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal, userProfileModal, ui.confirmationModal, researchOps.researchLineModal, researchOps.clinicalTrialModal, researchOps.innovationProjectModal, researchOps.assignCoordinatorModal, analyticsOps.exportModal, rotationOps.activationModal]
             modals.forEach(m => { if (m.show) m.show = false })
           })
 
@@ -2771,10 +2492,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment, viewDepartmentStaff,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits,
           getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal,
-          editTrainingUnit, deleteTrainingUnit, saveTrainingUnit,
-          unitCliniciansModal,
-          openUnitClinicians: (unit) => openUnitClinicians(unit, medicalStaff.value),
-          saveUnitClinicians,
+          editTrainingUnit, saveTrainingUnit,
           viewUnitResidents: (unit) => viewUnitResidents(unit, rotations.value),
           ...commsOps,
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
@@ -2804,7 +2522,7 @@ document.addEventListener('DOMContentLoaded', () => {
           absenceTotalPages: absenceOps.absenceTotalPages,
           trialTotalPages: researchOps.trialTotalPages,
           fieldErrors, clearFieldError: (form, field) => clearFieldError(form, field),
-          viewStaffDetails, toggleProfileSection, showUserProfileModal, saveUserProfile,
+          viewStaffDetails, showUserProfileModal, saveUserProfile,
           getStaffName, getSupervisorName, getPhysicianName, getResidentName, getTrainingUnitName,
           calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart,
           getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
@@ -2819,7 +2537,6 @@ document.addEventListener('DOMContentLoaded', () => {
           formatDateShort: (d) => Utils.formatDateShort(d),
           formatDatePlusDays: (d, n) => Utils.formatDatePlusDays(d, n),
           formatRelativeDate: (d) => Utils.formatRelativeDate(d),
-          formatClinicalDuration: (s, e) => Utils.formatClinicalDuration(s, e),
           formatTime: (d) => Utils.formatTime(d),
           formatRelativeTime: (d) => Utils.formatRelativeTime(d),
           formatTimeAgo: (d) => Utils.formatRelativeTime(d),
@@ -2844,15 +2561,8 @@ document.addEventListener('DOMContentLoaded', () => {
           onCallView,
           residentsWithRotations: rotationOps.residentsWithRotations,
           groupedOnCallSchedules: onCallOps.groupedOnCallSchedules,
-          staffWithOnCallOrbs: onCallOps.staffWithOnCallOrbs,
           weekDays,
           getRotationsForDay: rotationOps.getRotationsForDay,
-          rotationViewModal: rotationOps.rotationViewModal,
-          weekOffset: rotationOps.weekOffset,
-          getWeekDayLabel: rotationOps.getWeekDayLabel,
-          getWeekRangeLabel: rotationOps.getWeekRangeLabel,
-          isFirstDayOfRotation: rotationOps.isFirstDayOfRotation,
-          isLastDayOfRotation: rotationOps.isLastDayOfRotation,
           isRotationActive: rotationOps.isRotationActive,
           isShiftActive: onCallOps.isShiftActive,
           viewRotationDetails: rotationOps.viewRotationDetails
