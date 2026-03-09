@@ -407,6 +407,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const d = new Date(); d.setDate(d.getDate() + 1); return d
       }
 
+      static formatClinicalDuration(startDate, endDate) {
+        if (!startDate || !endDate) return 'N/A'
+        try {
+          const s = new Date(Utils.normalizeDate(startDate) + 'T00:00:00')
+          const e = new Date(Utils.normalizeDate(endDate) + 'T00:00:00')
+          const days = Math.round((e - s) / 86400000)
+          if (days < 0) return 'N/A'
+          if (days < 7) return `${days}d`
+          const weeks = Math.floor(days / 7)
+          const rem = days % 7
+          if (weeks < 5) return rem > 0 ? `${weeks}w ${rem}d` : `${weeks}w`
+          const months = Math.round(days / 30.44)
+          return `${months}mo`
+        } catch { return 'N/A' }
+      }
+
       static getInitials(name) {
         if (!name || typeof name !== 'string') return '??'
         return name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2)
