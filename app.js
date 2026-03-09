@@ -1344,6 +1344,12 @@ document.addEventListener('DOMContentLoaded', () => {
         form: { rotation_id: '', resident_id: '', training_unit_id: '', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)), rotation_status: 'scheduled', rotation_category: 'clinical_rotation', supervising_attending_id: '' }
       })
 
+      // Read-only rotation detail sheet (click on orb to view, separate from edit form)
+      const rotationViewModal = reactive({ show: false, rotation: null })
+
+      // Week navigator offset (0 = current week, -1 = last week, +1 = next week, etc.)
+      const weekOffset = ref(0)
+
       const pendingActivations = ref([])
       const activationModal = reactive({ show: false, rotations: [], selectedRotation: null, notes: '', action: 'activate' })
 
@@ -1632,12 +1638,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const getRotationsForDay = (resident, dayIndex) => {
         const today = new Date()
         const startOfWeek = new Date(today)
-        startOfWeek.setDate(today.getDate() - today.getDay() + 1) // Monday
-        
+        startOfWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset.value * 7) // Monday of offset week
+
         const targetDate = new Date(startOfWeek)
         targetDate.setDate(startOfWeek.getDate() + dayIndex - 1)
         const targetDateStr = Utils.normalizeDate(targetDate)
-        
+
         return resident.allRotations?.filter(r => {
           const start = Utils.normalizeDate(r.start_date)
           const end = Utils.normalizeDate(r.end_date)
@@ -1645,14 +1651,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }) || []
       }
 
+      // Get the actual date for a day column in the current week view
+      const getWeekDayDate = (dayIndex) => {
+        const today = new Date()
+        const startOfWeek = new Date(today)
+        startOfWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset.value * 7)
+        const d = new Date(startOfWeek)
+        d.setDate(startOfWeek.getDate() + dayIndex - 1)
+        return d
+      }
+
+      const getWeekDayLabel = (dayIndex) => {
+        const d = getWeekDayDate(dayIndex)
+        const today = new Date()
+        const isToday = Utils.normalizeDate(d) === Utils.normalizeDate(today)
+        const dayName = d.toLocaleDateString('en-GB', { weekday: 'short' })
+        const dayNum = d.getDate()
+        return { dayName, dayNum, isToday, dateStr: Utils.normalizeDate(d) }
+      }
+
+      const getWeekRangeLabel = () => {
+        const mon = getWeekDayDate(1)
+        const sun = getWeekDayDate(7)
+        const monStr = mon.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        const sunStr = sun.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        return `${monStr} – ${sunStr}`
+      }
+
+      const isFirstDayOfRotation = (rotation, dayIndex) => {
+        const d = getWeekDayDate(dayIndex)
+        return Utils.normalizeDate(d) === Utils.normalizeDate(rotation.start_date)
+      }
+
+      const isLastDayOfRotation = (rotation, dayIndex) => {
+        const d = getWeekDayDate(dayIndex)
+        return Utils.normalizeDate(d) === Utils.normalizeDate(rotation.end_date)
+      }
+
       const viewRotationDetails = (rotation) => {
-        // Find the resident and open their profile
-        const resident = medicalStaff.value.find(s => s.id === rotation.resident_id)
-        if (resident && window.viewStaffDetails) {
-          window.viewStaffDetails(resident)
-        } else {
-          console.log('View rotation for:', rotation)
+        // Enrich with computed names before showing
+        rotationViewModal.rotation = {
+          ...rotation,
+          residentName: getResidentName(rotation.resident_id),
+          unitName: rotation.unitName || getTrainingUnitName(rotation.training_unit_id),
+          supervisorName: rotation.supervising_attending_id ? medicalStaff.value.find(s => s.id === rotation.supervising_attending_id)?.full_name || '—' : '—',
+          daysTotal: Math.max(1, Math.round((new Date(Utils.normalizeDate(rotation.end_date) + 'T00:00:00') - new Date(Utils.normalizeDate(rotation.start_date) + 'T00:00:00')) / 86400000) + 1),
+          daysLeft: Utils.daysUntil(rotation.end_date),
+          clinicalDuration: Utils.formatClinicalDuration(rotation.start_date, rotation.end_date),
         }
+        rotationViewModal.show = true
       }
 
       return {
@@ -1668,7 +1715,14 @@ document.addEventListener('DOMContentLoaded', () => {
         residentsWithRotations,
         isRotationActive,
         getRotationsForDay,
-        viewRotationDetails
+        viewRotationDetails,
+        // Week view helpers
+        rotationViewModal,
+        weekOffset,
+        getWeekDayLabel,
+        getWeekRangeLabel,
+        isFirstDayOfRotation,
+        isLastDayOfRotation,
       }
     }
 
@@ -2576,6 +2630,12 @@ document.addEventListener('DOMContentLoaded', () => {
           staffWithOnCallOrbs: onCallOps.staffWithOnCallOrbs,
           weekDays,
           getRotationsForDay: rotationOps.getRotationsForDay,
+          rotationViewModal: rotationOps.rotationViewModal,
+          weekOffset: rotationOps.weekOffset,
+          getWeekDayLabel: rotationOps.getWeekDayLabel,
+          getWeekRangeLabel: rotationOps.getWeekRangeLabel,
+          isFirstDayOfRotation: rotationOps.isFirstDayOfRotation,
+          isLastDayOfRotation: rotationOps.isLastDayOfRotation,
           isRotationActive: rotationOps.isRotationActive,
           isShiftActive: onCallOps.isShiftActive,
           viewRotationDetails: rotationOps.viewRotationDetails
