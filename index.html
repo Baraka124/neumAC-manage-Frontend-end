@@ -723,6 +723,7 @@
                                             <div class="table-actions">
                                                 <button class="btn btn-sm btn-outline" @click.stop="viewStaffDetails(staff)" aria-label="View profile"><i class="fas fa-eye"></i></button>
                                                 <button class="btn btn-sm btn-outline" @click.stop="editMedicalStaff(staff)" v-if="hasPermission('medical_staff', 'update')" aria-label="Edit"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-outline btn-outline-danger" @click.stop="deleteMedicalStaff(staff)" v-if="hasPermission('medical_staff', 'delete')" aria-label="Delete"><i class="fas fa-trash-alt"></i></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -2235,8 +2236,34 @@
         <div v-if="medicalStaffModal.show" class="modal-overlay">
             <div class="modal-container">
                 <div class="modal-header">
-                    <div class="modal-title"><i class="fas fa-user-md"></i>{{ medicalStaffModal.mode === 'add' ? 'Add Staff' : 'Edit Staff' }}</div>
+                    <div class="modal-title">
+                        <i class="fas" :class="medicalStaffModal.mode === 'add' ? 'fa-user-plus' : 'fa-user-edit'"></i>
+                        {{ medicalStaffModal.mode === 'add' ? 'New Staff Member' : 'Edit Staff Record' }}
+                    </div>
                     <button class="modal-close" @click="medicalStaffModal.show = false"><i class="fas fa-times"></i></button>
+                </div>
+                <!-- Edit context banner — shows who is being edited -->
+                <div v-if="medicalStaffModal.mode === 'edit'" class="modal-edit-context">
+                    <div class="mec-icon" :class="'role-icon--' + medicalStaffModal.form.staff_type">
+                        <i class="fas" :class="{
+                            'fa-user-md':       medicalStaffModal.form.staff_type === 'attending_physician',
+                            'fa-user-graduate': medicalStaffModal.form.staff_type === 'medical_resident',
+                            'fa-stethoscope':   medicalStaffModal.form.staff_type === 'fellow',
+                            'fa-heartbeat':     medicalStaffModal.form.staff_type === 'nurse_practitioner'
+                        }"></i>
+                    </div>
+                    <div class="mec-info">
+                        <div class="mec-name">{{ medicalStaffModal.form.full_name }}</div>
+                        <div class="mec-meta">{{ formatStaffType(medicalStaffModal.form.staff_type) }}
+                            <span class="mec-sep">·</span>
+                            <span class="status-indicator" :class="'status-' + medicalStaffModal.form.employment_status">{{ formatEmploymentStatus(medicalStaffModal.form.employment_status) }}</span>
+                        </div>
+                    </div>
+                    <button class="mec-delete-btn" v-if="hasPermission('medical_staff', 'delete')"
+                            @click="deleteMedicalStaff(medicalStaffModal.form); medicalStaffModal.show = false"
+                            title="Delete this staff member">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
                 </div>
                 <div class="modal-body">
                     <div class="modal-tabs">
@@ -2982,19 +3009,36 @@
 
         <!-- ============ CONFIRMATION MODAL ============ -->
         <div v-if="confirmationModal.show" class="modal-overlay">
-            <div class="modal-container modal-sm">
-                <div class="modal-header">
-                    <div class="modal-title"><i class="fas" :class="confirmationModal.icon || 'fa-question-circle'"></i>{{ confirmationModal.title || 'Confirm' }}</div>
+            <div class="modal-container modal-sm modal-confirm"
+                 :class="confirmationModal.confirmButtonClass === 'btn-danger' ? 'modal-confirm--danger' : 'modal-confirm--warn'">
+                <div class="modal-header modal-confirm-header">
+                    <div class="modal-title">
+                        <div class="confirm-icon-wrap" :class="confirmationModal.confirmButtonClass === 'btn-danger' ? 'confirm-icon-wrap--danger' : 'confirm-icon-wrap--warn'">
+                            <i class="fas" :class="confirmationModal.icon || 'fa-exclamation-triangle'"></i>
+                        </div>
+                        {{ confirmationModal.title || 'Confirm Action' }}
+                    </div>
                     <button class="modal-close" @click="cancelConfirmation"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="modal-body">
-                    <p class="text-center text-gray-700 mb-4">{{ confirmationModal.message }}</p>
-                    <div v-if="confirmationModal.details" class="confirm-details"><i class="fas fa-info-circle"></i>{{ confirmationModal.details }}</div>
+                <div class="modal-body modal-confirm-body">
+                    <p class="confirm-message">{{ confirmationModal.message }}</p>
+                    <div v-if="confirmationModal.details" class="confirm-details-block">
+                        <i class="fas fa-info-circle"></i>
+                        <span>{{ confirmationModal.details }}</span>
+                    </div>
+                    <!-- Destructive action warning -->
+                    <div v-if="confirmationModal.confirmButtonClass === 'btn-danger'" class="confirm-warning-strip">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>This action is <strong>permanent</strong> and cannot be undone.</span>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="cancelConfirmation">{{ confirmationModal.cancelButtonText || 'Cancel' }}</button>
+                <div class="modal-footer modal-confirm-footer">
+                    <button class="btn btn-secondary" @click="cancelConfirmation">
+                        <i class="fas fa-arrow-left"></i> {{ confirmationModal.cancelButtonText || 'Cancel' }}
+                    </button>
                     <button class="btn" :class="confirmationModal.confirmButtonClass || 'btn-danger'" @click="confirmAction">
-                        <i :class="confirmationModal.confirmButtonIcon || 'fas fa-check'"></i>{{ confirmationModal.confirmButtonText || 'Confirm' }}
+                        <i :class="confirmationModal.confirmButtonIcon || 'fas fa-trash-alt'"></i>
+                        {{ confirmationModal.confirmButtonText || 'Confirm' }}
                     </button>
                 </div>
             </div>
