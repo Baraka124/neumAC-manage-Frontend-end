@@ -1546,10 +1546,19 @@
                                     </div>
                                 </div>
                                 <h3 class="research-line-name">{{ line.research_line_name || line.name }}</h3>
-                                <p class="research-line-description">{{ line.description }}</p>
+                                <p class="research-line-description" v-if="line.description">{{ line.description }}</p>
+                                <!-- FIX 21: Trial/project count summary on card -->
+                                <div class="rline-stats-row" v-if="line.stats">
+                                    <span class="rline-stat"><i class="fas fa-vial"></i> {{ line.stats.totalTrials || 0 }} trials</span>
+                                    <span class="rline-stat-sep">·</span>
+                                    <span class="rline-stat"><i class="fas fa-microscope"></i> {{ line.stats.totalProjects || 0 }} projects</span>
+                                    <span class="rline-stat-sep" v-if="line.stats.activeTrials > 0">·</span>
+                                    <span class="rline-stat rline-stat--active" v-if="line.stats.activeTrials > 0"><i class="fas fa-circle"></i> {{ line.stats.activeTrials }} active</span>
+                                </div>
                                 <div class="research-coordinator-section">
                                     <div class="coordinator-label">Coordinador/a</div>
                                     <div class="coordinator-info" v-if="line.coordinator_id">
+                                        <!-- FIX 23: coordinator chip and change button in separate rows to avoid wrapping fight -->
                                         <div class="coordinator-chip"><i class="fas fa-user-tie"></i><div><div class="coordinator-name">{{ line.coordinator_name }}</div><div class="coordinator-email" v-if="line.coordinator_email">{{ line.coordinator_email }}</div></div></div>
                                         <button class="btn btn-sm btn-outline coordinator-change-btn" @click="openAssignCoordinatorModal(line)" v-if="hasPermission('research_lines', 'update')" title="Change coordinator"><i class="fas fa-exchange-alt"></i> Change</button>
                                     </div>
@@ -1558,7 +1567,8 @@
                                         <button class="btn btn-sm btn-outline" @click="openAssignCoordinatorModal(line)" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-user-plus"></i> Asignar</button>
                                     </div>
                                 </div>
-                                <div class="research-capabilities"><span class="capabilities-label">{{ line.capabilities }}</span></div>
+                                <!-- FIX 22: Only show capabilities bar if it has real content (not placeholder) -->
+                                <div class="research-capabilities" v-if="line.capabilities && line.capabilities !== 'Alcance y capacidades'"><span class="capabilities-label">{{ line.capabilities }}</span></div>
                                 <div class="research-keywords" v-if="line.keywords && line.keywords.length">
                                     <span v-for="kw in line.keywords" :key="kw" class="keyword-tag">{{ kw }}</span>
                                 </div>
@@ -1597,6 +1607,7 @@
                                 <option value="Reclutando">Reclutando</option>
                                 <option value="Activo">Activo</option>
                                 <option value="Completado">Completado</option>
+                                <option value="Suspendido">Suspendido</option>
                             </select>
                             <input type="text" class="form-control" v-model="trialFilters.search" placeholder="Search by protocol or title…">
                         </div>
@@ -1608,6 +1619,8 @@
                                         <th @click="sortBy('trials', 'title')">Título del Estudio <i class="fas" :class="sortIcon('trials', 'title')"></i></th>
                                         <th>Línea</th>
                                         <th>PI</th>
+                                        <!-- FIX 9: Show co-I count -->
+                                        <th title="Co-Investigators">Co-I</th>
                                         <th @click="sortBy('trials', 'phase')">Fase <i class="fas" :class="sortIcon('trials', 'phase')"></i></th>
                                         <th @click="sortBy('trials', 'status')">Estado <i class="fas" :class="sortIcon('trials', 'status')"></i></th>
                                         <th>Actions</th>
@@ -1619,15 +1632,31 @@
                                         <td>{{ trial.title }}</td>
                                         <td>{{ getResearchLineName(trial.research_line_id) }}</td>
                                         <td><span v-if="trial.principal_investigator_id" class="trial-pi-name"><i class="fas fa-user-md"></i> {{ getStaffName(trial.principal_investigator_id) }}</span><span v-else class="text-muted-sm">—</span></td>
+                                        <!-- FIX 9: Co-I count badge -->
+                                        <td class="text-center">
+                                            <span v-if="trial.co_investigators?.length" class="badge badge-info" :title="trial.co_investigators.map(id => getStaffName(id)).join(', ')">{{ trial.co_investigators.length }}</span>
+                                            <span v-else class="text-muted-sm">—</span>
+                                        </td>
                                         <td><span class="badge badge-info">{{ trial.phase }}</span></td>
-                                        <td><span class="status-indicator" :class="trial.status === 'Reclutando' ? 'status-active' : 'status-completed'">{{ trial.status }}</span></td>
+                                        <!-- FIX 26: Distinct classes for Reclutando vs Activo vs Completado -->
+                                        <td>
+                                            <span class="status-indicator"
+                                                  :class="{
+                                                    'status-recruiting': trial.status === 'Reclutando',
+                                                    'status-active': trial.status === 'Activo',
+                                                    'status-completed': trial.status === 'Completado',
+                                                    'status-suspended': trial.status === 'Suspendido'
+                                                  }">{{ trial.status }}</span>
+                                        </td>
                                         <td class="table-actions-cell">
+                                            <!-- FIX 6: View button for read-only detail sheet -->
+                                            <button class="btn-pill btn-pill-view" @click="viewTrial(trial)" title="View details"><i class="fas fa-eye"></i></button>
                                             <button class="btn-pill btn-pill-edit" @click="editTrial(trial)" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-edit"></i></button>
                                             <button class="btn-pill btn-pill-delete" @click="deleteClinicalTrial(trial)" v-if="hasPermission('research_lines', 'delete')"><i class="fas fa-trash"></i></button>
                                         </td>
                                     </tr>
                                     <tr v-if="filteredTrials.length === 0">
-                                        <td colspan="7" class="empty-state">
+                                        <td colspan="8" class="empty-state">
                                             <i class="fas fa-vial empty-state-icon"></i>
                                             <div class="empty-state-title">No clinical trials found</div>
                                         </td>
@@ -1733,12 +1762,13 @@
                             <div class="card-header"><div class="card-title"><i class="fas fa-flask"></i> Research Lines Overview</div></div>
                             <div class="table-responsive">
                                 <table class="table">
+                                    <!-- FIX 30: coordinator_id may be absent in dashboard aggregate — show coordinator_name directly if available -->
                                     <thead><tr><th>Line</th><th>Name</th><th>Coordinator</th><th>Trials</th><th>Projects</th><th>Status</th></tr></thead>
                                     <tbody>
                                         <tr v-for="line in researchDashboard.researchLines" :key="line.id" class="row-active">
                                             <td>Línea {{ line.line_number }}</td>
                                             <td>{{ line.name }}</td>
-                                            <td>{{ getStaffName(line.coordinator_id) || 'Not assigned' }}</td>
+                                            <td>{{ line.coordinator_name || getStaffName(line.coordinator_id) || 'Not assigned' }}</td>
                                             <td><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></td>
                                             <td><span class="badge badge-success">{{ line.projectsCount || 0 }}</span></td>
                                             <td><span class="status-indicator" :class="line.active ? 'status-active' : 'status-inactive'">{{ line.active ? 'Active' : 'Inactive' }}</span></td>
@@ -1751,12 +1781,13 @@
                             <div class="chart-card">
                                 <h4><i class="fas fa-chart-pie"></i> Trials by Phase</h4>
                                 <div class="chart-bars">
+                                    <!-- FIX 31: Guard against NaN when totalTrials is 0 -->
                                     <div v-for="(count, phase) in researchDashboard.clinicalTrials?.byPhase" :key="phase" class="chart-bar-item" v-if="count > 0">
                                         <span class="bar-label">{{ phase }}</span>
-                                        <div class="bar-container"><div class="bar-fill" :style="{ width: (count / researchDashboard.summary?.totalTrials * 100) + '%', background: getPhaseColor(phase) }"></div></div>
+                                        <div class="bar-container"><div class="bar-fill" :style="{ width: researchDashboard.summary?.totalTrials > 0 ? (count / researchDashboard.summary.totalTrials * 100) + '%' : '0%', background: getPhaseColor(phase) }"></div></div>
                                         <span class="bar-value">{{ count }}</span>
                                     </div>
-                                    <div v-if="Object.keys(researchDashboard.clinicalTrials?.byPhase || {}).length === 0" class="empty-chart">No trial data available</div>
+                                    <div v-if="!researchDashboard.clinicalTrials?.byPhase || Object.values(researchDashboard.clinicalTrials.byPhase).every(v => v === 0)" class="empty-chart">No trial data available</div>
                                 </div>
                             </div>
                             <div class="chart-card">
@@ -1764,19 +1795,24 @@
                                 <div class="chart-bars">
                                     <div v-for="(count, stage) in researchDashboard.innovationProjects?.byStage" :key="stage" class="chart-bar-item" v-if="count > 0">
                                         <span class="bar-label">{{ stage }}</span>
-                                        <div class="bar-container"><div class="bar-fill" :style="{ width: (count / researchDashboard.summary?.totalProjects * 100) + '%', background: getStageColor(stage) }"></div></div>
+                                        <div class="bar-container"><div class="bar-fill" :style="{ width: researchDashboard.summary?.totalProjects > 0 ? (count / researchDashboard.summary.totalProjects * 100) + '%' : '0%', background: getStageColor(stage) }"></div></div>
                                         <span class="bar-value">{{ count }}</span>
                                     </div>
-                                    <div v-if="Object.keys(researchDashboard.innovationProjects?.byStage || {}).length === 0" class="empty-chart">No project data available</div>
+                                    <div v-if="!researchDashboard.innovationProjects?.byStage || Object.values(researchDashboard.innovationProjects.byStage || {}).every(v => v === 0)" class="empty-chart">No project data available</div>
                                 </div>
                             </div>
                         </div>
                         <div class="card" v-if="researchDashboard.innovationProjects?.partnerNeeds?.length">
                             <div class="card-header"><div class="card-title"><i class="fas fa-handshake"></i> Top Partner Needs</div></div>
-                            <div class="tags-cloud">
-                                <span v-for="need in researchDashboard.innovationProjects.partnerNeeds.slice(0, 15)" :key="need.name" class="need-tag" :style="{ fontSize: (12 + Math.min(need.count * 2, 20)) + 'px' }">
-                                    {{ need.name }} ({{ need.count }})
-                                </span>
+                            <!-- FIX 32: Partner needs shown as sorted bar list instead of poorly-scaled word cloud -->
+                            <div class="partner-needs-chart">
+                                <div v-for="need in researchDashboard.innovationProjects.partnerNeeds.slice(0, 10).sort((a,b) => b.count - a.count)" :key="need.name" class="pneed-row">
+                                    <span class="pneed-label">{{ need.name }}</span>
+                                    <div class="pneed-bar-wrap">
+                                        <div class="pneed-bar" :style="{ width: (need.count / researchDashboard.innovationProjects.partnerNeeds[0]?.count * 100) + '%' }"></div>
+                                    </div>
+                                    <span class="pneed-count">{{ need.count }}</span>
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -2160,6 +2196,20 @@
                         </div>
                         <template v-else-if="staffProfileModal.researchProfile">
 
+                            <!-- FIX 16: Coordinator banner — shown when staff manages research lines -->
+                            <div v-if="staffProfileModal.researchProfile.isCoordinator" class="research-coordinator-banner">
+                                <div class="rcb-icon"><i class="fas fa-crown"></i></div>
+                                <div class="rcb-body">
+                                    <div class="rcb-title">Research Coordinator</div>
+                                    <div class="rcb-lines">
+                                        Manages
+                                        <span v-for="(line, i) in staffProfileModal.researchProfile.coordinatorLines" :key="line.id">
+                                            <strong>L{{ line.line_number }} {{ line.name }}</strong><span v-if="i < staffProfileModal.researchProfile.coordinatorLines.length - 1">, </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Headline numbers -->
                             <div class="pd-stat-row">
                                 <div class="pd-stat-block">
@@ -2170,8 +2220,9 @@
                                     <div class="pd-stat-num">{{ staffProfileModal.researchProfile.trials?.asCoI || 0 }}</div>
                                     <div class="pd-stat-lbl">Co-Investigator</div>
                                 </div>
-                                <div class="pd-stat-block" v-if="staffProfileModal.staff.staff_type === 'medical_resident'">
-                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.trials?.asSubI || 0 }}</div>
+                                <!-- FIX 19: SubI shown for all staff types, not just residents -->
+                                <div class="pd-stat-block" v-if="staffProfileModal.researchProfile.trials?.asSubI > 0">
+                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.trials.asSubI }}</div>
                                     <div class="pd-stat-lbl">Sub-Investigator</div>
                                 </div>
                                 <div class="pd-stat-block">
@@ -2184,7 +2235,7 @@
                                 </div>
                             </div>
 
-                            <!-- Research Lines -->
+                            <!-- FIX 2+17: Research Lines with multi-role badges -->
                             <div v-if="staffProfileModal.researchProfile.allResearchLines?.length" class="pd-card">
                                 <div class="pd-card-head">
                                     <span class="pd-card-icon pd-card-icon--blue"><i class="fas fa-flask"></i></span>
@@ -2197,11 +2248,21 @@
                                         <span class="pd-line-name">{{ line.name }}</span>
                                         <span class="pd-line-meta">{{ line.trialsCount }} trials · {{ line.projectsCount }} projects</span>
                                     </div>
-                                    <span class="pd-badge" :class="{ 'pd-badge--purple': line.role === 'Coordinator', 'pd-badge--blue': line.role === 'Principal Investigator', 'pd-badge--ok': line.role === 'Co-Investigator', 'pd-badge--warn': line.role === 'Sub-Investigator', 'pd-badge--teal': line.role === 'Project Lead' }">{{ line.role }}</span>
+                                    <!-- FIX 2: Show all roles if staff holds multiple -->
+                                    <div class="pd-line-roles">
+                                        <span v-for="role in line.roles" :key="role" class="pd-badge pd-badge--sm"
+                                              :class="{
+                                                'pd-badge--purple': role === 'Coordinator',
+                                                'pd-badge--gold': role === 'Principal Investigator',
+                                                'pd-badge--blue': role === 'Co-Investigator',
+                                                'pd-badge--warn': role === 'Sub-Investigator',
+                                                'pd-badge--teal': role === 'Project Lead'
+                                              }">{{ role }}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Clinical Trials list -->
+                            <!-- FIX 18: Clinical Trials list with role indicator and proper layout -->
                             <div v-if="staffProfileModal.researchProfile.trials?.list?.length" class="pd-card">
                                 <div class="pd-card-head">
                                     <span class="pd-card-icon pd-card-icon--teal"><i class="fas fa-vial"></i></span>
@@ -2210,7 +2271,7 @@
                                 <div v-for="trial in staffProfileModal.researchProfile.trials.list" :key="trial.id" class="pd-trial-row">
                                     <div class="pd-trial-info">
                                         <span class="pd-trial-title">{{ trial.title }}</span>
-                                        <span class="pd-trial-meta">{{ trial.phase }}</span>
+                                        <span class="pd-trial-meta">{{ trial.phase }} · <span class="pd-trial-role">{{ trial.role }}</span></span>
                                     </div>
                                     <span class="pd-badge" :class="{ 'pd-badge--ok': trial.status === 'Activo', 'pd-badge--blue': trial.status === 'Reclutando', 'pd-badge--neutral': trial.status === 'Completado' }">{{ trial.status }}</span>
                                 </div>
@@ -2224,7 +2285,7 @@
                                 </div>
                                 <div v-for="project in staffProfileModal.researchProfile.projects.list" :key="project.id" class="pd-trial-row">
                                     <span class="pd-trial-title">{{ project.title }}</span>
-                                    <span class="pd-badge" :style="{ background: getStageColor(project.current_stage) + '22', color: getStageColor(project.current_stage), border: '1px solid ' + getStageColor(project.current_stage) + '44' }">{{ project.current_stage || project.development_stage }}</span>
+                                    <span class="pd-badge" :style="{ background: getStageColor(project.current_stage) + '22', color: getStageColor(project.current_stage), border: '1px solid ' + getStageColor(project.current_stage) + '44' }">{{ project.current_stage }}</span>
                                 </div>
                             </div>
 
@@ -3188,13 +3249,22 @@
                     <button class="modal-close" @click="assignCoordinatorModal.show = false"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-4">Assign coordinator for: <strong>{{ assignCoordinatorModal.lineName }}</strong></p>
+                    <p class="mb-4" style="font-size:13px;color:var(--text-2);">Assigning coordinator for: <strong style="color:var(--text-1)">{{ assignCoordinatorModal.lineName }}</strong></p>
+                    <!-- FIX 29: Show current coordinator before dropdown -->
+                    <div v-if="assignCoordinatorModal.selectedCoordinatorId" class="assign-coord-current">
+                        <i class="fas fa-user-tie"></i>
+                        <span>Currently: <strong>{{ getStaffName(assignCoordinatorModal.selectedCoordinatorId) }}</strong></span>
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Select Coordinator</label>
                         <select class="form-select" v-model="assignCoordinatorModal.selectedCoordinatorId">
                             <option value="">— No coordinator assigned —</option>
-                            <option v-for="staff in availableAttendings" :key="staff.id" :value="staff.id">{{ staff.full_name }} ({{ staff.specialization || 'Attending' }})</option>
+                            <!-- FIX 28: Show role indicator for existing research coordinators -->
+                            <option v-for="staff in availableAttendings" :key="staff.id" :value="staff.id">
+                                {{ staff.full_name }}{{ staff.is_research_coordinator ? ' ★' : '' }}
+                            </option>
                         </select>
+                        <small class="form-help">★ indicates staff already designated as Research Coordinator</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -3424,18 +3494,16 @@
                                       placeholder="Brief description of this research line's focus and goals..."></textarea>
                         </div>
                         <div class="form-group col-span-2">
-                            <label class="form-label">Coordinator</label>
-                            <select class="form-select" v-model="researchLineModal.form.coordinator_id">
-                                <option value="">-- No coordinator assigned --</option>
-                                <option v-for="staff in availableAttendings" :key="staff.id" :value="staff.id">
-                                    {{ staff.full_name }}
-                                </option>
-                            </select>
+                            <label class="form-label">Scope / Capabilities <span class="form-hint">(shown on research line card)</span></label>
+                            <input type="text" class="form-control" v-model="researchLineModal.form.capabilities"
+                                   placeholder="e.g. Trasplante, HTP, Fibrosis Pulmonar, Enfermedades Raras">
+                            <small class="form-help">Brief summary of this line's clinical and research scope</small>
                         </div>
+                        <!-- FIX 13: Coordinator field removed from edit modal — use the dedicated "Assign Coordinator" button on the card instead to avoid divergent code paths -->
                         <div class="form-group col-span-2">
                             <label class="form-label">Keywords <span class="form-hint">(comma-separated)</span></label>
                             <input type="text" class="form-control" v-model="researchLineModal.form.keywordsInput"
-                                   placeholder="e.g. EPOC, ventilacion mecanica, fibrosis pulmonar">
+                                   :placeholder="researchLineModal.mode === 'edit' && researchLineModal.form.keywords?.length ? researchLineModal.form.keywords.join(', ') : 'e.g. EPOC, ventilacion mecanica, fibrosis pulmonar'">
                             <small class="form-help">Keywords help search and categorize this research line</small>
                         </div>
                     </div>
@@ -3523,23 +3591,30 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Co-Investigator (Co-I)</label>
-                            <select class="form-select" v-model="clinicalTrialModal.form.co_investigator_id">
-                                <option value="">Select Co-I</option>
-                                <option v-for="staff in availablePhysicians" :key="staff.id" :value="staff.id">
-                                    {{ staff.full_name }}
-                                </option>
-                            </select>
+                        <!-- FIX 5: Co-investigators as multi-select checkboxes (array field) -->
+                        <div class="form-group col-span-2">
+                            <label class="form-label">Co-Investigators (Co-I) <span class="form-hint">Select all that apply</span></label>
+                            <div class="multi-investigator-grid">
+                                <label v-for="staff in availablePhysicians" :key="staff.id" class="investigator-checkbox"
+                                       :class="{ 'investigator-selected': clinicalTrialModal.form.co_investigators?.includes(staff.id) }">
+                                    <input type="checkbox" class="hidden" :value="staff.id"
+                                           :checked="clinicalTrialModal.form.co_investigators?.includes(staff.id)"
+                                           @change="toggleCoInvestigator(staff.id)">
+                                    <span>{{ staff.full_name }}</span>
+                                </label>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Sub-Investigator (Sub-I)</label>
-                            <select class="form-select" v-model="clinicalTrialModal.form.sub_investigator_id">
-                                <option value="">Select Sub-I</option>
-                                <option v-for="staff in availablePhysicians" :key="staff.id" :value="staff.id">
-                                    {{ staff.full_name }}
-                                </option>
-                            </select>
+                        <div class="form-group col-span-2">
+                            <label class="form-label">Sub-Investigators (Sub-I) <span class="form-hint">Select all that apply</span></label>
+                            <div class="multi-investigator-grid">
+                                <label v-for="staff in availablePhysicians.concat(availableResidents)" :key="staff.id" class="investigator-checkbox"
+                                       :class="{ 'investigator-selected': clinicalTrialModal.form.sub_investigators?.includes(staff.id) }">
+                                    <input type="checkbox" class="hidden" :value="staff.id"
+                                           :checked="clinicalTrialModal.form.sub_investigators?.includes(staff.id)"
+                                           @change="toggleSubInvestigator(staff.id)">
+                                    <span>{{ staff.full_name }}</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Start Date</label>
@@ -3547,7 +3622,12 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">End Date</label>
-                            <input type="date" class="form-control" v-model="clinicalTrialModal.form.end_date">
+                            <input type="date" class="form-control" v-model="clinicalTrialModal.form.end_date"
+                                   :min="clinicalTrialModal.form.start_date || undefined">
+                            <!-- FIX 8: Date validation hint -->
+                            <small v-if="clinicalTrialModal.form.start_date && clinicalTrialModal.form.end_date && clinicalTrialModal.form.end_date < clinicalTrialModal.form.start_date" class="error-text">
+                                <i class="fas fa-exclamation-circle"></i> End date must be after start date
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -3613,7 +3693,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Development Stage *</label>
-                            <select class="form-select" v-model="innovationProjectModal.form.development_stage" required>
+                            <select class="form-select" v-model="innovationProjectModal.form.current_stage" required>
                                 <option value="">Select Stage</option>
                                 <option value="Idea">Idea</option>
                                 <option value="Proof of Concept">Proof of Concept</option>
@@ -3655,6 +3735,82 @@
                         <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i>
                         {{ saving ? 'Saving...' : (innovationProjectModal.mode === 'add' ? 'Add Project' : 'Save Changes') }}
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ TRIAL DETAIL MODAL ============ -->
+        <div v-if="trialDetailModal.show" class="modal-overlay">
+            <div class="modal-container modal-wide">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="fas fa-vial"></i>
+                        <span class="font-mono" style="font-size:13px;color:var(--blue)">{{ trialDetailModal.trial?.protocol_id }}</span>
+                        <span class="modal-title-badge">{{ trialDetailModal.trial?.phase }}</span>
+                    </div>
+                    <button class="modal-close" @click="trialDetailModal.show = false"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body" v-if="trialDetailModal.trial">
+                    <h3 style="font-family:var(--font-display);font-size:20px;font-style:italic;color:var(--text-1);line-height:1.4;margin-bottom:16px;">{{ trialDetailModal.trial.title }}</h3>
+                    <!-- Status + Line row -->
+                    <div class="trial-detail-meta-row">
+                        <span class="status-indicator"
+                              :class="{
+                                'status-recruiting': trialDetailModal.trial.status === 'Reclutando',
+                                'status-active': trialDetailModal.trial.status === 'Activo',
+                                'status-completed': trialDetailModal.trial.status === 'Completado',
+                                'status-suspended': trialDetailModal.trial.status === 'Suspendido'
+                              }">{{ trialDetailModal.trial.status }}</span>
+                        <span class="trial-detail-line"><i class="fas fa-flask"></i> {{ getResearchLineName(trialDetailModal.trial.research_line_id) }}</span>
+                        <span v-if="trialDetailModal.trial.start_date" class="trial-detail-dates">
+                            <i class="fas fa-calendar"></i>
+                            {{ formatDate(trialDetailModal.trial.start_date) }}
+                            <span v-if="trialDetailModal.trial.end_date"> → {{ formatDate(trialDetailModal.trial.end_date) }}</span>
+                        </span>
+                    </div>
+                    <!-- Investigators -->
+                    <div class="trial-detail-section">
+                        <div class="trial-detail-section-title">Investigadores</div>
+                        <div class="trial-detail-investigators">
+                            <div v-if="trialDetailModal.trial.principal_investigator_id" class="trial-investigator-row">
+                                <span class="trial-inv-role pi-role">PI</span>
+                                <span class="trial-inv-name">{{ getStaffName(trialDetailModal.trial.principal_investigator_id) }}</span>
+                            </div>
+                            <div v-for="coId in (trialDetailModal.trial.co_investigators || [])" :key="coId" class="trial-investigator-row">
+                                <span class="trial-inv-role coi-role">Co-I</span>
+                                <span class="trial-inv-name">{{ getStaffName(coId) }}</span>
+                            </div>
+                            <div v-for="subId in (trialDetailModal.trial.sub_investigators || [])" :key="subId" class="trial-investigator-row">
+                                <span class="trial-inv-role subi-role">Sub-I</span>
+                                <span class="trial-inv-name">{{ getStaffName(subId) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Description -->
+                    <div class="trial-detail-section" v-if="trialDetailModal.trial.description">
+                        <div class="trial-detail-section-title">Descripción</div>
+                        <p class="trial-detail-text">{{ trialDetailModal.trial.description }}</p>
+                    </div>
+                    <!-- Inclusion / Exclusion criteria -->
+                    <div class="trial-detail-criteria-grid">
+                        <div class="trial-detail-section" v-if="trialDetailModal.trial.inclusion_criteria">
+                            <div class="trial-detail-section-title trial-detail-section-title--ok"><i class="fas fa-check-circle"></i> Criterios de Inclusión</div>
+                            <p class="trial-detail-text">{{ trialDetailModal.trial.inclusion_criteria }}</p>
+                        </div>
+                        <div class="trial-detail-section" v-if="trialDetailModal.trial.exclusion_criteria">
+                            <div class="trial-detail-section-title trial-detail-section-title--danger"><i class="fas fa-times-circle"></i> Criterios de Exclusión</div>
+                            <p class="trial-detail-text">{{ trialDetailModal.trial.exclusion_criteria }}</p>
+                        </div>
+                    </div>
+                    <!-- Contact -->
+                    <div class="trial-detail-section" v-if="trialDetailModal.trial.contact_email">
+                        <div class="trial-detail-section-title">Contacto</div>
+                        <a :href="'mailto:' + trialDetailModal.trial.contact_email" class="trial-detail-email"><i class="fas fa-envelope"></i> {{ trialDetailModal.trial.contact_email }}</a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="trialDetailModal.show = false">Close</button>
+                    <button class="btn btn-primary" @click="editTrial(trialDetailModal.trial); trialDetailModal.show = false" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-edit"></i> Edit Trial</button>
                 </div>
             </div>
         </div>
