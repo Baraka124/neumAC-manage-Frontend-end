@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER ====-======= -->
+    <!-- ============ TOAST CONTAINER =========== -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -2037,8 +2037,8 @@
                             <i class="fas fa-chevron-down pd-section-chevron"></i>
                         </button>
                         <div class="pd-section-body">
-                            <a :href="staffProfileModal.staff.professional_email ? 'mailto:' + staffProfileModal.staff.professional_email : '#'"
-                               class="pd-contact-row" :class="{ 'pd-contact-row--disabled': !staffProfileModal.staff.professional_email }">
+                            <a :href="staffProfileModal.staff?.professional_email ? 'mailto:' + staffProfileModal.staff.professional_email : '#'"
+                               class="pd-contact-row" :class="{ 'pd-contact-row--disabled': !staffProfileModal.staff?.professional_email }">
                                 <i class="fas fa-envelope"></i>
                                 <span>{{ staffProfileModal.staff.professional_email || 'No email' }}</span>
                             </a>
