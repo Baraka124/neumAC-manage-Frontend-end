@@ -806,6 +806,10 @@ a { color: var(--blue); text-decoration: none; }
   font-size: var(--t-12);
   min-width: 560px;
 }
+/* Fixed layout so page 2 columns match page 1 */
+.table-staff {
+  table-layout: fixed;
+}
 .table thead th {
   background: var(--surface-2); padding: 11px 16px; text-align: left; /* was 9px 14px */
   font-family: var(--font-data);
@@ -872,17 +876,23 @@ a { color: var(--blue); text-decoration: none; }
 .text-center { text-align: center; }
 
 .table-actions {
-  display: flex; gap: 5px; align-items: center; flex-wrap: wrap;
+  display: flex; gap: 3px; align-items: center; flex-wrap: nowrap;
 }
 .table-actions .btn-sm {
-  width: 36px !important; height: 36px !important; padding: 0;
-  border: 1px solid var(--border-2); border-radius: var(--r-sm);
-  color: var(--text-2); background: var(--surface); transition: var(--t);
+  width: 26px !important; height: 26px !important; padding: 0;
+  border: 1px solid transparent; border-radius: var(--r-sm);
+  color: var(--text-4); background: transparent; transition: var(--t);
   display: flex; align-items: center; justify-content: center;
+  font-size: 10px !important;
+  opacity: 0.55;
 }
+.table-actions .btn-sm i { font-size: 10px !important; }
 .table-actions .btn-sm:hover {
   background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue);
-  transform: scale(1.05);
+  opacity: 1; transform: none;
+}
+.table-actions .btn-sm.btn-outline-danger:hover {
+  background: var(--danger-lt); border-color: var(--danger-mid); color: var(--danger);
 }
 
 .na-value {
@@ -3888,50 +3898,61 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   display: flex; flex-direction: column; gap: 0;
   overflow: hidden;
   transition: box-shadow var(--t), transform var(--t);
+  /* Improvement 1: subtle left accent by status */
+  border-left: 3px solid var(--border);
 }
 .tuc:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.tuc--active { border-left-color: var(--ok); }
+.tuc--full   { border-left-color: var(--danger); }
+.tuc--warn   { border-left-color: var(--warn); }
 
 /* Head */
 .tuc-head {
   display: flex; align-items: flex-start; justify-content: space-between;
   padding: 14px 14px 10px;
   border-bottom: 1px solid var(--border);
+  background: var(--surface); /* Improvement 2: solid head bg, not washed out */
 }
 .tuc-name-row { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-.tuc-icon { font-size: 12px; color: var(--teal); flex-shrink: 0; }
+.tuc-icon { font-size: 13px; color: var(--teal); flex-shrink: 0; opacity: 0.9; }
 .tuc-name {
   font-family: var(--font-display); font-size: 16px;
   font-style: italic; font-weight: 400;
-  color: var(--text-1); letter-spacing: -.01em;
+  /* Improvement 3: darker name — was text-1 which is too faint on light bg */
+  color: #1a202c;
+  letter-spacing: -.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* Meta */
+/* Meta — department + specialty tags */
 .tuc-meta {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 8px 14px;
   border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
 }
 .tuc-meta-item {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; color: var(--text-3); font-weight: 500;
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600;
+  /* Improvement 4: was text-3 (too faint) — now text-2 */
+  color: var(--text-2);
 }
-.tuc-meta-item i { font-size: 10px; color: var(--text-4); }
+.tuc-meta-item i { font-size: 9px; color: var(--text-3); }
 
 /* Occupancy */
 .tuc-occupancy { padding: 10px 14px; border-bottom: 1px solid var(--border); }
 .tuc-occ-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .tuc-occ-label {
   font-family: var(--font-data); font-size: 9px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .1em; color: var(--text-4);
+  text-transform: uppercase; letter-spacing: .1em; color: var(--text-3);
 }
 .tuc-occ-count {
-  font-family: var(--font-data); font-size: 13px; font-weight: 700;
+  font-family: var(--font-data); font-size: 14px; font-weight: 800;
   color: var(--ok);
 }
-.tuc-occ-max { font-size: 11px; font-weight: 500; color: var(--text-3); }
+.tuc-occ-max { font-size: 12px; font-weight: 500; color: var(--text-2); }
 .tuc-occ-full { color: var(--danger) !important; }
-.tuc-occ-warn { color: var(--warn) !important; }
+.tuc-occ-warn { color: #d97706 !important; }
 
 .tuc-occ-bar {
   height: 5px; background: var(--border); border-radius: 3px; overflow: hidden;
@@ -3941,17 +3962,19 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   background: linear-gradient(90deg, var(--ok), #0d9e6e);
   transition: width .4s ease;
 }
-.tuc-occ-fill--warn { background: linear-gradient(90deg, var(--warn), #f59e0b); }
+.tuc-occ-fill--warn { background: linear-gradient(90deg, #f59e0b, #d97706); }
 .tuc-occ-fill--full { background: linear-gradient(90deg, var(--danger), #ef4444); }
 
 /* Supervisor strip */
 .tuc-supervisor {
   display: flex; align-items: center; gap: 7px;
   padding: 8px 14px; border-bottom: 1px solid var(--border);
-  font-size: 12px; font-weight: 500; color: var(--text-2);
+  font-size: 12px; font-weight: 600;
+  /* Improvement 5: was text-2 (still faint) — now explicitly readable */
+  color: #2d3748;
 }
 .tuc-supervisor i { font-size: 11px; color: var(--blue); }
-.tuc-supervisor--empty { color: var(--text-4); font-style: italic; }
+.tuc-supervisor--empty { color: var(--text-3); font-style: italic; font-weight: 400; }
 .tuc-supervisor--empty i { color: var(--text-4); }
 .tuc-sup-badge {
   margin-left: auto; font-family: var(--font-data);
@@ -3961,20 +3984,20 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   padding: 2px 7px; border-radius: 20px;
 }
 
-/* Actions */
+/* Actions — small, unobtrusive */
 .tuc-actions {
-  display: flex; align-items: center; gap: 5px;
-  padding: 10px 12px;
+  display: flex; align-items: center; gap: 4px;
+  padding: 8px 12px;
 }
 .tuc-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 10px; border-radius: var(--r-sm);
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 9px; border-radius: var(--r-sm);
   font-size: 11px; font-weight: 600; cursor: pointer;
   transition: var(--t); border: 1px solid transparent;
   font-family: var(--font-ui);
 }
-.tuc-btn i { font-size: 10px; }
-.tuc-btn-text { } /* label text */
+.tuc-btn i { font-size: 9px; opacity: 0.7; }
+.tuc-btn-text { }
 .tuc-count-badge {
   background: var(--blue); color: #fff;
   font-size: 9px; font-weight: 700; border-radius: 20px;
@@ -3987,18 +4010,23 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   color: var(--text-2);
 }
 .tuc-btn--ghost:hover { background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue); }
+.tuc-btn--ghost:hover i { opacity: 1; }
 
+/* Edit + Delete — icon-only, whisper quiet */
 .tuc-btn--edit {
-  background: var(--surface-2); border-color: var(--border); color: var(--text-3);
-  padding: 5px 10px;
+  padding: 5px 8px; background: transparent; border-color: transparent;
+  color: var(--text-4);
 }
 .tuc-btn--edit:hover { background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue); }
+.tuc-btn--edit i { font-size: 10px; opacity: 1; }
 
 .tuc-btn--danger {
-  background: var(--surface-2); border-color: var(--border); color: var(--text-3);
-  padding: 5px 10px;
+  padding: 5px 8px; background: transparent; border-color: transparent;
+  color: var(--text-4);
 }
 .tuc-btn--danger:hover { background: var(--danger-lt); border-color: var(--danger-mid); color: var(--danger); }
+.tuc-btn--danger i { font-size: 10px; opacity: 1; }
+
 
 /* ================================================================
    UNIT RESIDENTS MODAL — clean names list
