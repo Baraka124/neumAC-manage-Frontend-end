@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER ====-======= -->
+    <!-- ============ TOAST CONTAINER =========== -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -681,32 +681,41 @@
                                 <tbody>
                                     <tr v-for="staff in filteredMedicalStaff" :key="staff.id" :class="'row-' + staff.employment_status" @click="viewStaffDetails(staff)">
                                         <td>
-                                            <div class="font-medium">{{ staff.full_name }}</div>
-                                            <div class="text-xs text-gray-500">{{ staff.professional_email }}</div>
-                                            <div v-if="staff.training_year" class="text-xs text-blue-600">{{ formatTrainingYear(staff.training_year) }}</div>
-                                            <div v-if="staff.staff_type === 'medical_resident' && staff.resident_category"
-                                                 class="resident-badge" :class="'resident-' + staff.resident_category"
-                                                 :title="getResidentCategoryTooltip(staff)">
-                                                <i class="fas" :class="getResidentCategoryIcon(staff.resident_category)"></i>
-                                                {{ formatResidentCategorySimple(staff.resident_category) }}
-                                                <span v-if="staff.resident_category === 'external_resident' && staff.external_institution" class="resident-institution">({{ staff.external_institution }})</span>
+                                            <div class="staff-name-cell">
+                                                <div class="staff-avatar-chip" :class="'chip--' + staff.employment_status">{{ staff.full_name.split(' ').map(n=>n[0]).join('').slice(0,2) }}</div>
+                                                <div class="staff-name-block">
+                                                    <div class="staff-name-primary">{{ staff.full_name }}</div>
+                                                    <div v-if="staff.staff_type === 'medical_resident' && staff.resident_category" class="staff-name-sub">
+                                                        <i class="fas" :class="getResidentCategoryIcon(staff.resident_category)" style="font-size:9px; opacity:.6"></i>
+                                                        {{ formatResidentCategorySimple(staff.resident_category) }}
+                                                        <span v-if="staff.resident_category === 'external_resident' && staff.external_institution"> · {{ staff.external_institution }}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
                                         <td><span class="badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffType(staff.staff_type) }}</span></td>
                                         <td>
                                             <span v-if="getDepartmentName(staff.department_id)">{{ getDepartmentName(staff.department_id) }}</span>
-                                            <span v-else class="na-value">NA</span>
+                                            <span v-else class="na-value">—</span>
                                         </td>
                                         <td>
-                                            <span v-if="staff.staff_type === 'attending_physician'" class="na-value">N/A</span>
-                                            <span v-else-if="getCurrentRotationForStaff(staff.id)">{{ getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) }}</span>
-                                            <span v-else class="na-value">NA</span>
+                                            <template v-if="staff.staff_type === 'attending_physician'">
+                                                <span class="na-value">—</span>
+                                            </template>
+                                            <template v-else-if="getCurrentRotationForStaff(staff.id)">
+                                                <div class="staff-rotation-chip">
+                                                    <span class="src-dot"></span>
+                                                    <span class="src-unit">{{ getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) }}</span>
+                                                    <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(staff.id).start_date, getCurrentRotationForStaff(staff.id).end_date) }}</span>
+                                                </div>
+                                            </template>
+                                            <span v-else class="na-value">—</span>
                                         </td>
                                         <td><span class="status-indicator" :class="'status-' + staff.employment_status">{{ formatEmploymentStatus(staff.employment_status) }}</span></td>
                                         <td>
                                             <div class="table-actions">
-                                                <button class="btn btn-sm btn-outline" @click="viewStaffDetails(staff)" aria-label="View profile"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-outline" @click="editMedicalStaff(staff)" v-if="hasPermission('medical_staff', 'update')" aria-label="Edit"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-outline" @click.stop="viewStaffDetails(staff)" aria-label="View profile"><i class="fas fa-eye"></i></button>
+                                                <button class="btn btn-sm btn-outline" @click.stop="editMedicalStaff(staff)" v-if="hasPermission('medical_staff', 'update')" aria-label="Edit"><i class="fas fa-edit"></i></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -772,61 +781,67 @@
                             <input type="text" class="form-control" v-model="onCallFilters.search" placeholder="Search...">
                         </div>
 
-                        <!-- COMPACT STACK VIEW -->
-                        <div v-if="onCallView === 'compact'" class="oncall-stack">
-                            <div v-for="dateGroup in groupedOnCallSchedules" :key="dateGroup.date" class="oncall-date-group">
-                                <div class="oncall-date-header">
-                                    <span class="badge badge-info">{{ formatDate(dateGroup.date) }}</span>
-                                    <span class="text-xs text-gray-500">{{ dateGroup.dayOfWeek }}</span>
-                                    <span class="ml-auto text-xs text-gray-400">{{ dateGroup.shifts.length }} shift{{ dateGroup.shifts.length !== 1 ? 's' : '' }}</span>
-                                </div>
-                                
-                                <div v-for="shift in dateGroup.shifts" :key="shift.id" 
-                                     class="oncall-stack-row" 
-                                     :class="shift.shift_type === 'primary_call' ? 'primary' : 'backup'"
-                                     @click="editOnCallSchedule(shift)">
-                                    
-                                    <div class="oncall-time-badge">
-                                        {{ shift.start_time }} - {{ shift.end_time }}
-                                    </div>
-                                    
-                                    <div class="oncall-physician">
-                                        {{ getPhysicianName(shift.primary_physician_id) }}
-                                        <span class="oncall-type-badge">{{ shift.shift_type === 'primary_call' ? 'Primary' : 'Backup' }}</span>
-                                    </div>
-                                    
-                                    <div class="oncall-status-dot" :class="{ active: isShiftActive(shift) }"></div>
-                                    
-                                    <div class="oncall-actions" @click.stop>
-                                        <button class="btn-icon btn-sm" @click="editOnCallSchedule(shift)" 
-                                                v-if="hasPermission('oncall_schedule', 'update')" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn-icon btn-sm" @click="deleteOnCallSchedule(shift)" 
-                                                v-if="hasPermission('oncall_schedule', 'delete')" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                        <!-- PHYSICIAN ORB VIEW -->
+                        <div v-if="onCallView === 'compact'" class="oncall-orb-view">
+
+                            <!-- Legend -->
+                            <div class="rot-legend">
+                                <span class="rot-legend-item"><span class="oc-orb-demo oc-orb-demo--primary"></span> Primary call</span>
+                                <span class="rot-legend-item"><span class="oc-orb-demo oc-orb-demo--backup"></span> Backup</span>
+                                <span class="rot-legend-item"><span class="oc-orb-demo oc-orb-demo--today"></span> Today</span>
+                                <span class="rot-legend-item rot-legend-item--note"><i class="fas fa-hand-point-up"></i> Hover orb for shift time · Click to edit</span>
+                            </div>
+
+                            <div v-for="physician in staffWithOnCallOrbs" :key="physician.id" class="oc-row">
+
+                                <!-- Physician identity -->
+                                <div class="rot-who">
+                                    <div class="rot-who-avatar rot-who-avatar--blue">{{ physician.name.split(' ').map(n=>n[0]).join('').slice(0,2) }}</div>
+                                    <div class="rot-who-info">
+                                        <span class="rot-who-name">{{ physician.name }}</span>
+                                        <span class="rot-who-meta">{{ physician.shifts.length }} shift{{ physician.shifts.length !== 1 ? 's' : '' }}</span>
                                     </div>
                                 </div>
-                                
-                                <!-- Empty state for this date -->
-                                <div v-if="dateGroup.shifts.length === 0" class="oncall-stack-row" style="opacity:0.7;">
-                                    <div class="oncall-time-badge">No shifts</div>
-                                    <div class="oncall-physician">No on-call scheduled</div>
-                                    <button class="btn-pill btn-pill-primary btn-sm ml-auto" @click.stop="showAddOnCallModal(dateGroup.date)">
-                                        <i class="fas fa-plus"></i> Add
+
+                                <!-- Shift orbs -->
+                                <div class="rot-track">
+                                    <div v-for="shift in physician.shifts" :key="shift.id"
+                                         class="oc-orb"
+                                         :class="{
+                                             'oc-orb--primary': shift.shift_type === 'primary_call',
+                                             'oc-orb--backup':  shift.shift_type === 'backup_call',
+                                             'oc-orb--today':   shift.isToday,
+                                             'oc-orb--past':    shift.isPast && !shift.isToday,
+                                         }"
+                                         @click.stop="editOnCallSchedule(shift)">
+                                        <span class="oc-orb-day">{{ shift.dayLabel }}</span>
+                                        <span class="oc-orb-date">{{ shift.dateLabel }}</span>
+                                        <div class="rot-orb-tooltip">
+                                            <div class="rot-tt-unit">{{ shift.shift_type === 'primary_call' ? 'Primary Call' : 'Backup Call' }}</div>
+                                            <div class="rot-tt-dates">{{ shift.start_time }} – {{ shift.end_time }}</div>
+                                            <div v-if="shift.coverage_area" class="rot-tt-dates">{{ shift.coverage_area }}</div>
+                                            <div v-if="shift.isToday" class="rot-tt-tag rot-tt-tag--active">● Today</div>
+                                            <div v-else-if="shift.isPast" class="rot-tt-tag rot-tt-tag--done">Past</div>
+                                            <div v-else class="rot-tt-tag rot-tt-tag--scheduled">Upcoming</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick add -->
+                                <div class="rot-row-actions">
+                                    <button v-if="hasPermission('oncall_schedule', 'create')"
+                                            class="rot-action-btn" @click.stop="showAddOnCallModal()" title="Add shift">
+                                        <i class="fas fa-plus"></i>
                                     </button>
                                 </div>
                             </div>
-                            
-                            <!-- Global empty state -->
-                            <div v-if="groupedOnCallSchedules.length === 0" class="empty-state">
+
+                            <div v-if="staffWithOnCallOrbs.length === 0" class="empty-state">
                                 <i class="fas fa-phone-medical empty-state-icon"></i>
                                 <div class="empty-state-title">No schedules found</div>
                                 <div class="empty-state-description">No on-call shifts match your filters</div>
                             </div>
                         </div>
-
                         <!-- DETAILED VIEW (EXISTING TABLE) -->
                         <div v-else class="table-responsive">
                             <table class="table table-striped">
@@ -938,72 +953,101 @@
                             <input type="text" class="form-control" v-model="rotationFilters.search" placeholder="Search...">
                         </div>
 
-                        <!-- COMPACT VIEW (NEW) -->
-                        <div v-if="rotationView === 'compact'" class="compact-rotations-view">
-                            <div class="resident-rotation-summary">
-                                <div v-for="resident in residentsWithRotations" :key="resident.id" class="resident-row">
-                                    <div class="resident-info">
-                                        <div class="resident-name">{{ resident.full_name }}</div>
-                                        <div class="resident-year">{{ resident.training_year || 'PGY-?' }}</div>
-                                    </div>
-                                    
-                                    <div class="rotation-timeline-dots">
-                                        <!-- Completed/past rotations -->
-                                        <template v-for="(rotation, index) in resident.pastRotations">
-                                            <div class="rotation-dot completed"
-                                                 :data-tooltip="`${rotation.unitName} (${formatDate(rotation.start_date)} - ${formatDate(rotation.end_date)})`"
-                                                 @click="viewRotationDetails(rotation)"
-                                                 :key="rotation.id">
-                                                <span>{{ index + 1 }}</span>
-                                            </div>
-                                        </template>
-                                        
-                                        <!-- Current active rotation (highlighted) -->
-                                        <div v-if="resident.currentRotation" 
-                                             class="rotation-dot active-now"
-                                             :data-tooltip="`CURRENT: ${resident.currentRotation.unitName} (ends ${formatRelativeDate(resident.currentRotation.end_date)})`"
-                                             @click="viewRotationDetails(resident.currentRotation)">
-                                            <i class="fas fa-play"></i>
-                                        </div>
-                                        
-                                        <!-- Upcoming scheduled rotations -->
-                                        <template v-for="(rotation, index) in resident.upcomingRotations">
-                                            <div class="rotation-dot scheduled"
-                                                 :data-tooltip="`UPCOMING: ${rotation.unitName} (starts ${formatRelativeDate(rotation.start_date)})`"
-                                                 @click="viewRotationDetails(rotation)"
-                                                 :key="rotation.id">
-                                                <span>{{ resident.pastRotations.length + (resident.currentRotation ? 1 : 0) + index + 1 }}</span>
-                                            </div>
-                                        </template>
-                                        
-                                        <!-- Empty slots (shows available capacity) -->
-                                        <div v-for="n in resident.emptySlots" 
-                                             :key="'empty-'+n"
-                                             class="rotation-dot empty"
-                                             :data-tooltip="'Click to schedule new rotation'"
-                                             @click="showAddRotationModal(resident)">
-                                            <i class="fas fa-plus"></i>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="rotation-actions">
-                                        <button class="btn-pill btn-pill-view btn-sm" @click.stop="viewStaffDetails(resident)" 
-                                                :title="'View full profile'">
-                                            <i class="fas fa-user"></i>
-                                        </button>
-                                        <button class="btn-pill btn-pill-edit btn-sm" @click.stop="showAddRotationModal(resident)"
-                                                v-if="hasPermission('resident_rotations', 'create')" :title="'Add rotation'">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
+                        <!-- COMPACT VIEW — Orb Timeline -->
+                        <div v-if="rotationView === 'compact'" class="rot-compact">
+
+                            <!-- Legend -->
+                            <div class="rot-legend">
+                                <span class="rot-legend-item"><span class="rot-legend-dot rot-legend-dot--active"></span> Active</span>
+                                <span class="rot-legend-item"><span class="rot-legend-dot rot-legend-dot--scheduled"></span> Scheduled</span>
+                                <span class="rot-legend-item"><span class="rot-legend-dot rot-legend-dot--done"></span> Completed</span>
+                                <span class="rot-legend-item rot-legend-item--note"><i class="fas fa-hand-point-up"></i> Click orb for details · Hover to preview</span>
+                            </div>
+
+                            <div v-for="resident in residentsWithRotations" :key="resident.id" class="rot-row">
+
+                                <!-- Resident identity -->
+                                <div class="rot-who">
+                                    <div class="rot-who-avatar">{{ resident.full_name.split(' ').map(n=>n[0]).join('').slice(0,2) }}</div>
+                                    <div class="rot-who-info">
+                                        <span class="rot-who-name">{{ resident.full_name }}</span>
+                                        <span class="rot-who-meta">{{ formatTrainingYear(resident.training_year) || 'PGY-?' }}</span>
                                     </div>
                                 </div>
-                                
-                                <!-- Empty state -->
-                                <div v-if="residentsWithRotations.length === 0" class="empty-state">
-                                    <i class="fas fa-calendar-alt empty-state-icon"></i>
-                                    <div class="empty-state-title">No residents found</div>
-                                    <div class="empty-state-description">No residents match your current filters</div>
+
+                                <!-- Orb track -->
+                                <div class="rot-track">
+
+                                    <!-- Completed orbs -->
+                                    <div v-for="(rot, idx) in resident.pastRotations" :key="rot.id"
+                                         class="rot-orb rot-orb--done"
+                                         @click.stop="viewRotationDetails(rot)">
+                                        <span class="rot-orb-label">{{ formatClinicalDuration(rot.start_date, rot.end_date) }}</span>
+                                        <div class="rot-orb-tooltip">
+                                            <div class="rot-tt-unit">{{ rot.unitName }}</div>
+                                            <div class="rot-tt-dates">{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</div>
+                                            <div class="rot-tt-tag rot-tt-tag--done">Completed</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Connector arrow if there's history -->
+                                    <div v-if="resident.pastRotations.length && (resident.currentRotation || resident.upcomingRotations.length)" class="rot-connector">›</div>
+
+                                    <!-- Active orb — larger, glowing -->
+                                    <div v-if="resident.currentRotation"
+                                         class="rot-orb rot-orb--active"
+                                         @click.stop="viewRotationDetails(resident.currentRotation)">
+                                        <span class="rot-orb-label">{{ formatClinicalDuration(resident.currentRotation.start_date, resident.currentRotation.end_date) }}</span>
+                                        <div class="rot-orb-tooltip">
+                                            <div class="rot-tt-unit">{{ resident.currentRotation.unitName }}</div>
+                                            <div class="rot-tt-dates">{{ formatDate(resident.currentRotation.start_date) }} → {{ formatDate(resident.currentRotation.end_date) }}</div>
+                                            <div class="rot-tt-remaining">{{ getDaysRemaining(resident.currentRotation.end_date) }}d remaining</div>
+                                            <div class="rot-tt-tag rot-tt-tag--active">● Active now</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Connector before scheduled -->
+                                    <div v-if="resident.currentRotation && resident.upcomingRotations.length" class="rot-connector">›</div>
+
+                                    <!-- Scheduled orbs -->
+                                    <div v-for="(rot, idx) in resident.upcomingRotations" :key="rot.id"
+                                         class="rot-orb rot-orb--scheduled"
+                                         @click.stop="viewRotationDetails(rot)">
+                                        <span class="rot-orb-label">{{ formatClinicalDuration(rot.start_date, rot.end_date) }}</span>
+                                        <div class="rot-orb-tooltip">
+                                            <div class="rot-tt-unit">{{ rot.unitName }}</div>
+                                            <div class="rot-tt-dates">{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</div>
+                                            <div class="rot-tt-tag rot-tt-tag--scheduled">Scheduled</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Add slot -->
+                                    <div v-if="hasPermission('resident_rotations', 'create')"
+                                         class="rot-orb rot-orb--add"
+                                         @click.stop="showAddRotationModal(resident)"
+                                         title="Add rotation">
+                                        <i class="fas fa-plus"></i>
+                                    </div>
+
+                                    <!-- Empty state for this resident -->
+                                    <div v-if="!resident.currentRotation && !resident.upcomingRotations.length && !resident.pastRotations.length" class="rot-nil">
+                                        No rotations assigned
+                                    </div>
                                 </div>
+
+                                <!-- Quick actions -->
+                                <div class="rot-row-actions">
+                                    <button class="rot-action-btn" @click.stop="viewStaffDetails(resident)" title="View profile">
+                                        <i class="fas fa-user"></i>
+                                    </button>
+                                </div>
+
+                            </div>
+
+                            <div v-if="residentsWithRotations.length === 0" class="empty-state">
+                                <i class="fas fa-calendar-alt empty-state-icon"></i>
+                                <div class="empty-state-title">No residents found</div>
+                                <div class="empty-state-description">No residents match your current filters</div>
                             </div>
                         </div>
 
