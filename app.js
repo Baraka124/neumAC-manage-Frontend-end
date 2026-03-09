@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       CACHE_TTL: 300000
     }
 
-    // ============ 2. CONSTANTS ====-==-======
+    // ============ 2. CONSTANTS ============
     const ROLES = {
       ADMIN: 'system_admin',
       HEAD: 'department_head',
@@ -1625,6 +1625,47 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           console.log('View rotation for:', rotation)
         }
+      }
+
+      // ============ [NEW] Rotation detail sheet modal ============
+      const rotationViewModal = reactive({ show: false, rotation: null })
+
+      // ============ [NEW] Week view ============
+      const weekOffset = ref(0)
+
+      const getWeekDayLabel = (dayIndex) => {
+        const today = new Date()
+        const monday = new Date(today)
+        monday.setDate(today.getDate() - today.getDay() + 1 + weekOffset.value * 7)
+        const d = new Date(monday)
+        d.setDate(monday.getDate() + dayIndex - 1)
+        const isToday = d.toDateString() === today.toDateString()
+        return {
+          dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          dayNum: d.getDate(),
+          isToday,
+          date: Utils.normalizeDate(d)
+        }
+      }
+
+      const getWeekRangeLabel = () => {
+        const today = new Date()
+        const monday = new Date(today)
+        monday.setDate(today.getDate() - today.getDay() + 1 + weekOffset.value * 7)
+        const sunday = new Date(monday)
+        sunday.setDate(monday.getDate() + 6)
+        const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        return `${fmt(monday)} – ${fmt(sunday)}, ${sunday.getFullYear()}`
+      }
+
+      const isFirstDayOfRotation = (rotation, dayIndex) => {
+        const { date } = getWeekDayLabel(dayIndex)
+        return Utils.normalizeDate(rotation.start_date) === date
+      }
+
+      const isLastDayOfRotation = (rotation, dayIndex) => {
+        const { date } = getWeekDayLabel(dayIndex)
+        return Utils.normalizeDate(rotation.end_date) === date
       }
 
       return {
