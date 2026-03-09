@@ -397,13 +397,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       static PROJECT_STAGES = [
-        { key: 'Idea',             label: 'Idea',             icon: 'fa-lightbulb',    color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
-        { key: 'Proof of Concept', label: 'Proof of Concept', icon: 'fa-flask',        color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
-        { key: 'Prototype',        label: 'Prototype',        icon: 'fa-cube',         color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
-        { key: 'Pilot',            label: 'Pilot',            icon: 'fa-play-circle',  color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
-        { key: 'Validation',       label: 'Validation',       icon: 'fa-check-double', color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
-        { key: 'Scale-up',         label: 'Scale-up',         icon: 'fa-chart-line',   color: '#a78bfa', bg: 'rgba(167,139,250,.12)', step: 6 },
-        { key: 'Commercialized',   label: 'Commercialized',   icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 7 }
+        { key: 'Idea',             label: 'Idea',            icon: 'fa-lightbulb',    color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
+        { key: 'Prototipo',        label: 'Prototipo',       icon: 'fa-cube',         color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
+        { key: 'Piloto',           label: 'Piloto',          icon: 'fa-play-circle',  color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
+        { key: 'Validación',       label: 'Validación',      icon: 'fa-check-double', color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
+        { key: 'Escalamiento',     label: 'Escalamiento',    icon: 'fa-chart-line',   color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
+        { key: 'Comercialización', label: 'Comercialización',icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 6 }
       ]
       static getStageConfig(stage) {
         return Utils.PROJECT_STAGES.find(s => s.key === stage) || { key: stage, label: stage, icon: 'fa-circle', color: '#7a90b0', bg: 'rgba(122,144,176,.1)', step: 0 }
@@ -1666,13 +1665,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const viewRotationDetails = (rotation) => {
-        // Find the resident and open their profile
-        const resident = medicalStaff.value.find(s => s.id === rotation.resident_id)
-        if (resident && window.viewStaffDetails) {
-          window.viewStaffDetails(resident)
-        } else {
-          console.log('View rotation for:', rotation)
+        if (!rotation) return
+        // Enrich rotation with display-friendly fields expected by the detail sheet
+        const resident  = medicalStaff.value.find(s => s.id === rotation.resident_id)
+        const supervisor = medicalStaff.value.find(s => s.id === rotation.supervising_attending_id)
+        const startD = new Date(Utils.normalizeDate(rotation.start_date) + 'T00:00:00')
+        const endD   = new Date(Utils.normalizeDate(rotation.end_date)   + 'T00:00:00')
+        const today  = new Date(); today.setHours(0,0,0,0)
+        const daysTotal = Math.max(1, Math.round((endD - startD) / 86400000))
+        const daysLeft  = Math.max(0, Math.round((endD - today)  / 86400000))
+        rotationViewModal.rotation = {
+          ...rotation,
+          unitName:         rotation.unitName || getTrainingUnitName(rotation.training_unit_id),
+          residentName:     resident?.full_name   || rotation.residentName || 'Unknown',
+          supervisorName:   supervisor?.full_name || rotation.supervisorName || '—',
+          daysTotal,
+          daysLeft,
+          clinicalDuration: Utils.formatClinicalDuration(rotation.start_date, rotation.end_date)
         }
+        rotationViewModal.show = true
       }
 
       // ============ [NEW] Rotation detail sheet modal ============
