@@ -2315,12 +2315,41 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch { } }
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: researchLines.value.length + 1, active: true }); researchLineModal.show = true }
-      const showAddTrialModal = () => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1 }); clinicalTrialModal.show = true }
+      const showAddTrialModal = () => { 
+    clinicalTrialModal.mode = 'add'; 
+    Object.assign(clinicalTrialModal.form, { 
+        protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, 
+        title: '', 
+        research_line_id: '', 
+        phase: 'Phase III', 
+        status: 'Reclutando', 
+        description: '', 
+        inclusion_criteria: '', 
+        exclusion_criteria: '', 
+        principal_investigator_id: '', 
+        co_investigators: [], // Changed from co_investigator_id
+        // sub_investigator_id removed
+        contact_email: '', 
+        featured_in_website: true, 
+        display_order: clinicalTrials.value.length + 1,
+        start_date: '',
+        end_date: ''
+    }); 
+    clinicalTrialModal.show = true 
+}
+
       const showAddProjectModal = () => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', development_stage: 'En Desarrollo', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l }; researchLineModal.show = true }
-      const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t }; clinicalTrialModal.show = true }
+      const editTrial = (t) => { 
+    clinicalTrialModal.mode = 'edit'; 
+    clinicalTrialModal.form = { 
+        ...t, 
+        co_investigators: t.co_investigators || [] // Ensure array exists
+    }; 
+    clinicalTrialModal.show = true 
+}
       const editProject = (p) => { innovationProjectModal.mode = 'edit'; innovationProjectModal.form = { ...p }; innovationProjectModal.show = true }
 
       const saveResearchLine = async (saving) => {
