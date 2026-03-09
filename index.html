@@ -1303,9 +1303,9 @@
                                         <span>Residents</span>
                                         <span v-if="getUnitActiveRotationCount(unit.id) > 0" class="tuc-count-badge">{{ getUnitActiveRotationCount(unit.id) }}</span>
                                     </button>
-                                    <button class="tuc-btn tuc-btn--ghost" @click="openUnitClinicians(unit)" title="Assign clinicians" v-if="hasPermission('training_units', 'update')">
-                                        <i class="fas fa-user-tie"></i>
-                                        <span>Clinicians</span>
+                                    <button class="tuc-btn tuc-btn--ghost" @click="openUnitClinicians(unit)" title="Assign supervisor" v-if="hasPermission('training_units', 'update')">
+                                        <i class="fas fa-user-shield"></i>
+                                        <span>Supervisor</span>
                                     </button>
                                     <button class="tuc-btn tuc-btn--edit" @click="editTrainingUnit(unit)" v-if="hasPermission('training_units', 'update')" title="Edit unit">
                                         <i class="fas fa-pen"></i>
@@ -3297,37 +3297,37 @@
                 <div class="modal-header">
                     <div class="modal-title">
                         <i class="fas fa-user-tie"></i>
-                        Clinicians — {{ unitCliniciansModal.unit?.unit_name }}
+                        Supervisor — {{ unitCliniciansModal.unit?.unit_name }}
                     </div>
                     <button class="modal-close" @click="unitCliniciansModal.show = false"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body">
-                    <p class="ucm-hint">Select clinicians working in this unit. Then designate one as the unit supervisor.</p>
-                    <div class="ucm-list">
-                        <label v-for="s in unitCliniciansModal.allStaff" :key="s.id" class="ucm-row"
-                               :class="{ 'ucm-row--checked': unitCliniciansModal.clinicians.includes(s.id) }">
-                            <input type="checkbox"
-                                   :value="s.id"
-                                   :checked="unitCliniciansModal.clinicians.includes(s.id)"
-                                   @change="e => e.target.checked ? unitCliniciansModal.clinicians.push(s.id) : unitCliniciansModal.clinicians.splice(unitCliniciansModal.clinicians.indexOf(s.id), 1)"
-                                   class="ucm-check">
-                            <div class="ucm-avatar" :class="'role-icon--' + s.staff_type">
-                                <i class="fas" :class="s.staff_type === 'attending_physician' ? 'fa-user-md' : 'fa-stethoscope'"></i>
-                            </div>
-                            <div class="ucm-info">
-                                <div class="ucm-name">{{ s.full_name }}</div>
-                                <div class="ucm-type">{{ formatStaffType(s.staff_type) }}</div>
-                            </div>
-                            <!-- Supervisor radio — only visible when checked -->
-                            <div v-if="unitCliniciansModal.clinicians.includes(s.id)" class="ucm-sup-toggle">
-                                <label class="ucm-sup-label" :class="{ 'ucm-sup-active': unitCliniciansModal.supervisorId === s.id }">
-                                    <input type="radio" :value="s.id" v-model="unitCliniciansModal.supervisorId" class="hidden">
-                                    <i class="fas fa-shield-alt"></i>
-                                    <span>{{ unitCliniciansModal.supervisorId === s.id ? 'Supervisor' : 'Set as supervisor' }}</span>
-                                </label>
-                            </div>
-                        </label>
-                    </div>
+                    <p class="ucm-hint">Choose the attending physician or fellow who will supervise this unit.</p>
+                    <!-- Clear/none option -->
+                    <label class="ucm-row" :class="{ 'ucm-row--checked': !unitCliniciansModal.supervisorId }">
+                        <input type="radio" v-model="unitCliniciansModal.supervisorId" :value="''" class="ucm-check">
+                        <div class="ucm-avatar" style="background:var(--surface-2); border:1px dashed var(--border-2)">
+                            <i class="fas fa-ban" style="color:var(--text-4); font-size:10px"></i>
+                        </div>
+                        <div class="ucm-info">
+                            <div class="ucm-name" style="color:var(--text-3)">No supervisor</div>
+                            <div class="ucm-type">Clear assignment</div>
+                        </div>
+                    </label>
+                    <label v-for="s in unitCliniciansModal.allStaff" :key="s.id" class="ucm-row"
+                           :class="{ 'ucm-row--checked': unitCliniciansModal.supervisorId === s.id }">
+                        <input type="radio" :value="s.id" v-model="unitCliniciansModal.supervisorId" class="ucm-check">
+                        <div class="ucm-avatar" :class="'role-icon--' + s.staff_type">
+                            <i class="fas" :class="s.staff_type === 'attending_physician' ? 'fa-user-md' : 'fa-stethoscope'"></i>
+                        </div>
+                        <div class="ucm-info">
+                            <div class="ucm-name">{{ s.full_name }}</div>
+                            <div class="ucm-type">{{ formatStaffType(s.staff_type) }}</div>
+                        </div>
+                        <div v-if="unitCliniciansModal.supervisorId === s.id" class="ucm-sup-toggle">
+                            <span class="ucm-sup-active"><i class="fas fa-shield-alt"></i> Supervisor</span>
+                        </div>
+                    </label>
                     <div v-if="!unitCliniciansModal.allStaff?.length" class="empty-state" style="padding:24px 0">
                         <i class="fas fa-user-md empty-state-icon" style="font-size:32px"></i>
                         <div class="empty-state-title">No attending physicians or fellows found</div>
@@ -3336,7 +3336,7 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="unitCliniciansModal.show = false">Cancel</button>
                     <button class="btn btn-primary" @click="saveUnitClinicians">
-                        <i class="fas fa-save"></i> Save Assignments
+                        <i class="fas fa-save"></i> Save Supervisor
                     </button>
                 </div>
             </div>
