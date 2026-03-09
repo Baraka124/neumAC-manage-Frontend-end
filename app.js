@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // ============ 1. CONFIGURATION ====---=======-=
+    // ============ 1. CONFIGURATION ===========-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -396,11 +396,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return { 'Phase I': '#4d9aff', 'Phase II': '#00e5a0', 'Phase III': '#ffbe3d', 'Phase IV': '#ff5566' }[phase] || '#7a90b0'
       }
 
+      static PROJECT_STAGES = [
+        { key: 'Idea',             label: 'Idea',             icon: 'fa-lightbulb',    color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
+        { key: 'Proof of Concept', label: 'Proof of Concept', icon: 'fa-flask',        color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
+        { key: 'Prototype',        label: 'Prototype',        icon: 'fa-cube',         color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
+        { key: 'Pilot',            label: 'Pilot',            icon: 'fa-play-circle',  color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
+        { key: 'Validation',       label: 'Validation',       icon: 'fa-check-double', color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
+        { key: 'Scale-up',         label: 'Scale-up',         icon: 'fa-chart-line',   color: '#a78bfa', bg: 'rgba(167,139,250,.12)', step: 6 },
+        { key: 'Commercialized',   label: 'Commercialized',   icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 7 }
+      ]
+      static getStageConfig(stage) {
+        return Utils.PROJECT_STAGES.find(s => s.key === stage) || { key: stage, label: stage, icon: 'fa-circle', color: '#7a90b0', bg: 'rgba(122,144,176,.1)', step: 0 }
+      }
       static getStageColor(stage) {
-        return {
-          'Idea': '#9ca3af', 'Prototipo': '#60a5fa', 'Piloto': '#34d399',
-          'Validación': '#fbbf24', 'Escalamiento': '#f97316', 'Comercialización': '#10b981'
-        }[stage] || '#7a90b0'
+        return Utils.getStageConfig(stage).color
       }
 
       static getTomorrow() {
@@ -2172,12 +2181,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const innovationProjects = ref([])
       const researchLineFilters = reactive({ search: '', active: '' })
       const trialFilters = reactive({ line: '', phase: '', status: '', search: '' })
-      const projectFilters = reactive({ research_line_id: '', category: '', search: '' })
+      const projectFilters = reactive({ research_line_id: '', category: '', stage: '', funding_status: '', search: '' })
 
       const researchLineModal = reactive({ show: false, mode: 'add', form: { line_number: null, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: 0, active: true } })
       const clinicalTrialModal = reactive({ show: false, mode: 'add', form: { protocol_id: '', title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: 0, start_date: '', end_date: '' } })
       const trialDetailModal = reactive({ show: false, trial: null })
-      const innovationProjectModal = reactive({ show: false, mode: 'add', form: { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: 0 } })
+      const innovationProjectModal = reactive({ show: false, mode: 'add', form: { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, display_order: 0 } })
       const assignCoordinatorModal = reactive({ show: false, lineId: null, lineName: '', selectedCoordinatorId: '' })
 
       const getResearchLineName = (id) => { if (!id) return 'Not assigned'; const l = researchLines.value.find(l => l.id === id); return l ? (l.research_line_name || l.name) : 'Unknown' }
@@ -2205,7 +2214,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let f = innovationProjects.value
         if (projectFilters.research_line_id) f = f.filter(p => p.research_line_id === projectFilters.research_line_id)
         if (projectFilters.category) f = f.filter(p => p.category === projectFilters.category)
-        if (projectFilters.search) { const q = projectFilters.search.toLowerCase(); f = f.filter(p => p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)) }
+        if (projectFilters.stage) f = f.filter(p => (p.current_stage || p.development_stage) === projectFilters.stage)
+        if (projectFilters.funding_status) f = f.filter(p => (p.funding_status || 'not_applicable') === projectFilters.funding_status)
+        if (projectFilters.search) { const q = projectFilters.search.toLowerCase(); f = f.filter(p => p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q) || (Array.isArray(p.keywords) && p.keywords.some(k => k.toLowerCase().includes(q)))) }
         return f
       })
 
@@ -2217,12 +2228,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: '', sort_order: researchLines.value.length + 1, active: true, keywords: [], keywordsInput: '' }); researchLineModal.show = true }
       const showAddTrialModal = () => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1, start_date: '', end_date: '' }); clinicalTrialModal.show = true }
-      const showAddProjectModal = () => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
+      const showAddProjectModal = () => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
       const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t, co_investigators: Array.isArray(t.co_investigators) ? [...t.co_investigators] : (t.co_investigator_id ? [t.co_investigator_id] : []), sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : []) }; clinicalTrialModal.show = true }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [] }; innovationProjectModal.show = true }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: Array.isArray(p.co_investigators) ? [...p.co_investigators] : [], keywords: Array.isArray(p.keywords) ? [...p.keywords] : [], keywordsInput: Array.isArray(p.keywords) && p.keywords.length ? p.keywords.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '' }; innovationProjectModal.show = true }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
@@ -2264,12 +2275,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const saveInnovationProject = async (saving) => {
+        const f = innovationProjectModal.form
+        if (!f.title?.trim()) { showToast('Validation Error', 'Project title is required', 'error'); return }
         saving.value = true
         try {
-          const payload = { ...innovationProjectModal.form }
-          // FIX 10: backend uses current_stage — remove stale development_stage alias
+          const payload = { ...f }
+          // Parse keywords from comma-separated string into array
+          payload.keywords = f.keywordsInput ? f.keywordsInput.split(',').map(k => k.trim()).filter(Boolean) : (Array.isArray(f.keywords) ? f.keywords : [])
+          delete payload.keywordsInput
+          // Stage normalisation
           if (!payload.current_stage && payload.development_stage) payload.current_stage = payload.development_stage
           delete payload.development_stage
+          // Partner logic: if partner found, no longer need partner_needs list
+          if (payload.partner_found) payload.partner_needs = []
+          else payload.partner_name = ''
           if (innovationProjectModal.mode === 'add') { innovationProjects.value.unshift(await API.createInnovationProject(payload)); showToast('Success', 'Innovation project created', 'success') }
           else { const result = await API.updateInnovationProject(payload.id, payload); const idx = innovationProjects.value.findIndex(p => p.id === result.id); if (idx !== -1) innovationProjects.value[idx] = result; showToast('Success', 'Innovation project updated', 'success') }
           innovationProjectModal.show = false; await loadInnovationProjects(); loadAnalyticsSummary(); loadPartnerCollaborations()
@@ -2719,7 +2738,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getStaffTypeIcon, getAbsenceReasonIcon, calculateCapacityPercent,
           getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
           getPreviewStatusClass, getPreviewStatusText, updatePreview, requestFullDossier,
-          getPhaseColor: Utils.getPhaseColor, getStageColor: Utils.getStageColor, formatPercentage: Utils.formatPercentage,
+          getPhaseColor: Utils.getPhaseColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: Utils.PROJECT_STAGES, formatPercentage: Utils.formatPercentage,
           availablePhysicians, availableResidents, availableAttendings, availableHeadsOfDepartment, availableReplacementStaff,
           // FIX 11: Partner needs options with an "Other" escape hatch handled in template
           availablePartnerNeeds: ['Financiación', 'Distribución', 'Fabricación', 'Software', 'Regulatorio', 'Ensayos clínicos', 'Licencia de tecnología', 'Co-desarrollo'],
@@ -2736,6 +2755,11 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           toggleSubInvestigator: (id) => {
             const arr = researchOps.clinicalTrialModal.form.sub_investigators
+            const idx = arr.indexOf(id)
+            if (idx === -1) arr.push(id); else arr.splice(idx, 1)
+          },
+          toggleProjectCoInvestigator: (id) => {
+            const arr = researchOps.innovationProjectModal.form.co_investigators
             const idx = arr.indexOf(id)
             if (idx === -1) arr.push(id); else arr.splice(idx, 1)
           },
