@@ -1733,7 +1733,7 @@
                                  @click="projectFilters.stage = projectFilters.stage === stage.key ? '' : stage.key"
                                  :style="projectFilters.stage === stage.key ? { borderColor: stage.color, background: stage.bg } : {}">
                                 <div class="pst-count" :style="projectFilters.stage === stage.key ? { color: stage.color } : {}">
-                                    {{ innovationProjects.filter(p => (p.current_stage || p.development_stage) === stage.key).length }}
+                                    {{ (innovationProjects || []).filter(p => (p.current_stage || p.development_stage) === stage.key).length }}
                                 </div>
                                 <div class="pst-label">{{ stage.label }}</div>
                                 <div class="pst-dot" :style="{ background: stage.color }"></div>
@@ -1840,7 +1840,7 @@
                                             </div>
                                         </div>
                                         <div v-if="(project.co_investigators || []).length > 3" class="inno-member-overflow">
-                                            +{{ project.co_investigators.length - 3 }} more
+                                            +{{ (project.co_investigators || []).length - 3 }} more
                                         </div>
                                     </div>
                                 </div>
