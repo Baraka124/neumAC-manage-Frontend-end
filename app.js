@@ -614,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
       async getTrainingUnits() { return this.getList('/api/training-units') }
       async createTrainingUnit(d) { this.invalidate('/api/training-units'); return this.request('/api/training-units', { method: 'POST', body: d }) }
       async updateTrainingUnit(id, d) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'PUT', body: d }) }
+      async deleteTrainingUnit(id) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'DELETE' }) }
 
       async getRotations() { return this.getList('/api/rotations') }
       async createRotation(d) { this.invalidate('/api/rotations'); return this.request('/api/rotations', { method: 'POST', body: d }) }
@@ -1887,6 +1888,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
+      const unitCliniciansModal = reactive({ show: false, unit: null, clinicians: [], supervisorId: '', allStaff: [] })
 
       const filteredTrainingUnits = computed(() => {
         let f = trainingUnits.value
@@ -1906,6 +1908,34 @@ document.addEventListener('DOMContentLoaded', () => {
       const showAddTrainingUnitModal = () => { trainingUnitModal.mode = 'add'; Object.assign(trainingUnitModal.form, { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' }); trainingUnitModal.show = true }
       const editTrainingUnit = (u) => { trainingUnitModal.mode = 'edit'; trainingUnitModal.form = { ...u }; trainingUnitModal.show = true }
 
+      const deleteTrainingUnit = (unit) => showConfirmation({
+        title: 'Delete Training Unit', icon: 'fa-trash',
+        message: `Delete "${unit.unit_name}"? All rotation assignments to this unit will be affected.`,
+        confirmButtonText: 'Delete Unit', confirmButtonClass: 'btn-danger',
+        onConfirm: async () => {
+          await API.deleteTrainingUnit(unit.id)
+          trainingUnits.value = trainingUnits.value.filter(u => u.id !== unit.id)
+          showToast('Deleted', `${unit.unit_name} removed`, 'success')
+        }
+      })
+
+      const openUnitClinicians = (unit, allStaff) => {
+        unitCliniciansModal.unit = unit
+        unitCliniciansModal.clinicians = (unit.clinician_ids || []).slice()
+        unitCliniciansModal.supervisorId = unit.supervising_attending_id || ''
+        unitCliniciansModal.allStaff = allStaff.filter(s => ['attending_physician','fellow'].includes(s.staff_type))
+        unitCliniciansModal.show = true
+      }
+
+      const saveUnitClinicians = async () => {
+        const u = unitCliniciansModal.unit
+        await API.updateTrainingUnit(u.id, { ...u, clinician_ids: unitCliniciansModal.clinicians, supervising_attending_id: unitCliniciansModal.supervisorId })
+        const idx = trainingUnits.value.findIndex(x => x.id === u.id)
+        if (idx !== -1) { trainingUnits.value[idx] = { ...trainingUnits.value[idx], clinician_ids: unitCliniciansModal.clinicians, supervising_attending_id: unitCliniciansModal.supervisorId } }
+        unitCliniciansModal.show = false
+        showToast('Saved', 'Clinician assignments updated', 'success')
+      }
+
       const viewUnitResidents = (unit, allRotations) => {
         unitResidentsModal.unit = unit
         unitResidentsModal.rotations = allRotations.filter(r => r.training_unit_id === unit.id && ['active', 'scheduled'].includes(r.rotation_status))
@@ -1924,7 +1954,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits, getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, viewUnitResidents, saveTrainingUnit }
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, viewUnitResidents, saveTrainingUnit, openUnitClinicians, saveUnitClinicians }
     }
 
     // ============ 6.9 useComms ============
@@ -2352,7 +2382,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         const { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits,
-          getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, viewUnitResidents, saveTrainingUnit } = useTrainingUnits({
+          getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, viewUnitResidents, saveTrainingUnit, unitCliniciansModal, openUnitClinicians, saveUnitClinicians } = useTrainingUnits({
           showToast, rotations: ref([])
         })
 
@@ -2530,7 +2560,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return
-            const modals = [staffOps.medicalStaffModal, staffOps.staffProfileModal, departmentModal, trainingUnitModal, unitResidentsModal, rotationOps.rotationModal, onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal, userProfileModal, ui.confirmationModal, researchOps.researchLineModal, researchOps.clinicalTrialModal, researchOps.innovationProjectModal, researchOps.assignCoordinatorModal, analyticsOps.exportModal, rotationOps.activationModal]
+            const modals = [staffOps.medicalStaffModal, staffOps.staffProfileModal, departmentModal, trainingUnitModal, unitResidentsModal, unitCliniciansModal, rotationOps.rotationModal, onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal, userProfileModal, ui.confirmationModal, researchOps.researchLineModal, researchOps.clinicalTrialModal, researchOps.innovationProjectModal, researchOps.assignCoordinatorModal, analyticsOps.exportModal, rotationOps.activationModal]
             modals.forEach(m => { if (m.show) m.show = false })
           })
 
@@ -2557,7 +2587,10 @@ document.addEventListener('DOMContentLoaded', () => {
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment, viewDepartmentStaff,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, filteredTrainingUnits,
           getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal,
-          editTrainingUnit, saveTrainingUnit,
+          editTrainingUnit, deleteTrainingUnit, saveTrainingUnit,
+          unitCliniciansModal,
+          openUnitClinicians: (unit) => openUnitClinicians(unit, medicalStaff.value),
+          saveUnitClinicians,
           viewUnitResidents: (unit) => viewUnitResidents(unit, rotations.value),
           ...commsOps,
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
