@@ -673,22 +673,18 @@ document.addEventListener('DOMContentLoaded', () => {
             this.getAllInnovationProjects(), this.getResearchLines(), this.getRotations()
           ])
           
-          // coordinator_id is the UUID stored on research lines; performance API returns coordinator as a name string,
-          // so we match against the raw researchLines list which has coordinator_id directly.
-          const linesCoordinated = researchLines.filter(l => l.coordinator_id === staffId)
+          const linesCoordinated = performance.filter(l => l.coordinator === staffId)
           const trialsAsPI = allTrials.filter(t => t.principal_investigator_id === staffId)
           const linesAsPI = [...new Set(trialsAsPI.map(t => t.research_line_id))].map(lineId => researchLines.find(l => l.id === lineId)).filter(Boolean)
-          // co_investigator_id is stored as a single UUID string (not an array)
-          const trialsAsCoI = allTrials.filter(t => t.co_investigator_id === staffId)
+          const trialsAsCoI = allTrials.filter(t => t.co_investigators?.includes(staffId))
           const linesAsCoI = [...new Set(trialsAsCoI.map(t => t.research_line_id))].map(lineId => researchLines.find(l => l.id === lineId)).filter(Boolean)
           const projectsAsLead = allProjects.filter(p => p.lead_investigator_id === staffId)
           const linesAsLead = [...new Set(projectsAsLead.map(p => p.research_line_id))].map(lineId => researchLines.find(l => l.id === lineId)).filter(Boolean)
-          // sub_investigator_id is stored as a single UUID string (not an array)
-          const trialsAsSubI = allTrials.filter(t => t.sub_investigator_id === staffId)
+          const trialsAsSubI = allTrials.filter(t => t.sub_investigators?.includes(staffId))
           const linesAsSubI = [...new Set(trialsAsSubI.map(t => t.research_line_id))].map(lineId => researchLines.find(l => l.id === lineId)).filter(Boolean)
           
           const allLineMap = new Map();
-          linesCoordinated.forEach(l => { const perf = performance.find(p => p.id === l.id); allLineMap.set(l.id, { ...l, name: l.research_line_name || l.name, stats: perf?.stats, role: 'Coordinator' }); });
+          linesCoordinated.forEach(l => allLineMap.set(l.id, { ...l, role: 'Coordinator' }));
           linesAsPI.forEach(l => allLineMap.set(l.id, { ...l, role: 'Principal Investigator' }));
           linesAsCoI.forEach(l => allLineMap.set(l.id, { ...l, role: 'Co-Investigator' }));
           linesAsLead.forEach(l => allLineMap.set(l.id, { ...l, role: 'Project Lead' }));
@@ -706,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           return {
             allResearchLines,
-            researchLines: linesCoordinated.map(l => { const perf = performance.find(p => p.id === l.id); return { id: l.id, name: l.research_line_name || l.name, line_number: l.line_number, role: 'Coordinator', trialsCount: perf?.stats?.totalTrials || 0, projectsCount: perf?.stats?.totalProjects || 0 } }),
+            researchLines: linesCoordinated.map(l => ({ id: l.id, name: l.name, line_number: l.line_number, role: 'Coordinator', trialsCount: l.stats?.totalTrials || 0, projectsCount: l.stats?.totalProjects || 0 })),
             trials: {
               asPI: trialsAsPI.length, asCoI: trialsAsCoI.length, asSubI: trialsAsSubI.length,
               active: trialsAsPI.filter(t => ['Activo', 'Reclutando'].includes(t.status)).length,
@@ -1969,7 +1965,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const projectFilters = reactive({ research_line_id: '', category: '', search: '' })
 
       const researchLineModal = reactive({ show: false, mode: 'add', form: { line_number: null, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: 0, active: true } })
-      const clinicalTrialModal = reactive({ show: false, mode: 'add', form: { protocol_id: '', title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigator_id: '', sub_investigator_id: '', contact_email: '', featured_in_website: true, display_order: 0 } })
+      const clinicalTrialModal = reactive({ show: false, mode: 'add', form: { protocol_id: '', title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', contact_email: '', featured_in_website: true, display_order: 0 } })
       const innovationProjectModal = reactive({ show: false, mode: 'add', form: { title: '', category: 'Dispositivo', development_stage: 'En Desarrollo', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: 0 } })
       const assignCoordinatorModal = reactive({ show: false, lineId: null, lineName: '', selectedCoordinatorId: '' })
 
@@ -2009,7 +2005,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch { } }
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: researchLines.value.length + 1, active: true }); researchLineModal.show = true }
-      const showAddTrialModal = () => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigator_id: '', sub_investigator_id: '', contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1 }); clinicalTrialModal.show = true }
+      const showAddTrialModal = () => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1 }); clinicalTrialModal.show = true }
       const showAddProjectModal = () => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', development_stage: 'En Desarrollo', description: '', research_line_id: '', lead_investigator_id: '', partner_needs: [], featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
@@ -2279,27 +2275,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const viewStaffDetails = async (staff) => {
           staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'activity'; staffOps.staffProfileModal.show = true
-
-          const loadResearch = hasPermission('analytics', 'read')
-            ? analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id)
-            : Promise.resolve()
-
-          const loadSupervision = async () => {
-            if (staff.staff_type !== 'attending_physician') return
+          staffOps.staffProfileModal.collapsed = { credentials: false, resident: false, roles: false, research: false, leave: false, contact: false }
+          if (hasPermission('analytics', 'read')) await analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id)
+          if (staff.staff_type === 'attending_physician') {
             staffOps.staffProfileModal.loadingSupervision = true
             try { staffOps.staffProfileModal.supervisionData = await API.getSupervisedResidents(staff.id) }
             catch { staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, avgEvaluation: 0 } }
             finally { staffOps.staffProfileModal.loadingSupervision = false }
           }
-
-          const loadLeave = async () => {
-            staffOps.staffProfileModal.loadingLeave = true
-            try { staffOps.staffProfileModal.leaveBalance = await API.getLeaveBalance(staff.id) }
-            catch { staffOps.staffProfileModal.leaveBalance = null }
-            finally { staffOps.staffProfileModal.loadingLeave = false }
-          }
-
-          await Promise.all([loadResearch, loadSupervision(), loadLeave()])
+          staffOps.staffProfileModal.loadingLeave = true
+          try { staffOps.staffProfileModal.leaveBalance = await API.getLeaveBalance(staff.id) }
+          catch { staffOps.staffProfileModal.leaveBalance = null }
+          finally { staffOps.staffProfileModal.loadingLeave = false }
         }
 
         const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
@@ -2308,6 +2295,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatAbsenceReason = (r) => ABSENCE_REASON_LABELS[r] || r
         const formatRotationStatus = (s) => ROTATION_STATUS_LABELS[s] || s
         const getUserRoleDisplay = (r) => USER_ROLE_LABELS[r] || r
+        const toggleProfileSection = (key) => {
+          if (!staffOps.staffProfileModal.collapsed) staffOps.staffProfileModal.collapsed = {}
+          staffOps.staffProfileModal.collapsed[key] = !staffOps.staffProfileModal.collapsed[key]
+        }
+
         const formatAudience = (a) => ({ all_staff: 'All Staff', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attending Physicians' }[a] || a)
         const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'NeumoCare Dashboard'
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
@@ -2463,7 +2455,7 @@ document.addEventListener('DOMContentLoaded', () => {
           absenceTotalPages: absenceOps.absenceTotalPages,
           trialTotalPages: researchOps.trialTotalPages,
           fieldErrors, clearFieldError: (form, field) => clearFieldError(form, field),
-          viewStaffDetails, showUserProfileModal, saveUserProfile,
+          viewStaffDetails, toggleProfileSection, showUserProfileModal, saveUserProfile,
           getStaffName, getSupervisorName, getPhysicianName, getResidentName, getTrainingUnitName,
           calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart,
           getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
