@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER =====-====== -->
+    <!-- ============ TOAST CONTAINER =========== -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -1062,23 +1062,87 @@
                             </div>
                         </div>
 
-                        <!-- WEEK GRID VIEW (BONUS) -->
-                        <div v-else-if="rotationView === 'week'" class="rotation-week-grid">
-                            <div class="week-header">Resident</div>
-                            <div v-for="day in weekDays" :key="day" class="week-header">{{ day }}</div>
-                            
-                            <template v-for="resident in residentsWithRotations">
-                                <div class="week-resident-cell">{{ resident.full_name }}</div>
-                                <div v-for="day in 7" :key="day" class="week-day-cell">
-                                    <div v-for="rotation in getRotationsForDay(resident, day)" 
-                                         :key="rotation.id"
-                                         class="rotation-block"
-                                         :class="{ active: isRotationActive(rotation) }"
-                                         @click="viewRotationDetails(rotation)">
-                                        {{ rotation.unitName }}
-                                    </div>
+                        <!-- WEEK VIEW — Real dates, meaningful content -->
+                        <div v-else-if="rotationView === 'week'" class="week-view">
+
+                            <!-- Week navigator -->
+                            <div class="week-nav">
+                                <button class="week-nav-btn" @click="weekOffset--">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <div class="week-nav-label">
+                                    <i class="fas fa-calendar-week"></i>
+                                    {{ getWeekRangeLabel() }}
+                                    <button v-if="weekOffset !== 0" class="week-nav-today" @click="weekOffset = 0">Today</button>
                                 </div>
-                            </template>
+                                <button class="week-nav-btn" @click="weekOffset++">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <div class="week-grid">
+                                <!-- Header row -->
+                                <div class="week-cell week-cell--header week-cell--name">Resident</div>
+                                <div v-for="d in 7" :key="d"
+                                     class="week-cell week-cell--header"
+                                     :class="{ 'week-cell--today': getWeekDayLabel(d).isToday }">
+                                    <span class="week-hdr-day">{{ getWeekDayLabel(d).dayName }}</span>
+                                    <span class="week-hdr-num" :class="{ 'week-hdr-num--today': getWeekDayLabel(d).isToday }">{{ getWeekDayLabel(d).dayNum }}</span>
+                                </div>
+
+                                <!-- Resident rows -->
+                                <template v-for="resident in residentsWithRotations" :key="resident.id">
+                                    <!-- Name cell -->
+                                    <div class="week-cell week-cell--name">
+                                        <div class="week-resident-who">
+                                            <div class="week-resident-icon"><i class="fas fa-user-graduate"></i></div>
+                                            <div>
+                                                <div class="week-resident-name">{{ resident.full_name }}</div>
+                                                <div class="week-resident-year">{{ formatTrainingYear(resident.training_year) || 'PGY-?' }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Day cells -->
+                                    <div v-for="d in 7" :key="d"
+                                         class="week-cell week-cell--day"
+                                         :class="{ 'week-cell--today': getWeekDayLabel(d).isToday }">
+                                        <template v-for="rot in getRotationsForDay(resident, d)" :key="rot.id">
+                                            <div class="week-block"
+                                                 :class="{
+                                                     'week-block--active':    rot.rotation_status === 'active',
+                                                     'week-block--scheduled': rot.rotation_status === 'scheduled',
+                                                     'week-block--completed': rot.rotation_status === 'completed',
+                                                     'week-block--first': isFirstDayOfRotation(rot, d),
+                                                     'week-block--last':  isLastDayOfRotation(rot, d),
+                                                 }"
+                                                 @click="viewRotationDetails(rot)"
+                                                 :title="rot.unitName || getTrainingUnitName(rot.training_unit_id)">
+                                                <!-- Show unit name only on first visible day of the week (d===1) or first day of rotation -->
+                                                <span class="week-block-unit" v-if="d === 1 || isFirstDayOfRotation(rot, d)">
+                                                    {{ (rot.unitName || getTrainingUnitName(rot.training_unit_id)) }}
+                                                </span>
+                                                <!-- Start date marker -->
+                                                <span v-if="isFirstDayOfRotation(rot, d)" class="week-block-marker week-block-marker--start">
+                                                    <i class="fas fa-play"></i>
+                                                </span>
+                                                <!-- End date marker -->
+                                                <span v-if="isLastDayOfRotation(rot, d)" class="week-block-marker week-block-marker--end">
+                                                    <i class="fas fa-flag-checkered"></i>
+                                                </span>
+                                            </div>
+                                        </template>
+                                        <!-- Empty day — subtle add if nothing scheduled -->
+                                        <div v-if="getRotationsForDay(resident, d).length === 0 && getWeekDayLabel(d).isToday"
+                                             class="week-empty-today"></div>
+                                    </div>
+                                </template>
+
+                                <!-- Empty state -->
+                                <div v-if="residentsWithRotations.length === 0" class="week-empty-state">
+                                    <i class="fas fa-calendar-alt"></i> No residents to display
+                                </div>
+                            </div>
                         </div>
 
                         <!-- DETAILED VIEW (EXISTING TABLE) -->
@@ -2476,6 +2540,122 @@
         </div>
 
         <!-- ============ ADD/EDIT ROTATION MODAL ============ -->
+        <!-- ============ ROTATION DETAIL VIEW SHEET ============ -->
+        <transition name="drawer-backdrop">
+            <div v-if="rotationViewModal.show" class="modal-overlay" @click.self="rotationViewModal.show = false"></div>
+        </transition>
+        <transition name="drawer-slide">
+        <div v-if="rotationViewModal.show && rotationViewModal.rotation" class="rot-detail-sheet">
+            <div class="rds-header">
+                <div class="rds-status-bar" :class="'rds-bar--' + rotationViewModal.rotation.rotation_status"></div>
+                <div class="rds-header-content">
+                    <div class="rds-title-block">
+                        <div class="rds-unit">{{ rotationViewModal.rotation.unitName }}</div>
+                        <div class="rds-resident">{{ rotationViewModal.rotation.residentName }}</div>
+                    </div>
+                    <button class="pd-close" @click="rotationViewModal.show = false"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+
+            <div class="rds-body">
+
+                <!-- Status + category row -->
+                <div class="rds-meta-row">
+                    <span class="rds-badge" :class="{
+                        'rds-badge--active':    rotationViewModal.rotation.rotation_status === 'active',
+                        'rds-badge--scheduled': rotationViewModal.rotation.rotation_status === 'scheduled',
+                        'rds-badge--done':      rotationViewModal.rotation.rotation_status === 'completed',
+                        'rds-badge--cancelled': rotationViewModal.rotation.rotation_status === 'cancelled',
+                    }">
+                        <span class="rds-badge-dot"></span>
+                        {{ rotationViewModal.rotation.rotation_status }}
+                    </span>
+                    <span class="rds-category">{{ (rotationViewModal.rotation.rotation_category || 'Clinical Rotation').replace(/_/g, ' ') }}</span>
+                </div>
+
+                <!-- Duration span — the visual core -->
+                <div class="rds-span">
+                    <div class="rds-span-date">
+                        <div class="rds-span-label">Starts</div>
+                        <div class="rds-span-day">{{ formatDate(rotationViewModal.rotation.start_date) }}</div>
+                    </div>
+                    <div class="rds-span-line">
+                        <div class="rds-span-track">
+                            <div class="rds-span-fill" :class="'rds-fill--' + rotationViewModal.rotation.rotation_status"
+                                 :style="{ width: rotationViewModal.rotation.rotation_status === 'active' ? Math.min(100, Math.round((rotationViewModal.rotation.daysTotal - rotationViewModal.rotation.daysLeft) / rotationViewModal.rotation.daysTotal * 100)) + '%' : rotationViewModal.rotation.rotation_status === 'completed' ? '100%' : '0%' }">
+                            </div>
+                        </div>
+                        <div class="rds-span-dur">{{ rotationViewModal.rotation.clinicalDuration }} · {{ rotationViewModal.rotation.daysTotal }} days total</div>
+                    </div>
+                    <div class="rds-span-date rds-span-date--end">
+                        <div class="rds-span-label">Ends</div>
+                        <div class="rds-span-day">{{ formatDate(rotationViewModal.rotation.end_date) }}</div>
+                    </div>
+                </div>
+
+                <!-- Days remaining (active only) -->
+                <div v-if="rotationViewModal.rotation.rotation_status === 'active'" class="rds-remaining">
+                    <i class="fas fa-hourglass-half"></i>
+                    <span><strong>{{ rotationViewModal.rotation.daysLeft }}</strong> days remaining</span>
+                </div>
+                <div v-else-if="rotationViewModal.rotation.rotation_status === 'scheduled'" class="rds-remaining rds-remaining--scheduled">
+                    <i class="fas fa-clock"></i>
+                    <span>Starts in <strong>{{ getDaysUntilStart(rotationViewModal.rotation.start_date) }}</strong> days</span>
+                </div>
+
+                <!-- Data fields -->
+                <div class="rds-fields">
+                    <div class="rds-field">
+                        <span class="rds-field-key"><i class="fas fa-hospital-alt"></i> Training Unit</span>
+                        <span class="rds-field-val">{{ rotationViewModal.rotation.unitName }}</span>
+                    </div>
+                    <div class="rds-field">
+                        <span class="rds-field-key"><i class="fas fa-user-graduate"></i> Resident</span>
+                        <span class="rds-field-val">{{ rotationViewModal.rotation.residentName }}</span>
+                    </div>
+                    <div class="rds-field">
+                        <span class="rds-field-key"><i class="fas fa-user-md"></i> Supervisor</span>
+                        <span class="rds-field-val" :class="{ 'rds-field-na': rotationViewModal.rotation.supervisorName === '—' }">{{ rotationViewModal.rotation.supervisorName }}</span>
+                    </div>
+                    <div class="rds-field" v-if="rotationViewModal.rotation.notes">
+                        <span class="rds-field-key"><i class="fas fa-sticky-note"></i> Notes</span>
+                        <span class="rds-field-val">{{ rotationViewModal.rotation.notes }}</span>
+                    </div>
+                    <div class="rds-field" v-if="rotationViewModal.rotation.goals">
+                        <span class="rds-field-key"><i class="fas fa-bullseye"></i> Goals</span>
+                        <span class="rds-field-val">{{ rotationViewModal.rotation.goals }}</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer actions -->
+            <div class="rds-footer">
+                <button class="btn btn-secondary" @click="rotationViewModal.show = false">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <div style="display:flex;gap:8px">
+                    <button v-if="rotationViewModal.rotation.rotation_status === 'scheduled' && hasPermission('resident_rotations', 'update')"
+                            class="btn btn-outline-primary"
+                            @click="quickActivate(rotationViewModal.rotation); rotationViewModal.show = false">
+                        <i class="fas fa-play"></i> Activate
+                    </button>
+                    <button v-if="rotationViewModal.rotation.rotation_status === 'active' && hasPermission('resident_rotations', 'update')"
+                            class="btn btn-outline-primary"
+                            @click="quickComplete(rotationViewModal.rotation); rotationViewModal.show = false">
+                        <i class="fas fa-check"></i> Complete
+                    </button>
+                    <button v-if="hasPermission('resident_rotations', 'update')"
+                            class="btn btn-primary"
+                            @click="editRotation(rotationViewModal.rotation); rotationViewModal.show = false">
+                        <i class="fas fa-pen"></i> Edit Rotation
+                    </button>
+                </div>
+            </div>
+        </div>
+        </transition>
+
+        <!-- ============ ROTATION EDIT MODAL ============ -->
         <div v-if="rotationModal.show" class="modal-overlay">
             <div class="modal-container">
                 <div class="modal-header">
