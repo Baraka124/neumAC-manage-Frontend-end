@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER ===--======== -->
+    <!-- ============ TOAST CONTAINER ===-======== -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -865,7 +865,7 @@
                                     </div>
                                     <div class="rot-who-info">
                                         <span class="rot-who-name">{{ physician.name }}</span>
-                                        <span class="rot-who-meta">{{ physician.shifts.length }} shift{{ physician.shifts.length !== 1 ? 's' : '' }}</span>
+                                        <span class="rot-who-meta">{{ (physician.shifts || []).length }} shift{{ (physician.shifts || []).length !== 1 ? 's' : '' }}</span>
                                     </div>
                                 </div>
 
@@ -902,7 +902,7 @@
                                 </div>
                             </div>
 
-                            <div v-if="staffWithOnCallOrbs.length === 0" class="empty-state">
+                            <div v-if="(staffWithOnCallOrbs || []).length === 0" class="empty-state">
                                 <i class="fas fa-phone-medical empty-state-icon"></i>
                                 <div class="empty-state-title">No schedules found</div>
                                 <div class="empty-state-description">No on-call shifts match your filters</div>
@@ -1074,7 +1074,7 @@
                                     </div>
 
                                     <!-- Connector arrow if there's history -->
-                                    <div v-if="resident.pastRotations.length && (resident.currentRotation || resident.upcomingRotations.length)" class="rot-connector">›</div>
+                                    <div v-if="(resident.pastRotations||[]).length && (resident.currentRotation || (resident.upcomingRotations||[]).length)" class="rot-connector">›</div>
 
                                     <!-- Active orb — larger, glowing -->
                                     <div v-if="resident.currentRotation"
@@ -1090,7 +1090,7 @@
                                     </div>
 
                                     <!-- Connector before scheduled -->
-                                    <div v-if="resident.currentRotation && resident.upcomingRotations.length" class="rot-connector">›</div>
+                                    <div v-if="resident.currentRotation && (resident.upcomingRotations||[]).length" class="rot-connector">›</div>
 
                                     <!-- Scheduled orbs -->
                                     <div v-for="(rot, idx) in resident.upcomingRotations" :key="rot.id"
@@ -1113,7 +1113,7 @@
                                     </div>
 
                                     <!-- Empty state for this resident -->
-                                    <div v-if="!resident.currentRotation && !resident.upcomingRotations.length && !resident.pastRotations.length" class="rot-nil">
+                                    <div v-if="!resident.currentRotation && !(resident.upcomingRotations||[]).length && !(resident.pastRotations||[]).length" class="rot-nil">
                                         No rotations assigned
                                     </div>
                                 </div>
@@ -2423,7 +2423,7 @@
                                     <div class="rcb-lines">
                                         Manages
                                         <span v-for="(line, i) in staffProfileModal.researchProfile.coordinatorLines" :key="line.id">
-                                            <strong>L{{ line.line_number }} {{ line.name }}</strong><span v-if="i < staffProfileModal.researchProfile.coordinatorLines.length - 1">, </span>
+                                            <strong>L{{ line.line_number }} {{ line.name }}</strong><span v-if="i < (staffProfileModal.researchProfile?.coordinatorLines || []).length - 1">, </span>
                                         </span>
                                     </div>
                                 </div>
@@ -2459,7 +2459,7 @@
                                 <div class="pd-card-head">
                                     <span class="pd-card-icon pd-card-icon--blue"><i class="fas fa-flask"></i></span>
                                     <span class="pd-card-title">Research Lines</span>
-                                    <span class="pd-badge pd-badge--blue">{{ staffProfileModal.researchProfile.allResearchLines.length }}</span>
+                                    <span class="pd-badge pd-badge--blue">{{ (staffProfileModal.researchProfile?.allResearchLines || []).length }}</span>
                                 </div>
                                 <div v-for="line in staffProfileModal.researchProfile.allResearchLines" :key="line.id" class="pd-line-row">
                                     <div class="pd-line-num">L{{ line.line_number }}</div>
@@ -2540,7 +2540,7 @@
                                 <div class="pd-card-head">
                                     <span class="pd-card-icon pd-card-icon--ok"><i class="fas fa-user-graduate"></i></span>
                                     <span class="pd-card-title">Currently Supervising</span>
-                                    <span class="pd-badge pd-badge--ok">{{ staffProfileModal.supervisionData.current.length }}</span>
+                                    <span class="pd-badge pd-badge--ok">{{ (staffProfileModal.supervisionData?.current || []).length }}</span>
                                 </div>
                                 <div v-for="resident in staffProfileModal.supervisionData.current" :key="resident.id" class="pd-resident-row">
                                     <div class="pd-resident-avatar"><i class="fas fa-user-graduate"></i></div>
