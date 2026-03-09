@@ -851,6 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const mobileMenuOpen = ref(false)
       const userMenuOpen = ref(false)
       const statsSidebarOpen = ref(false)
+      const searchResultsOpen = ref(false)
       const globalSearchQuery = ref('')
       const currentView = ref('login')
       const systemAlerts = ref([])
@@ -898,7 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toasts, removeToast, showToast,
         confirmationModal, showConfirmation, confirmAction, cancelConfirmation,
         userProfileModal, systemAlerts, activeAlertsCount, dismissAlert,
-        sidebarCollapsed, mobileMenuOpen, userMenuOpen, statsSidebarOpen,
+        sidebarCollapsed, mobileMenuOpen, userMenuOpen, statsSidebarOpen, searchResultsOpen,
         globalSearchQuery, currentView
       }
     }
@@ -979,7 +980,36 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const editMedicalStaff = (staff) => {
-        clearAll('staff'); medicalStaffModal.mode = 'edit'; medicalStaffModal.form = { ...staff }; medicalStaffModal.show = true
+        clearAll('staff')
+        medicalStaffModal.mode = 'edit'
+        medicalStaffModal.activeTab = 'basic'
+        medicalStaffModal.form = {
+          ...staff,
+          full_name: staff.full_name || '',
+          professional_email: staff.professional_email || '',
+          mobile_phone: staff.mobile_phone || '',
+          department_id: staff.department_id || '',
+          academic_degree: staff.academic_degree || '',
+          specialization: staff.specialization || '',
+          training_year: staff.training_year || '',
+          clinical_certificate: staff.clinical_certificate || '',
+          certificate_status: staff.certificate_status || '',
+          medical_license: staff.medical_license || '',
+          special_notes: staff.special_notes || '',
+          other_certificate: staff.other_certificate || '',
+          resident_category: staff.resident_category || null,
+          home_department: staff.home_department || null,
+          external_institution: staff.external_institution || null,
+          can_supervise_residents: staff.can_supervise_residents || false,
+          can_be_pi: staff.can_be_pi || false,
+          can_be_coi: staff.can_be_coi || false,
+          is_chief_of_department: staff.is_chief_of_department || false,
+          is_research_coordinator: staff.is_research_coordinator || false,
+          is_resident_manager: staff.is_resident_manager || false,
+          is_oncall_manager: staff.is_oncall_manager || false,
+          clinical_study_certificates: Array.isArray(staff.clinical_study_certificates) ? [...staff.clinical_study_certificates] : []
+        }
+        medicalStaffModal.show = true
       }
 
       const saveMedicalStaff = async (saving) => {
@@ -2541,6 +2571,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const getTrainingUnitName = (id) => trainingUnits.value.find(u => u.id === id)?.unit_name || 'Not assigned'
         const calculateAbsenceDuration = (s, e) => Utils.dateDiff(s, e)
         const getDaysRemaining = (d) => Utils.daysUntil(d)
+
+        const getRotationProgress = (rotation) => {
+          if (!rotation) return { pct: 0, label: '', urgent: false, done: false }
+          const start = new Date(Utils.normalizeDate(rotation.start_date || rotation.rotation_start_date) + 'T00:00:00')
+          const end   = new Date(Utils.normalizeDate(rotation.end_date   || rotation.rotation_end_date)   + 'T23:59:59')
+          const now   = new Date()
+          if (rotation.rotation_status === 'completed') return { pct: 100, label: 'Completed', urgent: false, done: true }
+          if (rotation.rotation_status === 'cancelled') return { pct: 0, label: 'Cancelled', urgent: false, done: false }
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) return { pct: 0, label: '', urgent: false, done: false }
+          const total = end - start
+          const elapsed = now - start
+          const pct = Math.min(100, Math.max(0, Math.round(elapsed / total * 100)))
+          const daysLeft = Math.ceil((end - now) / 86400000)
+          const urgent = daysLeft <= 7 && daysLeft >= 0
+          const label = daysLeft <= 0 ? 'Ending' : daysLeft === 1 ? '1 day left' : `${daysLeft}d left`
+          return { pct, label, urgent, done: false }
+        }
         const getDaysUntilStart = (d) => Utils.daysUntil(d)
 
         const getCurrentRotationForStaff = (id) => rotations.value.find(r => r.resident_id === id && r.rotation_status === 'active') || null
@@ -2636,14 +2683,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const switchView = async (view) => {
           currentView.value = view; ui.mobileMenuOpen.value = false
+          ui.searchResultsOpen.value = false
           if (pagination[view]) pagination[view].page = 1
+          // Trigger entrance animation on content area
+          const ca = document.querySelector('.content-area')
+          if (ca) { ca.classList.remove('content-view-enter'); void ca.offsetWidth; ca.classList.add('content-view-enter') }
           if (view === 'analytics_dashboard' && hasPermission('analytics', 'read')) { await analyticsOps.loadResearchDashboard(); await analyticsOps.loadTrialsTimeline() }
           else if (view === 'analytics_performance' && hasPermission('analytics', 'read')) { await analyticsOps.loadResearchLinesPerformance() }
           else if (view === 'analytics_partners' && hasPermission('analytics', 'read')) { await analyticsOps.loadPartnerCollaborations() }
         }
 
         const toggleStatsSidebar = () => { ui.statsSidebarOpen.value = !ui.statsSidebarOpen.value }
-        const handleGlobalSearch = () => { }
+        const handleGlobalSearch = () => {
+          if (!globalSearchQuery.value.trim()) { ui.searchResultsOpen.value = false; return }
+          ui.searchResultsOpen.value = true
+        }
+
+        const globalSearchResults = Vue.computed(() => {
+          const q = (globalSearchQuery.value || '').toLowerCase().trim()
+          if (!q || q.length < 2) return {}
+          const results = {}
+          // Staff
+          const staff = (staffOps.medicalStaff.value || []).filter(s =>
+            (s.full_name || '').toLowerCase().includes(q) ||
+            (s.professional_email || '').toLowerCase().includes(q) ||
+            (s.staff_id || '').toLowerCase().includes(q)
+          ).slice(0, 4)
+          if (staff.length) results.staff = staff.map(s => ({ id: s.id, name: s.full_name, meta: rotationOps.formatStaffType ? rotationOps.formatStaffType(s.staff_type) : s.staff_type, icon: 'fa-user-md', action: () => { staffOps.viewStaffDetails(s); ui.searchResultsOpen.value = false; globalSearchQuery.value = '' } }))
+          // Rotations
+          const rots = (rotationOps.rotations.value || []).filter(r => {
+            const rn = (staffOps.medicalStaff.value || []).find(s => s.id === r.resident_id)
+            return rn && (rn.full_name || '').toLowerCase().includes(q)
+          }).slice(0, 3)
+          if (rots.length) results.rotations = rots.map(r => {
+            const rn = (staffOps.medicalStaff.value || []).find(s => s.id === r.resident_id)
+            return { id: r.id, name: rn ? rn.full_name : 'Resident', meta: `Rotation · ${r.rotation_status}`, icon: 'fa-calendar-check', action: () => { switchView('resident_rotations'); ui.searchResultsOpen.value = false; globalSearchQuery.value = '' } }
+          })
+          // Research lines
+          const lines = (researchOps.researchLines.value || []).filter(l =>
+            (l.name || '').toLowerCase().includes(q) ||
+            (l.description || '').toLowerCase().includes(q)
+          ).slice(0, 3)
+          if (lines.length) results.research = lines.map(l => ({ id: l.id, name: l.name, meta: `Research Line`, icon: 'fa-flask', action: () => { switchView('research_lines'); ui.searchResultsOpen.value = false; globalSearchQuery.value = '' } }))
+          return results
+        })
+
+        const clearSearch = () => { globalSearchQuery.value = ''; ui.searchResultsOpen.value = false }
 
         const loadAllData = async () => {
           loading.value = true
@@ -2717,7 +2802,8 @@ document.addEventListener('DOMContentLoaded', () => {
           ...analyticsOps,
           ...dashOps,
           handleLogin, handleLogout,
-          switchView, toggleStatsSidebar, handleGlobalSearch,
+          switchView, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
+          searchResultsOpen: ui.searchResultsOpen,
           sortState, sortBy, sortIcon, pagination,
           goToPage: (view, page) => {
             const arrMap = {
@@ -2737,7 +2823,7 @@ document.addEventListener('DOMContentLoaded', () => {
           fieldErrors, clearFieldError: (form, field) => clearFieldError(form, field),
           viewStaffDetails, toggleProfileSection, showUserProfileModal, saveUserProfile,
           getStaffName, getSupervisorName, getPhysicianName, getResidentName, getTrainingUnitName,
-          calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart,
+          calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart, getRotationProgress,
           getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
           getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
           getCurrentRotationSupervisor, hasProfessionalCredentials,
