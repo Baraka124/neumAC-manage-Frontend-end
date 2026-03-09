@@ -2243,8 +2243,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
-      const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t, co_investigators: Array.isArray(t.co_investigators) ? [...t.co_investigators] : (t.co_investigator_id ? [t.co_investigator_id] : []), sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : []) }; clinicalTrialModal.show = true }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: Array.isArray(p.co_investigators) ? [...p.co_investigators] : [], keywords: Array.isArray(p.keywords) ? [...p.keywords] : [], keywordsInput: Array.isArray(p.keywords) && p.keywords.length ? p.keywords.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '' }; innovationProjectModal.show = true }
+      const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t, end_date: t.end_date || t.estimated_end_date || '', co_investigators: Array.isArray(t.co_investigators) ? [...t.co_investigators] : (t.co_investigator_id ? [t.co_investigator_id] : []), sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : []) }; clinicalTrialModal.show = true }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '' }; innovationProjectModal.show = true }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
@@ -2261,6 +2261,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const payload = { ...f, name: lineName, keywords, capabilities }
           delete payload.research_line_name // backend only knows 'name'
           delete payload.keywordsInput
+          // These come from the view join — not writable columns on research_lines table
+          delete payload.coordinator_name
+          delete payload.coordinator_email
+          delete payload.coordinator_type
+          delete payload.full_name
+          delete payload.professional_email
           if (researchLineModal.mode === 'add') { researchLines.value.unshift(await API.createResearchLine(payload)); showToast('Success', 'Research line created', 'success') }
           else { const result = await API.updateResearchLine(f.id, payload); const idx = researchLines.value.findIndex(l => l.id === result.id); if (idx !== -1) researchLines.value[idx] = result; showToast('Success', 'Research line updated', 'success') }
           researchLineModal.show = false; await loadResearchLines(); loadAnalyticsSummary()
@@ -2274,9 +2280,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (f.start_date && f.end_date && f.end_date < f.start_date) { showToast('Validation Error', 'End date cannot be before start date', 'error'); return }
         saving.value = true
         try {
-          // FIX 5: co_investigators is array — send as-is (already array from modal state)
           const payload = { ...f }
-          delete payload.co_investigator_id // legacy field — not in schema
+          // Mirror end_date → estimated_end_date so both DB columns stay in sync
+          if (payload.end_date) payload.estimated_end_date = payload.end_date
+          delete payload.co_investigator_id // legacy field
           delete payload.sub_investigator_id // legacy field
           if (clinicalTrialModal.mode === 'add') { clinicalTrials.value.unshift(await API.createClinicalTrial(payload)); showToast('Success', 'Clinical trial created', 'success') }
           else { const result = await API.updateClinicalTrial(payload.id, payload); const idx = clinicalTrials.value.findIndex(t => t.id === result.id); if (idx !== -1) clinicalTrials.value[idx] = result; showToast('Success', 'Clinical trial updated', 'success') }
@@ -2294,6 +2301,9 @@ document.addEventListener('DOMContentLoaded', () => {
           // Parse keywords from comma-separated string into array
           payload.keywords = f.keywordsInput ? f.keywordsInput.split(',').map(k => k.trim()).filter(Boolean) : (Array.isArray(f.keywords) ? f.keywords : [])
           delete payload.keywordsInput
+          // Mirror to legacy DB column aliases
+          payload.co_leads = payload.co_investigators
+          payload.tags = payload.keywords
           // Stage normalisation
           if (!payload.current_stage && payload.development_stage) payload.current_stage = payload.development_stage
           delete payload.development_stage
