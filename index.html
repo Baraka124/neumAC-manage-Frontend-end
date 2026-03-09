@@ -3499,15 +3499,15 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Co-Investigator (Co-I)</label>
-                            <select class="form-select" v-model="clinicalTrialModal.form.co_investigator_id">
-                                <option value="">Select Co-I</option>
-                                <option v-for="staff in availablePhysicians" :key="staff.id" :value="staff.id">
-                                    {{ staff.full_name }}
-                                </option>
-                            </select>
-                        </div>
+                        <div class="form-group col-span-2">
+    <label class="form-label">Co-Investigators (Co-I)</label>
+    <select class="form-select" multiple size="4" v-model="clinicalTrialModal.form.co_investigators">
+        <option v-for="staff in availablePhysicians" :key="staff.id" :value="staff.id">
+            {{ staff.full_name }}
+        </option>
+    </select>
+    <small class="form-help">Hold Ctrl/Cmd to select multiple investigators</small>
+</div>
                         <div class="form-group">
                             <label class="form-label">Sub-Investigator (Sub-I)</label>
                             <select class="form-select" v-model="clinicalTrialModal.form.sub_investigator_id">
