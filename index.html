@@ -99,7 +99,9 @@
             <div class="sidebar-header">
                 <div class="sidebar-logo">
                     <i class="fas fa-lungs"></i>
-                    <span v-if="!sidebarCollapsed">NeumoCare</span>
+                    <span v-if="!sidebarCollapsed">
+                        <span class="logo-text-main">Neumo</span><span class="logo-text-sub">Care</span>
+                    </span>
                 </div>
                 <button class="sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed"
                         :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
@@ -466,7 +468,7 @@
                     <button class="mobile-menu-toggle" @click="mobileMenuOpen = !mobileMenuOpen">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <div>
+                    <div class="navbar-title-block">
                         <span class="navbar-title">{{ getCurrentViewTitle() }}</span>
                         <span class="navbar-subtitle" v-if="getCurrentViewSubtitle()">{{ getCurrentViewSubtitle() }}</span>
                     </div>
@@ -524,17 +526,29 @@
 
                 <!-- ============ DASHBOARD VIEW ============ -->
                 <div v-if="currentView === 'dashboard'">
-                    <div class="quick-actions-bar">
-                        <button class="action-btn" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')"><i class="fas fa-user-plus"></i> Add Staff</button>
-                        <button class="action-btn" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')"><i class="fas fa-phone-medical"></i> Schedule On-call</button>
-                        <button class="action-btn" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')"><i class="fas fa-user-clock"></i> Record Absence</button>
-                        <button class="action-btn" @click="showAddRotationModal" v-if="hasPermission('resident_rotations', 'create')"><i class="fas fa-calendar-check"></i> Add Rotation</button>
-                        <div class="ml-auto">
-                            <button class="btn btn-primary btn-sm" @click="showCommunicationsModal" v-if="hasPermission('communications', 'create')">
-                                <i class="fas fa-bullhorn"></i> New Announcement
-                            </button>
+
+                    <!-- Greeting zone -->
+                    <div class="db-greeting">
+                        <div class="db-greeting-left">
+                            <div class="db-greeting-time">{{ formatDate(currentTime) }}</div>
+                            <div class="db-greeting-title">
+                                Good morning, <span>{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Doctor' }}</span>
+                            </div>
+                        </div>
+                        <div class="quick-actions-bar" style="margin-bottom:0; flex:0 1 auto;">
+                            <button class="action-btn" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')"><i class="fas fa-user-plus"></i> Add Staff</button>
+                            <button class="action-btn" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')"><i class="fas fa-phone-medical"></i> Schedule On-call</button>
+                            <button class="action-btn" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')"><i class="fas fa-user-clock"></i> Record Absence</button>
+                            <button class="action-btn" @click="showAddRotationModal" v-if="hasPermission('resident_rotations', 'create')"><i class="fas fa-calendar-check"></i> Add Rotation</button>
+                            <div class="ml-auto">
+                                <button class="btn btn-primary btn-sm" @click="showCommunicationsModal" v-if="hasPermission('communications', 'create')">
+                                    <i class="fas fa-bullhorn"></i> Announce
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Stat cards -->
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-header"><i class="fas fa-stethoscope"></i><h3>Medical Staff</h3><button class="btn btn-sm btn-outline" @click="switchView('medical_staff')">View All</button></div>
@@ -582,53 +596,60 @@
                             </div>
                         </div>
                     </div>
+                    <!-- On-call timeline — replaces the dense table -->
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title"><i class="fas fa-phone-medical"></i> Today's On-call Schedule</div>
+                            <div class="card-title">
+                                <i class="fas fa-phone-medical"></i>
+                                Today's On-call Schedule
+                            </div>
                             <button class="btn btn-sm btn-primary" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')"><i class="fas fa-plus"></i> Add</button>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead><tr><th>Shift Period</th><th>Physician</th><th>Type</th><th>Coverage Area</th><th>Backup</th><th>Contact</th></tr></thead>
-                                <tbody>
-                                    <tr v-if="loadingSchedule"><td colspan="6" class="text-center py-8"><i class="fas fa-spinner fa-spin"></i></td></tr>
-                                    <tr v-else-if="todaysOnCall.length === 0">
-                                        <td colspan="6" class="empty-state">
-                                            <i class="fas fa-phone-slash empty-state-icon"></i>
-                                            <div class="empty-state-title">No on-call scheduled today</div>
-                                            <div class="empty-state-description">No physicians are scheduled for on-call coverage</div>
-                                            <button class="btn btn-primary btn-sm" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')"><i class="fas fa-plus"></i> Schedule First Shift</button>
-                                        </td>
-                                    </tr>
-                                    <tr v-else v-for="shift in todaysOnCall" :key="shift.id" class="row-active">
-                                        <td>
-                                            <div class="oncall-shift-cell">
-                                                <div class="oncall-shift-start">
-                                                    <span class="oncall-shift-label">From</span>
-                                                    <span class="oncall-shift-time">{{ shift.startTime }}</span>
-                                                    <span class="oncall-shift-date">{{ formatDateShort(new Date()) }}</span>
-                                                </div>
-                                                <div class="oncall-shift-sep"></div>
-                                                <div class="oncall-shift-end">
-                                                    <span class="oncall-shift-label">Until</span>
-                                                    <span class="oncall-shift-time">{{ shift.endTime }}</span>
-                                                    <span class="oncall-shift-date">{{ shift.endTime < shift.startTime ? formatDateShort(getTomorrow()) : formatDateShort(new Date()) }}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td><div class="font-medium">{{ shift.physicianName }}</div><div class="text-xs text-gray-500">{{ shift.staffType }}</div></td>
-                                        <td><span class="badge" :class="shift.shiftTypeClass">{{ shift.shiftType }}</span></td>
-                                        <td>{{ shift.coverageArea || 'NA' }}</td>
-                                        <td><span v-if="shift.backupPhysician">{{ shift.backupPhysician }}</span><span v-else class="na-value">NA</span></td>
-                                        <td>
+                        <div style="padding: 4px 20px 20px;">
+                            <div v-if="loadingSchedule" style="padding:32px;text-align:center;color:var(--text-3)">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                            <div v-else-if="todaysOnCall.length === 0" class="empty-state" style="padding:40px 20px;">
+                                <i class="fas fa-phone-slash empty-state-icon"></i>
+                                <div class="empty-state-title">No on-call scheduled today</div>
+                                <div class="empty-state-description">No physicians are scheduled for on-call coverage</div>
+                                <button class="btn btn-primary btn-sm" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')"><i class="fas fa-plus"></i> Schedule First Shift</button>
+                            </div>
+                            <div v-else class="oncall-timeline">
+                                <div v-for="shift in todaysOnCall" :key="shift.id"
+                                     class="oncall-tl-item"
+                                     :class="{ 'is-now': true }">
+                                    <!-- Time -->
+                                    <div class="oncall-tl-time">
+                                        <div class="oncall-tl-from">{{ shift.startTime }}</div>
+                                        <div class="oncall-tl-to">→ {{ shift.endTime }}</div>
+                                        <div class="oncall-tl-date">{{ shift.endTime < shift.startTime ? 'next day' : 'today' }}</div>
+                                    </div>
+                                    <!-- Line -->
+                                    <div class="oncall-tl-connector">
+                                        <div class="oncall-tl-dot"></div>
+                                    </div>
+                                    <!-- Card -->
+                                    <div class="oncall-tl-card">
+                                        <div class="oncall-tl-avatar">
+                                            {{ shift.physicianName ? shift.physicianName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?' }}
+                                        </div>
+                                        <div class="oncall-tl-info">
+                                            <div class="oncall-tl-name">{{ shift.physicianName }}</div>
+                                            <div class="oncall-tl-role">{{ shift.staffType }}</div>
+                                        </div>
+                                        <div class="oncall-tl-badges">
+                                            <span class="badge" :class="shift.shiftTypeClass">{{ shift.shiftType }}</span>
+                                            <span class="oncall-now-badge">On-call</span>
                                             <button class="btn btn-sm btn-outline" @click="contactPhysician(shift)"
-                                                    :disabled="!shift.contactInfo || shift.contactInfo === 'No contact info'">
+                                                    :disabled="!shift.contactInfo || shift.contactInfo === 'No contact info'"
+                                                    style="margin-left:4px">
                                                 <i class="fas" :class="shift.contactInfo && shift.contactInfo.includes('@') ? 'fa-envelope' : 'fa-phone'"></i>
                                             </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
