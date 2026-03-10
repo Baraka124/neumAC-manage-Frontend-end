@@ -76,7 +76,7 @@
   --t-24: 28px;   /* was 24px — dashboard h2                        */
   --t-hero: clamp(36px, 3.8vw, 54px); /* was clamp(32,3.5vw,48)  */
 
-  --sidebar-w:  clamp(230px, 19vw, 268px);
+  --sidebar-w:  clamp(240px, 19vw, 290px);
   --sidebar-sm: 64px;
   --panel-w:    360px;
   --topbar-h:   60px;
@@ -266,12 +266,12 @@ a { color: var(--blue); text-decoration: none; }
   display: flex; align-items: center; gap: 8px;
 }
 /* Title text color matches section accent */
-.sidebar-section:nth-child(1) .sidebar-section-title { color: rgba(77,154,255,.45); }
-.sidebar-section:nth-child(2) .sidebar-section-title { color: rgba(52,211,153,.40); }
-.sidebar-section:nth-child(3) .sidebar-section-title { color: rgba(34,211,238,.38); }
-.sidebar-section:nth-child(4) .sidebar-section-title { color: rgba(251,191,36,.38); }
-.sidebar-section:nth-child(5) .sidebar-section-title { color: rgba(167,139,250,.42); }
-.sidebar-section:nth-child(6) .sidebar-section-title { color: rgba(251,113,133,.40); }
+.sidebar-section:nth-child(1) .sidebar-section-title { color: rgba(77,154,255,.65); }
+.sidebar-section:nth-child(2) .sidebar-section-title { color: rgba(52,211,153,.60); }
+.sidebar-section:nth-child(3) .sidebar-section-title { color: rgba(34,211,238,.58); }
+.sidebar-section:nth-child(4) .sidebar-section-title { color: rgba(251,191,36,.58); }
+.sidebar-section:nth-child(5) .sidebar-section-title { color: rgba(167,139,250,.62); }
+.sidebar-section:nth-child(6) .sidebar-section-title { color: rgba(251,113,133,.60); }
 
 /* Thin line before section title */
 .sidebar-section-title::before {
@@ -294,8 +294,8 @@ a { color: var(--blue); text-decoration: none; }
 .sidebar-menu-link {
   display: flex; align-items: center; gap: 11px;
   padding: 9px 14px; border-radius: 8px;
-  color: rgba(255,255,255,.45);
-  font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,.68);
+  font-size: 13.5px; font-weight: 500;
   transition: background var(--t), color var(--t), box-shadow var(--t);
   white-space: nowrap; overflow: hidden; margin-bottom: 1px;
   min-height: 40px;
