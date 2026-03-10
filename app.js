@@ -909,6 +909,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 6.3 useStaff ============
     function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll }) {
       const medicalStaff = ref([])
+      // allStaffLookup keeps ALL staff (including inactive) for name resolution
+      // so deleted staff don't ghost as "Not assigned" in historical records
+      const allStaffLookup = ref([])
       const staffFilters = reactive({ search: '', staffType: '', department: '', status: '', residentCategory: '' })
       const staffProfileModal = reactive({ 
         show: false, staff: null, activeTab: 'activity',
@@ -960,7 +963,13 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(staffFilters, () => resetPage('medical_staff'), { deep: true })
 
       const loadMedicalStaff = async () => {
-        try { medicalStaff.value = await API.getMedicalStaff() }
+        try {
+          const raw = await API.getList('/api/medical-staff')
+          if (Array.isArray(raw)) {
+            allStaffLookup.value = raw.map(s => ({ id: s.id, full_name: s.full_name, staff_type: s.staff_type, employment_status: s.employment_status }))
+          }
+          medicalStaff.value = await API.getMedicalStaff()
+        }
         catch { showToast('Error', 'Failed to load medical staff', 'error') }
       }
 
@@ -1125,7 +1134,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const availableCertificates = ['GCP - Good Clinical Practice','ICH Guidelines','Clinical Research Coordinator','CITI Program','HIPAA Certification','Responsible Conduct of Research'];
 
       return {
-        medicalStaff, staffFilters, staffProfileModal, medicalStaffModal,
+        medicalStaff, allStaffLookup, staffFilters, staffProfileModal, medicalStaffModal,
         filteredMedicalStaff, filteredMedicalStaffAll, staffTotalPages,
         loadMedicalStaff, showAddMedicalStaffModal, editMedicalStaff, saveMedicalStaff, deleteMedicalStaff,
         formatTrainingYear: Utils.formatTrainingYear, formatSpecialization: Utils.formatSpecialization,
@@ -1148,7 +1157,12 @@ document.addEventListener('DOMContentLoaded', () => {
         form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '08:00', end_time: '17:00', primary_physician_id: '', backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '' }
       })
 
-      const getPhysicianName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
+      const getPhysicianName = (id) => {
+        if (!id) return 'Not assigned'
+        const s = medicalStaff.value.find(x => x.id === id)
+        if (!s) return id
+        return s.employment_status === 'inactive' ? `${s.full_name} (inactive)` : s.full_name
+      }
       const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
 
       const validateOnCall = (form) => {
@@ -1816,7 +1830,12 @@ document.addEventListener('DOMContentLoaded', () => {
         form: { staff_member_id: '', absence_type: 'planned', absence_reason: 'vacation', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 7 * 86400000)), covering_staff_id: '', coverage_notes: '', coverage_arranged: false, hod_notes: '' }
       })
 
-      const getStaffName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
+      const getStaffName = (id) => {
+        if (!id) return 'Not assigned'
+        const s = medicalStaff.value.find(x => x.id === id)
+        if (!s) return id // will be resolved by main getStaffName via allStaffLookup
+        return s.employment_status === 'inactive' ? `${s.full_name} (inactive)` : s.full_name
+      }
 
       const validateAbsence = (form) => {
         clearAll('absence'); let ok = true
@@ -2605,7 +2624,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tuOps = useTrainingUnits({ showToast, showConfirmation: () => {}, rotations: ref([]) })
 
         const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll })
-        const { medicalStaff } = staffOps
+        const { medicalStaff, allStaffLookup } = staffOps
 
         const { departments, departmentFilters, departmentModal, filteredDepartments,
           getDepartmentName, getDepartmentUnits, getDepartmentStaffCount,
@@ -2648,7 +2667,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
         // ============ EXISTING COMPUTED PROPERTIES ============
-        const getStaffName = (id) => medicalStaff.value.find(s => s.id === id)?.full_name || 'Not assigned'
+        const getStaffName = (id) => {
+          if (!id) return 'Not assigned'
+          const s = allStaffLookup.value.find(x => x.id === id) || medicalStaff.value.find(x => x.id === id)
+          if (!s) return 'Not assigned'
+          return s.employment_status === 'inactive' ? `${s.full_name} (inactive)` : s.full_name
+        }
         const getSupervisorName = (id) => getStaffName(id)
         const getPhysicianName = (id) => getStaffName(id)
         const getResidentName = (id) => getStaffName(id)
