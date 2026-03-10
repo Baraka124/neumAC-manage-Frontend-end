@@ -846,17 +846,18 @@
                         </div>
 
                         <!-- PHYSICIAN ORB VIEW -->
-                        <div v-if="onCallView === 'compact'" class="oncall-orb-view">
+                        <div v-if="onCallView === 'compact'" class="rot-compact">
 
                             <!-- Legend -->
                             <div class="rot-legend">
-                                <span class="rot-legend-item"><span class="oc-orb-demo oc-orb-demo--primary"></span> Primary call</span>
-                                <span class="rot-legend-item"><span class="oc-orb-demo oc-orb-demo--backup"></span> Backup</span>
-                                <span class="rot-legend-item"><span class="oc-orb-demo oc-orb-demo--today"></span> Today</span>
-                                <span class="rot-legend-item rot-legend-item--note"><i class="fas fa-hand-point-up"></i> Hover orb for shift time · Click to edit</span>
+                                <span class="rot-legend-item"><span class="rot-legend-dot" style="background:#4d9aff"></span> Primary Call</span>
+                                <span class="rot-legend-item"><span class="rot-legend-dot" style="background:#34d399"></span> Backup Call</span>
+                                <span class="rot-legend-item"><span class="rot-legend-dot" style="background:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.25)"></span> Today</span>
+                                <span class="rot-legend-item"><span class="rot-legend-dot" style="background:var(--surface-3);border:1px solid var(--border)"></span> Past</span>
+                                <span class="rot-legend-item rot-legend-item--note"><i class="fas fa-hand-point-up"></i> Hover for details · Click to edit</span>
                             </div>
 
-                            <div v-for="physician in staffWithOnCallOrbs" :key="physician.id" class="oc-row">
+                            <div v-for="physician in staffWithOnCallOrbs" :key="physician.id" class="rot-row">
 
                                 <!-- Physician identity -->
                                 <div class="rot-who">
@@ -869,35 +870,42 @@
                                     </div>
                                 </div>
 
-                                <!-- Shift orbs -->
+                                <!-- Shift orbs — same design language as rotation orbs -->
                                 <div class="rot-track">
                                     <div v-for="shift in physician.shifts" :key="shift.id"
-                                         class="oc-orb"
+                                         class="rot-orb"
                                          :class="{
-                                             'oc-orb--primary': shift.shift_type === 'primary_call',
-                                             'oc-orb--backup':  shift.shift_type === 'backup_call',
-                                             'oc-orb--today':   shift.isToday,
-                                             'oc-orb--past':    shift.isPast && !shift.isToday,
+                                             'rot-orb--active':    shift.isToday,
+                                             'rot-orb--scheduled': !shift.isToday && !shift.isPast && shift.shift_type === 'primary_call',
+                                             'rot-orb--backup-oc': !shift.isToday && !shift.isPast && shift.shift_type !== 'primary_call',
+                                             'rot-orb--done':       shift.isPast && !shift.isToday,
                                          }"
                                          @click.stop="editOnCallSchedule(shift)">
-                                        <span class="oc-orb-day">{{ shift.dayLabel }}</span>
-                                        <span class="oc-orb-date">{{ shift.dateLabel }}</span>
+                                        <span class="rot-orb-label">{{ shift.dayLabel }} {{ shift.dateLabel }}</span>
                                         <div class="rot-orb-tooltip">
                                             <div class="rot-tt-unit">{{ shift.shift_type === 'primary_call' ? 'Primary Call' : 'Backup Call' }}</div>
-                                            <div class="rot-tt-dates">{{ shift.start_time }} – {{ shift.end_time }}</div>
-                                            <div v-if="shift.coverage_area" class="rot-tt-dates">{{ shift.coverage_area }}</div>
-                                            <div v-if="shift.isToday" class="rot-tt-tag rot-tt-tag--active">● Today</div>
-                                            <div v-else-if="shift.isPast" class="rot-tt-tag rot-tt-tag--done">Past</div>
+                                            <div class="rot-tt-dates"><i class="fas fa-clock"></i> {{ shift.start_time }} – {{ shift.end_time }}</div>
+                                            <div v-if="shift.coverage_area" class="rot-tt-dates"><i class="fas fa-map-marker-alt"></i> {{ shift.coverage_area }}</div>
+                                            <div v-if="shift.backupName" class="rot-tt-dates"><i class="fas fa-user-shield"></i> Backup: {{ shift.backupName }}</div>
+                                            <div v-if="shift.isToday"  class="rot-tt-tag rot-tt-tag--active">● On call today</div>
+                                            <div v-else-if="shift.isPast" class="rot-tt-tag rot-tt-tag--done">Completed</div>
                                             <div v-else class="rot-tt-tag rot-tt-tag--scheduled">Upcoming</div>
                                         </div>
                                     </div>
+
+                                    <div v-if="hasPermission('oncall_schedule', 'create')"
+                                         class="rot-orb rot-orb--add"
+                                         @click.stop="showAddOnCallModal()" title="Add shift">
+                                        <i class="fas fa-plus"></i>
+                                    </div>
+
+                                    <div v-if="!(physician.shifts||[]).length" class="rot-nil">No shifts assigned</div>
                                 </div>
 
-                                <!-- Quick add -->
+                                <!-- Quick actions -->
                                 <div class="rot-row-actions">
-                                    <button v-if="hasPermission('oncall_schedule', 'create')"
-                                            class="rot-action-btn" @click.stop="showAddOnCallModal()" title="Add shift">
-                                        <i class="fas fa-plus"></i>
+                                    <button class="rot-action-btn" @click.stop="viewStaffDetails(physician)" title="View profile">
+                                        <i class="fas fa-user"></i>
                                     </button>
                                 </div>
                             </div>
@@ -3328,7 +3336,12 @@
                             <label class="form-label">Staff Member *</label>
                             <select class="form-select" v-model="absenceModal.form.staff_member_id" required @change="clearFieldError('absence', 'staff_member_id')" :class="{ 'is-invalid': fieldErrors.absence?.staff_member_id }">
                                 <option value="">Select Staff Member</option>
+                                <!-- Active staff first -->
                                 <option v-for="s in medicalStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                <!-- If editing and the current person is inactive, include them -->
+                                <template v-if="absenceModal.mode === 'edit' && absenceModal.form.staff_member_id && !medicalStaff.find(s => s.id === absenceModal.form.staff_member_id)">
+                                    <option :value="absenceModal.form.staff_member_id">{{ getStaffName(absenceModal.form.staff_member_id) }}</option>
+                                </template>
                             </select>
                             <small v-if="fieldErrors.absence?.staff_member_id" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.absence.staff_member_id }}</small>
                         </div>
