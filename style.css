@@ -6086,3 +6086,95 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   font-size: var(--t-11); color: var(--text-3); font-style: italic;
 }
 .rsm-cell-wide { font-size: var(--t-11); color: var(--text-3); }
+
+/* ═══════════════════════════════════════════════════════════════
+   HOSPITALS — network dots, table cell, profile pill, form UI
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Network color tokens */
+:root {
+  --chuac:    #0a7cff;   /* CHUAC blue */
+  --sergas:   #00a96e;   /* SERGAS green */
+  --ext-hosp: #9b59b6;   /* External purple */
+}
+
+/* Small inline dot used in table + pills */
+.hospital-network-dot,
+.hnd--chuac, .hnd--sergas, .hnd--external {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.hnd--chuac    { background: var(--chuac); }
+.hnd--sergas   { background: var(--sergas); }
+.hnd--external { background: var(--ext-hosp); }
+
+/* Staff table hospital cell */
+.hospital-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--t-12);
+  color: var(--text-1);
+}
+.hospital-name-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+/* Profile modal hospital pill */
+.pd-pill--hospital {
+  background: color-mix(in srgb, var(--canvas) 85%, var(--blue));
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Hospital network strip (CHUAC / SERGAS / External selector) ── */
+.hospital-network-strip {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.hns-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  font-size: var(--t-12);
+  font-weight: 500;
+  color: var(--text-2);
+  transition: border-color var(--t), background var(--t);
+  user-select: none;
+}
+.hns-option input[type="radio"] { display: none; }
+.hns-option:hover { border-color: var(--blue); background: color-mix(in srgb, var(--canvas) 90%, var(--blue)); }
+.hns-option.active { border-color: var(--blue); background: color-mix(in srgb, var(--canvas) 85%, var(--blue)); color: var(--text-1); }
+
+.hns-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.hns-dot--chuac    { background: var(--chuac); }
+.hns-dot--sergas   { background: var(--sergas); }
+.hns-dot--external { background: var(--ext-hosp); }
+
+/* Inline add hospital mini-form */
+.inline-add-hospital {
+  animation: fadeSlideDown 160ms ease;
+}
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
