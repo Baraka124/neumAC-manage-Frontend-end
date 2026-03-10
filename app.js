@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       CACHE_TTL: 300000
     }
 
-    // ============ 2. CONSTANTS ====-===-=====
+    // ============ 2. CONSTANTS ====-========
     const ROLES = {
       ADMIN: 'system_admin',
       HEAD: 'department_head',
@@ -1059,26 +1059,10 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      const deleteMedicalStaff = (staff) => {
-        const staffTypeLabel = STAFF_TYPE_LABELS[staff.staff_type] || staff.staff_type
-        const dept = staff.department?.name || staff.home_department || null
-        showConfirmation({
-          title: 'Remove Staff Member',
-          message: `You are about to permanently remove ${staff.full_name} (${staffTypeLabel}${dept ? ', ' + dept : ''}) from the system.`,
-          icon: 'fa-user-times',
-          confirmButtonText: 'Yes, Remove',
-          confirmButtonClass: 'btn-danger',
-          details: 'This will set their status to inactive. Their historical records (rotations, on-call assignments, absence records) are preserved for audit purposes. This action cannot be undone from the interface.',
-          onConfirm: async () => {
-            try {
-              await API.deleteMedicalStaff(staff.id)
-              medicalStaff.value = medicalStaff.value.filter(s => s.id !== staff.id)
-              showToast('Done', `${staff.full_name} has been removed from active staff`, 'success')
-            } catch (e) {
-              showToast('Error', e.message || 'Failed to remove staff member', 'error')
-            }
-          }
-        })
+      // Raw deactivation — called by the main setup's orchestrated deletion workflow
+      const deactivateStaffMember = async (staffId, staffName) => {
+        await API.deleteMedicalStaff(staffId)
+        medicalStaff.value = medicalStaff.value.filter(s => s.id !== staffId)
       }
 
       const isRoleTaken = (role) => {
@@ -1136,7 +1120,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         medicalStaff, allStaffLookup, staffFilters, staffProfileModal, medicalStaffModal,
         filteredMedicalStaff, filteredMedicalStaffAll, staffTotalPages,
-        loadMedicalStaff, showAddMedicalStaffModal, editMedicalStaff, saveMedicalStaff, deleteMedicalStaff,
+        loadMedicalStaff, showAddMedicalStaffModal, editMedicalStaff, saveMedicalStaff, deactivateStaffMember,
         formatTrainingYear: Utils.formatTrainingYear, formatSpecialization: Utils.formatSpecialization,
         formatPhone: Utils.formatPhone, formatLicense: Utils.formatLicense,
         getResidentCategoryInfo: Utils.getResidentCategoryInfo, formatResidentCategorySimple: Utils.formatResidentCategorySimple,
@@ -1159,9 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const getPhysicianName = (id) => {
         if (!id) return 'Not assigned'
-        const s = medicalStaff.value.find(x => x.id === id)
-        if (!s) return id
-        return s.employment_status === 'inactive' ? `${s.full_name} (inactive)` : s.full_name
+        return medicalStaff.value.find(x => x.id === id)?.full_name || id
       }
       const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
 
@@ -1832,9 +1814,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const getStaffName = (id) => {
         if (!id) return 'Not assigned'
-        const s = medicalStaff.value.find(x => x.id === id)
-        if (!s) return id // will be resolved by main getStaffName via allStaffLookup
-        return s.employment_status === 'inactive' ? `${s.full_name} (inactive)` : s.full_name
+        return medicalStaff.value.find(x => x.id === id)?.full_name || id
       }
 
       const validateAbsence = (form) => {
@@ -2652,7 +2632,115 @@ document.addEventListener('DOMContentLoaded', () => {
         const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff })
         const { absences } = absenceOps
 
-        const commsOps = useComms({ showToast, showConfirmation })
+        // ============ STAFF DEACTIVATION WORKFLOW ============
+        // Professional reassignment flow: scan future records before deactivating
+        const reassignmentModal = reactive({
+          show: false, staff: null, saving: false,
+          affectedShifts: [], affectedRotations: [], affectedAbsences: [],
+          replacements: {}
+        })
+
+        const deleteMedicalStaff = (staff) => {
+          const today = Utils.normalizeDate(new Date())
+
+          // Scan future on-call shifts
+          const affectedShifts = []
+          onCallSchedule.value.forEach(s => {
+            if (Utils.normalizeDate(s.duty_date) < today) return
+            if (s.primary_physician_id === staff.id) affectedShifts.push({ ...s, role: 'primary' })
+            else if (s.backup_physician_id === staff.id) affectedShifts.push({ ...s, role: 'backup' })
+          })
+
+          // Scan active/scheduled rotations
+          const affectedRotations = []
+          rotations.value.forEach(r => {
+            if (['completed', 'cancelled'].includes(r.rotation_status)) return
+            if (r.supervising_attending_id === staff.id) affectedRotations.push({ ...r, role: 'supervisor' })
+            else if (r.resident_id === staff.id) affectedRotations.push({ ...r, role: 'resident' })
+          })
+
+          // Scan future absences where this person is the cover
+          const affectedAbsences = []
+          absences.value.forEach(a => {
+            if (Utils.normalizeDate(a.end_date) < today) return
+            if (a.covering_staff_id === staff.id) affectedAbsences.push({ ...a, role: 'cover' })
+          })
+
+          const total = affectedShifts.length + affectedRotations.length + affectedAbsences.length
+
+          if (total === 0) {
+            showConfirmation({
+              title: 'Remove Staff Member',
+              message: `Remove ${staff.full_name} from active staff?`,
+              icon: 'fa-user-times',
+              confirmButtonText: 'Confirm Removal',
+              confirmButtonClass: 'btn-danger',
+              details: 'No upcoming assignments found. All historical records are preserved for audit purposes.',
+              onConfirm: async () => {
+                try {
+                  await staffOps.deactivateStaffMember(staff.id, staff.full_name)
+                  showToast('Done', `${staff.full_name} has been deactivated`, 'success')
+                } catch (e) { showToast('Error', e.message || 'Failed to remove staff member', 'error') }
+              }
+            })
+          } else {
+            Object.assign(reassignmentModal, {
+              show: true, staff, saving: false,
+              affectedShifts, affectedRotations, affectedAbsences,
+              replacements: {}
+            })
+          }
+        }
+
+        const confirmReassignAndDeactivate = async () => {
+          const { staff, affectedShifts, affectedRotations, affectedAbsences, replacements } = reassignmentModal
+          reassignmentModal.saving = true
+          try {
+            // Patch on-call shifts
+            for (const shift of affectedShifts) {
+              const newId = replacements[`shift_${shift.role}_${shift.id}`] || null
+              const existing = onCallSchedule.value.find(s => s.id === shift.id) || shift
+              const payload = {
+                primary_physician_id: shift.role === 'primary' ? newId : existing.primary_physician_id,
+                backup_physician_id:  shift.role === 'backup'  ? newId : existing.backup_physician_id,
+                duty_date: existing.duty_date, shift_type: existing.shift_type,
+                start_time: existing.start_time, end_time: existing.end_time,
+                coverage_area: existing.coverage_area, coverage_notes: existing.coverage_notes || ''
+              }
+              await API.updateOnCall(shift.id, payload)
+              const idx = onCallSchedule.value.findIndex(s => s.id === shift.id)
+              if (idx !== -1) {
+                if (shift.role === 'primary') onCallSchedule.value[idx].primary_physician_id = newId
+                else onCallSchedule.value[idx].backup_physician_id = newId
+              }
+            }
+            // Patch rotation supervisors (residents can't be re-assigned here)
+            for (const rot of affectedRotations.filter(r => r.role === 'supervisor')) {
+              const newId = replacements[`rotation_supervisor_${rot.id}`] || null
+              const existing = rotations.value.find(r => r.id === rot.id) || rot
+              await API.updateRotation(rot.id, { ...existing, supervising_attending_id: newId })
+              const idx = rotations.value.findIndex(r => r.id === rot.id)
+              if (idx !== -1) rotations.value[idx].supervising_attending_id = newId
+            }
+            // Patch absence cover assignments
+            for (const abs of affectedAbsences) {
+              const newId = replacements[`absence_cover_${abs.id}`] || null
+              const existing = absences.value.find(a => a.id === abs.id) || abs
+              await API.updateAbsence(abs.id, { ...existing, covering_staff_id: newId })
+              const idx = absences.value.findIndex(a => a.id === abs.id)
+              if (idx !== -1) absences.value[idx].covering_staff_id = newId
+            }
+            // Now deactivate
+            await staffOps.deactivateStaffMember(staff.id, staff.full_name)
+            const updatedCount = affectedShifts.length + affectedRotations.filter(r => r.role === 'supervisor').length + affectedAbsences.length
+            reassignmentModal.show = false
+            showToast('Done', `${staff.full_name} deactivated. ${updatedCount} assignment(s) updated.`, 'success')
+          } catch (e) {
+            showToast('Error', e.message || 'Failed to complete removal', 'error')
+          } finally { reassignmentModal.saving = false }
+        }
+
+
         const liveOps = useLiveStatus({ showToast, showConfirmation, medicalStaff, currentUser })
         const analyticsOps = useAnalytics({ showToast, hasPermission })
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
@@ -2670,8 +2758,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const getStaffName = (id) => {
           if (!id) return 'Not assigned'
           const s = allStaffLookup.value.find(x => x.id === id) || medicalStaff.value.find(x => x.id === id)
-          if (!s) return 'Not assigned'
-          return s.employment_status === 'inactive' ? `${s.full_name} (inactive)` : s.full_name
+          return s?.full_name || 'Not assigned'
         }
         const getSupervisorName = (id) => getStaffName(id)
         const getPhysicianName = (id) => getStaffName(id)
@@ -2896,6 +2983,8 @@ document.addEventListener('DOMContentLoaded', () => {
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
           ...staffOps,
+          deleteMedicalStaff,          // override useStaff's deactivateStaffMember with full workflow
+          reassignmentModal, confirmReassignAndDeactivate,
           ...onCallOps,
           ...rotationOps,
           ...absenceOps,
