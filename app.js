@@ -1182,13 +1182,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Groups ALL on-call schedules by physician for the compact orb view
       const staffWithOnCallOrbs = computed(() => {
+        const today = Utils.normalizeDate(new Date())
         const map = {}
         ;(onCallSchedule.value || []).forEach(shift => {
           const id = shift.primary_physician_id
           if (!id) return
-          if (!map[id]) map[id] = { id, name: medicalStaff.value.find(s => s.id === id)?.full_name || 'Unknown', shifts: [] }
-          map[id].shifts.push(shift)
+          const staff = medicalStaff.value.find(s => s.id === id)
+          if (!staff) return // skip inactive/deleted physicians
+          if (!map[id]) map[id] = {
+            id, name: staff.full_name,
+            staffType: staff.staff_type, shifts: []
+          }
+          const dutyDate = Utils.normalizeDate(shift.duty_date)
+          map[id].shifts.push({
+            ...shift,
+            dutyDate,
+            isToday: dutyDate === today,
+            isPast:  dutyDate < today,
+            dayLabel:  new Date(dutyDate + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' }),
+            dateLabel: new Date(dutyDate + 'T12:00:00').toLocaleDateString('en', { day: 'numeric', month: 'short' }),
+            backupName: shift.backup_physician_id ? (medicalStaff.value.find(s => s.id === shift.backup_physician_id)?.full_name || null) : null
+          })
         })
+        // Sort each physician's shifts by date
+        Object.values(map).forEach(p => p.shifts.sort((a, b) => a.dutyDate.localeCompare(b.dutyDate)))
         return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
       })
 
@@ -1914,14 +1931,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const editAbsence = (absence) => {
         clearAll('absence'); absenceModal.mode = 'edit'
-        absenceModal.form = {
-          id: absence.id, staff_member_id: absence.staff_member_id || '',
-          absence_type: absence.absence_type || 'planned', absence_reason: absence.absence_reason || 'vacation',
-          start_date: Utils.normalizeDate(absence.start_date), end_date: Utils.normalizeDate(absence.end_date),
-          covering_staff_id: absence.covering_staff_id || '', coverage_notes: absence.coverage_notes || '',
-          coverage_arranged: absence.coverage_arranged || false, hod_notes: absence.hod_notes || '',
-          current_status: absence.current_status || null
-        }
+        Object.assign(absenceModal.form, {
+          id: absence.id,
+          staff_member_id:    absence.staff_member_id    || '',
+          absence_type:       absence.absence_type       || 'planned',
+          absence_reason:     absence.absence_reason     || 'vacation',
+          start_date:         Utils.normalizeDate(absence.start_date),
+          end_date:           Utils.normalizeDate(absence.end_date),
+          covering_staff_id:  absence.covering_staff_id  || '',
+          coverage_notes:     absence.coverage_notes     || '',
+          coverage_arranged:  absence.coverage_arranged  ?? false,
+          hod_notes:          absence.hod_notes          || '',
+          current_status:     absence.current_status     || null
+        })
         absenceModal.show = true
       }
 
@@ -2651,6 +2673,9 @@ document.addEventListener('DOMContentLoaded', () => {
           viewUnitResidents, saveTrainingUnit } = useTrainingUnits({
           showToast, showConfirmation, rotations
         })
+
+        // Sync real trainingUnits into the stub so rotationOps.getTrainingUnitName resolves correctly
+        watch(trainingUnits, (v) => { _tuStub.value = v }, { immediate: true })
 
         const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff })
         const { absences } = absenceOps
