@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER ==-=--=--======= -->
+    <!-- ============ TOAST CONTAINER ==-=-=--======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -187,6 +187,16 @@
                                :aria-current="currentView === 'department_management' ? 'page' : null">
                                 <i class="fas fa-sitemap"></i>
                                 <span v-if="!sidebarCollapsed">Departments</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'system_settings' }"
+                               @click.prevent="switchView('system_settings'); mobileMenuOpen = false"
+                               v-if="hasPermission('system_settings', 'read')"
+                               :aria-current="currentView === 'system_settings' ? 'page' : null"
+                               data-tooltip="Settings">
+                                <i class="fas fa-cog"></i>
+                                <span v-if="!sidebarCollapsed">System Settings</span>
                             </a>
                         </li>
                         <li class="sidebar-menu-item">
@@ -687,10 +697,7 @@
                             <input type="text" class="form-control" v-model="staffFilters.search" placeholder="Search name or email…" aria-label="Search staff">
                             <select class="form-select" v-model="staffFilters.staffType">
                                 <option value="">All Types</option>
-                                <option value="attending_physician">Attending Physician</option>
-                                <option value="medical_resident">Medical Resident</option>
-                                <option value="fellow">Fellow</option>
-                                <option value="nurse_practitioner">Nurse Practitioner</option>
+                                <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
                             </select>
                             <select v-if="staffFilters.staffType === 'medical_resident'" class="form-select" v-model="staffFilters.residentCategory">
                                 <option value="">All Residents</option>
@@ -2277,8 +2284,137 @@
 
                 </div><!-- /analytics unified view -->
 
+                <!-- ============ SYSTEM SETTINGS VIEW ============ -->
+                <div v-if="currentView === 'system_settings'" v-cloak>
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title"><i class="fas fa-cog" style="color:var(--sb-accent-6)"></i> System Settings</h1>
+                            <p class="page-subtitle">Manage system-wide configuration and lookup tables</p>
+                        </div>
+                    </div>
+
+                    <!-- Staff Types Manager -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <div>
+                                <h3 class="card-title mb-0"><i class="fas fa-tags" style="color:var(--sb-accent-2)"></i> Staff Types</h3>
+                                <p class="text-muted mt-1 mb-0" style="font-size:12px">Define the staff categories available in your department. These populate all dropdowns across the system.</p>
+                            </div>
+                            <button class="btn btn-primary btn-sm" @click="openAddStaffType" v-if="hasPermission('staff_types','create')">
+                                <i class="fas fa-plus"></i> Add Staff Type
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Display Name</th>
+                                        <th>Type Key</th>
+                                        <th>Badge</th>
+                                        <th class="text-center">Resident Type</th>
+                                        <th class="text-center">Can Supervise</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Order</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="st in staffTypesList" :key="st.id" :class="{ 'opacity-50': !st.is_active }">
+                                        <td><strong>{{ st.display_name }}</strong></td>
+                                        <td><code style="font-size:11px;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px">{{ st.type_key }}</code></td>
+                                        <td><span :class="['badge', st.badge_class]">{{ st.display_name }}</span></td>
+                                        <td class="text-center"><i :class="st.is_resident_type ? 'fas fa-check text-success' : 'fas fa-minus text-muted'"></i></td>
+                                        <td class="text-center"><i :class="st.can_supervise ? 'fas fa-check text-success' : 'fas fa-minus text-muted'"></i></td>
+                                        <td class="text-center">
+                                            <span :class="st.is_active ? 'badge badge-success' : 'badge badge-secondary'">{{ st.is_active ? 'Active' : 'Inactive' }}</span>
+                                        </td>
+                                        <td class="text-center" style="color:rgba(255,255,255,.4);font-size:12px">{{ st.display_order }}</td>
+                                        <td class="text-end" style="white-space:nowrap">
+                                            <button class="btn btn-xs btn-ghost" @click="openEditStaffType(st)" title="Edit" v-if="hasPermission('staff_types','update')">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                            <button class="btn btn-xs btn-ghost" @click="toggleStaffTypeActive(st)" :title="st.is_active ? 'Deactivate' : 'Activate'" v-if="hasPermission('staff_types','update')">
+                                                <i :class="st.is_active ? 'fas fa-eye-slash text-warning' : 'fas fa-eye text-success'"></i>
+                                            </button>
+                                            <button class="btn btn-xs btn-ghost" @click="deleteStaffType(st)" title="Remove" v-if="hasPermission('staff_types','delete')">
+                                                <i class="fas fa-trash text-danger"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="staffTypesList.length === 0">
+                                        <td colspan="8" class="text-center text-muted py-4">No staff types defined yet. Click "Add Staff Type" to get started.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div><!-- /system_settings view -->
+
             </div><!-- /content-area -->
         </main>
+
+        <!-- ============ STAFF TYPE ADD/EDIT MODAL ============ -->
+        <div class="modal-overlay" v-if="staffTypeModal.show" @click.self="staffTypeModal.show = false">
+            <div class="modal-container" style="max-width:480px">
+                <div class="modal-header">
+                    <div class="modal-title"><i class="fas fa-tag"></i> {{ staffTypeModal.mode === 'add' ? 'Add Staff Type' : 'Edit Staff Type' }}</div>
+                    <button class="modal-close" @click="staffTypeModal.show = false"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:16px">
+                        <div class="form-group col-span-2">
+                            <label class="form-label">Display Name *</label>
+                            <input type="text" class="form-control" v-model="staffTypeModal.form.display_name" placeholder="e.g. Attending Physician" />
+                            <small class="text-muted" style="font-size:11px">Shown in all dropdowns and labels across the system</small>
+                        </div>
+                        <div class="form-group col-span-2" v-if="staffTypeModal.mode === 'add'">
+                            <label class="form-label">Type Key * <span style="font-size:10px;opacity:.5">(cannot be changed later)</span></label>
+                            <input type="text" class="form-control" v-model="staffTypeModal.form.type_key" placeholder="e.g. attending_physician" style="font-family:monospace" />
+                            <small class="text-muted" style="font-size:11px">Lowercase letters, numbers, underscores only — stored internally in the database</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Badge Style</label>
+                            <select class="form-select" v-model="staffTypeModal.form.badge_class">
+                                <option value="badge-primary">Blue (Primary)</option>
+                                <option value="badge-success">Green (Success)</option>
+                                <option value="badge-info">Cyan (Info)</option>
+                                <option value="badge-warning">Yellow (Warning)</option>
+                                <option value="badge-danger">Red (Danger)</option>
+                                <option value="badge-secondary">Grey (Secondary)</option>
+                                <option value="badge-purple">Purple</option>
+                            </select>
+                            <div class="mt-2"><span :class="['badge', staffTypeModal.form.badge_class]">{{ staffTypeModal.form.display_name || 'Preview' }}</span></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" v-model.number="staffTypeModal.form.display_order" min="0" />
+                            <small class="text-muted" style="font-size:11px">Lower numbers appear first in dropdowns</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label d-flex align-items-center gap-2">
+                                <input type="checkbox" v-model="staffTypeModal.form.is_resident_type" />
+                                Is Resident / Trainee Type
+                            </label>
+                            <small class="text-muted" style="font-size:11px">Shows training year &amp; resident category fields when selected</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label d-flex align-items-center gap-2">
+                                <input type="checkbox" v-model="staffTypeModal.form.can_supervise" />
+                                Can Supervise Residents
+                            </label>
+                            <small class="text-muted" style="font-size:11px">Used to filter supervising physician dropdowns</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" @click="staffTypeModal.show = false">Cancel</button>
+                    <button class="btn btn-primary" @click="saveStaffType" :disabled="staffTypeModal.saving">
+                        <i class="fas" :class="staffTypeModal.saving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                        {{ staffTypeModal.saving ? 'Saving…' : (staffTypeModal.mode === 'add' ? 'Create Staff Type' : 'Save Changes') }}
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- ============ STAFF PROFILE DRAWER ============ -->
         <!-- Backdrop -->
@@ -2384,7 +2520,7 @@
                     </div>
 
                     <!-- Resident info (conditional) -->
-                    <div v-if="staffProfileModal.staff.staff_type === 'medical_resident'" class="pd-section" :class="{ 'pd-section--collapsed': staffProfileModal.collapsed?.resident }">
+                    <div v-if="isResidentType(staffProfileModal.staff.staff_type)" class="pd-section" :class="{ 'pd-section--collapsed': staffProfileModal.collapsed?.resident }">
                         <button class="pd-section-head" @click="toggleProfileSection('resident')">
                             <span class="pd-section-icon"><i class="fas fa-user-graduate"></i></span>
                             <span class="pd-section-title">Resident Info</span>
@@ -2497,7 +2633,7 @@
                     <div v-if="staffProfileModal.activeTab === 'activity'" class="pd-tab-body">
 
                         <!-- Current Rotation (residents only) -->
-                        <div v-if="staffProfileModal.staff.staff_type === 'medical_resident'" class="pd-card">
+                        <div v-if="isResidentType(staffProfileModal.staff.staff_type)" class="pd-card">
                             <div class="pd-card-head">
                                 <span class="pd-card-icon pd-card-icon--blue"><i class="fas fa-clinic-medical"></i></span>
                                 <span class="pd-card-title">Current Rotation</span>
@@ -2552,7 +2688,7 @@
                         </div>
 
                         <!-- Rotation History (residents only) -->
-                        <div v-if="staffProfileModal.staff.staff_type === 'medical_resident'" class="pd-card">
+                        <div v-if="isResidentType(staffProfileModal.staff.staff_type)" class="pd-card">
                             <div class="pd-card-head">
                                 <span class="pd-card-icon pd-card-icon--purple"><i class="fas fa-history"></i></span>
                                 <span class="pd-card-title">Rotation History</span>
@@ -2832,11 +2968,13 @@
                             <div class="form-group">
                                 <label class="form-label">Staff Type *</label>
                                 <select class="form-select" v-model="medicalStaffModal.form.staff_type" required>
-                                    <option value="medical_resident">Medical Resident</option>
-                                    <option value="attending_physician">Attending Physician</option>
-                                    <option value="fellow">Fellow</option>
-                                    <option value="nurse_practitioner">Nurse Practitioner</option>
+                                    <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
                                 </select>
+                                <small class="text-muted d-flex align-items-center gap-1 mt-1" style="font-size:11px">
+                                    <i class="fas fa-info-circle"></i>
+                                    Staff types are managed in
+                                    <a href="#" @click.prevent="switchView('system_settings')" style="color:var(--p-accent)">System Settings → Staff Types</a>
+                                </small>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Employment Status</label>
@@ -2939,7 +3077,7 @@
                             </div>
                             <div class="form-group"><label class="form-label">Specialization</label><input type="text" class="form-control" v-model="medicalStaffModal.form.specialization"></div>
 
-                            <div v-if="medicalStaffModal.form.staff_type === 'medical_resident'" class="form-group">
+                            <div v-if="isResidentType(medicalStaffModal.form.staff_type)" class="form-group">
                                 <label class="form-label">Resident Year</label>
                                 <select class="form-select" v-model="medicalStaffModal.form.training_year">
                                     <option value="">Select Year</option>
@@ -2947,7 +3085,7 @@
                                 </select>
                             </div>
 
-                            <div v-if="medicalStaffModal.form.staff_type === 'medical_resident'" class="form-group col-span-2">
+                            <div v-if="isResidentType(medicalStaffModal.form.staff_type)" class="form-group col-span-2">
                                 <label class="form-label">Resident Category</label>
                                 <div class="resident-category-selector">
                                     <label class="category-option" :class="{ 'selected': medicalStaffModal.form.resident_category === 'department_internal' }">
