@@ -977,6 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const medicalStaffModal = reactive({
         show: false, mode: 'add', activeTab: 'basic',
         _addingHospital: false, _newHospitalName: '', _newHospitalNetwork: 'external',
+        _addingStaffType: false, _newStaffTypeName: '', _newStaffTypeIsResident: false, _savingStaffType: false,
         form: { 
           full_name: '', staff_type: 'medical_resident', staff_id: '', employment_status: 'active', 
           professional_email: '', department_id: '', academic_degree: '', specialization: '', 
@@ -1061,6 +1062,41 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { showToast('Error', 'Failed to add hospital', 'error'); return null }
       }
 
+      // Inline staff type creation — called from within the Add/Edit Staff modal
+      // Creates the type in DB, refreshes the list, auto-selects it in the form
+      const addStaffTypeInline = async () => {
+        const name = medicalStaffModal._newStaffTypeName?.trim()
+        if (!name) { showToast('Required', 'Please enter a staff type name', 'warning'); return }
+        // Generate a type_key from the display name: lowercase, spaces→underscores, strip special chars
+        const typeKey = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_').substring(0, 60)
+        if (!typeKey) { showToast('Invalid', 'Name must contain letters or numbers', 'warning'); return }
+        medicalStaffModal._savingStaffType = true
+        try {
+          await API.createStaffType({
+            type_key: typeKey,
+            display_name: name,
+            badge_class: 'badge-secondary',
+            is_resident_type: medicalStaffModal._newStaffTypeIsResident,
+            can_supervise: false,
+            is_active: true,
+            display_order: staffTypesList.value.length * 10
+          })
+          // Refresh the global staff types list + map
+          await loadStaffTypes()
+          // Auto-select the newly created type
+          medicalStaffModal.form.staff_type = typeKey
+          // Reset inline form
+          medicalStaffModal._addingStaffType = false
+          medicalStaffModal._newStaffTypeName = ''
+          medicalStaffModal._newStaffTypeIsResident = false
+          showToast('Success', `Staff type "${name}" created and selected`, 'success')
+        } catch (e) {
+          showToast('Error', e?.message || 'Failed to create staff type', 'error')
+        } finally {
+          medicalStaffModal._savingStaffType = false
+        }
+      }
+
       const showAddMedicalStaffModal = () => {
         clearAll('staff')
         medicalStaffModal.mode = 'add'
@@ -1068,6 +1104,10 @@ document.addEventListener('DOMContentLoaded', () => {
         medicalStaffModal._addingHospital = false
         medicalStaffModal._newHospitalName = ''
         medicalStaffModal._newHospitalNetwork = 'external'
+        medicalStaffModal._addingStaffType = false
+        medicalStaffModal._newStaffTypeName = ''
+        medicalStaffModal._newStaffTypeIsResident = false
+        medicalStaffModal._savingStaffType = false
         Object.assign(medicalStaffModal.form, {
           full_name: '', staff_type: 'medical_resident', staff_id: `MD-${Date.now().toString().slice(-6)}`,
           employment_status: 'active', professional_email: '', department_id: '', academic_degree: '',
@@ -1222,7 +1262,8 @@ document.addEventListener('DOMContentLoaded', () => {
         getResidentCategoryInfo: Utils.getResidentCategoryInfo, formatResidentCategorySimple: Utils.formatResidentCategorySimple,
         formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed, getResidentCategoryIcon: Utils.getResidentCategoryIcon,
         getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
-        isRoleTaken, getCurrentRoleHolder, handleRoleAssignment, toggleCertificate, availableCertificates
+        isRoleTaken, getCurrentRoleHolder, handleRoleAssignment, toggleCertificate, availableCertificates,
+        addStaffTypeInline
       }
     }
 
