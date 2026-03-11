@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER ==--=-=--======= -->
+    <!-- ============ TOAST CONTAINER ==-=-=--======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -163,7 +163,7 @@
                                v-if="hasPermission('training_units', 'read')"
                                :aria-current="currentView === 'training_units' ? 'page' : null">
                                 <i class="fas fa-hospital-user"></i>
-                                <span v-if="!sidebarCollapsed">Units</span>
+                                <span v-if="!sidebarCollapsed">Clinical Units</span>
                             </a>
                         </li>
                     </ul>
@@ -1286,6 +1286,7 @@
                                 <tbody>
                                     <tr v-for="rotation in filteredRotations" :key="rotation.id"
                                         :class="'row-' + rotation.rotation_status"
+                                        :title="rotation.rotation_status === 'terminated_early' ? 'Terminated early — this rotation was ended before completion' : rotation.rotation_status === 'completed' ? 'Completed rotation' : ''"
                                         @click="hasPermission('resident_rotations', 'update') && editRotation(rotation)">
                                         <td><div class="font-medium">{{ getResidentName(rotation.resident_id) }}</div></td>
                                         <td>{{ getTrainingUnitName(rotation.training_unit_id) }}</td>
@@ -1463,12 +1464,19 @@
                                 <option v-for="s in medicalStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                             </select>
                             <select class="form-select" v-model="absenceFilters.status">
-                                <option value="">All Status</option>
-                                <option value="currently_absent">Currently Absent</option>
-                                <option value="upcoming">Upcoming</option>
-                                <option value="completed">Completed</option>
+                                <option value="">Active</option>
+                                <option value="currently_absent">Absent Now</option>
+                                <option value="planned_leave">Planned</option>
+                                <option value="returned_to_duty">Returned</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
+                            <button class="btn btn-sm" :class="absenceFilters.hideReturned ? 'btn-ghost' : 'btn-primary'"
+                                    @click="absenceFilters.hideReturned = !absenceFilters.hideReturned"
+                                    :title="absenceFilters.hideReturned ? 'Currently hiding returned/past absences' : 'Showing all including past'"
+                                    style="white-space:nowrap;font-size:12px">
+                                <i class="fas" :class="absenceFilters.hideReturned ? 'fa-eye' : 'fa-eye-slash'"></i>
+                                {{ absenceFilters.hideReturned ? 'Show Past' : 'Hide Past' }}
+                            </button>
                             <select class="form-select" v-model="absenceFilters.reason">
                                 <option value="">All Reasons</option>
                                 <option value="vacation">Vacation</option>
@@ -1494,7 +1502,14 @@
                                 </thead>
                                 <tbody>
                                     <tr v-for="absence in filteredAbsences" :key="absence.id"
-                                        :class="absence.absence_type === 'unplanned' ? 'row-on_leave' : 'row-active'"
+                                        :class="{
+                                            'row-currently_absent': absence.current_status === 'currently_absent',
+                                            'row-planned_leave':    absence.current_status === 'planned_leave',
+                                            'row-returned':         absence.current_status === 'returned_to_duty',
+                                            'row-completed':        absence.current_status === 'returned_to_duty',
+                                            'row-expired':          absence.current_status === 'returned_to_duty',
+                                            'row-on_leave':         absence.absence_type === 'unplanned' && absence.current_status === 'currently_absent'
+                                        }"
                                         @click="hasPermission('staff_absence', 'update') && editAbsence(absence)">
                                         <td><div class="font-medium">{{ getStaffName(absence.staff_member_id) }}</div></td>
                                         <td>
@@ -1507,7 +1522,20 @@
                                                 'badge-gray': absence.absence_reason === 'other'
                                             }">{{ formatAbsenceReason(absence.absence_reason) }}</span>
                                         </td>
-                                        <td><span class="status-indicator" :class="'status-' + (absence.absence_type || 'planned')">{{ absence.absence_type === 'planned' ? 'Planned' : 'Unplanned' }}</span></td>
+                                        <td>
+                                            <span class="status-indicator" :class="{
+                                                'status-active':    absence.current_status === 'currently_absent',
+                                                'status-scheduled': absence.current_status === 'planned_leave',
+                                                'status-completed': absence.current_status === 'returned_to_duty',
+                                                'status-inactive':  absence.current_status === 'cancelled'
+                                            }">
+                                                <span v-if="absence.current_status === 'currently_absent'">Absent Now</span>
+                                                <span v-else-if="absence.current_status === 'planned_leave'">Planned</span>
+                                                <span v-else-if="absence.current_status === 'returned_to_duty'">Returned</span>
+                                                <span v-else-if="absence.current_status === 'cancelled'">Cancelled</span>
+                                                <span v-else>{{ absence.current_status }}</span>
+                                            </span>
+                                        </td>
                                         <td class="date-cell">{{ formatDate(absence.start_date) }}</td>
                                         <td class="date-cell">{{ formatDate(absence.end_date) }}</td>
                                         <td>
@@ -2298,7 +2326,7 @@
                         <div class="card-header d-flex align-items-center justify-content-between">
                             <div>
                                 <h3 class="card-title mb-0"><i class="fas fa-tags" style="color:var(--sb-accent-2)"></i> Staff Types</h3>
-                                <p class="text-muted mt-1 mb-0" style="font-size:12px">Define the staff categories available in your department. These populate all dropdowns across the system.</p>
+                                <p class="text-muted mt-1 mb-0" style="font-size:12px">Manage all staff categories. Staff can also create new types inline when enrolling new staff members.</p>
                             </div>
                             <button class="btn btn-primary btn-sm" @click="openAddStaffType" v-if="hasPermission('staff_types','create')">
                                 <i class="fas fa-plus"></i> Add Staff Type
@@ -2967,14 +2995,47 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Staff Type *</label>
-                                <select class="form-select" v-model="medicalStaffModal.form.staff_type" required>
-                                    <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
-                                </select>
-                                <small class="text-muted d-flex align-items-center gap-1 mt-1" style="font-size:11px">
-                                    <i class="fas fa-info-circle"></i>
-                                    Staff types are managed in
-                                    <a href="#" @click.prevent="switchView('system_settings')" style="color:var(--p-accent)">System Settings → Staff Types</a>
-                                </small>
+                                <div style="display:flex;gap:8px;align-items:center">
+                                    <select class="form-select" v-model="medicalStaffModal.form.staff_type" required style="flex:1">
+                                        <option value="" disabled>Select a type…</option>
+                                        <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
+                                    </select>
+                                    <button type="button" class="btn btn-sm btn-outline" style="white-space:nowrap;flex-shrink:0"
+                                        @click="medicalStaffModal._addingStaffType = !medicalStaffModal._addingStaffType">
+                                        <i class="fas" :class="medicalStaffModal._addingStaffType ? 'fa-times' : 'fa-plus'"></i>
+                                        {{ medicalStaffModal._addingStaffType ? 'Cancel' : 'New type' }}
+                                    </button>
+                                </div>
+                                <!-- Inline new staff type mini-form — same pattern as inline hospital add -->
+                                <div v-if="medicalStaffModal._addingStaffType" class="inline-add-hospital" style="margin-top:8px">
+                                    <div class="iah-label">Define new staff type</div>
+                                    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">
+                                        <div class="form-group" style="margin:0">
+                                            <label class="form-label" style="font-size:11px">Display Name *</label>
+                                            <input type="text" class="form-control"
+                                                v-model="medicalStaffModal._newStaffTypeName"
+                                                placeholder="e.g. Biomedical Engineer"
+                                                @keyup.enter="addStaffTypeInline()">
+                                        </div>
+                                        <div class="form-group" style="margin:0">
+                                            <label class="form-label" style="font-size:11px">Is trainee?</label>
+                                            <select class="form-select" v-model="medicalStaffModal._newStaffTypeIsResident" style="min-width:90px">
+                                                <option :value="false">No</option>
+                                                <option :value="true">Yes</option>
+                                            </select>
+                                        </div>
+                                        <button type="button" class="btn btn-primary btn-sm" style="height:36px;white-space:nowrap"
+                                            @click="addStaffTypeInline()"
+                                            :disabled="medicalStaffModal._savingStaffType || !medicalStaffModal._newStaffTypeName?.trim()">
+                                            <i class="fas" :class="medicalStaffModal._savingStaffType ? 'fa-spinner fa-spin' : 'fa-plus-circle'"></i>
+                                            {{ medicalStaffModal._savingStaffType ? 'Saving…' : 'Add &amp; Select' }}
+                                        </button>
+                                    </div>
+                                    <div style="font-size:11px;opacity:.5;margin-top:6px">
+                                        <i class="fas fa-info-circle"></i>
+                                        The type key is auto-generated. You can rename or adjust it later in System Settings.
+                                    </div>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Employment Status</label>
@@ -3949,7 +4010,7 @@
                     <div v-if="unitResidentsModal.rotations.length > 0" class="urm-list">
                         <div v-for="rotation in unitResidentsModal.rotations" :key="rotation.id"
                              class="urm-row"
-                             @click="viewStaffDetails(medicalStaff.find(s => s.id === rotation.resident_id))"
+                             @click="{ const _s = medicalStaff.find(s => s.id === rotation.resident_id); if (_s) viewStaffDetails(_s); }"
                              title="View profile">
                             <div class="urm-avatar" :class="'role-icon--medical_resident'">
                                 <i class="fas fa-user-graduate"></i>
