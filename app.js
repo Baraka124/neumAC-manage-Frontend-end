@@ -79,19 +79,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    const STAFF_TYPE_LABELS = {
-      medical_resident: 'Medical Resident', 
-      attending_physician: 'Attending Physician',
-      fellow: 'Fellow', 
-      nurse_practitioner: 'Nurse Practitioner'
+    // ── Staff types: loaded dynamically from /api/staff-types ──────────────
+    // Replaces the old hardcoded STAFF_TYPE_LABELS / STAFF_TYPE_CLASSES maps.
+    // staffTypesList  → raw array for v-for dropdowns
+    // staffTypeMap    → { type_key: { display_name, badge_class, is_resident_type } }
+    const staffTypesList = ref([])
+    const staffTypeMap   = ref({})
+
+    // Fallbacks for display while loading or for unknown keys
+    const STAFF_TYPE_LABELS_FALLBACK = {
+      medical_resident: 'Medical Resident', attending_physician: 'Attending Physician',
+      fellow: 'Fellow', nurse_practitioner: 'Nurse Practitioner', administrator: 'Administrator',
     }
-    
-    const STAFF_TYPE_CLASSES = {
-      medical_resident: 'badge-primary', 
-      attending_physician: 'badge-success',
-      fellow: 'badge-info', 
-      nurse_practitioner: 'badge-warning'
+    const STAFF_TYPE_CLASSES_FALLBACK = {
+      medical_resident: 'badge-primary', attending_physician: 'badge-success',
+      fellow: 'badge-info', nurse_practitioner: 'badge-warning', administrator: 'badge-secondary',
     }
+    // Global helpers used throughout the app
+    const formatStaffTypeGlobal   = (key) => staffTypeMap.value[key]?.display_name || STAFF_TYPE_LABELS_FALLBACK[key] || key
+    const getStaffTypeClassGlobal = (key) => staffTypeMap.value[key]?.badge_class  || STAFF_TYPE_CLASSES_FALLBACK[key] || 'badge-secondary'
+    const isResidentType          = (key) => staffTypeMap.value[key]?.is_resident_type ?? (key === 'medical_resident')
     
     const ABSENCE_REASON_LABELS = {
       vacation: 'Vacation', 
@@ -601,7 +608,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // ============ 4.4 EXISTING ENDPOINTS ============
-      
+
+      // ── Staff Types (dynamic) ─────────────────────────────────────────────
+      async getStaffTypes(includeInactive = false) {
+        const url = '/api/staff-types' + (includeInactive ? '?include_inactive=true' : '')
+        return this.getList(url)
+      }
+      async createStaffType(data) { this.invalidate('/api/staff-types'); return this.request('/api/staff-types', { method: 'POST', body: data }) }
+      async updateStaffType(id, data) { this.invalidate('/api/staff-types'); return this.request(`/api/staff-types/${id}`, { method: 'PUT', body: data }) }
+      async deleteStaffType(id) { this.invalidate('/api/staff-types'); return this.request(`/api/staff-types/${id}`, { method: 'DELETE' }) }
+
       async getDepartments() { return this.getList('/api/departments') }
       async getAllDepartments() { return this.getList('/api/departments?include_inactive=true') }
       async getDepartmentImpact(id) { return this.request(`/api/departments/${id}/impact`) }
@@ -980,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form.professional_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.professional_email)) {
           setErr('staff', 'professional_email', 'Invalid email address'); ok = false
         }
-        if (form.staff_type === 'medical_resident' && !form.training_year?.trim()) {
+        if (isResidentType(form.staff_type) && !form.training_year?.trim()) {
           setErr('staff', 'training_year', 'Training year is required for residents'); ok = false
         }
         return ok
@@ -1225,7 +1241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!id) return 'Not assigned'
         return medicalStaff.value.find(x => x.id === id)?.full_name || id
       }
-      const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
+      const formatStaffType = (t) => formatStaffTypeGlobal(t)
 
       const validateOnCall = (form) => {
         clearAll('oncall'); let ok = true
@@ -3119,8 +3135,8 @@ document.addEventListener('DOMContentLoaded', () => {
           finally { staffOps.staffProfileModal.loadingLeave = false }
         }
 
-        const formatStaffType = (t) => STAFF_TYPE_LABELS[t] || t
-        const getStaffTypeClass = (t) => STAFF_TYPE_CLASSES[t] || 'badge-secondary'
+        const formatStaffType = (t) => formatStaffTypeGlobal(t)
+        const getStaffTypeClass = (t) => getStaffTypeClassGlobal(t)
         const formatEmploymentStatus = (s) => ({ active: 'Active', on_leave: 'On Leave', inactive: 'Inactive' }[s] || s)
         const formatAbsenceReason = (r) => ABSENCE_REASON_LABELS[r] || r
         const formatRotationStatus = (s) => ROTATION_STATUS_LABELS[s] || s
@@ -3245,9 +3261,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const clearSearch = () => { globalSearchQuery.value = ''; ui.searchResultsOpen.value = false }
 
+        // ── Staff Types Management ─────────────────────────────────────────────
+        // Loads dynamic staff types from DB and builds the reactive lookup map
+        const loadStaffTypes = async (includeInactive = false) => {
+          try {
+            const raw = await API.getStaffTypes(includeInactive)
+            staffTypesList.value = raw
+            // Build the fast-lookup map: { type_key → { display_name, badge_class, is_resident_type, can_supervise } }
+            const map = {}
+            raw.forEach(t => { map[t.type_key] = t })
+            staffTypeMap.value = map
+          } catch { console.error('Failed to load staff types') }
+        }
+
+        // Staff Types manager modal (lives in System Settings)
+        const staffTypeModal = reactive({
+          show: false, mode: 'add',
+          form: { type_key: '', display_name: '', badge_class: 'badge-secondary', is_resident_type: false, can_supervise: false, display_order: 0 },
+          saving: false, deleting: false
+        })
+        const openAddStaffType = () => {
+          Object.assign(staffTypeModal.form, { type_key: '', display_name: '', badge_class: 'badge-secondary', is_resident_type: false, can_supervise: false, display_order: staffTypesList.value.length * 10 })
+          staffTypeModal.mode = 'add'
+          staffTypeModal.show = true
+        }
+        const openEditStaffType = (t) => {
+          Object.assign(staffTypeModal.form, { ...t })
+          staffTypeModal.mode = 'edit'
+          staffTypeModal.show = true
+        }
+        const saveStaffType = async () => {
+          if (!staffTypeModal.form.display_name?.trim()) { showToast('Validation', 'Display name is required', 'error'); return }
+          if (staffTypeModal.mode === 'add' && !staffTypeModal.form.type_key?.trim()) { showToast('Validation', 'Type key is required', 'error'); return }
+          staffTypeModal.saving = true
+          try {
+            if (staffTypeModal.mode === 'add') {
+              await API.createStaffType(staffTypeModal.form)
+              showToast('Success', `Staff type "${staffTypeModal.form.display_name}" created`, 'success')
+            } else {
+              await API.updateStaffType(staffTypeModal.form.id, staffTypeModal.form)
+              showToast('Success', `Staff type updated`, 'success')
+            }
+            await loadStaffTypes(true)
+            staffTypeModal.show = false
+          } catch (e) { showToast('Error', e.message || 'Failed to save staff type', 'error') }
+          finally { staffTypeModal.saving = false }
+        }
+        const deleteStaffType = async (t) => {
+          showConfirmation({
+            title: 'Remove Staff Type',
+            message: `Remove "${t.display_name}"? If staff members use this type it will be deactivated rather than deleted.`,
+            icon: 'fa-trash', confirmButtonText: 'Remove', confirmButtonClass: 'btn-danger',
+            onConfirm: async () => {
+              try {
+                const res = await API.deleteStaffType(t.id)
+                showToast('Success', res?.message || 'Staff type removed', 'success')
+                await loadStaffTypes(true)
+              } catch (e) { showToast('Error', e.message || 'Failed to remove staff type', 'error') }
+            }
+          })
+        }
+        const toggleStaffTypeActive = async (t) => {
+          try {
+            await API.updateStaffType(t.id, { is_active: !t.is_active })
+            showToast('Success', `Staff type ${t.is_active ? 'deactivated' : 'activated'}`, 'success')
+            await loadStaffTypes(true)
+          } catch (e) { showToast('Error', 'Failed to update staff type', 'error') }
+        }
+
         const loadAllData = async () => {
           loading.value = true
           try {
+            // Load staff types FIRST — all dropdowns depend on them
+            await loadStaffTypes()
             await Promise.all([staffOps.loadMedicalStaff(), loadDepartments(), loadTrainingUnits()])
             await Promise.all([rotationOps.loadRotations(), onCallOps.loadOnCallSchedule(), absenceOps.loadAbsences()])
             updateDashboardStats()
@@ -3321,6 +3407,8 @@ document.addEventListener('DOMContentLoaded', () => {
           ...dashOps,
           handleLogin, handleLogout,
           switchView, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
+          staffTypesList, staffTypeMap, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
+          staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           searchResultsOpen: ui.searchResultsOpen,
           sortState, sortBy, sortIcon, pagination,
           goToPage: (view, page) => {
