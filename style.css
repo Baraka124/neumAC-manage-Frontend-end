@@ -1172,8 +1172,44 @@ a { color: var(--blue); text-decoration: none; }
 .table tbody tr.row-on_leave  { border-left: 3px solid var(--warn); }
 .table tbody tr.row-inactive  { border-left: 3px solid var(--neutral); }
 .table tbody tr.row-scheduled { border-left: 3px solid var(--info); }
-.table tbody tr.row-completed { border-left: 3px solid var(--teal); }
-.table tbody tr.row-cancelled { border-left: 3px solid var(--neutral); }
+.table tbody tr.row-completed    { border-left: 3px solid var(--teal); }
+.table tbody tr.row-cancelled    { border-left: 3px solid var(--neutral); }
+
+/* ── Absence-specific status rows ────────────────────────────────── */
+/* Currently absent — amber left edge, same as on_leave */
+.table tbody tr.row-currently_absent {
+  border-left: 3px solid var(--warn);
+  background: rgba(251,191,36,.04);
+}
+/* Planned leave — blue tint, upcoming */
+.table tbody tr.row-planned_leave {
+  border-left: 3px solid var(--p-accent);
+  background: rgba(77,154,255,.03);
+}
+/* Returned to duty — faded, greyed out, past event */
+.table tbody tr.row-returned,
+.table tbody tr.row-expired {
+  border-left: 3px solid rgba(52,211,153,.35);
+  opacity: 0.55;
+  transition: opacity var(--t);
+}
+.table tbody tr.row-returned:hover,
+.table tbody tr.row-expired:hover {
+  opacity: 1;  /* Reveal on hover so user can see/edit if needed */
+}
+/* Rotation terminated early */
+.table tbody tr.row-terminated_early {
+  border-left: 3px solid var(--danger);
+  opacity: 0.50;
+  transition: opacity var(--t);
+}
+.table tbody tr.row-terminated_early:hover { opacity: 1; }
+/* Medical staff inactive */
+.table tbody tr.row-inactive {
+  opacity: 0.50;
+  transition: opacity var(--t);
+}
+.table tbody tr.row-inactive:hover { opacity: 1; }
 
 .text-center { text-align: center; }
 
@@ -3403,8 +3439,12 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 .table tbody tr.row-on_leave td:first-child { border-left: 3px solid var(--warn); }
 .table tbody tr.row-inactive td:first-child { border-left: 3px solid var(--neutral); }
 .table tbody tr.row-scheduled td:first-child { border-left: 3px solid var(--blue); }
-.table tbody tr.row-completed td:first-child { border-left: 3px solid var(--teal); }
-.table tbody tr.row-cancelled td:first-child { border-left: 3px solid var(--border-2); }
+.table tbody tr.row-completed         td:first-child { border-left: 3px solid var(--teal); }
+.table tbody tr.row-cancelled         td:first-child { border-left: 3px solid var(--border-2); }
+.table tbody tr.row-currently_absent  td:first-child { border-left: 3px solid var(--warn); }
+.table tbody tr.row-planned_leave     td:first-child { border-left: 3px solid var(--p-accent); }
+.table tbody tr.row-returned          td:first-child { border-left: 3px solid rgba(52,211,153,.35); }
+.table tbody tr.row-terminated_early  td:first-child { border-left: 3px solid var(--danger); }
 
 /* Remove old border-left applied to whole row */
 .table tbody tr.row-active,
@@ -3412,7 +3452,11 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 .table tbody tr.row-inactive,
 .table tbody tr.row-scheduled,
 .table tbody tr.row-completed,
-.table tbody tr.row-cancelled { border-left: none; }
+.table tbody tr.row-cancelled,
+.table tbody tr.row-currently_absent,
+.table tbody tr.row-planned_leave,
+.table tbody tr.row-returned,
+.table tbody tr.row-terminated_early { border-left: none; }
 
 /* ── Role icon — replaces initials avatar ─────────────────────── */
 .staff-role-icon {
