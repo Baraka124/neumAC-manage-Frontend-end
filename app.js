@@ -868,6 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const globalSearchQuery = ref('')
       const currentView = ref('login')
       const systemAlerts = ref([])
+      const hospitalsList = ref([])
 
       const confirmationModal = reactive({
         show: false, title: '', message: '', icon: 'fa-question-circle',
