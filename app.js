@@ -102,7 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
       attending_physician: 'Attending', medical_resident: 'Resident',
       fellow: 'Fellow', nurse_practitioner: 'NP', administrator: 'Admin'
     }
-    const formatStaffTypeShort = (key) => SHORT_LABELS[key] || (staffTypeMap.value[key]?.display_name?.split(' ')[0]) || key
+    const _toTitle = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    const formatStaffTypeShort = (key) => SHORT_LABELS[key] || (staffTypeMap.value[key]?.display_name?.split(' ')[0]) || _toTitle(key)
     const getStaffTypeClassGlobal = (key) => staffTypeMap.value[key]?.badge_class  || STAFF_TYPE_CLASSES_FALLBACK[key] || 'badge-secondary'
     const isResidentType          = (key) => staffTypeMap.value[key]?.is_resident_type ?? (key === 'medical_resident')
     
@@ -976,6 +977,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const hospitalsList = ref([])   // all hospitals from DB
       const clinicalUnits = ref([])   // clinical units (Pneumology + others)
       const staffFilters = reactive({ search: '', staffType: '', department: '', status: '', residentCategory: '', hospital: '', networkType: '' })
+      const clearStaffFilters = () => { staffFilters.search = ''; staffFilters.staffType = ''; staffFilters.department = ''; staffFilters.status = ''; staffFilters.residentCategory = ''; staffFilters.hospital = ''; staffFilters.networkType = '' }
+      const hasActiveStaffFilters = computed(() => !!(staffFilters.search || staffFilters.staffType || staffFilters.department || staffFilters.status || staffFilters.residentCategory || staffFilters.hospital || staffFilters.networkType))
       const staffProfileModal = reactive({ 
         show: false, staff: null, activeTab: 'activity',
         researchProfile: null, supervisionData: null, leaveBalance: null,
@@ -1271,7 +1274,9 @@ document.addEventListener('DOMContentLoaded', () => {
         getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
         isRoleTaken, getCurrentRoleHolder, handleRoleAssignment, toggleCertificate, availableCertificates,
         addStaffTypeInline,
-        staffView
+        staffView,
+        clearStaffFilters,
+        hasActiveStaffFilters
       }
     }
 
@@ -2225,7 +2230,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       // Use allDepartmentsLookup for name resolution so deactivated depts still resolve
-      const getDepartmentName = (id) => allDepartmentsLookup.value.find(d => d.id === id)?.name || departments.value.find(d => d.id === id)?.name || 'Not assigned'
+      const getDepartmentName = (id) => allDepartmentsLookup.value.find(d => d.id === id)?.name || departments.value.find(d => d.id === id)?.name || ''
       const getDepartmentUnits = (id) => trainingUnits.value.filter(u => u.department_id === id)
       const getDepartmentStaffCount = (id) => medicalStaff.value.filter(s => s.department_id === id).length
 
