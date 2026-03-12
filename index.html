@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>neuMAC | Pulmonology Management System</title>
+    <title>neumAC | Pulmonology Management System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -1538,10 +1538,10 @@
                                     <span v-if="unit.specialty" class="tuc-meta-item"><i class="fas fa-stethoscope"></i>{{ unit.specialty }}</span>
                                 </div>
 
-                                <!-- Occupancy bar -->
+                                <!-- Occupancy — slot-by-slot timeline -->
                                 <div class="tuc-occupancy">
                                     <div class="tuc-occ-row">
-                                        <span class="tuc-occ-label">Occupancy</span>
+                                        <span class="tuc-occ-label">Capacity</span>
                                         <span class="tuc-occ-count"
                                               :class="{
                                                 'tuc-occ-full': getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
@@ -1549,6 +1549,25 @@
                                               }">
                                             {{ getUnitActiveRotationCount(unit.id) }}<span class="tuc-occ-max">/{{ unit.maximum_residents }}</span>
                                         </span>
+                                    </div>
+                                    <!-- Slot list: one row per slot up to maximum_residents -->
+                                    <div class="tuc-slots">
+                                        <!-- Occupied slots -->
+                                        <div v-for="rot in getUnitRotations(unit.id)" :key="rot.id" class="tuc-slot tuc-slot--occupied">
+                                            <span class="tuc-slot-dot tuc-slot-dot--active"></span>
+                                            <span class="tuc-slot-name">{{ getResidentShortName(rot.resident_id) }}</span>
+                                            <span class="tuc-slot-dates">
+                                                {{ new Date(rot.start_date).toLocaleDateString('es-ES', {day:'2-digit',month:'short'}) }}
+                                                →
+                                                {{ new Date(rot.end_date).toLocaleDateString('es-ES', {day:'2-digit',month:'short'}) }}
+                                            </span>
+                                        </div>
+                                        <!-- Free slots -->
+                                        <div v-for="i in Math.max(0, unit.maximum_residents - getUnitActiveRotationCount(unit.id))"
+                                             :key="'free-' + i" class="tuc-slot tuc-slot--free">
+                                            <span class="tuc-slot-dot tuc-slot-dot--free"></span>
+                                            <span class="tuc-slot-name tuc-slot-available">Available slot</span>
+                                        </div>
                                     </div>
                                     <div class="tuc-occ-bar">
                                         <div class="tuc-occ-fill"
@@ -1745,30 +1764,98 @@
                             </select>
                         </div>
                         <div class="departments-grid">
-                            <div v-for="department in filteredDepartments" :key="department.id" class="department-card">
-                                <div class="department-header">
-                                    <div class="department-title"><i class="fas fa-hospital"></i>{{ department.name }}</div>
+                            <div v-for="department in filteredDepartments" :key="department.id" class="dept-card">
+
+                                <!-- ── Header: name + status ── -->
+                                <div class="dept-card-head">
+                                    <div class="dept-card-icon"><i class="fas fa-hospital-alt"></i></div>
+                                    <div class="dept-card-title-block">
+                                        <div class="dept-card-name">{{ department.name }}</div>
+                                        <div class="dept-card-code">{{ department.code }}</div>
+                                    </div>
                                     <span class="status-indicator" :class="'status-' + department.status">{{ department.status }}</span>
                                 </div>
-                                <div class="department-info">
-                                    <div v-if="department.head_of_department_id" class="department-info-row">
-                                        <span class="department-info-label">Head</span>
-                                        <span>{{ getStaffName(department.head_of_department_id) }}</span>
+
+                                <!-- ── Contact person ── -->
+                                <div class="dept-contact-block">
+                                    <div v-if="department.head_of_department?.full_name" class="dept-contact-row">
+                                        <i class="fas fa-user-tie"></i>
+                                        <div class="dept-contact-info">
+                                            <span class="dept-contact-name">{{ department.head_of_department.full_name }}</span>
+                                            <span class="dept-contact-role">Head of Department</span>
+                                        </div>
+                                        <a v-if="department.head_of_department?.professional_email"
+                                           :href="'mailto:' + department.head_of_department.professional_email"
+                                           class="dept-contact-mail" @click.stop title="Send email">
+                                            <i class="fas fa-envelope"></i>
+                                        </a>
                                     </div>
-                                    <div class="department-info-row"><span class="department-info-label">Staff</span><span class="font-semibold">{{ getDepartmentStaffCount(department.id) }}</span></div>
-                                </div>
-                                <div class="department-units">
-                                    <div class="department-units-label">Clinical Units</div>
-                                    <div class="department-units-tags">
-                                        <span v-for="unit in getDepartmentUnits(department.id).slice(0, 4)" :key="unit.id" class="department-unit-tag">{{ unit.unit_name }}</span>
-                                        <span v-if="getDepartmentUnits(department.id).length > 4" class="department-unit-tag">+{{ getDepartmentUnits(department.id).length - 4 }} more</span>
-                                        <span v-if="getDepartmentUnits(department.id).length === 0" class="department-unit-tag na-tag">No units</span>
+                                    <div v-else class="dept-contact-row dept-contact-row--empty">
+                                        <i class="fas fa-user-tie"></i>
+                                        <span>No head assigned</span>
+                                    </div>
+                                    <div v-if="department.contact_email" class="dept-contact-row dept-contact-row--sub">
+                                        <i class="fas fa-at"></i>
+                                        <a :href="'mailto:' + department.contact_email" class="dept-contact-link">{{ department.contact_email }}</a>
+                                    </div>
+                                    <div v-if="department.contact_phone" class="dept-contact-row dept-contact-row--sub">
+                                        <i class="fas fa-phone"></i>
+                                        <a :href="'tel:' + department.contact_phone" class="dept-contact-link">{{ department.contact_phone }}</a>
                                     </div>
                                 </div>
-                                <div class="department-actions">
-                                    <button class="btn-pill btn-pill-edit" @click="editDepartment(department)" v-if="hasPermission('system', 'manage_departments')"><i class="fas fa-edit"></i> Edit</button>
-                                    <button class="btn btn-primary btn-pill department-action-btn" @click="viewDepartmentStaff(department)"><i class="fas fa-users"></i> Staff</button>
-                                    <button class="btn btn-danger btn-pill department-action-btn" @click="deleteDepartment(department)" v-if="hasPermission('system', 'manage_departments')" title="Deactivate department"><i class="fas fa-power-off"></i></button>
+
+                                <!-- ── Resident breakdown ── -->
+                                <div class="dept-residents-block">
+                                    <div class="dept-block-label">Residents</div>
+                                    <div class="dept-res-stats">
+                                        <div class="dept-res-stat">
+                                            <span class="dept-res-num">{{ getDeptResidentStats(department.id).internal }}</span>
+                                            <span class="dept-res-label dept-res-label--int">Internal</span>
+                                        </div>
+                                        <div class="dept-res-stat">
+                                            <span class="dept-res-num">{{ getDeptResidentStats(department.id).rotating }}</span>
+                                            <span class="dept-res-label dept-res-label--rot">Rotating</span>
+                                        </div>
+                                        <div class="dept-res-stat">
+                                            <span class="dept-res-num">{{ getDeptResidentStats(department.id).external }}</span>
+                                            <span class="dept-res-label dept-res-label--ext">External</span>
+                                        </div>
+                                        <div class="dept-res-stat dept-res-stat--total">
+                                            <span class="dept-res-num">{{ getDeptResidentStats(department.id).total }}</span>
+                                            <span class="dept-res-label">Total</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ── Clinical units with live occupancy ── -->
+                                <div class="dept-units-block">
+                                    <div class="dept-block-label">Clinical Units
+                                        <span class="dept-block-count">{{ getDepartmentUnits(department.id).length }}</span>
+                                    </div>
+                                    <div class="dept-units-list">
+                                        <div v-for="unit in getDepartmentUnits(department.id).slice(0,5)" :key="unit.id" class="dept-unit-row">
+                                            <span class="dept-unit-name">{{ unit.unit_name }}</span>
+                                            <span class="dept-unit-occ"
+                                                  :class="{
+                                                      'dept-unit-occ--full': getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
+                                                      'dept-unit-occ--warn': getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) < unit.maximum_residents,
+                                                      'dept-unit-occ--free': getUnitActiveRotationCount(unit.id) === 0
+                                                  }">
+                                                {{ getUnitActiveRotationCount(unit.id) }}/{{ unit.maximum_residents }}
+                                            </span>
+                                        </div>
+                                        <div v-if="getDepartmentUnits(department.id).length > 5" class="dept-unit-more">
+                                            +{{ getDepartmentUnits(department.id).length - 5 }} more units
+                                        </div>
+                                        <div v-if="getDepartmentUnits(department.id).length === 0" class="dept-unit-empty">No units assigned</div>
+                                    </div>
+                                </div>
+
+                                <!-- ── Actions ── -->
+                                <div class="dept-card-actions">
+                                    <button class="rot-action-btn" @click="viewDepartmentStaff(department)" title="View staff"><i class="fas fa-users"></i></button>
+                                    <button class="rot-action-btn" @click="editDepartment(department)" v-if="hasPermission('system', 'manage_departments')" title="Edit"><i class="fas fa-edit"></i></button>
+                                    <button class="rot-action-btn rot-action-btn--danger" @click="deleteDepartment(department)" v-if="hasPermission('system', 'manage_departments')" title="Deactivate"><i class="fas fa-power-off"></i></button>
                                 </div>
                             </div>
                             <div v-if="filteredDepartments.length === 0" class="col-span-full empty-state">
@@ -2719,8 +2806,22 @@
                                 </span>
                             </div>
                             <div class="pd-row"><span class="pd-row-key">Training Year</span><span class="pd-row-val" :class="{'pd-row-na': !staffProfileModal.staff.training_year}">{{ formatTrainingYear(staffProfileModal.staff.training_year) || '—' }}</span></div>
-                            <div class="pd-row" v-if="staffProfileModal.staff.resident_category === 'rotating_other_dept'"><span class="pd-row-key">Home Dept</span><span class="pd-row-val">{{ staffProfileModal.staff.home_department || '—' }}</span></div>
-                            <div class="pd-row" v-if="staffProfileModal.staff.resident_category === 'external_resident'"><span class="pd-row-key">Institution</span><span class="pd-row-val">{{ staffProfileModal.staff.external_institution || '—' }}</span></div>
+                            <div class="pd-row" v-if="staffProfileModal.staff.resident_category === 'rotating_other_dept'">
+                                <span class="pd-row-key">Home Dept</span>
+                                <span class="pd-row-val">{{ getDepartmentName(staffProfileModal.staff.home_department_id) || staffProfileModal.staff.home_department || '—' }}</span>
+                            </div>
+                            <template v-if="staffProfileModal.staff.resident_category === 'external_resident'">
+                                <div class="pd-row"><span class="pd-row-key">Institution</span><span class="pd-row-val">{{ staffProfileModal.staff.external_institution || '—' }}</span></div>
+                                <div class="pd-row" v-if="staffProfileModal.staff.external_contact_name"><span class="pd-row-key">Contact</span><span class="pd-row-val">{{ staffProfileModal.staff.external_contact_name }}</span></div>
+                                <div class="pd-row" v-if="staffProfileModal.staff.external_contact_email">
+                                    <span class="pd-row-key">Contact Email</span>
+                                    <a :href="'mailto:' + staffProfileModal.staff.external_contact_email" class="pd-row-val pd-link">{{ staffProfileModal.staff.external_contact_email }}</a>
+                                </div>
+                                <div class="pd-row" v-if="staffProfileModal.staff.external_contact_phone">
+                                    <span class="pd-row-key">Contact Phone</span>
+                                    <a :href="'tel:' + staffProfileModal.staff.external_contact_phone" class="pd-row-val pd-link">{{ staffProfileModal.staff.external_contact_phone }}</a>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
@@ -3312,13 +3413,32 @@
                                         <div><i class="fas fa-globe"></i><span>External</span></div>
                                     </label>
                                 </div>
+                                <!-- Rotating: link to actual department record -->
                                 <div v-if="medicalStaffModal.form.resident_category === 'rotating_other_dept'" class="mt-3">
-                                    <label class="form-label">Home Department</label>
-                                    <input type="text" class="form-control" v-model="medicalStaffModal.form.home_department" placeholder="e.g., Cardiology">
+                                    <label class="form-label">Home Department <span class="form-hint">— where this resident is based</span></label>
+                                    <select class="form-select" v-model="medicalStaffModal.form.home_department_id">
+                                        <option value="">Select department…</option>
+                                        <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
+                                    </select>
                                 </div>
-                                <div v-if="medicalStaffModal.form.resident_category === 'external_resident'" class="mt-3">
-                                    <label class="form-label">External Institution</label>
-                                    <input type="text" class="form-control" v-model="medicalStaffModal.form.external_institution" placeholder="e.g., University Hospital">
+                                <!-- External: institution + contact person -->
+                                <div v-if="medicalStaffModal.form.resident_category === 'external_resident'" class="mt-3 external-contact-block">
+                                    <div class="form-group">
+                                        <label class="form-label">External Institution</label>
+                                        <input type="text" class="form-control" v-model="medicalStaffModal.form.external_institution" placeholder="e.g., Hospital El Tajo, Madrid">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Contact Person <span class="form-hint">— tutor or coordinator at the sending institution</span></label>
+                                        <input type="text" class="form-control" v-model="medicalStaffModal.form.external_contact_name" placeholder="Full name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Contact Email</label>
+                                        <input type="email" class="form-control" v-model="medicalStaffModal.form.external_contact_email" placeholder="contact@institution.es">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Contact Phone</label>
+                                        <input type="tel" class="form-control" v-model="medicalStaffModal.form.external_contact_phone" placeholder="+34 …">
+                                    </div>
                                 </div>
                             </div>
 
