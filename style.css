@@ -1148,6 +1148,106 @@ a { color: var(--blue); text-decoration: none; }
 .table-staff {
   table-layout: fixed;
 }
+
+/* ── Staff view toggle ──────────────────────────────────────────── */
+.staff-view-toggle {
+  display: flex; gap: 6px; align-items: center;
+  padding: 10px 0 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0;
+}
+
+/* ── Staff compact card grid ─────────────────────────────────────── */
+.staff-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  padding: 14px 0;
+}
+
+/* Individual staff card */
+.scc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 14px 10px;
+  cursor: pointer;
+  transition: box-shadow var(--t), border-color var(--t), transform var(--t);
+  display: flex; flex-direction: column; gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+.scc::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 3px 0 0 3px;
+  background: var(--ok);
+  opacity: 0; transition: opacity var(--t);
+}
+.scc:hover {
+  box-shadow: 0 4px 20px rgba(45,122,255,.1);
+  border-color: var(--blue-mid);
+  transform: translateY(-1px);
+}
+.scc:hover::before { opacity: 1; }
+.scc--inactive { opacity: .5; }
+.scc--leave::before { background: var(--warn); opacity: 1; }
+
+/* Avatar + status dot */
+.scc-avatar-wrap { position: relative; display: inline-flex; align-self: flex-start; }
+.scc-avatar {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--ink-2), var(--ink-3));
+}
+.scc-avatar--attending_physician { background: linear-gradient(135deg, #0d9e6e, #065f46); }
+.scc-avatar--medical_resident    { background: linear-gradient(135deg, #2d7aff, #1d4ed8); }
+.scc-avatar--fellow              { background: linear-gradient(135deg, #0891b2, #0e7490); }
+.scc-avatar--nurse_practitioner  { background: linear-gradient(135deg, #d97706, #92400e); }
+
+.scc-status-dot {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+.scc-dot--active   { background: var(--ok); }
+.scc-dot--on_leave { background: var(--warn); }
+.scc-dot--inactive { background: var(--neutral); }
+
+/* Card body */
+.scc-info { min-width: 0; }
+.scc-name {
+  font-size: 13.5px; font-weight: 600;
+  color: var(--text-1); letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 5px;
+}
+.scc-meta-row {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.scc-type-badge { font-size: 9.5px !important; padding: 2px 6px !important; }
+.scc-cat-pill {
+  font-size: 9px; font-weight: 700; letter-spacing: .05em;
+  padding: 1px 6px; border-radius: 4px; text-transform: uppercase;
+}
+.scc-cat--ext { background: rgba(251,191,36,.15); color: #d97706; }
+.scc-cat--int { background: rgba(13,158,110,.12); color: #0d9e6e; }
+
+.scc-dept {
+  font-size: 11px; color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.scc-dept i { margin-right: 3px; opacity: .6; }
+
+.scc-rotation { min-height: 22px; }
+
+/* Quick actions row */
+.scc-actions {
+  display: flex; gap: 5px; justify-content: flex-end;
+  padding-top: 6px; border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
 .table thead th {
   background: var(--surface-2); padding: 9px 14px; text-align: left;
   font-family: var(--font-data);
