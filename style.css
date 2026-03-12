@@ -1149,34 +1149,49 @@ a { color: var(--blue); text-decoration: none; }
   table-layout: fixed;
 }
 
-/* ── Staff compact — horizontal row list ──────────────────────── */
-/* ── Staff compact — horizontal row list (same density as rot-row) ── */
-.scc-list {
-  padding: 6px 0 4px;
-}
-
-.scc-row {
+/* ═══════════════════════════════════════════════════════════════
+   STAFF COMPACT — card grid
+   Each card: horizontal layout — avatar | body (3 text rows) | actions
+   2-column grid keeps density high without looking like a raw list
+═══════════════════════════════════════════════════════════════ */
+.scc-grid {
   display: grid;
-  /* avatar | name | type | dept | rotation | actions */
-  grid-template-columns: 32px 1fr 90px 120px 1fr 56px;
-  align-items: center;
-  gap: 0 12px;
-  padding: 7px 12px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background var(--t);
-  position: relative;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 8px;
+  padding: 12px 0 8px;
 }
-.scc-row:last-child { border-bottom: none; }
-.scc-row:hover { background: var(--blue-lt); }
-.scc-row--inactive { opacity: .5; }
-.scc-row--leave { border-left: 3px solid var(--warn); padding-left: 9px; }
 
-/* ① Avatar tile */
-.scc-row-avatar {
-  width: 28px; height: 28px; border-radius: 7px;
+/* Card shell */
+.scc {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 10px 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: box-shadow var(--t), border-color var(--t);
+  position: relative;
+  overflow: hidden;
+}
+/* Left accent blade — appears on hover or for on-leave */
+.scc::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 3px 0 0 3px;
+  background: var(--blue); opacity: 0;
+  transition: opacity var(--t);
+}
+.scc:hover { box-shadow: 0 2px 12px rgba(45,122,255,.10); border-color: var(--blue-mid); }
+.scc:hover::before { opacity: 1; }
+.scc--inactive { opacity: .5; }
+.scc--leave::before { background: var(--warn); opacity: 1; }
+
+/* Avatar tile — compact 34×34 */
+.scc-avatar {
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; color: #fff; flex-shrink: 0;
+  font-size: 13px; color: #fff;
   position: relative;
   background: linear-gradient(135deg, #334155, #475569);
 }
@@ -1185,62 +1200,56 @@ a { color: var(--blue); text-decoration: none; }
 .scc-avatar--fellow              { background: linear-gradient(135deg, #0891b2, #0e7490); }
 .scc-avatar--nurse_practitioner  { background: linear-gradient(135deg, #d97706, #92400e); }
 
-/* Status dot on avatar */
-.scc-row-dot {
+/* Status dot */
+.scc-dot {
   position: absolute; bottom: -2px; right: -2px;
-  width: 8px; height: 8px; border-radius: 50%;
-  border: 1.5px solid var(--surface);
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 2px solid var(--surface);
 }
 .scc-dot--active   { background: var(--ok); }
 .scc-dot--on_leave { background: var(--warn); }
 .scc-dot--inactive { background: #94a3b8; }
 
-/* ② Name */
-.scc-row-name {
-  display: flex; align-items: center; gap: 5px;
-  min-width: 0;
-}
-.scc-row-fullname {
+/* Body — all text, fills remaining width */
+.scc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+/* Row 1: name */
+.scc-name-row { display: flex; align-items: center; gap: 5px; }
+.scc-name {
   font-size: 13px; font-weight: 600; color: var(--text-1);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  letter-spacing: -.01em;
+  letter-spacing: -.01em; flex: 1; min-width: 0;
 }
-.scc-row-warn {
-  color: var(--warn); font-size: 11px; flex-shrink: 0;
-  opacity: .85; cursor: help;
-}
+.scc-warn { color: var(--warn); font-size: 10.5px; flex-shrink: 0; cursor: help; opacity: .85; }
 
-/* ③ Type + Int/Ext */
-.scc-row-type {
-  display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
+/* Row 2: type badge + int/ext + department inline */
+.scc-meta {
+  display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; overflow: hidden;
 }
-.scc-type-badge { font-size: 9.5px !important; padding: 2px 6px !important; }
+.scc-type-badge { font-size: 9px !important; padding: 1px 6px !important; flex-shrink: 0; }
 .scc-cat-pill {
-  font-size: 8.5px; font-weight: 700; letter-spacing: .04em;
-  padding: 1px 5px; border-radius: 3px; text-transform: uppercase;
-  flex-shrink: 0;
+  font-size: 8px; font-weight: 700; letter-spacing: .04em;
+  padding: 1px 4px; border-radius: 3px; text-transform: uppercase; flex-shrink: 0;
 }
 .scc-cat--ext { background: rgba(251,191,36,.15); color: #d97706; }
 .scc-cat--int { background: rgba(13,158,110,.12); color: #0d9e6e; }
-
-/* ④ Department */
-.scc-row-dept {
-  font-size: 12px; color: var(--text-2);
+.scc-dept-text {
+  font-size: 11px; color: var(--text-3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ⑤ Rotation */
-.scc-row-rotation { min-width: 0; }
+/* Row 3: rotation */
+.scc-rotation-row { min-height: 18px; display: flex; align-items: center; }
 .scc-no-rotation {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 10.5px; font-weight: 600; color: var(--warn);
-  opacity: .75;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600; color: var(--warn); opacity: .7;
 }
-.scc-no-rotation i { font-size: 9px; }
+.scc-no-rotation i { font-size: 8px; }
 
-/* ⑥ Actions */
-.scc-row-actions {
-  display: flex; gap: 4px; justify-content: flex-end;
+/* Action buttons — stacked on far right */
+.scc-actions {
+  display: flex; flex-direction: column; gap: 3px;
+  align-self: center; flex-shrink: 0;
 }
 
 /* Clear-filters pill */
