@@ -69,9 +69,6 @@
 
             <!-- Middle: NeuomoCare product identity -->
             <div class="lc-product">
-                <div class="lc-lungs-icon">
-                    <i class="fas fa-lungs"></i>
-                </div>
                 <div class="lc-product-name">Neumo<span>Care</span></div>
                 <div class="lc-product-sub">Pulmonology Management System</div>
             </div>
@@ -153,10 +150,30 @@
                aria-label="Main navigation">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <i class="fas fa-lungs"></i>
-                    <span v-if="!sidebarCollapsed">
-                        <span class="logo-text-main">Neumo</span><span class="logo-text-sub">Care</span>
-                    </span>
+                    <svg v-if="!sidebarCollapsed" viewBox="0 0 120 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="sb-neumax-svg" aria-label="neumAC">
+                        <defs>
+                            <linearGradient id="sbng" x1="0" y1="0" x2="120" y2="0" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#48cae4"/>
+                                <stop offset="50%" stop-color="#4d9aff"/>
+                                <stop offset="100%" stop-color="#90e0ef"/>
+                            </linearGradient>
+                        </defs>
+                        <text x="1" y="23" font-family="'DM Sans', sans-serif" font-weight="700"
+                              font-size="24" fill="url(#sbng)" letter-spacing="-0.8">neum</text>
+                        <text x="79" y="23" font-family="'DM Sans', sans-serif" font-weight="800"
+                              font-size="24" fill="url(#sbng)" letter-spacing="-0.8">AC</text>
+                    </svg>
+                    <!-- Collapsed: just the "n" monogram -->
+                    <svg v-if="sidebarCollapsed" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="sb-neumax-mono" aria-label="n">
+                        <defs>
+                            <linearGradient id="sbmono" x1="0" y1="0" x2="30" y2="0" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#48cae4"/>
+                                <stop offset="100%" stop-color="#4d9aff"/>
+                            </linearGradient>
+                        </defs>
+                        <text x="3" y="23" font-family="'DM Sans', sans-serif" font-weight="800"
+                              font-size="24" fill="url(#sbmono)">n</text>
+                    </svg>
                 </div>
                 <button class="sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed"
                         :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
@@ -194,7 +211,7 @@
                                @click.prevent="switchView('oncall_schedule'); mobileMenuOpen = false"
                                v-if="hasPermission('oncall_schedule', 'read')"
                                :aria-current="currentView === 'oncall_schedule' ? 'page' : null">
-                                <i class="fas fa-phone-medical"></i>
+                                <i class="fas fa-moon"></i>
                                 <span v-if="!sidebarCollapsed">On-call</span>
                             </a>
                         </li>
