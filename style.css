@@ -17,7 +17,7 @@
    ─ Live stats sidebar: all metric/detail text scaled up
    ─ Rotation dots: tooltip font bumped; dot size increased
    ─ All responsive breakpoints re-tuned to match new scale
-=================================-=====================-========== */
+=================================-=============================== */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500;600&display=swap');
 
@@ -1149,104 +1149,108 @@ a { color: var(--blue); text-decoration: none; }
   table-layout: fixed;
 }
 
-/* ── Staff view toggle ──────────────────────────────────────────── */
-.staff-view-toggle {
-  display: flex; gap: 6px; align-items: center;
-  padding: 10px 0 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0;
+/* ── Staff compact — horizontal row list ──────────────────────── */
+/* ── Staff compact — horizontal row list (same density as rot-row) ── */
+.scc-list {
+  padding: 6px 0 4px;
 }
 
-/* ── Staff compact card grid ─────────────────────────────────────── */
-.staff-compact-grid {
+.scc-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
-  padding: 14px 0;
-}
-
-/* Individual staff card */
-.scc {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 14px 10px;
+  /* avatar | name | type | dept | rotation | actions */
+  grid-template-columns: 32px 1fr 90px 120px 1fr 56px;
+  align-items: center;
+  gap: 0 12px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: box-shadow var(--t), border-color var(--t), transform var(--t);
-  display: flex; flex-direction: column; gap: 8px;
+  transition: background var(--t);
   position: relative;
-  overflow: hidden;
 }
-.scc::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px; border-radius: 3px 0 0 3px;
-  background: var(--ok);
-  opacity: 0; transition: opacity var(--t);
-}
-.scc:hover {
-  box-shadow: 0 4px 20px rgba(45,122,255,.1);
-  border-color: var(--blue-mid);
-  transform: translateY(-1px);
-}
-.scc:hover::before { opacity: 1; }
-.scc--inactive { opacity: .5; }
-.scc--leave::before { background: var(--warn); opacity: 1; }
+.scc-row:last-child { border-bottom: none; }
+.scc-row:hover { background: var(--blue-lt); }
+.scc-row--inactive { opacity: .5; }
+.scc-row--leave { border-left: 3px solid var(--warn); padding-left: 9px; }
 
-/* Avatar + status dot */
-.scc-avatar-wrap { position: relative; display: inline-flex; align-self: flex-start; }
-.scc-avatar {
-  width: 38px; height: 38px; border-radius: 10px;
+/* ① Avatar tile */
+.scc-row-avatar {
+  width: 28px; height: 28px; border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px; color: #fff; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--ink-2), var(--ink-3));
+  font-size: 12px; color: #fff; flex-shrink: 0;
+  position: relative;
+  background: linear-gradient(135deg, #334155, #475569);
 }
 .scc-avatar--attending_physician { background: linear-gradient(135deg, #0d9e6e, #065f46); }
 .scc-avatar--medical_resident    { background: linear-gradient(135deg, #2d7aff, #1d4ed8); }
 .scc-avatar--fellow              { background: linear-gradient(135deg, #0891b2, #0e7490); }
 .scc-avatar--nurse_practitioner  { background: linear-gradient(135deg, #d97706, #92400e); }
 
-.scc-status-dot {
+/* Status dot on avatar */
+.scc-row-dot {
   position: absolute; bottom: -2px; right: -2px;
-  width: 10px; height: 10px; border-radius: 50%;
-  border: 2px solid var(--surface);
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1.5px solid var(--surface);
 }
 .scc-dot--active   { background: var(--ok); }
 .scc-dot--on_leave { background: var(--warn); }
-.scc-dot--inactive { background: var(--neutral); }
+.scc-dot--inactive { background: #94a3b8; }
 
-/* Card body */
-.scc-info { min-width: 0; }
-.scc-name {
-  font-size: 13.5px; font-weight: 600;
-  color: var(--text-1); letter-spacing: -.01em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-bottom: 5px;
+/* ② Name */
+.scc-row-name {
+  display: flex; align-items: center; gap: 5px;
+  min-width: 0;
 }
-.scc-meta-row {
-  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
-  margin-bottom: 4px;
+.scc-row-fullname {
+  font-size: 13px; font-weight: 600; color: var(--text-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: -.01em;
+}
+.scc-row-warn {
+  color: var(--warn); font-size: 11px; flex-shrink: 0;
+  opacity: .85; cursor: help;
+}
+
+/* ③ Type + Int/Ext */
+.scc-row-type {
+  display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
 }
 .scc-type-badge { font-size: 9.5px !important; padding: 2px 6px !important; }
 .scc-cat-pill {
-  font-size: 9px; font-weight: 700; letter-spacing: .05em;
-  padding: 1px 6px; border-radius: 4px; text-transform: uppercase;
+  font-size: 8.5px; font-weight: 700; letter-spacing: .04em;
+  padding: 1px 5px; border-radius: 3px; text-transform: uppercase;
+  flex-shrink: 0;
 }
 .scc-cat--ext { background: rgba(251,191,36,.15); color: #d97706; }
 .scc-cat--int { background: rgba(13,158,110,.12); color: #0d9e6e; }
 
-.scc-dept {
-  font-size: 11px; color: var(--text-3);
+/* ④ Department */
+.scc-row-dept {
+  font-size: 12px; color: var(--text-2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.scc-dept i { margin-right: 3px; opacity: .6; }
 
-.scc-rotation { min-height: 22px; }
+/* ⑤ Rotation */
+.scc-row-rotation { min-width: 0; }
+.scc-no-rotation {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; font-weight: 600; color: var(--warn);
+  opacity: .75;
+}
+.scc-no-rotation i { font-size: 9px; }
 
-/* Quick actions row */
-.scc-actions {
-  display: flex; gap: 5px; justify-content: flex-end;
-  padding-top: 6px; border-top: 1px solid var(--border);
-  margin-top: 2px;
+/* ⑥ Actions */
+.scc-row-actions {
+  display: flex; gap: 4px; justify-content: flex-end;
+}
+
+/* Clear-filters pill */
+.btn-pill--clear {
+  background: rgba(239,68,68,.08) !important;
+  color: #ef4444 !important;
+  border-color: rgba(239,68,68,.2) !important;
+}
+.btn-pill--clear:hover {
+  background: rgba(239,68,68,.15) !important;
 }
 .table thead th {
   background: var(--surface-2); padding: 9px 14px; text-align: left;
