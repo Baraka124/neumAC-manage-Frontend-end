@@ -211,23 +211,24 @@ a { color: var(--blue); text-decoration: none; }
 }
 
 .sidebar-logo {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 17px; font-weight: 700; color: #fff;  /* was 16px */
-  white-space: nowrap; overflow: hidden; letter-spacing: -.03em;
-  font-family: var(--font-ui);
+  display: flex; align-items: center;
+  white-space: nowrap; overflow: hidden;
 }
-.sidebar-logo i {
-  font-size: 21px; color: #4d9aff;  /* was 19px */
-  filter: drop-shadow(0 0 8px rgba(77,154,255,.65));
+/* neumAC SVG wordmark — sized to fit header height comfortably */
+.sb-neumax-svg {
+  height: 22px;      /* tight, proportional — not too big */
+  width: auto;
+  display: block;
   flex-shrink: 0;
-  animation: lungPulse 3s ease-in-out infinite;
+  /* Subtle glow on the gradient letters */
+  filter: drop-shadow(0 0 8px rgba(77,154,255,.25));
 }
-@keyframes lungPulse {
-  0%,100% { filter: drop-shadow(0 0 6px rgba(77,154,255,.5)); }
-  50%      { filter: drop-shadow(0 0 14px rgba(77,154,255,.85)); }
+/* Collapsed state: just the "n" monogram */
+.sb-neumax-mono {
+  height: 26px; width: 26px;
+  display: block;
+  filter: drop-shadow(0 0 6px rgba(77,154,255,.35));
 }
-.sidebar-logo .logo-text-main { color: #fff; font-weight: 700; }
-.sidebar-logo .logo-text-sub  { color: rgba(255,255,255,.38); font-weight: 400; font-size: 13.5px; letter-spacing: 0; }
 
 .sidebar-toggle {
   background: rgba(255,255,255,.04);
@@ -246,7 +247,7 @@ a { color: var(--blue); text-decoration: none; }
 /* ── Nav scroll area ──────────────────────────────────────── */
 .sidebar-nav {
   flex: 1;
-  padding: 8px 10px 12px;
+  padding: 6px 8px 12px;    /* tight horizontal — items use their own padding */
   overflow-y: auto; overflow-x: hidden;
   position: relative; z-index: 2;
 }
@@ -263,21 +264,19 @@ a { color: var(--blue); text-decoration: none; }
 /* The section title is the ANCHOR — it must be clearly smaller
    and more subdued than the items, acting as a label not a heading */
 .sidebar-section-title {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .13em;
-  /* Top padding creates the visual gap between sections.
-     Bottom padding keeps items tight under their label.      */
-  padding: 20px 6px 5px;
+  padding: 16px 4px 4px;
   white-space: nowrap; overflow: hidden;
   display: flex; align-items: center; gap: 8px;
-  opacity: .45;                          /* Subdued — labels, not headings */
+  opacity: .45;
 }
 
 /* First section needs less top space (sits under logo) */
 .sidebar-section:first-child .sidebar-section-title {
-  padding-top: 10px;
+  padding-top: 8px;
 }
 
 /* Thin full-width rule before each section title (except first)
@@ -307,17 +306,16 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ── Nav link ─────────────────────────────────────────────── */
 .sidebar-menu-link {
-  display: flex; align-items: center; gap: 11px;
-  padding: 9px 12px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
   border-radius: 8px;
-  /* Inactive items are clearly dim — creates contrast with active */
   color: rgba(255,255,255,.52);
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   transition: background var(--t), color var(--t), opacity var(--t);
   white-space: nowrap; overflow: hidden;
   margin-bottom: 1px;
-  min-height: 38px;
+  min-height: 36px;
   position: relative;
   cursor: pointer;
   letter-spacing: -.01em;
@@ -325,10 +323,10 @@ a { color: var(--blue); text-decoration: none; }
 
 /* Icon — slightly dimmer than text so text reads first */
 .sidebar-menu-link i {
-  font-size: 14px; width: 18px; text-align: center;
+  font-size: 13px; width: 16px; text-align: center;
   flex-shrink: 0;
   transition: color var(--t), transform var(--t);
-  opacity: .7;
+  opacity: .65;
 }
 
 /* Per-section icon accent colors */
@@ -2279,18 +2277,8 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 /* ── NeuomoCare product identity ── */
 .lc-product {
   text-align: center;
-  margin-bottom: 24px;
-}
-.lc-lungs-icon {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 56px; height: 56px; border-radius: 16px;
-  background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%);
-  box-shadow: 0 8px 24px rgba(0,119,182,.35), 0 0 0 4px rgba(0,119,182,.08);
-  margin-bottom: 12px;
-}
-.lc-lungs-icon i {
-  font-size: 24px; color: #fff;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,.2));
+  margin-bottom: 20px;
+  padding-top: 4px;
 }
 .lc-product-name {
   font-family: var(--font-ui);
@@ -4410,23 +4398,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 
 /* [stale sidebar block removed — see main sidebar rules above] */
 
-/* Logo — more breathing room, refined */
-.sidebar-header {
-  padding: 0 14px !important;
-  height: 54px !important;
-  border-bottom: 1px solid rgba(255,255,255,.05) !important;
-}
-.sidebar-logo {
-  font-size: 16px !important; font-weight: 800 !important;
-  letter-spacing: -.03em !important;
-}
-.sidebar-logo i {
-  font-size: 18px !important;
-  filter: drop-shadow(0 0 8px rgba(45,122,255,.6)) !important;
-}
-
-/* Nav padding */
-.sidebar-nav { padding: 6px 0 !important; }
+/* [stale logo override removed — see .sidebar-logo / .sb-neumax-svg above] */
 
 /* User role text */
 .user-role { color: rgba(255,255,255,.35) !important; }
