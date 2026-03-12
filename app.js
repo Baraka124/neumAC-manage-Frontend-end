@@ -1035,9 +1035,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form.professional_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.professional_email)) {
           setErr('staff', 'professional_email', 'Invalid email address'); ok = false
         }
-        if (isResidentType(form.staff_type) && !form.training_year?.trim()) {
-          setErr('staff', 'training_year', 'Training year is required for residents'); ok = false
-        }
         return ok
       }
 
@@ -2451,6 +2448,79 @@ document.addEventListener('DOMContentLoaded', () => {
         return parts.length > 1 ? `${parts[0]} ${parts[parts.length-1][0]}.` : s.full_name
       }
 
+      // ── Timeline view state ─────────────────────────────────────────────
+      const trainingUnitView    = ref('timeline')  // 'timeline' | 'detail'
+      const trainingUnitHorizon = ref(6)            // months to show: 3 | 6 | 12
+
+      // Generate the array of month objects for the timeline header
+      const getTimelineMonths = (horizonMonths) => {
+        const today = new Date()
+        const months = []
+        for (let i = 0; i < horizonMonths; i++) {
+          const d = new Date(today.getFullYear(), today.getMonth() + i, 1)
+          months.push({
+            key:       `${d.getFullYear()}-${d.getMonth()}`,
+            label:     d.toLocaleDateString('es-ES', { month: 'short', year: i === 0 || d.getMonth() === 0 ? '2-digit' : undefined }),
+            year:      d.getFullYear(),
+            month:     d.getMonth(),   // 0-based
+            isCurrent: i === 0
+          })
+        }
+        return months
+      }
+
+      // For each slot (1..max), compute monthly status across the horizon
+      const getUnitSlots = (unitId, maxResidents, horizonMonths) => {
+        const unitRots = rotations.value.filter(r =>
+          r.training_unit_id === unitId && ['active','scheduled'].includes(r.rotation_status)
+        ).sort((a,b) => new Date(a.start_date) - new Date(b.start_date))
+
+        const months = getTimelineMonths(horizonMonths)
+        const today  = new Date()
+
+        return Array.from({ length: maxResidents }, (_, slotIdx) => {
+          const rot = unitRots[slotIdx] // one rotation per slot (simplified: sorted by start)
+          const residentId   = rot?.resident_id   || null
+          const residentName = rot ? getResidentShortName(rot.resident_id) : null
+          const initials     = residentName
+            ? residentName.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase()
+            : null
+
+          const monthData = months.map(m => {
+            const mStart = new Date(m.year, m.month, 1)
+            const mEnd   = new Date(m.year, m.month + 1, 0)   // last day of month
+
+            let status  = 'free'
+            let tooltip = `Slot ${slotIdx + 1} — ${m.label}: Available`
+            let showName = false
+
+            if (rot) {
+              const rotStart = new Date(rot.start_date)
+              const rotEnd   = new Date(rot.end_date)
+              const overlaps = rotStart <= mEnd && rotEnd >= mStart
+
+              if (overlaps) {
+                const fullMonth = rotStart <= mStart && rotEnd >= mEnd
+                status   = fullMonth ? 'occupied' : 'partial'
+                showName = fullMonth
+                tooltip  = `${residentName} · ${rotStart.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})} → ${rotEnd.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})}`
+              }
+            }
+
+            return { key: m.key, label: m.label, isCurrent: m.isCurrent, status, tooltip, showName }
+          })
+
+          return { slotIdx, residentId, residentName, initials, months: monthData }
+        })
+      }
+
+      // Days until a rotation ends (for "Free in Xd" chip)
+      const getDaysUntilFree = (endDate) => {
+        const today = new Date(); today.setHours(0,0,0,0)
+        const end   = new Date(endDate)
+        return Math.ceil((end - today) / (1000 * 60 * 60 * 24))
+      }
+
       const loadTrainingUnits = async () => {
         try { trainingUnits.value = await API.getTrainingUnits() }
         catch { showToast('Error', 'Failed to load training units', 'error') }
@@ -2555,7 +2625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit }
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree }
     }
 
     // ============ 6.9 useComms ============
@@ -3488,9 +3558,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── Academic Degrees ────────────────────────────────────────────────
+        const ACADEMIC_DEGREES_FALLBACK = [
+          { id: 'LMed',     name: 'Licenciado en Medicina',                abbreviation: 'LMed'     },
+          { id: 'GMed',     name: 'Grado en Medicina',                     abbreviation: 'GMed'     },
+          { id: 'MIR',      name: 'Médico Interno Residente',              abbreviation: 'MIR'      },
+          { id: 'PhD',      name: 'Doctor en Medicina (PhD)',              abbreviation: 'PhD'      },
+          { id: 'MU',       name: 'Máster Universitario',                  abbreviation: 'MU'       },
+          { id: 'EspNeum',  name: 'Especialista en Neumología',            abbreviation: 'Esp-Neum' },
+          { id: 'DUE',      name: 'Diplomado Universitario en Enfermería', abbreviation: 'DUE'      },
+          { id: 'GEnf',     name: 'Grado en Enfermería',                   abbreviation: 'GEnf'     },
+          { id: 'TSID',     name: 'Técnico Superior Imagen Diagnóstica',   abbreviation: 'TSID'     },
+          { id: 'LFarm',    name: 'Licenciado en Farmacia',                abbreviation: 'LFarm'    },
+        ]
+
         const loadAcademicDegrees = async () => {
-          try { academicDegrees.value = await API.getAcademicDegrees() }
-          catch { console.error('Failed to load academic degrees') }
+          try {
+            const result = await API.getAcademicDegrees()
+            // Use DB results if we got real UUIDs back; fall back to hardcoded list otherwise
+            academicDegrees.value = (result && result.length > 0 && result[0].id?.includes('-'))
+              ? result
+              : ACADEMIC_DEGREES_FALLBACK
+          } catch (e) {
+            console.warn('Academic degrees API failed, using fallback:', e.message)
+            academicDegrees.value = ACADEMIC_DEGREES_FALLBACK
+          }
         }
 
         // Staff Types manager modal (lives in System Settings)
@@ -3612,6 +3703,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
           getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
+        trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
           editTrainingUnit, deleteTrainingUnit, saveTrainingUnit,
           openUnitClinicians: (unit) => openUnitClinicians(unit, medicalStaff.value),
           saveUnitClinicians,
