@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER ==-=-=-----======= -->
+    <!-- ============ TOAST CONTAINER ==-=-=--======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -633,6 +633,17 @@
                             <div class="db-greeting-title">
                                 Good morning, <span>{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Doctor' }}</span>
                             </div>
+                            <div class="db-greeting-subtitle">{{ formatDate(currentTime, 'long') || 'Today' }}</div>
+                            <!-- Situational awareness items -->
+                            <div v-if="situationItems && situationItems.length > 0" class="db-situation-row">
+                                <div v-for="item in situationItems" :key="item.text"
+                                     class="situation-item"
+                                     @click="switchView(item.action, item.actionFilter || {})">
+                                    <i class="fas" :class="item.icon"></i>
+                                    <span v-html="item.text"></span>
+                                    <span class="sit-action"><i class="fas fa-arrow-right"></i></span>
+                                </div>
+                            </div>
                         </div>
                         <div class="quick-actions-bar" style="margin-bottom:0; flex:0 1 auto;">
                             <button class="action-btn" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')"><i class="fas fa-user-plus"></i> Add Staff</button>
@@ -663,7 +674,11 @@
                             <div class="stat-main-value">{{ systemStats.activeRotations || 0 }}</div>
                             <div class="stat-breakdown">
                                 <div class="breakdown-item"><span class="label">Currently Active</span><span class="value">{{ systemStats.activeRotations || 0 }}</span></div>
-                                <div class="breakdown-item"><span class="label">Ending This Week</span><span class="value">{{ systemStats.endingThisWeek || 0 }}</span><span class="status-indicator status-busy">Alert</span></div>
+                                <div class="breakdown-item" style="cursor:pointer" @click="switchView('resident_rotations', { rotationStatus: 'active' })" title="View active rotations">
+                                    <span class="label">Ending This Week</span>
+                                    <span class="value">{{ systemStats.endingThisWeek || 0 }}</span>
+                                    <span class="status-indicator status-busy">Alert</span>
+                                </div>
                                 <div class="breakdown-item"><span class="label">Starting Next Week</span><span class="value">{{ systemStats.startingNextWeek || 0 }}</span></div>
                             </div>
                         </div>
@@ -755,6 +770,24 @@
 
                 <!-- ============ MEDICAL STAFF VIEW ============ -->
                 <div v-if="currentView === 'medical_staff'">
+                    <!-- Breadcrumb — shows filter context if navigated from dept -->
+                    <nav class="breadcrumb" v-if="staffFilters.department || staffFilters.residentCategory">
+                        <span class="breadcrumb-link" @click="switchView('department_management')">
+                            <i class="fas fa-sitemap" style="font-size:10px"></i> Departments
+                        </span>
+                        <span class="breadcrumb-sep">›</span>
+                        <span class="breadcrumb-item active">Medical Staff</span>
+                        <template v-if="staffFilters.residentCategory">
+                            <span class="breadcrumb-sep">›</span>
+                            <span class="breadcrumb-item active" :style="{color: staffFilters.residentCategory==='external_resident' ? 'var(--cat-external)' : staffFilters.residentCategory==='rotating_other_dept' ? 'var(--cat-rotating)' : 'var(--cat-internal)'}">
+                                {{ staffFilters.residentCategory === 'external_resident' ? 'External' : staffFilters.residentCategory === 'rotating_other_dept' ? 'Rotating' : 'Internal' }}
+                            </span>
+                        </template>
+                        <button @click="staffFilters.department = ''; staffFilters.residentCategory = ''"
+                                style="margin-left:8px;background:none;border:none;color:var(--text-4);cursor:pointer;font-size:11px">
+                            Clear filter ×
+                        </button>
+                    </nav>
                     <div class="card mb-6">
                         <div class="card-header">
                             <div class="card-title"><i class="fas fa-stethoscope"></i> Medical Staff</div>
@@ -772,6 +805,14 @@
                         </div>
                         <div class="filter-bar">
                             <input type="text" class="form-control" v-model="staffFilters.search" placeholder="Search name…" aria-label="Search staff">
+                            <!-- Active category filter chip from dept cross-nav -->
+                            <span v-if="staffFilters.residentCategory" class="nav-context-chip"
+                                  @click="staffFilters.residentCategory = ''"
+                                  :style="{background: staffFilters.residentCategory === 'external_resident' ? 'var(--violet-lt)' : staffFilters.residentCategory === 'rotating_other_dept' ? 'var(--partial-lt)' : 'var(--ok-lt)', borderColor: 'transparent', color: staffFilters.residentCategory === 'external_resident' ? 'var(--cat-external)' : staffFilters.residentCategory === 'rotating_other_dept' ? 'var(--cat-rotating)' : 'var(--cat-internal)'}">
+                                <i class="fas fa-filter"></i>
+                                {{ staffFilters.residentCategory === 'external_resident' ? 'External Residents' : staffFilters.residentCategory === 'rotating_other_dept' ? 'Rotating Residents' : 'Internal Residents' }}
+                                &nbsp;×
+                            </span>
                             <select class="form-select" v-model="staffFilters.staffType">
                                 <option value="">All Types</option>
                                 <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
@@ -801,7 +842,12 @@
                              COMPACT VIEW — card grid, same language as on-call/rotations
                              ══════════════════════════════════════════════ -->
                         <!-- COMPACT VIEW — card grid, 2 columns, space-efficient -->
-                        <div v-if="staffView === 'compact'" class="scc-grid">
+                        <div v-if="staffView === 'compact'">
+                            <!-- Skeleton loading -->
+                            <div v-if="loading" class="scc-grid" style="pointer-events:none;opacity:0.5">
+                                <div v-for="i in 6" :key="i" class="skeleton-card" style="height:140px"></div>
+                            </div>
+                            <div v-else class="scc-grid">
 
                             <div v-for="staff in filteredMedicalStaff" :key="staff.id"
                                  class="scc"
@@ -841,11 +887,24 @@
                                         <span class="badge scc-type-badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffTypeShortFn(staff.staff_type) }}</span>
                                         <span v-if="staff.resident_category" class="scc-cat-pill"
                                               :class="staff.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'">
-                                            {{ staff.resident_category === 'external_resident' ? 'Ext' : 'Int' }}
+                                            {{ staff.resident_category === 'external_resident' ? 'Ext' : staff.resident_category === 'rotating_other_dept' ? 'Rot' : 'Int' }}
                                         </span>
                                         <span v-if="getDepartmentName(staff.department_id)" class="scc-dept-text">
                                             · {{ getDepartmentName(staff.department_id) }}
                                         </span>
+                                    </div>
+                                    <!-- External contact (shown only for external residents) -->
+                                    <div v-if="staff.resident_category === 'external_resident' && staff.external_contact_name" class="scc-ext-row">
+                                        <i class="fas fa-link" style="font-size:9px"></i>
+                                        <span>{{ staff.external_contact_name }}</span>
+                                        <a v-if="staff.external_contact_email" :href="'mailto:' + staff.external_contact_email"
+                                           @click.stop style="margin-left:4px" title="Email contact">
+                                            <i class="fas fa-envelope" style="font-size:9px"></i>
+                                        </a>
+                                        <a v-if="staff.external_contact_phone" :href="'tel:' + staff.external_contact_phone"
+                                           @click.stop style="margin-left:2px" title="Call contact">
+                                            <i class="fas fa-phone" style="font-size:9px"></i>
+                                        </a>
                                     </div>
 
                                     <!-- Row 3: rotation chip OR unassigned warning for residents -->
@@ -885,7 +944,8 @@
                                 <i class="fas fa-user-md empty-state-icon"></i>
                                 <div class="empty-state-title">No staff found</div>
                             </div>
-                        </div>
+                            </div><!-- end v-else scc-grid -->
+                        </div><!-- end compact wrapper -->
 
                         <!-- ══════════════════════════════════════════════
                              TABLE VIEW — cleaned up, proportional columns
@@ -1181,6 +1241,14 @@
 
                 <!-- ============ RESIDENT ROTATIONS VIEW (ENHANCED) ============ -->
                 <div v-if="currentView === 'resident_rotations'">
+                    <!-- Breadcrumb -->
+                    <nav class="breadcrumb">
+                        <span class="breadcrumb-link" @click="switchView('training_units')">
+                            <i class="fas fa-hospital-user" style="font-size:10px"></i> Training Units
+                        </span>
+                        <span class="breadcrumb-sep">›</span>
+                        <span class="breadcrumb-item active">Rotations</span>
+                    </nav>
                     <div class="card mb-6">
                         <div class="card-header">
                             <div class="card-title"><i class="fas fa-calendar-check"></i> Resident Rotations</div>
@@ -1253,6 +1321,10 @@
                                     <div class="rot-who-info">
                                         <span class="rot-who-name">{{ resident.full_name }}</span>
                                         <span class="rot-who-meta">{{ formatTrainingYear(resident.training_year) || 'PGY-?' }}</span>
+                                    <span v-if="resident.department_id" class="rot-who-dept"
+                                          style="font-size:10px;color:var(--text-4);display:block;margin-top:1px">
+                                        {{ getDepartmentName(resident.department_id) }}
+                                    </span>
                                     </div>
                                 </div>
 
@@ -1433,8 +1505,29 @@
                                         :class="'row-' + rotation.rotation_status"
                                         :title="rotation.rotation_status === 'terminated_early' ? 'Terminated early — this rotation was ended before completion' : rotation.rotation_status === 'completed' ? 'Completed rotation' : ''"
                                         @click="hasPermission('resident_rotations', 'update') && editRotation(rotation)">
-                                        <td><div class="font-medium">{{ getResidentName(rotation.resident_id) }}</div></td>
-                                        <td>{{ getTrainingUnitName(rotation.training_unit_id) }}</td>
+                                        <td>
+                                            <div class="font-medium" style="cursor:pointer;color:var(--blue)"
+                                                 @click.stop="{ const _s = medicalStaff.find(s => s.id === rotation.resident_id); if (_s) viewStaffDetails(_s) }"
+                                                 title="View profile">
+                                                {{ getResidentName(rotation.resident_id) }}
+                                            </div>
+                                            <div v-if="rotation.resident?.resident_category === 'external_resident' && rotation.resident?.external_contact_name"
+                                                 class="scc-ext-row" style="margin-top:2px">
+                                                <i class="fas fa-link" style="font-size:9px"></i>
+                                                {{ rotation.resident.external_contact_name }}
+                                                <a v-if="rotation.resident.external_contact_email"
+                                                   :href="'mailto:' + rotation.resident.external_contact_email"
+                                                   @click.stop title="Email contact">
+                                                    <i class="fas fa-envelope" style="font-size:9px"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="font-medium">{{ getTrainingUnitName(rotation.training_unit_id) }}</div>
+                                            <div v-if="rotation.training_unit?.dept?.name" style="font-size:var(--t-11);color:var(--text-3)">
+                                                {{ rotation.training_unit.dept.name }}
+                                            </div>
+                                        </td>
                                         <td>
                                             <div class="rotation-period">
                                                 <span class="rp-date">{{ formatDate(rotation.start_date) }}</span>
@@ -1499,6 +1592,20 @@
 
                 <!-- ============ TRAINING UNITS VIEW ============ -->
                 <div v-if="currentView === 'training_units'">
+                    <!-- Breadcrumb -->
+                    <nav class="breadcrumb">
+                        <span class="breadcrumb-link" @click="switchView('department_management')">
+                            <i class="fas fa-sitemap" style="font-size:10px"></i> Departments
+                        </span>
+                        <span class="breadcrumb-sep">›</span>
+                        <span class="breadcrumb-item active">Training Units</span>
+                        <span v-if="trainingUnitFilters.department" class="breadcrumb-sep">›</span>
+                        <span v-if="trainingUnitFilters.department" class="breadcrumb-item active">
+                            {{ departments.find(d => d.id === trainingUnitFilters.department)?.name || '' }}
+                            <button @click="trainingUnitFilters.department = ''" title="Clear filter"
+                                    style="background:none;border:none;color:var(--text-4);cursor:pointer;padding:0 0 0 3px;font-size:10px">×</button>
+                        </span>
+                    </nav>
                     <div class="card mb-6">
                         <div class="card-header">
                             <div class="card-title"><i class="fas fa-hospital-user"></i> Training Units</div>
@@ -1506,6 +1613,13 @@
                         </div>
                         <div class="filter-bar">
                             <input type="text" class="form-control" v-model="trainingUnitFilters.search" placeholder="Search units...">
+                            <!-- Clear dept filter chip if navigated from dept -->
+                            <span v-if="trainingUnitFilters.department" class="nav-context-chip"
+                                  @click="trainingUnitFilters.department = ''">
+                                <i class="fas fa-sitemap"></i>
+                                {{ departments.find(d => d.id === trainingUnitFilters.department)?.name || 'Department' }}
+                                <span style="margin-left:4px;opacity:.6">×</span>
+                            </span>
                             <select class="form-select" v-model="trainingUnitFilters.department">
                                 <option value="">All Departments</option>
                                 <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
@@ -1535,7 +1649,11 @@
                                         @click="trainingUnitHorizon = m">{{ m }}mo</button>
                             </div>
                         </div>
-                        <div class="training-units-grid">
+                        <!-- Skeleton loading -->
+                        <div v-if="loading" class="skeleton-grid" style="padding:16px">
+                            <div v-for="i in 4" :key="i" class="skeleton-card"></div>
+                        </div>
+                        <div v-else class="training-units-grid">
                             <div v-for="unit in filteredTrainingUnits" :key="unit.id"
                                  class="tuc"
                                  :class="{
@@ -1557,9 +1675,10 @@
                                     <div class="tuc-head-right">
                                         <span class="tuc-cap-pill"
                                               :class="{
-                                                'tuc-cap-pill--full': getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
-                                                'tuc-cap-pill--warn': getUnitActiveRotationCount(unit.id) / unit.maximum_residents > 0.75 && getUnitActiveRotationCount(unit.id) < unit.maximum_residents,
-                                                'tuc-cap-pill--free': getUnitActiveRotationCount(unit.id) === 0
+                                                'tuc-cap-pill--full':    getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
+                                                'tuc-cap-pill--warn':    getUnitActiveRotationCount(unit.id) / unit.maximum_residents > 0.75 && getUnitActiveRotationCount(unit.id) < unit.maximum_residents,
+                                                'tuc-cap-pill--partial': getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) / unit.maximum_residents <= 0.75,
+                                                'tuc-cap-pill--free':    getUnitActiveRotationCount(unit.id) === 0
                                               }">
                                             {{ getUnitActiveRotationCount(unit.id) }}/{{ unit.maximum_residents }}
                                         </span>
@@ -1693,7 +1812,7 @@
                                 <div class="empty-state-description">Training units are the clinical areas where residents rotate</div>
                                 <button class="btn btn-primary btn-sm" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')"><i class="fas fa-plus"></i> Add First Unit</button>
                             </div>
-                        </div>
+                        </div><!-- end v-else -->
                     </div>
                 </div>
 
@@ -1841,7 +1960,13 @@
                             </select>
                         </div>
                         <div class="departments-grid">
-                            <div v-for="department in filteredDepartments" :key="department.id" class="dept-card">
+                        <!-- Skeleton loading -->
+                        <div v-if="loading" class="skeleton-grid" style="padding:16px">
+                            <div v-for="i in 3" :key="i" class="skeleton-card" style="height:200px"></div>
+                        </div>
+                        <template v-else>
+                            <div v-for="(department, deptIdx) in filteredDepartments" :key="department.id"
+                                 class="dept-card" :data-accent="((deptIdx % 6) + 1)">
 
                                 <!-- ── Header: name + status ── -->
                                 <div class="dept-card-head">
@@ -1885,15 +2010,21 @@
                                 <div class="dept-residents-block">
                                     <div class="dept-block-label">Residents</div>
                                     <div class="dept-res-stats">
-                                        <div class="dept-res-stat">
+                                        <div class="dept-res-stat"
+                                             @click.stop="switchView('medical_staff', { department: department.id, residentCategory: 'department_internal' })"
+                                             title="View internal residents">
                                             <span class="dept-res-num">{{ getDeptResidentStats(department.id).internal }}</span>
                                             <span class="dept-res-label dept-res-label--int">Internal</span>
                                         </div>
-                                        <div class="dept-res-stat">
+                                        <div class="dept-res-stat"
+                                             @click.stop="switchView('medical_staff', { department: department.id, residentCategory: 'rotating_other_dept' })"
+                                             title="View rotating residents">
                                             <span class="dept-res-num">{{ getDeptResidentStats(department.id).rotating }}</span>
                                             <span class="dept-res-label dept-res-label--rot">Rotating</span>
                                         </div>
-                                        <div class="dept-res-stat">
+                                        <div class="dept-res-stat"
+                                             @click.stop="switchView('medical_staff', { department: department.id, residentCategory: 'external_resident' })"
+                                             title="View external residents">
                                             <span class="dept-res-num">{{ getDeptResidentStats(department.id).external }}</span>
                                             <span class="dept-res-label dept-res-label--ext">External</span>
                                         </div>
@@ -1901,6 +2032,18 @@
                                             <span class="dept-res-num">{{ getDeptResidentStats(department.id).total }}</span>
                                             <span class="dept-res-label">Total</span>
                                         </div>
+                                    </div>
+                                    <!-- Mini composition bar -->
+                                    <div class="dept-res-bar" v-if="getDeptResidentStats(department.id).total > 0">
+                                        <div class="dept-res-bar-seg dept-res-bar-seg--int"
+                                             :style="{ flex: getDeptResidentStats(department.id).internal }"
+                                             v-if="getDeptResidentStats(department.id).internal > 0"></div>
+                                        <div class="dept-res-bar-seg dept-res-bar-seg--rot"
+                                             :style="{ flex: getDeptResidentStats(department.id).rotating }"
+                                             v-if="getDeptResidentStats(department.id).rotating > 0"></div>
+                                        <div class="dept-res-bar-seg dept-res-bar-seg--ext"
+                                             :style="{ flex: getDeptResidentStats(department.id).external }"
+                                             v-if="getDeptResidentStats(department.id).external > 0"></div>
                                     </div>
                                 </div>
 
@@ -1910,7 +2053,10 @@
                                         <span class="dept-block-count">{{ getDepartmentUnits(department.id).length }}</span>
                                     </div>
                                     <div class="dept-units-list">
-                                        <div v-for="unit in getDepartmentUnits(department.id).slice(0,5)" :key="unit.id" class="dept-unit-row">
+                                        <div v-for="unit in getDepartmentUnits(department.id).slice(0,5)" :key="unit.id"
+                                             class="dept-unit-row"
+                                             @click.stop="switchView('training_units', { department: department.id })"
+                                             title="View in Training Units">
                                             <span class="dept-unit-name">{{ unit.unit_name }}</span>
                                             <span class="dept-unit-occ"
                                                   :class="{
@@ -1920,6 +2066,7 @@
                                                   }">
                                                 {{ getUnitActiveRotationCount(unit.id) }}/{{ unit.maximum_residents }}
                                             </span>
+                                            <i class="fas fa-arrow-right" style="font-size:9px;color:var(--text-4);margin-left:2px"></i>
                                         </div>
                                         <div v-if="getDepartmentUnits(department.id).length > 5" class="dept-unit-more">
                                             +{{ getDepartmentUnits(department.id).length - 5 }} more units
@@ -1941,7 +2088,8 @@
                                 <div class="empty-state-description">Departments group your clinical staff and training units</div>
                                 <button class="btn btn-primary btn-sm" @click="showAddDepartmentModal" v-if="hasPermission('system', 'manage_departments')"><i class="fas fa-plus"></i> Add First Department</button>
                             </div>
-                        </div>
+                                                </template><!-- end v-else dept skeleton -->
+</div>
                     </div>
                 </div>
 
@@ -2971,6 +3119,10 @@
                         <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'activity' }" @click="staffProfileModal.activeTab = 'activity'">
                             <i class="fas fa-pulse"></i> Activity
                         </button>
+                        <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'rotations' }" @click="staffProfileModal.activeTab = 'rotations'"
+                                v-if="isResidentType(staffProfileModal.staff?.staff_type)">
+                            <i class="fas fa-calendar-check"></i> Rotations
+                        </button>
                         <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'research' }" @click="staffProfileModal.activeTab = 'research'" v-if="hasPermission('analytics', 'read')">
                             <i class="fas fa-flask"></i> Research
                         </button>
@@ -3066,6 +3218,44 @@
                     </div><!-- /activity tab -->
 
                     <!-- ── RESEARCH TAB ── -->
+                    <div v-if="staffProfileModal.activeTab === 'rotations'" class="pd-tab-body">
+                        <!-- Current rotation -->
+                        <div class="pd-section-label" style="margin-bottom:8px">Current &amp; Scheduled</div>
+                        <template v-if="getUpcomingRotations(staffProfileModal.staff?.id).length > 0">
+                            <div v-for="rot in getUpcomingRotations(staffProfileModal.staff?.id)" :key="rot.id"
+                                 class="profile-rot-item profile-rot-item--active">
+                                <div class="profile-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</div>
+                                <div class="profile-rot-dates">
+                                    {{ new Date(rot.start_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) }}
+                                    → {{ new Date(rot.end_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) }}
+                                    <span v-if="rot.rotation_status==='active'" style="color:var(--ok);font-weight:600">· {{ getDaysRemaining(rot.end_date) }}d left</span>
+                                </div>
+                                <div class="profile-rot-status">
+                                    <span class="status-indicator" :class="'status-'+rot.rotation_status">{{ formatRotationStatus(rot.rotation_status) }}</span>
+                                    <span v-if="rot.supervising_attending_id" style="font-size:11px;color:var(--text-3)">
+                                        <i class="fas fa-user-md"></i> {{ getSupervisorName(rot.supervising_attending_id) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                        <div v-else class="pd-empty-note">No active or scheduled rotations</div>
+
+                        <div class="pd-section-label" style="margin-top:16px;margin-bottom:8px">History</div>
+                        <template v-if="getRotationHistory(staffProfileModal.staff?.id).length > 0">
+                            <div v-for="rot in getRotationHistory(staffProfileModal.staff?.id).slice(0,5)" :key="rot.id"
+                                 class="profile-rot-item">
+                                <div class="profile-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</div>
+                                <div class="profile-rot-dates">
+                                    {{ new Date(rot.start_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) }}
+                                    → {{ new Date(rot.end_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) }}
+                                </div>
+                                <div class="profile-rot-status">
+                                    <span class="status-indicator" :class="'status-'+rot.rotation_status">{{ formatRotationStatus(rot.rotation_status) }}</span>
+                                </div>
+                            </div>
+                        </template>
+                        <div v-else class="pd-empty-note">No rotation history</div>
+                    </div>
                     <div v-if="staffProfileModal.activeTab === 'research'" class="pd-tab-body">
                         <div v-if="staffProfileModal.loadingResearch" class="pd-loading">
                             <i class="fas fa-spinner fa-spin"></i> Loading research data…
@@ -3985,7 +4175,9 @@
                         </div>
                         <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.resident_id }">
                             <label class="form-label">Resident *</label>
-                            <select class="form-select" v-model="rotationModal.form.resident_id" required @change="clearFieldError('rotation', 'resident_id')" :class="{ 'is-invalid': fieldErrors.rotation?.resident_id }">
+                            <select class="form-select" v-model="rotationModal.form.resident_id" required
+                                    @change="clearFieldError('rotation', 'resident_id'); checkRotationAvailability()"
+                                    :class="{ 'is-invalid': fieldErrors.rotation?.resident_id }">
                                 <option value="">Select Resident</option>
                                 <option v-for="r in availableResidents" :key="r.id" :value="r.id">{{ r.full_name }}</option>
                             </select>
@@ -3993,12 +4185,41 @@
                         </div>
                         <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.training_unit_id }">
                             <label class="form-label">Training Unit *</label>
-                            <select class="form-select" v-model="rotationModal.form.training_unit_id" required @change="clearFieldError('rotation', 'training_unit_id')" :class="{ 'is-invalid': fieldErrors.rotation?.training_unit_id }">
+                            <select class="form-select" v-model="rotationModal.form.training_unit_id" required
+                                    @change="clearFieldError('rotation', 'training_unit_id'); checkRotationAvailability()"
+                                    :class="{ 'is-invalid': fieldErrors.rotation?.training_unit_id }">
                                 <option value="">Select Unit</option>
                                 <option v-for="u in trainingUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
                             </select>
                             <small v-if="fieldErrors.rotation?.training_unit_id" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.rotation.training_unit_id }}</small>
-                            <div v-if="selectedUnitCapacity" class="unit-capacity-hint" :class="{ 'unit-capacity-hint--full': selectedUnitCapacity.full, 'unit-capacity-hint--warn': selectedUnitCapacity.warn && !selectedUnitCapacity.full }">
+                            <!-- Live availability panel -->
+                            <div v-if="rotationModal.checkingAvailability" style="font-size:12px;color:var(--text-3);margin-top:6px">
+                                <i class="fas fa-spinner fa-spin"></i> Checking availability…
+                            </div>
+                            <template v-if="rotationModal.availability && !rotationModal.checkingAvailability">
+                                <!-- Unit slot status -->
+                                <div class="conflict-badge" :class="rotationModal.availability.unit_has_slot ? 'conflict-badge--ok' : 'conflict-badge--err'" style="margin-top:6px">
+                                    <i class="fas" :class="rotationModal.availability.unit_has_slot ? 'fa-check-circle' : 'fa-ban'"></i>
+                                    <span v-if="rotationModal.availability.unit_has_slot">
+                                        <strong>Slot available</strong> — {{ rotationModal.availability.unit_slots_used }}/{{ rotationModal.availability.unit_max }} used in this period
+                                    </span>
+                                    <span v-else>
+                                        <strong>Unit full</strong> — {{ rotationModal.availability.unit_slots_used }}/{{ rotationModal.availability.unit_max }} slots occupied:
+                                        {{ (rotationModal.availability.unit_conflicts || []).map(c => c.resident_name).join(', ') }}
+                                    </span>
+                                </div>
+                                <!-- Resident conflict -->
+                                <div v-if="rotationModal.form.resident_id && !rotationModal.availability.resident_free"
+                                     class="conflict-badge conflict-badge--warn" style="margin-top:4px">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span><strong>Resident conflict:</strong>
+                                        already assigned to {{ (rotationModal.availability.resident_conflicts || []).map(c => c.unit_name).join(', ') }}
+                                        during this period
+                                    </span>
+                                </div>
+                            </template>
+                            <!-- Legacy capacity bar (hidden when availability check active) -->
+                            <div v-if="selectedUnitCapacity && !rotationModal.availability" class="unit-capacity-hint" :class="{ 'unit-capacity-hint--full': selectedUnitCapacity.full, 'unit-capacity-hint--warn': selectedUnitCapacity.warn && !selectedUnitCapacity.full }">
                                 <div class="ucap-row">
                                     <span v-if="selectedUnitCapacity.full"><i class="fas fa-ban"></i> Full — {{ selectedUnitCapacity.current }}/{{ selectedUnitCapacity.max }} residents</span>
                                     <span v-else-if="selectedUnitCapacity.warn"><i class="fas fa-exclamation-triangle"></i> Nearly full — {{ selectedUnitCapacity.current }}/{{ selectedUnitCapacity.max }} residents</span>
@@ -4010,12 +4231,16 @@
                         </div>
                         <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.start_date }">
                             <label class="form-label">Start Date *</label>
-                            <input type="date" class="form-control" v-model="rotationModal.form.start_date" required @input="clearFieldError('rotation', 'start_date')" :class="{ 'is-invalid': fieldErrors.rotation?.start_date }">
+                            <input type="date" class="form-control" v-model="rotationModal.form.start_date" required
+                                   @input="clearFieldError('rotation', 'start_date'); checkRotationAvailability()"
+                                   :class="{ 'is-invalid': fieldErrors.rotation?.start_date }">
                             <small v-if="fieldErrors.rotation?.start_date" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.rotation.start_date }}</small>
                         </div>
                         <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.end_date }">
                             <label class="form-label">End Date *</label>
-                            <input type="date" class="form-control" v-model="rotationModal.form.end_date" required @input="clearFieldError('rotation', 'end_date')" :class="{ 'is-invalid': fieldErrors.rotation?.end_date }">
+                            <input type="date" class="form-control" v-model="rotationModal.form.end_date" required
+                                   @input="clearFieldError('rotation', 'end_date'); checkRotationAvailability()"
+                                   :class="{ 'is-invalid': fieldErrors.rotation?.end_date }">
                             <small v-if="fieldErrors.rotation?.end_date" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.rotation.end_date }}</small>
                         </div>
                         <div class="form-group col-span-2">
@@ -4471,10 +4696,28 @@
                             </div>
                             <div class="urm-info">
                                 <div class="urm-name">{{ getResidentName(rotation.resident_id) }}</div>
+                                <!-- Date range — key planning info -->
+                                <div style="font-size:11px;font-family:var(--font-data);color:var(--text-3);margin:2px 0;display:flex;align-items:center;gap:4px">
+                                    <i class="fas fa-calendar" style="font-size:9px"></i>
+                                    {{ new Date(rotation.start_date + 'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}
+                                    → {{ new Date(rotation.end_date + 'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}
+                                    <span v-if="getDaysUntilFree(rotation.end_date) <= 30 && getDaysUntilFree(rotation.end_date) > 0"
+                                          style="color:var(--warn);font-weight:600">&nbsp;· Free in {{ getDaysUntilFree(rotation.end_date) }}d</span>
+                                </div>
                                 <div class="urm-sub">
                                     <span class="status-indicator" :class="'status-' + rotation.rotation_status">{{ formatRotationStatus(rotation.rotation_status) }}</span>
                                     <span v-if="rotation.supervising_attending_id" class="urm-sup">
                                         <i class="fas fa-user-md"></i> {{ getSupervisorName(rotation.supervising_attending_id) }}
+                                    </span>
+                                </div>
+                                <!-- External contact chip -->
+                                <div v-if="medicalStaff.find(s=>s.id===rotation.resident_id)?.external_contact_name" style="margin-top:3px">
+                                    <span class="ext-contact-chip">
+                                        <i class="fas fa-link"></i>
+                                        {{ medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_name }}
+                                        <a v-if="medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_email"
+                                           :href="'mailto:' + medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_email"
+                                           @click.stop style="color:inherit"><i class="fas fa-envelope"></i></a>
                                     </span>
                                 </div>
                             </div>
@@ -5297,7 +5540,13 @@
             <button class="mobile-nav-item" :class="{ active: currentView === 'oncall_schedule' }" @click="switchView('oncall_schedule')" v-if="hasPermission('oncall_schedule','read')">
                 <i class="fas fa-phone-medical"></i><span>On-call</span>
             </button>
-            <button class="mobile-nav-item" :class="{ active: ['research_lines','clinical_trials','innovation_projects'].includes(currentView) }" @click="switchView('research_lines')" v-if="hasPermission('research_lines','read')">
+            <button class="mobile-nav-item mobile-nav-training" :class="{ active: currentView === 'training_units' }" @click="switchView('training_units')" v-if="hasPermission('training_units','read')">
+                <i class="fas fa-clinic-medical"></i><span>Units</span>
+            </button>
+            <button class="mobile-nav-item" :class="{ active: currentView === 'department_management' }" @click="switchView('department_management')" v-if="hasPermission('department_management','read')">
+                <i class="fas fa-sitemap"></i><span>Depts</span>
+            </button>
+            <button class="mobile-nav-item" style="display:none" :class="{ active: ['research_lines','clinical_trials','innovation_projects'].includes(currentView) }" @click="switchView('research_lines')" v-if="hasPermission('research_lines','read')">
                 <i class="fas fa-flask"></i><span>Research</span>
             </button>
         </nav>
