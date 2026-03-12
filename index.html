@@ -143,18 +143,20 @@
                aria-label="Main navigation">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <svg v-if="!sidebarCollapsed" viewBox="0 0 120 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="sb-neumax-svg" aria-label="neumAC">
+                    <svg v-if="!sidebarCollapsed" viewBox="0 0 108 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="sb-neumax-svg" aria-label="neumAC">
                         <defs>
-                            <linearGradient id="sbng" x1="0" y1="0" x2="120" y2="0" gradientUnits="userSpaceOnUse">
+                            <linearGradient id="sbng" x1="0" y1="0" x2="108" y2="0" gradientUnits="userSpaceOnUse">
                                 <stop offset="0%" stop-color="#48cae4"/>
-                                <stop offset="50%" stop-color="#4d9aff"/>
-                                <stop offset="100%" stop-color="#90e0ef"/>
+                                <stop offset="45%" stop-color="#4d9aff"/>
+                                <stop offset="100%" stop-color="#a5b4fc"/>
                             </linearGradient>
                         </defs>
-                        <text x="1" y="23" font-family="'DM Sans', sans-serif" font-weight="700"
-                              font-size="24" fill="url(#sbng)" letter-spacing="-0.8">neum</text>
-                        <text x="79" y="23" font-family="'DM Sans', sans-serif" font-weight="800"
-                              font-size="24" fill="url(#sbng)" letter-spacing="-0.8">AC</text>
+                        <!-- "neum" — regular weight -->
+                        <text x="1" y="23" font-family="'DM Sans', sans-serif" font-weight="600"
+                              font-size="24" fill="url(#sbng)" letter-spacing="-0.5">neum</text>
+                        <!-- "AC" — heavy weight, tight, no gap -->
+                        <text x="62" y="23" font-family="'DM Sans', sans-serif" font-weight="800"
+                              font-size="24" fill="url(#sbng)" letter-spacing="-1">AC</text>
                     </svg>
                     <!-- Collapsed: just the "n" monogram -->
                     <svg v-if="sidebarCollapsed" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="sb-neumax-mono" aria-label="n">
