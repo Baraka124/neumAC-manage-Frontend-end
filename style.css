@@ -225,6 +225,195 @@
 /* ═══════════════════════════════════════════════════════════════
    CLINICAL UNIT SLOTS — occupancy timeline
 ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRAINING UNIT CARDS — VIEW TOGGLE + TIMELINE
+═══════════════════════════════════════════════════════════════════ */
+
+/* View toggle buttons */
+.tuc-view-toggle {
+  display: flex; gap: 2px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 3px;
+}
+.tuc-view-btn {
+  width: 32px; height: 28px; border-radius: 6px; border: none;
+  background: transparent; color: var(--text-3);
+  cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--t);
+}
+.tuc-view-btn.active {
+  background: var(--blue); color: #fff;
+  box-shadow: 0 2px 6px rgba(45,122,255,.3);
+}
+.tuc-view-btn:hover:not(.active) { background: var(--border); color: var(--text-1); }
+
+/* Horizon selector */
+.tuc-horizon-row {
+  display: flex; align-items: center; gap: 4px;
+}
+.tuc-horizon-label {
+  font-size: 11px; color: var(--text-3); font-weight: 500;
+}
+.tuc-horizon-btn {
+  padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text-2);
+  font-size: 11px; font-weight: 600; cursor: pointer; transition: var(--t);
+}
+.tuc-horizon-btn.active {
+  background: var(--blue); color: #fff; border-color: var(--blue);
+}
+.tuc-horizon-btn:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
+
+/* ── Card header shared ── */
+.tuc-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 8px; margin-bottom: 10px;
+}
+.tuc-head-right {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.tuc-name-row {
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.tuc-sub {
+  font-size: 11px; color: var(--text-3); margin-top: 2px;
+}
+
+/* Capacity pill */
+.tuc-cap-pill {
+  font-size: 12px; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+  font-family: var(--font-data);
+  background: rgba(13,158,110,.1); color: #0d9e6e;
+  border: 1px solid rgba(13,158,110,.2);
+}
+.tuc-cap-pill--warn  { background: rgba(245,158,11,.1); color: #d97706; border-color: rgba(245,158,11,.2); }
+.tuc-cap-pill--full  { background: rgba(239,68,68,.1);  color: #ef4444; border-color: rgba(239,68,68,.2); }
+.tuc-cap-pill--free  { background: rgba(99,102,241,.08); color: var(--blue); border-color: rgba(99,102,241,.15); }
+
+/* ── TIMELINE BODY ── */
+.tuc-timeline-body {
+  margin-bottom: 10px;
+}
+
+/* Header row with month labels */
+.tuc-tl-header {
+  display: flex; align-items: center;
+  margin-bottom: 4px;
+}
+.tuc-tl-slot-label {
+  width: 32px; flex-shrink: 0;
+}
+.tuc-tl-months {
+  flex: 1; display: flex; gap: 2px;
+}
+.tuc-tl-month-label {
+  flex: 1; text-align: center;
+  font-size: 9.5px; font-weight: 700;
+  color: var(--text-3); text-transform: uppercase;
+  letter-spacing: .04em; padding: 0 2px;
+}
+.tuc-tl-month-label--current {
+  color: var(--blue); font-weight: 800;
+}
+
+/* Each slot row */
+.tuc-tl-row {
+  display: flex; align-items: center; gap: 0;
+  margin-bottom: 3px;
+}
+.tuc-tl-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), #6366f1);
+  color: #fff; font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: default;
+  box-shadow: 0 1px 4px rgba(45,122,255,.3);
+}
+.tuc-tl-slot-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-3); font-size: 10px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Month cells */
+.tuc-tl-cell {
+  flex: 1; height: 26px; border-radius: 4px;
+  margin: 0 1px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+  transition: transform .1s;
+  cursor: default;
+  position: relative;
+}
+.tuc-tl-cell:hover { transform: scaleY(1.08); z-index: 1; }
+
+.tuc-tl-cell--free {
+  background: rgba(13,158,110,.1);
+  border: 1px dashed rgba(13,158,110,.3);
+  color: #0d9e6e;
+}
+.tuc-tl-cell--free.tuc-tl-cell--current {
+  background: rgba(13,158,110,.18);
+  border-style: solid;
+  box-shadow: 0 0 0 1px rgba(13,158,110,.3);
+}
+.tuc-tl-cell--occupied {
+  background: linear-gradient(135deg, rgba(45,122,255,.18), rgba(99,102,241,.14));
+  border: 1px solid rgba(45,122,255,.25);
+  color: var(--blue);
+}
+.tuc-tl-cell--partial {
+  background: linear-gradient(135deg,
+    rgba(13,158,110,.12) 0%, rgba(13,158,110,.12) 40%,
+    rgba(45,122,255,.14) 60%, rgba(45,122,255,.14) 100%);
+  border: 1px solid rgba(245,158,11,.3);
+  color: #d97706;
+}
+.tuc-tl-cell--current {
+  outline: 2px solid rgba(45,122,255,.3);
+  outline-offset: 1px;
+}
+.tuc-tl-cell-name {
+  font-size: 8px; font-weight: 800;
+  letter-spacing: .03em; opacity: .8;
+}
+.tuc-tl-cell-free { font-size: 10px; }
+
+/* Legend */
+.tuc-tl-legend {
+  display: flex; gap: 12px; margin-top: 8px;
+  padding-top: 6px; border-top: 1px solid var(--border);
+}
+.tuc-tl-leg-item {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; color: var(--text-3);
+}
+.tuc-tl-leg-dot {
+  width: 10px; height: 10px; border-radius: 3px;
+}
+.tuc-tl-leg-dot--occupied { background: rgba(45,122,255,.25); border: 1px solid rgba(45,122,255,.4); }
+.tuc-tl-leg-dot--partial  { background: rgba(245,158,11,.25); border: 1px solid rgba(245,158,11,.4); }
+.tuc-tl-leg-dot--free     { background: rgba(13,158,110,.15); border: 1px dashed rgba(13,158,110,.4); }
+
+/* "Free in Xd" chip */
+.tuc-free-soon {
+  margin-left: auto; flex-shrink: 0;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 7px; border-radius: 10px;
+  background: rgba(245,158,11,.1); color: #d97706;
+  border: 1px solid rgba(245,158,11,.25);
+}
+
+/* Timeline mode card — slightly wider look */
+.tuc--timeline-mode {
+  /* let the timeline breathe */
+}
+
 .tuc-slots {
   display: flex; flex-direction: column; gap: 3px;
   margin: 6px 0 6px;
