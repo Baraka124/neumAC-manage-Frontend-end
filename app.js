@@ -2362,7 +2362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.8 useTrainingUnits ============
-    function useTrainingUnits({ showToast, showConfirmation, rotations }) {
+    function useTrainingUnits({ showToast, showConfirmation, rotations, allStaffLookup }) {
       const trainingUnits = ref([])
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', specialty: '', supervising_attending_id: '' } })
@@ -2378,6 +2378,17 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       const getUnitActiveRotationCount = (id) => rotations.value.filter(r => r.training_unit_id === id && ['active', 'scheduled'].includes(r.rotation_status)).length
+
+      const getUnitRotations = (id) => rotations.value
+        .filter(r => r.training_unit_id === id && ['active', 'scheduled'].includes(r.rotation_status))
+        .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+
+      const getResidentShortName = (id) => {
+        const s = allStaffLookup.value.find(x => x.id === id)
+        if (!s) return '—'
+        const parts = (s.full_name || '').trim().split(' ')
+        return parts.length > 1 ? `${parts[0]} ${parts[parts.length-1][0]}.` : s.full_name
+      }
 
       const loadTrainingUnits = async () => {
         try { trainingUnits.value = await API.getTrainingUnits() }
@@ -2483,7 +2494,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit }
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit }
     }
 
     // ============ 6.9 useComms ============
@@ -3051,10 +3062,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Full useTrainingUnits with real rotations ref (now declared above)
         const { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
-          filteredTrainingUnits, getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal,
+          filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName,
+          loadTrainingUnits, showAddTrainingUnitModal,
           editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
           viewUnitResidents, saveTrainingUnit } = useTrainingUnits({
-          showToast, showConfirmation, rotations
+          showToast, showConfirmation, rotations, allStaffLookup
         })
 
         // Sync real trainingUnits into the stub so rotationOps.getTrainingUnitName resolves correctly
@@ -3531,7 +3543,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
-          getUnitActiveRotationCount, loadTrainingUnits, showAddTrainingUnitModal,
+          getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
           editTrainingUnit, deleteTrainingUnit, saveTrainingUnit,
           openUnitClinicians: (unit) => openUnitClinicians(unit, medicalStaff.value),
           saveUnitClinicians,
