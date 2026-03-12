@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============ TOAST CONTAINER ==-=-=---======= -->
+    <!-- ============ TOAST CONTAINER ==-=-=--======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -3388,10 +3388,21 @@
                     <!-- Professional Tab -->
                     <div v-if="medicalStaffModal.activeTab === 'professional'" class="mt-6">
                         <div class="grid grid-cols-2 gap-4">
-                            <!-- Academic Degree — from DB, user-configurable -->
+                            <!-- Academic Degree — from DB with fallback -->
                             <div class="form-group">
                                 <label class="form-label">Academic Degree</label>
-                                <select class="form-select" v-model="medicalStaffModal.form.academic_degree_id">
+                                <select class="form-select"
+                                        :value="medicalStaffModal.form.academic_degree_id || medicalStaffModal.form.academic_degree"
+                                        @change="e => {
+                                            const d = academicDegrees.find(x => x.id === e.target.value)
+                                            if (d && d.id.includes('-')) {
+                                                medicalStaffModal.form.academic_degree_id = d.id
+                                                medicalStaffModal.form.academic_degree = d.name
+                                            } else {
+                                                medicalStaffModal.form.academic_degree_id = null
+                                                medicalStaffModal.form.academic_degree = e.target.value
+                                            }
+                                        }">
                                     <option value="">Select Degree</option>
                                     <option v-for="d in academicDegrees" :key="d.id" :value="d.id">
                                         {{ d.name }}{{ d.abbreviation ? ' (' + d.abbreviation + ')' : '' }}
