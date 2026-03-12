@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       CACHE_TTL: 300000
     }
 
-    // ============ 2. CONSTANTS ====--========
+    // ============ 2. CONSTANTS ====-========
     const ROLES = {
       ADMIN: 'system_admin',
       HEAD: 'department_head',
@@ -2234,6 +2234,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const getDepartmentUnits = (id) => trainingUnits.value.filter(u => u.department_id === id)
       const getDepartmentStaffCount = (id) => medicalStaff.value.filter(s => s.department_id === id).length
 
+      // Break down residents by category for a department
+      const getDeptResidentStats = (id) => {
+        const residents = medicalStaff.value.filter(s => s.department_id === id && isResidentType(s.staff_type))
+        return {
+          total: residents.length,
+          internal:  residents.filter(r => r.resident_category === 'department_internal').length,
+          rotating:  residents.filter(r => r.resident_category === 'rotating_other_dept').length,
+          external:  residents.filter(r => r.resident_category === 'external_resident').length,
+          list: residents
+        }
+      }
+
+      // Residents whose home_department_id points to this dept (rotating from here to elsewhere)
+      const getDeptHomeResidents = (id) => medicalStaff.value.filter(s =>
+        s.home_department_id === id && isResidentType(s.staff_type)
+      )
+
       const loadDepartments = async () => {
         try {
           const [active, all] = await Promise.all([API.getDepartments(), API.getAllDepartments()])
@@ -2338,7 +2355,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return {
         departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
-        filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount,
+        filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
         loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
         deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff
       }
@@ -3017,7 +3034,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { medicalStaff, allStaffLookup, hospitalsList, clinicalUnits } = staffOps
 
         const { departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
-          filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount,
+          filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff } = useDepartments({
           showToast, showConfirmation, medicalStaff, trainingUnits: tuOps.trainingUnits, rotations: ref([])
@@ -3510,7 +3527,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
           getDaysRemainingColor: Utils.getDaysRemainingColor,
           departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
-          filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount,
+          filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
