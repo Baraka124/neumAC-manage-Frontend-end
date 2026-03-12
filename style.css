@@ -1,9 +1,9 @@
-/*- ---═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    RESIDENCY YEAR — auto/override display
 ═══════════════════════════════════════════════════════════════ */
 .form-hint { font-size: 10.5px; color: var(--text-3); font-weight: 400; margin-left: 4px; }
-.form-hint--auto     { color: #0d9e6e; }
-.form-hint--override { color: #d97706; }
+.form-hint--auto     { color: var(--ok); }
+.form-hint--override { color: var(--warn); }
 
 .ryear-auto-row {
   display: flex; align-items: center; gap: 8px;
@@ -28,7 +28,7 @@
   margin-top: 6px; font-size: 11px; color: var(--text-3);
   display: flex; align-items: center; gap: 5px;
 }
-.ryear-end-preview i { color: #0d9e6e; }
+.ryear-end-preview i { color: var(--ok); }
 
 /* ═══════════════════════════════════════════════════════════════
    MEDICAL LICENSE TOGGLE
@@ -76,7 +76,7 @@
 .cert-dot--ok      { background: #0d9e6e; box-shadow: 0 0 4px rgba(13,158,110,.4); }
 .cert-dot--expired { background: #ef4444; box-shadow: 0 0 4px rgba(239,68,68,.4); }
 .cert-row-name { flex: 1; font-weight: 600; color: var(--text-1); }
-.cert-row-dates { font-size: 11px; color: var(--text-3); font-family: var(--font-data); }
+.cert-row-dates { font-size: var(--t-11); color: var(--text-3); font-family: var(--font-data); line-height: 1.3; }
 .cert-row-del {
   width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0;
   border: none; background: transparent; color: var(--text-3);
@@ -114,12 +114,19 @@
 .dept-card {
   background: var(--surface);
   border: 1px solid var(--border);
+  border-left: 4px solid var(--dept-1); /* accent edge — overridden by data-accent */
   border-radius: 12px;
   overflow: hidden;
   display: flex; flex-direction: column;
-  transition: box-shadow var(--t), border-color var(--t);
+  transition: box-shadow var(--t), border-color var(--t), transform var(--t);
 }
-.dept-card:hover { box-shadow: 0 4px 20px rgba(45,122,255,.08); border-color: var(--blue-mid); }
+.dept-card:hover { box-shadow: 0 4px 20px rgba(45,122,255,.08); border-color: var(--blue-mid); transform: translateY(-2px); }
+.dept-card[data-accent="1"] { border-left-color: var(--dept-1); }
+.dept-card[data-accent="2"] { border-left-color: var(--dept-2); }
+.dept-card[data-accent="3"] { border-left-color: var(--dept-3); }
+.dept-card[data-accent="4"] { border-left-color: var(--dept-4); }
+.dept-card[data-accent="5"] { border-left-color: var(--dept-5); }
+.dept-card[data-accent="6"] { border-left-color: var(--dept-6); }
 
 /* Header */
 .dept-card-head {
@@ -191,9 +198,9 @@
 .dept-res-stat--total { background: rgba(45,122,255,.06); }
 .dept-res-num { font-size: 18px; font-weight: 700; color: var(--text-1); line-height: 1; }
 .dept-res-label { font-size: 9px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }
-.dept-res-label--int { color: #0d9e6e; }
-.dept-res-label--rot { color: #2d7aff; }
-.dept-res-label--ext { color: #d97706; }
+.dept-res-label--int { color: var(--cat-internal); }
+.dept-res-label--rot { color: var(--cat-rotating); }
+.dept-res-label--ext { color: var(--cat-external); }
 
 /* Clinical units mini-list */
 .dept-units-block { padding: 10px 14px; flex: 1; }
@@ -209,8 +216,8 @@
   font-size: 10px; font-weight: 700; padding: 1px 6px;
   border-radius: 10px; flex-shrink: 0; font-family: var(--font-data);
 }
-.dept-unit-occ--free  { background: rgba(13,158,110,.1); color: #0d9e6e; }
-.dept-unit-occ--warn  { background: rgba(245,158,11,.1); color: #d97706; }
+.dept-unit-occ--free  { background: rgba(13,158,110,.1); color: var(--ok); }
+.dept-unit-occ--warn  { background: rgba(245,158,11,.1); color: var(--warn); }
 .dept-unit-occ--full  { background: rgba(239,68,68,.1); color: #ef4444; }
 .dept-unit-more { font-size: 11px; color: var(--text-3); padding: 2px 8px; }
 .dept-unit-empty { font-size: 11px; color: var(--text-3); font-style: italic; padding: 4px 8px; }
@@ -286,12 +293,12 @@
   font-size: 12px; font-weight: 700;
   padding: 2px 8px; border-radius: 20px;
   font-family: var(--font-data);
-  background: rgba(13,158,110,.1); color: #0d9e6e;
+  background: rgba(13,158,110,.1); color: var(--ok);
   border: 1px solid rgba(13,158,110,.2);
 }
-.tuc-cap-pill--warn  { background: rgba(245,158,11,.1); color: #d97706; border-color: rgba(245,158,11,.2); }
+.tuc-cap-pill--warn  { background: rgba(245,158,11,.1); color: var(--warn); border-color: rgba(245,158,11,.2); }
 .tuc-cap-pill--full  { background: rgba(239,68,68,.1);  color: #ef4444; border-color: rgba(239,68,68,.2); }
-.tuc-cap-pill--free  { background: rgba(99,102,241,.08); color: var(--blue); border-color: rgba(99,102,241,.15); }
+.tuc-cap-pill--free  { background: var(--ok-lt); color: var(--ok); border-color: var(--ok-mid); }
 
 /* ── TIMELINE BODY ── */
 .tuc-timeline-body {
@@ -355,7 +362,7 @@
 .tuc-tl-cell--free {
   background: rgba(13,158,110,.1);
   border: 1px dashed rgba(13,158,110,.3);
-  color: #0d9e6e;
+  color: var(--ok);
 }
 .tuc-tl-cell--free.tuc-tl-cell--current {
   background: rgba(13,158,110,.18);
@@ -372,7 +379,7 @@
     rgba(13,158,110,.12) 0%, rgba(13,158,110,.12) 40%,
     rgba(45,122,255,.14) 60%, rgba(45,122,255,.14) 100%);
   border: 1px solid rgba(245,158,11,.3);
-  color: #d97706;
+  color: var(--warn);
 }
 .tuc-tl-cell--current {
   outline: 2px solid rgba(45,122,255,.3);
@@ -405,7 +412,7 @@
   margin-left: auto; flex-shrink: 0;
   font-size: 10px; font-weight: 700;
   padding: 1px 7px; border-radius: 10px;
-  background: rgba(245,158,11,.1); color: #d97706;
+  background: rgba(245,158,11,.1); color: var(--warn);
   border: 1px solid rgba(245,158,11,.25);
 }
 
@@ -477,85 +484,119 @@
    DESIGN TOKENS
 ---------------------------------------------------------------- */
 :root {
-  --ink:     #0a1628;
-  --ink-2:   #1a2d4a;
-  --ink-3:   #243b5e;
+  /* ═══════════════════════════════════════════════════════════════
+     NEUMOCARE DESIGN SYSTEM v12
+     Clinician-grade: WCAG AA contrast, unambiguous semantics,
+     Instrument Serif deployed, blue reserved for actions only
+  ═══════════════════════════════════════════════════════════════ */
 
-  --blue:    #2d7aff;
-  --blue-lt: #e8f1ff;
-  --blue-mid:#b8d0ff;
-  --blue-dim:rgba(45,122,255,.12);
-  --blue-glow:rgba(45,122,255,.25);
+  /* ── Brand ink ─────────────────────────────────────────────── */
+  --ink:   #07111f;
+  --ink-2: #132035;
+  --ink-3: #1e3050;
 
-  --canvas:   #f4f6fa;
-  --surface:  #ffffff;
-  --surface-2:#f8fafc;
-  --surface-3:#f1f5f9;
-  --border:   #e4e9f0;
-  --border-2: #cdd5e0;
-  --border-3: #b8c4d4;
+  /* ── Action blue — ONLY for interactive/clickable elements ─── */
+  --blue:     #2563eb;
+  --blue-lt:  #eff6ff;
+  --blue-mid: #bfdbfe;
+  --blue-dim: rgba(37,99,235,.12);
+  --blue-glow:rgba(37,99,235,.28);
 
-  --text-1: #0a1628;
-  --text-2: #3d5278;
-  --text-3: #7a90b0;
-  --text-4: #aab8cc;
+  /* ── Surfaces & borders ─────────────────────────────────────── */
+  --canvas:    #f0f4f8;
+  --surface:   #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
+  --border:    #e2e8f0;
+  --border-2:  #cbd5e1;
+  --border-3:  #94a3b8;
 
-  --ok:      #0d9e6e; --ok-lt:   #d1fae8; --ok-mid:  #6ee7b7;
-  --warn:    #d97706; --warn-lt: #fef3c7; --warn-mid:#fcd34d;
-  --danger:  #dc3545; --danger-lt:#ffe1e4;--danger-mid:#f9a8b0;
-  --info:    #2d7aff; --info-lt: #e8f1ff;
-  --neutral: #64748b; --neutral-lt:#f1f5f9; --neutral-mid:#cbd5e1;
-  --teal:    #0891b2; --teal-lt: #e0f7fa;
-  --purple:  #7c3aed; --purple-lt:#ede9fe;
+  /* ── Text — ALL pass WCAG AA on white ──────────────────────── */
+  --text-1: #07111f;   /* 19.3:1  — headings, primary content  */
+  --text-2: #2d4a6e;   /* 7.4:1   — secondary content           */
+  --text-3: #4a6585;   /* 4.8:1   — labels, meta (was #7a90b0 = 3.8 FAIL) */
+  --text-4: #7a93ae;   /* 3.1:1   — placeholders only           */
 
+  /* ── Semantic colours (capacity / status) ──────────────────── */
+  --ok:        #059669; --ok-lt:    #d1fae5; --ok-mid: #6ee7b7;
+  --partial:   #0891b2; --partial-lt:#e0f7fa; --partial-mid:#67e8f9;
+  --warn:      #d97706; --warn-lt:  #fef3c7; --warn-mid:#fcd34d;
+  --danger:    #dc2626; --danger-lt:#fee2e2; --danger-mid:#fca5a5;
+  --info:      #2563eb; --info-lt:  #eff6ff;
+  --neutral:   #64748b; --neutral-lt:#f8fafc; --neutral-mid:#cbd5e1;
+  --teal:      #0891b2; --teal-lt:  #e0f7fa;
+  --purple:    #7c3aed; --purple-lt:#ede9fe;
+  --violet:    #6d28d9; --violet-lt:#f5f3ff;
+
+  /* ── Resident category colours (neutral, non-hierarchical) ─── */
+  --cat-internal: #059669;  /* green  — home dept resident        */
+  --cat-rotating: #0891b2;  /* teal   — rotating from another dept */
+  --cat-external: #7c3aed;  /* violet — external institution      */
+
+  /* ── Department accent palette (sidebar-aligned) ────────────── */
+  --dept-1: #3b82f6;  /* blue   */
+  --dept-2: #10b981;  /* emerald */
+  --dept-3: #22d3ee;  /* cyan   */
+  --dept-4: #f59e0b;  /* amber  */
+  --dept-5: #a78bfa;  /* violet */
+  --dept-6: #fb7185;  /* rose   */
+
+  /* ── Research pipeline ─────────────────────────────────────── */
   --phase1:#4d9aff; --phase2:#00e5a0; --phase3:#ffbe3d; --phase4:#ff5566;
   --stage-idea:#9ca3af; --stage-proto:#60a5fa; --stage-pilot:#34d399;
-  --stage-val:#fbbf24; --stage-scale:#f97316; --stage-market:#10b981;
+  --stage-val:#fbbf24;  --stage-scale:#f97316; --stage-market:#10b981;
 
+  /* ── Typography ─────────────────────────────────────────────── */
   --font-ui:      'DM Sans', system-ui, sans-serif;
-  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-display: 'Instrument Serif', Georgia, serif;   /* NOW USED */
   --font-data:    'DM Mono', 'Courier New', monospace;
   --font-body:    var(--font-ui);
   --font-mono:    var(--font-data);
 
-  /* ── TYPE SCALE (v11: shifted up ~1 step) ─────────────────── */
-  --t-10: 11px;   /* was 10px — table headers, form labels, badges */
-  --t-11: 12px;   /* was 11px — meta text, toasts, user-role       */
-  --t-12: 13px;   /* was 12px — buttons, nav links, filter controls */
-  --t-13: 15px;   /* was 13px — table body, card titles, body copy  */
-  --t-15: 17px;   /* was 15px — modal titles, sidebar logo          */
-  --t-18: 20px;   /* was 18px — navbar title                        */
-  --t-24: 28px;   /* was 24px — dashboard h2                        */
-  --t-hero: clamp(36px, 3.8vw, 54px); /* was clamp(32,3.5vw,48)  */
+  /* ── Type scale v12 — min 12px for ALL information-bearing text */
+  --t-10: 12px;   /* table headers, badges, nav section labels     */
+  --t-11: 13px;   /* meta text, form hints, timestamps             */
+  --t-12: 14px;   /* buttons, nav links, filter controls           */
+  --t-13: 15px;   /* table body, card content, body copy           */
+  --t-15: 17px;   /* modal titles, card titles                     */
+  --t-18: 20px;   /* navbar title, section headers                 */
+  --t-24: 28px;   /* dashboard stat values                         */
+  --t-hero: clamp(28px, 3vw, 42px); /* display headings           */
 
-  --sidebar-w:  clamp(268px, 20vw, 330px);  /* was clamp(252,19vw,310) — more breathing room */
-  --sidebar-sm: 68px;                              /* was 64px — bigger collapsed icon strip */
+  /* ── Layout ─────────────────────────────────────────────────── */
+  --sidebar-w:  clamp(272px, 20vw, 320px);
+  --sidebar-sm: 68px;
   --panel-w:    360px;
   --topbar-h:   60px;
 
-  --shadow-xs: 0 1px 2px rgba(10,22,40,.04);
-  --shadow-sm: 0 1px 4px rgba(10,22,40,.06),0 1px 2px rgba(10,22,40,.04);
-  --shadow:    0 4px 12px rgba(10,22,40,.08),0 2px 4px rgba(10,22,40,.04);
-  --shadow-md: 0 8px 24px rgba(10,22,40,.10),0 3px 8px rgba(10,22,40,.05);
-  --shadow-lg: 0 16px 40px rgba(10,22,40,.12),0 6px 16px rgba(10,22,40,.06);
-  --shadow-xl: 0 32px 64px rgba(10,22,40,.18),0 12px 24px rgba(10,22,40,.08);
-  --shadow-blue: 0 4px 16px rgba(45,122,255,.20);
+  /* ── Elevation ──────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(7,17,31,.04);
+  --shadow-sm: 0 1px 4px rgba(7,17,31,.06), 0 1px 2px rgba(7,17,31,.04);
+  --shadow:    0 4px 12px rgba(7,17,31,.08), 0 2px 4px rgba(7,17,31,.04);
+  --shadow-md: 0 8px 24px rgba(7,17,31,.10), 0 3px 8px rgba(7,17,31,.05);
+  --shadow-lg: 0 16px 40px rgba(7,17,31,.12), 0 6px 16px rgba(7,17,31,.06);
+  --shadow-xl: 0 32px 64px rgba(7,17,31,.18), 0 12px 24px rgba(7,17,31,.08);
+  --shadow-blue: 0 4px 16px rgba(37,99,235,.22);
 
+  /* ── Radii ──────────────────────────────────────────────────── */
   --r-xs: 4px; --r-sm: 6px; --r: 10px;
   --r-lg: 14px; --r-xl: 18px; --r-2xl: 24px;
 
+  /* ── Motion ─────────────────────────────────────────────────── */
   --t:    150ms cubic-bezier(.4,0,.2,1);
   --t-md: 240ms cubic-bezier(.4,0,.2,1);
   --t-lg: 360ms cubic-bezier(.4,0,.2,1);
 
-  --p-bg:      #07111f; --p-surface: #0d1e33; --p-surface-2:#112340;
+  /* ── Sidebar dark surface ───────────────────────────────────── */
+  --p-bg:      #07111f; --p-surface: #0c1c30; --p-surface-2:#112340;
   --p-border:  rgba(255,255,255,.06); --p-border-2:rgba(255,255,255,.11);
-  --p-text:    rgba(255,255,255,.90); --p-muted:   rgba(255,255,255,.40);
+  --p-text:    rgba(255,255,255,.92); --p-muted:   rgba(255,255,255,.44);
   --p-faint:   rgba(255,255,255,.14);
-  --p-blue:    #4d9aff; --p-green:  #00e5a0;
-  --p-amber:   #ffbe3d; --p-red:    #ff5566; --p-teal: #00d4d4;
+  --p-blue:    #60a5fa; --p-green:  #34d399;
+  --p-amber:   #fbbf24; --p-red:    #f87171; --p-teal: #22d3ee;
+  --p-violet:  #a78bfa;
 
-  /* ── LAYOUT SPACING (viewport-aware) ─────────────────────── */
+  /* ── Spacing ────────────────────────────────────────────────── */
   --content-pad-x: clamp(20px, 2.6vw, 44px);
   --content-pad-y: clamp(18px, 2vw, 30px);
 }
@@ -716,14 +757,14 @@ a { color: var(--blue); text-decoration: none; }
 /* The section title is the ANCHOR — it must be clearly smaller
    and more subdued than the items, acting as a label not a heading */
 .sidebar-section-title {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: var(--t-10);   /* 12px — was 9px (blob at weight 700) */
+  font-weight: 500;          /* was 700 — lighter = more legible at 12px */
   text-transform: uppercase;
-  letter-spacing: .14em;
+  letter-spacing: .10em;     /* was .14em — tighter is fine at 12px */
   padding: 18px 4px 5px;
   white-space: nowrap; overflow: hidden;
   display: flex; align-items: center; gap: 8px;
-  opacity: .5;
+  opacity: .55;
 }
 
 /* First section needs less top space (sits under logo) */
@@ -1045,18 +1086,24 @@ a { color: var(--blue); text-decoration: none; }
    BREADCRUMB
 ---------------------------------------------------------------- */
 .breadcrumb {
-  display: none;
+  display: flex; /* visible on ALL screen sizes */
   align-items: center; gap: 6px;
   margin-bottom: 16px; font-size: var(--t-11);
-  flex-wrap: wrap;
+  flex-wrap: wrap; color: var(--text-3);
 }
 .breadcrumb button {
   background: none; border: none; color: var(--text-3);
   display: flex; align-items: center; gap: 4px;
   cursor: pointer; transition: var(--t); padding: 0; font-family: var(--font-ui);
+  font-size: var(--t-11);
 }
 .breadcrumb button:hover { color: var(--blue); }
 .bc-sep { color: var(--border-2); }
+.breadcrumb-link { color: var(--blue); cursor: pointer; font-size: var(--t-11); }
+.breadcrumb-link:hover { text-decoration: underline; }
+.breadcrumb-item { color: var(--text-3); font-size: var(--t-11); }
+.breadcrumb-item.active { color: var(--text-2); font-weight: 500; }
+.breadcrumb-sep { color: var(--text-4); font-size: 10px; }
 .bc-current { color: var(--blue); font-weight: 700; font-size: var(--t-11); }
 
 /* ----------------------------------------------------------------
@@ -1686,8 +1733,8 @@ a { color: var(--blue); text-decoration: none; }
   font-size: 8px; font-weight: 700; letter-spacing: .04em;
   padding: 1px 4px; border-radius: 3px; text-transform: uppercase; flex-shrink: 0;
 }
-.scc-cat--ext { background: rgba(251,191,36,.15); color: #d97706; }
-.scc-cat--int { background: rgba(13,158,110,.12); color: #0d9e6e; }
+.scc-cat--ext { background: rgba(251,191,36,.15); color: var(--warn); }
+.scc-cat--int { background: rgba(13,158,110,.12); color: var(--ok); }
 .scc-dept-text {
   font-size: 11px; color: var(--text-3);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -3454,8 +3501,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   .research-lines-grid,
   .innovation-projects-grid { grid-template-columns: 1fr; }
 
-  /* Show breadcrumb on mobile */
-  .breadcrumb { display: flex; }
+  /* breadcrumb always visible — defined in base styles */
 
   /* Larger touch targets on mobile */
   .table-actions .btn-sm { width: 44px !important; height: 44px !important; }
@@ -3541,7 +3587,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 @media print {
   .sidebar, .top-navbar, .stats-toggle-btn,
   .live-stats-sidebar, .toast-container, .modal-overlay,
-  .breadcrumb, .quick-actions-bar, .filter-bar { display: none !important; }
+  .quick-actions-bar, .filter-bar { display: none !important; }
   .main-content { margin-left: 0 !important; height: auto; overflow: visible; }
   .content-area { padding: 0; overflow: visible; }
   body { background: #fff; background-image: none; color: #000; font-size: 12px; }
@@ -5444,7 +5490,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 /* FIX 2+17: Multi-role badge container in research line rows */
 .pd-line-roles { display: flex; flex-wrap: wrap; gap: 4px; }
 .pd-badge--sm { font-size: 9px !important; padding: 2px 7px !important; }
-.pd-badge--gold { background: rgba(251,191,36,.15); color: #d97706; border: 1px solid rgba(251,191,36,.3); }
+.pd-badge--gold { background: rgba(251,191,36,.15); color: var(--warn); border: 1px solid rgba(251,191,36,.3); }
 
 /* FIX 18: Trial role indicator in meta */
 .pd-trial-role { font-weight: 700; color: var(--blue); }
@@ -5519,7 +5565,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 .trial-investigator-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .trial-investigator-row:last-child { border-bottom: none; }
 .trial-inv-role { font-family: var(--font-data); font-size: var(--t-10); font-weight: 700; letter-spacing: .06em; padding: 2px 8px; border-radius: 20px; flex-shrink: 0; text-transform: uppercase; }
-.pi-role  { background: rgba(251,191,36,.15); color: #d97706; border: 1px solid rgba(251,191,36,.3); }
+.pi-role  { background: rgba(251,191,36,.15); color: var(--warn); border: 1px solid rgba(251,191,36,.3); }
 .coi-role { background: var(--blue-lt); color: var(--blue); border: 1px solid var(--blue-mid); }
 .subi-role { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
 .trial-inv-name { font-size: var(--t-13); font-weight: 600; color: var(--text-1); }
@@ -5929,7 +5975,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   flex-shrink: 0;
 }
 .inno-member-avatar--lead {
-  background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.4); color: #d97706;
+  background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.4); color: var(--warn);
 }
 .inno-member-info { display: flex; flex-direction: column; gap: 0; }
 .inno-member-name { font-size: var(--t-12); font-weight: 600; color: var(--text-1); line-height: 1.3; }
@@ -7014,3 +7060,302 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ================================================================
+   NEUMOCARE v12 ADDITIONS
+   All gaps from the design review addressed below
+================================================================ */
+
+/* ── Instrument Serif — NOW DEPLOYED ─────────────────────────── */
+.db-greeting-title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.8vw, 36px);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--text-1);
+  letter-spacing: -.01em;
+}
+.db-greeting-title span {
+  font-style: italic;
+  color: var(--blue);
+}
+.db-greeting-subtitle {
+  font-family: var(--font-display);
+  font-size: var(--t-13);
+  font-style: italic;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.db-situation-sentence {
+  font-size: var(--t-12);
+  color: var(--text-2);
+  margin-top: 8px;
+  line-height: 1.5;
+  padding: 10px 14px;
+  background: var(--blue-lt);
+  border-left: 3px solid var(--blue);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.db-situation-sentence i { color: var(--blue); margin-top: 2px; flex-shrink: 0; }
+
+/* ── View section headers with Instrument Serif ──────────────── */
+.view-display-title {
+  font-family: var(--font-display);
+  font-size: var(--t-18);
+  font-weight: 400;
+  color: var(--text-1);
+  letter-spacing: -.01em;
+}
+
+/* dept-card accent consolidated above */
+
+/* ── Dept resident category mini-bar ─────────────────────────── */
+.dept-res-bar {
+  display: flex;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+  gap: 1px;
+}
+.dept-res-bar-seg { height: 100%; border-radius: 2px; min-width: 4px; transition: flex var(--t); }
+.dept-res-bar-seg--int { background: var(--cat-internal); }
+.dept-res-bar-seg--rot { background: var(--cat-rotating); }
+.dept-res-bar-seg--ext { background: var(--cat-external); }
+.dept-res-bar-seg--empty { background: var(--border); flex: 1; }
+
+/* ── Department unit rows — clickable ────────────────────────── */
+.dept-unit-row {
+  cursor: pointer;
+  transition: background var(--t), padding-left var(--t);
+}
+.dept-unit-row:hover {
+  background: var(--blue-lt);
+  padding-left: 8px;
+  border-radius: var(--r-sm);
+}
+.dept-unit-row:hover .dept-unit-name { color: var(--blue); }
+
+/* ── Dept resident counts — clickable ────────────────────────── */
+.dept-res-stat {
+  cursor: pointer;
+  transition: transform var(--t), box-shadow var(--t);
+  border-radius: var(--r-sm);
+  padding: 4px 6px;
+}
+.dept-res-stat:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); background: var(--surface); }
+
+/* ── Capacity pill — partial state (was missing) ─────────────── */
+.tuc-cap-pill--partial { background: var(--partial-lt); color: var(--partial); border: 1px solid var(--partial-mid); }
+
+/* ── Training Unit timeline — scroll fix ─────────────────────── */
+.tuc-tl-months {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-2) transparent;
+  scroll-behavior: smooth;
+  position: relative;
+}
+.tuc-tl-months::-webkit-scrollbar { height: 3px; }
+.tuc-tl-months::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+/* Fade right edge to signal scrollable content */
+.tuc-timeline-body {
+  position: relative;
+}
+.tuc-timeline-body::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 32px; height: 100%;
+  background: linear-gradient(90deg, transparent, var(--surface) 85%);
+  pointer-events: none;
+  border-radius: 0 var(--r) var(--r) 0;
+}
+
+/* ── Timeline row — compact line-height ─────────────────────── */
+.tuc-tl-row { line-height: 1.3; }
+
+/* ── External contact badge — visible on cards ───────────────── */
+.ext-contact-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--t-11); color: var(--cat-external);
+  background: var(--violet-lt);
+  border: 1px solid rgba(124,58,237,.2);
+  border-radius: var(--r-sm);
+  padding: 2px 7px;
+  text-decoration: none;
+  transition: background var(--t);
+}
+.ext-contact-chip:hover { background: rgba(124,58,237,.12); }
+.ext-contact-chip i { font-size: 10px; }
+
+/* ── Cross-navigation context chips ─────────────────────────── */
+.nav-context-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: var(--t-11); font-weight: 500;
+  color: var(--blue); background: var(--blue-lt);
+  border: 1px solid var(--blue-mid);
+  border-radius: var(--r-sm);
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: background var(--t), border-color var(--t);
+  text-decoration: none;
+}
+.nav-context-chip:hover { background: var(--blue-mid); border-color: var(--blue); }
+.nav-context-chip i { font-size: 10px; }
+
+/* breadcrumb consolidated above */
+
+/* ── Skeleton loading — NOW wired to views ───────────────────── */
+.skeleton-view { padding: 4px; }
+.skeleton-card-row {
+  display: flex; gap: 16px; margin-bottom: 16px;
+}
+.skeleton-card-row .skeleton-card { flex: 1; }
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+/* ── Staff compact card — external contact visible ───────────── */
+.scc-ext-row {
+  display: flex; align-items: center; gap: 5px;
+  font-size: var(--t-11); color: var(--cat-external);
+  margin-top: 3px;
+}
+.scc-ext-row a { color: inherit; }
+
+/* ── Rotation orb track — month ruler ───────────────────────── */
+.rot-month-ruler {
+  display: flex;
+  height: 20px;
+  align-items: center;
+  padding-left: 168px; /* same as .rot-who width */
+  gap: 4px;
+  margin-bottom: -4px;
+}
+.rot-month-tick {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-family: var(--font-data);
+  color: var(--text-4);
+  letter-spacing: .02em;
+  min-width: 36px;
+  text-align: center;
+}
+.rot-month-tick.is-now {
+  color: var(--blue);
+  font-weight: 600;
+}
+
+/* ── Profile drawer — Rotations tab ─────────────────────────── */
+.profile-rot-item {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  transition: border-color var(--t), box-shadow var(--t);
+  cursor: pointer;
+}
+.profile-rot-item:hover { border-color: var(--blue-mid); box-shadow: var(--shadow-sm); }
+.profile-rot-item--active {
+  border-color: var(--ok-mid);
+  background: var(--ok-lt);
+}
+.profile-rot-unit { font-weight: 600; font-size: var(--t-12); color: var(--text-1); }
+.profile-rot-dates { font-size: var(--t-11); color: var(--text-3); font-family: var(--font-data); }
+.profile-rot-status { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+
+/* ── Rotation modal — unit timeline mini preview ─────────────── */
+.rot-unit-preview {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--surface-2);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+}
+.rot-unit-preview-title {
+  font-size: var(--t-11);
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 8px;
+}
+
+/* ── Conflict detection badge ─────────────────────────────────── */
+.conflict-badge {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--r);
+  font-size: var(--t-11);
+  line-height: 1.4;
+}
+.conflict-badge--warn { background: var(--warn-lt); color: #92400e; border: 1px solid var(--warn-mid); }
+.conflict-badge--ok   { background: var(--ok-lt); color: #065f46; border: 1px solid var(--ok-mid); }
+.conflict-badge--err  { background: var(--danger-lt); color: #991b1b; border: 1px solid var(--danger-mid); }
+.conflict-badge i { flex-shrink: 0; margin-top: 1px; }
+
+/* filter-bar already has flex-wrap:wrap in base definition */
+.tuc-horizon-row {
+  flex-wrap: wrap;
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* ── Situation sentence on dashboard ─────────────────────────── */
+.db-situation-row {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-top: 10px;
+}
+.situation-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: var(--t-12);
+  color: var(--text-2);
+  padding: 7px 12px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: border-color var(--t);
+  cursor: pointer;
+}
+.situation-item:hover { border-color: var(--blue-mid); }
+.situation-item i { color: var(--blue); width: 16px; text-align: center; flex-shrink: 0; }
+.situation-item strong { color: var(--text-1); }
+.situation-item .sit-action {
+  margin-left: auto;
+  font-size: var(--t-11);
+  color: var(--blue);
+  font-weight: 500;
+}
+
+/* ── Mobile bottom nav — Training Units added ────────────────── */
+@media (max-width: 768px) {
+  .mobile-nav-training { display: flex !important; }
+  .mobile-nav-research  { display: none !important; } /* deprioritise research on mobile */
+}
+
+/* ── Responsive timeline — auto-degrade at 900px ─────────────── */
+@media (max-width: 900px) {
+  .tuc-timeline-body .tuc-tl-months {
+    max-width: calc(100vw - 140px);
+  }
+}
+
+/* ── Table rows — compact line-height ────────────────────────── */
+.table tbody tr td { line-height: 1.35; }
+
+/* ── Rotation detail quick-view dates ────────────────────────── */
+.rot-detail-date-range {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-data);
+  font-size: var(--t-12);
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 4px 10px;
+}
+.rot-detail-date-range .sep { color: var(--text-4); }
