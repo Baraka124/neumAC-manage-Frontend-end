@@ -650,6 +650,11 @@ document.addEventListener('DOMContentLoaded', () => {
       async deleteStaffCertificate(staffId, certId) { return this.request(`/api/medical-staff/${staffId}/certificates/${certId}`, { method: 'DELETE' }) }
 
       async getDepartments() { return this.getList('/api/departments') }
+      async getDepartmentSummary(id) { return this.request(`/api/departments/${id}/summary`) }
+      async checkRotationAvailability(params) {
+        const q = new URLSearchParams(params).toString()
+        return this.request(`/api/rotations/availability?${q}`)
+      }
       async getAllDepartments() { return this.getList('/api/departments?include_inactive=true') }
       async getDepartmentImpact(id) { return this.request(`/api/departments/${id}/impact`) }
       async createDepartment(d) { this.invalidate('/api/departments'); return this.request('/api/departments', { method: 'POST', body: d }) }
@@ -1619,8 +1624,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const rotationFilters = reactive({ resident: '', status: '', trainingUnit: '', supervisor: '', search: '' })
       const rotationModal = reactive({
         show: false, mode: 'add',
-        form: { rotation_id: '', resident_id: '', training_unit_id: '', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)), rotation_status: 'scheduled', rotation_category: 'clinical_rotation', supervising_attending_id: '' }
+        form: { rotation_id: '', resident_id: '', training_unit_id: '', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)), rotation_status: 'scheduled', rotation_category: 'clinical_rotation', supervising_attending_id: '' },
+        availability: null,  // result from /api/rotations/availability
+        checkingAvailability: false
       })
+
+      // ── Rotation availability watcher — checks before save ──────
+      // Debounced: fires when unit + dates are all set
+      let _availCheckTimer = null
+      const checkRotationAvailability = () => {
+        clearTimeout(_availCheckTimer)
+        const { training_unit_id, resident_id, start_date, end_date } = rotationModal.form
+        if (!training_unit_id || !start_date || !end_date) { rotationModal.availability = null; return }
+        _availCheckTimer = setTimeout(async () => {
+          rotationModal.checkingAvailability = true
+          try {
+            const params = { training_unit_id, start_date, end_date }
+            if (resident_id) params.resident_id = resident_id
+            if (rotationModal.mode === 'edit' && rotationModal.form.id) params.exclude_id = rotationModal.form.id
+            rotationModal.availability = await API.checkRotationAvailability(params)
+          } catch { rotationModal.availability = null }
+          finally { rotationModal.checkingAvailability = false }
+        }, 500)
+      }
 
       const pendingActivations = ref([])
       const activationModal = reactive({ show: false, rotations: [], selectedRotation: null, notes: '', action: 'activate' })
@@ -2041,6 +2067,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rotations, rotationFilters, rotationModal,
         filteredRotations, filteredRotationsAll, rotationTotalPages,
         loadRotations, showAddRotationModal, editRotation, saveRotation, deleteRotation, selectedUnitCapacity,
+        checkRotationAvailability,
         pendingActivations, activationModal, checkAndUpdateRotations, updateRotationStatus,
         confirmPendingActivation, skipPendingActivation, postponeAllActivations, initAutoCheck,
         forceActivationCheck: () => checkAndUpdateRotations(true),
@@ -2471,46 +2498,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // For each slot (1..max), compute monthly status across the horizon
       const getUnitSlots = (unitId, maxResidents, horizonMonths) => {
+        // All active+scheduled rotations for this unit, sorted by start date
         const unitRots = rotations.value.filter(r =>
           r.training_unit_id === unitId && ['active','scheduled'].includes(r.rotation_status)
         ).sort((a,b) => new Date(a.start_date) - new Date(b.start_date))
 
         const months = getTimelineMonths(horizonMonths)
-        const today  = new Date()
 
-        return Array.from({ length: maxResidents }, (_, slotIdx) => {
-          const rot = unitRots[slotIdx] // one rotation per slot (simplified: sorted by start)
-          const residentId   = rot?.resident_id   || null
-          const residentName = rot ? getResidentShortName(rot.resident_id) : null
-          const initials     = residentName
-            ? residentName.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase()
-            : null
+        // Assign rotations to physical slots using a greedy bin-packing algorithm
+        // so sequential rotations reuse the same slot (e.g. Slot 1: R1 Jan-Mar, then R3 Apr-Jun)
+        const slots = Array.from({ length: maxResidents }, () => ({ rotations: [] }))
 
+        for (const rot of unitRots) {
+          const rotStart = new Date(rot.start_date)
+          const rotEnd   = new Date(rot.end_date)
+          // Find first slot where no existing rotation overlaps this one
+          const targetSlot = slots.find(slot =>
+            slot.rotations.every(existing => {
+              const eEnd = new Date(existing.end_date)
+              const eStart = new Date(existing.start_date)
+              return rotEnd < eStart || rotStart > eEnd  // no overlap
+            })
+          )
+          if (targetSlot) targetSlot.rotations.push(rot)
+          // If no slot available (over-capacity), rotation not shown — capacity exceeded
+        }
+
+        return slots.map((slot, slotIdx) => {
+          // Build month-by-month data — may have multiple rotations covering different months
           const monthData = months.map(m => {
             const mStart = new Date(m.year, m.month, 1)
-            const mEnd   = new Date(m.year, m.month + 1, 0)   // last day of month
+            const mEnd   = new Date(m.year, m.month + 1, 0)
 
-            let status  = 'free'
-            let tooltip = `Slot ${slotIdx + 1} — ${m.label}: Available`
-            let showName = false
-
-            if (rot) {
+            // Find which rotation (if any) covers this month
+            const coveringRot = slot.rotations.find(rot => {
               const rotStart = new Date(rot.start_date)
               const rotEnd   = new Date(rot.end_date)
-              const overlaps = rotStart <= mEnd && rotEnd >= mStart
+              return rotStart <= mEnd && rotEnd >= mStart
+            })
 
-              if (overlaps) {
-                const fullMonth = rotStart <= mStart && rotEnd >= mEnd
-                status   = fullMonth ? 'occupied' : 'partial'
-                showName = fullMonth
-                tooltip  = `${residentName} · ${rotStart.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})} → ${rotEnd.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})}`
-              }
+            let status   = 'free'
+            let tooltip  = `Slot ${slotIdx + 1} — ${m.label}: Available`
+            let showName = false
+            let initials = null
+            let residentName = null
+
+            if (coveringRot) {
+              residentName = getResidentShortName(coveringRot.resident_id)
+              initials     = residentName !== '—'
+                ? residentName.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase()
+                : '?'
+              const rotStart = new Date(coveringRot.start_date)
+              const rotEnd   = new Date(coveringRot.end_date)
+              const fullMonth = rotStart <= mStart && rotEnd >= mEnd
+              status    = fullMonth ? 'occupied' : 'partial'
+              showName  = fullMonth
+              const fmtStart = rotStart.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})
+              const fmtEnd   = rotEnd.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})
+              tooltip = `${residentName} · ${fmtStart} → ${fmtEnd}`
             }
 
-            return { key: m.key, label: m.label, isCurrent: m.isCurrent, status, tooltip, showName }
+            return { key: m.key, label: m.label, isCurrent: m.isCurrent, status, tooltip, showName, initials }
           })
 
-          return { slotIdx, residentId, residentName, initials, months: monthData }
+          // Primary resident for the slot label (current/first active rotation)
+          const primaryRot = slot.rotations.find(r => r.rotation_status === 'active') || slot.rotations[0]
+          const primaryName = primaryRot ? getResidentShortName(primaryRot.resident_id) : null
+          const primaryInitials = primaryName && primaryName !== '—'
+            ? primaryName.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase()
+            : null
+
+          return {
+            slotIdx,
+            residentId:   primaryRot?.resident_id || null,
+            residentName: primaryName,
+            initials:     primaryInitials,
+            rotationCount: slot.rotations.length,
+            months: monthData
+          }
         })
       }
 
@@ -3061,7 +3126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.13 useDashboard ============
-    function useDashboard({ medicalStaff, rotations, absences, onCallSchedule }) {
+    function useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits = ref([]) }) {
       const systemStats = ref({
         totalStaff: 0, activeAttending: 0, activeResidents: 0, onCallNow: 0, inSurgery: 0,
         activeRotations: 0, endingThisWeek: 0, startingNextWeek: 0, onLeaveStaff: 0,
@@ -3133,8 +3198,60 @@ document.addEventListener('DOMContentLoaded', () => {
         systemStats.value.onCallNow = unique.size
       }
 
+      // ── Situational awareness — "What is happening today" narrative ──
+      const situationItems = computed(() => {
+        const items = []
+        const todayDate = new Date(); todayDate.setHours(0,0,0,0)
+        const in7  = new Date(todayDate.getTime() + 7  * 86400000)
+        const in30 = new Date(todayDate.getTime() + 30 * 86400000)
+
+        // Rotations ending this week
+        const endingThisWeek = rotations.value.filter(r => {
+          if (r.rotation_status !== 'active') return false
+          const e = new Date(r.end_date + 'T00:00:00')
+          return e >= todayDate && e <= in7
+        })
+        if (endingThisWeek.length > 0) {
+          const names = endingThisWeek.slice(0,2).map(r => {
+            const s = medicalStaff.value.find(x => x.id === r.resident_id)
+            return s ? s.full_name.split(' ').slice(-1)[0] : 'Unknown'
+          }).join(', ')
+          const more = endingThisWeek.length > 2 ? ` +${endingThisWeek.length-2}` : ''
+          items.push({ icon: 'fa-clock', type: 'warn', text: `${endingThisWeek.length} rotation${endingThisWeek.length>1?'s':''} ending this week — ${names}${more}`, action: 'resident_rotations', actionFilter: { rotationStatus: 'active' } })
+        }
+
+        // Free slots opening within 30 days
+        const freeSlots = []
+        trainingUnits.value.forEach(unit => {
+          const activeRots = rotations.value.filter(r => r.training_unit_id === unit.id && r.rotation_status === 'active')
+          activeRots.forEach(r => {
+            const end = new Date(r.end_date + 'T00:00:00')
+            if (end >= todayDate && end <= in30 && activeRots.length >= unit.maximum_residents) {
+              freeSlots.push({ unit: unit.unit_name, date: r.end_date })
+            }
+          })
+        })
+        if (freeSlots.length > 0) {
+          const first = freeSlots[0]
+          const fmtDate = new Date(first.date + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+          items.push({ icon: 'fa-calendar-plus', type: 'info', text: `Slot opens in ${first.unit} from ${fmtDate}`, action: 'training_units' })
+        }
+
+        // Starting next 7 days
+        const startingThisWeek = rotations.value.filter(r => {
+          if (r.rotation_status !== 'scheduled') return false
+          const s = new Date(r.start_date + 'T00:00:00')
+          return s >= todayDate && s <= in7
+        })
+        if (startingThisWeek.length > 0) {
+          items.push({ icon: 'fa-play-circle', type: 'ok', text: `${startingThisWeek.length} rotation${startingThisWeek.length>1?'s':''} starting this week`, action: 'resident_rotations' })
+        }
+
+        return items
+      })
+
       const currentTimeFormatted = computed(() => Utils.formatTime(currentTime.value))
-      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats }
+      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems }
     }
 
     // ============ 7. ROOT APP ============
@@ -3323,8 +3440,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
 
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
-        const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule })
-        const { systemStats, updateDashboardStats, loadSystemStats } = dashOps
+        const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits })
+        const { systemStats, updateDashboardStats, loadSystemStats, situationItems } = dashOps
 
         // ============ NEW COMPACT VIEW STATE ============
         const rotationView = ref('detailed') // 'compact', 'detailed', or 'week'
@@ -3375,7 +3492,19 @@ document.addEventListener('DOMContentLoaded', () => {
               && a.current_status !== 'completed')
             .sort((a, b) => Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
         }
-        const getRotationHistory = (staffId) => { if (!staffId) return []; return rotations.value.filter(r => r.resident_id === staffId && !['active', 'scheduled'].includes(r.rotation_status)).sort((a, b) => Utils.normalizeDate(b.end_date || b.rotation_end_date).localeCompare(Utils.normalizeDate(a.end_date || a.rotation_end_date))) }
+        // Returns active + scheduled rotations for a resident (used in profile Rotations tab)
+        const getUpcomingRotations = (staffId) => {
+          if (!staffId) return []
+          return rotations.value.filter(r =>
+            r.resident_id === staffId && ['active', 'scheduled'].includes(r.rotation_status)
+          ).sort((a, b) => {
+            // active first, then by start date
+            if (a.rotation_status === 'active' && b.rotation_status !== 'active') return -1
+            if (a.rotation_status !== 'active' && b.rotation_status === 'active') return 1
+            return (a.start_date || '').localeCompare(b.start_date || '')
+          })
+        }
+                const getRotationHistory = (staffId) => { if (!staffId) return []; return rotations.value.filter(r => r.resident_id === staffId && !['active', 'scheduled'].includes(r.rotation_status)).sort((a, b) => Utils.normalizeDate(b.end_date || b.rotation_end_date).localeCompare(Utils.normalizeDate(a.end_date || a.rotation_end_date))) }
         const getRotationDaysLeft = (staffId) => { const r = getCurrentRotationForStaff(staffId); return r ? getDaysRemaining(r.end_date || r.rotation_end_date) : 0 }
         const getCurrentRotationSupervisor = (staffId) => { const r = getCurrentRotationForStaff(staffId); return r?.supervising_attending_id ? getStaffName(r.supervising_attending_id) : 'Not assigned' }
         const hasProfessionalCredentials = (staff) => !!(staff?.academic_degree || staff?.specialization || staff?.training_year || staff?.clinical_certificate || staff?.medical_license)
@@ -3483,8 +3612,19 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         })
 
-        const switchView = async (view) => {
+        // switchView(view, filters) — supports cross-navigation with pre-applied filters
+        // filters example: { department: deptId, category: 'external_resident' }
+        const switchView = async (view, filters = {}) => {
           currentView.value = view; ui.mobileMenuOpen.value = false
+          // Apply pre-filters if provided (cross-view navigation)
+          if (filters.department) {
+            if (staffFilters && staffFilters.department !== undefined) staffFilters.department = filters.department
+            if (trainingUnitFilters && trainingUnitFilters.department !== undefined) trainingUnitFilters.department = filters.department
+            if (rotationFilters && rotationFilters.trainingUnit === undefined && view === 'department_management') {} // no-op
+          }
+          if (filters.residentCategory && staffFilters) { staffFilters.staffType = 'medical_resident'; staffFilters.residentCategory = filters.residentCategory }
+          if (filters.rotationStatus && rotationFilters) rotationFilters.status = filters.rotationStatus
+          if (filters.trainingUnit && rotationFilters) rotationFilters.trainingUnit = filters.trainingUnit
           ui.searchResultsOpen.value = false
           if (pagination[view]) pagination[view].page = 1
           // Trigger entrance animation on content area
@@ -3710,6 +3850,8 @@ document.addEventListener('DOMContentLoaded', () => {
           openUnitClinicians: (unit) => openUnitClinicians(unit, medicalStaff.value),
           saveUnitClinicians,
           viewUnitResidents: (unit) => viewUnitResidents(unit, rotations.value),
+          checkRotationAvailability: rotationOps.checkRotationAvailability,
+          rotationAvailability: rotationOps.rotationModal,  // exposes .availability state
           ...commsOps,
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
           ...liveOps,
@@ -3720,7 +3862,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ...analyticsOps,
           ...dashOps,
           handleLogin, handleLogout,
-          switchView, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
+          switchView, situationItems, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           searchResultsOpen: ui.searchResultsOpen,
@@ -3750,7 +3892,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getStaffName, getSupervisorName, getPhysicianName, getResidentName, getTrainingUnitName,
           calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart, getRotationProgress,
           getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
-          getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
+          getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
           getCurrentRotationSupervisor, hasProfessionalCredentials,
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
           formatRotationStatus, getUserRoleDisplay, formatAudience,
