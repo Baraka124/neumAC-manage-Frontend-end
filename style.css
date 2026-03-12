@@ -527,14 +527,14 @@ a { color: var(--blue); text-decoration: none; }
 /* The section title is the ANCHOR — it must be clearly smaller
    and more subdued than the items, acting as a label not a heading */
 .sidebar-section-title {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .13em;
-  padding: 16px 4px 4px;
+  letter-spacing: .14em;
+  padding: 18px 4px 5px;
   white-space: nowrap; overflow: hidden;
   display: flex; align-items: center; gap: 8px;
-  opacity: .45;
+  opacity: .5;
 }
 
 /* First section needs less top space (sits under logo) */
@@ -569,19 +569,20 @@ a { color: var(--blue); text-decoration: none; }
 
 /* ── Nav link ─────────────────────────────────────────────── */
 .sidebar-menu-link {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px;
+  display: flex; align-items: center; gap: 11px;
+  padding: 8px 12px;
   border-radius: 8px;
-  color: rgba(255,255,255,.52);
+  color: rgba(255,255,255,.55);
   font-size: 13px;
   font-weight: 500;
-  transition: background var(--t), color var(--t), opacity var(--t);
+  transition: background var(--t), color var(--t);
   white-space: nowrap; overflow: hidden;
-  margin-bottom: 1px;
-  min-height: 36px;
+  margin-bottom: 2px;
+  min-height: 37px;
   position: relative;
   cursor: pointer;
   letter-spacing: -.01em;
+  text-decoration: none;
 }
 
 /* Icon — slightly dimmer than text so text reads first */
@@ -617,8 +618,9 @@ a { color: var(--blue); text-decoration: none; }
    ────────────────────────────────────────────────────────── */
 .sidebar-menu-link.active {
   color: #fff;
-  font-weight: 650;          /* Noticeably heavier than inactive 500 */
+  font-weight: 700;
   letter-spacing: -.02em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
 }
 .sidebar-menu-link.active i {
   opacity: 1 !important;
@@ -694,22 +696,22 @@ a { color: var(--blue); text-decoration: none; }
 }
 .sidebar-user:hover { background: rgba(255,255,255,.07); }
 .sidebar-user-avatar {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   background: linear-gradient(135deg, #4d9aff 0%, #7c3aed 100%);
   color: #fff; display: flex; align-items: center; justify-content: center;
-  font-size: var(--t-11); font-weight: 700; flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(77,154,255,.3);
+  font-size: 12px; font-weight: 700; flex-shrink: 0; letter-spacing: .02em;
+  box-shadow: 0 0 0 2px rgba(77,154,255,.25), 0 0 12px rgba(77,154,255,.2);
 }
 .user-info { min-width: 0; overflow: hidden; }
 .user-name {
-  font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,.92);  /* was 13px */
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,.95);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -.01em;
 }
 .user-role {
-  font-size: 11px; color: rgba(255,255,255,.38);  /* was 10px */
-  text-transform: uppercase; letter-spacing: .08em;
+  font-size: 10px; color: rgba(255,255,255,.42);
+  text-transform: uppercase; letter-spacing: .07em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* ── Collapsed state ──────────────────────────────────────── */
