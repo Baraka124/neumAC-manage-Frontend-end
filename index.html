@@ -929,10 +929,10 @@
                         <div v-if="staffView === 'table'" class="table-responsive">
                             <table class="table table-striped table-staff">
                                 <colgroup>
-                                    <col style="width:24%"><!-- Name -->
-                                    <col style="width:11%"><!-- Type -->
-                                    <col style="width:14%"><!-- Department -->
-                                    <col style="width:15%"><!-- Rotation -->
+                                    <col style="width:28%"><!-- Name -->
+                                    <col style="width:9%"> <!-- Type — narrow, pulls toward name -->
+                                    <col style="width:16%"><!-- Department — more space, pushed right -->
+                                    <col style="width:17%"><!-- Rotation -->
                                     <col style="width:9%"> <!-- Status -->
                                     <col style="width:7%"> <!-- Actions -->
                                 </colgroup>
@@ -940,7 +940,7 @@
                                     <tr>
                                         <th @click="sortBy('medical_staff', 'full_name')">Name <i class="fas" :class="sortIcon('medical_staff', 'full_name')"></i></th>
                                         <th style="text-align:center" @click="sortBy('medical_staff', 'staff_type')">Type <i class="fas" :class="sortIcon('medical_staff', 'staff_type')"></i></th>
-                                        <th>Department</th>
+                                        <th style="padding-left:18px">Department</th>
                                         <th>Current Rotation</th>
                                         <th style="text-align:center" @click="sortBy('medical_staff', 'employment_status')">Status <i class="fas" :class="sortIcon('medical_staff', 'employment_status')"></i></th>
                                         <th style="text-align:center">Actions</th>
@@ -979,7 +979,7 @@
                                         <td style="text-align:center">
                                             <span class="badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffTypeShortFn(staff.staff_type) }}</span>
                                         </td>
-                                        <td>
+                                        <td style="padding-left:18px">
                                             <span v-if="getDepartmentName(staff.department_id)">{{ getDepartmentName(staff.department_id) }}</span>
                                             <span v-else class="na-value">—</span>
                                         </td>
@@ -1635,6 +1635,14 @@
                                 <span class="tuc-tl-leg-item"><span class="tuc-tl-leg-dot tuc-tl-leg-dot--occupied"></span>Occupied</span>
                                 <span class="tuc-tl-leg-item"><span class="tuc-tl-leg-dot tuc-tl-leg-dot--partial"></span>Partial</span>
                                 <span class="tuc-tl-leg-item"><span class="tuc-tl-leg-dot tuc-tl-leg-dot--free"></span>Available</span>
+                                <!-- Shared month header labels — right-aligned to match card internals -->
+                                <div class="tuc-shared-month-header">
+                                    <div v-for="m in getTimelineMonths(trainingUnitHorizon)" :key="m.key"
+                                         class="tuc-tl-month-label"
+                                         :class="{ 'tuc-tl-month-label--current': m.isCurrent }">
+                                        {{ m.label }}
+                                    </div>
+                                </div>
                             </div>
                             <div v-for="unit in filteredTrainingUnits" :key="unit.id"
                                  class="tuc"
@@ -1673,17 +1681,7 @@
                                      ══════════════════════════════════════ -->
                                 <div v-if="trainingUnitView === 'timeline'" class="tuc-timeline-body">
 
-                                    <!-- Month header labels -->
-                                    <div class="tuc-tl-header">
-                                        <div class="tuc-tl-slot-label"></div>
-                                        <div class="tuc-tl-months">
-                                            <div v-for="m in getTimelineMonths(trainingUnitHorizon)" :key="m.key"
-                                                 class="tuc-tl-month-label"
-                                                 :class="{ 'tuc-tl-month-label--current': m.isCurrent }">
-                                                {{ m.label }}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <!-- Month header suppressed per-card — rendered once above grid -->
 
                                     <!-- One row per slot -->
                                     <div v-for="(slot, si) in getUnitSlots(unit.id, unit.maximum_residents, trainingUnitHorizon)"
@@ -1705,9 +1703,10 @@
                                                    'tuc-tl-cell--occupied':  m.status === 'occupied',
                                                    'tuc-tl-cell--partial':   m.status === 'partial',
                                                    'tuc-tl-cell--free':      m.status === 'free',
-                                                   'tuc-tl-cell--current':   m.isCurrent
+                                                   'tuc-tl-cell--current':   m.isCurrent,
+                                                   'tuc-tl-cell--clickable': true
                                                  }"
-                                                 :title="m.tooltip">
+                                                 @click="openCellPopover($event, unit.id, unit.unit_name, slot, m)">
                                                 <span v-if="m.status === 'occupied' && m.showName" class="tuc-tl-cell-name">{{ slot.initials }}</span>
                                                 <span v-if="m.status === 'free' && m.isCurrent" class="tuc-tl-cell-free">✓</span>
                                             </div>
@@ -4410,6 +4409,37 @@
                 </div>
             </div>
         </div>
+
+        <!-- ============ TIMELINE CELL POPOVER ============ -->
+        <div v-if="tlPopover.show"
+             class="tl-popover"
+             :style="{ left: tlPopover.x + 'px', top: tlPopover.y + 'px' }"
+             @click.stop>
+            <div class="tl-popover-header">
+                <span class="tl-popover-unit">{{ tlPopover.unitName }}</span>
+                <span class="tl-popover-sep">·</span>
+                <span class="tl-popover-slot">Slot {{ tlPopover.slotIdx }}</span>
+                <span class="tl-popover-sep">·</span>
+                <span class="tl-popover-month">{{ tlPopover.monthLabel }}</span>
+                <button class="tl-popover-close" @click="closeCellPopover"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="tl-popover-body">
+                <div v-for="(entry, i) in tlPopover.entries" :key="i" class="tl-popover-entry">
+                    <template v-if="entry.status === 'free'">
+                        <span class="tl-popover-dot tl-popover-dot--free"></span>
+                        <span class="tl-popover-name tl-popover-name--free">Available</span>
+                    </template>
+                    <template v-else>
+                        <span class="tl-popover-dot" :class="entry.partial ? 'tl-popover-dot--partial' : 'tl-popover-dot--occupied'"></span>
+                        <span class="tl-popover-name">{{ entry.name }}</span>
+                        <span class="tl-popover-dates">{{ entry.start }} → {{ entry.end }}</span>
+                        <span v-if="entry.partial" class="tl-popover-partial-badge">partial</span>
+                    </template>
+                </div>
+            </div>
+        </div>
+        <!-- Click-away to close popover -->
+        <div v-if="tlPopover.show" class="tl-popover-backdrop" @click="closeCellPopover"></div>
 
         <!-- ============ ANNOUNCEMENT READ MODAL ============ -->
         <div v-if="announcementReadModal.show" class="modal-overlay" @click.self="announcementReadModal.show = false">
