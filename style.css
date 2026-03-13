@@ -279,7 +279,7 @@
   gap: 8px; margin-bottom: 10px;
 }
 .tuc-head-right {
-  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 5px; flex-shrink: 0;
 }
 .tuc-name-row {
   display: flex; align-items: flex-start; gap: 8px;
@@ -302,7 +302,8 @@
 
 /* ── TIMELINE BODY ── */
 .tuc-timeline-body {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  padding: 8px 12px 0;
 }
 
 /* Header row with month labels */
@@ -393,8 +394,7 @@
 
 /* Legend */
 .tuc-tl-legend {
-  display: flex; gap: 12px; margin-top: 8px;
-  padding-top: 6px; border-top: 1px solid var(--border);
+  display: flex; gap: 12px; margin-top: 6px;
 }
 .tuc-tl-leg-item {
   display: flex; align-items: center; gap: 4px;
@@ -1718,17 +1718,20 @@ a { color: var(--blue); text-decoration: none; }
 /* Body — all text, fills remaining width */
 .scc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 
-/* Row 1: name */
-.scc-name-row { display: flex; align-items: center; gap: 5px; }
+/* Row 1: name + badge + int/ext pill */
+.scc-name-row { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; overflow: hidden; }
 .scc-name {
   font-size: 13px; font-weight: 600; color: var(--text-1);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  letter-spacing: -.01em; flex: 1; min-width: 0;
+  letter-spacing: -.01em; min-width: 0; flex-shrink: 1;
 }
 .scc-warn { color: var(--warn); font-size: 9.5px; flex-shrink: 0; cursor: help; opacity: .55; transition: opacity var(--t); }
 .scc:hover .scc-warn { opacity: .9; }
 
-/* Row 2: type badge + int/ext + department inline */
+/* Row 2: department only */
+.scc-dept-row { display: flex; align-items: center; min-height: 14px; }
+
+/* Row 2 (old meta — kept for any fallback reference) */
 .scc-meta {
   display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; overflow: hidden;
 }
@@ -5059,20 +5062,19 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 .training-units-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px; padding: 16px;
+  gap: 10px; padding: 12px 16px;
 }
 
 .tuc {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--r-xl);
+  border-radius: 8px;
   display: flex; flex-direction: column; gap: 0;
   overflow: hidden;
   transition: box-shadow var(--t), transform var(--t);
-  /* Improvement 1: subtle left accent by status */
   border-left: 3px solid var(--border);
 }
-.tuc:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.tuc:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .tuc--active { border-left-color: var(--ok); }
 .tuc--full   { border-left-color: var(--danger); }
 .tuc--warn   { border-left-color: var(--warn); }
@@ -5080,19 +5082,23 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 /* Head */
 .tuc-head {
   display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 14px 14px 10px;
+  padding: 11px 12px 9px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface); /* Improvement 2: solid head bg, not washed out */
+  background: var(--surface);
 }
 .tuc-name-row { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-.tuc-icon { font-size: 13px; color: var(--teal); flex-shrink: 0; opacity: 0.9; }
+.tuc-icon { font-size: 12px; color: var(--teal); flex-shrink: 0; opacity: 0.9; }
 .tuc-name {
-  font-family: var(--font-display); font-size: 16px;
+  font-family: var(--font-display); font-size: 14px;
   font-style: italic; font-weight: 400;
-  /* Improvement 3: darker name — was text-1 which is too faint on light bg */
   color: #1a202c;
   letter-spacing: -.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Sub — department · specialty */
+.tuc-sub {
+  font-size: 11px; color: var(--text-2); margin-top: 1px;
 }
 
 /* Meta — department + specialty tags */
@@ -5139,14 +5145,14 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 /* Supervisor strip */
 .tuc-supervisor {
   display: flex; align-items: center; gap: 7px;
-  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  padding: 6px 14px; border-bottom: 1px solid var(--border);
   font-size: 12px; font-weight: 600;
-  /* Improvement 5: was text-2 (still faint) — now explicitly readable */
   color: #2d3748;
 }
 .tuc-supervisor i { font-size: 11px; color: var(--blue); }
-.tuc-supervisor--empty { color: var(--text-3); font-style: italic; font-weight: 400; }
-.tuc-supervisor--empty i { color: var(--text-4); }
+.tuc-supervisor--empty { padding: 5px 14px; border-bottom: 1px solid var(--border); }
+.tuc-supervisor--empty i { color: var(--text-4); font-size: 10px; }
+.tuc-sup-empty-label { font-size: 10px; color: var(--text-4); font-style: italic; font-weight: 400; }
 .tuc-sup-badge {
   margin-left: auto; font-family: var(--font-data);
   font-size: 9px; font-weight: 800; text-transform: uppercase;
@@ -5155,14 +5161,23 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   padding: 2px 7px; border-radius: 20px;
 }
 
+/* Shared legend above all cards */
+.tuc-shared-legend {
+  grid-column: 1 / -1;
+  display: flex; gap: 14px; align-items: center;
+  padding: 2px 4px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
 /* Actions — small, unobtrusive */
 .tuc-actions {
   display: flex; align-items: center; gap: 4px;
-  padding: 8px 12px;
+  padding: 6px 10px;
 }
 .tuc-btn {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 9px; border-radius: var(--r-sm);
+  padding: 3px 8px; border-radius: var(--r-sm);
   font-size: 11px; font-weight: 600; cursor: pointer;
   transition: var(--t); border: 1px solid transparent;
   font-family: var(--font-ui);
@@ -5185,14 +5200,14 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 
 /* Edit + Delete — icon-only, whisper quiet */
 .tuc-btn--edit {
-  padding: 5px 8px; background: transparent; border-color: transparent;
+  padding: 4px 7px; background: transparent; border-color: transparent;
   color: var(--text-4);
 }
 .tuc-btn--edit:hover { background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue); }
 .tuc-btn--edit i { font-size: 10px; opacity: 1; }
 
 .tuc-btn--danger {
-  padding: 5px 8px; background: transparent; border-color: transparent;
+  padding: 4px 7px; background: transparent; border-color: transparent;
   color: var(--text-4);
 }
 .tuc-btn--danger:hover { background: var(--danger-lt); border-color: var(--danger-mid); color: var(--danger); }
