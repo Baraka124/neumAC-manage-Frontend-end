@@ -83,15 +83,14 @@
             </div>
 
             <!-- Form -->
-            <div class="lc-form">
+            <form class="lc-form" @submit.prevent="handleLogin" autocomplete="on">
                 <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.email }">
                     <label class="lc-label">Email</label>
                     <div class="lc-input-wrap">
                         <i class="fas fa-envelope lc-input-icon"></i>
                         <input type="email" class="lc-input" v-model="loginForm.email"
                                placeholder="your@email.com" autocomplete="email"
-                               @input="clearLoginError('email')"
-                               @keyup.enter="handleLogin">
+                               @input="clearLoginError('email')">
                     </div>
                     <span v-if="loginFieldErrors.email" class="lc-field-err">{{ loginFieldErrors.email }}</span>
                 </div>
@@ -103,8 +102,7 @@
                         <input :type="showPassword ? 'text' : 'password'" class="lc-input"
                                v-model="loginForm.password" placeholder="••••••••"
                                autocomplete="current-password"
-                               @input="clearLoginError('password')"
-                               @keyup.enter="handleLogin">
+                               @input="clearLoginError('password')">
                         <button type="button" class="lc-eye" @click="showPassword = !showPassword" tabindex="-1">
                             <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                         </button>
@@ -120,12 +118,12 @@
                     <a href="#" class="lc-forgot" @click.prevent="handleForgotPassword">Forgot password?</a>
                 </div>
 
-                <button class="lc-submit" @click="handleLogin" :disabled="loginLoading">
+                <button type="submit" class="lc-submit" :disabled="loginLoading">
                     <i v-if="loginLoading" class="fas fa-spinner fa-spin"></i>
                     <span>{{ loginLoading ? 'Authenticating…' : 'Sign in' }}</span>
                     <i v-if="!loginLoading" class="fas fa-arrow-right lc-submit-arrow"></i>
                 </button>
-            </div>
+            </form>
 
 
 
