@@ -430,6 +430,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return { 'Phase I': '#4d9aff', 'Phase II': '#00e5a0', 'Phase III': '#ffbe3d', 'Phase IV': '#ff5566' }[phase] || '#7a90b0'
       }
 
+      static getPartnerTypeColor(type) {
+        const map = {
+          'Empresa': '#4d9aff', 'Hospital': '#00e5a0', 'Tecnología': '#ffbe3d', 'Universidad': '#a78bfa',
+          'Industria': '#f97316', 'Startup': '#34d399', 'Fundación': '#fb7185', 'Institución': '#60a5fa',
+          'CRO': '#f59e0b', 'Other': '#7a90b0'
+        }
+        return map[type] || ('#' + [...type].reduce((h, c) => (h * 31 + c.charCodeAt(0)) & 0xffffff, 0x4d9aff).toString(16).padStart(6, '0'))
+      }
+
       static getStageConfig(stage) {
         return PROJECT_STAGES_DATA.find(s => s.key === stage) || { key: stage, label: stage, icon: 'fa-circle', color: '#7a90b0', bg: 'rgba(122,144,176,.1)', step: 0 }
       }
@@ -2723,7 +2732,8 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.assign(communicationsModal.form, { title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } })
       }
 
-      const viewAnnouncement = (a) => showToast(a.title, Utils.truncateText(a.content, 120), 'info')
+      const announcementReadModal = reactive({ show: false, announcement: null })
+      const viewAnnouncement = (a) => { announcementReadModal.announcement = a; announcementReadModal.show = true }
 
       const saveCommunication = async (saving, saveClinicalStatus) => {
         saving.value = true
@@ -2752,7 +2762,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
-      return { announcements, communicationsFilters, communicationsModal, filteredAnnouncements, recentAnnouncements, unreadAnnouncements, loadAnnouncements, showCommunicationsModal, viewAnnouncement, saveCommunication, deleteAnnouncement }
+      return { announcements, communicationsFilters, communicationsModal, announcementReadModal, filteredAnnouncements, recentAnnouncements, unreadAnnouncements, loadAnnouncements, showCommunicationsModal, viewAnnouncement, saveCommunication, deleteAnnouncement }
     }
 
     // ============ 6.10 useLiveStatus ============
@@ -3539,6 +3549,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatRotationStatus = (s) => ROTATION_STATUS_LABELS[s] || s
         const getUserRoleDisplay = (r) => USER_ROLE_LABELS[r] || r
         const formatAudience = (a) => ({ all_staff: 'All Staff', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attending Physicians' }[a] || a)
+        const formatTrialStatus = (s) => ({ 'Reclutando': 'Recruiting', 'Activo': 'Active', 'Completado': 'Completed', 'Suspendido': 'Suspended', 'Pendiente': 'Pending', 'Cerrado': 'Closed' }[s] || s)
         const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'NeumoCare Dashboard'
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
         const getSearchPlaceholder = () => 'Search...'
@@ -3895,7 +3906,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
           getCurrentRotationSupervisor, hasProfessionalCredentials,
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
-          formatRotationStatus, getUserRoleDisplay, formatAudience,
+          formatRotationStatus, getUserRoleDisplay, formatAudience, formatTrialStatus,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
           showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword,
           normalizeDate: (d) => Utils.normalizeDate(d),
@@ -3912,7 +3923,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getStaffTypeIcon, getAbsenceReasonIcon, calculateCapacityPercent,
           getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
           getPreviewStatusClass, getPreviewStatusText, updatePreview, requestFullDossier,
-          getPhaseColor: Utils.getPhaseColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatPercentage: Utils.formatPercentage,
+          getPhaseColor: Utils.getPhaseColor, getPartnerTypeColor: Utils.getPartnerTypeColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatPercentage: Utils.formatPercentage,
           availablePhysicians, availableResidents, availableAttendings, availableHeadsOfDepartment, availableReplacementStaff,
           // FIX 11: Partner needs options with an "Other" escape hatch handled in template
           availablePartnerNeeds: ['Financiación', 'Distribución', 'Fabricación', 'Software', 'Regulatorio', 'Ensayos clínicos', 'Licencia de tecnología', 'Co-desarrollo'],
