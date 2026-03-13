@@ -1890,8 +1890,14 @@
                                         </td>
                                         <td>
                                             <div class="table-actions">
-                                                <button class="btn-pill btn-pill-edit" @click="editAbsence(absence)" v-if="hasPermission('staff_absence', 'update')"><i class="fas fa-edit"></i> Edit</button>
-                                                <button class="btn-pill btn-pill-danger" @click="deleteAbsence(absence)" v-if="hasPermission('staff_absence', 'delete')"><i class="fas fa-trash"></i></button>
+                                                <button v-if="absence.current_status === 'completed'"
+                                                        class="btn-pill btn-pill-resolve"
+                                                        @click.stop="openResolutionModal(absence)"
+                                                        title="This absence has ended — click to resolve">
+                                                    <i class="fas fa-clipboard-check"></i> Resolve
+                                                </button>
+                                                <button class="btn-pill btn-pill-edit" @click.stop="editAbsence(absence)" v-if="hasPermission('staff_absence', 'update') && absence.current_status !== 'completed'"><i class="fas fa-edit"></i> Edit</button>
+                                                <button class="btn-pill btn-pill-danger" @click.stop="deleteAbsence(absence)" v-if="hasPermission('staff_absence', 'delete') && absence.current_status !== 'completed'"><i class="fas fa-trash"></i></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -4281,6 +4287,110 @@
                     <button class="btn btn-primary" @click="saveTrainingUnit" :disabled="saving">
                         <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i>
                         {{ saving ? 'Saving...' : (trainingUnitModal.mode === 'add' ? 'Add Unit' : 'Save Changes') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ ABSENCE RESOLUTION MODAL ============ -->
+        <div v-if="absenceResolutionModal.show && absenceResolutionModal.absence" class="modal-overlay" @click.self="absenceResolutionModal.show = false">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <div>
+                        <h3 class="modal-title"><i class="fas fa-clipboard-check"></i> Resolve Absence</h3>
+                        <div class="modal-subtitle" style="margin-top:3px;font-size:12px;color:var(--text-3)">
+                            {{ getStaffName(absenceResolutionModal.absence.staff_member_id) }} ·
+                            {{ formatDate(absenceResolutionModal.absence.start_date) }} →
+                            {{ formatDate(absenceResolutionModal.absence.end_date) }}
+                        </div>
+                    </div>
+                    <button class="modal-close" @click="absenceResolutionModal.show = false"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Action selector -->
+                    <div class="arm-actions">
+                        <div class="arm-action" :class="{ 'arm-action--active': absenceResolutionModal.action === 'confirm_return' }"
+                             @click="absenceResolutionModal.action = 'confirm_return'">
+                            <div class="arm-action-icon arm-action-icon--ok"><i class="fas fa-user-check"></i></div>
+                            <div>
+                                <div class="arm-action-title">Confirm Return</div>
+                                <div class="arm-action-desc">Staff returned to duty as expected</div>
+                            </div>
+                        </div>
+                        <div class="arm-action" :class="{ 'arm-action--active': absenceResolutionModal.action === 'extend' }"
+                             @click="absenceResolutionModal.action = 'extend'">
+                            <div class="arm-action-icon arm-action-icon--warn"><i class="fas fa-calendar-plus"></i></div>
+                            <div>
+                                <div class="arm-action-title">Extend Absence</div>
+                                <div class="arm-action-desc">Staff is not back yet — update end date</div>
+                            </div>
+                        </div>
+                        <div class="arm-action" :class="{ 'arm-action--active': absenceResolutionModal.action === 'archive' }"
+                             @click="absenceResolutionModal.action = 'archive'">
+                            <div class="arm-action-icon arm-action-icon--neutral"><i class="fas fa-archive"></i></div>
+                            <div>
+                                <div class="arm-action-title">Archive Record</div>
+                                <div class="arm-action-desc">Mark as cancelled — record is kept for audit</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confirm return fields -->
+                    <div v-if="absenceResolutionModal.action === 'confirm_return'" class="form-section" style="margin-top:16px">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Actual Return Date</label>
+                                <input type="date" class="form-control" v-model="absenceResolutionModal.returnDate">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Notes <span class="form-label-optional">optional</span></label>
+                            <input type="text" class="form-control" v-model="absenceResolutionModal.returnNotes" placeholder="e.g. Returned full duties, no further action needed">
+                        </div>
+                    </div>
+
+                    <!-- Extend fields -->
+                    <div v-if="absenceResolutionModal.action === 'extend'" class="form-section" style="margin-top:16px">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">New End Date</label>
+                                <input type="date" class="form-control" v-model="absenceResolutionModal.extendedEndDate">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reason for extension <span class="form-label-optional">optional</span></label>
+                            <input type="text" class="form-control" v-model="absenceResolutionModal.returnNotes" placeholder="e.g. Medical certificate extended by GP">
+                        </div>
+                    </div>
+
+                    <!-- Archive confirmation -->
+                    <div v-if="absenceResolutionModal.action === 'archive'" class="arm-archive-notice" style="margin-top:16px">
+                        <i class="fas fa-info-circle"></i>
+                        <span>The record will be marked as <strong>cancelled</strong> and removed from the active list. It is permanently retained in the audit log and cannot be deleted.</span>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="absenceResolutionModal.show = false">Cancel</button>
+                    <button class="btn"
+                            :class="{
+                                'btn-primary':  absenceResolutionModal.action === 'confirm_return',
+                                'btn-warning':  absenceResolutionModal.action === 'extend',
+                                'btn-secondary': absenceResolutionModal.action === 'archive'
+                            }"
+                            @click="resolveAbsence()"
+                            :disabled="absenceResolutionModal.saving">
+                        <i class="fas" :class="{
+                            'fa-check':        absenceResolutionModal.action === 'confirm_return',
+                            'fa-calendar-plus': absenceResolutionModal.action === 'extend',
+                            'fa-archive':      absenceResolutionModal.action === 'archive',
+                            'fa-spinner fa-spin': absenceResolutionModal.saving
+                        }"></i>
+                        <span v-if="!absenceResolutionModal.saving">
+                            {{ absenceResolutionModal.action === 'confirm_return' ? 'Confirm Return' : absenceResolutionModal.action === 'extend' ? 'Extend Absence' : 'Archive Record' }}
+                        </span>
+                        <span v-else>Saving…</span>
                     </button>
                 </div>
             </div>
