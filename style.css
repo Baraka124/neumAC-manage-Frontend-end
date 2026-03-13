@@ -5167,6 +5167,35 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   margin-bottom: 2px;
 }
 
+/* Shared month header — right side of the legend row, auto-pushes right */
+.tuc-shared-month-header {
+  margin-left: auto;
+  display: flex; gap: 2px;
+  /* Width matches the month columns inside cards:
+     card padding (12px left) + slot-label (32px) + gap = ~46px offset from right edge
+     We mirror using padding-right to align labels above cells */
+  padding-right: 12px;
+}
+.tuc-shared-month-header .tuc-tl-month-label {
+  width: 44px; text-align: center;
+  font-size: 9.5px; font-weight: 700;
+  color: var(--text-3); text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.tuc-shared-month-header .tuc-tl-month-label--current {
+  color: var(--blue); font-weight: 800;
+}
+
+/* Clickable cell affordance */
+.tuc-tl-cell--clickable {
+  cursor: pointer;
+}
+.tuc-tl-cell--clickable:hover {
+  filter: brightness(1.12);
+  transform: scaleY(1.1);
+  z-index: 2;
+}
+
 /* Actions — small, unobtrusive */
 .tuc-actions {
   display: flex; align-items: center; gap: 4px;
@@ -7375,3 +7404,70 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   padding: 4px 10px;
 }
 .rot-detail-date-range .sep { color: var(--text-4); }
+
+/* ================================================================
+   TIMELINE CELL POPOVER
+================================================================ */
+.tl-popover-backdrop {
+  position: fixed; inset: 0; z-index: 299;
+}
+.tl-popover {
+  position: absolute; z-index: 300;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.13), 0 2px 6px rgba(0,0,0,.08);
+  min-width: 220px; max-width: 300px;
+  overflow: hidden;
+  animation: popover-in .12s ease;
+}
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tl-popover-header {
+  display: flex; align-items: center; gap: 5px;
+  padding: 8px 10px 7px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.tl-popover-unit  { font-weight: 700; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+.tl-popover-sep   { color: var(--text-4); }
+.tl-popover-slot  { font-weight: 600; color: var(--text-2); flex-shrink: 0; }
+.tl-popover-month { font-weight: 700; color: var(--blue); flex-shrink: 0; text-transform: uppercase; letter-spacing: .04em; }
+.tl-popover-close {
+  margin-left: auto; flex-shrink: 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-4); font-size: 9px; padding: 2px 4px;
+  border-radius: 3px; transition: var(--t);
+}
+.tl-popover-close:hover { background: var(--border); color: var(--text-1); }
+
+.tl-popover-body { padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 5px; }
+
+.tl-popover-entry {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; line-height: 1.4;
+}
+.tl-popover-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.tl-popover-dot--occupied { background: var(--blue); }
+.tl-popover-dot--partial  { background: var(--warn); }
+.tl-popover-dot--free     { background: var(--ok); }
+.tl-popover-name {
+  font-weight: 600; color: var(--text-1); flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tl-popover-name--free { color: var(--ok); font-weight: 500; font-style: italic; }
+.tl-popover-dates {
+  font-size: 10.5px; color: var(--text-3); flex-shrink: 0;
+  font-family: var(--font-data);
+}
+.tl-popover-partial-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; padding: 1px 5px; border-radius: 3px;
+  background: rgba(245,158,11,.12); color: var(--warn);
+  border: 1px solid rgba(245,158,11,.25); flex-shrink: 0;
+}
