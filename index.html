@@ -2108,6 +2108,13 @@
                                 <option value="high">High</option>
                                 <option value="urgent">Urgent</option>
                             </select>
+                            <select class="form-select" v-model="communicationsFilters.audience">
+                                <option value="">All Audiences</option>
+                                <option value="all_staff">All Staff</option>
+                                <option value="medical_staff">Medical Staff</option>
+                                <option value="residents">Residents</option>
+                                <option value="attendings">Attendings</option>
+                            </select>
                         </div>
                         <div class="space-y-4">
                             <div v-for="announcement in recentAnnouncements" :key="announcement.id" class="announcement-card">
@@ -2120,7 +2127,7 @@
                                 </div>
                                 <p class="announcement-body">{{ announcement.content }}</p>
                                 <div class="announcement-footer">
-                                    <span>{{ announcement.target_audience }}</span>
+                                    <span>{{ formatAudience(announcement.target_audience) }}</span>
                                     <button class="btn-pill btn-pill-view" @click="viewAnnouncement(announcement)"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
@@ -2261,10 +2268,10 @@
                             </select>
                             <select class="form-select" v-model="trialFilters.status">
                                 <option value="">All Status</option>
-                                <option value="Reclutando">Reclutando</option>
-                                <option value="Activo">Activo</option>
-                                <option value="Completado">Completado</option>
-                                <option value="Suspendido">Suspendido</option>
+                                <option value="Reclutando">Recruiting</option>
+                                <option value="Activo">Active</option>
+                                <option value="Completado">Completed</option>
+                                <option value="Suspendido">Suspended</option>
                             </select>
                             <input type="text" class="form-control" v-model="trialFilters.search" placeholder="Search by protocol or title…">
                         </div>
@@ -2305,7 +2312,7 @@
                                                     'status-active': trial.status === 'Activo',
                                                     'status-completed': trial.status === 'Completado',
                                                     'status-suspended': trial.status === 'Suspendido'
-                                                  }">{{ trial.status }}</span>
+                                                  }">{{ formatTrialStatus(trial.status) }}</span>
                                         </td>
                                         <td class="trial-enrollment-cell">
                                             <div v-if="trial.enrollment_target" class="enrollment-wrap">
@@ -2355,10 +2362,7 @@
                                 <button class="btn-pill" @click="goToPage('trials', pagination.trials.page + 1)" :disabled="pagination.trials.page === trialTotalPages"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         </div>
-                        <div class="trials-note">
-                            <i class="fas fa-info-circle"></i>
-                            <span>10 ensayos mostrados (muestra — base de datos completa próximamente). <a href="#" @click.prevent="requestFullDossier">Solicitar Dossier</a></span>
-                        </div>
+
                     </div>
                 </div>
 
@@ -2589,25 +2593,6 @@
                                 <div class="stat-breakdown"><div class="breakdown-item"><span class="label">Active</span><span class="value">{{ researchDashboard.summary?.activeProjects || 0 }}</span></div></div>
                             </div>
                         </div>
-                        <div class="card">
-                            <div class="card-header"><div class="card-title"><i class="fas fa-flask"></i> Research Lines Overview</div></div>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <!-- FIX 30: coordinator_id may be absent in dashboard aggregate — show coordinator_name directly if available -->
-                                    <thead><tr><th>Line</th><th>Name</th><th>Coordinator</th><th>Trials</th><th>Projects</th><th>Status</th></tr></thead>
-                                    <tbody>
-                                        <tr v-for="line in researchDashboard.researchLines" :key="line.id" class="row-active">
-                                            <td>Línea {{ line.line_number }}</td>
-                                            <td>{{ line.name }}</td>
-                                            <td>{{ line.coordinator_name || getStaffName(line.coordinator_id) || 'Not assigned' }}</td>
-                                            <td><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></td>
-                                            <td><span class="badge badge-success">{{ line.projectsCount || 0 }}</span></td>
-                                            <td><span class="status-indicator" :class="line.active ? 'status-active' : 'status-inactive'">{{ line.active ? 'Active' : 'Inactive' }}</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
                         <div class="charts-grid">
                             <div class="chart-card">
                                 <h4><i class="fas fa-chart-pie"></i> Trials by Phase</h4>
@@ -2742,7 +2727,7 @@
                             <div class="chart-bars">
                                 <div v-for="item in partnerCollaborations.needsByType" :key="item.type" class="chart-bar-item">
                                     <span class="bar-label">{{ item.type }}</span>
-                                    <div class="bar-container"><div class="bar-fill" :style="{ width: (item.count / partnerCollaborations.totalPartnerNeeds * 100) + '%', background: getPhaseColor(item.type) }"></div></div>
+                                    <div class="bar-container"><div class="bar-fill" :style="{ width: (item.count / partnerCollaborations.totalPartnerNeeds * 100) + '%', background: getPartnerTypeColor(item.type) }"></div></div>
                                     <span class="bar-value">{{ item.count }}</span>
                                 </div>
                             </div>
@@ -3339,7 +3324,7 @@
                                         <span class="pd-trial-title">{{ trial.title }}</span>
                                         <span class="pd-trial-meta">{{ trial.phase }} · <span class="pd-trial-role">{{ trial.role }}</span></span>
                                     </div>
-                                    <span class="pd-badge" :class="{ 'pd-badge--ok': trial.status === 'Activo', 'pd-badge--blue': trial.status === 'Reclutando', 'pd-badge--neutral': trial.status === 'Completado' }">{{ trial.status }}</span>
+                                    <span class="pd-badge" :class="{ 'pd-badge--ok': trial.status === 'Activo', 'pd-badge--blue': trial.status === 'Reclutando', 'pd-badge--neutral': trial.status === 'Completado' }">{{ formatTrialStatus(trial.status) }}</span>
                                 </div>
                             </div>
 
@@ -4449,6 +4434,36 @@
             </div>
         </div>
 
+        <!-- ============ ANNOUNCEMENT READ MODAL ============ -->
+        <div v-if="announcementReadModal.show" class="modal-overlay" @click.self="announcementReadModal.show = false">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <div>
+                        <h3 class="modal-title">{{ announcementReadModal.announcement?.title }}</h3>
+                        <div class="modal-subtitle" style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
+                            <span :class="'priority-badge priority-' + announcementReadModal.announcement?.priority">
+                                {{ announcementReadModal.announcement?.priority }}
+                            </span>
+                            <span class="badge badge-secondary">
+                                {{ formatAudience(announcementReadModal.announcement?.target_audience) }}
+                            </span>
+                            <span class="text-muted" style="font-size:0.8rem;">
+                                {{ formatDate(announcementReadModal.announcement?.created_at) }}
+                                <span v-if="announcementReadModal.announcement?.author_name"> · {{ announcementReadModal.announcement.author_name }}</span>
+                            </span>
+                        </div>
+                    </div>
+                    <button class="modal-close" @click="announcementReadModal.show = false"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <p style="white-space:pre-wrap;line-height:1.7;">{{ announcementReadModal.announcement?.content }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="announcementReadModal.show = false">Close</button>
+                </div>
+            </div>
+        </div>
+
         <!-- ============ COMMUNICATIONS MODAL ============ -->
         <div v-if="communicationsModal.show" class="modal-overlay">
             <div class="modal-container modal-wide">
@@ -4949,9 +4964,9 @@
                             <label class="form-label">Status *</label>
                             <select class="form-select" v-model="clinicalTrialModal.form.status" required>
                                 <option value="">Select Status</option>
-                                <option value="Reclutando">Reclutando</option>
-                                <option value="Activo">Activo</option>
-                                <option value="Completado">Completado</option>
+                                <option value="Reclutando">Recruiting</option>
+                                <option value="Activo">Active</option>
+                                <option value="Completado">Completed</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -5406,7 +5421,7 @@
                                 'status-active':     trialDetailModal.trial.status === 'Activo',
                                 'status-completed':  trialDetailModal.trial.status === 'Completado',
                                 'status-suspended':  trialDetailModal.trial.status === 'Suspendido'
-                              }">{{ trialDetailModal.trial.status }}</span>
+                              }">{{ formatTrialStatus(trialDetailModal.trial.status) }}</span>
                         <span class="tdm-meta-sep">·</span>
                         <span class="tdm-line"><i class="fas fa-flask"></i> {{ getResearchLineName(trialDetailModal.trial.research_line_id) }}</span>
                         <span class="tdm-meta-sep" v-if="trialDetailModal.trial.start_date">·</span>
