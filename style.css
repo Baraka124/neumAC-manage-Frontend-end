@@ -7471,3 +7471,60 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   background: rgba(245,158,11,.12); color: var(--warn);
   border: 1px solid rgba(245,158,11,.25); flex-shrink: 0;
 }
+
+/* ================================================================
+   ABSENCE RESOLUTION MODAL
+================================================================ */
+.arm-actions {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.arm-action {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: border-color var(--t), background var(--t);
+}
+.arm-action:hover { border-color: var(--blue-mid); background: var(--blue-lt); }
+.arm-action--active {
+  border-color: var(--blue);
+  background: var(--blue-lt);
+  box-shadow: 0 0 0 2px rgba(45,122,255,.15);
+}
+.arm-action-icon {
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.arm-action-icon--ok      { background: var(--ok-lt); color: var(--ok); }
+.arm-action-icon--warn    { background: var(--warn-lt); color: var(--warn); }
+.arm-action-icon--neutral { background: var(--surface); color: var(--text-3); border: 1px solid var(--border); }
+.arm-action-title { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.arm-action-desc  { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+
+.arm-archive-notice {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 14px; border-radius: 8px;
+  background: var(--neutral-lt, rgba(100,116,139,.08));
+  border: 1px solid var(--border);
+  font-size: 12px; color: var(--text-2); line-height: 1.5;
+}
+.arm-archive-notice i { color: var(--text-3); flex-shrink: 0; margin-top: 2px; }
+
+/* Resolve button in absence table */
+.btn-pill-resolve {
+  background: rgba(245,158,11,.1); color: var(--warn);
+  border: 1px solid rgba(245,158,11,.25);
+  font-weight: 600;
+}
+.btn-pill-resolve:hover { background: rgba(245,158,11,.2); border-color: var(--warn); }
+
+/* Pulse on completed rows to draw attention */
+.row-completed .btn-pill-resolve {
+  animation: resolve-pulse 2.5s ease-in-out infinite;
+}
+@keyframes resolve-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.4); }
+  50%       { box-shadow: 0 0 0 4px rgba(245,158,11,.0); }
+}
