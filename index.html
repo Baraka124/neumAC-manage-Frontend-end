@@ -83,14 +83,15 @@
             </div>
 
             <!-- Form -->
-            <form class="lc-form" @submit.prevent="handleLogin" autocomplete="on">
+            <div class="lc-form">
                 <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.email }">
                     <label class="lc-label">Email</label>
                     <div class="lc-input-wrap">
                         <i class="fas fa-envelope lc-input-icon"></i>
                         <input type="email" class="lc-input" v-model="loginForm.email"
                                placeholder="your@email.com" autocomplete="email"
-                               @input="clearLoginError('email')">
+                               @input="clearLoginError('email')"
+                               @keyup.enter="handleLogin">
                     </div>
                     <span v-if="loginFieldErrors.email" class="lc-field-err">{{ loginFieldErrors.email }}</span>
                 </div>
@@ -102,7 +103,8 @@
                         <input :type="showPassword ? 'text' : 'password'" class="lc-input"
                                v-model="loginForm.password" placeholder="••••••••"
                                autocomplete="current-password"
-                               @input="clearLoginError('password')">
+                               @input="clearLoginError('password')"
+                               @keyup.enter="handleLogin">
                         <button type="button" class="lc-eye" @click="showPassword = !showPassword" tabindex="-1">
                             <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                         </button>
@@ -118,12 +120,12 @@
                     <a href="#" class="lc-forgot" @click.prevent="handleForgotPassword">Forgot password?</a>
                 </div>
 
-                <button type="submit" class="lc-submit" :disabled="loginLoading">
+                <button class="lc-submit" @click="handleLogin" :disabled="loginLoading">
                     <i v-if="loginLoading" class="fas fa-spinner fa-spin"></i>
                     <span>{{ loginLoading ? 'Authenticating…' : 'Sign in' }}</span>
                     <i v-if="!loginLoading" class="fas fa-arrow-right lc-submit-arrow"></i>
                 </button>
-            </form>
+            </div>
 
 
 
@@ -730,7 +732,7 @@
                             <div v-else class="oncall-timeline">
                                 <div v-for="shift in todaysOnCall" :key="shift.id"
                                      class="oncall-tl-item"
-                                     :class="{ 'is-now': isShiftNow(shift) }">
+                                     :class="{ 'is-now': true }">
                                     <!-- Time -->
                                     <div class="oncall-tl-time">
                                         <div class="oncall-tl-from">{{ shift.startTime }}</div>
@@ -2099,19 +2101,12 @@
                             <button class="btn btn-primary" @click="showCommunicationsModal" v-if="hasPermission('communications', 'create')"><i class="fas fa-plus"></i> New Communication</button>
                         </div>
                         <div class="filter-bar">
-                            <input type="text" class="form-control" v-model="communicationsFilters.search" placeholder="Buscar comunicados...">
+                            <input type="text" class="form-control" v-model="communicationsFilters.search" placeholder="Search announcements...">
                             <select class="form-select" v-model="communicationsFilters.priority">
-                                <option value="">Todas las Prioridades</option>
+                                <option value="">All Priorities</option>
                                 <option value="normal">Normal</option>
-                                <option value="high">Alta</option>
-                                <option value="urgent">Urgente</option>
-                            </select>
-                            <select class="form-select" v-model="communicationsFilters.audience">
-                                <option value="">Todo el Personal</option>
-                                <option value="all_staff">Todo el Personal</option>
-                                <option value="medical_staff">Personal Médico</option>
-                                <option value="residents">Residentes</option>
-                                <option value="attendings">Médicos Adjuntos</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
                             </select>
                         </div>
                         <div class="space-y-4">
@@ -2121,11 +2116,11 @@
                                         <h4 class="announcement-title">{{ announcement.title }}</h4>
                                         <div class="announcement-meta"><span>{{ announcement.author }}</span><span>•</span><span>{{ formatTimeAgo(announcement.created_at) }}</span></div>
                                     </div>
-                                    <span class="badge" :class="'badge-' + announcement.priority_level">{{ { normal: 'Normal', high: 'Alta', urgent: 'Urgente' }[announcement.priority_level] || announcement.priority_level }}</span>
+                                    <span class="badge" :class="'badge-' + announcement.priority_level">{{ announcement.priority_level }}</span>
                                 </div>
                                 <p class="announcement-body">{{ announcement.content }}</p>
                                 <div class="announcement-footer">
-                                    <span>{{ formatAudience(announcement.target_audience) }}</span>
+                                    <span>{{ announcement.target_audience }}</span>
                                     <button class="btn-pill btn-pill-view" @click="viewAnnouncement(announcement)"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
@@ -2254,24 +2249,24 @@
                         </div>
                         <div class="filter-bar">
                             <select class="form-select" v-model="trialFilters.line">
-                                <option value="">Todas las Líneas</option>
+                                <option value="">All Lines</option>
                                 <option v-for="line in researchLines" :key="line.id" :value="line.id">{{ line.research_line_name || line.name }}</option>
                             </select>
                             <select class="form-select" v-model="trialFilters.phase">
-                                <option value="">Todas las Fases</option>
+                                <option value="">All Phases</option>
                                 <option value="Phase I">Phase I</option>
                                 <option value="Phase II">Phase II</option>
                                 <option value="Phase III">Phase III</option>
                                 <option value="Phase IV">Phase IV</option>
                             </select>
                             <select class="form-select" v-model="trialFilters.status">
-                                <option value="">Todos los Estados</option>
+                                <option value="">All Status</option>
                                 <option value="Reclutando">Reclutando</option>
                                 <option value="Activo">Activo</option>
                                 <option value="Completado">Completado</option>
                                 <option value="Suspendido">Suspendido</option>
                             </select>
-                            <input type="text" class="form-control" v-model="trialFilters.search" placeholder="Buscar por protocolo o título…">
+                            <input type="text" class="form-control" v-model="trialFilters.search" placeholder="Search by protocol or title…">
                         </div>
                         <div class="table-responsive">
                             <table class="table table-striped">
@@ -2286,8 +2281,8 @@
                                         <th @click="sortBy('trials', 'status')">Estado <i class="fas" :class="sortIcon('trials', 'status')"></i></th>
                                         <th title="Enrollment (actual / target)">Reclut.</th>
                                         <th @click="sortBy('trials', 'start_date')" style="white-space:nowrap">Fechas <i class="fas" :class="sortIcon('trials', 'start_date')"></i></th>
-                                        <th>Patrocinador</th>
-                                        <th>Acciones</th>
+                                        <th>Sponsor</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2360,7 +2355,10 @@
                                 <button class="btn-pill" @click="goToPage('trials', pagination.trials.page + 1)" :disabled="pagination.trials.page === trialTotalPages"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         </div>
-
+                        <div class="trials-note">
+                            <i class="fas fa-info-circle"></i>
+                            <span>10 ensayos mostrados (muestra — base de datos completa próximamente). <a href="#" @click.prevent="requestFullDossier">Solicitar Dossier</a></span>
+                        </div>
                     </div>
                 </div>
 
@@ -2423,7 +2421,6 @@
                                         {{ project.category }}
                                     </span>
                                     <div class="inno-card-actions">
-                                        <button class="inno-action-btn" @click="viewProject(project)" title="View details"><i class="fas fa-eye"></i></button>
                                         <button class="inno-action-btn" @click="editProject(project)" v-if="hasPermission('research_lines', 'update')" title="Edit"><i class="fas fa-edit"></i></button>
                                         <button class="inno-action-btn inno-action-btn--danger" @click="deleteInnovationProject(project)" v-if="hasPermission('research_lines', 'delete')" title="Delete"><i class="fas fa-trash"></i></button>
                                     </div>
@@ -2592,6 +2589,25 @@
                                 <div class="stat-breakdown"><div class="breakdown-item"><span class="label">Active</span><span class="value">{{ researchDashboard.summary?.activeProjects || 0 }}</span></div></div>
                             </div>
                         </div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title"><i class="fas fa-flask"></i> Research Lines Overview</div></div>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <!-- FIX 30: coordinator_id may be absent in dashboard aggregate — show coordinator_name directly if available -->
+                                    <thead><tr><th>Line</th><th>Name</th><th>Coordinator</th><th>Trials</th><th>Projects</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="line in researchDashboard.researchLines" :key="line.id" class="row-active">
+                                            <td>Línea {{ line.line_number }}</td>
+                                            <td>{{ line.name }}</td>
+                                            <td>{{ line.coordinator_name || getStaffName(line.coordinator_id) || 'Not assigned' }}</td>
+                                            <td><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></td>
+                                            <td><span class="badge badge-success">{{ line.projectsCount || 0 }}</span></td>
+                                            <td><span class="status-indicator" :class="line.active ? 'status-active' : 'status-inactive'">{{ line.active ? 'Active' : 'Inactive' }}</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         <div class="charts-grid">
                             <div class="chart-card">
                                 <h4><i class="fas fa-chart-pie"></i> Trials by Phase</h4>
@@ -2661,7 +2677,7 @@
                                             @click="trialFilters.line = line.id; switchView('clinical_trials')">
                                             <td><span class="rline-number-pill" style="font-size:11px">Línea {{ line.line_number }}</span></td>
                                             <td class="font-medium">{{ line.name }}</td>
-                                            <td>{{ line.coordinator_name || 'Sin asignar' }}</td>
+                                            <td>{{ line.coordinator_name || 'Not assigned' }}</td>
                                             <td><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></td>
                                             <td><span class="badge badge-success">{{ line.projectsCount || 0 }}</span></td>
                                             <td><span class="status-indicator" :class="line.active ? 'status-active' : 'status-inactive'">{{ line.active ? 'Active' : 'Inactive' }}</span></td>
@@ -2689,11 +2705,11 @@
                     <div v-else-if="researchLinesPerformance.length > 0" class="card">
                         <div class="table-responsive">
                             <table class="table">
-                                <thead><tr><th>Línea de Investigación</th><th>Coordinador/a</th><th>Ensayos Totales</th><th>Ensayos Activos</th><th>Ensayos Completados</th><th>Proyectos Totales</th><th>Proyectos Activos</th><th>Comercializados</th></tr></thead>
+                                <thead><tr><th>Research Line</th><th>Coordinator</th><th>Total Trials</th><th>Active Trials</th><th>Completed Trials</th><th>Total Projects</th><th>Active Projects</th><th>Commercialized</th></tr></thead>
                                 <tbody>
                                     <tr v-for="line in researchLinesPerformance" :key="line.id" class="row-active">
                                         <td><div class="font-medium">Línea {{ line.line_number }}: {{ line.name }}</div></td>
-                                        <td>{{ line.coordinator || 'Sin asignar' }}</td>
+                                        <td>{{ line.coordinator || 'Not assigned' }}</td>
                                         <td class="text-center">{{ line.stats?.totalTrials || 0 }}</td>
                                         <td class="text-center"><span class="badge badge-success">{{ line.stats?.activeTrials || 0 }}</span></td>
                                         <td class="text-center">{{ line.stats?.completedTrials || 0 }}</td>
@@ -2726,7 +2742,7 @@
                             <div class="chart-bars">
                                 <div v-for="item in partnerCollaborations.needsByType" :key="item.type" class="chart-bar-item">
                                     <span class="bar-label">{{ item.type }}</span>
-                                    <div class="bar-container"><div class="bar-fill" :style="{ width: (item.count / partnerCollaborations.totalPartnerNeeds * 100) + '%', background: getPartnerTypeColor(item.type) }"></div></div>
+                                    <div class="bar-container"><div class="bar-fill" :style="{ width: (item.count / partnerCollaborations.totalPartnerNeeds * 100) + '%', background: getPhaseColor(item.type) }"></div></div>
                                     <span class="bar-value">{{ item.count }}</span>
                                 </div>
                             </div>
@@ -4433,50 +4449,6 @@
             </div>
         </div>
 
-        <!-- ============ ANNOUNCEMENT READ MODAL ============ -->
-        <div v-if="announcementReadModal.show" class="modal-overlay" @click.self="announcementReadModal.show = false">
-            <div class="modal-container" style="max-width:620px">
-                <div class="modal-header">
-                    <div class="modal-title">
-                        <i class="fas fa-bullhorn"></i>
-                        <span>Announcement</span>
-                        <span v-if="announcementReadModal.announcement" class="badge ms-2"
-                              :class="'badge-' + announcementReadModal.announcement.priority_level"
-                              style="margin-left:10px;font-size:11px">
-                            {{ announcementReadModal.announcement.priority_level }}
-                        </span>
-                    </div>
-                    <button class="modal-close" @click="announcementReadModal.show = false"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="modal-body" v-if="announcementReadModal.announcement" style="padding:24px 28px">
-                    <h2 style="font-family:var(--font-serif);font-size:1.35rem;font-weight:600;color:var(--text-1);margin:0 0 10px">
-                        {{ announcementReadModal.announcement.title }}
-                    </h2>
-                    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
-                        <span style="font-size:12px;color:var(--text-4);display:flex;align-items:center;gap:5px">
-                            <i class="fas fa-user"></i> {{ announcementReadModal.announcement.author || 'System' }}
-                        </span>
-                        <span style="color:var(--border-2)">·</span>
-                        <span style="font-size:12px;color:var(--text-4)">{{ formatTimeAgo(announcementReadModal.announcement.created_at) }}</span>
-                        <span style="color:var(--border-2)">·</span>
-                        <span style="font-size:12px;color:var(--text-4);display:flex;align-items:center;gap:5px">
-                            <i class="fas fa-users"></i> {{ formatAudience(announcementReadModal.announcement.target_audience) }}
-                        </span>
-                    </div>
-                    <p style="font-size:14px;line-height:1.75;color:var(--text-2);white-space:pre-wrap;margin:0">
-                        {{ announcementReadModal.announcement.content }}
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="announcementReadModal.show = false"><i class="fas fa-times"></i> Close</button>
-                    <button class="btn btn-danger btn-sm" @click="deleteAnnouncement(announcementReadModal.announcement); announcementReadModal.show = false"
-                            v-if="hasPermission('communications', 'delete')" style="margin-left:auto">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- ============ COMMUNICATIONS MODAL ============ -->
         <div v-if="communicationsModal.show" class="modal-overlay">
             <div class="modal-container modal-wide">
@@ -4974,13 +4946,12 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Estado *</label>
+                            <label class="form-label">Status *</label>
                             <select class="form-select" v-model="clinicalTrialModal.form.status" required>
-                                <option value="">Seleccionar Estado</option>
+                                <option value="">Select Status</option>
                                 <option value="Reclutando">Reclutando</option>
                                 <option value="Activo">Activo</option>
                                 <option value="Completado">Completado</option>
-                                <option value="Suspendido">Suspendido</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -5207,82 +5178,9 @@
             </div>
         </div>
 
-        <!-- ============ INNOVATION PROJECT READ MODAL ============ -->
-        <div v-if="projectReadModal.show" class="modal-overlay" @click.self="projectReadModal.show = false">
-            <div class="modal-container modal-wide" style="max-width:760px">
-                <div class="modal-header" v-if="projectReadModal.project">
-                    <div class="modal-title" style="flex-wrap:wrap;gap:8px">
-                        <i class="fas fa-microscope"></i>
-                        <span>{{ projectReadModal.project.title }}</span>
-                        <span class="badge badge-info" style="font-size:11px">{{ projectReadModal.project.category }}</span>
-                        <span class="status-indicator" style="font-size:11px"
-                              :style="{ background: getStageConfig(projectReadModal.project.current_stage || projectReadModal.project.development_stage).bg,
-                                        color: getStageConfig(projectReadModal.project.current_stage || projectReadModal.project.development_stage).color }">
-                            <i class="fas" :class="getStageConfig(projectReadModal.project.current_stage || projectReadModal.project.development_stage).icon"></i>
-                            {{ projectReadModal.project.current_stage || projectReadModal.project.development_stage }}
-                        </span>
-                    </div>
-                    <button class="modal-close" @click="projectReadModal.show = false"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="modal-body" v-if="projectReadModal.project" style="padding:24px 28px">
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
-                        <span class="inno-line-badge"><i class="fas fa-flask"></i> {{ getResearchLineName(projectReadModal.project.research_line_id) }}</span>
-                        <span v-if="projectReadModal.project.funding_status && projectReadModal.project.funding_status !== 'not_applicable'"
-                              class="inno-funding-badge" :class="'inno-funding--' + projectReadModal.project.funding_status">
-                            {{ { seeking: 'Seeking Funding', applied: 'Applied', funded: 'Funded' }[projectReadModal.project.funding_status] }}
-                        </span>
-                        <span v-if="projectReadModal.project.trl_level" style="font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:4px">
-                            <i class="fas fa-layer-group"></i> TRL {{ projectReadModal.project.trl_level }}
-                        </span>
-                    </div>
-                    <div v-if="projectReadModal.project.description" style="margin-bottom:18px">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px"><i class="fas fa-align-left"></i> Descripción</div>
-                        <p style="font-size:14px;line-height:1.75;color:var(--text-2);white-space:pre-wrap;margin:0">{{ projectReadModal.project.description }}</p>
-                    </div>
-                    <div v-if="projectReadModal.project.clinical_rationale" style="margin-bottom:18px;padding:14px 16px;background:rgba(59,130,246,.06);border-left:3px solid var(--blue);border-radius:0 var(--r-sm) var(--r-sm) 0">
-                        <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px"><i class="fas fa-heartbeat"></i> Justificación Clínica</div>
-                        <p style="font-size:13px;line-height:1.7;color:var(--text-2);margin:0">{{ projectReadModal.project.clinical_rationale }}</p>
-                    </div>
-                    <div v-if="projectReadModal.project.lead_investigator_id || (projectReadModal.project.co_investigators||[]).length" style="margin-bottom:18px">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px"><i class="fas fa-users-cog"></i> Equipo</div>
-                        <div class="tdm-inv-list">
-                            <div v-if="projectReadModal.project.lead_investigator_id" class="tdm-inv-row">
-                                <div class="tdm-inv-avatar tdm-inv-avatar--pi">{{ getStaffName(projectReadModal.project.lead_investigator_id).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
-                                <div class="tdm-inv-info">
-                                    <span class="tdm-inv-name">{{ getStaffName(projectReadModal.project.lead_investigator_id) }}</span>
-                                    <span class="tdm-inv-badge tdm-inv-badge--pi">Lead / PI</span>
-                                </div>
-                            </div>
-                            <div v-for="coId in (projectReadModal.project.co_investigators||[])" :key="coId" class="tdm-inv-row">
-                                <div class="tdm-inv-avatar">{{ getStaffName(coId).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
-                                <div class="tdm-inv-info">
-                                    <span class="tdm-inv-name">{{ getStaffName(coId) }}</span>
-                                    <span class="tdm-inv-badge tdm-inv-badge--coi">Co-I</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div v-if="projectReadModal.project.partner_found && projectReadModal.project.partner_name" style="margin-bottom:14px">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px"><i class="fas fa-handshake"></i> Partner</div>
-                        <div class="inno-partner-found"><i class="fas fa-handshake"></i> <span class="inno-partner-name">{{ projectReadModal.project.partner_name }}</span></div>
-                    </div>
-                    <div v-else-if="(projectReadModal.project.partner_needs||[]).length" style="margin-bottom:14px">
-                        <div style="font-size:11px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px"><i class="fas fa-search"></i> Seeking Partner For</div>
-                        <div class="inno-needs-chips"><span v-for="need in projectReadModal.project.partner_needs" :key="need" class="inno-need-chip">{{ need }}</span></div>
-                    </div>
-                    <div v-if="(projectReadModal.project.keywords||[]).length" style="margin-top:12px">
-                        <span v-for="kw in projectReadModal.project.keywords" :key="kw" class="inno-kw-chip">{{ kw }}</span>
-                    </div>
-                </div>
-                <div class="modal-footer tdm-footer">
-                    <button class="btn btn-secondary" @click="projectReadModal.show = false"><i class="fas fa-times"></i> Close</button>
-                    <button class="btn btn-primary" @click="editProject(projectReadModal.project); projectReadModal.show = false"
-                            v-if="hasPermission('research_lines', 'update')"><i class="fas fa-edit"></i> Edit Project</button>
-                </div>
-            </div>
-        </div>
-
         <!-- ============ STAFF REASSIGNMENT MODAL ============ -->
+        <div v-if="reassignmentModal.show" class="modal-overlay">
+            <div class="modal-container rsm-container">
 
                 <div class="rsm-header">
                     <div class="rsm-header-icon"><i class="fas fa-user-times"></i></div>
@@ -5491,7 +5389,7 @@
             <div class="modal-container tdm-container">
 
                 <!-- ── Hero header ─────────────────────────────────────── -->
-                <div class="tdm-hero" v-if="trialDetailModal.trial">
+                <div class="tdm-hero">
                     <div class="tdm-hero-top">
                         <div class="tdm-badges">
                             <span class="tdm-protocol"><i class="fas fa-hashtag"></i> {{ trialDetailModal.trial?.protocol_id }}</span>
@@ -5648,7 +5546,7 @@
             <button class="mobile-nav-item" :class="{ active: currentView === 'department_management' }" @click="switchView('department_management')" v-if="hasPermission('department_management','read')">
                 <i class="fas fa-sitemap"></i><span>Depts</span>
             </button>
-            <button class="mobile-nav-item" :class="{ active: ['research_lines','clinical_trials','innovation_projects'].includes(currentView) }" @click="switchView('research_lines')" v-if="hasPermission('research_lines','read')">
+            <button class="mobile-nav-item" style="display:none" :class="{ active: ['research_lines','clinical_trials','innovation_projects'].includes(currentView) }" @click="switchView('research_lines')" v-if="hasPermission('research_lines','read')">
                 <i class="fas fa-flask"></i><span>Research</span>
             </button>
         </nav>
