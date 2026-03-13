@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       CACHE_TTL: 300000
     }
 
-    // ============ 2. CONSTANTS ===-=-========
+    // ============ 2. CONSTANTS ====-========
     const ROLES = {
       ADMIN: 'system_admin',
       HEAD: 'department_head',
@@ -708,8 +708,11 @@ document.addEventListener('DOMContentLoaded', () => {
       async getTrainingUnits() { return this.getList('/api/training-units') }
       async createTrainingUnit(d) { this.invalidate('/api/training-units'); return this.request('/api/training-units', { method: 'POST', body: d }) }
       async updateTrainingUnit(id, d) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'PUT', body: d }) }
+      async deleteTrainingUnit(id) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'DELETE' }) }
 
-      async getRotations() { return this.getList('/api/rotations') }
+      async getRotations() {
+        try { const r = await this.request('/api/rotations'); return Utils.ensureArray(r?.data ?? r) } catch { return [] }
+      }
       async createRotation(d) { this.invalidate('/api/rotations'); return this.request('/api/rotations', { method: 'POST', body: d }) }
       async updateRotation(id, d) { this.invalidate('/api/rotations'); return this.request(`/api/rotations/${id}`, { method: 'PUT', body: d }) }
       async deleteRotation(id) { this.invalidate('/api/rotations'); return this.request(`/api/rotations/${id}`, { method: 'DELETE' }) }
@@ -1248,16 +1251,28 @@ document.addEventListener('DOMContentLoaded', () => {
             full_name: f.full_name.trim(), staff_type: f.staff_type || 'medical_resident',
             staff_id: f.staff_id || Utils.generateId('MD'), employment_status: f.employment_status || 'active',
             professional_email: f.professional_email || '', department_id: f.department_id || null,
-            academic_degree: clean(f.academic_degree), specialization: clean(f.specialization),
-            training_year: clean(f.training_year), clinical_certificate: clean(f.clinical_certificate),
+            academic_degree: clean(f.academic_degree), academic_degree_id: f.academic_degree_id || null,
+            specialization: clean(f.specialization),
+            training_year: clean(f.training_year),
+            residency_start_date: f.residency_start_date || null,
+            residency_year_override: f.residency_year_override || null,
+            clinical_certificate: clean(f.clinical_certificate),
             certificate_status: clean(f.certificate_status), mobile_phone: clean(f.mobile_phone),
-            medical_license: clean(f.medical_license), can_supervise_residents: f.can_supervise_residents || false,
+            medical_license: clean(f.medical_license),
+            has_medical_license: f.has_medical_license || false,
+            can_supervise_residents: f.can_supervise_residents || false,
             can_be_pi: f.can_be_pi || false, can_be_coi: f.can_be_coi || false,
             other_certificate: clean(f.other_certificate),
             special_notes: clean(f.special_notes), resident_category: f.resident_category || null,
-            home_department: f.home_department || null, external_institution: f.external_institution || null,
+            home_department: f.home_department || null,
+            home_department_id: f.home_department_id || null,
+            external_institution: f.external_institution || null,
+            external_contact_name: f.external_contact_name || null,
+            external_contact_email: f.external_contact_email || null,
+            external_contact_phone: f.external_contact_phone || null,
             is_chief_of_department: f.is_chief_of_department || false, is_research_coordinator: f.is_research_coordinator || false,
             is_resident_manager: f.is_resident_manager || false, is_oncall_manager: f.is_oncall_manager || false,
+            hospital_id: f.hospital_id || null,
             clinical_study_certificates: f.clinical_study_certificates || []
           }
           if (medicalStaffModal.mode === 'add') {
@@ -2643,8 +2658,18 @@ document.addEventListener('DOMContentLoaded', () => {
         tlPopover.slotIdx = slot.slotIdx + 1
         tlPopover.monthLabel = month.label
         tlPopover.entries = entries
-        tlPopover.x = rect.left + window.scrollX
-        tlPopover.y = rect.bottom + window.scrollY + 6
+        const popoverWidth = 300
+        const popoverHeight = 120 // conservative estimate
+        const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
+        const left = rect.left + popoverWidth > viewportWidth
+          ? Math.max(4, rect.right - popoverWidth)
+          : rect.left
+        const top = rect.bottom + popoverHeight > viewportHeight
+          ? rect.top - popoverHeight - 4
+          : rect.bottom + 6
+        tlPopover.x = left
+        tlPopover.y = top
       }
       const closeCellPopover = () => { tlPopover.show = false }
 
@@ -2760,8 +2785,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const announcements = ref([])
       const communicationsFilters = reactive({ search: '', priority: '', audience: '' })
       const communicationsModal = reactive({
-        show: false, activeTab: 'announcement',
-        form: { title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } }
+        show: false, activeTab: 'announcement', mode: 'add',
+        form: { id: null, title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } }
       })
 
       const filteredAnnouncements = computed(() => {
@@ -2781,8 +2806,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const showCommunicationsModal = () => {
+        communicationsModal.mode = 'add'
         communicationsModal.show = true; communicationsModal.activeTab = 'announcement'
-        Object.assign(communicationsModal.form, { title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } })
+        Object.assign(communicationsModal.form, { id: null, title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } })
+      }
+
+      const editAnnouncement = (ann) => {
+        communicationsModal.mode = 'edit'
+        communicationsModal.activeTab = 'announcement'
+        Object.assign(communicationsModal.form, { id: ann.id, title: ann.title || '', content: ann.content || '', priority: ann.priority_level || 'normal', target_audience: ann.target_audience || 'all_staff' })
+        communicationsModal.show = true
       }
 
       const announcementReadModal = reactive({ show: false, announcement: null })
@@ -2793,8 +2826,16 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           if (communicationsModal.activeTab === 'announcement') {
             const f = communicationsModal.form
-            announcements.value.unshift(await API.createAnnouncement({ title: f.title, content: f.content, priority_level: f.priority, target_audience: f.target_audience, type: 'announcement' }))
-            showToast('Success', 'Announcement posted', 'success')
+            const payload = { title: f.title, content: f.content, priority_level: f.priority, target_audience: f.target_audience || 'all_staff', type: 'announcement' }
+            if (communicationsModal.mode === 'edit' && f.id) {
+              const result = await API.updateAnnouncement(f.id, payload)
+              const idx = announcements.value.findIndex(a => a.id === f.id)
+              if (idx !== -1) announcements.value[idx] = result
+              showToast('Success', 'Announcement updated', 'success')
+            } else {
+              announcements.value.unshift(await API.createAnnouncement(payload))
+              showToast('Success', 'Announcement posted', 'success')
+            }
           } else { await saveClinicalStatus() }
           communicationsModal.show = false
         } catch (e) { showToast('Error', e?.message || 'An unexpected error occurred', 'error') }
@@ -2815,7 +2856,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
-      return { announcements, communicationsFilters, communicationsModal, announcementReadModal, filteredAnnouncements, recentAnnouncements, unreadAnnouncements, loadAnnouncements, showCommunicationsModal, viewAnnouncement, saveCommunication, deleteAnnouncement }
+      return { announcements, communicationsFilters, communicationsModal, announcementReadModal, filteredAnnouncements, recentAnnouncements, unreadAnnouncements, loadAnnouncements, showCommunicationsModal, editAnnouncement, viewAnnouncement, saveCommunication, deleteAnnouncement }
     }
 
     // ============ 6.10 useLiveStatus ============
@@ -3602,7 +3643,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatAbsenceReason = (r) => ABSENCE_REASON_LABELS[r] || r
         const formatRotationStatus = (s) => ROTATION_STATUS_LABELS[s] || s
         const getUserRoleDisplay = (r) => USER_ROLE_LABELS[r] || r
-        const formatAudience = (a) => ({ all_staff: 'All Staff', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attending Physicians' }[a] || a)
+        const formatAudience = (a) => ({ all_staff: 'All Staff', all: 'All (incl. admin)', residents_only: 'Residents Only', attending_only: 'Attendings Only', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attendings' }[a] || a || '—')
         const formatTrialStatus = (s) => ({ 'Reclutando': 'Recruiting', 'Activo': 'Active', 'Completado': 'Completed', 'Suspendido': 'Suspended', 'Pendiente': 'Pending', 'Cerrado': 'Closed' }[s] || s)
         const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'NeumoCare Dashboard'
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
