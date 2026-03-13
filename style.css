@@ -3040,7 +3040,8 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   outline: none;
   transition: border-color .2s, background .2s, box-shadow .2s;
 }
-.lc-input::placeholder { color: #aab8cc; }
+.lc-input--revealed { -webkit-text-security: none; }
+
 .lc-input:focus {
   border-color: #0077b6;
   background: #fff;
