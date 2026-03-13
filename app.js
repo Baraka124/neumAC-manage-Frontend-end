@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // ============ 1. CONFIGURATION ====----===--====-=
+    // ============ 1. CONFIGURATION ====---===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -2567,7 +2567,7 @@ document.addEventListener('DOMContentLoaded', () => {
               tooltip = `${residentName} · ${fmtStart} → ${fmtEnd}`
             }
 
-            return { key: m.key, label: m.label, isCurrent: m.isCurrent, status, tooltip, showName, initials }
+            return { key: m.key, label: m.label, year: m.year, month: m.month, isCurrent: m.isCurrent, status, tooltip, showName, initials }
           })
 
           // Primary resident for the slot label (current/first active rotation)
@@ -2594,6 +2594,59 @@ document.addEventListener('DOMContentLoaded', () => {
         const end   = new Date(endDate)
         return Math.ceil((end - today) / (1000 * 60 * 60 * 24))
       }
+
+      // ── Timeline cell popover ─────────────────────────────────────────
+      const tlPopover = reactive({ show: false, unitName: '', slotIdx: 0, monthLabel: '', entries: [], x: 0, y: 0 })
+
+      const openCellPopover = (event, unitId, unitName, slot, month) => {
+        event.stopPropagation()
+        // Collect ALL rotations in this slot that touch this month
+        const mStart = new Date(month.year, month.month, 1)
+        const mEnd   = new Date(month.year, month.month + 1, 0)
+        // Get all rotations for this unit to find ones in this slot and month
+        const unitRots = rotations.value.filter(r =>
+          r.training_unit_id === unitId && ['active','scheduled'].includes(r.rotation_status)
+        )
+        // We need the same slot assignment as getUnitSlots — find rotations assigned to this slotIdx
+        // Use greedy bin-packing identical to getUnitSlots
+        const allSlots = Array.from({ length: 20 }, () => ({ rotations: [] }))
+        const sorted = [...unitRots].sort((a,b) => new Date(a.start_date) - new Date(b.start_date))
+        for (const rot of sorted) {
+          const rotStart = new Date(rot.start_date)
+          const rotEnd   = new Date(rot.end_date)
+          const target = allSlots.find(s => s.rotations.every(e => {
+            const eEnd = new Date(e.end_date); const eStart = new Date(e.start_date)
+            return rotEnd < eStart || rotStart > eEnd
+          }))
+          if (target) target.rotations.push(rot)
+        }
+        const slotRots = allSlots[slot.slotIdx]?.rotations || []
+        // Filter to those touching this month
+        const touching = slotRots.filter(rot => {
+          const s = new Date(rot.start_date); const e = new Date(rot.end_date)
+          return s <= mEnd && e >= mStart
+        })
+        const fmt = (d) => new Date(d).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'2-digit' })
+        const entries = touching.length
+          ? touching.map(rot => ({
+              name: getResidentShortName(rot.resident_id),
+              start: fmt(rot.start_date),
+              end:   fmt(rot.end_date),
+              status: rot.rotation_status,
+              partial: new Date(rot.start_date) > mStart || new Date(rot.end_date) < mEnd
+            }))
+          : [{ name: '—', start: null, end: null, status: 'free', partial: false }]
+        // Position near the clicked cell
+        const rect = event.currentTarget.getBoundingClientRect()
+        tlPopover.show = true
+        tlPopover.unitName = unitName
+        tlPopover.slotIdx = slot.slotIdx + 1
+        tlPopover.monthLabel = month.label
+        tlPopover.entries = entries
+        tlPopover.x = rect.left + window.scrollX
+        tlPopover.y = rect.bottom + window.scrollY + 6
+      }
+      const closeCellPopover = () => { tlPopover.show = false }
 
       const loadTrainingUnits = async () => {
         try { trainingUnits.value = await API.getTrainingUnits() }
@@ -2699,7 +2752,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree }
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover }
     }
 
     // ============ 6.9 useComms ============
@@ -3856,7 +3909,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
           getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
-        trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
+        trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
           editTrainingUnit, deleteTrainingUnit, saveTrainingUnit,
           openUnitClinicians: (unit) => openUnitClinicians(unit, medicalStaff.value),
           saveUnitClinicians,
