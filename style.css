@@ -1657,17 +1657,17 @@ a { color: var(--blue); text-decoration: none; }
 ═══════════════════════════════════════════════════════════════ */
 .scc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 6px;
   padding: 10px 0 8px;
 }
 
-/* Card shell */
+/* Card shell — fixed min-height so all cards sit on the same baseline */
 .scc {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 10px 10px 10px 12px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -1675,8 +1675,9 @@ a { color: var(--blue); text-decoration: none; }
   transition: box-shadow var(--t), border-color var(--t);
   position: relative;
   overflow: hidden;
+  min-height: 68px;
 }
-/* Left accent blade — appears on hover or for on-leave */
+/* Left accent blade */
 .scc::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0;
   width: 3px; border-radius: 3px 0 0 3px;
@@ -1688,16 +1689,16 @@ a { color: var(--blue); text-decoration: none; }
 .scc--inactive { opacity: .5; }
 .scc--leave::before { background: var(--warn); opacity: 1; }
 
-/* Avatar tile — monogram circle */
+/* Avatar — circle, smaller */
 .scc-avatar {
-  width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  position: relative;
+  color: #fff; position: relative;
   background: linear-gradient(135deg, #334155, #475569);
+  margin-top: 2px;
 }
 .scc-initials {
-  font-size: 11px; font-weight: 700; letter-spacing: .02em;
+  font-size: 10px; font-weight: 700; letter-spacing: .02em;
   line-height: 1; user-select: none; text-transform: uppercase;
 }
 .scc-avatar--attending_physician { background: linear-gradient(135deg, #0d9e6e, #065f46); }
@@ -1707,32 +1708,32 @@ a { color: var(--blue); text-decoration: none; }
 
 /* Status dot */
 .scc-dot {
-  position: absolute; bottom: -2px; right: -2px;
-  width: 9px; height: 9px; border-radius: 50%;
+  position: absolute; bottom: -1px; right: -1px;
+  width: 8px; height: 8px; border-radius: 50%;
   border: 2px solid var(--surface);
 }
 .scc-dot--active   { background: var(--ok); }
 .scc-dot--on_leave { background: var(--warn); }
 .scc-dot--inactive { background: #94a3b8; }
 
-/* Body — all text, fills remaining width */
-.scc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+/* Body */
+.scc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 
-/* Row 1: name + badge + int/ext pill */
-.scc-name-row { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; overflow: hidden; }
+/* Row 1: full name — wraps naturally, never truncates */
+.scc-name-row { display: flex; align-items: flex-start; gap: 4px; }
 .scc-name {
   font-size: 13px; font-weight: 600; color: var(--text-1);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  letter-spacing: -.01em; min-width: 0; flex-shrink: 1;
+  line-height: 1.3; letter-spacing: -.01em;
+  flex: 1; min-width: 0; word-break: break-word;
 }
-.scc-warn { color: var(--warn); font-size: 9.5px; flex-shrink: 0; cursor: help; opacity: .55; transition: opacity var(--t); }
+.scc-warn {
+  color: var(--warn); font-size: 9.5px; flex-shrink: 0;
+  cursor: help; opacity: .55; transition: opacity var(--t); margin-top: 2px;
+}
 .scc:hover .scc-warn { opacity: .9; }
 
-/* Row 2: department only */
-.scc-dept-row { display: flex; align-items: center; min-height: 14px; }
-
-/* Row 2 (old meta — kept for any fallback reference) */
-.scc-meta {
+/* Row 2: badge + cat pill + dept */
+.scc-meta-row {
   display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; overflow: hidden;
 }
 .scc-type-badge { font-size: 9px !important; padding: 1px 6px !important; flex-shrink: 0; }
@@ -1742,19 +1743,15 @@ a { color: var(--blue); text-decoration: none; }
 }
 .scc-cat--ext { background: rgba(251,191,36,.15); color: var(--warn); }
 .scc-cat--int { background: rgba(13,158,110,.12); color: var(--ok); }
-.scc-dept-text {
-  font-size: 11px; color: var(--text-3);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+.scc-dept-text { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Row 3: rotation */
-.scc-rotation-row { min-height: 18px; display: flex; align-items: center; }
-.scc-no-rotation {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-size: 10px; font-weight: 600; color: var(--warn); opacity: .7;
-}
-.scc-no-rotation i { font-size: 8px; }
+/* Row 3: rotation chip — only rendered when active, silent otherwise */
+.scc-rotation-row { display: flex; align-items: center; margin-top: 2px; }
 
+/* Legacy selectors kept for safety */
+.scc-meta { display: flex; align-items: center; gap: 4px; }
+.scc-dept-row { display: flex; align-items: center; min-height: 14px; }
+.scc-no-rotation { display: none; }
 /* Action buttons — hidden at rest, appear on card hover */
 .scc-actions {
   display: flex; flex-direction: column; gap: 3px;
