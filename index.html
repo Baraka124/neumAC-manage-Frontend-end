@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============- TOAST CONTAINER ==-=---=--======= -->
+    <!-- ============- TOAST CONTAINER ==-=--=--======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -2874,7 +2874,7 @@
         </transition>
         <!-- Drawer -->
         <transition name="drawer-slide">
-            <div v-if="staffProfileModal.show" class="profile-drawer" :class="'status-accent--' + (staffProfileModal.staff?.employment_status || 'active')">
+            <div v-if="staffProfileModal.show && staffProfileModal.staff" class="profile-drawer" :class="'status-accent--' + (staffProfileModal.staff?.employment_status || 'active')">
 
                 <!-- ── Identity Panel (left column) ── -->
                 <div class="pd-identity">
