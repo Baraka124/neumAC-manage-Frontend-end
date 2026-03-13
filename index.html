@@ -867,52 +867,34 @@
                                 <!-- Right: all text info -->
                                 <div class="scc-body">
 
-                                    <!-- Row 1: name + badge + int/ext pill + warn icon -->
+                                    <!-- Row 1: full name (never truncates) + warn icon -->
                                     <div class="scc-name-row">
                                         <span class="scc-name">{{ staff.full_name }}</span>
-                                        <span class="badge scc-type-badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffTypeShortFn(staff.staff_type) }}</span>
-                                        <span v-if="staff.resident_category" class="scc-cat-pill"
-                                              :class="staff.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'">
-                                            {{ staff.resident_category === 'external_resident' ? 'Ext' : staff.resident_category === 'rotating_other_dept' ? 'Rot' : 'Int' }}
-                                        </span>
                                         <span v-if="!staff.professional_email || !staff.department_id"
                                               class="scc-warn" title="Profile incomplete — missing email or department">
                                             <i class="fas fa-exclamation-circle"></i>
                                         </span>
                                     </div>
 
-                                    <!-- Row 2: department only -->
-                                    <div class="scc-dept-row">
-                                        <span v-if="getDepartmentName(staff.department_id)" class="scc-dept-text">
-                                            {{ getDepartmentName(staff.department_id) }}
+                                    <!-- Row 2: badge + int/ext pill + dept -->
+                                    <div class="scc-meta-row">
+                                        <span class="badge scc-type-badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffTypeShortFn(staff.staff_type) }}</span>
+                                        <span v-if="staff.resident_category" class="scc-cat-pill"
+                                              :class="staff.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'">
+                                            {{ staff.resident_category === 'external_resident' ? 'Ext' : staff.resident_category === 'rotating_other_dept' ? 'Rot' : 'Int' }}
                                         </span>
-                                    </div>
-                                    <!-- External contact (shown only for external residents) -->
-                                    <div v-if="staff.resident_category === 'external_resident' && staff.external_contact_name" class="scc-ext-row">
-                                        <i class="fas fa-link" style="font-size:9px"></i>
-                                        <span>{{ staff.external_contact_name }}</span>
-                                        <a v-if="staff.external_contact_email" :href="'mailto:' + staff.external_contact_email"
-                                           @click.stop style="margin-left:4px" title="Email contact">
-                                            <i class="fas fa-envelope" style="font-size:9px"></i>
-                                        </a>
-                                        <a v-if="staff.external_contact_phone" :href="'tel:' + staff.external_contact_phone"
-                                           @click.stop style="margin-left:2px" title="Call contact">
-                                            <i class="fas fa-phone" style="font-size:9px"></i>
-                                        </a>
+                                        <span v-if="getDepartmentName(staff.department_id)" class="scc-dept-text">
+                                            · {{ getDepartmentName(staff.department_id) }}
+                                        </span>
                                     </div>
 
-                                    <!-- Row 3: rotation chip OR unassigned warning for residents -->
-                                    <div class="scc-rotation-row">
-                                        <template v-if="getCurrentRotationForStaff(staff.id)">
-                                            <div class="staff-rotation-chip">
-                                                <span class="src-dot"></span>
-                                                <span class="src-unit">{{ getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) }}</span>
-                                                <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(staff.id).start_date, getCurrentRotationForStaff(staff.id).end_date) }}</span>
-                                            </div>
-                                        </template>
-                                        <span v-else-if="isResidentType(staff.staff_type)" class="scc-no-rotation">
-                                            <i class="fas fa-circle-notch"></i> No rotation
-                                        </span>
+                                    <!-- Row 3: rotation chip ONLY if active — silent otherwise -->
+                                    <div v-if="getCurrentRotationForStaff(staff.id)" class="scc-rotation-row">
+                                        <div class="staff-rotation-chip">
+                                            <span class="src-dot"></span>
+                                            <span class="src-unit">{{ getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) }}</span>
+                                            <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(staff.id).start_date, getCurrentRotationForStaff(staff.id).end_date) }}</span>
+                                        </div>
                                     </div>
 
                                 </div>
