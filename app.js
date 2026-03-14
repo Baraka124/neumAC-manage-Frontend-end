@@ -2181,9 +2181,9 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return { ...a, current_status: derived, coverage_arranged: coverageOk }
         })
-        // Hide 'returned_to_duty' by default (past events) — toggle via "Show Past" filter
+        // Hide past/resolved records by default — toggle via "Show Past" filter
         if (!absenceFilters.status && absenceFilters.hideReturned) {
-          f = f.filter(a => a.current_status !== 'returned_to_duty')
+          f = f.filter(a => a.current_status !== 'returned_to_duty' && a.current_status !== 'cancelled')
         }
         if (absenceFilters.staff) f = f.filter(a => a.staff_member_id === absenceFilters.staff)
         if (absenceFilters.status) f = f.filter(a => a.current_status === absenceFilters.status)
@@ -2201,7 +2201,8 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(absenceFilters, () => resetPage('absences'), { deep: true })
 
       const deriveAbsenceStatus = (a) => {
-        if (a.current_status === 'cancelled') return 'cancelled'
+        if (a.current_status === 'cancelled')       return 'cancelled'
+        if (a.current_status === 'returned_to_duty') return 'returned_to_duty'
         const today = Utils.normalizeDate(new Date())
         const start = Utils.normalizeDate(a.start_date)
         const end   = Utils.normalizeDate(a.end_date)
@@ -2223,7 +2224,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const normalized = { ...a, start_date: Utils.normalizeDate(a.start_date), end_date: Utils.normalizeDate(a.end_date) }
             const derived = deriveAbsenceStatus(normalized)
             // Silently patch stale records (ended but still not 'completed' in DB)
-            if (derived === 'completed' && a.current_status && a.current_status !== 'completed' && a.current_status !== 'cancelled') {
+            // Skip records already formally resolved — returned_to_duty must never be overwritten
+            if (derived === 'completed' && a.current_status && a.current_status !== 'completed' && a.current_status !== 'cancelled' && a.current_status !== 'returned_to_duty') {
               stalePatches.push(API.updateAbsence(a.id, { ...a, current_status: 'completed' }).catch(() => {}))
             }
             return { ...normalized, current_status: derived }
