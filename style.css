@@ -3742,6 +3742,25 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 }
 .pd-edit-btn:hover { opacity: 1; box-shadow: 0 0 16px var(--accent-dim); }
 
+/* Profile drawer quick actions */
+.pd-quick-actions {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin: 10px 0 2px;
+}
+.pd-quick-btn {
+  flex: 1 1 auto;
+  display: flex; align-items: center; gap: 6px; justify-content: center;
+  padding: 7px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 500;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  color: var(--text-secondary); cursor: pointer; transition: all .18s ease;
+  white-space: nowrap;
+}
+.pd-quick-btn:hover {
+  background: rgba(77,154,255,.15); border-color: var(--accent);
+  color: var(--accent); box-shadow: 0 0 10px var(--accent-dim);
+}
+.pd-quick-btn i { font-size: 0.72rem; }
+
 /* Divider */
 .pd-divider {
   height: 1px; background: rgba(255,255,255,.07);
