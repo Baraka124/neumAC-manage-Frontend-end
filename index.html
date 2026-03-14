@@ -277,66 +277,16 @@
                         </li>
                     </ul>
                 </div>
-                <div class="sidebar-section">
+                <div class="sidebar-section" v-if="hasPermission('research_lines', 'read')">
                     <div class="sidebar-section-title" v-if="!sidebarCollapsed">Research</div>
                     <ul class="sidebar-menu">
                         <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'research_lines' }"
-                               @click.prevent="switchView('research_lines'); mobileMenuOpen = false"
-                               v-if="hasPermission('research_lines', 'read')"
-                               :aria-current="currentView === 'research_lines' ? 'page' : null">
-                                <i class="fas fa-flask"></i>
-                                <span v-if="!sidebarCollapsed">Research Lines</span>
-                            </a>
-                        </li>
-                        <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'clinical_trials' }"
-                               @click.prevent="switchView('clinical_trials'); mobileMenuOpen = false"
-                               v-if="hasPermission('research_lines', 'read')"
-                               :aria-current="currentView === 'clinical_trials' ? 'page' : null">
-                                <i class="fas fa-vial"></i>
-                                <span v-if="!sidebarCollapsed">Clinical Trials</span>
-                            </a>
-                        </li>
-                        <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'innovation_projects' }"
-                               @click.prevent="switchView('innovation_projects'); mobileMenuOpen = false"
-                               v-if="hasPermission('research_lines', 'read')"
-                               :aria-current="currentView === 'innovation_projects' ? 'page' : null">
+                            <a href="#" class="sidebar-menu-link"
+                               :class="{ active: currentView === 'research_hub' }"
+                               @click.prevent="switchView('research_hub'); mobileMenuOpen = false"
+                               :aria-current="currentView === 'research_hub' ? 'page' : null">
                                 <i class="fas fa-microscope"></i>
-                                <span v-if="!sidebarCollapsed">Innovation Projects</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title" v-if="!sidebarCollapsed">Analytics</div>
-                    <ul class="sidebar-menu">
-                        <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'analytics_dashboard' }"
-                               @click.prevent="switchView('analytics_dashboard'); mobileMenuOpen = false"
-                               v-if="hasPermission('analytics', 'read')"
-                               :aria-current="currentView === 'analytics_dashboard' ? 'page' : null">
-                                <i class="fas fa-chart-pie"></i>
-                                <span v-if="!sidebarCollapsed">Research Dashboard</span>
-                            </a>
-                        </li>
-                        <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'analytics_performance' }"
-                               @click.prevent="switchView('analytics_performance'); mobileMenuOpen = false"
-                               v-if="hasPermission('analytics', 'read')"
-                               :aria-current="currentView === 'analytics_performance' ? 'page' : null">
-                                <i class="fas fa-chart-line"></i>
-                                <span v-if="!sidebarCollapsed">Lines Performance</span>
-                            </a>
-                        </li>
-                        <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'analytics_partners' }"
-                               @click.prevent="switchView('analytics_partners'); mobileMenuOpen = false"
-                               v-if="hasPermission('analytics', 'read')"
-                               :aria-current="currentView === 'analytics_partners' ? 'page' : null">
-                                <i class="fas fa-handshake"></i>
-                                <span v-if="!sidebarCollapsed">Partner Collaborations</span>
+                                <span v-if="!sidebarCollapsed">Research Hub</span>
                             </a>
                         </li>
                     </ul>
@@ -1898,7 +1848,8 @@
                                                     <i class="fas fa-clipboard-check"></i> Resolve
                                                 </button>
                                                 <button class="btn-pill btn-pill-edit" @click.stop="editAbsence(absence)" v-if="hasPermission('staff_absence', 'update') && absence.current_status !== 'completed'"><i class="fas fa-edit"></i> Edit</button>
-                                                <button class="btn-pill btn-pill-danger" @click.stop="deleteAbsence(absence)" v-if="hasPermission('staff_absence', 'delete') && absence.current_status !== 'completed'"><i class="fas fa-trash"></i></button>
+                                                <button class="btn-pill btn-pill-danger" @click.stop="deleteAbsence(absence)" v-if="hasPermission('staff_absence', 'delete') && absence.current_status !== 'completed'" title="Cancel — keeps record for audit"><i class="fas fa-ban"></i></button>
+                                                <button class="btn-pill btn-pill-purge" @click.stop="purgeAbsence(absence)" v-if="currentUser && ['system_admin','department_head'].includes(currentUser.user_role)" title="Permanently delete this record"><i class="fas fa-trash-alt"></i></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -2126,130 +2077,132 @@
                     </div>
                 </div>
 
-                <!-- ============ RESEARCH LINES VIEW ============ -->
-                <div v-if="currentView === 'research_lines'">
-                    <div class="card mb-6">
-                        <div class="card-header">
-                            <div class="card-title"><i class="fas fa-flask"></i> Research Lines</div>
-                            <button class="btn btn-primary" @click="showAddResearchLineModal" v-if="hasPermission('research_lines', 'create')"><i class="fas fa-plus"></i> Add Research Line</button>
+                <!-- ============ RESEARCH HUB (unified) ============ -->
+                <div v-if="currentView === 'research_hub'" class="research-hub">
+
+                    <!-- ── Hub header ───────────────────────────────────── -->
+                    <div class="rhub-header">
+                        <div class="rhub-header-left">
+                            <div class="rhub-title-block">
+                                <span class="rhub-eyebrow">Research &amp; Innovation</span>
+                                <h1 class="rhub-title">Research Hub</h1>
+                            </div>
+                            <!-- Context pill — shows active line filter if set -->
+                            <div v-if="trialFilters.line" class="rhub-context-pill">
+                                <i class="fas fa-flask"></i>
+                                <span>{{ getResearchLineName(trialFilters.line) }}</span>
+                                <button @click="trialFilters.line = ''; projectFilters.research_line_id = ''" class="rhub-ctx-clear"><i class="fas fa-times"></i></button>
+                            </div>
                         </div>
-                        <div class="filter-bar">
-                            <input type="text" class="form-control" v-model="researchLineFilters.search" placeholder="Search by name, description or keyword...">
-                            <select class="form-select" v-model="researchLineFilters.active" style="max-width:160px">
+                        <div class="rhub-header-right">
+                            <button class="btn btn-primary btn-sm" v-if="researchHubTab === 'lines' && hasPermission('research_lines','create')" @click="showAddResearchLineModal"><i class="fas fa-plus"></i> Add Line</button>
+                            <button class="btn btn-primary btn-sm" v-if="researchHubTab === 'trials' && hasPermission('research_lines','create')" @click="showAddTrialModal"><i class="fas fa-plus"></i> Add Trial</button>
+                            <button class="btn btn-primary btn-sm" v-if="researchHubTab === 'projects' && hasPermission('research_lines','create')" @click="showAddProjectModal"><i class="fas fa-plus"></i> Add Project</button>
+                            <button class="btn btn-outline btn-sm" v-if="researchHubTab === 'analytics'" @click="showExportModal" v-if="hasPermission('analytics','export')"><i class="fas fa-download"></i> Export</button>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab bar ───────────────────────────────────────── -->
+                    <div class="rhub-tabs">
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'lines' }" @click="researchHubTab = 'lines'">
+                            <i class="fas fa-flask"></i>
+                            <span>Lines</span>
+                            <span class="rhub-tab-count">{{ researchLines.length }}</span>
+                        </button>
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'trials' }" @click="researchHubTab = 'trials'">
+                            <i class="fas fa-vial"></i>
+                            <span>Trials</span>
+                            <span class="rhub-tab-count">{{ clinicalTrials.length }}</span>
+                        </button>
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'projects' }" @click="researchHubTab = 'projects'">
+                            <i class="fas fa-microscope"></i>
+                            <span>Projects</span>
+                            <span class="rhub-tab-count">{{ innovationProjects.length }}</span>
+                        </button>
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'analytics' }"
+                                @click="researchHubTab = 'analytics'; loadResearchDashboard(); loadTrialsTimeline(); loadResearchLinesPerformance(); loadPartnerCollaborations()">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Analytics</span>
+                        </button>
+                    </div>
+
+                    <!-- ══════════════════════════════════════════════════
+                         TAB: LINES
+                    ══════════════════════════════════════════════════ -->
+                    <div v-show="researchHubTab === 'lines'" class="rhub-panel">
+                        <div class="rhub-filter-bar">
+                            <input type="text" class="form-control" v-model="researchLineFilters.search" placeholder="Search lines…">
+                            <select class="form-select" v-model="researchLineFilters.active" style="max-width:140px">
                                 <option value="">All Status</option>
                                 <option value="true">Active</option>
                                 <option value="false">Inactive</option>
                             </select>
                         </div>
-                        <div class="research-lines-grid">
+                        <div class="rhub-lines-grid">
                             <div v-for="line in filteredResearchLines" :key="line.id"
-                                 class="rline-card"
-                                 :class="{ 'rline-card--inactive': !line.active }">
-
-                                <!-- Coloured top accent — active=blue/teal, inactive=muted -->
-                                <div class="rline-card-accent" :style="line.active ? {} : { background: 'var(--border)' }"></div>
-
-                                <!-- Header row -->
-                                <div class="rline-card-header">
-                                    <div class="rline-card-header-left">
-                                        <span class="rline-number-pill">Línea {{ line.line_number }}</span>
-                                        <span v-if="!line.active" class="rline-inactive-badge"><i class="fas fa-pause-circle"></i> Inactive</span>
-                                    </div>
-                                    <div class="rline-card-actions" v-if="hasPermission('research_lines', 'update') || hasPermission('research_lines', 'delete')">
-                                        <button class="rline-action-btn" @click="editResearchLine(line)" v-if="hasPermission('research_lines', 'update')" title="Edit line"><i class="fas fa-edit"></i></button>
-                                        <button class="rline-action-btn rline-action-btn--danger" @click="deleteResearchLine(line)" v-if="hasPermission('research_lines', 'delete')" title="Delete"><i class="fas fa-trash"></i></button>
+                                 class="rhl-card"
+                                 :class="{ 'rhl-card--inactive': !line.active }"
+                                 @click="openLineDetail(line)">
+                                <div class="rhl-accent" :style="!line.active ? { background: 'var(--border)' } : {}"></div>
+                                <div class="rhl-top">
+                                    <span class="rhl-number">L{{ line.line_number }}</span>
+                                    <span v-if="!line.active" class="rhl-inactive-pill">Inactive</span>
+                                    <div class="rhl-actions" @click.stop>
+                                        <button class="rhl-btn" @click.stop="editResearchLine(line)" v-if="hasPermission('research_lines','update')" title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button class="rhl-btn rhl-btn--danger" @click.stop="deleteResearchLine(line)" v-if="hasPermission('research_lines','delete')" title="Delete"><i class="fas fa-trash"></i></button>
                                     </div>
                                 </div>
-
-                                <!-- Name — big Instrument Serif -->
-                                <h3 class="rline-card-name">{{ line.research_line_name || line.name }}</h3>
-
-                                <!-- Description -->
-                                <p class="rline-card-description" v-if="line.description">{{ line.description }}</p>
-
-                                <!-- Activity stats row -->
-                                <div class="rline-activity-row">
-                                    <div class="rline-activity-pill">
-                                        <i class="fas fa-vial"></i>
-                                        <span>{{ line.stats?.totalTrials || 0 }}</span>
-                                        <span class="rline-activity-label">trials</span>
+                                <h3 class="rhl-name">{{ line.research_line_name || line.name }}</h3>
+                                <p class="rhl-desc" v-if="line.description">{{ line.description }}</p>
+                                <div class="rhl-stats">
+                                    <div class="rhl-stat" @click.stop="drillToTrials(line.id)" title="View trials">
+                                        <span class="rhl-stat-num">{{ line.stats?.totalTrials || 0 }}</span>
+                                        <span class="rhl-stat-label">Trials</span>
+                                        <span v-if="line.stats?.activeTrials > 0" class="rhl-stat-live">{{ line.stats.activeTrials }} active</span>
                                     </div>
-                                    <div class="rline-activity-pill rline-activity-pill--teal" v-if="line.stats?.activeTrials > 0">
-                                        <span class="rline-dot-pulse"></span>
-                                        <span>{{ line.stats.activeTrials }}</span>
-                                        <span class="rline-activity-label">active</span>
-                                    </div>
-                                    <div class="rline-activity-pill">
-                                        <i class="fas fa-microscope"></i>
-                                        <span>{{ line.stats?.totalProjects || 0 }}</span>
-                                        <span class="rline-activity-label">projects</span>
-                                    </div>
-                                    <div class="rline-activity-pill rline-activity-pill--purple" v-if="line.stats?.activeProjects > 0">
-                                        <i class="fas fa-circle"></i>
-                                        <span>{{ line.stats.activeProjects }}</span>
-                                        <span class="rline-activity-label">active</span>
+                                    <div class="rhl-stat-divider"></div>
+                                    <div class="rhl-stat" @click.stop="drillToProjects(line.id)" title="View projects">
+                                        <span class="rhl-stat-num">{{ line.stats?.totalProjects || 0 }}</span>
+                                        <span class="rhl-stat-label">Projects</span>
+                                        <span v-if="line.stats?.activeProjects > 0" class="rhl-stat-live">{{ line.stats.activeProjects }} active</span>
                                     </div>
                                 </div>
-
-                                <!-- Coordinator row — compact single line -->
-                                <div class="rline-coord-row">
-                                    <div class="rline-coord-label">COORDINADOR/A</div>
-                                    <div v-if="line.coordinator_id" class="rline-coord-person">
-                                        <div class="rline-coord-avatar">{{ line.coordinator_name ? line.coordinator_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?' }}</div>
-                                        <div class="rline-coord-info">
-                                            <span class="rline-coord-name">{{ line.coordinator_name }}</span>
-                                            <span class="rline-coord-email" v-if="line.coordinator_email">{{ line.coordinator_email }}</span>
-                                        </div>
-                                        <button class="rline-coord-change" @click="openAssignCoordinatorModal(line)" v-if="hasPermission('research_lines', 'update')" title="Change coordinator"><i class="fas fa-exchange-alt"></i></button>
+                                <div class="rhl-coordinator">
+                                    <div v-if="line.coordinator_id" class="rhl-coord-row">
+                                        <div class="rhl-coord-avatar">{{ line.coordinator_name ? line.coordinator_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?' }}</div>
+                                        <span class="rhl-coord-name">{{ line.coordinator_name }}</span>
+                                        <button class="rhl-coord-btn" @click.stop="openAssignCoordinatorModal(line)" v-if="hasPermission('research_lines','update')" title="Change"><i class="fas fa-exchange-alt"></i></button>
                                     </div>
-                                    <div v-else class="rline-coord-empty">
+                                    <div v-else class="rhl-coord-empty" @click.stop>
                                         <i class="fas fa-user-slash"></i>
-                                        <span>No asignado</span>
-                                        <button class="rline-coord-assign" @click="openAssignCoordinatorModal(line)" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-user-plus"></i> Asignar</button>
+                                        <span>No coordinator</span>
+                                        <button class="rhl-coord-btn" @click.stop="openAssignCoordinatorModal(line)" v-if="hasPermission('research_lines','update')"><i class="fas fa-user-plus"></i> Assign</button>
                                     </div>
                                 </div>
-
-                                <!-- Capabilities — shown as small scope label -->
-                                <div class="rline-scope" v-if="line.capabilities && line.capabilities !== 'Alcance y capacidades'">
-                                    <i class="fas fa-microscope"></i>
-                                    <span>{{ line.capabilities }}</span>
+                                <div class="rhl-keywords" v-if="line.keywords && line.keywords.length">
+                                    <span v-for="kw in line.keywords.slice(0,4)" :key="kw" class="rhl-kw">{{ kw }}</span>
                                 </div>
-
-                                <!-- Keywords as pill chips -->
-                                <div class="rline-keywords" v-if="line.keywords && line.keywords.length">
-                                    <span v-for="kw in line.keywords" :key="kw" class="rline-kw-chip">{{ kw }}</span>
-                                </div>
-
-                            </div><!-- /rline-card -->
-
-                            <div v-if="filteredResearchLines.length === 0" class="col-span-full empty-state">
-                                <i class="fas fa-flask empty-state-icon"></i>
-                                <div class="empty-state-title">No research lines found</div>
-                                <div class="empty-state-description">Research lines organize your department's scientific focus areas</div>
-                                <button class="btn btn-primary btn-sm" @click="showAddResearchLineModal" v-if="hasPermission('research_lines', 'create')"><i class="fas fa-plus"></i> Add First Research Line</button>
+                            </div>
+                            <div v-if="filteredResearchLines.length === 0" class="rhub-empty">
+                                <i class="fas fa-flask"></i>
+                                <p>No research lines found</p>
+                                <button class="btn btn-primary btn-sm" @click="showAddResearchLineModal" v-if="hasPermission('research_lines','create')"><i class="fas fa-plus"></i> Add First Line</button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- ============ CLINICAL TRIALS VIEW ============ -->
-                <div v-if="currentView === 'clinical_trials'">
-                    <div class="card mb-6">
-                        <div class="card-header">
-                            <div class="card-title"><i class="fas fa-vial"></i> Clinical Trials</div>
-                            <button class="btn btn-primary" @click="showAddTrialModal" v-if="hasPermission('research_lines', 'create')"><i class="fas fa-plus"></i> Add Trial</button>
-                        </div>
-                        <div class="filter-bar">
+                    <!-- ══════════════════════════════════════════════════
+                         TAB: TRIALS
+                    ══════════════════════════════════════════════════ -->
+                    <div v-show="researchHubTab === 'trials'" class="rhub-panel">
+                        <div class="rhub-filter-bar">
                             <select class="form-select" v-model="trialFilters.line">
                                 <option value="">All Lines</option>
                                 <option v-for="line in researchLines" :key="line.id" :value="line.id">{{ line.research_line_name || line.name }}</option>
                             </select>
                             <select class="form-select" v-model="trialFilters.phase">
                                 <option value="">All Phases</option>
-                                <option value="Phase I">Phase I</option>
-                                <option value="Phase II">Phase II</option>
-                                <option value="Phase III">Phase III</option>
-                                <option value="Phase IV">Phase IV</option>
+                                <option>Phase I</option><option>Phase II</option><option>Phase III</option><option>Phase IV</option>
                             </select>
                             <select class="form-select" v-model="trialFilters.status">
                                 <option value="">All Status</option>
@@ -2258,108 +2211,53 @@
                                 <option value="Completado">Completed</option>
                                 <option value="Suspendido">Suspended</option>
                             </select>
-                            <input type="text" class="form-control" v-model="trialFilters.search" placeholder="Search by protocol or title…">
+                            <input type="text" class="form-control" v-model="trialFilters.search" placeholder="Search protocol or title…">
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th @click="sortBy('trials', 'protocol_id')" style="white-space:nowrap">Protocolo <i class="fas" :class="sortIcon('trials', 'protocol_id')"></i></th>
-                                        <th @click="sortBy('trials', 'title')">Título del Estudio <i class="fas" :class="sortIcon('trials', 'title')"></i></th>
-                                        <th>Línea</th>
-                                        <th>PI</th>
-                                        <th title="Co-Investigators">Co-I</th>
-                                        <th @click="sortBy('trials', 'phase')">Fase <i class="fas" :class="sortIcon('trials', 'phase')"></i></th>
-                                        <th @click="sortBy('trials', 'status')">Estado <i class="fas" :class="sortIcon('trials', 'status')"></i></th>
-                                        <th title="Enrollment (actual / target)">Reclut.</th>
-                                        <th @click="sortBy('trials', 'start_date')" style="white-space:nowrap">Fechas <i class="fas" :class="sortIcon('trials', 'start_date')"></i></th>
-                                        <th>Sponsor</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="trial in filteredTrials" :key="trial.id">
-                                        <td class="font-mono">{{ trial.protocol_id }}</td>
-                                        <td>{{ trial.title }}</td>
-                                        <td>{{ getResearchLineName(trial.research_line_id) }}</td>
-                                        <td><span v-if="trial.principal_investigator_id" class="trial-pi-name"><i class="fas fa-user-md"></i> {{ getStaffName(trial.principal_investigator_id) }}</span><span v-else class="text-muted-sm">—</span></td>
-                                        <!-- FIX 9: Co-I count badge -->
-                                        <td class="text-center">
-                                            <span v-if="trial.co_investigators?.length" class="badge badge-info" :title="trial.co_investigators.map(id => getStaffName(id)).join(', ')">{{ trial.co_investigators.length }}</span>
-                                            <span v-else class="text-muted-sm">—</span>
-                                        </td>
-                                        <td><span class="badge badge-info">{{ trial.phase }}</span></td>
-                                        <!-- FIX 26: Distinct classes for Reclutando vs Activo vs Completado -->
-                                        <td>
-                                            <span class="status-indicator"
-                                                  :class="{
-                                                    'status-recruiting': trial.status === 'Reclutando',
-                                                    'status-active': trial.status === 'Activo',
-                                                    'status-completed': trial.status === 'Completado',
-                                                    'status-suspended': trial.status === 'Suspendido'
-                                                  }">{{ formatTrialStatus(trial.status) }}</span>
-                                        </td>
-                                        <td class="trial-enrollment-cell">
-                                            <div v-if="trial.enrollment_target" class="enrollment-wrap">
-                                                <div class="enrollment-nums">
-                                                    <span class="enrollment-actual">{{ trial.actual_enrollment || 0 }}</span>
-                                                    <span class="enrollment-sep">/</span>
-                                                    <span class="enrollment-target">{{ trial.enrollment_target }}</span>
-                                                </div>
-                                                <div class="enrollment-bar">
-                                                    <div class="enrollment-fill"
-                                                         :style="{ width: Math.min(100, Math.round(((trial.actual_enrollment||0)/trial.enrollment_target)*100)) + '%',
-                                                                   background: trial.status === 'Completado' ? 'var(--teal)' : 'var(--blue)' }"></div>
-                                                </div>
-                                            </div>
-                                            <span v-else class="text-muted-sm">—</span>
-                                        </td>
-                                        <td class="trial-dates-cell">
-                                            <div v-if="trial.start_date || trial.end_date" class="trial-dates-wrap">
-                                                <span v-if="trial.start_date" class="trial-date-from"><i class="fas fa-play" style="font-size:8px;opacity:.6"></i> {{ formatDateShort(trial.start_date) }}</span>
-                                                <span v-if="trial.end_date" class="trial-date-to"><i class="fas fa-flag-checkered" style="font-size:8px;opacity:.6"></i> {{ formatDateShort(trial.end_date) }}</span>
-                                            </div>
-                                            <span v-else class="text-muted-sm">—</span>
-                                        </td>
-                                        <td>
-                                            <span v-if="trial.sponsor_name" class="trial-sponsor-badge" :title="trial.sponsor_type || ''">
-                                                <i class="fas fa-building" style="opacity:.5;font-size:10px"></i> {{ trial.sponsor_name }}
-                                            </span>
-                                            <span v-else class="text-muted-sm">—</span>
-                                        </td>
-                                        <td class="table-actions-cell">
-                                            <button class="btn-pill btn-pill-view" @click="viewTrial(trial)" title="View details"><i class="fas fa-eye"></i></button>
-                                            <button class="btn-pill btn-pill-edit" @click="editTrial(trial)" v-if="hasPermission('research_lines', 'update')"><i class="fas fa-edit"></i></button>
-                                            <button class="btn-pill btn-pill-delete" @click="deleteClinicalTrial(trial)" v-if="hasPermission('research_lines', 'delete')"><i class="fas fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="filteredTrials.length === 0">
-                                        <td colspan="8" class="empty-state">
-                                            <i class="fas fa-vial empty-state-icon"></i>
-                                            <div class="empty-state-title">No clinical trials found</div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="pagination" v-if="trialTotalPages > 1">
-                                <button class="btn-pill" @click="goToPage('trials', pagination.trials.page - 1)" :disabled="pagination.trials.page === 1"><i class="fas fa-chevron-left"></i></button>
-                                <span class="pagination-info">Page {{ pagination.trials.page }} of {{ trialTotalPages }}</span>
-                                <button class="btn-pill" @click="goToPage('trials', pagination.trials.page + 1)" :disabled="pagination.trials.page === trialTotalPages"><i class="fas fa-chevron-right"></i></button>
+                        <div class="rhub-trials-list">
+                            <div v-for="trial in filteredTrials" :key="trial.id" class="rht-row" @click="viewTrial(trial)">
+                                <div class="rht-phase-badge" :style="{ background: getPhaseColor(trial.phase) }">{{ trial.phase?.replace('Phase ','') }}</div>
+                                <div class="rht-main">
+                                    <div class="rht-title">{{ trial.title }}</div>
+                                    <div class="rht-meta">
+                                        <span class="rht-protocol">{{ trial.protocol_id }}</span>
+                                        <span class="rht-sep">·</span>
+                                        <span>{{ getResearchLineName(trial.research_line_id) }}</span>
+                                        <span v-if="trial.principal_investigator_id" class="rht-sep">·</span>
+                                        <span v-if="trial.principal_investigator_id"><i class="fas fa-user-md" style="opacity:.5;font-size:10px"></i> {{ getStaffName(trial.principal_investigator_id) }}</span>
+                                    </div>
+                                </div>
+                                <div class="rht-enrollment" v-if="trial.enrollment_target">
+                                    <div class="rht-enroll-nums">{{ trial.actual_enrollment || 0 }}/{{ trial.enrollment_target }}</div>
+                                    <div class="rht-enroll-bar"><div :style="{ width: Math.min(100,(trial.actual_enrollment||0)/trial.enrollment_target*100)+'%', background: getPhaseColor(trial.phase) }"></div></div>
+                                </div>
+                                <div class="rht-dates" v-if="trial.start_date || trial.end_date">
+                                    <span v-if="trial.start_date">{{ formatDateShort(trial.start_date) }}</span>
+                                    <span v-if="trial.end_date"> → {{ formatDateShort(trial.end_date) }}</span>
+                                </div>
+                                <span class="rht-status status-indicator"
+                                      :class="{ 'status-recruiting': trial.status==='Reclutando', 'status-active': trial.status==='Activo', 'status-completed': trial.status==='Completado', 'status-suspended': trial.status==='Suspendido' }">
+                                    {{ formatTrialStatus(trial.status) }}
+                                </span>
+                                <div class="rht-actions" @click.stop>
+                                    <button class="btn-pill btn-pill-edit" @click.stop="editTrial(trial)" v-if="hasPermission('research_lines','update')"><i class="fas fa-edit"></i></button>
+                                    <button class="btn-pill btn-pill-delete" @click.stop="deleteClinicalTrial(trial)" v-if="hasPermission('research_lines','delete')"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div v-if="filteredTrials.length === 0" class="rhub-empty">
+                                <i class="fas fa-vial"></i><p>No trials match your filters</p>
                             </div>
                         </div>
-
-                    </div>
-                </div>
-
-                <!-- ============ INNOVATION PROJECTS VIEW ============ -->
-                <div v-if="currentView === 'innovation_projects'">
-                    <div class="card mb-6">
-                        <div class="card-header">
-                            <div class="card-title"><i class="fas fa-microscope"></i> Innovation Projects</div>
-                            <button class="btn btn-primary" @click="showAddProjectModal" v-if="hasPermission('research_lines', 'create')"><i class="fas fa-plus"></i> Add Project</button>
+                        <div class="pagination" v-if="trialTotalPages > 1">
+                            <button class="btn-pill" @click="goToPage('trials', pagination.trials.page - 1)" :disabled="pagination.trials.page === 1"><i class="fas fa-chevron-left"></i></button>
+                            <span class="pagination-info">Page {{ pagination.trials.page }} of {{ trialTotalPages }}</span>
+                            <button class="btn-pill" @click="goToPage('trials', pagination.trials.page + 1)" :disabled="pagination.trials.page === trialTotalPages"><i class="fas fa-chevron-right"></i></button>
                         </div>
+                    </div>
 
-                        <!-- Pipeline stage overview bar -->
+                    <!-- ══════════════════════════════════════════════════
+                         TAB: PROJECTS
+                    ══════════════════════════════════════════════════ -->
+                    <div v-show="researchHubTab === 'projects'" class="rhub-panel">
                         <div class="pipeline-overview">
                             <div v-for="stage in PROJECT_STAGES" :key="stage.key"
                                  class="pipeline-stage-tile"
@@ -2373,8 +2271,7 @@
                                 <div class="pst-dot" :style="{ background: stage.color }"></div>
                             </div>
                         </div>
-
-                        <div class="filter-bar">
+                        <div class="rhub-filter-bar">
                             <select class="form-select" v-model="projectFilters.research_line_id">
                                 <option value="">All Lines</option>
                                 <option v-for="line in researchLines" :key="line.id" :value="line.id">{{ line.research_line_name || line.name }}</option>
@@ -2388,361 +2285,274 @@
                             </select>
                             <select class="form-select" v-model="projectFilters.funding_status">
                                 <option value="">All Funding</option>
-                                <option value="not_applicable">N/A</option>
-                                <option value="seeking">Seeking Funding</option>
+                                <option value="seeking">Seeking</option>
                                 <option value="applied">Applied</option>
                                 <option value="funded">Funded ✓</option>
                             </select>
-                            <input type="text" class="form-control" v-model="projectFilters.search" placeholder="Search title, description or keyword...">
+                            <input type="text" class="form-control" v-model="projectFilters.search" placeholder="Search projects…">
                         </div>
-
                         <div class="inno-projects-grid">
                             <div v-for="project in filteredProjects" :key="project.id"
                                  class="inno-card"
                                  :style="{ '--stage-color': getStageConfig(project.current_stage || project.development_stage).color, '--stage-bg': getStageConfig(project.current_stage || project.development_stage).bg }">
-
-                                <!-- Stage-colored left border accent -->
                                 <div class="inno-card-bar"></div>
-
-                                <!-- Top row: category badge + actions -->
                                 <div class="inno-card-top">
-                                    <span class="inno-cat-badge" :class="'inno-cat--' + (project.category || '').toLowerCase().replace(/[^a-z]/g, '-')">
-                                        {{ project.category }}
-                                    </span>
+                                    <span class="inno-cat-badge" :class="'inno-cat--' + (project.category || '').toLowerCase().replace(/[^a-z]/g, '-')">{{ project.category }}</span>
                                     <div class="inno-card-actions">
-                                        <button class="inno-action-btn" @click="editProject(project)" v-if="hasPermission('research_lines', 'update')" title="Edit"><i class="fas fa-edit"></i></button>
-                                        <button class="inno-action-btn inno-action-btn--danger" @click="deleteInnovationProject(project)" v-if="hasPermission('research_lines', 'delete')" title="Delete"><i class="fas fa-trash"></i></button>
+                                        <button class="inno-action-btn" @click="editProject(project)" v-if="hasPermission('research_lines','update')"><i class="fas fa-edit"></i></button>
+                                        <button class="inno-action-btn inno-action-btn--danger" @click="deleteInnovationProject(project)" v-if="hasPermission('research_lines','delete')"><i class="fas fa-trash"></i></button>
                                     </div>
                                 </div>
-
-                                <!-- Title -->
                                 <h3 class="inno-card-title">{{ project.title }}</h3>
-
-                                <!-- Stage pipeline track -->
                                 <div class="inno-stage-track">
-                                    <div v-for="s in PROJECT_STAGES" :key="s.key"
-                                         class="inno-stage-node"
-                                         :class="{
-                                           'inno-stage-node--done': s.step < getStageConfig(project.current_stage || project.development_stage).step,
-                                           'inno-stage-node--current': s.key === (project.current_stage || project.development_stage),
-                                           'inno-stage-node--future': s.step > getStageConfig(project.current_stage || project.development_stage).step
-                                         }"
-                                         :style="s.key === (project.current_stage || project.development_stage) ? { background: s.color, borderColor: s.color } : {}"
-                                         :title="s.label">
+                                    <div v-for="s in PROJECT_STAGES" :key="s.key" class="inno-stage-node"
+                                         :class="{ 'inno-stage-node--done': s.step < getStageConfig(project.current_stage || project.development_stage).step, 'inno-stage-node--current': s.key === (project.current_stage || project.development_stage), 'inno-stage-node--future': s.step > getStageConfig(project.current_stage || project.development_stage).step }"
+                                         :style="s.key === (project.current_stage || project.development_stage) ? { background: s.color, borderColor: s.color } : {}" :title="s.label">
                                         <i class="fas" :class="s.key === (project.current_stage || project.development_stage) ? s.icon : 'fa-check'" v-if="s.step <= getStageConfig(project.current_stage || project.development_stage).step"></i>
                                     </div>
-                                    <span class="inno-stage-label" :style="{ color: 'var(--stage-color)' }">
-                                        <i class="fas" :class="getStageConfig(project.current_stage || project.development_stage).icon"></i>
-                                        {{ project.current_stage || project.development_stage }}
-                                    </span>
+                                    <span class="inno-stage-label" :style="{ color: 'var(--stage-color)' }"><i class="fas" :class="getStageConfig(project.current_stage || project.development_stage).icon"></i> {{ project.current_stage || project.development_stage }}</span>
                                 </div>
-
-                                <!-- Description -->
                                 <p class="inno-card-description" v-if="project.description">{{ project.description }}</p>
-
-                                <!-- Research line + funding badge row -->
                                 <div class="inno-meta-row">
                                     <span class="inno-line-badge"><i class="fas fa-flask"></i> {{ getResearchLineName(project.research_line_id) }}</span>
-                                    <span v-if="project.funding_status && project.funding_status !== 'not_applicable'"
-                                          class="inno-funding-badge"
-                                          :class="'inno-funding--' + project.funding_status">
-                                        <i class="fas" :class="{ 'fa-search-dollar': project.funding_status === 'seeking', 'fa-file-alt': project.funding_status === 'applied', 'fa-check-circle': project.funding_status === 'funded' }"></i>
+                                    <span v-if="project.funding_status && project.funding_status !== 'not_applicable'" class="inno-funding-badge" :class="'inno-funding--' + project.funding_status">
+                                        <i class="fas" :class="{ 'fa-search-dollar': project.funding_status==='seeking', 'fa-file-alt': project.funding_status==='applied', 'fa-check-circle': project.funding_status==='funded' }"></i>
                                         {{ { seeking: 'Seeking Funding', applied: 'Applied', funded: 'Funded' }[project.funding_status] }}
                                     </span>
                                 </div>
-
-                                <!-- Team section -->
-                                <div class="inno-team-section" v-if="project.lead_investigator_id || (project.co_investigators && project.co_investigators.length)">
+                                <div class="inno-team-section" v-if="project.lead_investigator_id">
                                     <div class="inno-team-label">EQUIPO</div>
                                     <div class="inno-team-members">
-                                        <div v-if="project.lead_investigator_id" class="inno-team-member">
-                                            <div class="inno-member-avatar inno-member-avatar--lead">
-                                                {{ getStaffName(project.lead_investigator_id).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}
-                                            </div>
-                                            <div class="inno-member-info">
-                                                <span class="inno-member-name">{{ getStaffName(project.lead_investigator_id) }}</span>
-                                                <span class="inno-member-role">PI / Lead</span>
-                                            </div>
-                                        </div>
-                                        <div v-for="coId in (project.co_investigators || []).slice(0,3)" :key="coId" class="inno-team-member">
-                                            <div class="inno-member-avatar">
-                                                {{ getStaffName(coId).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}
-                                            </div>
-                                            <div class="inno-member-info">
-                                                <span class="inno-member-name">{{ getStaffName(coId) }}</span>
-                                                <span class="inno-member-role">Co-I</span>
-                                            </div>
-                                        </div>
-                                        <div v-if="(project.co_investigators || []).length > 3" class="inno-member-overflow">
-                                            +{{ (project.co_investigators || []).length - 3 }} more
+                                        <div class="inno-team-member">
+                                            <div class="inno-member-avatar inno-member-avatar--lead">{{ getStaffName(project.lead_investigator_id).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                            <div class="inno-member-info"><span class="inno-member-name">{{ getStaffName(project.lead_investigator_id) }}</span><span class="inno-member-role">PI / Lead</span></div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Partner section — conditional on partner_found -->
-                                <div class="inno-partner-section" v-if="project.partner_found && project.partner_name">
-                                    <div class="inno-partner-found">
-                                        <i class="fas fa-handshake"></i>
-                                        <span class="inno-partner-found-label">Partner:</span>
-                                        <span class="inno-partner-name">{{ project.partner_name }}</span>
-                                    </div>
-                                </div>
-                                <div class="inno-needs-section" v-else-if="project.partner_needs && project.partner_needs.length">
-                                    <div class="inno-needs-label"><i class="fas fa-search"></i> Seeking partner for:</div>
-                                    <div class="inno-needs-chips">
-                                        <span v-for="need in project.partner_needs" :key="need" class="inno-need-chip">{{ need }}</span>
-                                    </div>
-                                </div>
-
-                                <!-- TRL level badge -->
                                 <div class="inno-trl-row" v-if="project.trl_level">
                                     <div class="inno-trl-track">
-                                        <div v-for="n in 9" :key="n"
-                                             class="inno-trl-pip"
-                                             :class="{
-                                               'inno-trl-pip--filled': n <= project.trl_level,
-                                               'inno-trl-pip--current': n === project.trl_level
-                                             }"
-                                             :title="'TRL ' + n"
-                                             :style="n <= project.trl_level ? { background: getStageConfig(project.current_stage || project.development_stage).color } : {}">
-                                        </div>
+                                        <div v-for="n in 9" :key="n" class="inno-trl-pip" :class="{ 'inno-trl-pip--filled': n <= project.trl_level, 'inno-trl-pip--current': n === project.trl_level }" :style="n <= project.trl_level ? { background: getStageConfig(project.current_stage || project.development_stage).color } : {}"></div>
                                     </div>
                                     <span class="inno-trl-label">TRL {{ project.trl_level }}</span>
                                 </div>
-
-                                <!-- Keywords -->
                                 <div class="inno-keywords" v-if="project.keywords && project.keywords.length">
                                     <span v-for="kw in project.keywords" :key="kw" class="inno-kw-chip">{{ kw }}</span>
                                 </div>
-
-                            </div><!-- /inno-card -->
-
-                            <div v-if="filteredProjects.length === 0" class="col-span-full empty-state">
-                                <i class="fas fa-microscope empty-state-icon"></i>
-                                <div class="empty-state-title">No innovation projects found</div>
-                                <div class="empty-state-description">Innovation projects track ideas from inception through funding to clinical implementation</div>
-                                <button class="btn btn-primary btn-sm" @click="showAddProjectModal" v-if="hasPermission('research_lines', 'create')"><i class="fas fa-plus"></i> Add First Project</button>
                             </div>
-                        </div><!-- /grid -->
+                            <div v-if="filteredProjects.length === 0" class="rhub-empty col-span-full">
+                                <i class="fas fa-microscope"></i><p>No projects found</p>
+                            </div>
+                        </div>
                         <div class="pagination" v-if="projectTotalPages > 1">
                             <button class="btn-pill" @click="goToPage('projects', pagination.projects?.page - 1)" :disabled="!pagination.projects || pagination.projects.page === 1"><i class="fas fa-chevron-left"></i></button>
                             <span class="pagination-info">Page {{ pagination.projects?.page || 1 }} of {{ projectTotalPages }}</span>
                             <button class="btn-pill" @click="goToPage('projects', pagination.projects?.page + 1)" :disabled="!pagination.projects || pagination.projects.page === projectTotalPages"><i class="fas fa-chevron-right"></i></button>
                         </div>
                     </div>
-                </div>
 
-                <!-- ============ ANALYTICS (UNIFIED TABBED VIEW) ============ -->
-                <div v-if="currentView === 'analytics_dashboard' || currentView === 'analytics_performance' || currentView === 'analytics_partners'">
-
-                    <!-- Tab navigation -->
-                    <div class="analytics-tab-bar">
-                        <button class="analytics-tab" :class="{ 'analytics-tab--active': analyticsActiveTab === 'dashboard' }"
-                                @click="analyticsActiveTab = 'dashboard'; loadResearchDashboard(); loadTrialsTimeline()">
-                            <i class="fas fa-chart-pie"></i> Dashboard
-                        </button>
-                        <button class="analytics-tab" :class="{ 'analytics-tab--active': analyticsActiveTab === 'performance' }"
-                                @click="analyticsActiveTab = 'performance'; loadResearchLinesPerformance()">
-                            <i class="fas fa-chart-line"></i> Performance
-                        </button>
-                        <button class="analytics-tab" :class="{ 'analytics-tab--active': analyticsActiveTab === 'partners' }"
-                                @click="analyticsActiveTab = 'partners'; loadPartnerCollaborations()">
-                            <i class="fas fa-handshake"></i> Partners
-                        </button>
-                        <div class="analytics-tab-spacer"></div>
-                        <button class="btn btn-primary btn-sm" @click="showExportModal" v-if="hasPermission('analytics', 'export')"><i class="fas fa-download"></i> Export</button>
-                    </div>
-
-                    <!-- ── TAB: DASHBOARD ─────────────────────────────────────── -->
-                    <div v-show="analyticsActiveTab === 'dashboard'">
-                    <div class="dashboard-header" style="padding-top:0;margin-top:0">
-                        <h2><i class="fas fa-chart-pie"></i> Research Analytics Dashboard</h2>
-                        <button class="btn btn-outline btn-sm" @click="loadResearchDashboard(); loadTrialsTimeline()" :disabled="loadingAnalytics"><i class="fas fa-sync-alt" :class="{ 'fa-spin': loadingAnalytics }"></i> Refresh</button>
-                    </div>
-                    <div v-if="loadingAnalytics" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading analytics data...</div>
-                    <template v-else-if="researchDashboard">
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-header"><i class="fas fa-flask"></i><h3>Research Lines</h3></div>
-                                <div class="stat-main-value">{{ researchDashboard.summary?.totalResearchLines || 0 }}</div>
-                                <div class="stat-breakdown"><div class="breakdown-item"><span class="label">Active</span><span class="value">{{ researchDashboard.summary?.activeResearchLines || 0 }}</span></div></div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-header"><i class="fas fa-vial"></i><h3>Clinical Trials</h3></div>
-                                <div class="stat-main-value">{{ researchDashboard.summary?.totalTrials || 0 }}</div>
-                                <div class="stat-breakdown"><div class="breakdown-item"><span class="label">Active</span><span class="value">{{ researchDashboard.summary?.activeTrials || 0 }}</span></div></div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-header"><i class="fas fa-microscope"></i><h3>Innovation Projects</h3></div>
-                                <div class="stat-main-value">{{ researchDashboard.summary?.totalProjects || 0 }}</div>
-                                <div class="stat-breakdown"><div class="breakdown-item"><span class="label">Active</span><span class="value">{{ researchDashboard.summary?.activeProjects || 0 }}</span></div></div>
-                            </div>
-                        </div>
-                        <div class="charts-grid">
-                            <div class="chart-card">
-                                <h4><i class="fas fa-chart-pie"></i> Trials by Phase</h4>
-                                <div class="chart-bars">
-                                    <!-- FIX 31: Guard against NaN when totalTrials is 0 -->
-                                    <div v-for="(count, phase) in researchDashboard.clinicalTrials?.byPhase" :key="phase" class="chart-bar-item" v-if="count > 0">
-                                        <span class="bar-label">{{ phase }}</span>
-                                        <div class="bar-container"><div class="bar-fill" :style="{ width: researchDashboard.summary?.totalTrials > 0 ? (count / researchDashboard.summary.totalTrials * 100) + '%' : '0%', background: getPhaseColor(phase) }"></div></div>
-                                        <span class="bar-value">{{ count }}</span>
-                                    </div>
-                                    <div v-if="!researchDashboard.clinicalTrials?.byPhase || Object.values(researchDashboard.clinicalTrials.byPhase).every(v => v === 0)" class="empty-chart">No trial data available</div>
-                                </div>
-                            </div>
-                            <div class="chart-card">
-                                <h4><i class="fas fa-chart-bar"></i> Projects by Stage</h4>
-                                <div class="chart-bars">
-                                    <div v-for="(count, stage) in researchDashboard.innovationProjects?.byStage" :key="stage" class="chart-bar-item" v-if="count > 0">
-                                        <span class="bar-label">{{ stage }}</span>
-                                        <div class="bar-container"><div class="bar-fill" :style="{ width: researchDashboard.summary?.totalProjects > 0 ? (count / researchDashboard.summary.totalProjects * 100) + '%' : '0%', background: getStageColor(stage) }"></div></div>
-                                        <span class="bar-value">{{ count }}</span>
-                                    </div>
-                                    <div v-if="!researchDashboard.innovationProjects?.byStage || Object.values(researchDashboard.innovationProjects.byStage || {}).every(v => v === 0)" class="empty-chart">No project data available</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card" v-if="researchDashboard.innovationProjects?.partnerNeeds?.length">
-                            <div class="card-header"><div class="card-title"><i class="fas fa-handshake"></i> Top Partner Needs</div></div>
-                            <div class="partner-needs-chart">
-                                <div v-for="need in researchDashboard.innovationProjects.partnerNeeds.slice(0, 10).sort((a,b) => b.count - a.count)" :key="need.name" class="pneed-row">
-                                    <span class="pneed-label">{{ need.name }}</span>
-                                    <div class="pneed-bar-wrap">
-                                        <div class="pneed-bar" :style="{ width: (need.count / researchDashboard.innovationProjects.partnerNeeds[0]?.count * 100) + '%' }"></div>
-                                    </div>
-                                    <span class="pneed-count">{{ need.count }}</span>
-                                </div>
-                            </div>
+                    <!-- ══════════════════════════════════════════════════
+                         TAB: ANALYTICS
+                    ══════════════════════════════════════════════════ -->
+                    <div v-show="researchHubTab === 'analytics'" class="rhub-panel">
+                        <!-- Analytics sub-tabs -->
+                        <div class="rha-subtabs">
+                            <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'dashboard' }" @click="analyticsActiveTab = 'dashboard'"><i class="fas fa-chart-pie"></i> Dashboard</button>
+                            <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'performance' }" @click="analyticsActiveTab = 'performance'"><i class="fas fa-chart-line"></i> Performance</button>
+                            <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'partners' }" @click="analyticsActiveTab = 'partners'"><i class="fas fa-handshake"></i> Partners</button>
                         </div>
 
-                        <!-- Trials added over time timeline -->
-                        <div class="card" v-if="trialsTimeline && trialsTimeline.timeline?.length">
-                            <div class="card-header">
-                                <div class="card-title"><i class="fas fa-stream"></i> Trials Added Over Time</div>
-                                <span class="badge badge-info">{{ trialsTimeline.totalInPeriod }} in last 3 years</span>
-                            </div>
-                            <div class="timeline-chart">
-                                <div v-for="(item, idx) in trialsTimeline.timeline" :key="item.month" class="timeline-bar-col">
-                                    <div class="timeline-bar-wrap">
-                                        <div class="timeline-bar-fill"
-                                             :style="{ height: Math.max(4, Math.round((item.count / Math.max(...trialsTimeline.timeline.map(t=>t.count))) * 100)) + '%' }"
-                                             :title="item.month + ': ' + item.count + ' trial(s)'">
+                        <!-- DASHBOARD -->
+                        <div v-show="analyticsActiveTab === 'dashboard'">
+                            <div v-if="loadingAnalytics" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+                            <template v-else-if="researchDashboard">
+                                <!-- KPI strip -->
+                                <div class="rha-kpi-strip">
+                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ researchDashboard.summary?.totalResearchLines || 0 }}</div><div class="rha-kpi-label">Lines</div><div class="rha-kpi-sub">{{ researchDashboard.summary?.activeResearchLines || 0 }} active</div></div>
+                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ researchDashboard.summary?.totalTrials || 0 }}</div><div class="rha-kpi-label">Trials</div><div class="rha-kpi-sub">{{ researchDashboard.summary?.activeTrials || 0 }} active</div></div>
+                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ researchDashboard.summary?.totalProjects || 0 }}</div><div class="rha-kpi-label">Projects</div><div class="rha-kpi-sub">{{ researchDashboard.summary?.activeProjects || 0 }} active</div></div>
+                                </div>
+                                <!-- Charts -->
+                                <div class="rha-charts-row">
+                                    <div class="rha-chart-card">
+                                        <div class="rha-chart-title"><i class="fas fa-chart-pie"></i> Trials by Phase</div>
+                                        <div class="chart-bars">
+                                            <div v-for="(count, phase) in researchDashboard.clinicalTrials?.byPhase" :key="phase" class="chart-bar-item" v-if="count > 0">
+                                                <span class="bar-label">{{ phase }}</span>
+                                                <div class="bar-container"><div class="bar-fill" :style="{ width: researchDashboard.summary?.totalTrials > 0 ? (count / researchDashboard.summary.totalTrials * 100) + '%' : '0%', background: getPhaseColor(phase) }"></div></div>
+                                                <span class="bar-value">{{ count }}</span>
+                                            </div>
+                                            <div v-if="!researchDashboard.clinicalTrials?.byPhase || Object.values(researchDashboard.clinicalTrials.byPhase).every(v => v === 0)" class="empty-chart">No data</div>
                                         </div>
-                                        <span v-if="item.count > 0" class="timeline-bar-val">{{ item.count }}</span>
                                     </div>
-                                    <span class="timeline-bar-label">{{ item.month.slice(5) }}</span>
+                                    <div class="rha-chart-card">
+                                        <div class="rha-chart-title"><i class="fas fa-chart-bar"></i> Projects by Stage</div>
+                                        <div class="chart-bars">
+                                            <div v-for="(count, stage) in researchDashboard.innovationProjects?.byStage" :key="stage" class="chart-bar-item" v-if="count > 0">
+                                                <span class="bar-label">{{ stage }}</span>
+                                                <div class="bar-container"><div class="bar-fill" :style="{ width: researchDashboard.summary?.totalProjects > 0 ? (count / researchDashboard.summary.totalProjects * 100) + '%' : '0%', background: getStageColor(stage) }"></div></div>
+                                                <span class="bar-value">{{ count }}</span>
+                                            </div>
+                                            <div v-if="!researchDashboard.innovationProjects?.byStage || Object.values(researchDashboard.innovationProjects.byStage || {}).every(v => v === 0)" class="empty-chart">No data</div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                                <!-- Timeline -->
+                                <div class="rha-chart-card rha-chart-card--wide" v-if="trialsTimeline && trialsTimeline.timeline?.length">
+                                    <div class="rha-chart-title"><i class="fas fa-stream"></i> Trials Added Over Time <span class="rha-chart-badge">{{ trialsTimeline.totalInPeriod }} in 3 yrs</span></div>
+                                    <div class="timeline-chart">
+                                        <div v-for="item in trialsTimeline.timeline" :key="item.month" class="timeline-bar-col">
+                                            <div class="timeline-bar-wrap">
+                                                <div class="timeline-bar-fill" :style="{ height: Math.max(4, Math.round((item.count / Math.max(...trialsTimeline.timeline.map(t=>t.count))) * 100)) + '%' }" :title="item.month + ': ' + item.count"></div>
+                                                <span v-if="item.count > 0" class="timeline-bar-val">{{ item.count }}</span>
+                                            </div>
+                                            <span class="timeline-bar-label">{{ item.month.slice(5) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Lines overview -->
+                                <div class="rha-lines-overview" v-if="researchDashboard.researchLines?.length">
+                                    <div class="rha-chart-title" style="padding:0 0 10px"><i class="fas fa-flask"></i> Research Lines Overview</div>
+                                    <div class="rha-lines-table">
+                                        <div class="rha-lt-header">
+                                            <span>Line</span><span>Name</span><span>Coordinator</span><span>Trials</span><span>Projects</span><span>Status</span>
+                                        </div>
+                                        <div v-for="line in researchDashboard.researchLines" :key="line.id" class="rha-lt-row" @click="drillToTrials(line.id)" style="cursor:pointer">
+                                            <span class="rline-number-pill" style="font-size:10px">L{{ line.line_number }}</span>
+                                            <span class="rha-lt-name">{{ line.name }}</span>
+                                            <span class="rha-lt-coord">{{ line.coordinator_name || '—' }}</span>
+                                            <span><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></span>
+                                            <span><span class="badge badge-success">{{ line.projectsCount || 0 }}</span></span>
+                                            <span><span class="status-indicator" :class="line.active ? 'status-active' : 'status-inactive'">{{ line.active ? 'Active' : 'Inactive' }}</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <div v-else class="rhub-empty"><i class="fas fa-chart-pie"></i><p>No analytics data</p><button class="btn btn-sm btn-primary" @click="loadResearchDashboard(); loadTrialsTimeline()">Load</button></div>
                         </div>
 
-                        <!-- Research Lines overview table — built from local data -->
-                        <div class="card" v-if="researchDashboard.researchLines?.length">
-                            <div class="card-header"><div class="card-title"><i class="fas fa-flask"></i> Research Lines Overview</div></div>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead><tr><th>Line</th><th>Name</th><th>Coordinator</th><th>Trials</th><th>Projects</th><th>Status</th></tr></thead>
-                                    <tbody>
-                                        <tr v-for="line in researchDashboard.researchLines" :key="line.id" class="row-active" style="cursor:pointer"
-                                            @click="trialFilters.line = line.id; switchView('clinical_trials')">
-                                            <td><span class="rline-number-pill" style="font-size:11px">Línea {{ line.line_number }}</span></td>
-                                            <td class="font-medium">{{ line.name }}</td>
-                                            <td>{{ line.coordinator_name || 'Not assigned' }}</td>
-                                            <td><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></td>
-                                            <td><span class="badge badge-success">{{ line.projectsCount || 0 }}</span></td>
-                                            <td><span class="status-indicator" :class="line.active ? 'status-active' : 'status-inactive'">{{ line.active ? 'Active' : 'Inactive' }}</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </template>
-                    <div v-else class="empty-state">
-                        <i class="fas fa-chart-pie empty-state-icon"></i>
-                        <div class="empty-state-title">No analytics data available</div>
-                        <div class="empty-state-description">Unable to load research dashboard data</div>
-                        <button class="btn btn-primary btn-sm" @click="loadResearchDashboard(); loadTrialsTimeline()"><i class="fas fa-sync-alt"></i> Retry</button>
-                    </div>
-                    </div><!-- /tab:dashboard -->
-
-                    <!-- ── TAB: PERFORMANCE ───────────────────────────────────── -->
-                    <div v-show="analyticsActiveTab === 'performance'">
-                    <div class="dashboard-header" style="padding-top:0;margin-top:0">
-                        <h2><i class="fas fa-chart-line"></i> Research Lines Performance</h2>
-                        <button class="btn btn-outline btn-sm" @click="loadResearchLinesPerformance()" :disabled="loadingAnalytics"><i class="fas fa-sync-alt" :class="{ 'fa-spin': loadingAnalytics }"></i> Refresh</button>
-                    </div>
-                    <div v-if="loadingAnalytics" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading performance data...</div>
-                    <div v-else-if="researchLinesPerformance.length > 0" class="card">
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead><tr><th>Research Line</th><th>Coordinator</th><th>Total Trials</th><th>Active Trials</th><th>Completed Trials</th><th>Total Projects</th><th>Active Projects</th><th>Commercialized</th></tr></thead>
-                                <tbody>
-                                    <tr v-for="line in researchLinesPerformance" :key="line.id" class="row-active">
-                                        <td><div class="font-medium">Línea {{ line.line_number }}: {{ line.name }}</div></td>
-                                        <td>{{ line.coordinator || 'Not assigned' }}</td>
-                                        <td class="text-center">{{ line.stats?.totalTrials || 0 }}</td>
-                                        <td class="text-center"><span class="badge badge-success">{{ line.stats?.activeTrials || 0 }}</span></td>
-                                        <td class="text-center">{{ line.stats?.completedTrials || 0 }}</td>
-                                        <td class="text-center">{{ line.stats?.totalProjects || 0 }}</td>
-                                        <td class="text-center">{{ line.stats?.activeProjects || 0 }}</td>
-                                        <td class="text-center"><span class="badge badge-primary">{{ line.stats?.commercialized || 0 }}</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div v-else class="empty-state"><i class="fas fa-chart-line empty-state-icon"></i><div class="empty-state-title">No performance data available</div></div>
-                    </div><!-- /tab:performance -->
-
-                    <!-- ── TAB: PARTNERS ──────────────────────────────────────── -->
-                    <div v-show="analyticsActiveTab === 'partners'">
-                    <div class="dashboard-header" style="padding-top:0;margin-top:0">
-                        <h2><i class="fas fa-handshake"></i> Partner Collaborations</h2>
-                        <button class="btn btn-outline btn-sm" @click="loadPartnerCollaborations()" :disabled="loadingAnalytics"><i class="fas fa-sync-alt" :class="{ 'fa-spin': loadingAnalytics }"></i> Refresh</button>
-                    </div>
-                    <div v-if="loadingAnalytics" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading partner data...</div>
-                    <div v-else-if="partnerCollaborations" class="space-y-4">
-                        <div class="stats-grid mini">
-                            <div class="stat-card mini"><div class="stat-header"><i class="fas fa-project-diagram"></i><h3>Projects with Partners</h3></div><div class="stat-value">{{ partnerCollaborations.totalProjectsWithPartners || 0 }}</div></div>
-                            <div class="stat-card mini"><div class="stat-header"><i class="fas fa-handshake"></i><h3>Total Collaborations</h3></div><div class="stat-value">{{ partnerCollaborations.totalPartnerNeeds || 0 }}</div></div>
-                            <div class="stat-card mini"><div class="stat-header"><i class="fas fa-tags"></i><h3>Unique Partner Types</h3></div><div class="stat-value">{{ partnerCollaborations.uniquePartnerNeeds || 0 }}</div></div>
-                        </div>
-                        <div class="card" v-if="partnerCollaborations.needsByType?.length">
-                            <div class="card-header"><div class="card-title"><i class="fas fa-chart-pie"></i> Collaborations by Type</div></div>
-                            <div class="chart-bars">
-                                <div v-for="item in partnerCollaborations.needsByType" :key="item.type" class="chart-bar-item">
-                                    <span class="bar-label">{{ item.type }}</span>
-                                    <div class="bar-container"><div class="bar-fill" :style="{ width: (item.count / partnerCollaborations.totalPartnerNeeds * 100) + '%', background: getPartnerTypeColor(item.type) }"></div></div>
-                                    <span class="bar-value">{{ item.count }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card" v-if="partnerCollaborations.partnerNeeds?.length">
-                            <div class="card-header"><div class="card-title"><i class="fas fa-list"></i> Partner Needs</div></div>
-                            <div class="needs-grid">
-                                <div v-for="need in partnerCollaborations.partnerNeeds.slice(0, 20)" :key="need.name" class="need-item">
-                                    <span class="need-name">{{ need.name }}</span>
-                                    <span class="need-count">{{ need.count }}</span>
-                                    <div class="need-bar"><div class="need-fill" :style="{ width: (need.count / partnerCollaborations.partnerNeeds[0].count * 100) + '%' }"></div></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card" v-if="partnerCollaborations.needsByCategory && Object.keys(partnerCollaborations.needsByCategory).length">
-                            <div class="card-header"><div class="card-title"><i class="fas fa-tags"></i> Needs by Category</div></div>
-                            <div class="category-grid">
-                                <div v-for="(needs, category) in partnerCollaborations.needsByCategory" :key="category" class="category-card">
-                                    <h5>{{ category }}</h5>
-                                    <div v-for="(count, need) in needs" :key="need" class="category-item">
-                                        <span>{{ need }}</span><span class="badge badge-info">{{ count }}</span>
+                        <!-- PERFORMANCE -->
+                        <div v-show="analyticsActiveTab === 'performance'">
+                            <div v-if="loadingAnalytics" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+                            <div v-else-if="researchLinesPerformance.length > 0" class="rha-perf-grid">
+                                <div v-for="line in researchLinesPerformance" :key="line.id" class="rha-perf-card" @click="drillToTrials(line.id)">
+                                    <div class="rha-perf-header">
+                                        <span class="rha-perf-number">L{{ line.line_number }}</span>
+                                        <span class="rha-perf-name">{{ line.name }}</span>
+                                        <span class="rha-perf-coord">{{ line.coordinator || '—' }}</span>
+                                    </div>
+                                    <div class="rha-perf-stats">
+                                        <div class="rha-ps"><div class="rha-ps-val">{{ line.stats?.totalTrials || 0 }}</div><div class="rha-ps-label">Trials</div></div>
+                                        <div class="rha-ps rha-ps--ok"><div class="rha-ps-val">{{ line.stats?.activeTrials || 0 }}</div><div class="rha-ps-label">Active</div></div>
+                                        <div class="rha-ps"><div class="rha-ps-val">{{ line.stats?.completedTrials || 0 }}</div><div class="rha-ps-label">Done</div></div>
+                                        <div class="rha-ps"><div class="rha-ps-val">{{ line.stats?.totalProjects || 0 }}</div><div class="rha-ps-label">Projects</div></div>
+                                        <div class="rha-ps rha-ps--blue"><div class="rha-ps-val">{{ line.stats?.activeProjects || 0 }}</div><div class="rha-ps-label">Active</div></div>
+                                        <div class="rha-ps rha-ps--purple"><div class="rha-ps-val">{{ line.stats?.commercialized || 0 }}</div><div class="rha-ps-label">Commerc.</div></div>
+                                    </div>
+                                    <div class="rha-perf-bar">
+                                        <div class="rha-perf-bar-fill" :style="{ width: line.stats?.totalTrials > 0 ? Math.min(100, (line.stats.activeTrials / line.stats.totalTrials) * 100) + '%' : '0%' }"></div>
                                     </div>
                                 </div>
                             </div>
+                            <div v-else class="rhub-empty"><i class="fas fa-chart-line"></i><p>No performance data</p></div>
+                        </div>
+
+                        <!-- PARTNERS -->
+                        <div v-show="analyticsActiveTab === 'partners'">
+                            <div v-if="loadingAnalytics" class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+                            <div v-else-if="partnerCollaborations">
+                                <div class="rha-kpi-strip">
+                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ partnerCollaborations.totalProjectsWithPartners || 0 }}</div><div class="rha-kpi-label">Projects with Partners</div></div>
+                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ partnerCollaborations.totalPartnerNeeds || 0 }}</div><div class="rha-kpi-label">Collaborations</div></div>
+                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ partnerCollaborations.uniquePartnerNeeds || 0 }}</div><div class="rha-kpi-label">Unique Types</div></div>
+                                </div>
+                                <div class="rha-charts-row">
+                                    <div class="rha-chart-card" v-if="partnerCollaborations.needsByType?.length">
+                                        <div class="rha-chart-title"><i class="fas fa-chart-pie"></i> By Partner Type</div>
+                                        <div class="chart-bars">
+                                            <div v-for="item in partnerCollaborations.needsByType" :key="item.type" class="chart-bar-item">
+                                                <span class="bar-label">{{ item.type }}</span>
+                                                <div class="bar-container"><div class="bar-fill" :style="{ width: (item.count / partnerCollaborations.totalPartnerNeeds * 100) + '%', background: getPartnerTypeColor(item.type) }"></div></div>
+                                                <span class="bar-value">{{ item.count }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="rha-chart-card" v-if="partnerCollaborations.partnerNeeds?.length">
+                                        <div class="rha-chart-title"><i class="fas fa-list"></i> Partner Needs</div>
+                                        <div class="needs-grid">
+                                            <div v-for="need in partnerCollaborations.partnerNeeds.slice(0,15)" :key="need.name" class="need-item">
+                                                <span class="need-name">{{ need.name }}</span>
+                                                <span class="need-count">{{ need.count }}</span>
+                                                <div class="need-bar"><div class="need-fill" :style="{ width: (need.count / partnerCollaborations.partnerNeeds[0].count * 100) + '%' }"></div></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-else class="rhub-empty"><i class="fas fa-handshake"></i><p>No partner data</p></div>
                         </div>
                     </div>
-                    <div v-else class="empty-state"><i class="fas fa-handshake empty-state-icon"></i><div class="empty-state-title">No partner collaboration data available</div></div>
-                    </div><!-- /tab:partners -->
 
-                </div><!-- /analytics unified view -->
+                    <!-- ══════════════════════════════════════════════════
+                         LINE DETAIL PANEL (slide-in from right)
+                    ══════════════════════════════════════════════════ -->
+                    <div v-if="researchDetailPanel && selectedResearchLine" class="rldp-backdrop" @click="closeLineDetail"></div>
+                    <div class="rldp" :class="{ 'rldp--open': researchDetailPanel && selectedResearchLine }">
+                        <template v-if="selectedResearchLine">
+                            <div class="rldp-header">
+                                <div>
+                                    <span class="rldp-number">Línea {{ selectedResearchLine.line_number }}</span>
+                                    <h2 class="rldp-title">{{ selectedResearchLine.research_line_name || selectedResearchLine.name }}</h2>
+                                </div>
+                                <button class="rldp-close" @click="closeLineDetail"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="rldp-body">
+                                <p class="rldp-description" v-if="selectedResearchLine.description">{{ selectedResearchLine.description }}</p>
+                                <!-- Coordinator -->
+                                <div class="rldp-section">
+                                    <div class="rldp-section-label">Coordinator</div>
+                                    <div v-if="selectedResearchLine.coordinator_id" class="rldp-coord">
+                                        <div class="rldp-coord-avatar">{{ selectedResearchLine.coordinator_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                        <span>{{ selectedResearchLine.coordinator_name }}</span>
+                                    </div>
+                                    <span v-else class="rldp-empty">Not assigned</span>
+                                </div>
+                                <!-- Stats -->
+                                <div class="rldp-stats-row">
+                                    <div class="rldp-stat-block" @click="drillToTrials(selectedResearchLine.id)">
+                                        <div class="rldp-stat-num">{{ selectedResearchLine.stats?.totalTrials || 0 }}</div>
+                                        <div class="rldp-stat-label">Total Trials</div>
+                                        <div class="rldp-stat-active" v-if="selectedResearchLine.stats?.activeTrials > 0">{{ selectedResearchLine.stats.activeTrials }} active</div>
+                                        <div class="rldp-stat-link"><i class="fas fa-arrow-right"></i> View</div>
+                                    </div>
+                                    <div class="rldp-stat-block" @click="drillToProjects(selectedResearchLine.id)">
+                                        <div class="rldp-stat-num">{{ selectedResearchLine.stats?.totalProjects || 0 }}</div>
+                                        <div class="rldp-stat-label">Total Projects</div>
+                                        <div class="rldp-stat-active" v-if="selectedResearchLine.stats?.activeProjects > 0">{{ selectedResearchLine.stats.activeProjects }} active</div>
+                                        <div class="rldp-stat-link"><i class="fas fa-arrow-right"></i> View</div>
+                                    </div>
+                                </div>
+                                <!-- Capabilities -->
+                                <div class="rldp-section" v-if="selectedResearchLine.capabilities && selectedResearchLine.capabilities !== 'Alcance y capacidades'">
+                                    <div class="rldp-section-label">Capabilities</div>
+                                    <p class="rldp-text">{{ selectedResearchLine.capabilities }}</p>
+                                </div>
+                                <!-- Keywords -->
+                                <div class="rldp-section" v-if="selectedResearchLine.keywords?.length">
+                                    <div class="rldp-section-label">Keywords</div>
+                                    <div class="rldp-keywords">
+                                        <span v-for="kw in selectedResearchLine.keywords" :key="kw" class="rhl-kw">{{ kw }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rldp-footer">
+                                <button class="btn btn-outline btn-sm" @click="editResearchLine(selectedResearchLine); closeLineDetail()" v-if="hasPermission('research_lines','update')"><i class="fas fa-edit"></i> Edit Line</button>
+                                <button class="btn btn-primary btn-sm" @click="drillToTrials(selectedResearchLine.id)"><i class="fas fa-vial"></i> Trials</button>
+                                <button class="btn btn-primary btn-sm" @click="drillToProjects(selectedResearchLine.id)"><i class="fas fa-microscope"></i> Projects</button>
+                            </div>
+                        </template>
+                    </div>
+
+                </div><!-- /research-hub -->
 
                 <!-- ============ SYSTEM SETTINGS VIEW ============ -->
                 <div v-if="currentView === 'system_settings'" v-cloak>
