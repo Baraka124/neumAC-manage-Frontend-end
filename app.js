@@ -4388,15 +4388,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
 
         const loadAcademicDegrees = async () => {
-          try {
-            const result = await API.getAcademicDegrees()
-            academicDegrees.value = (result && result.length > 0 && result[0].id?.includes('-'))
-              ? result
-              : ACADEMIC_DEGREES_FALLBACK
-          } catch {
-            // Endpoint not yet deployed — use hardcoded fallback silently
-            academicDegrees.value = ACADEMIC_DEGREES_FALLBACK
-          }
+          // Skip network call — /api/academic-degrees not yet on production backend
+          // Will be re-enabled once backend v5.3 is deployed
+          academicDegrees.value = ACADEMIC_DEGREES_FALLBACK
         }
 
         // Staff Types manager modal (lives in System Settings)
