@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // ============ 1. CONFIGURATION ====-----===--====-=
+    // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           'external_resident': {
             icon: 'fa-globe',
-            text: staff.external_institution ? `External (${staff.external_institution})` : 'External Resident',
+            text: 'External',
             shortText: 'External', color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.1)'
           }
         };
