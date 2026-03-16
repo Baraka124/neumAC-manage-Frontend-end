@@ -1377,7 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
       const onCallModal = reactive({
         show: false, mode: 'add',
-        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '08:00', end_time: '17:00', primary_physician_id: '', backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '' }
+        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '' }
       })
 
       const getPhysicianName = (id) => {
@@ -1512,7 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onCallModal.mode = 'add'
         Object.assign(onCallModal.form, {
           duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
-          start_time: '08:00', end_time: '17:00',
+          start_time: '15:00', end_time: '08:00',
           primary_physician_id: physician?.id || '',
           backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '',
           schedule_id: `SCH-${Date.now().toString().slice(-6)}`
@@ -1573,7 +1573,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const f = onCallModal.form
           const data = {
             duty_date: Utils.normalizeDate(f.duty_date), shift_type: f.shift_type || 'primary_call',
-            start_time: f.start_time || '08:00', end_time: f.end_time || '17:00',
+            start_time: f.start_time || '15:00', end_time: f.end_time || '08:00',
             primary_physician_id: f.primary_physician_id, backup_physician_id: f.backup_physician_id || null,
             coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH')
           }
