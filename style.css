@@ -1,4 +1,4 @@
-/*-- ═══════════════════════════════════════════════════════════════
+/*- ═══════════════════════════════════════════════════════════════
    RESIDENCY YEAR — auto/override display
 ═══════════════════════════════════════════════════════════════ */
 .form-hint { font-size: 10.5px; color: var(--text-3); font-weight: 400; margin-left: 4px; }
@@ -654,7 +654,12 @@ a { color: var(--blue); text-decoration: none; }
 
 .sidebar {
   width: var(--sidebar-w);
-  background: #07111f;
+  background: linear-gradient(175deg,
+    #071e3d 0%,
+    #0d2f5e 28%,
+    #0a2448 58%,
+    #061830 100%
+  );
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -664,7 +669,6 @@ a { color: var(--blue); text-decoration: none; }
   transition: width var(--t-md);
   overflow: hidden;
   flex-shrink: 0;
-  /* Subtle noise texture overlay */
   isolation: isolate;
 }
 
@@ -676,9 +680,9 @@ a { color: var(--blue); text-decoration: none; }
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(77,154,255,.22) 20%,
-    rgba(34,211,238,.14) 55%,
-    rgba(167,139,250,.18) 80%,
+    rgba(99,179,255,.3) 20%,
+    rgba(56,189,248,.2) 55%,
+    rgba(139,92,246,.22) 80%,
     transparent 100%
   );
   pointer-events: none; z-index: 1;
@@ -688,8 +692,8 @@ a { color: var(--blue); text-decoration: none; }
 .sidebar::after {
   content: '';
   position: absolute; bottom: 0; left: 0; right: 0;
-  height: 200px;
-  background: radial-gradient(ellipse at 50% 100%, rgba(77,154,255,.07) 0%, transparent 70%);
+  height: 220px;
+  background: radial-gradient(ellipse at 50% 100%, rgba(56,189,248,.1) 0%, rgba(99,102,241,.06) 50%, transparent 70%);
   pointer-events: none; z-index: 0;
 }
 
@@ -757,14 +761,14 @@ a { color: var(--blue); text-decoration: none; }
 /* The section title is the ANCHOR — it must be clearly smaller
    and more subdued than the items, acting as a label not a heading */
 .sidebar-section-title {
-  font-size: var(--t-10);   /* 12px — was 9px (blob at weight 700) */
-  font-weight: 500;          /* was 700 — lighter = more legible at 12px */
+  font-size: var(--t-10);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .10em;     /* was .14em — tighter is fine at 12px */
-  padding: 14px 4px 4px;
+  letter-spacing: .11em;
+  padding: 16px 4px 5px;
   white-space: nowrap; overflow: hidden;
   display: flex; align-items: center; gap: 8px;
-  opacity: .55;
+  opacity: .75;
 }
 
 /* First section needs less top space (sits under logo) */
@@ -780,7 +784,7 @@ a { color: var(--blue); text-decoration: none; }
   left: 10px; right: 10px;
   top: 0;
   height: 1px;
-  background: rgba(255,255,255,.06);
+  background: rgba(255,255,255,.1);
 }
 .sidebar-section:not(:first-child) .sidebar-section-title {
   position: relative;
@@ -800,15 +804,15 @@ a { color: var(--blue); text-decoration: none; }
 /* ── Nav link ─────────────────────────────────────────────── */
 .sidebar-menu-link {
   display: flex; align-items: center; gap: 9px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-radius: 7px;
-  color: rgba(255,255,255,.55);
-  font-size: 12.5px;
+  color: rgba(255,255,255,.78);
+  font-size: 13px;
   font-weight: 500;
   transition: background var(--t), color var(--t);
   white-space: nowrap; overflow: hidden;
-  margin-bottom: 1px;
-  min-height: 33px;
+  margin-bottom: 2px;
+  min-height: 36px;
   position: relative;
   cursor: pointer;
   letter-spacing: -.01em;
@@ -820,21 +824,21 @@ a { color: var(--blue); text-decoration: none; }
   font-size: 13px; width: 16px; text-align: center;
   flex-shrink: 0;
   transition: color var(--t), transform var(--t);
-  opacity: .65;
+  opacity: .8;
 }
 
 /* Per-section icon accent colors */
-.sidebar-section:nth-child(1) .sidebar-menu-link i { color: rgba(77,154,255,.7); }
-.sidebar-section:nth-child(2) .sidebar-menu-link i { color: rgba(52,211,153,.7); }
-.sidebar-section:nth-child(3) .sidebar-menu-link i { color: rgba(34,211,238,.7); }
-.sidebar-section:nth-child(4) .sidebar-menu-link i { color: rgba(251,191,36,.7); }
-.sidebar-section:nth-child(5) .sidebar-menu-link i { color: rgba(167,139,250,.7); }
-.sidebar-section:nth-child(6) .sidebar-menu-link i { color: rgba(251,113,133,.7); }
+.sidebar-section:nth-child(1) .sidebar-menu-link i { color: rgba(99,179,255,.85); }
+.sidebar-section:nth-child(2) .sidebar-menu-link i { color: rgba(52,211,153,.85); }
+.sidebar-section:nth-child(3) .sidebar-menu-link i { color: rgba(56,189,248,.85); }
+.sidebar-section:nth-child(4) .sidebar-menu-link i { color: rgba(251,191,36,.85); }
+.sidebar-section:nth-child(5) .sidebar-menu-link i { color: rgba(167,139,250,.85); }
+.sidebar-section:nth-child(6) .sidebar-menu-link i { color: rgba(251,113,133,.85); }
 
 /* Hover — step up brightness, not colour */
 .sidebar-menu-link:hover {
-  background: rgba(255,255,255,.05);
-  color: rgba(255,255,255,.80);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.95);
 }
 .sidebar-menu-link:hover i {
   opacity: 1;
@@ -858,12 +862,12 @@ a { color: var(--blue); text-decoration: none; }
 
 /* Tinted background fill — unique per section so you instantly
    know which category you're in just from the colour           */
-.sidebar-section:nth-child(1) .sidebar-menu-link.active { background: rgba(77,154,255,.14); }
-.sidebar-section:nth-child(2) .sidebar-menu-link.active { background: rgba(52,211,153,.13); }
-.sidebar-section:nth-child(3) .sidebar-menu-link.active { background: rgba(34,211,238,.12); }
-.sidebar-section:nth-child(4) .sidebar-menu-link.active { background: rgba(251,191,36,.12); }
-.sidebar-section:nth-child(5) .sidebar-menu-link.active { background: rgba(167,139,250,.13); }
-.sidebar-section:nth-child(6) .sidebar-menu-link.active { background: rgba(251,113,133,.12); }
+.sidebar-section:nth-child(1) .sidebar-menu-link.active { background: rgba(99,179,255,.18); }
+.sidebar-section:nth-child(2) .sidebar-menu-link.active { background: rgba(52,211,153,.16); }
+.sidebar-section:nth-child(3) .sidebar-menu-link.active { background: rgba(56,189,248,.16); }
+.sidebar-section:nth-child(4) .sidebar-menu-link.active { background: rgba(251,191,36,.15); }
+.sidebar-section:nth-child(5) .sidebar-menu-link.active { background: rgba(167,139,250,.17); }
+.sidebar-section:nth-child(6) .sidebar-menu-link.active { background: rgba(251,113,133,.15); }
 
 /* Left blade — thicker, taller, glowing */
 .sidebar-menu-link.active::before {
@@ -895,7 +899,7 @@ a { color: var(--blue); text-decoration: none; }
   left: calc(var(--sidebar-sm) - 6px);
   top: 50%;
   transform: translateY(-50%);
-  background: #112340;
+  background: #0a2448;
   color: rgba(255,255,255,.92);
   padding: 5px 12px;
   border-radius: var(--r-sm);
@@ -914,17 +918,17 @@ a { color: var(--blue); text-decoration: none; }
 /* ── Footer / user area ───────────────────────────────────── */
 .sidebar-footer {
   padding: 12px 10px;
-  border-top: 1px solid rgba(255,255,255,.05);
+  border-top: 1px solid rgba(255,255,255,.09);
   flex-shrink: 0; position: relative; z-index: 2;
 }
 .sidebar-user {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; border-radius: 10px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
   overflow: hidden; transition: background var(--t);
 }
-.sidebar-user:hover { background: rgba(255,255,255,.07); }
+.sidebar-user:hover { background: rgba(255,255,255,.1); }
 .sidebar-user-avatar {
   width: 36px; height: 36px; border-radius: 50%;
   background: linear-gradient(135deg, #4d9aff 0%, #7c3aed 100%);
@@ -1146,9 +1150,9 @@ a { color: var(--blue); text-decoration: none; }
 .db-greeting-left {}
 .db-greeting-time {
   font-family: var(--font-data);
-  font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .14em;
-  color: var(--text-3); margin-bottom: 3px;
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .12em;
+  color: var(--text-4); margin-bottom: 2px;
 }
 .db-greeting-title {
   font-family: var(--font-display);
