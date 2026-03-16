@@ -583,7 +583,6 @@
                             <div class="db-greeting-title">
                                 Good morning, <span>{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Doctor' }}</span>
                             </div>
-                            <div class="db-greeting-subtitle">{{ formatDate(currentTime, 'long') || 'Today' }}</div>
                         </div>
                         <div class="quick-actions-bar" style="margin-bottom:0; flex:0 1 auto;">
                             <button class="action-btn" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')"><i class="fas fa-user-plus"></i> Add Staff</button>
@@ -888,12 +887,12 @@
                         <div v-if="staffView === 'table'" class="table-responsive">
                             <table class="table table-striped table-staff">
                                 <colgroup>
-                                    <col style="width:28%"><!-- Name -->
-                                    <col style="width:9%"> <!-- Type — narrow, pulls toward name -->
-                                    <col style="width:16%"><!-- Department — more space, pushed right -->
-                                    <col style="width:17%"><!-- Rotation -->
-                                    <col style="width:9%"> <!-- Status -->
-                                    <col style="width:7%"> <!-- Actions -->
+                                    <col style="width:24%"><!-- Name -->
+                                    <col style="width:12%"><!-- Type -->
+                                    <col style="width:18%"><!-- Department -->
+                                    <col style="width:18%"><!-- Rotation -->
+                                    <col style="width:10%"><!-- Status -->
+                                    <col style="width:8%"> <!-- Actions -->
                                 </colgroup>
                                 <thead>
                                     <tr>
@@ -940,7 +939,7 @@
                                         </td>
                                         <td style="padding-left:18px">
                                             <span v-if="getDepartmentName(staff.department_id)">{{ getDepartmentName(staff.department_id) }}</span>
-                                            <span v-else class="na-value">—</span>
+                                            <span v-else class="na-value" style="font-size:11px;color:var(--text-4);font-style:italic">Not assigned</span>
                                         </td>
                                         <td>
                                             <template v-if="getCurrentRotationForStaff(staff.id)">
@@ -950,7 +949,7 @@
                                                     <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(staff.id).start_date, getCurrentRotationForStaff(staff.id).end_date) }}</span>
                                                 </div>
                                             </template>
-                                            <span v-else class="na-value">—</span>
+                                            <span v-else class="na-value" style="font-size:11px;color:var(--text-4);font-style:italic">None active</span>
                                         </td>
                                         <td style="text-align:center">
                                             <span class="status-indicator" :class="'status-' + staff.employment_status">{{ formatEmploymentStatus(staff.employment_status) }}</span>
@@ -1012,7 +1011,7 @@
 
                         <!-- Filter Bar -->
                         <div class="filter-bar">
-                            <input type="date" class="form-control" v-model="onCallFilters.date">
+                            <input type="date" class="form-control" style="max-width:180px" v-model="onCallFilters.date">
                             <select class="form-select" v-model="onCallFilters.shiftType">
                                 <option value="">All Shift Types</option>
                                 <option value="primary_call">Primary</option>
@@ -1123,16 +1122,14 @@
                                     <tr v-for="schedule in filteredOnCallSchedules" :key="schedule.id" class="row-active">
                                         <td :data-label="'Shift Period'">
                                             <div class="oncall-shift-cell">
-                                                <div class="oncall-shift-start">
-                                                    <span class="oncall-shift-label">From</span>
-                                                    <span class="oncall-shift-time">{{ schedule.start_time }}</span>
-                                                    <span class="oncall-shift-date">{{ formatDate(schedule.duty_date) }}</span>
+                                                <div class="oncall-shift-date-row">
+                                                    {{ formatDate(schedule.duty_date) }}
+                                                    <span v-if="schedule.end_time < schedule.start_time" class="oncall-shift-overnight">+1d</span>
                                                 </div>
-                                                <div class="oncall-shift-sep"></div>
-                                                <div class="oncall-shift-end">
-                                                    <span class="oncall-shift-label">Until</span>
-                                                    <span class="oncall-shift-time">{{ schedule.end_time }}</span>
-                                                    <span class="oncall-shift-date">{{ schedule.end_time < schedule.start_time ? formatDatePlusDays(schedule.duty_date, 1) : formatDate(schedule.duty_date) }}</span>
+                                                <div class="oncall-shift-time-row">
+                                                    <span class="oncall-shift-time">{{ (schedule.start_time||'').slice(0,5) }}</span>
+                                                    <span class="oncall-shift-arrow">→</span>
+                                                    <span class="oncall-shift-time">{{ (schedule.end_time||'').slice(0,5) }}</span>
                                                 </div>
                                             </div>
                                         </td>
