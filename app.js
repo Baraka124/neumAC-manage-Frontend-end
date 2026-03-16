@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // ============ 1. CONFIGURATION ====-----===--====-=
+    // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -1370,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.4 useOnCall ============
-    function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup }) {
+    function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences }) {
       const onCallSchedule = ref([])
       const todaysOnCall = ref([])
       const loadingSchedule = ref(false)
@@ -1534,6 +1534,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveOnCallSchedule = async (saving) => {
         if (!validateOnCall(onCallModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
+
+        // ── Absence conflict check ──────────────────────────────────────────
+        const f0 = onCallModal.form
+        if (f0.primary_physician_id && f0.duty_date) {
+          const dutyDate  = Utils.normalizeDate(f0.duty_date)
+          const absList   = absences?.value || []
+          const onAbsence = absList.filter(a => {
+            if (a.staff_member_id !== f0.primary_physician_id) return false
+            const s = Utils.normalizeDate(a.start_date)
+            const e = Utils.normalizeDate(a.end_date)
+            return dutyDate >= s && dutyDate <= e && !['cancelled','resolved'].includes(a.current_status)
+          })
+          if (onAbsence.length > 0) {
+            const abs     = onAbsence[0]
+            const staffName = medicalStaff.value.find(x => x.id === f0.primary_physician_id)?.full_name || 'This physician'
+            const reason  = abs.absence_reason?.replace(/_/g,' ') || 'absence'
+            const fmt     = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+            let proceed = false
+            await new Promise((resolve) => {
+              showConfirmation({
+                title: '⚠️ Physician On Absence',
+                message: `${staffName} is recorded as absent on this date (${reason}).`,
+                details: `Absence period: ${fmt(abs.start_date)} → ${fmt(abs.end_date)}`,
+                icon: 'fa-user-slash',
+                confirmButtonText: 'Schedule Anyway',
+                confirmButtonClass: 'btn-danger',
+                onConfirm: () => { proceed = true; resolve() },
+                onCancel:  () => resolve()
+              })
+            })
+            if (!proceed) { saving.value = false; return }
+          }
+        }
+
         saving.value = true
         try {
           const f = onCallModal.form
@@ -1634,96 +1668,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return currentTime >= shift.start_time && currentTime <= shift.end_time
       }
 
-      // ── Upcoming on-call: next 14 days grouped by date (for dashboard) ──
-      const upcomingOnCallDays = computed(() => {
-        const today    = Utils.normalizeDate(new Date())
-        const cutoff   = Utils.normalizeDate(new Date(Date.now() + 14 * 86400000))
-        const fmt      = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
-        const dayLabel = (d) => {
-          const tomorrow = Utils.normalizeDate(new Date(Date.now() + 86400000))
-          if (d === today)    return 'Today'
-          if (d === tomorrow) return 'Tomorrow'
-          return fmt(d)
-        }
-        const map = {}
-        onCallSchedule.value.forEach(s => {
-          const d = Utils.normalizeDate(s.duty_date)
-          if (d < today || d > cutoff) return
-          if (!map[d]) map[d] = { date: d, label: dayLabel(d), isToday: d === today, primary: null, backup: null }
-          if (['primary_call','primary'].includes(s.shift_type)) map[d].primary = s
-          else map[d].backup = s
-        })
-        return Object.values(map).sort((a,b) => a.date.localeCompare(b.date))
-      })
-
-      // ── Coverage grid: 28-day rolling calendar for Coverage view ──
-      const coverageGridOffset = ref(0)   // weeks offset (0 = current 4 weeks)
-
-      const onCallCoverageGrid = computed(() => {
-        const today   = new Date(); today.setHours(0,0,0,0)
-        const start   = new Date(today); start.setDate(today.getDate() + coverageGridOffset.value * 28)
-        const rows    = []
-        for (let i = 0; i < 28; i++) {
-          const d     = new Date(start); d.setDate(start.getDate() + i)
-          const dateStr = Utils.normalizeDate(d)
-          const shifts  = onCallSchedule.value.filter(s => Utils.normalizeDate(s.duty_date) === dateStr)
-          const primary = shifts.find(s => ['primary_call','primary'].includes(s.shift_type)) || null
-          const backup  = shifts.find(s => !['primary_call','primary'].includes(s.shift_type)) || null
-          const isToday = dateStr === Utils.normalizeDate(new Date())
-          const isPast  = d < today
-          const isWeekend = d.getDay() === 0 || d.getDay() === 6
-          rows.push({
-            date: dateStr,
-            label: d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
-            shortDay: d.toLocaleDateString('es-ES', { weekday: 'short' }),
-            dayNum: d.getDate(),
-            monthLabel: d.toLocaleDateString('es-ES', { month: 'short' }),
-            isToday, isPast, isWeekend,
-            isMonthStart: d.getDate() === 1,
-            primary, backup
-          })
-        }
-        return rows
-      })
-
-      const coverageRangeLabel = computed(() => {
-        const rows = onCallCoverageGrid.value
-        if (!rows.length) return ''
-        const first = new Date(rows[0].date + 'T12:00:00')
-        const last  = new Date(rows[rows.length-1].date + 'T12:00:00')
-        const fmt   = (d) => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: first.getFullYear() !== last.getFullYear() ? 'numeric' : undefined })
-        return `${fmt(first)} – ${fmt(last)}`
-      })
-
-      // ── Fairness tally: shift counts per physician this month ──
-      const onCallFairnessTally = computed(() => {
-        const today      = new Date()
-        const monthStart = Utils.normalizeDate(new Date(today.getFullYear(), today.getMonth(), 1))
-        const monthEnd   = Utils.normalizeDate(new Date(today.getFullYear(), today.getMonth() + 1, 0))
-        const map = {}
-        onCallSchedule.value.forEach(s => {
-          const d = Utils.normalizeDate(s.duty_date)
-          if (d < monthStart || d > monthEnd) return
-          const id = s.primary_physician_id; if (!id) return
-          const staff = allStaffLookup?.value?.find(x => x.id === id) || medicalStaff.value.find(x => x.id === id)
-          if (!staff) return
-          if (!map[id]) map[id] = { id, name: staff.full_name, total: 0, primary: 0, backup: 0 }
-          if (['primary_call','primary'].includes(s.shift_type)) { map[id].primary++; map[id].total++ }
-          else { map[id].backup++; map[id].total++ }
-        })
-        return Object.values(map).sort((a,b) => b.total - a.total)
-      })
-
-      const coveragePanel = reactive({ show: false })
-
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
         filteredOnCallSchedules, filteredOnCallAll, oncallTotalPages, todaysOnCallCount,
         loadOnCallSchedule, loadTodaysOnCall, showAddOnCallModal,
         editOnCallSchedule, saveOnCallSchedule, deleteOnCallSchedule, contactPhysician,
-        groupedOnCallSchedules, isShiftActive, staffWithOnCallOrbs,
-        upcomingOnCallDays, onCallCoverageGrid, coverageRangeLabel,
-        coverageGridOffset, onCallFairnessTally, coveragePanel
+        // NEW compact view properties
+        groupedOnCallSchedules,
+        isShiftActive,
+        staffWithOnCallOrbs
       }
     }
 
@@ -2140,91 +2093,79 @@ document.addEventListener('DOMContentLoaded', () => {
       // ============ [NEW] Rotation detail sheet modal ============
       const rotationViewModal = reactive({ show: false, rotation: null })
 
-      // ============ Month Horizon view ============
-      const monthHorizon = ref(6)   // 3 | 6 | 12
-      const monthOffset  = ref(0)   // shift start by N months (for navigation)
+      // ============ [NEW] Week view ============
+      const weekOffset = ref(0)
 
-      const getHorizonMonths = (n, offset) => {
-        const today  = new Date()
-        const months = []
-        for (let i = 0; i < n; i++) {
-          const d    = new Date(today.getFullYear(), today.getMonth() + offset + i, 1)
-          const prev = i > 0 ? new Date(today.getFullYear(), today.getMonth() + offset + i - 1, 1) : null
-          months.push({
-            key:         `${d.getFullYear()}-${d.getMonth()}`,
-            label:       d.toLocaleDateString('es-ES', { month: 'short' }),
-            year:        d.getFullYear(),
-            month:       d.getMonth(),
-            isCurrent:   d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth(),
-            isYearStart: !prev || d.getFullYear() !== prev.getFullYear(),
-            daysInMonth: new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
-          })
-        }
-        return months
-      }
-
-      const getHorizonRangeLabel = () => {
-        const months = getHorizonMonths(monthHorizon.value, monthOffset.value)
-        if (!months.length) return ''
-        const first = months[0]
-        const last  = months[months.length - 1]
-        if (first.year === last.year)
-          return `${first.label} – ${last.label} ${last.year}`
-        return `${first.label} ${first.year} – ${last.label} ${last.year}`
-      }
-
-      // Rotations for a resident that overlap the current horizon
-      const getResidentRotationsInHorizon = (resident) => {
-        const months = getHorizonMonths(monthHorizon.value, monthOffset.value)
-        if (!months.length) return []
-        const n            = months.length
-        const horizonStart = new Date(months[0].year, months[0].month, 1)
-        const horizonEnd   = new Date(months[n - 1].year, months[n - 1].month + 1, 0)
-        return rotations.value.filter(r =>
-          r.resident_id === resident.id &&
-          ['active', 'scheduled', 'completed'].includes(r.rotation_status) &&
-          new Date(r.start_date) <= horizonEnd &&
-          new Date(r.end_date)   >= horizonStart
-        )
-      }
-
-      // CSS position for a rotation bar within the horizon grid
-      const getRotationBarStyle = (rotation) => {
-        const months = getHorizonMonths(monthHorizon.value, monthOffset.value)
-        const n = months.length
-        if (!n) return { display: 'none' }
-        const horizonStart = new Date(months[0].year, months[0].month, 1)
-        const horizonEnd   = new Date(months[n - 1].year, months[n - 1].month + 1, 0)
-        const rotStart     = new Date(rotation.start_date + 'T00:00:00')
-        const rotEnd       = new Date(rotation.end_date   + 'T00:00:00')
-        const cs = rotStart < horizonStart ? horizonStart : rotStart
-        const ce = rotEnd   > horizonEnd   ? horizonEnd   : rotEnd
-        if (cs > ce) return { display: 'none' }
-        const totalDays  = months.reduce((s, m) => s + m.daysInMonth, 0)
-        const daysToStart = Math.round((cs - horizonStart) / 86400000)
-        const daysToEnd   = Math.round((ce - horizonStart) / 86400000) + 1
-        const leftPct  = (daysToStart / totalDays) * 100
-        const widthPct = ((daysToEnd - daysToStart) / totalDays) * 100
+      const getWeekDayLabel = (dayIndex) => {
+        const today = new Date()
+        const monday = new Date(today)
+        monday.setDate(today.getDate() - today.getDay() + 1 + weekOffset.value * 7)
+        const d = new Date(monday)
+        d.setDate(monday.getDate() + dayIndex - 1)
+        const isToday = d.toDateString() === today.toDateString()
         return {
-          left:  `calc(${leftPct.toFixed(2)}% + 3px)`,
-          width: `calc(${widthPct.toFixed(2)}% - 6px)`
+          dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          dayNum: d.getDate(),
+          isToday,
+          date: Utils.normalizeDate(d)
         }
       }
 
-      // True if rotation starts exactly within the visible horizon (not clamped on left)
-      const rotationStartsInHorizon = (rotation) => {
-        const months = getHorizonMonths(monthHorizon.value, monthOffset.value)
-        if (!months.length) return false
-        const horizonStart = new Date(months[0].year, months[0].month, 1)
-        return new Date(rotation.start_date + 'T00:00:00') >= horizonStart
+      const getWeekRangeLabel = () => {
+        const today = new Date()
+        const monday = new Date(today)
+        monday.setDate(today.getDate() - today.getDay() + 1 + weekOffset.value * 7)
+        const sunday = new Date(monday)
+        sunday.setDate(monday.getDate() + 6)
+        const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        return `${fmt(monday)} – ${fmt(sunday)}, ${sunday.getFullYear()}`
       }
-      const rotationEndsInHorizon = (rotation) => {
-        const months = getHorizonMonths(monthHorizon.value, monthOffset.value)
-        if (!months.length) return false
-        const n          = months.length
-        const horizonEnd = new Date(months[n - 1].year, months[n - 1].month + 1, 0)
-        return new Date(rotation.end_date + 'T00:00:00') <= horizonEnd
+
+      const isFirstDayOfRotation = (rotation, dayIndex) => {
+        const { date } = getWeekDayLabel(dayIndex)
+        return Utils.normalizeDate(rotation.start_date) === date
       }
+
+      const isLastDayOfRotation = (rotation, dayIndex) => {
+        const { date } = getWeekDayLabel(dayIndex)
+        return Utils.normalizeDate(rotation.end_date) === date
+      }
+
+      // ── Resident gap warnings ─────────────────────────────────────────────
+      // Residents who have no rotation scheduled for any of the next 3 months
+      const residentGapWarnings = computed(() => {
+        const today    = new Date(); today.setHours(0,0,0,0)
+        const warnings = []
+        // All active residents
+        const residents = medicalStaff.value.filter(s =>
+          isResidentType(s.staff_type) && s.employment_status === 'active'
+        )
+        for (const resident of residents) {
+          const gaps = []
+          for (let i = 0; i < 3; i++) {
+            const mStart = new Date(today.getFullYear(), today.getMonth() + i, 1)
+            const mEnd   = new Date(today.getFullYear(), today.getMonth() + i + 1, 0)
+            const covered = rotations.value.some(r =>
+              r.resident_id === resident.id &&
+              ['active','scheduled'].includes(r.rotation_status) &&
+              new Date(r.start_date) <= mEnd && new Date(r.end_date) >= mStart
+            )
+            if (!covered) {
+              gaps.push(mStart.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }))
+            }
+          }
+          if (gaps.length > 0) {
+            warnings.push({
+              id:       resident.id,
+              name:     resident.full_name,
+              year:     resident.training_year,
+              gaps,
+              gapCount: gaps.length
+            })
+          }
+        }
+        return warnings.sort((a,b) => b.gapCount - a.gapCount)
+      })
 
       return {
         rotations, rotationFilters, rotationModal,
@@ -2241,17 +2182,19 @@ document.addEventListener('DOMContentLoaded', () => {
         isRotationActive,
         getRotationsForDay,
         viewRotationDetails,
-        // Month horizon view
+        // Week view
         rotationViewModal,
-        monthHorizon, monthOffset,
-        getHorizonMonths, getHorizonRangeLabel,
-        getResidentRotationsInHorizon, getRotationBarStyle,
-        rotationStartsInHorizon, rotationEndsInHorizon
+        weekOffset,
+        getWeekDayLabel,
+        getWeekRangeLabel,
+        isFirstDayOfRotation,
+        isLastDayOfRotation,
+        residentGapWarnings
       }
     }
 
     // ============ 6.6 useAbsences ============
-    function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup }) {
+    function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule }) {
       const absences = ref([])
       const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', hideReturned: true })
       const absenceModal = reactive({
@@ -2418,6 +2361,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveAbsence = async (saving) => {
         if (!validateAbsence(absenceModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
+
+        // ── On-call conflict check ──────────────────────────────────────────
+        const f = absenceModal.form
+        if (f.staff_member_id && f.start_date && f.end_date) {
+          const absStart = Utils.normalizeDate(f.start_date)
+          const absEnd   = Utils.normalizeDate(f.end_date)
+          const conflicts = (onCallSchedule?.value || []).filter(s => {
+            const d = Utils.normalizeDate(s.duty_date)
+            return d >= absStart && d <= absEnd &&
+              (s.primary_physician_id === f.staff_member_id || s.backup_physician_id === f.staff_member_id)
+          })
+          if (conflicts.length > 0) {
+            const fmt    = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+            const lines  = conflicts.slice(0, 4).map(s => {
+              const role = s.primary_physician_id === f.staff_member_id ? 'Primary' : 'Backup'
+              return `${fmt(s.duty_date)} · ${role} · ${s.start_time}–${s.end_time}`
+            }).join('\n')
+            const more   = conflicts.length > 4 ? `\n+${conflicts.length - 4} more` : ''
+            const staffName = medicalStaff.value.find(x => x.id === f.staff_member_id)?.full_name || 'This physician'
+            await new Promise((resolve) => {
+              showConfirmation({
+                title: '⚠️ On-Call Conflict Detected',
+                message: `${staffName} has ${conflicts.length} on-call shift${conflicts.length > 1 ? 's' : ''} during this absence period that will be left uncovered:`,
+                details: lines + more,
+                icon: 'fa-phone-slash',
+                confirmButtonText: 'Save Anyway',
+                confirmButtonClass: 'btn-danger',
+                onConfirm: () => resolve(true),
+                onCancel:  () => resolve(false)
+              })
+            }).then(async (confirmed) => {
+              if (!confirmed) { saving.value = false; return }
+              await _doSaveAbsence(saving)
+            })
+            return
+          }
+        }
+        await _doSaveAbsence(saving)
+      }
+
+      const _doSaveAbsence = async (saving) => {
         saving.value = true
         try {
           const f = absenceModal.form
@@ -2805,16 +2789,11 @@ document.addEventListener('DOMContentLoaded', () => {
               const rotStart = new Date(coveringRot.start_date)
               const rotEnd   = new Date(coveringRot.end_date)
               const fullMonth = rotStart <= mStart && rotEnd >= mEnd
-              // Month-based logic: any overlap = occupied.
-              // "closing" = rotation ends within this month (slot freeing up next month)
-              const isClosing = rotEnd.getFullYear() === m.year && rotEnd.getMonth() === m.month && rotEnd < mEnd
-              status    = isClosing ? 'closing' : 'occupied'
+              status    = fullMonth ? 'occupied' : 'partial'
               showName  = fullMonth
               const fmtStart = rotStart.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})
               const fmtEnd   = rotEnd.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})
-              tooltip = isClosing
-                ? `${residentName} · ends ${fmtEnd} — freeing up next month`
-                : `${residentName} · ${fmtStart} → ${fmtEnd}`
+              tooltip = `${residentName} · ${fmtStart} → ${fmtEnd}`
             }
 
             return { key: m.key, label: m.label, year: m.year, month: m.month, isCurrent: m.isCurrent, status, tooltip, showName, initials }
@@ -2907,105 +2886,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tlPopover.y = top
       }
       const closeCellPopover = () => { tlPopover.show = false }
-
-      // ── Units Occupancy Panel ────────────────────────────────────────────
-      const occupancyPanel    = reactive({ show: false })
-      const unitDetailDrawer  = reactive({ show: false, unit: null })
-
-      // Aggregated month occupancy for a unit (all slots combined)
-      // Returns { status: 'free'|'partial'|'closing'|'occupied', occupied, total }
-      const getUnitMonthOccupancy = (unitId, year, month) => {
-        const mStart   = new Date(year, month, 1)
-        const mEnd     = new Date(year, month + 1, 0)
-        const unit     = trainingUnits.value.find(u => u.id === unitId)
-        if (!unit) return { status: 'free', occupied: 0, total: 0 }
-        const maxSlots = unit.maximum_residents
-        const touching = rotations.value.filter(r =>
-          r.training_unit_id === unitId &&
-          ['active','scheduled'].includes(r.rotation_status) &&
-          new Date(r.start_date) <= mEnd && new Date(r.end_date) >= mStart
-        )
-        const occupied = touching.length
-        if (occupied === 0) return { status: 'free', occupied: 0, total: maxSlots }
-        const isClosing = touching.some(r => {
-          const e = new Date(r.end_date)
-          return e.getFullYear() === year && e.getMonth() === month && e < mEnd
-        })
-        if (occupied >= maxSlots) return { status: isClosing ? 'closing' : 'occupied', occupied, total: maxSlots }
-        return { status: isClosing ? 'closing' : 'partial', occupied, total: maxSlots }
-      }
-
-      // First month (within 24) that has at least one free slot
-      const getNextFreeMonth = (unitId) => {
-        const today = new Date()
-        const unit  = trainingUnits.value.find(u => u.id === unitId)
-        if (!unit) return null
-        for (let i = 0; i < 24; i++) {
-          const d   = new Date(today.getFullYear(), today.getMonth() + i, 1)
-          const occ = getUnitMonthOccupancy(unitId, d.getFullYear(), d.getMonth())
-          if (occ.occupied < occ.total) {
-            return {
-              label:      d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
-              shortLabel: d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }),
-              date:       `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`,
-              monthsAway: i,
-              freeSlots:  occ.total - occ.occupied
-            }
-          }
-        }
-        return null
-      }
-
-      // 12-month heatmap: per-month count of units by status
-      const occupancyHeatmap = computed(() => {
-        const today       = new Date()
-        const activeUnits = trainingUnits.value.filter(u => u.unit_status === 'active')
-        return Array.from({ length: 12 }, (_, i) => {
-          const d = new Date(today.getFullYear(), today.getMonth() + i, 1)
-          let free = 0, partial = 0, closing = 0, full = 0
-          for (const u of activeUnits) {
-            const occ = getUnitMonthOccupancy(u.id, d.getFullYear(), d.getMonth())
-            if      (occ.status === 'free')     free++
-            else if (occ.status === 'closing')  closing++
-            else if (occ.status === 'partial')  partial++
-            else                                full++
-          }
-          return {
-            key:       `${d.getFullYear()}-${d.getMonth()}`,
-            label:     d.toLocaleDateString('es-ES', { month: 'short' }),
-            yearLabel: (i === 0 || d.getMonth() === 0) ? `'${d.getFullYear().toString().slice(-2)}` : '',
-            isCurrent: i === 0,
-            free, partial, closing, full, total: activeUnits.length
-          }
-        })
-      })
-
-      // All active units enriched with current occupancy + next free month, sorted by availability
-      const occupancyPanelUnits = computed(() => {
-        const today = new Date()
-        return trainingUnits.value
-          .filter(u => u.unit_status === 'active')
-          .map(u => {
-            const occ      = getUnitMonthOccupancy(u.id, today.getFullYear(), today.getMonth())
-            const nextFree = getNextFreeMonth(u.id)
-            return { ...u, occ, nextFree }
-          })
-          .sort((a, b) => {
-            const order = { free: 0, closing: 1, partial: 2, occupied: 3 }
-            const diff  = (order[a.occ.status] ?? 4) - (order[b.occ.status] ?? 4)
-            if (diff !== 0) return diff
-            return (a.nextFree?.monthsAway ?? 99) - (b.nextFree?.monthsAway ?? 99)
-          })
-      })
-
-      // Open unit detail drawer, enriching the unit with live occ + nextFree data
-      const openUnitDetail = (unit) => {
-        const today = new Date()
-        const occ      = getUnitMonthOccupancy(unit.id, today.getFullYear(), today.getMonth())
-        const nextFree = getNextFreeMonth(unit.id)
-        unitDetailDrawer.unit = { ...unit, occ, nextFree }
-        unitDetailDrawer.show = true
-      }
 
       const loadTrainingUnits = async () => {
         try { trainingUnits.value = await API.getTrainingUnits() }
@@ -3111,9 +2991,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
-        occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
-        getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover }
     }
 
     // ============ 6.9 useComms ============
@@ -3477,7 +3355,68 @@ document.addEventListener('DOMContentLoaded', () => {
       const deleteClinicalTrial = (trial) => showConfirmation({ title: 'Delete Trial', message: `Delete "${trial.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', details: `Protocol: ${trial.protocol_id}`, onConfirm: async () => { await API.deleteClinicalTrial(trial.id); await loadClinicalTrials(); showToast('Success', 'Trial deleted', 'success'); loadAnalyticsSummary() } })
       const deleteInnovationProject = (project) => showConfirmation({ title: 'Delete Project', message: `Delete "${project.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', onConfirm: async () => { await API.deleteInnovationProject(project.id); await loadInnovationProjects(); showToast('Success', 'Project deleted', 'success'); loadAnalyticsSummary(); loadPartnerCollaborations() } })
 
-      return { researchLines, clinicalTrials, innovationProjects, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey }
+      // ── Quick research profile built entirely from local refs (no API call) ──
+      const getStaffResearchQuick = (staffId) => {
+        if (!staffId) return null
+        const coordinatorLines = researchLines.value.filter(l => l.coordinator_id === staffId)
+        const trialsAsPI  = clinicalTrials.value.filter(t => t.principal_investigator_id === staffId)
+        const trialsAsCoI = clinicalTrials.value.filter(t => (t.co_investigators || []).includes(staffId))
+        const trialsAsSub = clinicalTrials.value.filter(t => (t.sub_investigators || []).includes(staffId))
+        const projectsAsLead = innovationProjects.value.filter(p => p.lead_investigator_id === staffId)
+        const projectsAsCoI  = innovationProjects.value.filter(p => (p.co_investigators || []).includes(staffId))
+
+        const allTrials = [...new Map([...trialsAsPI, ...trialsAsCoI, ...trialsAsSub].map(t => [t.id, t])).values()]
+        const allProjects = [...new Map([...projectsAsLead, ...projectsAsCoI].map(p => [p.id, p])).values()]
+
+        if (!coordinatorLines.length && !allTrials.length && !allProjects.length) return null
+
+        return {
+          isCoordinator: coordinatorLines.length > 0,
+          coordinatorLines: coordinatorLines.map(l => ({ id: l.id, line_number: l.line_number, name: l.research_line_name || l.name })),
+          trials: {
+            asPI: trialsAsPI.length, asCoI: trialsAsCoI.length, asSubI: trialsAsSub.length,
+            active: allTrials.filter(t => ['Activo','Reclutando'].includes(t.status)).length,
+            list: allTrials.map(t => ({
+              id: t.id, title: t.title, phase: t.phase, status: t.status,
+              role: trialsAsPI.find(x => x.id === t.id) ? 'Principal Investigator'
+                  : trialsAsCoI.find(x => x.id === t.id) ? 'Co-Investigator' : 'Sub-Investigator'
+            }))
+          },
+          projects: {
+            asLead: projectsAsLead.length,
+            list: allProjects.map(p => ({
+              id: p.id, title: p.title, current_stage: p.current_stage,
+              role: projectsAsLead.find(x => x.id === p.id) ? 'Lead' : 'Co-Investigator'
+            }))
+          },
+          allResearchLines: (() => {
+            const lineMap = {}
+            coordinatorLines.forEach(l => {
+              if (!lineMap[l.id]) lineMap[l.id] = { id: l.id, line_number: l.line_number, name: l.research_line_name || l.name, roles: [], trialsCount: 0, projectsCount: 0 }
+              lineMap[l.id].roles.push('Coordinator')
+            })
+            ;[...trialsAsPI, ...trialsAsCoI, ...trialsAsSub].forEach(t => {
+              const lineId = t.research_line_id; if (!lineId) return
+              const line = researchLines.value.find(l => l.id === lineId); if (!line) return
+              if (!lineMap[lineId]) lineMap[lineId] = { id: lineId, line_number: line.line_number, name: line.research_line_name || line.name, roles: [], trialsCount: 0, projectsCount: 0 }
+              const role = trialsAsPI.find(x => x.id === t.id) ? 'Principal Investigator' : trialsAsCoI.find(x => x.id === t.id) ? 'Co-Investigator' : 'Sub-Investigator'
+              if (!lineMap[lineId].roles.includes(role)) lineMap[lineId].roles.push(role)
+              lineMap[lineId].trialsCount++
+            })
+            ;[...projectsAsLead, ...projectsAsCoI].forEach(p => {
+              const lineId = p.research_line_id; if (!lineId) return
+              const line = researchLines.value.find(l => l.id === lineId); if (!line) return
+              if (!lineMap[lineId]) lineMap[lineId] = { id: lineId, line_number: line.line_number, name: line.research_line_name || line.name, roles: [], trialsCount: 0, projectsCount: 0 }
+              const role = projectsAsLead.find(x => x.id === p.id) ? 'Project Lead' : 'Co-Investigator'
+              if (!lineMap[lineId].roles.includes(role)) lineMap[lineId].roles.push(role)
+              lineMap[lineId].projectsCount++
+            })
+            return Object.values(lineMap).sort((a,b) => a.line_number - b.line_number)
+          })()
+        }
+      }
+
+      return { researchLines, clinicalTrials, innovationProjects, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick }
     }
 
     // ============ 6.12 useAnalytics ============
@@ -3703,11 +3642,46 @@ document.addEventListener('DOMContentLoaded', () => {
           items.push({ icon: 'fa-play-circle', type: 'ok', text: `${startingThisWeek.length} rotation${startingThisWeek.length>1?'s':''} starting this week`, action: 'resident_rotations' })
         }
 
-        return items
+        // Residents with no rotation in the next month
+        const unassigned = medicalStaff.value.filter(s => {
+          if (!isResidentType(s.staff_type) || s.employment_status !== 'active') return false
+          const mStart = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 1)
+          const mEnd   = new Date(todayDate.getFullYear(), todayDate.getMonth() + 2, 0)
+          return !rotations.value.some(r =>
+            r.resident_id === s.id &&
+            ['active','scheduled'].includes(r.rotation_status) &&
+            new Date(r.start_date) <= mEnd && new Date(r.end_date) >= mStart
+          )
+        })
+        if (unassigned.length > 0) {
+          const names = unassigned.slice(0,2).map(s => s.full_name.split(' ').slice(-1)[0]).join(', ')
+          const more  = unassigned.length > 2 ? ` +${unassigned.length - 2}` : ''
+          items.push({ icon: 'fa-user-clock', type: 'warn', text: `${unassigned.length} resident${unassigned.length>1?'s':''} unassigned next month — ${names}${more}`, action: 'resident_rotations', urgent: unassigned.length > 2 })
+        }
+
+        // On-call gaps in next 7 days
+        const ocGaps = []
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(todayDate.getTime() + i * 86400000)
+          const ds = Utils.normalizeDate(d)
+          const hasPrimary = onCallSchedule.value.some(s => Utils.normalizeDate(s.duty_date) === ds && ['primary_call','primary'].includes(s.shift_type))
+          if (!hasPrimary) ocGaps.push(d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }))
+        }
+        if (ocGaps.length > 0) {
+          items.push({ icon: 'fa-phone-slash', type: 'danger', text: `${ocGaps.length} day${ocGaps.length>1?'s':''} without primary on-call — ${ocGaps.slice(0,2).join(', ')}${ocGaps.length>2?'…':''}`, action: 'oncall_schedule', urgent: true })
+        }
+
+        return items.sort((a,b) => {
+          const p = { danger: 0, warn: 1, info: 2, ok: 3 }
+          return (p[a.type] ?? 4) - (p[b.type] ?? 4)
+        })
       })
 
+      // Top 3 priority items for the dashboard briefing card
+      const dailyBriefing = computed(() => situationItems.value.slice(0, 3))
+
       const currentTimeFormatted = computed(() => Utils.formatTime(currentTime.value))
-      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems }
+      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems, dailyBriefing }
     }
 
     // ============ 7. ROOT APP ============
@@ -3755,7 +3729,8 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast, showConfirmation, medicalStaff, trainingUnits: tuOps.trainingUnits, rotations: ref([])
         })
 
-        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup })
+        const _absencesStub = ref([])
+        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences: _absencesStub })
         const { onCallSchedule } = onCallOps
 
         // useTrainingUnits needs a stub here so trainingUnits ref is available for rotationOps
@@ -3771,9 +3746,7 @@ document.addEventListener('DOMContentLoaded', () => {
           editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
           viewUnitResidents, saveTrainingUnit,
           trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
-          tlPopover, openCellPopover, closeCellPopover,
-          occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
-          getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
+          tlPopover, openCellPopover, closeCellPopover
         } = useTrainingUnits({
           showToast, showConfirmation, rotations, allStaffLookup
         })
@@ -3781,8 +3754,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Sync real trainingUnits into the stub so rotationOps.getTrainingUnitName resolves correctly
         watch(trainingUnits, (v) => { _tuStub.value = v }, { immediate: true })
 
-        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup })
+        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule })
         const { absences } = absenceOps
+        watch(absences, (v) => { _absencesStub.value = v }, { immediate: true })
 
         // ============ STAFF DEACTIVATION WORKFLOW ============
         // Professional reassignment flow: scan future records before deactivating
@@ -3900,19 +3874,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
         const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits })
-
-        // Smart shortcut: pre-fill rotation modal from occupancy panel
-        const openAssignRotationFromUnit = (unit, startDate) => {
-          occupancyPanel.show   = false
-          unitDetailDrawer.show = false
-          rotationOps.showAddRotationModal(null, unit)
-          if (startDate) rotationOps.rotationModal.form.start_date = startDate
-        }
-        const { systemStats, updateDashboardStats, loadSystemStats, situationItems } = dashOps
+        const { systemStats, updateDashboardStats, loadSystemStats, situationItems, dailyBriefing } = dashOps
 
         // ============ NEW COMPACT VIEW STATE ============
-        const rotationView = ref('detailed') // 'compact', 'detailed', or 'month'
+        const rotationView = ref('detailed') // 'compact', 'detailed', or 'week'
         const onCallView = ref('detailed') // 'compact' or 'detailed'
+        const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
         // ============ EXISTING COMPUTED PROPERTIES ============
         const getStaffName = (id) => {
@@ -3984,6 +3951,10 @@ document.addEventListener('DOMContentLoaded', () => {
           // Guard: staff might be undefined if medicalStaff.find() returned nothing
           if (!staff || !staff.id) { console.warn('viewStaffDetails: staff object is undefined or missing id'); return; }
           staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'activity'; staffOps.staffProfileModal.show = true
+          // Instant local profile from refs — shown immediately with no loading state
+          const quickProfile = researchOps.getStaffResearchQuick(staff.id)
+          if (quickProfile) staffOps.staffProfileModal.researchProfile = quickProfile
+          // Then enrich with full API data asynchronously
           if (hasPermission('analytics', 'read')) await analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id)
           if (staff.staff_type === 'attending_physician' || staffTypeMap.value[staff.staff_type]?.can_supervise) {
             staffOps.staffProfileModal.loadingSupervision = true
@@ -4357,8 +4328,6 @@ document.addEventListener('DOMContentLoaded', () => {
           viewUnitResidents: (unit) => viewUnitResidents(unit, rotations.value),
           checkRotationAvailability: rotationOps.checkRotationAvailability,
           rotationAvailability: rotationOps.rotationModal,  // exposes .availability state
-          occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
-          getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
           ...commsOps,
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
           ...liveOps,
@@ -4369,7 +4338,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ...analyticsOps,
           ...dashOps,
           handleLogin, handleLogout,
-          switchView, situationItems, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
+          switchView, situationItems, dailyBriefing, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
           drillToTrials, drillToProjects,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
@@ -4460,25 +4429,18 @@ document.addEventListener('DOMContentLoaded', () => {
           residentsWithRotations: rotationOps.residentsWithRotations,
           groupedOnCallSchedules: onCallOps.groupedOnCallSchedules,
           staffWithOnCallOrbs: onCallOps.staffWithOnCallOrbs,
-          upcomingOnCallDays:    onCallOps.upcomingOnCallDays,
-          onCallCoverageGrid:    onCallOps.onCallCoverageGrid,
-          coverageRangeLabel:    onCallOps.coverageRangeLabel,
-          coverageGridOffset:    onCallOps.coverageGridOffset,
-          onCallFairnessTally:   onCallOps.onCallFairnessTally,
-          coveragePanel:         onCallOps.coveragePanel,
+          weekDays,
           getRotationsForDay: rotationOps.getRotationsForDay,
           rotationViewModal: rotationOps.rotationViewModal,
-          monthHorizon: rotationOps.monthHorizon,
-          monthOffset:  rotationOps.monthOffset,
-          getHorizonMonths:              rotationOps.getHorizonMonths,
-          getHorizonRangeLabel:          rotationOps.getHorizonRangeLabel,
-          getResidentRotationsInHorizon: rotationOps.getResidentRotationsInHorizon,
-          getRotationBarStyle:           rotationOps.getRotationBarStyle,
-          rotationStartsInHorizon:       rotationOps.rotationStartsInHorizon,
-          rotationEndsInHorizon:         rotationOps.rotationEndsInHorizon,
+          weekOffset: rotationOps.weekOffset,
+          getWeekDayLabel: rotationOps.getWeekDayLabel,
+          getWeekRangeLabel: rotationOps.getWeekRangeLabel,
+          isFirstDayOfRotation: rotationOps.isFirstDayOfRotation,
+          isLastDayOfRotation: rotationOps.isLastDayOfRotation,
           isRotationActive: rotationOps.isRotationActive,
           isShiftActive: onCallOps.isShiftActive,
-          viewRotationDetails: rotationOps.viewRotationDetails
+          viewRotationDetails: rotationOps.viewRotationDetails,
+          residentGapWarnings: rotationOps.residentGapWarnings,
         }
       }
     })
