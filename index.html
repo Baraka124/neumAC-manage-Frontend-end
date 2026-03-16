@@ -5732,6 +5732,161 @@
             </div>
         </div>
 
+        <!-- ═══ UNITS OCCUPANCY PANEL ═══ -->
+        <teleport to="body">
+        <div v-if="occupancyPanel && occupancyPanel.show" class="uop-backdrop" @click.self="occupancyPanel.show = false">
+            <div class="uop-panel" :class="{ 'uop-panel--open': occupancyPanel.show }">
+                <div class="uop-header">
+                    <div class="uop-header-left">
+                        <div class="uop-header-icon"><i class="fas fa-layer-group"></i></div>
+                        <div>
+                            <div class="uop-title">Units Occupancy</div>
+                            <div class="uop-subtitle">{{ (occupancyPanelUnits || []).filter(u => u.occ.status === 'free').length }} available now · {{ (occupancyPanelUnits || []).filter(u => u.occ.status === 'closing').length }} closing soon</div>
+                        </div>
+                    </div>
+                    <button class="uop-close" @click="occupancyPanel.show = false"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="uop-body">
+                    <!-- Available -->
+                    <div class="uop-swimlane" v-if="(occupancyPanelUnits||[]).some(u => ['free','closing','partial'].includes(u.occ.status))">
+                        <div class="uop-swimlane-title"><span class="uop-swimlane-dot uop-swimlane-dot--free"></span>Available Now &amp; Soon</div>
+                        <div class="uop-unit-list">
+                            <div v-for="unit in (occupancyPanelUnits||[]).filter(u => ['free','closing','partial'].includes(u.occ.status))"
+                                 :key="unit.id" class="uop-unit-row" :class="'uop-unit-row--' + unit.occ.status"
+                                 @click="openUnitDetail(unit); occupancyPanel.show = false">
+                                <div class="uop-unit-icon"><i class="fas fa-clinic-medical"></i></div>
+                                <div class="uop-unit-info">
+                                    <div class="uop-unit-name">{{ unit.unit_name }}</div>
+                                    <div class="uop-unit-meta">{{ getDepartmentName(unit.department_id) || '—' }}<span v-if="unit.specialty"> · {{ unit.specialty }}</span></div>
+                                </div>
+                                <div class="uop-unit-status-block">
+                                    <span class="uop-status-pill" :class="'uop-status-pill--' + unit.occ.status">
+                                        <span v-if="unit.occ.status === 'free'">Free now</span>
+                                        <span v-else-if="unit.occ.status === 'closing'">Closing soon</span>
+                                        <span v-else>Partial</span>
+                                    </span>
+                                    <div class="uop-slots-badge">{{ unit.occ.total - unit.occ.occupied }} slot{{ (unit.occ.total - unit.occ.occupied) !== 1 ? 's' : '' }} free</div>
+                                </div>
+                                <div class="uop-unit-next">
+                                    <div class="uop-next-label">Free from</div>
+                                    <div class="uop-next-date">{{ unit.nextFree?.shortLabel || 'Now' }}</div>
+                                </div>
+                                <button class="uop-assign-btn" @click.stop="openAssignRotationFromUnit(unit, unit.nextFree?.date)" v-if="hasPermission('resident_rotations','create')"><i class="fas fa-user-plus"></i> Assign</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Occupied -->
+                    <div class="uop-swimlane" v-if="(occupancyPanelUnits||[]).some(u => u.occ.status === 'occupied')">
+                        <div class="uop-swimlane-title uop-swimlane-title--muted"><span class="uop-swimlane-dot uop-swimlane-dot--occupied"></span>Fully Occupied</div>
+                        <div class="uop-unit-list">
+                            <div v-for="unit in (occupancyPanelUnits||[]).filter(u => u.occ.status === 'occupied')"
+                                 :key="unit.id" class="uop-unit-row uop-unit-row--occupied"
+                                 @click="openUnitDetail(unit); occupancyPanel.show = false">
+                                <div class="uop-unit-icon uop-unit-icon--dim"><i class="fas fa-clinic-medical"></i></div>
+                                <div class="uop-unit-info">
+                                    <div class="uop-unit-name">{{ unit.unit_name }}</div>
+                                    <div class="uop-unit-meta">{{ getDepartmentName(unit.department_id) || '—' }}</div>
+                                </div>
+                                <div class="uop-unit-status-block">
+                                    <span class="uop-status-pill uop-status-pill--occupied">Full</span>
+                                    <div class="uop-slots-badge uop-slots-badge--dim">{{ unit.occ.occupied }}/{{ unit.occ.total }}</div>
+                                </div>
+                                <div class="uop-unit-next">
+                                    <div class="uop-next-label">Next opening</div>
+                                    <div class="uop-next-date" :class="{ 'uop-next-date--far': unit.nextFree?.monthsAway > 3 }">{{ unit.nextFree?.shortLabel || 'None' }}</div>
+                                </div>
+                                <button class="uop-assign-btn uop-assign-btn--ghost" @click.stop="openAssignRotationFromUnit(unit, unit.nextFree?.date)" v-if="hasPermission('resident_rotations','create') && unit.nextFree"><i class="fas fa-calendar-plus"></i> Plan</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </teleport>
+
+        <!-- ═══ UNIT DETAIL DRAWER ═══ -->
+        <teleport to="body">
+        <div v-if="unitDetailDrawer && unitDetailDrawer.show" class="udd-backdrop" @click.self="unitDetailDrawer.show = false"></div>
+        <div class="udd" :class="{ 'udd--open': unitDetailDrawer && unitDetailDrawer.show }" v-if="unitDetailDrawer && unitDetailDrawer.unit">
+            <div class="udd-header">
+                <div class="udd-header-top">
+                    <div class="udd-icon"><i class="fas fa-clinic-medical"></i></div>
+                    <div class="udd-header-info">
+                        <div class="udd-unit-name">{{ unitDetailDrawer.unit.unit_name }}</div>
+                        <div class="udd-unit-meta">{{ getDepartmentName(unitDetailDrawer.unit.department_id) || '—' }}<span v-if="unitDetailDrawer.unit.specialty"> · {{ unitDetailDrawer.unit.specialty }}</span></div>
+                    </div>
+                    <button class="udd-close" @click="unitDetailDrawer.show = false"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="udd-status-strip">
+                    <span class="uop-status-pill" :class="'uop-status-pill--' + unitDetailDrawer.unit.occ.status">
+                        <span v-if="unitDetailDrawer.unit.occ.status === 'free'"><i class="fas fa-check-circle"></i> Available</span>
+                        <span v-else-if="unitDetailDrawer.unit.occ.status === 'closing'"><i class="fas fa-hourglass-half"></i> Closing Soon</span>
+                        <span v-else-if="unitDetailDrawer.unit.occ.status === 'partial'"><i class="fas fa-adjust"></i> Partial</span>
+                        <span v-else><i class="fas fa-ban"></i> Full</span>
+                    </span>
+                    <span class="udd-cap-chip">{{ unitDetailDrawer.unit.occ.occupied }}/{{ unitDetailDrawer.unit.occ.total }} slots</span>
+                    <div class="udd-cap-bar"><div class="udd-cap-fill" :style="{ width: unitDetailDrawer.unit.occ.total ? Math.round((unitDetailDrawer.unit.occ.occupied/unitDetailDrawer.unit.occ.total)*100)+'%' : '0%' }"></div></div>
+                </div>
+            </div>
+            <div class="udd-body">
+                <div class="udd-callout udd-callout--free" v-if="unitDetailDrawer.unit.nextFree">
+                    <div class="udd-callout-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="udd-callout-content">
+                        <div class="udd-callout-title">Next available: {{ unitDetailDrawer.unit.nextFree.label }}</div>
+                        <div class="udd-callout-sub">{{ unitDetailDrawer.unit.nextFree.freeSlots }} slot{{ unitDetailDrawer.unit.nextFree.freeSlots !== 1 ? 's' : '' }} opening{{ unitDetailDrawer.unit.nextFree.monthsAway === 0 ? ' this month' : unitDetailDrawer.unit.nextFree.monthsAway === 1 ? ' next month' : ` in ${unitDetailDrawer.unit.nextFree.monthsAway} months` }}</div>
+                    </div>
+                    <button class="udd-assign-cta" @click="openAssignRotationFromUnit(unitDetailDrawer.unit, unitDetailDrawer.unit.nextFree.date)" v-if="hasPermission('resident_rotations','create')"><i class="fas fa-user-plus"></i> Assign</button>
+                </div>
+                <div class="udd-callout udd-callout--warn" v-else>
+                    <div class="udd-callout-icon"><i class="fas fa-calendar-times"></i></div>
+                    <div class="udd-callout-content">
+                        <div class="udd-callout-title">No openings in next 24 months</div>
+                        <div class="udd-callout-sub">All slots fully scheduled</div>
+                    </div>
+                </div>
+                <div class="udd-section">
+                    <div class="udd-section-label"><i class="fas fa-stream"></i> Monthly Occupancy (6 months)</div>
+                    <div class="udd-mini-timeline">
+                        <div v-for="m in getTimelineMonths(6)" :key="m.key" class="udd-mt-col">
+                            <div class="udd-mt-cell"
+                                 :class="{
+                                   'udd-mt-cell--free':     getUnitMonthOccupancy(unitDetailDrawer.unit.id, m.year, m.month).status === 'free',
+                                   'udd-mt-cell--closing':  getUnitMonthOccupancy(unitDetailDrawer.unit.id, m.year, m.month).status === 'closing',
+                                   'udd-mt-cell--partial':  getUnitMonthOccupancy(unitDetailDrawer.unit.id, m.year, m.month).status === 'partial',
+                                   'udd-mt-cell--occupied': getUnitMonthOccupancy(unitDetailDrawer.unit.id, m.year, m.month).status === 'occupied',
+                                   'udd-mt-cell--current':  m.isCurrent
+                                 }">
+                                <span class="udd-mt-occ">{{ getUnitMonthOccupancy(unitDetailDrawer.unit.id, m.year, m.month).occupied }}/{{ getUnitMonthOccupancy(unitDetailDrawer.unit.id, m.year, m.month).total }}</span>
+                            </div>
+                            <div class="udd-mt-label" :class="{ 'udd-mt-label--current': m.isCurrent }">{{ m.label }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="udd-section">
+                    <div class="udd-section-label"><i class="fas fa-user-graduate"></i> Active &amp; Scheduled Rotations</div>
+                    <div class="udd-rot-list">
+                        <div v-for="rot in getUnitRotations(unitDetailDrawer.unit.id)" :key="rot.id" class="udd-rot-row">
+                            <div class="udd-rot-avatar">{{ getResidentShortName(rot.resident_id).split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase() }}</div>
+                            <div class="udd-rot-info">
+                                <div class="udd-rot-name">{{ getResidentShortName(rot.resident_id) }}</div>
+                                <div class="udd-rot-dates">{{ new Date(rot.start_date).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'2-digit'}) }} → {{ new Date(rot.end_date).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'2-digit'}) }}</div>
+                            </div>
+                            <span class="udd-rot-status" :class="'udd-rot-status--' + rot.rotation_status">{{ rot.rotation_status }}</span>
+                        </div>
+                        <div v-if="getUnitRotations(unitDetailDrawer.unit.id).length === 0" class="udd-empty">
+                            <i class="fas fa-check-circle" style="color:var(--ok)"></i> No active rotations — unit fully available
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="udd-footer">
+                <button class="btn btn-secondary btn-sm" @click="unitDetailDrawer.show = false"><i class="fas fa-times"></i> Close</button>
+                <button class="btn btn-ghost btn-sm" @click="switchView('resident_rotations'); unitDetailDrawer.show = false" v-if="hasPermission('resident_rotations','read')"><i class="fas fa-calendar-check"></i> All Rotations</button>
+                <button class="btn btn-primary btn-sm" @click="openAssignRotationFromUnit(unitDetailDrawer.unit, unitDetailDrawer.unit.nextFree?.date)" v-if="hasPermission('resident_rotations','create')"><i class="fas fa-user-plus"></i> Assign Rotation</button>
+            </div>
+        </div>
+        </teleport>
+
         <!-- Mobile bottom navigation (shows on ≤1024px) -->
         <nav class="mobile-bottom-nav" aria-label="Mobile navigation" v-if="currentUser">
             <button class="mobile-nav-item" :class="{ active: currentView === 'dashboard' }" @click="switchView('dashboard')">
