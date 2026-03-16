@@ -3864,11 +3864,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { showToast('Error', e.message, 'error') }
       }
 
+      // Strip joined/virtual fields before any PUT to backend
+      const cleanPost = (post) => {
+        const { author, research_line, ...rest } = post
+        return rest
+      }
+
       const publishNews = async (post) => {
         try {
           const expiry = post.expires_at || (post.post_type !== 'publication' ? autoExpiry(post.post_type) : null)
           await API.request(`/api/news/${post.id}`, { method: 'PUT', body: {
-            ...post, status: 'published',
+            ...cleanPost(post), status: 'published',
             published_at: new Date().toISOString(),
             expires_at: expiry
           }})
@@ -3880,7 +3886,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const archiveNews = async (post) => {
         showConfirmation('Archive Post', `Archive "${post.title}"? It will be hidden from view but not deleted.`, async () => {
           try {
-            await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...post, status: 'archived' }})
+            await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...cleanPost(post), status: 'archived' }})
             showToast('Archived', 'Post archived', 'info')
             await loadNews()
           } catch (e) { showToast('Error', e.message, 'error') }
@@ -3899,7 +3905,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const togglePublic = async (post) => {
         try {
-          await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...post, is_public: !post.is_public }})
+          await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...cleanPost(post), is_public: !post.is_public }})
           showToast('Updated', post.is_public ? 'Now internal only' : 'Now public on website', 'success')
           await loadNews()
         } catch (e) { showToast('Error', e.message, 'error') }
