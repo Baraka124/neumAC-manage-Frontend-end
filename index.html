@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============- TOAST CONTAINER ==--=--=---======= -->
+    <!-- ============- TOAST CONTAINER ==-=--=---======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -2982,28 +2982,6 @@
                         <i class="fas fa-pen"></i> Edit Profile
                     </button>
 
-                    <!-- Quick actions: open pre-filled modals for this person -->
-                    <div class="pd-quick-actions" v-if="hasPermission('resident_rotations','create') || hasPermission('oncall_schedule','create') || hasPermission('staff_absence','create')">
-                        <button v-if="hasPermission('resident_rotations','create') && isResidentType(staffProfileModal.staff.staff_type)"
-                                class="pd-quick-btn"
-                                @click="staffProfileModal.show = false; showAddRotationModal(staffProfileModal.staff)"
-                                title="Add rotation for this resident">
-                            <i class="fas fa-calendar-check"></i> Add Rotation
-                        </button>
-                        <button v-if="hasPermission('oncall_schedule','create')"
-                                class="pd-quick-btn"
-                                @click="staffProfileModal.show = false; showAddOnCallModal(staffProfileModal.staff)"
-                                title="Schedule on-call for this person">
-                            <i class="fas fa-phone-medical"></i> Schedule On-call
-                        </button>
-                        <button v-if="hasPermission('staff_absence','create')"
-                                class="pd-quick-btn"
-                                @click="staffProfileModal.show = false; showAddAbsenceModal(staffProfileModal.staff)"
-                                title="Record absence for this person">
-                            <i class="fas fa-user-clock"></i> Record Absence
-                        </button>
-                    </div>
-
                     <!-- Divider -->
                     <div class="pd-divider"></div>
 
@@ -3164,6 +3142,24 @@
                             <i class="fas fa-users"></i> Supervision
                         </button>
                         <div class="pd-tabs-spacer"></div>
+                        <!-- Contextual actions — right side of tab bar -->
+                        <div class="pd-tab-actions">
+                            <button v-if="hasPermission('resident_rotations','create') && isResidentType(staffProfileModal.staff.staff_type)"
+                                    class="pd-tab-action-btn"
+                                    @click="staffProfileModal.show = false; showAddRotationModal(staffProfileModal.staff)">
+                                <i class="fas fa-calendar-check"></i> Add Rotation
+                            </button>
+                            <button v-if="hasPermission('oncall_schedule','create')"
+                                    class="pd-tab-action-btn"
+                                    @click="staffProfileModal.show = false; showAddOnCallModal(staffProfileModal.staff)">
+                                <i class="fas fa-phone-alt"></i> On-call
+                            </button>
+                            <button v-if="hasPermission('staff_absence','create')"
+                                    class="pd-tab-action-btn"
+                                    @click="staffProfileModal.show = false; showAddAbsenceModal(staffProfileModal.staff)">
+                                <i class="fas fa-user-clock"></i> Absence
+                            </button>
+                        </div>
                     </div>
 
                     <!-- ── ACTIVITY TAB ── -->
