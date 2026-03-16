@@ -4083,6 +4083,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
         const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits })
 
+        const newsOps = useNews({ showToast, showConfirmation, medicalStaff, researchLines: researchOps.researchLines })
+        const { newsPosts, newsLoading, newsModal, newsFilters, filteredNews,
+                newsWordCount, newsWordLimit,
+                loadNews, showAddNewsModal, editNews, saveNews,
+                publishNews, archiveNews, deleteNews, togglePublic: toggleNewsPublic,
+                formatAuthorName: newsAuthorName, getLineName: newsLineName } = newsOps
+
         const openAssignRotationFromUnit = (unit, startDate) => {
           occupancyPanel.show   = false
           unitDetailDrawer.show = false
@@ -4473,7 +4480,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await Promise.all([staffOps.loadMedicalStaff(), loadDepartments(), loadTrainingUnits()])
             await Promise.all([rotationOps.loadRotations(), onCallOps.loadOnCallSchedule(), absenceOps.loadAbsences()])
             updateDashboardStats()
-            Promise.all([onCallOps.loadTodaysOnCall(), commsOps.loadAnnouncements(), liveOps.loadClinicalStatus(), liveOps.loadActiveMedicalStaff(), researchOps.loadResearchLines(), loadSystemStats()]).then(() => updateDashboardStats())
+            Promise.all([onCallOps.loadTodaysOnCall(), commsOps.loadAnnouncements(), liveOps.loadClinicalStatus(), liveOps.loadActiveMedicalStaff(), researchOps.loadResearchLines(), loadSystemStats(), loadNews()]).then(() => updateDashboardStats())
             Promise.all([researchOps.loadClinicalTrials(), researchOps.loadInnovationProjects(), analyticsOps.loadAnalyticsSummary()])
             showToast('Success', 'System data loaded', 'success')
           } catch { showToast('Error', 'Failed to load some data', 'error') }
@@ -4548,6 +4555,11 @@ document.addEventListener('DOMContentLoaded', () => {
           ...dashOps,
           handleLogin, handleLogout,
           switchView, situationItems, dailyBriefing, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
+          newsPosts, newsLoading, newsModal, newsFilters, filteredNews,
+          newsWordCount, newsWordLimit,
+          loadNews, showAddNewsModal, editNews, saveNews,
+          publishNews, archiveNews, deleteNews, toggleNewsPublic,
+          newsAuthorName, newsLineName,
           drillToTrials, drillToProjects,
           activeMissionLine: researchOps.activeMissionLine,
           portfolioKPIs:     researchOps.portfolioKPIs,
@@ -4675,3 +4687,180 @@ document.addEventListener('DOMContentLoaded', () => {
     throw error;
   }
 });
+
+// ============================================================
+// NEWS & BLOG — useNews composable
+// ============================================================
+function useNews({ showToast, showConfirmation, medicalStaff, researchLines }) {
+  const newsPosts      = ref([])
+  const newsLoading    = ref(false)
+  const newsModal      = reactive({
+    show: false, mode: 'add',
+    form: {
+      post_type: 'update', title: '', body: '', featured_image_url: '',
+      author_id: '', research_line_id: '', is_public: false,
+      status: 'draft', expires_at: '',
+      journal_name: '', authors_text: '', doi: ''
+    }
+  })
+  const newsFilters    = reactive({ type: '', status: '', search: '', scope: '' })
+  const newsWordCount  = computed(() => {
+    const t = newsModal.form.body || ''
+    return t.trim() === '' ? 0 : t.trim().split(/\s+/).length
+  })
+  const newsWordLimit  = computed(() => newsModal.form.post_type === 'update' ? 80 : 400)
+
+  // ── Helpers ─────────────────────────────────────────────
+  const formatAuthorName = (staffId) => {
+    const s = (medicalStaff.value || []).find(m => m.id === staffId)
+    if (!s) return '—'
+    const parts = (s.full_name || '').trim().split(' ')
+    const last  = parts[parts.length - 1]
+    return `Dr. ${last}`
+  }
+  const getLineName = (lineId) => {
+    const l = (researchLines.value || []).find(r => r.id === lineId)
+    return l ? `L${l.line_number} — ${l.research_line_name || l.name}` : '—'
+  }
+  const autoExpiry = (type) => {
+    const d = new Date()
+    if (type === 'update')  d.setDate(d.getDate() + 90)
+    if (type === 'article') d.setMonth(d.getMonth() + 18)
+    if (type === 'publication') return ''
+    return d.toISOString().split('T')[0]
+  }
+
+  // ── Filtered list ────────────────────────────────────────
+  const filteredNews = computed(() => {
+    let posts = newsPosts.value || []
+    if (newsFilters.type)   posts = posts.filter(p => p.post_type === newsFilters.type)
+    if (newsFilters.status) posts = posts.filter(p => p.status === newsFilters.status)
+    if (newsFilters.scope === 'public')   posts = posts.filter(p => p.is_public)
+    if (newsFilters.scope === 'internal') posts = posts.filter(p => !p.is_public)
+    if (newsFilters.search) {
+      const q = newsFilters.search.toLowerCase()
+      posts = posts.filter(p =>
+        (p.title || '').toLowerCase().includes(q) ||
+        (p.body  || '').toLowerCase().includes(q)
+      )
+    }
+    return posts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  })
+
+  // ── CRUD ────────────────────────────────────────────────
+  const loadNews = async () => {
+    newsLoading.value = true
+    try {
+      const data = await API.getList('/api/news')
+      newsPosts.value = data || []
+    } catch { newsPosts.value = [] }
+    finally { newsLoading.value = false }
+  }
+
+  const showAddNewsModal = () => {
+    newsModal.mode = 'add'
+    Object.assign(newsModal.form, {
+      post_type: 'update', title: '', body: '', featured_image_url: '',
+      author_id: '', research_line_id: '', is_public: false,
+      status: 'draft', expires_at: '', journal_name: '', authors_text: '', doi: ''
+    })
+    newsModal.show = true
+  }
+
+  const editNews = (post) => {
+    newsModal.mode = 'edit'
+    Object.assign(newsModal.form, {
+      ...post,
+      expires_at: post.expires_at ? post.expires_at.split('T')[0] : ''
+    })
+    newsModal.show = true
+  }
+
+  const saveNews = async () => {
+    if (!newsModal.form.title.trim()) { showToast('Validation', 'Title is required', 'warn'); return }
+    if (newsModal.form.post_type !== 'publication' && !newsModal.form.author_id) {
+      showToast('Validation', 'Author is required', 'warn'); return
+    }
+    if (newsModal.form.post_type !== 'publication' && newsWordCount.value > newsWordLimit.value) {
+      showToast('Validation', `Exceeds ${newsWordLimit.value} word limit`, 'warn'); return
+    }
+    const payload = {
+      post_type:          newsModal.form.post_type,
+      title:              newsModal.form.title.trim(),
+      body:               newsModal.form.body.trim() || null,
+      author_id:          newsModal.form.author_id || null,
+      research_line_id:   newsModal.form.research_line_id || null,
+      is_public:          newsModal.form.is_public,
+      status:             newsModal.form.status,
+      featured_image_url: newsModal.form.featured_image_url.trim() || null,
+      expires_at:         newsModal.form.expires_at || null,
+      journal_name:       newsModal.form.journal_name.trim() || null,
+      authors_text:       newsModal.form.authors_text.trim() || null,
+      doi:                newsModal.form.doi.trim() || null,
+      word_count:         newsWordCount.value
+    }
+    if (payload.status === 'published' && !payload.expires_at && newsModal.form.post_type !== 'publication') {
+      payload.expires_at = autoExpiry(newsModal.form.post_type)
+    }
+    try {
+      if (newsModal.mode === 'add') {
+        await API.request('/api/news', { method: 'POST', body: payload })
+        showToast('Published', 'Post created', 'success')
+      } else {
+        await API.request(`/api/news/${newsModal.form.id}`, { method: 'PUT', body: payload })
+        showToast('Updated', 'Post saved', 'success')
+      }
+      newsModal.show = false
+      await loadNews()
+    } catch (e) { showToast('Error', e.message, 'error') }
+  }
+
+  const publishNews = async (post) => {
+    try {
+      const expiry = post.expires_at || (post.post_type !== 'publication' ? autoExpiry(post.post_type) : null)
+      await API.request(`/api/news/${post.id}`, { method: 'PUT', body: {
+        ...post, status: 'published',
+        published_at: new Date().toISOString(),
+        expires_at: expiry
+      }})
+      showToast('Published', 'Post is now live', 'success')
+      await loadNews()
+    } catch (e) { showToast('Error', e.message, 'error') }
+  }
+
+  const archiveNews = async (post) => {
+    showConfirmation('Archive Post', `Archive "${post.title}"? It will be hidden from view but not deleted.`, async () => {
+      try {
+        await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...post, status: 'archived' }})
+        showToast('Archived', 'Post archived', 'info')
+        await loadNews()
+      } catch (e) { showToast('Error', e.message, 'error') }
+    })
+  }
+
+  const deleteNews = async (post) => {
+    showConfirmation('Delete Post', `Permanently delete "${post.title}"? This cannot be undone.`, async () => {
+      try {
+        await API.request(`/api/news/${post.id}`, { method: 'DELETE' })
+        showToast('Deleted', 'Post deleted', 'success')
+        await loadNews()
+      } catch (e) { showToast('Error', e.message, 'error') }
+    })
+  }
+
+  const togglePublic = async (post) => {
+    try {
+      await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...post, is_public: !post.is_public }})
+      showToast('Updated', post.is_public ? 'Now internal only' : 'Now public on website', 'success')
+      await loadNews()
+    } catch (e) { showToast('Error', e.message, 'error') }
+  }
+
+  return {
+    newsPosts, newsLoading, newsModal, newsFilters, filteredNews,
+    newsWordCount, newsWordLimit,
+    loadNews, showAddNewsModal, editNews, saveNews,
+    publishNews, archiveNews, deleteNews, togglePublic,
+    formatAuthorName, getLineName, autoExpiry
+  }
+}
