@@ -1264,9 +1264,9 @@
                                             @click="rotationView = 'detailed'">
                                         <i class="fas fa-table"></i> Detailed
                                     </button>
-                                    <button class="btn-pill" :class="{ active: rotationView === 'week' }" 
-                                            @click="rotationView = 'week'" v-if="hasPermission('analytics', 'read')">
-                                        <i class="fas fa-calendar-week"></i> Week
+                                    <button class="btn-pill" :class="{ active: rotationView === 'month' }" 
+                                            @click="rotationView = 'month'" v-if="hasPermission('analytics', 'read')">
+                                        <i class="fas fa-calendar-alt"></i> Month
                                     </button>
                                 </div>
                                 <div class="header-actions-right">
@@ -1406,87 +1406,88 @@
                         </div>
 
                         <!-- WEEK VIEW — Real dates, meaningful content -->
-                        <div v-else-if="rotationView === 'week'" class="week-view">
+                        <div v-else-if="rotationView === 'month'" class="mv-view">
 
-                            <!-- Week navigator -->
-                            <div class="week-nav">
-                                <button class="week-nav-btn" @click="weekOffset--">
+                            <!-- Navigator -->
+                            <div class="mv-nav">
+                                <button class="mv-nav-btn" @click="monthOffset -= monthHorizon" title="Previous period">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
-                                <div class="week-nav-label">
-                                    <i class="fas fa-calendar-week"></i>
-                                    {{ getWeekRangeLabel() }}
-                                    <button v-if="weekOffset !== 0" class="week-nav-today" @click="weekOffset = 0">Today</button>
+                                <div class="mv-nav-center">
+                                    <i class="fas fa-calendar-alt" style="color:var(--blue);font-size:12px"></i>
+                                    <span class="mv-nav-label">{{ getHorizonRangeLabel() }}</span>
+                                    <button v-if="monthOffset !== 0" class="mv-nav-today" @click="monthOffset = 0">Today</button>
                                 </div>
-                                <button class="week-nav-btn" @click="weekOffset++">
+                                <div class="mv-nav-horizon">
+                                    <button v-for="h in [3, 6, 12]" :key="h"
+                                            class="mv-hz-btn" :class="{ active: monthHorizon === h }"
+                                            @click="monthHorizon = h">{{ h }}mo</button>
+                                </div>
+                                <button class="mv-nav-btn" @click="monthOffset += monthHorizon" title="Next period">
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                             </div>
 
-                            <div class="week-grid">
-                                <!-- Header row -->
-                                <div class="week-cell week-cell--header week-cell--name">Resident</div>
-                                <div v-for="d in 7" :key="d"
-                                     class="week-cell week-cell--header"
-                                     :class="{ 'week-cell--today': getWeekDayLabel(d).isToday }">
-                                    <span class="week-hdr-day">{{ getWeekDayLabel(d).dayName }}</span>
-                                    <span class="week-hdr-num" :class="{ 'week-hdr-num--today': getWeekDayLabel(d).isToday }">{{ getWeekDayLabel(d).dayNum }}</span>
+                            <!-- Grid -->
+                            <div class="mv-grid" :style="{ '--mv-cols': monthHorizon }">
+
+                                <!-- Year label row -->
+                                <div class="mv-name-spacer"></div>
+                                <div v-for="m in getHorizonMonths(monthHorizon, monthOffset)" :key="'yr-' + m.key"
+                                     class="mv-year-cell">
+                                    <span v-if="m.isYearStart" class="mv-year-label">{{ m.year }}</span>
+                                </div>
+
+                                <!-- Month header row -->
+                                <div class="mv-name-header">Resident</div>
+                                <div v-for="m in getHorizonMonths(monthHorizon, monthOffset)" :key="'hdr-' + m.key"
+                                     class="mv-month-header"
+                                     :class="{ 'mv-month-header--current': m.isCurrent }">
+                                    {{ m.label }}
                                 </div>
 
                                 <!-- Resident rows -->
                                 <template v-for="resident in residentsWithRotations" :key="resident.id">
-                                    <!-- Name cell -->
-                                    <div class="week-cell week-cell--name">
-                                        <div class="week-resident-who">
-                                            <div class="week-resident-icon"><i class="fas fa-user-graduate"></i></div>
-                                            <div>
-                                                <div class="week-resident-name">{{ resident.full_name }}</div>
-                                                <div class="week-resident-year">{{ formatTrainingYear(resident.training_year) || 'PGY-?' }}</div>
-                                            </div>
+                                    <div class="mv-name-cell">
+                                        <div class="mv-resident-icon"><i class="fas fa-user-graduate"></i></div>
+                                        <div class="mv-resident-text">
+                                            <div class="mv-resident-name">{{ resident.full_name }}</div>
+                                            <div class="mv-resident-year">{{ formatTrainingYear(resident.training_year) || 'PGY-?' }}</div>
                                         </div>
                                     </div>
-
-                                    <!-- Day cells -->
-                                    <div v-for="d in 7" :key="d"
-                                         class="week-cell week-cell--day"
-                                         :class="{ 'week-cell--today': getWeekDayLabel(d).isToday }">
-                                        <template v-for="rot in getRotationsForDay(resident, d)" :key="rot.id">
-                                            <div class="week-block"
-                                                 :class="{
-                                                     'week-block--active':    rot.rotation_status === 'active',
-                                                     'week-block--scheduled': rot.rotation_status === 'scheduled',
-                                                     'week-block--completed': rot.rotation_status === 'completed',
-                                                     'week-block--first': isFirstDayOfRotation(rot, d),
-                                                     'week-block--last':  isLastDayOfRotation(rot, d),
-                                                 }"
-                                                 @click="viewRotationDetails(rot)"
-                                                 :title="rot.unitName || getTrainingUnitName(rot.training_unit_id)">
-                                                <!-- Show unit name only on first visible day of the week (d===1) or first day of rotation -->
-                                                <span class="week-block-unit" v-if="d === 1 || isFirstDayOfRotation(rot, d)">
-                                                    {{ (rot.unitName || getTrainingUnitName(rot.training_unit_id)) }}
-                                                </span>
-                                                <!-- Start date marker -->
-                                                <span v-if="isFirstDayOfRotation(rot, d)" class="week-block-marker week-block-marker--start">
-                                                    <i class="fas fa-play"></i>
-                                                </span>
-                                                <!-- End date marker -->
-                                                <span v-if="isLastDayOfRotation(rot, d)" class="week-block-marker week-block-marker--end">
-                                                    <i class="fas fa-flag-checkered"></i>
-                                                </span>
-                                            </div>
-                                        </template>
-                                        <!-- Empty day — subtle add if nothing scheduled -->
-                                        <div v-if="getRotationsForDay(resident, d).length === 0 && getWeekDayLabel(d).isToday"
-                                             class="week-empty-today"></div>
+                                    <div class="mv-months-area" :style="{ '--mv-cols': monthHorizon }">
+                                        <div v-for="m in getHorizonMonths(monthHorizon, monthOffset)" :key="'bg-' + m.key"
+                                             class="mv-month-bg"
+                                             :class="{ 'mv-month-bg--current': m.isCurrent }">
+                                        </div>
+                                        <div v-for="rot in getResidentRotationsInHorizon(resident)" :key="rot.id"
+                                             class="mv-rot-bar"
+                                             :class="{
+                                               'mv-rot-bar--active':    rot.rotation_status === 'active',
+                                               'mv-rot-bar--scheduled': rot.rotation_status === 'scheduled',
+                                               'mv-rot-bar--completed': rot.rotation_status === 'completed',
+                                               'mv-rot-bar--clipped-left':  !rotationStartsInHorizon(rot),
+                                               'mv-rot-bar--clipped-right': !rotationEndsInHorizon(rot)
+                                             }"
+                                             :style="getRotationBarStyle(rot)"
+                                             @click="viewRotationDetails(rot)"
+                                             :title="getTrainingUnitName(rot.training_unit_id) + ' · ' + formatDate(rot.start_date) + ' → ' + formatDate(rot.end_date)">
+                                            <span v-if="rotationStartsInHorizon(rot)" class="mv-rot-cap mv-rot-cap--start"></span>
+                                            <span class="mv-rot-label">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
+                                            <span v-if="rotationEndsInHorizon(rot)" class="mv-rot-cap mv-rot-cap--end"></span>
+                                        </div>
                                     </div>
                                 </template>
 
                                 <!-- Empty state -->
-                                <div v-if="residentsWithRotations.length === 0" class="week-empty-state">
-                                    <i class="fas fa-calendar-alt"></i> No residents to display
+                                <div v-if="residentsWithRotations.length === 0" class="mv-empty-state">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    No residents with rotations to display
                                 </div>
+
                             </div>
                         </div>
+
 
                         <!-- DETAILED VIEW (EXISTING TABLE) -->
                         <div v-else class="table-responsive">
