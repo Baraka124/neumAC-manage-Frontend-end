@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // ============ 1. CONFIGURATION ====-----===--====-=
+    // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -1659,14 +1659,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!shift.duty_date) return false
         const today = Utils.normalizeDate(new Date())
         const shiftDate = Utils.normalizeDate(shift.duty_date)
-        
         if (shiftDate !== today) return false
-        
         const now = new Date()
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-        
         return currentTime >= shift.start_time && currentTime <= shift.end_time
       }
+
+      // ── Upcoming on-call: next 14 days grouped by date (for dashboard) ──
+      const upcomingOnCallDays = computed(() => {
+        const today    = Utils.normalizeDate(new Date())
+        const cutoff   = Utils.normalizeDate(new Date(Date.now() + 14 * 86400000))
+        const fmt      = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+        const dayLabel = (d) => {
+          const tomorrow = Utils.normalizeDate(new Date(Date.now() + 86400000))
+          if (d === today)    return 'Today'
+          if (d === tomorrow) return 'Tomorrow'
+          return fmt(d)
+        }
+        const map = {}
+        ;(onCallSchedule.value || []).forEach(s => {
+          const d = Utils.normalizeDate(s.duty_date)
+          if (d < today || d > cutoff) return
+          if (!map[d]) map[d] = { date: d, label: dayLabel(d), isToday: d === today, primary: null, backup: null }
+          if (['primary_call','primary'].includes(s.shift_type)) map[d].primary = s
+          else map[d].backup = s
+        })
+        return Object.values(map).sort((a,b) => a.date.localeCompare(b.date))
+      })
 
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
@@ -1676,7 +1695,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // NEW compact view properties
         groupedOnCallSchedules,
         isShiftActive,
-        staffWithOnCallOrbs
+        staffWithOnCallOrbs,
+        upcomingOnCallDays
       }
     }
 
@@ -4429,6 +4449,7 @@ document.addEventListener('DOMContentLoaded', () => {
           residentsWithRotations: rotationOps.residentsWithRotations,
           groupedOnCallSchedules: onCallOps.groupedOnCallSchedules,
           staffWithOnCallOrbs: onCallOps.staffWithOnCallOrbs,
+          upcomingOnCallDays:  onCallOps.upcomingOnCallDays,
           weekDays,
           getRotationsForDay: rotationOps.getRotationsForDay,
           rotationViewModal: rotationOps.rotationViewModal,
