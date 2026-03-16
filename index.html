@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============- TOAST CONTAINER ==-=--=----======= -->
+    <!-- ============- TOAST CONTAINER ==-=--=---======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -647,7 +647,7 @@
                                 <div class="db-kpi-label">On-call Today</div>
                                 <div class="db-kpi-sub" v-if="todaysOnCall.length > 0">
                                     <span class="db-kpi-dot db-kpi-dot--ok"></span>
-                                    {{ todaysOnCall[0].physicianName.split(' ').slice(-1)[0] }} · {{ todaysOnCall[0].startTime }}–{{ todaysOnCall[0].endTime }}
+                                    {{ (todaysOnCall[0].physicianName || '').split(' ').slice(-1)[0] }} · {{ todaysOnCall[0].startTime }}–{{ todaysOnCall[0].endTime }}
                                 </div>
                                 <div class="db-kpi-sub" v-else style="color:var(--danger)">
                                     <span class="db-kpi-dot" style="background:var(--danger)"></span> No coverage today
@@ -685,9 +685,9 @@
                                     <div class="db-oc-slot" :class="day.primary ? 'db-oc-slot--ok' : 'db-oc-slot--gap'"
                                          @click="!day.primary && hasPermission('oncall_schedule','create') ? showAddOnCallModal() : null">
                                         <template v-if="day.primary">
-                                            <div class="db-oc-avatar">{{ getPhysicianName(day.primary.primary_physician_id).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                            <div class="db-oc-avatar">{{ (getPhysicianName(day.primary.primary_physician_id)||'??').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() }}</div>
                                             <div class="db-oc-info">
-                                                <span class="db-oc-name">{{ getPhysicianName(day.primary.primary_physician_id).split(' ').slice(-1)[0] }}</span>
+                                                <span class="db-oc-name">{{ (getPhysicianName(day.primary.primary_physician_id)||'—').split(' ').slice(-1)[0] }}</span>
                                                 <span class="db-oc-time">{{ (day.primary.start_time||'').slice(0,5) }}–{{ (day.primary.end_time||'').slice(0,5) }}</span>
                                             </div>
                                             <span class="db-oc-badge db-oc-badge--primary">Primary</span>
@@ -700,8 +700,8 @@
                                     </div>
                                     <div class="db-oc-slot db-oc-slot--backup" :class="day.backup ? 'db-oc-slot--soft' : ''">
                                         <template v-if="day.backup">
-                                            <div class="db-oc-avatar db-oc-avatar--backup">{{ getPhysicianName(day.backup.primary_physician_id).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
-                                            <span class="db-oc-name">{{ getPhysicianName(day.backup.primary_physician_id).split(' ').slice(-1)[0] }}</span>
+                                            <div class="db-oc-avatar db-oc-avatar--backup">{{ (getPhysicianName(day.backup.primary_physician_id)||'??').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() }}</div>
+                                            <span class="db-oc-name">{{ (getPhysicianName(day.backup.primary_physician_id)||'—').split(' ').slice(-1)[0] }}</span>
                                             <span class="db-oc-badge db-oc-badge--backup">Backup</span>
                                         </template>
                                         <template v-else>
@@ -724,17 +724,17 @@
                             </div>
                             <template v-if="rotations.filter(r => (r.rotation_status==='active'||r.rotation_status==='scheduled') && new Date(r.end_date||r.start_date) >= new Date() && new Date(r.end_date||r.start_date) <= new Date(Date.now()+7*86400000)).length > 0">
                                 <div v-for="rot in rotations.filter(r => r.rotation_status==='active' && new Date(r.end_date) >= new Date() && new Date(r.end_date) <= new Date(Date.now()+7*86400000)).slice(0,2)" :key="'end-'+rot.id" class="db-rot-row">
-                                    <div class="db-rot-avatar">{{ getResidentName(rot.resident_id).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                    <div class="db-rot-avatar">{{ (getResidentName(rot.resident_id)||'??').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() }}</div>
                                     <div class="db-rot-info">
-                                        <span class="db-rot-name">{{ getResidentName(rot.resident_id).split(' ').slice(-1)[0] }}</span>
+                                        <span class="db-rot-name">{{ (getResidentName(rot.resident_id)||'—').split(' ').slice(-1)[0] }}</span>
                                         <span class="db-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
                                     </div>
                                     <span class="db-rot-chip db-rot-chip--ending">ends {{ formatDateShort(rot.end_date) }}</span>
                                 </div>
                                 <div v-for="rot in rotations.filter(r => r.rotation_status==='scheduled' && new Date(r.start_date) >= new Date() && new Date(r.start_date) <= new Date(Date.now()+7*86400000)).slice(0,2)" :key="'start-'+rot.id" class="db-rot-row">
-                                    <div class="db-rot-avatar db-rot-avatar--start">{{ getResidentName(rot.resident_id).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                    <div class="db-rot-avatar db-rot-avatar--start">{{ (getResidentName(rot.resident_id)||'??').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() }}</div>
                                     <div class="db-rot-info">
-                                        <span class="db-rot-name">{{ getResidentName(rot.resident_id).split(' ').slice(-1)[0] }}</span>
+                                        <span class="db-rot-name">{{ (getResidentName(rot.resident_id)||'—').split(' ').slice(-1)[0] }}</span>
                                         <span class="db-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
                                     </div>
                                     <span class="db-rot-chip db-rot-chip--starting">starts {{ formatDateShort(rot.start_date) }}</span>
@@ -754,9 +754,9 @@
                             <div class="db-gap-grid">
                                 <div v-for="w in residentGapWarnings" :key="w.id" class="db-gap-item"
                                      @click="showAddRotationModal({ id: w.id, full_name: w.name })">
-                                    <div class="db-gap-avatar">{{ w.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                    <div class="db-gap-avatar">{{ (w.name||'??').split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase() }}</div>
                                     <div class="db-gap-info">
-                                        <span class="db-gap-name">{{ w.name.split(' ').slice(-1)[0] }}</span>
+                                        <span class="db-gap-name">{{ (w.name||'—').split(' ').slice(-1)[0] }}</span>
                                         <span class="db-gap-year" v-if="w.year">PGY-{{ w.year }}</span>
                                     </div>
                                     <div class="db-gap-pills">
@@ -1238,9 +1238,9 @@
                             <div v-for="w in residentGapWarnings" :key="w.id" class="rgw-item"
                                  @click="showAddRotationModal({ id: w.id, full_name: w.name })"
                                  :title="'Gaps: ' + w.gaps.join(', ')">
-                                <div class="rgw-avatar">{{ w.name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                <div class="rgw-avatar">{{ (w.name||'??').split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase() }}</div>
                                 <div class="rgw-info">
-                                    <span class="rgw-name">{{ w.name.split(' ').slice(-1)[0] }}</span>
+                                    <span class="rgw-name">{{ (w.name||'—').split(' ').slice(-1)[0] }}</span>
                                     <span class="rgw-year" v-if="w.year">PGY-{{ w.year }}</span>
                                 </div>
                                 <div class="rgw-gaps">
