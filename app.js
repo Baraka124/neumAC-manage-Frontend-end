@@ -4390,12 +4390,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadAcademicDegrees = async () => {
           try {
             const result = await API.getAcademicDegrees()
-            // Use DB results if we got real UUIDs back; fall back to hardcoded list otherwise
             academicDegrees.value = (result && result.length > 0 && result[0].id?.includes('-'))
               ? result
               : ACADEMIC_DEGREES_FALLBACK
-          } catch (e) {
-            console.warn('Academic degrees API failed, using fallback:', e.message)
+          } catch {
+            // Endpoint not yet deployed — use hardcoded fallback silently
             academicDegrees.value = ACADEMIC_DEGREES_FALLBACK
           }
         }
