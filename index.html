@@ -1611,7 +1611,12 @@
                     <div class="card mb-6">
                         <div class="card-header">
                             <div class="card-title"><i class="fas fa-hospital-user"></i> Training Units</div>
-                            <button class="btn btn-primary" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')"><i class="fas fa-plus"></i> Add Unit</button>
+                            <div style="display:flex;gap:8px;align-items:center">
+                                <button class="btn btn-ghost uop-trigger-btn" @click="occupancyPanel.show = true" title="View units availability at a glance">
+                                    <i class="fas fa-layer-group"></i> Units Occupancy
+                                </button>
+                                <button class="btn btn-primary" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')"><i class="fas fa-plus"></i> Add Unit</button>
+                            </div>
                         </div>
                         <div class="filter-bar">
                             <input type="text" class="form-control" v-model="trainingUnitFilters.search" placeholder="Search units...">
@@ -2201,30 +2206,30 @@
                         <!-- ── Portfolio KPI strip (Idea 3) ── -->
                         <div class="rp-kpi-strip">
                             <div class="rp-kpi">
-                                <div class="rp-kpi-val">{{ portfolioKPIs.activeLines }}</div>
+                                <div class="rp-kpi-val">{{ portfolioKPIs?.activeLines || 0 }}</div>
                                 <div class="rp-kpi-label">Active Lines</div>
-                                <div class="rp-kpi-sub">of {{ portfolioKPIs.totalLines }} total</div>
+                                <div class="rp-kpi-sub">of {{ portfolioKPIs?.totalLines || 0 }} total</div>
                             </div>
                             <div class="rp-kpi-div"></div>
                             <div class="rp-kpi">
-                                <div class="rp-kpi-val" :class="{ 'rp-kpi-val--ok': portfolioKPIs.activeTrials > 0 }">{{ portfolioKPIs.activeTrials }}</div>
+                                <div class="rp-kpi-val" :class="{ 'rp-kpi-val--ok': portfolioKPIs?.activeTrials > 0 }">{{ portfolioKPIs?.activeTrials || 0 }}</div>
                                 <div class="rp-kpi-label">Active Trials</div>
-                                <div class="rp-kpi-sub" v-if="portfolioKPIs.recruitingTrials > 0" style="color:var(--ok)">{{ portfolioKPIs.recruitingTrials }} recruiting</div>
-                                <div class="rp-kpi-sub" v-else>of {{ portfolioKPIs.totalTrials }} total</div>
+                                <div class="rp-kpi-sub" v-if="portfolioKPIs?.recruitingTrials > 0" style="color:var(--ok)">{{ portfolioKPIs?.recruitingTrials || 0 }} recruiting</div>
+                                <div class="rp-kpi-sub" v-else>of {{ portfolioKPIs?.totalTrials || 0 }} total</div>
                             </div>
                             <div class="rp-kpi-div"></div>
                             <div class="rp-kpi">
-                                <div class="rp-kpi-val">{{ portfolioKPIs.totalProjects }}</div>
+                                <div class="rp-kpi-val">{{ portfolioKPIs?.totalProjects || 0 }}</div>
                                 <div class="rp-kpi-label">Projects</div>
-                                <div class="rp-kpi-sub" v-if="portfolioKPIs.lateStageProjects > 0" style="color:var(--blue)">{{ portfolioKPIs.lateStageProjects }} advanced stage</div>
+                                <div class="rp-kpi-sub" v-if="portfolioKPIs?.lateStageProjects > 0" style="color:var(--blue)">{{ portfolioKPIs?.lateStageProjects || 0 }} advanced stage</div>
                                 <div class="rp-kpi-sub" v-else>in pipeline</div>
                             </div>
                             <div class="rp-kpi-div"></div>
                             <div class="rp-kpi">
-                                <div class="rp-kpi-val">{{ portfolioKPIs.totalEnrolled.toLocaleString() }}</div>
+                                <div class="rp-kpi-val">{{ (portfolioKPIs?.totalEnrolled || 0).toLocaleString() }}</div>
                                 <div class="rp-kpi-label">Participants</div>
-                                <div class="rp-kpi-sub" v-if="portfolioKPIs.totalTarget > 0">
-                                    {{ Math.round((portfolioKPIs.totalEnrolled / portfolioKPIs.totalTarget) * 100) }}% of target
+                                <div class="rp-kpi-sub" v-if="portfolioKPIs?.totalTarget > 0">
+                                    {{ Math.round(((portfolioKPIs?.totalEnrolled || 0) / (portfolioKPIs?.totalTarget || 1)) * 100) }}% of target
                                 </div>
                             </div>
                             <div class="rp-kpi-search">
