@@ -6170,29 +6170,27 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 
 /* Shift period cell — no wrapping, readable layout */
 .oncall-shift-cell {
-  display: flex; align-items: center; gap: 8px;
-  flex-wrap: nowrap; min-width: 0;
+  display: flex; flex-direction: column; gap: 3px; min-width: 0;
 }
-.oncall-shift-start,
-.oncall-shift-end {
-  display: flex; flex-direction: column; gap: 1px; min-width: 0;
+.oncall-shift-date-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--text-2);
+  white-space: nowrap;
 }
-.oncall-shift-label {
-  font-size: 9px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .1em;
-  color: var(--text-4);
+.oncall-shift-overnight {
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+  border-radius: 4px; background: var(--warn-lt);
+  color: var(--warn); border: 1px solid var(--warn-mid);
+}
+.oncall-shift-time-row {
+  display: flex; align-items: center; gap: 5px;
 }
 .oncall-shift-time {
-  font-family: var(--font-data); font-size: 14px; font-weight: 700;
+  font-family: var(--font-data); font-size: 15px; font-weight: 700;
   color: var(--text-1); line-height: 1; white-space: nowrap;
 }
-.oncall-shift-date {
-  font-size: 10px; color: var(--text-3); white-space: nowrap;
-  font-weight: 500;
-}
-.oncall-shift-sep {
-  width: 16px; height: 1px; background: var(--border-2);
-  flex-shrink: 0; margin: 0 2px; align-self: center;
+.oncall-shift-arrow {
+  font-size: 11px; color: var(--text-4);
 }
 
 /* Past shift dimming */
@@ -7976,3 +7974,18 @@ tr:not(:hover) .btn-pill-purge {
 }
 .rgw-add-icon { font-size: 10px; color: var(--blue); opacity: .6; margin-left: 2px; }
 .rgw-item:hover .rgw-add-icon { opacity: 1; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ON-CALL MODAL — overnight shift indicator
+═══════════════════════════════════════════════════════════════ */
+.oc-overnight-hint {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 6px; padding: 6px 10px;
+  background: rgba(99,102,241,.08);
+  border: 1px solid rgba(99,102,241,.2);
+  border-radius: 7px;
+  font-size: 11px; font-weight: 500; color: #4f46e5;
+}
+.oc-overnight-hint i { font-size: 10px; }
+.oc-overnight-hint strong { font-weight: 700; }
