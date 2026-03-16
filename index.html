@@ -638,11 +638,11 @@
                             <div class="stat-breakdown">
                                 <div v-for="shift in todaysOnCall.slice(0, 3)" :key="shift.id" class="breakdown-item">
                                     <span class="label">{{ shift.physicianName }}</span>
-                                    <span class="value">{{ shift.startTime }}</span>
-                                    <span class="status-indicator status-oncall">On-call</span>
+                                    <span class="value" style="font-family:var(--font-data);font-size:11px">{{ shift.startTime }}–{{ shift.endTime }}</span>
+                                    <span class="status-indicator" :class="shift.shiftType === 'Primary' ? 'status-active' : 'status-busy'">{{ shift.shiftType }}</span>
                                 </div>
                                 <div v-if="todaysOnCall.length === 0" class="breakdown-item">
-                                    <span class="label text-gray-500">No on-call scheduled</span>
+                                    <span class="label text-gray-500">No on-call scheduled today</span>
                                 </div>
                             </div>
                         </div>
@@ -985,6 +985,9 @@
                         <div class="card-header">
                             <div class="card-title"><i class="fas fa-phone-medical"></i> On-call Schedule</div>
                             <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
+                                <button class="btn btn-ghost uop-trigger-btn" @click="coveragePanel.show = true" title="Coverage overview, upcoming shifts and fairness">
+                                    <i class="fas fa-calendar-check"></i> Coverage
+                                </button>
                                 <div class="view-toggle">
                                     <button class="btn-pill" :class="{ active: onCallView === 'compact' }" 
                                             @click="onCallView = 'compact'">
@@ -5781,6 +5784,139 @@
                     <i class="fas fa-user-plus"></i> Assign Rotation
                 </button>
             </div>
+        </div>
+        </teleport>
+
+        <!-- ═══════════════════════════════════════════════════════
+             ON-CALL COVERAGE PANEL  (slide-in from right)
+             ═══════════════════════════════════════════════════════ -->
+        <teleport to="body">
+        <div v-if="coveragePanel.show" class="cvp-backdrop" @click.self="coveragePanel.show = false"></div>
+        <div class="cvp" :class="{ 'cvp--open': coveragePanel.show }">
+
+            <!-- Header -->
+            <div class="cvp-header">
+                <div class="cvp-header-left">
+                    <div class="cvp-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div>
+                        <div class="cvp-title">Coverage Overview</div>
+                        <div class="cvp-subtitle">{{ coverageRangeLabel }}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button class="mv-nav-btn" @click="coverageGridOffset -= 1" title="Previous 28 days"><i class="fas fa-chevron-left"></i></button>
+                    <button class="mv-nav-today" @click="coverageGridOffset = 0" v-if="coverageGridOffset !== 0">Today</button>
+                    <button class="mv-nav-btn" @click="coverageGridOffset += 1" title="Next 28 days"><i class="fas fa-chevron-right"></i></button>
+                    <button class="uop-close" @click="coveragePanel.show = false"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+
+            <div class="cvp-body">
+
+                <!-- ── Fairness tally ── -->
+                <div class="cvp-section" v-if="onCallFairnessTally.length">
+                    <div class="cvp-section-label"><i class="fas fa-balance-scale"></i> Shift Distribution — This Month</div>
+                    <div class="cvp-tally-list">
+                        <div v-for="(p, idx) in onCallFairnessTally" :key="p.id" class="cvp-tally-row">
+                            <span class="cvp-tally-rank">#{{ idx + 1 }}</span>
+                            <span class="cvp-tally-name">{{ p.name }}</span>
+                            <div class="cvp-tally-bar-wrap">
+                                <div class="cvp-tally-bar"
+                                     :style="{ width: onCallFairnessTally[0].total ? (p.total / onCallFairnessTally[0].total * 100) + '%' : '0%' }"></div>
+                            </div>
+                            <span class="cvp-tally-total">{{ p.total }}</span>
+                            <span class="cvp-tally-detail">
+                                <span class="cvp-tally-p" title="Primary">P:{{ p.primary }}</span>
+                                <span class="cvp-tally-b" title="Backup">B:{{ p.backup }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── 28-day coverage grid ── -->
+                <div class="cvp-section">
+                    <div class="cvp-section-label"><i class="fas fa-th"></i> Day-by-Day Coverage</div>
+                    <div class="cvp-legend">
+                        <span class="cvp-leg-item"><span class="cvp-leg-dot cvp-leg-dot--covered"></span>Covered</span>
+                        <span class="cvp-leg-item"><span class="cvp-leg-dot cvp-leg-dot--partial"></span>Partial</span>
+                        <span class="cvp-leg-item"><span class="cvp-leg-dot cvp-leg-dot--gap"></span>Gap</span>
+                        <span class="cvp-leg-item"><span class="cvp-leg-dot cvp-leg-dot--past"></span>Past</span>
+                    </div>
+                    <div class="cvp-grid">
+                        <!-- Column headers -->
+                        <div class="cvp-col-hdr cvp-col-hdr--date">Date</div>
+                        <div class="cvp-col-hdr">Primary</div>
+                        <div class="cvp-col-hdr">Backup</div>
+
+                        <!-- Day rows -->
+                        <template v-for="day in onCallCoverageGrid" :key="day.date">
+                            <!-- Month divider -->
+                            <div v-if="day.isMonthStart" class="cvp-month-divider" style="grid-column:1/-1">
+                                {{ new Date(day.date + 'T12:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) }}
+                            </div>
+
+                            <!-- Date cell -->
+                            <div class="cvp-day-label"
+                                 :class="{
+                                   'cvp-day-label--today':   day.isToday,
+                                   'cvp-day-label--weekend': day.isWeekend,
+                                   'cvp-day-label--past':    day.isPast
+                                 }">
+                                <span class="cvp-day-weekday">{{ day.shortDay }}</span>
+                                <span class="cvp-day-num">{{ day.dayNum }}</span>
+                                <span class="cvp-day-month" v-if="day.dayNum === 1 || day.isToday">{{ day.monthLabel }}</span>
+                            </div>
+
+                            <!-- Primary cell -->
+                            <div class="cvp-cov-cell"
+                                 :class="{
+                                   'cvp-cov-cell--covered': day.primary && !day.isPast,
+                                   'cvp-cov-cell--past':    day.primary && day.isPast,
+                                   'cvp-cov-cell--gap':     !day.primary && !day.isPast,
+                                   'cvp-cov-cell--past-empty': !day.primary && day.isPast,
+                                   'cvp-cov-cell--today':   day.isToday
+                                 }"
+                                 :title="day.primary ? getPhysicianName(day.primary.primary_physician_id) + ' · ' + day.primary.start_time + '–' + day.primary.end_time : 'No primary assigned'"
+                                 @click="!day.primary && !day.isPast ? (showAddOnCallModal(), $nextTick(() => { onCallModal.form.duty_date = day.date; onCallModal.form.shift_type = 'primary_call' })) : null">
+                                <template v-if="day.primary">
+                                    <span class="cvp-cov-name">{{ getPhysicianName(day.primary.primary_physician_id).split(' ').slice(-1)[0] }}</span>
+                                    <span class="cvp-cov-time">{{ day.primary.start_time }}–{{ day.primary.end_time }}</span>
+                                </template>
+                                <template v-else-if="!day.isPast">
+                                    <span class="cvp-cov-add"><i class="fas fa-plus"></i></span>
+                                </template>
+                                <template v-else>
+                                    <span class="cvp-cov-dash">—</span>
+                                </template>
+                            </div>
+
+                            <!-- Backup cell -->
+                            <div class="cvp-cov-cell cvp-cov-cell--backup"
+                                 :class="{
+                                   'cvp-cov-cell--covered': day.backup && !day.isPast,
+                                   'cvp-cov-cell--past':    day.backup && day.isPast,
+                                   'cvp-cov-cell--soft-gap': !day.backup && !day.isPast,
+                                   'cvp-cov-cell--past-empty': !day.backup && day.isPast,
+                                   'cvp-cov-cell--today':   day.isToday
+                                 }"
+                                 :title="day.backup ? getPhysicianName(day.backup.primary_physician_id) + ' · ' + day.backup.start_time + '–' + day.backup.end_time : 'No backup assigned'"
+                                 @click="!day.backup && !day.isPast ? (showAddOnCallModal(), $nextTick(() => { onCallModal.form.duty_date = day.date; onCallModal.form.shift_type = 'backup_call' })) : null">
+                                <template v-if="day.backup">
+                                    <span class="cvp-cov-name">{{ getPhysicianName(day.backup.primary_physician_id).split(' ').slice(-1)[0] }}</span>
+                                    <span class="cvp-cov-time">{{ day.backup.start_time }}–{{ day.backup.end_time }}</span>
+                                </template>
+                                <template v-else-if="!day.isPast">
+                                    <span class="cvp-cov-add"><i class="fas fa-plus"></i></span>
+                                </template>
+                                <template v-else>
+                                    <span class="cvp-cov-dash">—</span>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+            </div><!-- end cvp-body -->
         </div>
         </teleport>
 
