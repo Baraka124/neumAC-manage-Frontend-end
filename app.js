@@ -3498,20 +3498,46 @@ document.addEventListener('DOMContentLoaded', () => {
       const analyticsActiveTab = ref('dashboard') // 'dashboard' | 'performance' | 'partners'
 
       // ── Research Hub unified state ────────────────────────────────────────
-      // researchHubTab drives the top tab bar: lines | trials | projects | analytics
-      // analyticsActiveTab still drives the analytics sub-tabs
-      const researchHubTab = ref('lines')   // 'lines' | 'trials' | 'projects' | 'analytics'
-      const selectedResearchLine = ref(null) // line object — drives the detail panel
-      const researchDetailPanel = ref(false) // panel open state
+      const researchHubTab = ref('lines')
+      const selectedResearchLine = ref(null)
+      const researchDetailPanel = ref(false)
+      // Mission Control: which line row is selected in the left panel
+      const activeMissionLine = ref(null)
 
       const openLineDetail = (line) => {
         selectedResearchLine.value = line
         researchDetailPanel.value = true
+        activeMissionLine.value = line
       }
       const closeLineDetail = () => {
         researchDetailPanel.value = false
         setTimeout(() => { selectedResearchLine.value = null }, 300)
       }
+
+      // Portfolio KPIs — computed from local refs, instant, no API needed
+      const portfolioKPIs = computed(() => {
+        const totalLines    = researchLines.value.length
+        const activeLines   = researchLines.value.filter(l => l.active !== false).length
+        const totalTrials   = clinicalTrials.value.length
+        const activeTrials  = clinicalTrials.value.filter(t => ['Activo','Reclutando'].includes(t.status)).length
+        const recruitingTrials = clinicalTrials.value.filter(t => t.status === 'Reclutando').length
+        const totalProjects = innovationProjects.value.length
+        const lateStageProjects = innovationProjects.value.filter(p => ['Piloto','Validación','Escalado','Mercado'].includes(p.current_stage)).length
+        const totalEnrolled = clinicalTrials.value.reduce((s, t) => s + (t.actual_enrollment || 0), 0)
+        const totalTarget   = clinicalTrials.value.reduce((s, t) => s + (t.enrollment_target || 0), 0)
+        return { totalLines, activeLines, totalTrials, activeTrials, recruitingTrials, totalProjects, lateStageProjects, totalEnrolled, totalTarget }
+      })
+
+      // Line accent colours — cycles through 6 department colours
+      const LINE_ACCENTS = [
+        { bg: 'linear-gradient(135deg,#3b82f6,#6366f1)', light: '#eff6ff', color: '#1e40af' },
+        { bg: 'linear-gradient(135deg,#10b981,#0891b2)', light: '#d1fae5', color: '#065f46' },
+        { bg: 'linear-gradient(135deg,#22d3ee,#0ea5e9)', light: '#e0f7fa', color: '#0e7490' },
+        { bg: 'linear-gradient(135deg,#f59e0b,#f97316)', light: '#fef3c7', color: '#92400e' },
+        { bg: 'linear-gradient(135deg,#a78bfa,#8b5cf6)', light: '#ede9fe', color: '#5b21b6' },
+        { bg: 'linear-gradient(135deg,#fb7185,#ec4899)', light: '#fce7f3', color: '#9d174d' },
+      ]
+      const getLineAccent = (lineNumber) => LINE_ACCENTS[((lineNumber || 1) - 1) % 6]
 
       const loadResearchDashboard = async (localResearchLines, localTrials, localProjects) => {
         if (!hasPermission('analytics', 'read')) return
@@ -3584,7 +3610,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const showExportModal = () => { exportModal.type = 'clinical-trials'; exportModal.show = true }
 
-      return { researchDashboard, researchLinesPerformance, partnerCollaborations, trialsTimeline, analyticsSummary, loadingAnalytics, exportModal, analyticsActiveTab, researchHubTab, selectedResearchLine, researchDetailPanel, openLineDetail, closeLineDetail, loadResearchDashboard, loadResearchLinesPerformance, loadPartnerCollaborations, loadTrialsTimeline, loadAnalyticsSummary, loadStaffResearchProfile, handleExport, showExportModal }
+      return { researchDashboard, researchLinesPerformance, partnerCollaborations, trialsTimeline, analyticsSummary, loadingAnalytics, exportModal, analyticsActiveTab, researchHubTab, selectedResearchLine, researchDetailPanel, openLineDetail, closeLineDetail, loadResearchDashboard, loadResearchLinesPerformance, loadPartnerCollaborations, loadTrialsTimeline, loadAnalyticsSummary, loadStaffResearchProfile, handleExport, showExportModal,
+        activeMissionLine, portfolioKPIs, getLineAccent, LINE_ACCENTS }
     }
 
     // ============ 6.13 useDashboard ============
@@ -4406,6 +4433,9 @@ document.addEventListener('DOMContentLoaded', () => {
           handleLogin, handleLogout,
           switchView, situationItems, dailyBriefing, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
           drillToTrials, drillToProjects,
+          activeMissionLine: researchOps.activeMissionLine,
+          portfolioKPIs:     researchOps.portfolioKPIs,
+          getLineAccent:     researchOps.getLineAccent,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           searchResultsOpen: ui.searchResultsOpen,
