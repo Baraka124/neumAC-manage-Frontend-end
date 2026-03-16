@@ -613,18 +613,23 @@ document.addEventListener('DOMContentLoaded', () => {
               const unit = trainingUnits.find(u => u.id === r.training_unit_id);
               return {
                 id: r.id, residentId: r.resident_id,
-                residentName: resident?.full_name || 'Unknown', residentYear: resident?.training_year || null,
+                residentName: resident?.full_name || 'Unknown',
+                residentYear: resident?.training_year || null,
                 unitId: r.training_unit_id, unitName: unit?.unit_name || 'Unknown',
                 startDate: r.start_date, endDate: r.end_date,
-                daysLeft: Utils.daysUntil(r.end_date), evaluation: r.mid_evaluation || null
+                daysLeft: Utils.daysUntil(r.end_date)
               };
             });
-          
+
           const past = rotations.filter(r => r.supervising_attending_id === attendingId && r.rotation_status === 'completed').length;
-          const evaluations = rotations.filter(r => r.supervising_attending_id === attendingId && r.final_evaluation).map(r => r.final_evaluation);
-          const avgEvaluation = evaluations.length > 0 ? Math.round((evaluations.reduce((a, b) => a + b, 0) / evaluations.length) * 10) / 10 : 4.7;
-          
-          return { current: active, currentCount: active.length, pastCount: past, avgEvaluation };
+          const totalDaysSupervised = rotations
+            .filter(r => r.supervising_attending_id === attendingId && ['completed','active'].includes(r.rotation_status))
+            .reduce((sum, r) => {
+              const s = new Date(r.start_date), e = new Date(r.end_date)
+              return sum + Math.max(0, Math.round((e - s) / 86400000))
+            }, 0)
+
+          return { current: active, currentCount: active.length, pastCount: past, totalDaysSupervised };
         } catch (error) {
           console.error('Failed to load supervision data:', error);
           return { current: [], currentCount: 0, pastCount: 0, avgEvaluation: 0 };
@@ -4168,7 +4173,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (staff.staff_type === 'attending_physician' || staffTypeMap.value[staff.staff_type]?.can_supervise) {
             staffOps.staffProfileModal.loadingSupervision = true
             try { staffOps.staffProfileModal.supervisionData = await API.getSupervisedResidents(staff.id) }
-            catch { staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, avgEvaluation: 0 } }
+            catch { staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, totalDaysSupervised: 0 } }
             finally { staffOps.staffProfileModal.loadingSupervision = false }
           }
           staffOps.staffProfileModal.loadingLeave = true
