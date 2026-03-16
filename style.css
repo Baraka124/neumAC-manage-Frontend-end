@@ -3769,12 +3769,12 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   background: rgba(37,99,235,.08);
 }
-.pd-section-icon i { font-size: 9px; color: #2563eb; opacity: .7; }
+.pd-section-icon i { font-size: 9px; color: #2563eb; opacity: 1; }
 .pd-section-title {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .09em; color: var(--text-3); flex: 1;
+  letter-spacing: .09em; color: #374151; flex: 1;
 }
-.pd-section-chevron { font-size: 8px; color: var(--text-4); transition: transform .2s; }
+.pd-section-chevron { font-size: 8px; color: #9ca3af; transition: transform .2s; }
 .pd-section--collapsed .pd-section-chevron { transform: rotate(-90deg); }
 .pd-section-body { overflow: hidden; max-height: 600px; transition: max-height .25s ease; }
 .pd-section--collapsed .pd-section-body { max-height: 0; }
@@ -3787,7 +3787,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 .pd-row:last-child { border-bottom: none; }
 .pd-row-key {
   font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .06em; color: var(--text-3); flex-shrink: 0;
+  letter-spacing: .06em; color: #6b7280; flex-shrink: 0;
 }
 .pd-row-val { font-size: 12px; font-weight: 500; color: var(--text-1); text-align: right; line-height: 1.4; }
 .pd-row-na  { color: var(--text-4) !important; font-style: italic; }
@@ -3828,7 +3828,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
 }
 .pd-contact-row:last-child { border-bottom: none; }
 .pd-contact-row:hover { color: #2563eb; background: #eff6ff; }
-.pd-contact-row i { font-size: 10px; color: var(--text-3); width: 13px; flex-shrink: 0; }
+.pd-contact-row i { font-size: 10px; color: #4b5563; width: 13px; flex-shrink: 0; }
 .pd-contact-row--disabled { opacity: .3; pointer-events: none; }
 
 /* Pills (kept for backwards compat on right panel) */
