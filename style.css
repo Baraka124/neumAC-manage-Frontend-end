@@ -7583,17 +7583,19 @@ tr:not(:hover) .btn-pill-purge {
 /* ── Header ─────────────────────────────────────────────────── */
 .rhub-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 0 16px; gap: 12px;
+  padding: 16px 0 0; gap: 16px; flex-wrap: wrap;
 }
-.rhub-header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.rhub-header-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
 .rhub-eyebrow {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .12em; color: var(--blue); opacity: .8;
+  letter-spacing: .14em; color: var(--blue); opacity: .85;
+  margin-bottom: 3px;
 }
 .rhub-title {
-  font-family: var(--font-display); font-size: 26px; font-style: italic;
-  font-weight: 400; color: var(--text-1); letter-spacing: -.02em;
-  line-height: 1; margin: 2px 0 0;
+  font-family: var(--font-ui);
+  font-size: 20px; font-style: normal; font-weight: 700;
+  color: var(--text-1); letter-spacing: -.03em;
+  line-height: 1; margin: 0;
 }
 .rhub-context-pill {
   display: inline-flex; align-items: center; gap: 6px;
@@ -7655,25 +7657,31 @@ tr:not(:hover) .btn-pill-purge {
 /* ── Lines grid ─────────────────────────────────────────────── */
 .rhub-lines-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
 }
 .rhl-card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 8px; padding: 14px 14px 12px;
+  border-radius: 10px; padding: 16px 16px 13px;
   cursor: pointer; position: relative; overflow: hidden;
   transition: box-shadow var(--t), border-color var(--t), transform var(--t);
-  display: flex; flex-direction: column; gap: 8px;
+  display: flex; flex-direction: column; gap: 10px;
 }
 .rhl-card:hover {
-  box-shadow: 0 4px 16px rgba(37,99,235,.1);
-  border-color: var(--blue-mid); transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(37,99,235,.1);
+  border-color: var(--blue-mid); transform: translateY(-2px);
 }
 .rhl-card--inactive { opacity: .6; }
 .rhl-accent {
-  position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, var(--blue), #6366f1);
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
 }
+/* Unique accent per line number */
+.rhl-card:nth-child(6n+1) .rhl-accent { background: linear-gradient(90deg, var(--dept-1), #6366f1); }
+.rhl-card:nth-child(6n+2) .rhl-accent { background: linear-gradient(90deg, var(--dept-2), #0891b2); }
+.rhl-card:nth-child(6n+3) .rhl-accent { background: linear-gradient(90deg, var(--dept-3), #0ea5e9); }
+.rhl-card:nth-child(6n+4) .rhl-accent { background: linear-gradient(90deg, var(--dept-4), #f97316); }
+.rhl-card:nth-child(6n+5) .rhl-accent { background: linear-gradient(90deg, var(--dept-5), #8b5cf6); }
+.rhl-card:nth-child(6n+0) .rhl-accent { background: linear-gradient(90deg, var(--dept-6), #ec4899); }
 .rhl-top { display: flex; align-items: center; gap: 6px; }
 .rhl-number {
   font-family: var(--font-data); font-size: 10px; font-weight: 700;
@@ -7696,27 +7704,32 @@ tr:not(:hover) .btn-pill-purge {
 .rhl-btn:hover { background: var(--blue-lt); color: var(--blue); }
 .rhl-btn--danger:hover { background: var(--danger-lt); color: var(--danger); }
 .rhl-name {
-  font-family: var(--font-display); font-size: 16px; font-style: italic;
-  font-weight: 400; color: var(--text-1); line-height: 1.2; margin: 0;
+  font-family: var(--font-ui);
+  font-size: 14px; font-style: normal; font-weight: 700;
+  color: var(--text-1); line-height: 1.25; margin: 0;
+  letter-spacing: -.02em;
 }
 .rhl-desc {
-  font-size: 12px; color: var(--text-3); line-height: 1.5;
+  font-size: 12.5px; color: var(--text-2); line-height: 1.55;
   margin: 0; overflow: hidden; display: -webkit-box;
   -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .rhl-stats {
   display: flex; align-items: center; gap: 0;
   background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: 6px; overflow: hidden; margin-top: 2px;
+  border-radius: 7px; overflow: hidden; margin-top: 2px;
 }
 .rhl-stat {
-  flex: 1; padding: 8px 10px; cursor: pointer;
+  flex: 1; padding: 8px 12px; cursor: pointer;
   transition: background var(--t);
-  display: flex; flex-direction: column; gap: 1px;
+  display: flex; flex-direction: column; gap: 2px;
 }
 .rhl-stat:hover { background: var(--blue-lt); }
-.rhl-stat-num { font-family: var(--font-data); font-size: 20px; font-weight: 700; color: var(--text-1); line-height: 1; }
-.rhl-stat-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+.rhl-stat-num {
+  font-family: var(--font-data); font-size: 16px; font-weight: 800;
+  color: var(--text-1); line-height: 1;
+}
+.rhl-stat-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
 .rhl-stat-live { font-size: 9px; font-weight: 700; color: var(--ok); }
 .rhl-stat-divider { width: 1px; background: var(--border); align-self: stretch; }
 .rhl-coordinator { margin-top: 2px; }
