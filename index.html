@@ -3501,9 +3501,10 @@
                             <i class="fas" :class="{
                                 'fa-bolt':        post.post_type === 'update',
                                 'fa-file-alt':    post.post_type === 'article',
-                                'fa-book-open':   post.post_type === 'publication'
+                                'fa-book-open':   post.post_type === 'publication',
+                                'fa-camera':      post.post_type === 'photo_story'
                             }"></i>
-                            {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : 'Publication' }}
+                            {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'photo_story' ? 'Photo Story' : 'Publication' }}
                         </span>
                     </div>
 
@@ -3621,6 +3622,11 @@
                                     @click="newsModal.form.post_type = 'publication'">
                                 <i class="fas fa-book-open"></i> Publication
                             </button>
+                            <button type="button"
+                                    :class="['toggle-opt toggle-opt--photo', newsModal.form.post_type === 'photo_story' && 'active']"
+                                    @click="newsModal.form.post_type = 'photo_story'">
+                                <i class="fas fa-camera"></i> Photo Story
+                            </button>
                         </div>
                     </div>
 
@@ -3673,8 +3679,8 @@
                             </div>
                         </div>
                         <textarea class="form-control" v-model="newsModal.form.body"
-                                  :rows="newsModal.form.post_type === 'update' ? 4 : 8"
-                                  :placeholder="newsModal.form.post_type === 'update' ? 'Short update — max 80 words…' : 'Article content — max 400 words…'">
+                                  :rows="newsModal.form.post_type === 'update' ? 3 : newsModal.form.post_type === 'photo_story' ? 4 : 8"
+                                  :placeholder="newsModal.form.post_type === 'update' ? 'Short update — max 80 words…' : newsModal.form.post_type === 'photo_story' ? 'Caption — what this photo tells us (max 120 words)…' : 'Article content — max 400 words…'">
                         </textarea>
                     </div>
 
@@ -3696,10 +3702,18 @@
                         </div>
                     </template>
 
-                    <!-- Article image URL -->
-                    <div class="form-group" v-if="newsModal.form.post_type === 'article'">
-                        <label class="form-label">Featured Image URL <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
-                        <input type="url" class="form-control" v-model="newsModal.form.featured_image_url" placeholder="https://…">
+                    <!-- Image URL — optional for articles, required for photo stories -->
+                    <div class="form-group" v-if="newsModal.form.post_type === 'article' || newsModal.form.post_type === 'photo_story'">
+                        <label class="form-label">
+                            Featured Image URL
+                            <span v-if="newsModal.form.post_type === 'photo_story'" class="req">*</span>
+                            <span v-else style="color:var(--text-3);font-weight:400">(optional)</span>
+                        </label>
+                        <input type="url" class="form-control" v-model="newsModal.form.featured_image_url"
+                               :placeholder="newsModal.form.post_type === 'photo_story' ? 'https://… (required — this is the story)' : 'https://…'">
+                        <p v-if="newsModal.form.post_type === 'photo_story'" class="form-hint" style="color:var(--text-4);font-size:10px;margin-top:4px">
+                            <i class="fas fa-info-circle"></i> The photo is the main character. Caption goes in the body field below (max 120 words).
+                        </p>
                     </div>
 
                     <!-- Visibility + Status row -->
