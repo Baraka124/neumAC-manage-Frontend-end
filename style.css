@@ -1,4 +1,4 @@
-/*-- ═══════════════════════════════════════════════════════════════
+/*- ═══════════════════════════════════════════════════════════════
    RESIDENCY YEAR — auto/override display
 ═══════════════════════════════════════════════════════════════ */
 .form-hint { font-size: 10.5px; color: var(--text-3); font-weight: 400; margin-left: 4px; }
@@ -9084,3 +9084,10 @@ tr:not(:hover) .btn-pill-purge {
 .news-card:hover .news-card-title { color: var(--blue); }
 .news-card--update:hover .news-card-title { color: var(--warn); }
 .news-card--publication:hover .news-card-title { color: #7c6fcf; }
+
+
+/* Photo Story post type */
+.toggle-opt--photo.active { background: var(--coral,#e05c4b); border-color: var(--coral,#e05c4b); color: #fff; }
+.news-card--photo_story { border-left-color: #e05c4b; }
+.ntb--photo_story { background: rgba(224,92,75,.1); color: #e05c4b; border: 1px solid rgba(224,92,75,.2); }
+.nrd-drawer.nrd--photo_story { --nrd-accent: #e05c4b; --nrd-accent-lt: rgba(224,92,75,.1); --nrd-accent-mid: rgba(224,92,75,.3); }
