@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // ============ 1. CONFIGURATION ====-----===--====-=
+    // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -3748,7 +3748,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = newsModal.form.body || ''
         return t.trim() === '' ? 0 : t.trim().split(/\s+/).length
       })
-      const newsWordLimit  = computed(() => newsModal.form.post_type === 'update' ? 80 : 400)
+      const newsWordLimit  = computed(() => newsModal.form.post_type === 'update' ? 80 : newsModal.form.post_type === 'photo_story' ? 120 : 400)
 
       // ── Helpers ─────────────────────────────────────────────
       const formatAuthorName = (staffId) => {
@@ -3766,6 +3766,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const d = new Date()
         if (type === 'update')  d.setDate(d.getDate() + 90)
         if (type === 'article') d.setMonth(d.getMonth() + 18)
+    if (type === 'photo_story') d.setMonth(d.getMonth() + 12)
         if (type === 'publication') return ''
         return d.toISOString().split('T')[0]
       }
@@ -3827,6 +3828,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const saveNews = async () => {
         const _t = (v) => (v == null ? '' : String(v)).trim()
         if (!_t(newsModal.form.title)) { showToast('Validation', 'Title is required', 'warn'); return }
+        if (newsModal.form.post_type === 'photo_story' && !_t(newsModal.form.featured_image_url)) {
+          showToast('Validation', 'Photo Story requires an image URL', 'warn'); return
+        }
         if (newsModal.form.post_type !== 'publication' && !newsModal.form.author_id) {
           showToast('Validation', 'Author is required', 'warn'); return
         }
