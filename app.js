@@ -4277,6 +4277,59 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits })
 
         const newsOps = useNews({ showToast, showConfirmation, medicalStaff, researchLines: researchOps.researchLines })
+
+        // ── NEWS READER DRAWER ────────────────────────────────────────
+        const newsDrawer = reactive({ show: false, post: null })
+        const openNewsDrawer = (post) => { newsDrawer.post = post; newsDrawer.show = true }
+        const closeNewsDrawer = () => { newsDrawer.show = false; newsDrawer.post = null }
+        const newsDrawerPrev = computed(() => {
+          if (!newsDrawer.post) return null
+          const list = newsOps.filteredNews.value
+          const idx = list.findIndex(p => p.id === newsDrawer.post.id)
+          return idx > 0 ? list[idx - 1] : null
+        })
+        const newsDrawerNext = computed(() => {
+          if (!newsDrawer.post) return null
+          const list = newsOps.filteredNews.value
+          const idx = list.findIndex(p => p.id === newsDrawer.post.id)
+          return idx < list.length - 1 ? list[idx + 1] : null
+        })
+        const newsDrawerBodyParagraphs = computed(() => {
+          const body = newsDrawer.post?.body
+          if (!body) return []
+          const chunks = body.split(/\n{2,}/).map(s => s.trim()).filter(Boolean)
+          if (chunks.length <= 1) {
+            const sentences = body.match(/[^.!?]+[.!?]+/g) || [body]
+            const paras = []
+            for (let i = 0; i < sentences.length; i += 3)
+              paras.push(sentences.slice(i, i + 3).join(' ').trim())
+            return paras
+          }
+          return chunks
+        })
+        const newsDrawerInitials = computed(() => {
+          const name = newsDrawerAuthorFull.value || ''
+          const parts = name.trim().split(/\s+/).filter(w => w.replace('.','').length > 1)
+          if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+          return name[0]?.toUpperCase() || '?'
+        })
+        const newsDrawerAuthorFull = computed(() => {
+          const id = newsDrawer.post?.author_id
+          if (!id) return ''
+          const s = (medicalStaff.value || []).find(m => m.id === id)
+          return s?.full_name || ''
+        })
+        const newsDrawerReadMins = computed(() => {
+          const wc = newsDrawer.post?.word_count
+          return wc ? Math.max(1, Math.round(wc / 200)) : null
+        })
+        const newsDrawerLineName = computed(() => {
+          const id = newsDrawer.post?.research_line_id
+          if (!id) return ''
+          return newsOps.getLineName(id)
+        })
+        // ── END NEWS READER DRAWER ────────────────────────────────────
+
         const { newsPosts, newsLoading, newsModal, newsFilters, filteredNews,
                 newsWordCount, newsWordLimit,
                 loadNews, showAddNewsModal, editNews, saveNews,
@@ -4753,6 +4806,9 @@ document.addEventListener('DOMContentLoaded', () => {
           loadNews, showAddNewsModal, editNews, saveNews,
           publishNews, archiveNews, deleteNews, toggleNewsPublic,
           newsAuthorName, newsLineName,
+          newsDrawer, openNewsDrawer, closeNewsDrawer,
+          newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
+          newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName,
           drillToTrials, drillToProjects,
           activeMissionLine: researchOps.activeMissionLine,
           portfolioKPIs:     researchOps.portfolioKPIs,
