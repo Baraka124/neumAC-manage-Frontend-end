@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============- TOAST CONTAINER ==-=--=----======= -->
+    <!-- ============- TOAST CONTAINER ==-=--=---======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -3493,7 +3493,7 @@
                     </button>
                 </div>
 
-                <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="'news-card--' + post.post_type">
+                <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="'news-card--' + post.post_type" @click.stop="openNewsDrawer(post)">
 
                     <!-- Left accent + type -->
                     <div class="news-card-left">
@@ -3546,7 +3546,7 @@
                     </div>
 
                     <!-- Right: status + visibility + actions -->
-                    <div class="news-card-right">
+                    <div class="news-card-right" @click.stop>
                         <!-- Status badge -->
                         <span class="news-status-badge" :class="'nsb--' + post.status">
                             {{ post.status === 'published' ? 'Published' : post.status === 'draft' ? 'Draft' : 'Archived' }}
@@ -3752,6 +3752,135 @@
                 </div>
             </div>
         </div>
+
+        <!-- ============================================================
+             NEWS READER DRAWER
+        ============================================================ -->
+        <template v-if="newsDrawer.show && newsDrawer.post">
+          <div class="nrd-backdrop" @click="closeNewsDrawer()"></div>
+          <div class="nrd-drawer" :class="'nrd--' + newsDrawer.post.post_type" @keydown.esc="closeNewsDrawer()" tabindex="-1">
+
+            <!-- Progress bar -->
+            <div class="nrd-progress">
+              <div class="nrd-progress-fill" :style="{ width: newsDrawer.post.word_count ? Math.min(100, Math.round((newsDrawer.post.word_count / (newsDrawer.post.post_type === 'update' ? 80 : 400)) * 100)) + '%' : '100%' }"></div>
+            </div>
+
+            <!-- Header -->
+            <div class="nrd-hdr">
+              <div class="nrd-hdr-left">
+                <span class="nrd-status-pill" :class="{ pub: newsDrawer.post.status==='published', draft: newsDrawer.post.status==='draft', arch: newsDrawer.post.status==='archived' }">
+                  <i class="fas" :class="{ 'fa-check-circle': newsDrawer.post.status==='published', 'fa-edit': newsDrawer.post.status==='draft', 'fa-archive': newsDrawer.post.status==='archived' }"></i>
+                  {{ newsDrawer.post.status === 'published' ? 'Published' : newsDrawer.post.status === 'draft' ? 'Draft' : 'Archived' }}
+                </span>
+                <span class="nrd-vis-pill" :class="newsDrawer.post.is_public ? 'public' : 'internal'">
+                  <i class="fas" :class="newsDrawer.post.is_public ? 'fa-globe' : 'fa-lock'"></i>
+                  {{ newsDrawer.post.is_public ? 'Public' : 'Internal' }}
+                </span>
+              </div>
+              <button class="nrd-close" @click="closeNewsDrawer()" title="Close (Esc)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+
+            <!-- Scrollable body -->
+            <div class="nrd-body">
+
+              <!-- Eyebrow -->
+              <div class="nrd-eyebrow">
+                <span class="nrd-type-badge">
+                  <i class="fas" :class="{ 'fa-bolt': newsDrawer.post.post_type==='update', 'fa-file-alt': newsDrawer.post.post_type==='article', 'fa-book-open': newsDrawer.post.post_type==='publication' }"></i>
+                  {{ newsDrawer.post.post_type === 'update' ? 'Update' : newsDrawer.post.post_type === 'article' ? 'Article' : 'Publication' }}
+                </span>
+                <span v-if="newsDrawerLineName" class="nrd-line-tag">
+                  <i class="fas fa-flask" style="font-size:9px;opacity:.6;margin-right:2px"></i>{{ newsDrawerLineName }}
+                </span>
+                <span v-if="newsDrawerReadMins" class="nrd-read-time">~{{ newsDrawerReadMins }} min read</span>
+              </div>
+
+              <!-- Title -->
+              <div class="nrd-title">{{ newsDrawer.post.title }}</div>
+
+              <!-- Byline -->
+              <div class="nrd-byline">
+                <div v-if="newsDrawerAuthorFull" class="nrd-byline-author">
+                  <div class="nrd-avatar">{{ newsDrawerInitials }}</div>
+                  {{ newsDrawerAuthorFull }}
+                </div>
+                <span v-if="newsDrawerAuthorFull" class="nrd-byline-dot"></span>
+                <span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span>
+                <template v-if="newsDrawer.post.word_count && newsDrawer.post.post_type !== 'publication'">
+                  <span class="nrd-byline-dot"></span>
+                  <span class="nrd-wc-bar">
+                    <span class="nrd-wc-track">
+                      <span class="nrd-wc-fill" :style="{ width: Math.min(100, Math.round((newsDrawer.post.word_count / (newsDrawer.post.post_type === 'update' ? 80 : 400)) * 100)) + '%' }"></span>
+                    </span>
+                    {{ newsDrawer.post.word_count }}w
+                  </span>
+                </template>
+              </div>
+
+              <!-- PUBLICATION content -->
+              <template v-if="newsDrawer.post.post_type === 'publication'">
+                <div v-if="newsDrawer.post.journal_name" class="nrd-pub-journal">{{ newsDrawer.post.journal_name }}</div>
+                <div v-if="newsDrawer.post.authors_text" class="nrd-pub-authors">{{ newsDrawer.post.authors_text }}</div>
+                <a v-if="newsDrawer.post.doi" :href="'https://doi.org/' + newsDrawer.post.doi" target="_blank" class="nrd-pub-doi">
+                  <i class="fas fa-external-link-alt"></i>
+                  DOI {{ newsDrawer.post.doi }}
+                </a>
+              </template>
+
+              <!-- UPDATE content -->
+              <div v-else-if="newsDrawer.post.post_type === 'update' && newsDrawer.post.body" class="nrd-update-body">
+                {{ newsDrawer.post.body }}
+              </div>
+
+              <!-- ARTICLE content — smart paragraphs -->
+              <div v-else-if="newsDrawer.post.post_type === 'article'" class="nrd-content">
+                <p v-for="(para, i) in newsDrawerBodyParagraphs" :key="i">{{ para }}</p>
+              </div>
+
+              <!-- Prev / Next navigation -->
+              <div v-if="newsDrawerPrev || newsDrawerNext" style="display:flex;justify-content:space-between;margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--border);gap:1rem;">
+                <div v-if="newsDrawerPrev" class="news-card-title" style="font-size:12px;cursor:pointer;max-width:44%;color:var(--text-3);transition:color var(--t);" @click="openNewsDrawer(newsDrawerPrev)">
+                  <div style="font-size:10px;color:var(--text-4);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                    <i class="fas fa-arrow-left" style="font-size:9px"></i> Previous
+                  </div>
+                  {{ newsDrawerPrev.title }}
+                </div>
+                <div v-else></div>
+                <div v-if="newsDrawerNext" class="news-card-title" style="font-size:12px;cursor:pointer;max-width:44%;color:var(--text-3);text-align:right;transition:color var(--t);" @click="openNewsDrawer(newsDrawerNext)">
+                  <div style="font-size:10px;color:var(--text-4);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;justify-content:flex-end;gap:4px">
+                    Next <i class="fas fa-arrow-right" style="font-size:9px"></i>
+                  </div>
+                  {{ newsDrawerNext.title }}
+                </div>
+              </div>
+
+            </div><!-- /nrd-body -->
+
+            <!-- Footer actions -->
+            <div class="nrd-footer">
+              <button class="btn btn-secondary btn-sm" @click="closeNewsDrawer()">
+                <i class="fas fa-arrow-left"></i> Back
+              </button>
+              <div class="nrd-footer-spacer"></div>
+              <button class="btn btn-secondary btn-sm" @click="editNews(newsDrawer.post); closeNewsDrawer()" v-if="hasPermission('research_lines','update')" title="Edit post">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="btn btn-success btn-sm" @click="publishNews(newsDrawer.post); closeNewsDrawer()" v-if="newsDrawer.post.status === 'draft' && hasPermission('research_lines','update')" title="Publish now">
+                <i class="fas fa-paper-plane"></i> Publish
+              </button>
+              <button class="btn btn-secondary btn-sm" @click="toggleNewsPublic(newsDrawer.post)" v-if="newsDrawer.post.status === 'published' && hasPermission('research_lines','update')">
+                <i class="fas" :class="newsDrawer.post.is_public ? 'fa-lock' : 'fa-globe'"></i>
+                {{ newsDrawer.post.is_public ? 'Make Internal' : 'Make Public' }}
+              </button>
+              <button class="btn btn-secondary btn-sm" @click="archiveNews(newsDrawer.post); closeNewsDrawer()" v-if="newsDrawer.post.status === 'published' && hasPermission('research_lines','update')">
+                <i class="fas fa-archive"></i> Archive
+              </button>
+            </div>
+
+          </div>
+        </template>
 
         <!-- ============ ROTATION ACTIVATION MODAL ============ -->
         <div v-if="activationModal?.show" class="modal-overlay">
