@@ -3747,13 +3747,26 @@
 
                     <!-- Expiry (not for publications) -->
                     <div class="form-group" v-if="newsModal.form.post_type !== 'publication'">
-                        <label class="form-label">
-                            Expiry Date
-                            <span style="color:var(--text-3);font-weight:400">
-                                (auto: {{ newsModal.form.post_type === 'update' ? '90 days' : '18 months' }})
+                        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+                            <span>
+                                Expiry Date
+                                <span style="color:var(--text-4);font-weight:400;font-size:10px;">
+                                    — auto:
+                                    {{ newsModal.form.post_type === 'update' ? '90 days' : newsModal.form.post_type === 'photo_story' ? '12 months' : '18 months' }}
+                                </span>
                             </span>
+                            <button type="button"
+                                    style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font-data);"
+                                    @click="newsModal.form.expires_at = autoExpiry(newsModal.form.post_type)">
+                                ↺ Reset to default
+                            </button>
                         </label>
-                        <input type="date" class="form-control" v-model="newsModal.form.expires_at">
+                        <input type="date" class="form-control" v-model="newsModal.form.expires_at"
+                               :min="new Date().toISOString().split('T')[0]">
+                        <p style="font-size:10px;color:var(--text-4);margin-top:4px;">
+                            <i class="fas fa-info-circle"></i>
+                            Leave blank to apply the default automatically on publish. Set a date to override.
+                        </p>
                     </div>
 
                 </div>
