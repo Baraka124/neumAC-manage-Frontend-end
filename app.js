@@ -547,6 +547,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.status === 401) {
               localStorage.removeItem(CONFIG.TOKEN_KEY)
               localStorage.removeItem(CONFIG.USER_KEY)
+              // Force Vue app back to login — dispatch custom event picked up in setup()
+              window.dispatchEvent(new CustomEvent('neumax:session-expired'))
               throw new Error('Session expired. Please login again.')
             }
             const err = await res.text().catch(() => `HTTP ${res.status}`)
@@ -3309,7 +3311,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const communicationsFilters = reactive({ search: '', priority: '', audience: '' })
       const communicationsModal = reactive({
         show: false, activeTab: 'announcement', mode: 'add',
-        form: { id: null, title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } }
+        form: { id: null, title: '', content: '', priority: 'normal', target_audience: 'all_staff', target_department_id: '', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } }
       })
 
       const filteredAnnouncements = computed(() => {
@@ -4225,6 +4227,42 @@ document.addEventListener('DOMContentLoaded', () => {
           items.push({ icon: 'fa-phone-slash', type: 'danger', text: `${ocGaps.length} day${ocGaps.length>1?'s':''} without primary on-call — ${ocGaps.slice(0,2).join(', ')}${ocGaps.length>2?'…':''}`, action: 'oncall_schedule', urgent: true })
         }
 
+        // Gap + slot match — pair residents finishing soon with units opening soon
+        const gapSlotMatches = []
+        const endingSoon = rotations.value.filter(r => {
+          if (r.rotation_status !== 'active') return false
+          const e = new Date(r.end_date + 'T00:00:00')
+          return e >= todayDate && e <= in30
+        })
+        endingSoon.forEach(rot => {
+          const resident = medicalStaff.value.find(s => s.id === rot.resident_id)
+          if (!resident) return
+          // Find units with free slots opening around the same time
+          trainingUnits.value.forEach(unit => {
+            const active = rotations.value.filter(r =>
+              r.training_unit_id === unit.id && r.rotation_status === 'active'
+            )
+            if (active.length < unit.maximum_residents) {
+              gapSlotMatches.push({
+                residentName: resident.full_name.split(' ').slice(-1)[0],
+                residentId: resident.id,
+                unitName: unit.unit_name,
+                unitId: unit.id,
+                endDate: rot.end_date
+              })
+            }
+          })
+        })
+        if (gapSlotMatches.length > 0) {
+          const m = gapSlotMatches[0]
+          items.push({
+            icon: 'fa-link', type: 'info',
+            text: `${m.residentName} finishing rotation — ${m.unitName} has a free slot`,
+            action: 'resident_rotations',
+            actionFilter: { resident: m.residentId }
+          })
+        }
+
         return items.sort((a,b) => {
           const p = { danger: 0, warn: 1, info: 2, ok: 3 }
           return (p[a.type] ?? 4) - (p[b.type] ?? 4)
@@ -4285,6 +4323,7 @@ document.addEventListener('DOMContentLoaded', () => {
           filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName,
           loadTrainingUnits, showAddTrainingUnitModal,
           editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
+          assignAttendingToUnit,
           viewUnitResidents, saveTrainingUnit,
           trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
           tlPopover, openCellPopover, closeCellPopover,
@@ -4608,7 +4647,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const formatAbsenceReason = (r) => ABSENCE_REASON_LABELS[r] || r
         const formatRotationStatus = (s) => ROTATION_STATUS_LABELS[s] || s
         const getUserRoleDisplay = (r) => USER_ROLE_LABELS[r] || r
-        const formatAudience = (a) => ({ all_staff: 'All Staff', all: 'All (incl. admin)', residents_only: 'Residents Only', attending_only: 'Attendings Only', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attendings' }[a] || a || '—')
+        const formatAudience = (a) => {
+          const base = { all_staff: 'All Staff', all: 'All (incl. admin)', residents_only: 'Residents Only', attending_only: 'Attendings Only', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attendings' }
+          if (base[a]) return base[a]
+          if (a?.startsWith('dept_')) {
+            const deptId = a.replace('dept_', '')
+            const dept = departments.value.find(d => d.id === deptId) || allDepartmentsLookup.value.find(d => d.id === deptId)
+            return dept ? `${dept.name} — All` : 'Department'
+          }
+          return a || '—'
+        }
         const formatTrialStatus = (s) => ({ 'Reclutando': 'Recruiting', 'Activo': 'Active', 'Completado': 'Completed', 'Suspendido': 'Suspended', 'Pendiente': 'Pending', 'Cerrado': 'Closed' }[s] || s)
         const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'NeumoCare Dashboard'
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
@@ -4663,13 +4711,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const availableReplacementStaff = computed(() => medicalStaff.value.filter(s => s.employment_status === 'active'))
 
         const showUserProfileModal = () => {
-          userProfileModal.form = { full_name: currentUser.value?.full_name || '', email: currentUser.value?.email || '', department_id: currentUser.value?.department_id || '' }
+          // Find linked staff record by email match
+          const linkedStaff = medicalStaff.value.find(s =>
+            s.professional_email === currentUser.value?.email ||
+            s.full_name === currentUser.value?.full_name
+          )
+          userProfileModal.form = {
+            full_name: currentUser.value?.full_name || '',
+            email: currentUser.value?.email || '',
+            department_id: currentUser.value?.department_id || '',
+            linked_staff_id: linkedStaff?.id || null
+          }
           userProfileModal.show = true; userMenuOpen.value = false
         }
 
         const saveUserProfile = async () => {
           saving.value = true
-          try { currentUser.value.full_name = userProfileModal.form.full_name; currentUser.value.department_id = userProfileModal.form.department_id; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value)); userProfileModal.show = false; showToast('Success', 'Profile updated', 'success') }
+          try {
+            // Update display name in app_users
+            currentUser.value.full_name = userProfileModal.form.full_name
+            currentUser.value.department_id = userProfileModal.form.department_id
+            localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value))
+            // If this user has a linked staff record, open it for full profile editing
+            if (userProfileModal.form.linked_staff_id) {
+              const staffRecord = medicalStaff.value.find(s => s.id === userProfileModal.form.linked_staff_id)
+              if (staffRecord) {
+                userProfileModal.show = false
+                viewStaffDetails(staffRecord)
+                showToast('Profile', 'Edit your full clinical profile below', 'info')
+                return
+              }
+            }
+            userProfileModal.show = false; showToast('Success', 'Profile updated', 'success')
+          }
           catch (e) { showToast('Error', e?.message || 'An unexpected error occurred', 'error') }
           finally { saving.value = false }
         }
@@ -4959,9 +5033,44 @@ document.addEventListener('DOMContentLoaded', () => {
           const token = localStorage.getItem(CONFIG.TOKEN_KEY)
           const user = localStorage.getItem(CONFIG.USER_KEY)
           if (token && user) {
-            try { currentUser.value = JSON.parse(user); loadAllData(); currentView.value = 'dashboard' }
+            try {
+              // Validate token with backend before showing the app.
+              // This blocks access from shared/QR sessions with expired tokens.
+              const parsed = JSON.parse(user)
+              currentUser.value = parsed  // optimistic — show splash while validating
+              currentView.value = 'dashboard'
+              // Validate in background — if invalid, session-expired event fires
+              API.request('/api/auth/me').then(data => {
+                if (data && data.id) {
+                  currentUser.value = { ...parsed, ...data }
+                  loadAllData()
+                } else {
+                  window.dispatchEvent(new CustomEvent('neumax:session-expired'))
+                }
+              }).catch(() => {
+                window.dispatchEvent(new CustomEvent('neumax:session-expired'))
+              })
+            }
             catch { currentView.value = 'login' }
           } else { currentView.value = 'login' }
+
+          // Session expiry — redirect to login cleanly from anywhere in the app
+          window.addEventListener('neumax:session-expired', () => {
+            currentUser.value = null
+            currentView.value = 'login'
+            // Close all open panels/modals
+            try {
+              const modals = [staffOps.medicalStaffModal, staffOps.staffProfileModal,
+                departmentModal, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
+                rotationOps.rotationModal, rotationOps.rotationViewModal,
+                onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal]
+              modals.forEach(m => { if (m && 'show' in m) m.show = false })
+              if (deptPanel) deptPanel.show = false
+            } catch {}
+            // Set friendly message on login page
+            loginError.value = 'Your session has expired. Please log in again.'
+            showToast('Session Expired', 'Your session has expired. Please log in again.', 'warning', 6000)
+          })
 
           const statusInterval = setInterval(() => { if (currentUser.value && !liveOps.isLoadingStatus.value) liveOps.loadClinicalStatus() }, 60000)
           const timeInterval = setInterval(() => { dashOps.currentTime.value = new Date() }, 60000)
