@@ -1935,6 +1935,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
       watch(rotationFilters, () => resetPage('rotations'), { deep: true })
 
+      // Auto-derive rotation status from dates as user edits them
+      watch(() => [rotationModal.form.start_date, rotationModal.form.end_date], ([start, end]) => {
+        if (!start || !end) return
+        const todayStr = Utils.normalizeDate(new Date())
+        const startStr = Utils.normalizeDate(start)
+        const endStr   = Utils.normalizeDate(end)
+        const terminal = ['terminated_early', 'completed', 'extended']
+        if (terminal.includes(rotationModal.form.rotation_status)) return
+        if (startStr > todayStr)       rotationModal.form.rotation_status = 'scheduled'
+        else if (endStr < todayStr)    rotationModal.form.rotation_status = 'completed'
+        else                           rotationModal.form.rotation_status = 'active'
+      })
+
       // Auto-fill supervisor when unit is selected — reads supervisor_id from the unit
       watch(() => rotationModal.form.training_unit_id, (unitId) => {
         if (!unitId) return
@@ -2026,12 +2039,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+          // Derive status from dates — never trust what the form says.
+          // If the user picked today as start date, it should be active immediately.
+          // Only terminal states (terminated_early, extended, completed) are preserved
+          // when editing an existing rotation.
+          const todayStr = Utils.normalizeDate(new Date())
+          const terminalStatuses = ['terminated_early', 'completed', 'extended']
+          let derivedStatus
+          if (rotationModal.mode === 'edit' && terminalStatuses.includes(f.rotation_status)) {
+            // Keep terminal status when editing
+            derivedStatus = f.rotation_status
+          } else if (startISO > todayStr) {
+            derivedStatus = 'scheduled'
+          } else if (endISO < todayStr) {
+            derivedStatus = 'completed'
+          } else {
+            // start_date <= today <= end_date
+            derivedStatus = 'active'
+          }
+
           const data = {
             rotation_id: f.rotation_id || Utils.generateId('ROT'), resident_id: f.resident_id,
             training_unit_id: f.training_unit_id, supervising_attending_id: f.supervising_attending_id || null,
             start_date: startISO, end_date: endISO,
             rotation_category: f.rotation_category || 'clinical_rotation',
-            rotation_status: (f.rotation_status || 'scheduled').toLowerCase()
+            rotation_status: derivedStatus
           }
           const normalize = r => ({ ...r, start_date: Utils.normalizeDate(r.start_date), end_date: Utils.normalizeDate(r.end_date) })
           if (rotationModal.mode === 'add') {
