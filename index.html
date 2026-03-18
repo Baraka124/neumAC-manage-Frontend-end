@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============- TOAST CONTAINER ==-=--=---======= --> 
+    <!-- ============- TOAST CONTAINER ==-=--=---======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -2055,8 +2055,7 @@
 
                                         <!-- Institution -->
                                         <td>
-                                            <span v-if="department.hospital_id" class="dept-institution-badge" style="margin-top:0">
-                                                <i class="fas fa-landmark" style="font-size:9px"></i>
+                                            <span v-if="department.hospital_id" class="dept-tbl-institution">
                                                 {{ hospitalsList.find(h => h.id === department.hospital_id)?.name || '—' }}
                                             </span>
                                             <span v-else class="dept-tbl-empty">—</span>
@@ -2084,24 +2083,28 @@
                                             <span v-else class="dept-tbl-empty">0</span>
                                         </td>
 
-                                        <!-- Residents pills -->
+                                        <!-- Residents pills - only show non-zero counts -->
                                         <td style="text-align:center">
                                             <div class="dept-tbl-res" v-if="getDeptResidentStats(department.id).total > 0">
-                                                <span class="dept-tbl-res-pill res-int"
+                                                <span v-if="getDeptResidentStats(department.id).internal > 0"
+                                                      class="dept-tbl-res-pill res-int"
                                                       @click="switchView('medical_staff', { department: department.id, residentCategory: 'department_internal' })"
                                                       title="Internal residents">
                                                     {{ getDeptResidentStats(department.id).internal }} Int
                                                 </span>
-                                                <span class="dept-tbl-res-pill res-rot"
+                                                <span v-if="getDeptResidentStats(department.id).rotating > 0"
+                                                      class="dept-tbl-res-pill res-rot"
                                                       @click="switchView('medical_staff', { department: department.id, residentCategory: 'rotating_other_dept' })"
                                                       title="Rotating residents">
                                                     {{ getDeptResidentStats(department.id).rotating }} Rot
                                                 </span>
-                                                <span class="dept-tbl-res-pill res-ext"
+                                                <span v-if="getDeptResidentStats(department.id).external > 0"
+                                                      class="dept-tbl-res-pill res-ext"
                                                       @click="switchView('medical_staff', { department: department.id, residentCategory: 'external_resident' })"
                                                       title="External residents">
                                                     {{ getDeptResidentStats(department.id).external }} Ext
                                                 </span>
+                                                <span class="dept-tbl-code">{{ getDeptResidentStats(department.id).total }} total</span>
                                             </div>
                                             <span v-else class="dept-tbl-empty">—</span>
                                         </td>
