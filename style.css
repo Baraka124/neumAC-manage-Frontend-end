@@ -9579,3 +9579,20 @@ input, select, textarea { font-size: 16px !important; } /* prevents iOS zoom on 
   opacity: .7; transition: opacity .15s;
 }
 .rds-mail-link:hover { opacity: 1; }
+
+/* ── Rotation form — date-derived status display ── */
+.rot-status-derived {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
+  border: 1px solid; width: 100%; box-sizing: border-box;
+}
+.rot-status-active    { background: var(--ok-lt);      color: var(--ok);      border-color: var(--ok-mid); }
+.rot-status-scheduled { background: var(--blue-lt);    color: var(--blue);    border-color: var(--blue-mid); }
+.rot-status-completed { background: var(--surface-2);  color: var(--text-3);  border-color: var(--border); }
+
+.rot-status-hint {
+  font-size: 11px; color: var(--text-3); margin-top: 5px;
+  display: flex; align-items: flex-start; gap: 5px; line-height: 1.5;
+}
+.rot-status-hint i { margin-top: 2px; flex-shrink: 0; color: var(--blue); }
+.rot-status-hint strong { color: var(--text-2); }
