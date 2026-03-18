@@ -12,7 +12,7 @@
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============- TOAST CONTAINER ==-=--=-----======= -->
+    <!-- ============- TOAST CONTAINER ==-=--=---======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -2041,7 +2041,7 @@
                                         </td>
 
                                         <!-- Head -->
-                                        <td>
+                                        <td data-label="Head">
                                             <div v-if="department.head_of_department?.full_name" class="dept-tbl-head">
                                                 <span class="dept-tbl-head-name">{{ department.head_of_department.full_name }}</span>
                                                 <a v-if="department.head_of_department?.professional_email"
@@ -2054,7 +2054,7 @@
                                         </td>
 
                                         <!-- Institution -->
-                                        <td>
+                                        <td data-label="Institution">
                                             <span v-if="department.hospital_id" class="dept-tbl-institution">
                                                 {{ hospitalsList.find(h => h.id === department.hospital_id)?.name || '—' }}
                                             </span>
@@ -2062,7 +2062,7 @@
                                         </td>
 
                                         <!-- Units with occupancy mini-bars -->
-                                        <td style="text-align:center">
+                                        <td data-label="Units" style="text-align:center">
                                             <div v-if="getDepartmentUnits(department.id).length > 0"
                                                  class="dept-tbl-units"
                                                  @click="switchView('training_units', { department: department.id })"
@@ -2084,7 +2084,7 @@
                                         </td>
 
                                         <!-- Residents pills - only show non-zero counts -->
-                                        <td style="text-align:center">
+                                        <td data-label="Residents" style="text-align:center">
                                             <div class="dept-tbl-res" v-if="getDeptResidentStats(department.id).total > 0">
                                                 <span v-if="getDeptResidentStats(department.id).internal > 0"
                                                       class="dept-tbl-res-pill res-int"
@@ -2110,12 +2110,12 @@
                                         </td>
 
                                         <!-- Status -->
-                                        <td style="text-align:center">
+                                        <td data-label="Status" style="text-align:center">
                                             <span class="status-indicator" :class="'status-' + department.status">{{ department.status }}</span>
                                         </td>
 
                                         <!-- Actions -->
-                                        <td style="text-align:right">
+                                        <td data-label="" style="text-align:right">
                                             <div class="row-actions">
                                                 <button class="btn-icon-sm" @click="viewDepartmentStaff(department)" title="View staff"><i class="fas fa-users"></i></button>
                                                 <button class="btn-icon-sm" @click="editDepartment(department)" v-if="hasPermission('system', 'manage_departments')" title="Edit"><i class="fas fa-edit"></i></button>
@@ -4296,13 +4296,17 @@
                                         <label class="form-label">External Institution</label>
                                         <input type="text" class="form-control" v-model="medicalStaffModal.form.external_institution" placeholder="e.g., Hospital El Tajo, Madrid">
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Contact Person <span class="form-hint">— tutor or coordinator at the sending institution</span></label>
-                                        <input type="text" class="form-control" v-model="medicalStaffModal.form.external_contact_name" placeholder="Full name">
+                                    <div class="form-group" :class="{'has-error': fieldErrors.staff?.external_contact_name}">
+                                        <label class="form-label">Contact Person * <span class="form-hint">— tutor or coordinator at the sending institution</span></label>
+                                        <input type="text" class="form-control" v-model="medicalStaffModal.form.external_contact_name" placeholder="Full name"
+                                               :class="{'is-invalid': fieldErrors.staff?.external_contact_name}">
+                                        <small v-if="fieldErrors.staff?.external_contact_name" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.staff.external_contact_name }}</small>
                                     </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Contact Email</label>
-                                        <input type="email" class="form-control" v-model="medicalStaffModal.form.external_contact_email" placeholder="contact@institution.es">
+                                    <div class="form-group" :class="{'has-error': fieldErrors.staff?.external_contact_email}">
+                                        <label class="form-label">Contact Email *</label>
+                                        <input type="email" class="form-control" v-model="medicalStaffModal.form.external_contact_email" placeholder="contact@institution.es"
+                                               :class="{'is-invalid': fieldErrors.staff?.external_contact_email}">
+                                        <small v-if="fieldErrors.staff?.external_contact_email" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.staff.external_contact_email }}</small>
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Contact Phone</label>
@@ -6356,6 +6360,11 @@
                                     <i class="fas fa-clinic-medical" style="font-size:9px;color:var(--text-4)"></i>
                                     {{ trainingUnits.find(u => u.supervisor_id === s.id && u.department_id === deptPanel.dept?.id)?.unit_name }}
                                 </div>
+                                <div v-else class="dp-staff-unit" style="color:var(--text-4);font-style:italic">— no unit</div>
+                                <button class="dp-assign-btn" title="Assign to unit"
+                                        @click="assignAttendingToUnit(s)">
+                                    <i class="fas fa-clinic-medical"></i>
+                                </button>
                                 <span class="dp-status-dot" :class="s.employment_status === 'active' ? 'dp-dot--ok' : 'dp-dot--warn'"></span>
                             </div>
                         </div>
@@ -6658,7 +6667,7 @@
             <button class="mobile-nav-item mobile-nav-training" :class="{ active: currentView === 'training_units' }" @click="switchView('training_units')" v-if="hasPermission('training_units','read')">
                 <i class="fas fa-clinic-medical"></i><span>Units</span>
             </button>
-            <button class="mobile-nav-item" :class="{ active: currentView === 'department_management' }" @click="switchView('department_management')" v-if="hasPermission('department_management','read')">
+            <button class="mobile-nav-item" :class="{ active: currentView === 'department_management' }" @click="switchView('department_management')" v-if="hasPermission('system','manage_departments')">
                 <i class="fas fa-sitemap"></i><span>Depts</span>
             </button>
             <button class="mobile-nav-item" style="display:none" :class="{ active: ['research_lines','clinical_trials','innovation_projects'].includes(currentView) }" @click="switchView('research_lines')" v-if="hasPermission('research_lines','read')">
