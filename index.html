@@ -213,15 +213,15 @@
                     </ul>
                 </div>
                 <div class="sidebar-section">
-                    <div class="sidebar-section-title" v-if="!sidebarCollapsed">Training &amp; Education</div>
+                    <div class="sidebar-section-title" v-if="!sidebarCollapsed">Structure & Training</div>
                     <ul class="sidebar-menu">
                         <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'resident_rotations' }"
-                               @click.prevent="switchView('resident_rotations'); mobileMenuOpen = false"
-                               v-if="hasPermission('resident_rotations', 'read')"
-                               :aria-current="currentView === 'resident_rotations' ? 'page' : null">
-                                <i class="fas fa-calendar-check"></i>
-                                <span v-if="!sidebarCollapsed">Rotations</span>
+                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'department_management' }"
+                               @click.prevent="switchView('department_management'); mobileMenuOpen = false"
+                               v-if="hasPermission('system', 'manage_departments')"
+                               :aria-current="currentView === 'department_management' ? 'page' : null">
+                                <i class="fas fa-sitemap"></i>
+                                <span v-if="!sidebarCollapsed">Departments</span>
                             </a>
                         </li>
                         <li class="sidebar-menu-item">
@@ -230,7 +230,16 @@
                                v-if="hasPermission('training_units', 'read')"
                                :aria-current="currentView === 'training_units' ? 'page' : null">
                                 <i class="fas fa-hospital-user"></i>
-                                <span v-if="!sidebarCollapsed">Clinical Units</span>
+                                <span v-if="!sidebarCollapsed">Training Units</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'resident_rotations' }"
+                               @click.prevent="switchView('resident_rotations'); mobileMenuOpen = false"
+                               v-if="hasPermission('resident_rotations', 'read')"
+                               :aria-current="currentView === 'resident_rotations' ? 'page' : null">
+                                <i class="fas fa-calendar-check"></i>
+                                <span v-if="!sidebarCollapsed">Rotations</span>
                             </a>
                         </li>
                     </ul>
@@ -245,15 +254,6 @@
                                :aria-current="currentView === 'staff_absence' ? 'page' : null">
                                 <i class="fas fa-user-clock"></i>
                                 <span v-if="!sidebarCollapsed">Absence</span>
-                            </a>
-                        </li>
-                        <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'department_management' }"
-                               @click.prevent="switchView('department_management'); mobileMenuOpen = false"
-                               v-if="hasPermission('system', 'manage_departments')"
-                               :aria-current="currentView === 'department_management' ? 'page' : null">
-                                <i class="fas fa-sitemap"></i>
-                                <span v-if="!sidebarCollapsed">Departments</span>
                             </a>
                         </li>
                         <li class="sidebar-menu-item">
@@ -3024,6 +3024,14 @@
                                 <i class="fas fa-chevron-down pd-section-chevron"></i>
                             </button>
                             <div class="pd-section-body">
+                                <div class="pd-row"
+                                     v-if="!isResidentType(staffProfileModal.staff.staff_type) && trainingUnits.find(u => u.supervisor_id === staffProfileModal.staff.id)">
+                                    <span class="pd-row-key">Primary Unit</span>
+                                    <span class="pd-row-val" style="color:var(--blue)">
+                                        <i class="fas fa-clinic-medical" style="font-size:9px;margin-right:3px"></i>
+                                        {{ trainingUnits.find(u => u.supervisor_id === staffProfileModal.staff.id)?.unit_name }}
+                                    </span>
+                                </div>
                                 <div class="pd-row"><span class="pd-row-key">Degree</span><span class="pd-row-val" :class="{'pd-row-na': !staffProfileModal.staff.academic_degree}">{{ staffProfileModal.staff.academic_degree || '—' }}</span></div>
                                 <div class="pd-row"><span class="pd-row-key">License</span><span class="pd-row-val" :class="{'pd-row-na': !staffProfileModal.staff.medical_license}">{{ formatLicense(staffProfileModal.staff.medical_license) || '—' }}</span></div>
                                 <div class="pd-row"><span class="pd-row-key">Mobile</span><span class="pd-row-val" :class="{'pd-row-na': !staffProfileModal.staff.mobile_phone}">{{ formatPhone(staffProfileModal.staff.mobile_phone) || '—' }}</span></div>
@@ -4712,7 +4720,9 @@
                                     @change="clearFieldError('rotation', 'resident_id'); checkRotationAvailability()"
                                     :class="{ 'is-invalid': fieldErrors.rotation?.resident_id }">
                                 <option value="">Select Resident</option>
-                                <option v-for="r in availableResidents" :key="r.id" :value="r.id">{{ r.full_name }}</option>
+                                <option v-for="r in availableResidents" :key="r.id" :value="r.id">
+                                    {{ r.full_name }}{{ rotations.find(rot => rot.resident_id === r.id && rot.rotation_status === 'active') ? ' · rotating' : '' }}
+                                </option>
                             </select>
                             <small v-if="fieldErrors.rotation?.resident_id" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.rotation.resident_id }}</small>
                         </div>
@@ -6354,7 +6364,14 @@
                         <div class="dp-section">
                             <div class="dp-section-head">
                                 <span class="dp-section-title"><i class="fas fa-user-graduate"></i> Residents</span>
-                                <span class="dp-section-count">{{ deptPanelResidents.length }}</span>
+                                <div style="display:flex;gap:5px;align-items:center">
+                                    <span class="dp-section-count">{{ deptPanelResidents.length }}</span>
+                                    <button class="dp-action-btn" v-if="hasPermission('medical_staff','create')"
+                                        @click="closeDeptPanel(); showAddMedicalStaffModal({ department_id: deptPanel.dept?.id })"
+                                        title="Add staff to this department">
+                                        <i class="fas fa-user-plus"></i> Add
+                                    </button>
+                                </div>
                             </div>
                             <div v-if="deptPanelResidents.length === 0" class="dp-empty">No residents assigned to this department</div>
                             <div v-for="s in deptPanelResidents" :key="s.id" class="dp-staff-row">
@@ -6378,6 +6395,12 @@
                                     <span>{{ rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')?.training_unit?.unit_name || '—' }}</span>
                                     <span class="dp-days-left">{{ rotDaysLeft(rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')) }}d</span>
                                 </div>
+                                <button v-if="hasPermission('resident_rotations','create')"
+                                        class="dp-assign-btn"
+                                        @click="closeDeptPanel(); showAddRotationModal(s)"
+                                        title="Assign rotation">
+                                    <i class="fas fa-calendar-check"></i>
+                                </button>
                                 <span class="dp-status-dot" :class="s.employment_status === 'active' ? 'dp-dot--ok' : 'dp-dot--warn'"></span>
                             </div>
                         </div>
