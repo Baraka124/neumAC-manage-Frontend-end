@@ -147,61 +147,58 @@
 }
 /* ── DEPARTMENT TABLE ──────────────────────────────────────────── */
 .dept-summary-strip {
-  display:flex;gap:0;border-bottom:1px solid var(--border);
-  padding:10px 16px;background:var(--surface-2);
+  display:flex;border-bottom:1px solid var(--border);
+  background:var(--surface-2);
 }
 .dept-summary-item {
-  flex:1;display:flex;flex-direction:column;align-items:center;
-  padding:4px 8px;border-right:1px solid var(--border);
+  flex:1;display:flex;align-items:center;gap:8px;
+  padding:8px 16px;border-right:1px solid var(--border);
 }
 .dept-summary-item:last-child { border-right:none; }
-.dept-summary-num { font-size:1.25rem;font-weight:700;color:var(--text-1);line-height:1; }
-.dept-summary-num.dept-summary-warn { color:var(--warning); }
-.dept-summary-warn { color:var(--warning); }
-.dept-summary-label { font-size:10px;color:var(--text-3);margin-top:2px;text-transform:uppercase;letter-spacing:.05em; }
+.dept-summary-num { font-size:.9rem;font-weight:700;color:var(--text-1); }
+.dept-summary-warn { color:var(--warning) !important; }
+.dept-summary-label { font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em; }
 
-.dept-table-row { cursor:default; }
+.dept-table-row td { padding:8px 12px;vertical-align:middle; }
 .dept-table-row:hover { background:var(--surface-2); }
 
-.dept-tbl-name { font-size:13px;font-weight:600;color:var(--text-1); }
-.dept-tbl-code { font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.07em;text-transform:uppercase;margin-top:1px; }
-.dept-tbl-head { display:flex;align-items:center;gap:6px; }
+.dept-tbl-name { font-size:13px;font-weight:600;color:var(--text-1);line-height:1.3; }
+.dept-tbl-code { font-size:10px;font-weight:700;color:var(--text-4);letter-spacing:.07em;text-transform:uppercase;margin-top:1px; }
+.dept-tbl-head { display:flex;align-items:center;gap:5px; }
 .dept-tbl-head-name { font-size:12px;color:var(--text-2); }
-.dept-tbl-mail { color:var(--blue);font-size:11px;opacity:.7;transition:opacity .15s; }
+.dept-tbl-mail { color:var(--blue);font-size:10px;opacity:.6;transition:opacity .15s; }
 .dept-tbl-mail:hover { opacity:1; }
-.dept-tbl-empty { font-size:11px;color:var(--text-4);font-style:italic; }
+.dept-tbl-empty { font-size:11px;color:var(--text-4); }
+.dept-tbl-institution { font-size:11px;color:var(--text-3); }
 
-.dept-tbl-units { display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer; }
+.dept-tbl-units { display:inline-flex;align-items:center;gap:6px;cursor:pointer; }
 .dept-tbl-count { font-size:13px;font-weight:700;color:var(--text-1); }
 .dept-tbl-occ-bars { display:flex;gap:2px;align-items:flex-end; }
-.dept-tbl-occ-bar {
-  width:6px;height:14px;border-radius:2px;
-  transition:height .2s;
-}
-.dept-tbl-units:hover .dept-tbl-occ-bar { height:18px; }
-.occ-full    { background:var(--danger);opacity:.8; }
-.occ-partial { background:var(--warning);opacity:.8; }
-.occ-free    { background:var(--ok);opacity:.6; }
+.dept-tbl-occ-bar { width:5px;height:12px;border-radius:2px; }
+.dept-tbl-units:hover .dept-tbl-occ-bar { opacity:.75; }
+.occ-full    { background:var(--danger); }
+.occ-partial { background:var(--warning); }
+.occ-free    { background:var(--ok);opacity:.5; }
 
-.dept-tbl-res { display:flex;gap:3px;justify-content:center;flex-wrap:wrap; }
+.dept-tbl-res { display:flex;gap:3px;justify-content:center;flex-wrap:wrap;align-items:center; }
 .dept-tbl-res-pill {
-  font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;
+  font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;
   cursor:pointer;transition:opacity .15s;white-space:nowrap;
 }
-.dept-tbl-res-pill:hover { opacity:.75; }
+.dept-tbl-res-pill:hover { opacity:.7; }
 .res-int { background:var(--ok-lt);color:var(--ok);border:1px solid var(--ok-mid); }
 .res-rot { background:var(--partial-lt);color:var(--partial);border:1px solid var(--partial-mid); }
 .res-ext { background:var(--violet-lt);color:var(--violet);border:1px solid var(--violet-mid); }
 
 .btn-icon-sm {
-  width:26px;height:26px;border-radius:5px;border:1px solid var(--border);
+  width:24px;height:24px;border-radius:4px;border:1px solid var(--border);
   background:transparent;color:var(--text-3);cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;
-  font-size:11px;transition:all .15s;
+  font-size:10px;transition:all .15s;
 }
 .btn-icon-sm:hover { background:var(--blue-lt);color:var(--blue);border-color:var(--blue-mid); }
 .btn-icon-sm--danger:hover { background:var(--danger-lt);color:var(--danger);border-color:var(--danger-mid); }
-.row-actions { display:flex;gap:3px;justify-content:flex-end; }
+.row-actions { display:flex;gap:2px;justify-content:flex-end; }
 .dept-institution-badge {
   display:inline-flex;align-items:center;gap:4px;
   margin-top:3px;
