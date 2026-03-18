@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // ============ 1. CONFIGURATION ====----===---====-=
+    // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -2802,15 +2802,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return trainingUnits.value.filter(u => u.department_id === deptPanel.dept.id)
       })
 
-      // Active rotations in this department's units
-      const deptPanelRotations = computed(() => {
-        if (!deptPanel.dept) return []
-        const unitIds = new Set(deptPanelUnits.value.map(u => u.id))
-        return rotations.value.filter(r =>
-          unitIds.has(r.training_unit_id) &&
-          ['active','scheduled'].includes(r.rotation_status)
-        ).sort((a,b) => new Date(a.end_date) - new Date(b.end_date))
-      })
+      // deptPanelRotations is defined in the main setup after rotationOps loads
+      // (rotations ref not available here at construction time)
 
       // Get supervisor name for a unit
       const getUnitSupervisorName = (unit) => {
@@ -2832,7 +2825,10 @@ document.addEventListener('DOMContentLoaded', () => {
         departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
         filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
         loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
-        deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff
+        deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
+        deptPanel, openDeptPanel, closeDeptPanel,
+        deptPanelAttending, deptPanelResidents, deptPanelUnits,
+        getUnitSupervisorName
       }
     }
 
@@ -4216,7 +4212,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const { departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
-          deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff } = useDepartments({
+          deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
+          deptPanel, openDeptPanel, closeDeptPanel,
+          deptPanelAttending, deptPanelResidents, deptPanelUnits,
+          getUnitSupervisorName } = useDepartments({
           showToast, showConfirmation, medicalStaff, trainingUnits: tuOps.trainingUnits, rotations: ref([])
         })
 
@@ -4229,6 +4228,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits: _tuStub, currentUser })
         const { rotations } = rotationOps
+
+        // deptPanelRotations — defined here because rotations is now available
+        const deptPanelRotations = computed(() => {
+          if (!deptPanel.dept) return []
+          const unitIds = new Set(deptPanelUnits.value.map(u => u.id))
+          return rotations.value.filter(r =>
+            unitIds.has(r.training_unit_id) &&
+            ['active','scheduled'].includes(r.rotation_status)
+          ).sort((a,b) => new Date(a.end_date) - new Date(b.end_date))
+        })
+
+        const rotDaysLeft = (r) => {
+          if (!r) return 0
+          const diff = Math.ceil((new Date(r.end_date) - new Date()) / 86400000)
+          return diff > 0 ? diff : 0
+        }
 
         // Full useTrainingUnits with real rotations ref (now declared above)
         const { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
