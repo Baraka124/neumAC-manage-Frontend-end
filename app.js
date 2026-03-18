@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // ============ 1. CONFIGURATION ====-----===--====-=
+    // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       CACHE_TTL: 300000
     }
 
-    // ============ 2. CONSTANTS ===-=-========
+    // ============ 2. CONSTANTS ====-========
     // Research line accent colours — available globally, not just inside useResearch
     const LINE_ACCENTS_GLOBAL = [
       { bg: 'linear-gradient(135deg,#3b82f6,#6366f1)', light: '#eff6ff', color: '#1e40af' },
@@ -1085,6 +1085,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form.professional_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.professional_email)) {
           setErr('staff', 'professional_email', 'Invalid email address'); ok = false
         }
+        if (form.resident_category === 'external_resident') {
+          if (!form.hospital_id)                   { setErr('staff', 'hospital_id', 'Origin hospital required'); ok = false }
+          if (!form.home_department_id)            { setErr('staff', 'home_department_id', 'Home department required'); ok = false }
+          if (!form.external_contact_name?.trim()) { setErr('staff', 'external_contact_name', 'Contact person required'); ok = false }
+          if (!form.external_contact_email?.trim()){ setErr('staff', 'external_contact_email', 'Contact email required'); ok = false }
+        }
+        if (form.resident_category && form.resident_category !== 'external_resident') {
+          if (!form.department_id) { setErr('staff', 'department_id', 'Department is required'); ok = false }
+        }
         return ok
       }
 
@@ -1880,12 +1889,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const initAutoCheck = () => {
-        setTimeout(() => checkAndUpdateRotations(true), 2000)
+        // Silent: scheduled→active and active→completed are date facts, not decisions
+        setTimeout(() => checkAndUpdateRotations(false), 2000)
         const interval = setInterval(() => {
           const lastCheck = localStorage.getItem('last_rotation_check')
           const now = new Date()
           if (!lastCheck || (now - new Date(lastCheck)) > 4 * 60 * 60 * 1000) {
-            checkAndUpdateRotations(true); localStorage.setItem('last_rotation_check', now.toISOString())
+            checkAndUpdateRotations(false)
+            localStorage.setItem('last_rotation_check', now.toISOString())
           }
         }, 60 * 60 * 1000)
         return interval
@@ -3191,8 +3202,47 @@ document.addEventListener('DOMContentLoaded', () => {
       const openUnitClinicians = (unit, allStaff) => {
         unitCliniciansModal.unit = unit
         unitCliniciansModal.clinicians = (unit.clinician_ids || []).slice()
-        unitCliniciansModal.supervisorId = unit.supervising_attending_id || ''
-        unitCliniciansModal.allStaff = allStaff.filter(s => ['attending_physician','fellow'].includes(s.staff_type))
+        unitCliniciansModal.supervisorId = unit.supervisor_id || unit.supervising_attending_id || ''
+        // Filter to same-department attendings/fellows only
+        // If unit has a department_id, only show staff from that department
+        const deptFilter = unit.department_id
+          ? s => s.department_id === unit.department_id
+          : () => true
+        unitCliniciansModal.allStaff = allStaff.filter(s =>
+          (staffTypeMap.value[s.staff_type]?.can_supervise ||
+           ['attending_physician','fellow'].includes(s.staff_type)) &&
+          s.employment_status === 'active' &&
+          deptFilter(s)
+        )
+        unitCliniciansModal.show = true
+      }
+
+      // Open clinicians modal from dept panel attending row — assign attending to a unit
+      const assignAttendingToUnit = (staff) => {
+        // Find all units in the same department as this attending
+        const deptUnits = trainingUnits.value.filter(u =>
+          u.department_id === staff.department_id && u.unit_status === 'active'
+        )
+        if (deptUnits.length === 0) {
+          showToast('No Units', 'No active units in this department', 'warning')
+          return
+        }
+        // If attending already supervises a unit, open that unit's clinicians modal
+        const currentUnit = deptUnits.find(u => u.supervisor_id === staff.id)
+        const targetUnit = currentUnit || deptUnits[0]
+        // Pre-select this attending
+        unitCliniciansModal.unit = targetUnit
+        unitCliniciansModal.clinicians = (targetUnit.clinician_ids || []).slice()
+        unitCliniciansModal.supervisorId = staff.id  // pre-select this attending
+        const deptFilter = targetUnit.department_id
+          ? s => s.department_id === targetUnit.department_id
+          : () => true
+        unitCliniciansModal.allStaff = medicalStaff.value.filter(s =>
+          (staffTypeMap.value[s.staff_type]?.can_supervise ||
+           ['attending_physician','fellow'].includes(s.staff_type)) &&
+          s.employment_status === 'active' &&
+          deptFilter(s)
+        )
         unitCliniciansModal.show = true
       }
 
@@ -3249,7 +3299,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
         occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
     }
 
@@ -4916,7 +4966,7 @@ document.addEventListener('DOMContentLoaded', () => {
         trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
-          editTrainingUnit, deleteTrainingUnit, saveTrainingUnit,
+          editTrainingUnit, deleteTrainingUnit, saveTrainingUnit, assignAttendingToUnit,
           openUnitClinicians: (unit) => openUnitClinicians(unit, medicalStaff.value),
           saveUnitClinicians,
           viewUnitResidents: (unit) => viewUnitResidents(unit, rotations.value),
