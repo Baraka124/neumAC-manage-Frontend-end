@@ -4896,18 +4896,59 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e) { showToast('Error', 'Failed to update staff type', 'error') }
         }
 
+        const warmBackend = async () => {
+          // Fire a lightweight ping to wake Railway from sleep before the real requests hit.
+          // /health requires no auth and returns immediately once the container is warm.
+          // We don't await the result — just send and move on. By the time the main
+          // requests arrive the container will already be processing.
+          try { fetch(`${CONFIG.API_BASE_URL}/health`).catch(() => {}) } catch {}
+        }
+
         const loadAllData = async () => {
           loading.value = true
           try {
-            // Load staff types FIRST — all dropdowns depend on them
-            await loadStaffTypes()
-            await loadAcademicDegrees()
-            await Promise.all([staffOps.loadMedicalStaff(), loadDepartments(), loadTrainingUnits()])
-            await Promise.all([rotationOps.loadRotations(), onCallOps.loadOnCallSchedule(), absenceOps.loadAbsences()])
+            // Wake Railway immediately — runs in background while we set up
+            warmBackend()
+
+            // loadAcademicDegrees is synchronous (uses fallback data) — free.
+            // loadStaffTypes needs ONE network call — run it in parallel with the
+            // first main batch. staffTypeMap will be populated by the time any
+            // staff dropdown renders because Vue defers rendering until microtasks settle.
+            await Promise.all([
+              loadStaffTypes(),
+              loadAcademicDegrees(),
+              staffOps.loadMedicalStaff(),
+              loadDepartments(),
+              loadTrainingUnits()
+            ])
+
+            // Second batch: depends on staff + units being loaded
+            await Promise.all([
+              rotationOps.loadRotations(),
+              onCallOps.loadOnCallSchedule(),
+              absenceOps.loadAbsences()
+            ])
+
             updateDashboardStats()
-            Promise.all([onCallOps.loadTodaysOnCall(), commsOps.loadAnnouncements(), liveOps.loadClinicalStatus(), liveOps.loadActiveMedicalStaff(), researchOps.loadResearchLines(), loadSystemStats(), loadNews()]).then(() => updateDashboardStats())
-            Promise.all([researchOps.loadClinicalTrials(), researchOps.loadInnovationProjects(), analyticsOps.loadAnalyticsSummary()])
-            showToast('Success', 'System data loaded', 'success')
+
+            // Third batch: non-critical, fire and forget
+            Promise.all([
+              onCallOps.loadTodaysOnCall(),
+              commsOps.loadAnnouncements(),
+              liveOps.loadClinicalStatus(),
+              liveOps.loadActiveMedicalStaff(),
+              researchOps.loadResearchLines(),
+              loadSystemStats(),
+              loadNews()
+            ]).then(() => updateDashboardStats())
+
+            // Low priority — research analytics
+            Promise.all([
+              researchOps.loadClinicalTrials(),
+              researchOps.loadInnovationProjects(),
+              analyticsOps.loadAnalyticsSummary()
+            ])
+
           } catch { showToast('Error', 'Failed to load some data', 'error') }
           finally { loading.value = false }
         }
