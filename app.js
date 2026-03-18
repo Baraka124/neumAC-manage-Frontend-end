@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
 
-    // -============ 1. CONFIGURATION ====----===--====-=
+    // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
@@ -189,9 +189,18 @@ document.addEventListener('DOMContentLoaded', () => {
     ]
     class Utils {
       // Date utilities
+      static localDateStr(d) {
+        // Returns YYYY-MM-DD in LOCAL timezone — prevents UTC offset issues
+        const dt = d instanceof Date ? d : new Date(d)
+        if (isNaN(dt.getTime())) return ''
+        const y = dt.getFullYear()
+        const m = String(dt.getMonth() + 1).padStart(2, '0')
+        const day = String(dt.getDate()).padStart(2, '0')
+        return `${y}-${m}-${day}`
+      }
       static normalizeDate(d) {
         if (!d) return ''
-        if (d instanceof Date) return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0]
+        if (d instanceof Date) return isNaN(d.getTime()) ? '' : Utils.localDateStr(d)
         const s = String(d).trim()
         if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
         if (s.includes('T')) return s.split('T')[0]
@@ -1803,7 +1812,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const checkAndUpdateRotations = async (requireValidation = true) => {
         const today = new Date(); today.setHours(0, 0, 0, 0)
-        const todayStr = Utils.normalizeDate(today)
+        const todayStr = Utils.localDateStr(today)  // local date — not UTC
         const updates = [], pending = []
 
         rotations.value.forEach(rotation => {
@@ -1936,9 +1945,10 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(rotationFilters, () => resetPage('rotations'), { deep: true })
 
       // Auto-derive rotation status from dates as user edits them
+      // Uses local date (not UTC) to handle timezone offsets correctly
       watch(() => [rotationModal.form.start_date, rotationModal.form.end_date], ([start, end]) => {
         if (!start || !end) return
-        const todayStr = Utils.normalizeDate(new Date())
+        const todayStr = Utils.localDateStr(new Date())
         const startStr = Utils.normalizeDate(start)
         const endStr   = Utils.normalizeDate(end)
         const terminal = ['terminated_early', 'completed', 'extended']
@@ -2043,7 +2053,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // If the user picked today as start date, it should be active immediately.
           // Only terminal states (terminated_early, extended, completed) are preserved
           // when editing an existing rotation.
-          const todayStr = Utils.normalizeDate(new Date())
+          const todayStr = Utils.localDateStr(new Date())  // local date — not UTC
           const terminalStatuses = ['terminated_early', 'completed', 'extended']
           let derivedStatus
           if (rotationModal.mode === 'edit' && terminalStatuses.includes(f.rotation_status)) {
