@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       CACHE_TTL: 300000
     }
 
-    // ============ 2. CONSTANTS ====-========
+    // ============ 2. CONSTANTS ===-=-========
     // Research line accent colours — available globally, not just inside useResearch
     const LINE_ACCENTS_GLOBAL = [
       { bg: 'linear-gradient(135deg,#3b82f6,#6366f1)', light: '#eff6ff', color: '#1e40af' },
