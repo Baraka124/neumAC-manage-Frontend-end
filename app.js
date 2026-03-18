@@ -1182,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      const showAddMedicalStaffModal = () => {
+      const showAddMedicalStaffModal = (opts = {}) => {
         clearAll('staff')
         medicalStaffModal.mode = 'add'
         medicalStaffModal.activeTab = 'basic'
@@ -1193,9 +1193,14 @@ document.addEventListener('DOMContentLoaded', () => {
         medicalStaffModal._newStaffTypeName = ''
         medicalStaffModal._newStaffTypeIsResident = false
         medicalStaffModal._savingStaffType = false
+        // Context-aware department default:
+        // 1. Explicit opts.department_id (e.g. opened from dept panel)
+        // 2. Current user's own department
+        // 3. Blank — user must select
+        const defaultDeptId = opts.department_id || null
         Object.assign(medicalStaffModal.form, {
           full_name: '', staff_type: 'medical_resident', staff_id: `MD-${Date.now().toString().slice(-6)}`,
-          employment_status: 'active', professional_email: '', department_id: '', academic_degree: '',
+          employment_status: 'active', professional_email: '', department_id: defaultDeptId || '', academic_degree: '',
           specialization: '', training_year: '', clinical_certificate: '', certificate_status: '',
           mobile_phone: '', medical_license: '', can_supervise_residents: false, special_notes: '',
           can_be_pi: false, can_be_coi: false, other_certificate: '',
@@ -1730,8 +1735,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.5 useRotations ============
-    function useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, currentUser }) {
-      const rotations = ref([])
+    function useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser }) {
+      // rotations is a shared ref hoisted in main setup — do not redeclare
       const rotationFilters = reactive({ resident: '', status: '', trainingUnit: '', supervisor: '', search: '' })
       const rotationModal = reactive({
         show: false, mode: 'add',
@@ -1916,6 +1921,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const rotationTotalPages = computed(() => totalPages(filteredRotationsAll.value, 'rotations'))
 
       watch(rotationFilters, () => resetPage('rotations'), { deep: true })
+
+      // Auto-fill supervisor when unit is selected — reads supervisor_id from the unit
+      watch(() => rotationModal.form.training_unit_id, (unitId) => {
+        if (!unitId) return
+        const unit = trainingUnits.value.find(u => u.id === unitId)
+        if (unit && (unit.supervisor_id || unit.default_supervisor_id)) {
+          // Only auto-fill if supervisor is not already manually set
+          if (!rotationModal.form.supervising_attending_id) {
+            rotationModal.form.supervising_attending_id = unit.supervisor_id || unit.default_supervisor_id
+          }
+        }
+      })
 
       const loadRotations = async () => {
         try {
@@ -2833,8 +2850,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.8 useTrainingUnits ============
-    function useTrainingUnits({ showToast, showConfirmation, rotations, allStaffLookup }) {
-      const trainingUnits = ref([])
+    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup }) {
+      // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', unit_type: 'training_unit', unit_description: '', specialty: '', supervising_attending_id: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
@@ -4203,11 +4220,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { fieldErrors, setErr, clearErr: clearFieldError, clearAll } = makeValidation(['rotation', 'staff', 'absence', 'oncall', 'research'])
 
-        const deptOps = useDepartments({ showToast, showConfirmation: () => {}, medicalStaff: ref([]), trainingUnits: ref([]), rotations: ref([]) })
-        const tuOps = useTrainingUnits({ showToast, showConfirmation: () => {}, rotations: ref([]) })
+        // ── Shared refs hoisted above all composables ──────────────────────
+        // Both useTrainingUnits and useRotations need each other's data.
+        // Hoisting the refs here breaks the circular dependency cleanly:
+        // both composables receive the same reactive container,
+        // so when either load function fills it all consumers see it immediately.
+        const trainingUnits = ref([])
+        const rotations     = ref([])
 
         const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll })
-        const { medicalStaff, allStaffLookup, hospitalsList, clinicalUnits } = staffOps
+        const { medicalStaff, allStaffLookup, hospitalsList } = staffOps
+
+        const { trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
+          filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName,
+          loadTrainingUnits, showAddTrainingUnitModal,
+          editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
+          viewUnitResidents, saveTrainingUnit,
+          trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
+          tlPopover, openCellPopover, closeCellPopover,
+          occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
+          getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
+        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup })
+
+        const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
         const { departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
@@ -4216,20 +4251,10 @@ document.addEventListener('DOMContentLoaded', () => {
           deptPanel, openDeptPanel, closeDeptPanel,
           deptPanelAttending, deptPanelResidents, deptPanelUnits,
           getUnitSupervisorName } = useDepartments({
-          showToast, showConfirmation, medicalStaff, trainingUnits: tuOps.trainingUnits, rotations: ref([])
+          showToast, showConfirmation, medicalStaff, trainingUnits, rotations
         })
 
-        const _absencesStub = ref([])
-        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences: _absencesStub })
-        const { onCallSchedule } = onCallOps
-
-        // useTrainingUnits needs a stub here so trainingUnits ref is available for rotationOps
-        const { trainingUnits: _tuStub } = useTrainingUnits({ showToast, showConfirmation: () => {}, rotations: ref([]) })
-
-        const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits: _tuStub, currentUser })
-        const { rotations } = rotationOps
-
-        // deptPanelRotations — defined here because rotations is now available
+        // deptPanelRotations — uses the shared rotations ref, needs deptPanelUnits
         const deptPanelRotations = computed(() => {
           if (!deptPanel.dept) return []
           const unitIds = new Set(deptPanelUnits.value.map(u => u.id))
@@ -4245,26 +4270,11 @@ document.addEventListener('DOMContentLoaded', () => {
           return diff > 0 ? diff : 0
         }
 
-        // Full useTrainingUnits with real rotations ref (now declared above)
-        const { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
-          filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName,
-          loadTrainingUnits, showAddTrainingUnitModal,
-          editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
-          viewUnitResidents, saveTrainingUnit,
-          trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
-          tlPopover, openCellPopover, closeCellPopover,
-          occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
-          getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
-        } = useTrainingUnits({
-          showToast, showConfirmation, rotations, allStaffLookup
-        })
-
-        // Sync real trainingUnits into the stub so rotationOps.getTrainingUnitName resolves correctly
-        watch(trainingUnits, (v) => { _tuStub.value = v }, { immediate: true })
+        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences: ref([]) })
+        const { onCallSchedule } = onCallOps
 
         const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule })
         const { absences } = absenceOps
-        watch(absences, (v) => { _absencesStub.value = v }, { immediate: true })
 
         // ============ STAFF DEACTIVATION WORKFLOW ============
         // Professional reassignment flow: scan future records before deactivating
@@ -4456,14 +4466,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const onCallView = ref('detailed')
 
         // ============ EXISTING COMPUTED PROPERTIES ============
-        const getStaffName = (id) => {
-          if (!id) return 'Not assigned'
-          const s = allStaffLookup.value.find(x => x.id === id) || medicalStaff.value.find(x => x.id === id)
-          return s?.full_name || 'Not assigned'
-        }
-        const getSupervisorName = (id) => getStaffName(id)
-        const getPhysicianName = (id) => getStaffName(id)
-        const getResidentName = (id) => getStaffName(id)
+        // Name lookups — canonical versions live in their composables and are
+        // exposed via ...staffOps / ...rotationOps spreads in the return below.
+        // These aliases unify access from templates that call them directly.
+        const getStaffName       = (id) => { if (!id) return 'Not assigned'; const s = allStaffLookup.value.find(x => x.id === id) || medicalStaff.value.find(x => x.id === id); return s?.full_name || 'Not assigned' }
+        const getSupervisorName  = (id) => getStaffName(id)
+        const getPhysicianName   = (id) => getStaffName(id)
+        const getResidentName    = (id) => getStaffName(id)
         const getTrainingUnitName = (id) => trainingUnits.value.find(u => u.id === id)?.unit_name || 'Not assigned'
         const calculateAbsenceDuration = (s, e) => Utils.dateDiff(s, e)
         const getDaysRemaining = (d) => Utils.daysUntil(d)
@@ -4542,7 +4551,7 @@ document.addEventListener('DOMContentLoaded', () => {
           finally { staffOps.staffProfileModal.loadingLeave = false }
         }
 
-        const formatStaffType = (t) => formatStaffTypeGlobal(t)
+        const formatStaffType = (t) => formatStaffTypeGlobal(t)  // single definition — composable copies removed
         const formatStaffTypeShortFn = (t) => formatStaffTypeShort(t)
         const getStaffTypeClass = (t) => getStaffTypeClassGlobal(t)
         const formatEmploymentStatus = (s) => ({ active: 'Active', on_leave: 'On Leave', inactive: 'Inactive' }[s] || s)
@@ -4575,12 +4584,25 @@ document.addEventListener('DOMContentLoaded', () => {
             ? true  // any active known type is eligible for scheduling
             : ['attending_physician','fellow','nurse_practitioner','medical_resident'].includes(s.staff_type))
         ))
-        const availableResidents = computed(() => medicalStaff.value.filter(s =>
-          s.employment_status === 'active' && s.staff_type &&
-          (staffTypeMap.value[s.staff_type] != null
-            ? staffTypeMap.value[s.staff_type].is_resident_type
-            : s.staff_type === 'medical_resident')
-        ))
+        const availableResidents = computed(() => {
+          const residents = medicalStaff.value.filter(s =>
+            s.employment_status === 'active' && s.staff_type &&
+            (staffTypeMap.value[s.staff_type] != null
+              ? staffTypeMap.value[s.staff_type].is_resident_type
+              : s.staff_type === 'medical_resident')
+          )
+          // Sort: free residents first, currently rotating last
+          const activeRotatingIds = new Set(
+            rotations.value
+              .filter(r => r.rotation_status === 'active')
+              .map(r => r.resident_id)
+          )
+          return residents.sort((a, b) => {
+            const aRot = activeRotatingIds.has(a.id) ? 1 : 0
+            const bRot = activeRotatingIds.has(b.id) ? 1 : 0
+            return aRot - bRot
+          })
+        })
         const availableAttendings = computed(() => medicalStaff.value.filter(s =>
           s.employment_status === 'active' && s.staff_type &&
           (staffTypeMap.value[s.staff_type] != null
@@ -4870,7 +4892,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loading, saving, currentUser, loginForm, loginLoading,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
-          ...staffOps,
+          ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
           deleteMedicalStaff,          // override useStaff's deactivateStaffMember with full workflow
           reassignmentModal, confirmReassignAndDeactivate,
           ...onCallOps,
