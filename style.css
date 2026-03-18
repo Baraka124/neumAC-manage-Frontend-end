@@ -9320,3 +9320,205 @@ tr:not(:hover) .btn-pill-purge {
   transition:all .15s;
 }
 .dp-assign-btn:hover { background:var(--blue);color:#fff; }
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPREHENSIVE MOBILE RESPONSIVENESS
+   Targets: Android Chrome, iOS Safari, tablets (≤768px)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Viewport safety ── */
+html { -webkit-text-size-adjust: 100%; }
+* { -webkit-tap-highlight-color: transparent; }
+input, select, textarea { font-size: 16px !important; } /* prevents iOS zoom on focus */
+
+/* ── Touch targets — everything tappable ≥ 44px ── */
+@media (max-width: 768px) {
+  .btn-icon-sm { width:36px !important; height:36px !important; font-size:13px !important; }
+  .dp-assign-btn { width:32px !important; height:32px !important; font-size:11px !important; }
+  .rot-action-btn { min-width:38px !important; height:38px !important; }
+  .row-actions { gap:6px; }
+  .btn-pill { min-height:40px; padding:8px 14px; }
+  .scc-actions .rot-action-btn { width:42px !important; height:42px !important; }
+}
+
+/* ── Dept table → card stack on mobile ── */
+@media (max-width: 768px) {
+  .data-table-wrap { overflow-x: visible; }
+  .data-table thead { display: none; }
+  .data-table tbody { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+  .data-table tr.dept-table-row {
+    display: flex; flex-direction: column; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  .data-table tr.dept-table-row td {
+    display: flex; align-items: center; padding: 3px 0;
+    border: none; text-align: left !important;
+  }
+  .data-table tr.dept-table-row td::before {
+    content: attr(data-label);
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--text-4);
+    min-width: 72px; flex-shrink: 0;
+  }
+  .data-table tr.dept-table-row td:first-child { border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 4px; }
+  .data-table tr.dept-table-row td:first-child::before { display: none; }
+  .dept-tbl-name { font-size: 14px; }
+  .row-actions { justify-content: flex-start; }
+  .dept-summary-strip { flex-wrap: wrap; }
+  .dept-summary-item { min-width: 50%; border-bottom: 1px solid var(--border); }
+}
+
+/* ── Side panels — full screen on phones ── */
+@media (max-width: 480px) {
+  .uop-panel, .dp-panel {
+    width: 100vw !important;
+    border-left: none !important;
+    border-radius: 0 !important;
+  }
+  .uop-header { padding: 14px 16px 12px; }
+  .uop-body { padding: 12px 16px 80px; } /* 80px = bottom nav clearance */
+  .dp-stat-bar .dp-stat { padding: 8px 4px; }
+  .dp-stat-label { font-size: 8px; }
+  .dp-staff-row { padding: 8px; }
+  .dp-unit-row { padding: 8px; }
+  .dp-rot-row { padding: 8px; }
+}
+
+/* ── Filter bars — stack vertically on phones ── */
+@media (max-width: 600px) {
+  .filter-bar {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .filter-bar .form-control,
+  .filter-bar .form-select,
+  .filter-bar input { width: 100% !important; max-width: 100% !important; min-width: unset !important; }
+}
+
+/* ── Dashboard KPIs — 2×2 on phones ── */
+@media (max-width: 600px) {
+  .db-kpi-bar { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .db-kpi { padding: 10px 10px; }
+  .db-kpi-val { font-size: 18px; }
+  .db-kpi-icon { width: 28px; height: 28px; font-size: 12px; }
+  .db-kpi-sub { display: none; }
+}
+
+/* ── Rotation week timeline — hidden on phones, show list instead ── */
+@media (max-width: 520px) {
+  .rotation-week-grid { display: none; }
+  .rotation-week-fallback { display: flex !important; flex-direction: column; gap: 6px; }
+}
+.rotation-week-fallback { display: none; }
+
+/* ── Staff card actions — always visible on mobile (not hover-only) ── */
+@media (max-width: 768px) {
+  .scc-actions { opacity: 1 !important; pointer-events: auto !important; }
+  .scc { overflow: visible; }
+}
+
+/* ── Modal full-screen on phones ── */
+@media (max-width: 480px) {
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal-container {
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh; width: 100%; max-width: 100%; margin: 0;
+  }
+  .modal-body { max-height: calc(92vh - 130px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .modal-header { padding: 16px 16px 12px; }
+  .modal-footer { padding: 12px 16px; }
+  .grid-cols-2 { grid-template-columns: 1fr !important; }
+  .col-span-2 { grid-column: span 1 !important; }
+}
+
+/* ── Top navbar — compact on phones ── */
+@media (max-width: 480px) {
+  .top-navbar { padding: 0 10px; height: 52px; }
+  .nav-search-wrap { display: none; } /* search in content area */
+  .nav-actions > *:not(.mobile-menu-toggle):not(.nav-user-btn) { display: none; }
+  .header-title { font-size: 14px; }
+  .header-subtitle { display: none; }
+}
+
+/* ── Content area — safe area for notched phones ── */
+.content-area {
+  padding-bottom: calc(var(--content-pad-y) + env(safe-area-inset-bottom, 0px));
+}
+@media (max-width: 1100px) {
+  .content-area { padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px)); }
+}
+
+/* ── Mobile bottom nav — safe area + larger touch targets ── */
+.mobile-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (max-width: 480px) {
+  .mobile-bottom-nav { height: calc(58px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-nav-item { font-size: 10px; padding: 6px 2px; min-width: 44px; }
+  .mobile-nav-item i { font-size: 19px; }
+  .mobile-nav-item span { display: none; } /* icon only on very small screens */
+}
+@media (min-width: 381px) and (max-width: 480px) {
+  .mobile-nav-item span { display: block; font-size: 9px; }
+}
+
+/* ── On-call schedule — stack on mobile ── */
+@media (max-width: 600px) {
+  .oncall-row { flex-wrap: wrap; }
+  .oncall-date-badge { width: 100%; margin-bottom: 4px; }
+}
+
+/* ── Staff profile drawer — full screen on phones ── */
+@media (max-width: 480px) {
+  .modal-profile { height: 100vh; max-height: 100vh; border-radius: 0; }
+  .profile-drawer-backdrop { display: none; }
+  .pd-close { width: 40px; height: 40px; }
+}
+
+/* ── Rotation timeline — horizontal scroll on tablets ── */
+@media (max-width: 900px) {
+  .tuc-timeline-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+/* ── Department panel stat bar — 2 per row on phones ── */
+@media (max-width: 400px) {
+  .dp-stat-bar { flex-wrap: wrap; }
+  .dp-stat { min-width: 50%; border-bottom: 1px solid var(--border); }
+}
+
+/* ── Unit clinicians modal — full width list on phones ── */
+@media (max-width: 480px) {
+  .ucm-row { padding: 12px 8px; min-height: 52px; }
+  .ucm-avatar { width: 36px; height: 36px; }
+  .ucm-name { font-size: 13px; }
+}
+
+/* ── Occupancy panel heatmap — scroll on mobile ── */
+@media (max-width: 600px) {
+  .uop-heatmap-grid { min-width: 480px; overflow-x: auto; }
+  .uop-body { -webkit-overflow-scrolling: touch; }
+}
+
+/* ── Absence and rotation forms — better spacing on phones ── */
+@media (max-width: 480px) {
+  .reason-grid { grid-template-columns: 1fr 1fr; }
+  .category-option { padding: 10px 8px; font-size: 11px; }
+  .hns-option { padding: 10px 8px; font-size: 11px; }
+  .cert-list-inline { font-size: 12px; }
+}
+
+/* ── Tables in cards — horizontal scroll ── */
+@media (max-width: 768px) {
+  .card .data-table-wrap.scrollable { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .card .data-table.no-mobile-stack { min-width: 560px; }
+}
+
+/* ── iOS safari misc fixes ── */
+@supports (-webkit-touch-callout: none) {
+  .modal-body { overflow-y: scroll; -webkit-overflow-scrolling: touch; }
+  select { appearance: none; -webkit-appearance: none; }
+  .content-area { -webkit-overflow-scrolling: touch; }
+}
