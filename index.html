@@ -651,7 +651,7 @@
                     <div class="db-kpi-bar">
                         <div class="db-kpi" @click="switchView('medical_staff')">
                             <div class="db-kpi-icon db-kpi-icon--blue"><i class="fas fa-stethoscope"></i></div>
-                            <div class="db-kpi-body">
+                            <div class="db-kpi-body" style="min-width:0;flex:1">
                                 <div class="db-kpi-val">{{ systemStats.totalStaff || 0 }}</div>
                                 <div class="db-kpi-label">Medical Staff</div>
                                 <div class="db-kpi-sub">
@@ -663,7 +663,7 @@
                         </div>
                         <div class="db-kpi" @click="switchView('resident_rotations')">
                             <div class="db-kpi-icon db-kpi-icon--green"><i class="fas fa-calendar-check"></i></div>
-                            <div class="db-kpi-body">
+                            <div class="db-kpi-body" style="min-width:0;flex:1">
                                 <div class="db-kpi-val">{{ systemStats.activeRotations || 0 }}</div>
                                 <div class="db-kpi-label">Active Rotations</div>
                                 <div class="db-kpi-sub">
@@ -674,7 +674,7 @@
                         </div>
                         <div class="db-kpi" @click="switchView('oncall_schedule')">
                             <div class="db-kpi-icon db-kpi-icon--amber"><i class="fas fa-phone-alt"></i></div>
-                            <div class="db-kpi-body">
+                            <div class="db-kpi-body" style="min-width:0;flex:1">
                                 <div class="db-kpi-val">{{ todaysOnCallCount || 0 }}</div>
                                 <div class="db-kpi-label">On-call Today</div>
                                 <div class="db-kpi-sub" v-if="todaysOnCall.length > 0">
@@ -688,7 +688,7 @@
                         </div>
                         <div class="db-kpi" @click="switchView('research_lines')">
                             <div class="db-kpi-icon db-kpi-icon--purple"><i class="fas fa-flask"></i></div>
-                            <div class="db-kpi-body">
+                            <div class="db-kpi-body" style="min-width:0;flex:1">
                                 <div class="db-kpi-val">{{ analyticsSummary?.researchLines || researchLines.length || 0 }}</div>
                                 <div class="db-kpi-label">Research Lines</div>
                                 <div class="db-kpi-sub">
@@ -725,7 +725,7 @@
                                             <span class="db-oc-badge db-oc-badge--primary">Primary</span>
                                         </template>
                                         <template v-else>
-                                            <i class="fas fa-exclamation-triangle" style="color:var(--danger);font-size:11px"></i>
+                                            <i class="fas fa-exclamation-triangle" style="color:var(--danger);font-size:13px"></i>
                                             <span class="db-oc-gap">No primary assigned</span>
                                             <span v-if="hasPermission('oncall_schedule','create')" class="db-oc-assign" @click.stop="showAddOnCallModal()">＋ Assign</span>
                                         </template>
@@ -808,7 +808,7 @@
                     <!-- Breadcrumb — shows filter context if navigated from dept -->
                     <nav class="breadcrumb" v-if="staffFilters.department || staffFilters.residentCategory">
                         <span class="breadcrumb-link" @click="switchView('department_management')">
-                            <i class="fas fa-sitemap" style="font-size:10px"></i> Departments
+                            <i class="fas fa-sitemap" style="font-size:12px"></i> Departments
                         </span>
                         <span class="breadcrumb-sep">›</span>
                         <span class="breadcrumb-item active">Medical Staff</span>
@@ -819,7 +819,7 @@
                             </span>
                         </template>
                         <button @click="staffFilters.department = ''; staffFilters.residentCategory = ''"
-                                style="margin-left:8px;background:none;border:none;color:var(--text-4);cursor:pointer;font-size:11px">
+                                style="margin-left:8px;background:none;border:none;color:var(--text-4);cursor:pointer;font-size:13px">
                             Clear filter ×
                         </button>
                     </nav>
@@ -1004,7 +1004,7 @@
                                                         </span>
                                                     </div>
                                                     <div v-if="isResidentType(staff.staff_type) && staff.resident_category" class="staff-name-sub">
-                                                        <span :class="staff.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'" style="font-size:9px;padding:1px 5px;border-radius:4px;font-weight:600">
+                                                        <span :class="staff.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'" style="font-size:13px;padding:1px 5px;border-radius:4px;font-weight:600">
                                                             {{ staff.resident_category === 'external_resident' ? 'External' : 'Internal' }}
                                                         </span>
                                                     </div>
@@ -1016,7 +1016,7 @@
                                         </td>
                                         <td style="padding-left:18px">
                                             <span v-if="getDepartmentName(staff.department_id)">{{ getDepartmentName(staff.department_id) }}</span>
-                                            <span v-else class="na-value" style="font-size:11px;color:var(--text-4);font-style:italic">Not assigned</span>
+                                            <span v-else class="na-value" style="font-size:13px;color:var(--text-4);font-style:italic">Not assigned</span>
                                         </td>
                                         <td>
                                             <template v-if="getCurrentRotationForStaff(staff.id)">
@@ -1026,7 +1026,7 @@
                                                     <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(staff.id).start_date, getCurrentRotationForStaff(staff.id).end_date) }}</span>
                                                 </div>
                                             </template>
-                                            <span v-else class="na-value" style="font-size:11px;color:var(--text-4);font-style:italic">None active</span>
+                                            <span v-else class="na-value" style="font-size:13px;color:var(--text-4);font-style:italic">None active</span>
                                         </td>
                                         <td style="text-align:center">
                                             <span class="status-indicator" :class="'status-' + staff.employment_status">{{ formatEmploymentStatus(staff.employment_status) }}</span>
@@ -1253,7 +1253,7 @@
                     <!-- Breadcrumb -->
                     <nav class="breadcrumb">
                         <span class="breadcrumb-link" @click="switchView('training_units')">
-                            <i class="fas fa-hospital-user" style="font-size:10px"></i> Training Units
+                            <i class="fas fa-hospital-user" style="font-size:12px"></i> Training Units
                         </span>
                         <span class="breadcrumb-sep">›</span>
                         <span class="breadcrumb-item active">Rotations</span>
@@ -1351,7 +1351,7 @@
                                         <span class="rot-who-name">{{ resident.full_name }}</span>
                                         <span class="rot-who-meta">{{ formatTrainingYear(resident.training_year) || 'PGY-?' }}</span>
                                     <span v-if="resident.department_id" class="rot-who-dept"
-                                          style="font-size:10px;color:var(--text-4);display:block;margin-top:1px">
+                                          style="font-size:12px;color:var(--text-4);display:block;margin-top:1px">
                                         {{ getDepartmentName(resident.department_id) }}
                                     </span>
                                     </div>
@@ -1543,12 +1543,12 @@
                                             </div>
                                             <div v-if="rotation.resident?.resident_category === 'external_resident' && rotation.resident?.external_contact_name"
                                                  class="scc-ext-row" style="margin-top:2px">
-                                                <i class="fas fa-link" style="font-size:9px"></i>
+                                                <i class="fas fa-link" style="font-size:13px"></i>
                                                 {{ rotation.resident.external_contact_name }}
                                                 <a v-if="rotation.resident.external_contact_email"
                                                    :href="'mailto:' + rotation.resident.external_contact_email"
                                                    @click.stop title="Email contact">
-                                                    <i class="fas fa-envelope" style="font-size:9px"></i>
+                                                    <i class="fas fa-envelope" style="font-size:13px"></i>
                                                 </a>
                                             </div>
                                         </td>
@@ -1623,7 +1623,7 @@
                     <!-- Breadcrumb -->
                     <nav class="breadcrumb">
                         <span class="breadcrumb-link" @click="switchView('department_management')">
-                            <i class="fas fa-sitemap" style="font-size:10px"></i> Departments
+                            <i class="fas fa-sitemap" style="font-size:12px"></i> Departments
                         </span>
                         <span class="breadcrumb-sep">›</span>
                         <span class="breadcrumb-item active">Training Units</span>
@@ -1631,7 +1631,7 @@
                         <span v-if="trainingUnitFilters.department" class="breadcrumb-item active">
                             {{ departments.find(d => d.id === trainingUnitFilters.department)?.name || '' }}
                             <button @click="trainingUnitFilters.department = ''" title="Clear filter"
-                                    style="background:none;border:none;color:var(--text-4);cursor:pointer;padding:0 0 0 3px;font-size:10px">×</button>
+                                    style="background:none;border:none;color:var(--text-4);cursor:pointer;padding:0 0 0 3px;font-size:12px">×</button>
                         </span>
                     </nav>
                     <div class="card mb-6">
@@ -2507,7 +2507,7 @@
                                         <span class="rht-sep">·</span>
                                         <span>{{ getResearchLineName(trial.research_line_id) }}</span>
                                         <span v-if="trial.principal_investigator_id" class="rht-sep">·</span>
-                                        <span v-if="trial.principal_investigator_id"><i class="fas fa-user-md" style="opacity:.5;font-size:10px"></i> {{ getStaffName(trial.principal_investigator_id) }}</span>
+                                        <span v-if="trial.principal_investigator_id"><i class="fas fa-user-md" style="opacity:.5;font-size:12px"></i> {{ getStaffName(trial.principal_investigator_id) }}</span>
                                     </div>
                                 </div>
                                 <div class="rht-enrollment" v-if="trial.enrollment_target">
@@ -2701,7 +2701,7 @@
                                             <span>Line</span><span>Name</span><span>Coordinator</span><span>Trials</span><span>Projects</span><span>Status</span>
                                         </div>
                                         <div v-for="line in researchDashboard.researchLines" :key="line.id" class="rha-lt-row" @click="drillToTrials(line.id)" style="cursor:pointer">
-                                            <span class="rline-number-pill" style="font-size:10px">L{{ line.line_number }}</span>
+                                            <span class="rline-number-pill" style="font-size:12px">L{{ line.line_number }}</span>
                                             <span class="rha-lt-name">{{ line.name }}</span>
                                             <span class="rha-lt-coord">{{ line.coordinator_name || '—' }}</span>
                                             <span><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></span>
@@ -2875,7 +2875,7 @@
                                 <tbody>
                                     <tr v-for="st in staffTypesList" :key="st.id" :class="{ 'opacity-50': !st.is_active }">
                                         <td><strong>{{ st.display_name }}</strong></td>
-                                        <td><code style="font-size:11px;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px">{{ st.type_key }}</code></td>
+                                        <td><code style="font-size:13px;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px">{{ st.type_key }}</code></td>
                                         <td><span :class="['badge', st.badge_class]">{{ st.display_name }}</span></td>
                                         <td class="text-center"><i :class="st.is_resident_type ? 'fas fa-check text-success' : 'fas fa-minus text-muted'"></i></td>
                                         <td class="text-center"><i :class="st.can_supervise ? 'fas fa-check text-success' : 'fas fa-minus text-muted'"></i></td>
@@ -2919,12 +2919,12 @@
                         <div class="form-group col-span-2">
                             <label class="form-label">Display Name *</label>
                             <input type="text" class="form-control" v-model="staffTypeModal.form.display_name" placeholder="e.g. Attending Physician" />
-                            <small class="text-muted" style="font-size:11px">Shown in all dropdowns and labels across the system</small>
+                            <small class="text-muted" style="font-size:13px">Shown in all dropdowns and labels across the system</small>
                         </div>
                         <div class="form-group col-span-2" v-if="staffTypeModal.mode === 'add'">
-                            <label class="form-label">Type Key * <span style="font-size:10px;opacity:.5">(cannot be changed later)</span></label>
+                            <label class="form-label">Type Key * <span style="font-size:12px;opacity:.5">(cannot be changed later)</span></label>
                             <input type="text" class="form-control" v-model="staffTypeModal.form.type_key" placeholder="e.g. attending_physician" style="font-family:monospace" />
-                            <small class="text-muted" style="font-size:11px">Lowercase letters, numbers, underscores only — stored internally in the database</small>
+                            <small class="text-muted" style="font-size:13px">Lowercase letters, numbers, underscores only — stored internally in the database</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Badge Style</label>
@@ -2942,21 +2942,21 @@
                         <div class="form-group">
                             <label class="form-label">Display Order</label>
                             <input type="number" class="form-control" v-model.number="staffTypeModal.form.display_order" min="0" />
-                            <small class="text-muted" style="font-size:11px">Lower numbers appear first in dropdowns</small>
+                            <small class="text-muted" style="font-size:13px">Lower numbers appear first in dropdowns</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label d-flex align-items-center gap-2">
                                 <input type="checkbox" v-model="staffTypeModal.form.is_resident_type" />
                                 Is Resident / Trainee Type
                             </label>
-                            <small class="text-muted" style="font-size:11px">Shows training year &amp; resident category fields when selected</small>
+                            <small class="text-muted" style="font-size:13px">Shows training year &amp; resident category fields when selected</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label d-flex align-items-center gap-2">
                                 <input type="checkbox" v-model="staffTypeModal.form.can_supervise" />
                                 Can Supervise Residents
                             </label>
-                            <small class="text-muted" style="font-size:11px">Used to filter supervising physician dropdowns</small>
+                            <small class="text-muted" style="font-size:13px">Used to filter supervising physician dropdowns</small>
                         </div>
                     </div>
                 </div>
@@ -3045,7 +3045,7 @@
                                      v-if="!isResidentType(staffProfileModal.staff.staff_type) && trainingUnits.find(u => u.supervisor_id === staffProfileModal.staff.id)">
                                     <span class="pd-row-key">Primary Unit</span>
                                     <span class="pd-row-val" style="color:var(--blue)">
-                                        <i class="fas fa-clinic-medical" style="font-size:9px;margin-right:3px"></i>
+                                        <i class="fas fa-clinic-medical" style="font-size:13px;margin-right:3px"></i>
                                         {{ trainingUnits.find(u => u.supervisor_id === staffProfileModal.staff.id)?.unit_name }}
                                     </span>
                                 </div>
@@ -3296,7 +3296,7 @@
                                 </div>
                                 <div class="profile-rot-status">
                                     <span class="status-indicator" :class="'status-'+rot.rotation_status">{{ formatRotationStatus(rot.rotation_status) }}</span>
-                                    <span v-if="rot.supervising_attending_id" style="font-size:11px;color:var(--text-3)">
+                                    <span v-if="rot.supervising_attending_id" style="font-size:13px;color:var(--text-3)">
                                         <i class="fas fa-user-md"></i> {{ getSupervisorName(rot.supervising_attending_id) }}
                                     </span>
                                 </div>
@@ -3755,8 +3755,8 @@
                         </label>
                         <input type="url" class="form-control" v-model="newsModal.form.featured_image_url"
                                :placeholder="newsModal.form.post_type === 'photo_story' ? 'https://… (required — this is the story)' : 'https://…'">
-                        <p v-if="newsModal.form.post_type === 'photo_story'" class="form-hint" style="color:var(--text-4);font-size:10px;margin-top:4px">
-                            <i class="fas fa-images"></i> Add multiple photos by separating URLs with commas — e.g. <code style="font-size:9px">https://…/photo1.jpg, https://…/photo2.jpg</code>. First photo becomes the hero. Caption (body) max 120 words.
+                        <p v-if="newsModal.form.post_type === 'photo_story'" class="form-hint" style="color:var(--text-4);font-size:12px;margin-top:4px">
+                            <i class="fas fa-images"></i> Add multiple photos by separating URLs with commas — e.g. <code style="font-size:13px">https://…/photo1.jpg, https://…/photo2.jpg</code>. First photo becomes the hero. Caption (body) max 120 words.
                         </p>
                     </div>
 
@@ -3794,20 +3794,20 @@
                         <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
                             <span>
                                 Expiry Date
-                                <span style="color:var(--text-4);font-weight:400;font-size:10px;">
+                                <span style="color:var(--text-4);font-weight:400;font-size:12px;">
                                     — auto:
                                     {{ newsModal.form.post_type === 'update' ? '90 days' : newsModal.form.post_type === 'photo_story' ? '12 months' : '18 months' }}
                                 </span>
                             </span>
                             <button type="button"
-                                    style="font-size:10px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font-data);"
+                                    style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font-data);"
                                     @click="newsModal.form.expires_at = autoExpiry(newsModal.form.post_type)">
                                 ↺ Reset to default
                             </button>
                         </label>
                         <input type="date" class="form-control" v-model="newsModal.form.expires_at"
                                :min="new Date().toISOString().split('T')[0]">
-                        <p style="font-size:10px;color:var(--text-4);margin-top:4px;">
+                        <p style="font-size:12px;color:var(--text-4);margin-top:4px;">
                             <i class="fas fa-info-circle"></i>
                             Leave blank to apply the default automatically on publish. Set a date to override.
                         </p>
@@ -3863,7 +3863,7 @@
                   {{ newsDrawer.post.post_type === 'update' ? 'Update' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'photo_story' ? 'Photo Story' : 'Publication' }}
                 </span>
                 <span v-if="newsDrawerLineName" class="nrd-line-tag">
-                  <i class="fas fa-flask" style="font-size:9px;opacity:.6;margin-right:2px"></i>{{ newsDrawerLineName }}
+                  <i class="fas fa-flask" style="font-size:13px;opacity:.6;margin-right:2px"></i>{{ newsDrawerLineName }}
                 </span>
                 <span v-if="newsDrawerReadMins" class="nrd-read-time">~{{ newsDrawerReadMins }} min read</span>
               </div>
@@ -3926,15 +3926,15 @@
               <!-- Prev / Next navigation -->
               <div v-if="newsDrawerPrev || newsDrawerNext" style="display:flex;justify-content:space-between;margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--border);gap:1rem;">
                 <div v-if="newsDrawerPrev" class="news-card-title" style="font-size:12px;cursor:pointer;max-width:44%;color:rgba(255,255,255,.72);transition:color .2s;" @click="openNewsDrawer(newsDrawerPrev)">
-                  <div style="font-size:10px;color:rgba(255,255,255,.45);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;gap:4px">
-                    <i class="fas fa-arrow-left" style="font-size:9px"></i> Previous
+                  <div style="font-size:12px;color:rgba(255,255,255,.45);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                    <i class="fas fa-arrow-left" style="font-size:13px"></i> Previous
                   </div>
                   {{ newsDrawerPrev.title }}
                 </div>
                 <div v-else></div>
                 <div v-if="newsDrawerNext" class="news-card-title" style="font-size:12px;cursor:pointer;max-width:44%;color:rgba(255,255,255,.72);text-align:right;transition:color .2s;" @click="openNewsDrawer(newsDrawerNext)">
-                  <div style="font-size:10px;color:rgba(255,255,255,.45);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;justify-content:flex-end;gap:4px">
-                    Next <i class="fas fa-arrow-right" style="font-size:9px"></i>
+                  <div style="font-size:12px;color:rgba(255,255,255,.45);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;justify-content:flex-end;gap:4px">
+                    Next <i class="fas fa-arrow-right" style="font-size:13px"></i>
                   </div>
                   {{ newsDrawerNext.title }}
                 </div>
@@ -4080,14 +4080,14 @@
                                     <div class="iah-label">Define new staff type</div>
                                     <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end">
                                         <div class="form-group" style="margin:0">
-                                            <label class="form-label" style="font-size:11px">Display Name *</label>
+                                            <label class="form-label" style="font-size:13px">Display Name *</label>
                                             <input type="text" class="form-control"
                                                 v-model="medicalStaffModal._newStaffTypeName"
                                                 placeholder="e.g. Biomedical Engineer"
                                                 @keyup.enter="addStaffTypeInline()">
                                         </div>
                                         <div class="form-group" style="margin:0">
-                                            <label class="form-label" style="font-size:11px">Is trainee?</label>
+                                            <label class="form-label" style="font-size:13px">Is trainee?</label>
                                             <select class="form-select" v-model="medicalStaffModal._newStaffTypeIsResident" style="min-width:90px">
                                                 <option :value="false">No</option>
                                                 <option :value="true">Yes</option>
@@ -4100,7 +4100,7 @@
                                             {{ medicalStaffModal._savingStaffType ? 'Saving…' : 'Add &amp; Select' }}
                                         </button>
                                     </div>
-                                    <div style="font-size:11px;opacity:.5;margin-top:6px">
+                                    <div style="font-size:13px;opacity:.5;margin-top:6px">
                                         <i class="fas fa-info-circle"></i>
                                         The type key is auto-generated. You can rename or adjust it later in System Settings.
                                     </div>
@@ -4144,17 +4144,17 @@
                                     <label class="hns-option" :class="{ active: medicalStaffModal.form._networkHint === 'CHUAC' || hospitalsList.find(h=>h.id===medicalStaffModal.form.hospital_id)?.parent_complex === 'CHUAC' }">
                                         <input type="radio" name="hns" value="CHUAC" @change="medicalStaffModal.form._networkHint = 'CHUAC'; medicalStaffModal.form.hospital_id = null">
                                         <span class="hns-dot hns-dot--chuac"></span> CHUAC
-                                        <small style="opacity:.5;font-size:10px;margin-left:2px">A Coruña complex</small>
+                                        <small style="opacity:.5;font-size:12px;margin-left:2px">A Coruña complex</small>
                                     </label>
                                     <label class="hns-option" :class="{ active: medicalStaffModal.form._networkHint === 'SERGAS' || hospitalsList.find(h=>h.id===medicalStaffModal.form.hospital_id)?.parent_complex === 'SERGAS' }">
                                         <input type="radio" name="hns" value="SERGAS" @change="medicalStaffModal.form._networkHint = 'SERGAS'; medicalStaffModal.form.hospital_id = null">
                                         <span class="hns-dot hns-dot--sergas"></span> SERGAS
-                                        <small style="opacity:.5;font-size:10px;margin-left:2px">Galician network</small>
+                                        <small style="opacity:.5;font-size:12px;margin-left:2px">Galician network</small>
                                     </label>
                                     <label class="hns-option" :class="{ active: medicalStaffModal.form._networkHint === 'external' || hospitalsList.find(h=>h.id===medicalStaffModal.form.hospital_id)?.parent_complex === 'external' }">
                                         <input type="radio" name="hns" value="external" @change="medicalStaffModal.form._networkHint = 'external'; medicalStaffModal.form.hospital_id = null">
                                         <span class="hns-dot hns-dot--external"></span> External
-                                        <small style="opacity:.5;font-size:10px;margin-left:2px">Outside SERGAS</small>
+                                        <small style="opacity:.5;font-size:12px;margin-left:2px">Outside SERGAS</small>
                                     </label>
                                 </div>
                                 <!-- Hospital dropdown + inline add -->
@@ -4181,11 +4181,11 @@
                                     <div class="iah-label">Register new hospital</div>
                                     <div style="display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:end">
                                         <div class="form-group" style="margin:0">
-                                            <label class="form-label" style="font-size:11px">Name *</label>
+                                            <label class="form-label" style="font-size:13px">Name *</label>
                                             <input type="text" class="form-control" v-model="medicalStaffModal._newHospitalName" placeholder="e.g. Hospital Santa María">
                                         </div>
                                         <div class="form-group" style="margin:0">
-                                            <label class="form-label" style="font-size:11px">Network</label>
+                                            <label class="form-label" style="font-size:13px">Network</label>
                                             <select class="form-select" v-model="medicalStaffModal._newHospitalNetwork">
                                                 <option value="CHUAC">CHUAC</option>
                                                 <option value="SERGAS">SERGAS</option>
@@ -5155,7 +5155,7 @@
                                 {{ h.name }} <span v-if="h.parent_complex"> · {{ h.parent_complex }}</span>
                             </option>
                         </select>
-                        <p style="font-size:10px;color:var(--text-4);margin-top:3px;">The hospital or institution this department belongs to</p>
+                        <p style="font-size:12px;color:var(--text-4);margin-top:3px;">The hospital or institution this department belongs to</p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -5527,8 +5527,8 @@
                             <div class="urm-info">
                                 <div class="urm-name">{{ getResidentName(rotation.resident_id) }}</div>
                                 <!-- Date range — key planning info -->
-                                <div style="font-size:11px;font-family:var(--font-data);color:var(--text-3);margin:2px 0;display:flex;align-items:center;gap:4px">
-                                    <i class="fas fa-calendar" style="font-size:9px"></i>
+                                <div style="font-size:13px;font-family:var(--font-data);color:var(--text-3);margin:2px 0;display:flex;align-items:center;gap:4px">
+                                    <i class="fas fa-calendar" style="font-size:13px"></i>
                                     {{ new Date(rotation.start_date + 'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}
                                     → {{ new Date(rotation.end_date + 'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}
                                     <span v-if="getDaysUntilFree(rotation.end_date) <= 30 && getDaysUntilFree(rotation.end_date) > 0"
@@ -5595,7 +5595,7 @@
                     <label class="ucm-row" :class="{ 'ucm-row--checked': !unitCliniciansModal.supervisorId }">
                         <input type="radio" v-model="unitCliniciansModal.supervisorId" :value="''" class="ucm-check">
                         <div class="ucm-avatar" style="background:var(--surface-2); border:1px dashed var(--border-2)">
-                            <i class="fas fa-ban" style="color:var(--text-4); font-size:10px"></i>
+                            <i class="fas fa-ban" style="color:var(--text-4); font-size:12px"></i>
                         </div>
                         <div class="ucm-info">
                             <div class="ucm-name" style="color:var(--text-3)">No supervisor</div>
@@ -6424,7 +6424,7 @@
                                     </div>
                                 </div>
                                 <div class="dp-staff-unit" v-if="trainingUnits.find(u => u.supervisor_id === s.id && u.department_id === deptPanel.dept?.id)">
-                                    <i class="fas fa-clinic-medical" style="font-size:9px;color:var(--text-4)"></i>
+                                    <i class="fas fa-clinic-medical" style="font-size:13px;color:var(--text-4)"></i>
                                     {{ trainingUnits.find(u => u.supervisor_id === s.id && u.department_id === deptPanel.dept?.id)?.unit_name }}
                                 </div>
                                 <div v-else class="dp-staff-unit" style="color:var(--text-4);font-style:italic">— no unit</div>
@@ -6467,7 +6467,7 @@
                                 </div>
                                 <!-- Current rotation -->
                                 <div class="dp-staff-rotation" v-if="rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')">
-                                    <i class="fas fa-arrows-rotate" style="font-size:9px;color:var(--blue)"></i>
+                                    <i class="fas fa-arrows-rotate" style="font-size:13px;color:var(--blue)"></i>
                                     <span>{{ rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')?.training_unit?.unit_name || '—' }}</span>
                                     <span class="dp-days-left">{{ rotDaysLeft(rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')) }}d</span>
                                 </div>
@@ -6500,8 +6500,8 @@
                                         <span class="tuc-type-badge" :class="'tuc-type--' + (unit.unit_type || 'training_unit')" style="margin:0">
                                             {{ unit.unit_type === 'clinical_unit' ? 'Ward' : unit.unit_type === 'icu' ? 'ICU' : unit.unit_type === 'outpatient' ? 'Outpatient' : unit.unit_type === 'surgical' ? 'Surgical' : unit.unit_type === 'research' ? 'Research' : 'Training' }}
                                         </span>
-                                        <span v-if="getUnitSupervisorName(unit)" style="font-size:11px;color:var(--text-3)">
-                                            <i class="fas fa-user-md" style="font-size:9px"></i> {{ getUnitSupervisorName(unit) }}
+                                        <span v-if="getUnitSupervisorName(unit)" style="font-size:13px;color:var(--text-3)">
+                                            <i class="fas fa-user-md" style="font-size:13px"></i> {{ getUnitSupervisorName(unit) }}
                                         </span>
                                     </div>
                                 </div>
@@ -6539,10 +6539,10 @@
                                 <div class="dp-rot-info">
                                     <div class="dp-rot-resident">{{ r.resident?.full_name || '—' }}</div>
                                     <div class="dp-rot-unit">
-                                        <i class="fas fa-clinic-medical" style="font-size:9px;color:var(--text-4)"></i>
+                                        <i class="fas fa-clinic-medical" style="font-size:13px;color:var(--text-4)"></i>
                                         {{ r.training_unit?.unit_name || '—' }}
                                         <span v-if="r.supervising_attending?.full_name" style="color:var(--text-4)">
-                                            · <i class="fas fa-user-md" style="font-size:9px"></i> {{ r.supervising_attending.full_name.split(' ').slice(-1)[0] }}
+                                            · <i class="fas fa-user-md" style="font-size:13px"></i> {{ r.supervising_attending.full_name.split(' ').slice(-1)[0] }}
                                         </span>
                                     </div>
                                 </div>
@@ -6552,7 +6552,7 @@
                                         {{ rotDaysLeft(r) }}d left
                                     </div>
                                 </div>
-                                <span class="status-indicator" :class="'status-' + r.rotation_status" style="font-size:9px">{{ r.rotation_status }}</span>
+                                <span class="status-indicator" :class="'status-' + r.rotation_status" style="font-size:13px">{{ r.rotation_status }}</span>
                             </div>
                         </div>
                     </template>
@@ -6720,25 +6720,19 @@
         <!-- Mobile bottom navigation (shows on ≤1024px) -->
         <nav class="mobile-bottom-nav" aria-label="Mobile navigation" v-if="currentUser">
             <button class="mobile-nav-item" :class="{ active: currentView === 'dashboard' }" @click="switchView('dashboard')">
-                <i class="fas fa-chart-line"></i><span>Home</span>
+                <i class="fas fa-chart-line"></i><span>Overview</span>
             </button>
             <button class="mobile-nav-item" :class="{ active: currentView === 'medical_staff' }" @click="switchView('medical_staff')" v-if="hasPermission('medical_staff','read')">
-                <i class="fas fa-stethoscope"></i><span>Staff</span>
+                <i class="fas fa-user-md"></i><span>Staff</span>
             </button>
             <button class="mobile-nav-item" :class="{ active: currentView === 'resident_rotations' }" @click="switchView('resident_rotations')" v-if="hasPermission('resident_rotations','read')">
                 <i class="fas fa-calendar-check"></i><span>Rotations</span>
             </button>
-            <button class="mobile-nav-item" :class="{ active: currentView === 'oncall_schedule' }" @click="switchView('oncall_schedule')" v-if="hasPermission('oncall_schedule','read')">
-                <i class="fas fa-phone-medical"></i><span>On-call</span>
+            <button class="mobile-nav-item" :class="{ active: currentView === 'staff_absence' }" @click="switchView('staff_absence')" v-if="hasPermission('staff_absence','read')">
+                <i class="fas fa-user-clock"></i><span>Absences</span>
             </button>
-            <button class="mobile-nav-item mobile-nav-training" :class="{ active: currentView === 'training_units' }" @click="switchView('training_units')" v-if="hasPermission('training_units','read')">
-                <i class="fas fa-clinic-medical"></i><span>Units</span>
-            </button>
-            <button class="mobile-nav-item" :class="{ active: currentView === 'department_management' }" @click="switchView('department_management')" v-if="hasPermission('system','manage_departments')">
-                <i class="fas fa-sitemap"></i><span>Depts</span>
-            </button>
-            <button class="mobile-nav-item" style="display:none" :class="{ active: ['research_lines','clinical_trials','innovation_projects'].includes(currentView) }" @click="switchView('research_lines')" v-if="hasPermission('research_lines','read')">
-                <i class="fas fa-flask"></i><span>Research</span>
+            <button class="mobile-nav-item" :class="{ active: ['oncall_schedule','training_units','department_management','communications','research_hub','news','system_settings'].includes(currentView) }" @click="mobileMenuOpen = !mobileMenuOpen">
+                <i class="fas fa-ellipsis-h"></i><span>More</span>
             </button>
         </nav>
 
