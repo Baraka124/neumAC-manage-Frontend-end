@@ -39,8 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         oncall_schedule: ['create', 'read', 'update', 'delete'],
         resident_rotations: ['create', 'read', 'update', 'delete'], 
         training_units: ['create', 'read', 'update', 'delete'],
-        staff_absence: ['create', 'read', 'update', 'delete'], 
-        department_management: ['create', 'read', 'update', 'delete'],
+        staff_absence: ['create', 'read', 'update', 'delete'],
         communications: ['create', 'read', 'update', 'delete'], 
         research_lines: ['create', 'read', 'update', 'delete'],
         clinical_trials: ['create', 'read', 'update', 'delete'], 
@@ -53,8 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         oncall_schedule: ['create', 'read', 'update'],
         resident_rotations: ['create', 'read', 'update'], 
         training_units: ['read', 'update'],
-        staff_absence: ['create', 'read', 'update'], 
-        department_management: ['read'],
+        staff_absence: ['create', 'read', 'update'],
         communications: ['create', 'read'], 
         research_lines: ['read', 'update'],
         clinical_trials: ['read', 'create', 'update'], 
@@ -67,8 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         oncall_schedule: ['read'], 
         resident_rotations: ['read'],
         training_units: ['read'], 
-        staff_absence: ['read'], 
-        department_management: ['read'],
+        staff_absence: ['read'],
         communications: ['read'], 
         research_lines: ['read'], 
         clinical_trials: ['read'],
@@ -80,8 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         oncall_schedule: ['read'], 
         resident_rotations: ['read'],
         training_units: ['read'], 
-        staff_absence: ['read'], 
-        department_management: [],
+        staff_absence: ['read'],
         communications: ['read'], 
         research_lines: ['read'], 
         clinical_trials: ['read'],
@@ -147,10 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
       medical_staff: 'Medical Staff Management',
       oncall_schedule: 'On-call Schedule', 
       resident_rotations: 'Resident Rotations',
-      training_units: 'Training Units', 
+      training_units: 'Clinical Units', 
       staff_absence: 'Staff Absence Management',
-      department_management: 'Department Management', 
-      communications: 'Communications Center',
+      department_management: 'Department Management',
       research_hub: 'Research Hub',
       research_lines: 'Research Hub', 
       clinical_trials: 'Research Hub',
@@ -165,10 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
       medical_staff: 'Manage physicians, residents, and clinical staff',
       oncall_schedule: 'View and manage on-call physician schedules',
       resident_rotations: 'Track and manage resident training rotations',
-      training_units: 'Clinical training units and resident assignments',
+      training_units: 'Clinical units and resident assignments',
       staff_absence: 'Track staff absences and coverage assignments',
       department_management: 'Organizational structure and clinical units',
-      communications: 'Department announcements and capacity updates',
       research_hub: 'Research lines, trials, projects and analytics',
       research_lines: 'Research lines, trials, projects and analytics',
       clinical_trials: 'Research lines, trials, projects and analytics',
@@ -4820,7 +4814,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (filters.department) {
             if (staffFilters && staffFilters.department !== undefined) staffFilters.department = filters.department
             if (trainingUnitFilters && trainingUnitFilters.department !== undefined) trainingUnitFilters.department = filters.department
-            if (rotationFilters && rotationFilters.trainingUnit === undefined && view === 'department_management') {} // no-op
           }
           if (filters.residentCategory && staffFilters) { staffFilters.staffType = 'medical_resident'; staffFilters.residentCategory = filters.residentCategory }
           if (filters.rotationStatus && rotationFilters) rotationFilters.status = filters.rotationStatus
@@ -4830,28 +4823,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Trigger entrance animation on content area
           const ca = document.querySelector('.content-area')
           if (ca) { ca.classList.remove('content-view-enter'); void ca.offsetWidth; ca.classList.add('content-view-enter') }
-          if (view === 'analytics_dashboard' && hasPermission('analytics', 'read')) {
-            analyticsOps.analyticsActiveTab.value = 'dashboard'
-            analyticsOps.researchHubTab.value = 'analytics'
-            currentView.value = 'research_hub'
-            await Promise.all([
-              analyticsOps.loadResearchDashboard(researchOps.researchLines, researchOps.clinicalTrials, researchOps.innovationProjects),
-              analyticsOps.loadTrialsTimeline()
-            ])
-            return
-          } else if (view === 'analytics_performance' && hasPermission('analytics', 'read')) {
-            analyticsOps.analyticsActiveTab.value = 'performance'
-            analyticsOps.researchHubTab.value = 'analytics'
-            currentView.value = 'research_hub'
-            await analyticsOps.loadResearchLinesPerformance()
-            return
-          } else if (view === 'analytics_partners' && hasPermission('analytics', 'read')) {
-            analyticsOps.analyticsActiveTab.value = 'partners'
-            analyticsOps.researchHubTab.value = 'analytics'
-            currentView.value = 'research_hub'
-            await analyticsOps.loadPartnerCollaborations()
-            return
-          } else if (view === 'research_hub') {
+          if (view === 'research_hub') {
             // Direct navigation — default to lines tab
             if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
