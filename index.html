@@ -31,12 +31,9 @@
     <!-- ============ LOGIN SCREEN ============ -->
     <div v-if="!currentUser" class="login-container">
 
-        <!-- Animated background particles -->
+        <!-- Anatomical bronchial tree background -->
         <div class="lc-bg">
-            <div class="lc-orb lc-orb--1"></div>
-            <div class="lc-orb lc-orb--2"></div>
-            <div class="lc-orb lc-orb--3"></div>
-            <div class="lc-grid"></div>
+            <canvas id="loginTreeCanvas" aria-hidden="true"></canvas>
         </div>
 
         <!-- Card -->
@@ -199,6 +196,15 @@
                 </button>
             </div>
             <nav class="sidebar-nav" aria-label="Primary navigation">
+            <!-- Department context -->
+            <div class="sidebar-dept-ctx" v-if="!sidebarCollapsed">
+                <div class="sidebar-dept-dot"></div>
+                <div>
+                    <div class="sidebar-dept-name">Pulmonology</div>
+                    <div class="sidebar-dept-sub">HUAC · Área Sanitaria A Coruña</div>
+                </div>
+            </div>
+
                 <div class="sidebar-section">
                     <div class="sidebar-section-title" v-if="!sidebarCollapsed">Dashboard</div>
                     <ul class="sidebar-menu">
@@ -236,24 +242,15 @@
                     </ul>
                 </div>
                 <div class="sidebar-section">
-                    <div class="sidebar-section-title" v-if="!sidebarCollapsed">Structure & Training</div>
+                    <div class="sidebar-section-title" v-if="!sidebarCollapsed">Structure</div>
                     <ul class="sidebar-menu">
-                        <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'department_management' }"
-                               @click.prevent="switchView('department_management'); mobileMenuOpen = false"
-                               v-if="hasPermission('system', 'manage_departments')"
-                               :aria-current="currentView === 'department_management' ? 'page' : null">
-                                <i class="fas fa-sitemap"></i>
-                                <span v-if="!sidebarCollapsed">Departments</span>
-                            </a>
-                        </li>
                         <li class="sidebar-menu-item">
                             <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'training_units' }"
                                @click.prevent="switchView('training_units'); mobileMenuOpen = false"
                                v-if="hasPermission('training_units', 'read')"
                                :aria-current="currentView === 'training_units' ? 'page' : null">
                                 <i class="fas fa-hospital-user"></i>
-                                <span v-if="!sidebarCollapsed">Training Units</span>
+                                <span v-if="!sidebarCollapsed">Clinical Units</span>
                             </a>
                         </li>
                         <li class="sidebar-menu-item">
@@ -287,15 +284,6 @@
                                data-tooltip="Settings">
                                 <i class="fas fa-cog"></i>
                                 <span v-if="!sidebarCollapsed">System Settings</span>
-                            </a>
-                        </li>
-                        <li class="sidebar-menu-item">
-                            <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'communications' }"
-                               @click.prevent="switchView('communications'); mobileMenuOpen = false"
-                               v-if="hasPermission('communications', 'read')"
-                               :aria-current="currentView === 'communications' ? 'page' : null">
-                                <i class="fas fa-bullhorn"></i>
-                                <span v-if="!sidebarCollapsed">Communications</span>
                             </a>
                         </li>
                     </ul>
@@ -807,7 +795,7 @@
                 <div v-if="currentView === 'medical_staff'">
                     <!-- Breadcrumb — shows filter context if navigated from dept -->
                     <nav class="breadcrumb" v-if="staffFilters.department || staffFilters.residentCategory">
-                        <span class="breadcrumb-link" @click="switchView('department_management')">
+                        <span class="breadcrumb-link" @click="switchView('medical_staff')">
                             <i class="fas fa-sitemap" style="font-size:12px"></i> Departments
                         </span>
                         <span class="breadcrumb-sep">›</span>
@@ -1253,7 +1241,7 @@
                     <!-- Breadcrumb -->
                     <nav class="breadcrumb">
                         <span class="breadcrumb-link" @click="switchView('training_units')">
-                            <i class="fas fa-hospital-user" style="font-size:12px"></i> Training Units
+                            <i class="fas fa-hospital-user" style="font-size:12px"></i> Clinical Units
                         </span>
                         <span class="breadcrumb-sep">›</span>
                         <span class="breadcrumb-item active">Rotations</span>
@@ -1622,11 +1610,11 @@
                 <div v-if="currentView === 'training_units'">
                     <!-- Breadcrumb -->
                     <nav class="breadcrumb">
-                        <span class="breadcrumb-link" @click="switchView('department_management')">
+                        <span class="breadcrumb-link" @click="switchView('medical_staff')">
                             <i class="fas fa-sitemap" style="font-size:12px"></i> Departments
                         </span>
                         <span class="breadcrumb-sep">›</span>
-                        <span class="breadcrumb-item active">Training Units</span>
+                        <span class="breadcrumb-item active">Clinical Units</span>
                         <span v-if="trainingUnitFilters.department" class="breadcrumb-sep">›</span>
                         <span v-if="trainingUnitFilters.department" class="breadcrumb-item active">
                             {{ departments.find(d => d.id === trainingUnitFilters.department)?.name || '' }}
@@ -1636,7 +1624,7 @@
                     </nav>
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title"><i class="fas fa-hospital-user"></i> Training Units</div>
+                            <div class="card-title"><i class="fas fa-hospital-user"></i> Clinical Units</div>
                             <div style="display:flex;gap:8px;align-items:center">
                                 <button class="btn btn-ghost uop-trigger-btn" @click="occupancyPanel.show = true" title="View units availability at a glance">
                                     <i class="fas fa-layer-group"></i> Units Occupancy
@@ -1990,166 +1978,6 @@
                                 <button class="btn-pill" @click="goToPage('absences', pagination.absences.page + 1)" :disabled="pagination.absences.page === absenceTotalPages"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- ============ DEPARTMENT MANAGEMENT VIEW ============ -->
-                <div v-if="currentView === 'department_management'">
-                    <div class="card mb-6">
-                        <div class="card-header">
-                            <div class="card-title"><i class="fas fa-sitemap"></i> Departments</div>
-                            <button class="btn btn-primary" @click="showAddDepartmentModal" v-if="hasPermission('system', 'manage_departments')"><i class="fas fa-plus"></i> Add Department</button>
-                        </div>
-                        <div class="filter-bar">
-                            <input type="text" class="form-control" v-model="departmentFilters.search" placeholder="Search departments...">
-                            <select class="form-select" v-model="departmentFilters.status">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-                        <!-- Skeleton loading -->
-                        <div v-if="loading" style="padding:16px">
-                            <div v-for="i in 4" :key="i" class="skeleton-row" style="height:48px;margin-bottom:4px;border-radius:6px"></div>
-                        </div>
-
-                        <template v-else>
-                        <!-- ── Summary strip ── -->
-                        <div class="dept-summary-strip">
-                            <div class="dept-summary-item">
-                                <span class="dept-summary-num">{{ filteredDepartments.length }}</span>
-                                <span class="dept-summary-label">Departments</span>
-                            </div>
-                            <div class="dept-summary-item">
-                                <span class="dept-summary-num">{{ filteredDepartments.reduce((s,d) => s + getDepartmentUnits(d.id).length, 0) }}</span>
-                                <span class="dept-summary-label">Total Units</span>
-                            </div>
-                            <div class="dept-summary-item">
-                                <span class="dept-summary-num">{{ filteredDepartments.reduce((s,d) => s + getDeptResidentStats(d.id).total, 0) }}</span>
-                                <span class="dept-summary-label">Residents Assigned</span>
-                            </div>
-                            <div class="dept-summary-item">
-                                <span class="dept-summary-num dept-summary-warn">{{ filteredDepartments.filter(d => !d.head_of_department?.full_name).length }}</span>
-                                <span class="dept-summary-label">No Head Assigned</span>
-                            </div>
-                        </div>
-
-                        <!-- ── Table ── -->
-                        <div class="data-table-wrap">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th style="width:26%">Department</th>
-                                        <th style="width:20%">Head of Department</th>
-                                        <th style="width:16%">Institution</th>
-                                        <th style="width:10%;text-align:center">Units</th>
-                                        <th style="width:18%;text-align:center">Residents</th>
-                                        <th style="width:6%;text-align:center">Status</th>
-                                        <th style="width:6%;text-align:right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="department in filteredDepartments" :key="department.id" class="dept-table-row">
-
-                                        <!-- Department name + code -->
-                                        <td>
-                                            <div class="dept-tbl-name">{{ department.name }}</div>
-                                            <div class="dept-tbl-code">{{ department.code }}</div>
-                                        </td>
-
-                                        <!-- Head -->
-                                        <td data-label="Head">
-                                            <div v-if="department.head_of_department?.full_name" class="dept-tbl-head">
-                                                <span class="dept-tbl-head-name">{{ department.head_of_department.full_name }}</span>
-                                                <a v-if="department.head_of_department?.professional_email"
-                                                   :href="'mailto:' + department.head_of_department.professional_email"
-                                                   class="dept-tbl-mail" @click.stop title="Send email">
-                                                    <i class="fas fa-envelope"></i>
-                                                </a>
-                                            </div>
-                                            <span v-else class="dept-tbl-empty">— unassigned</span>
-                                        </td>
-
-                                        <!-- Institution -->
-                                        <td data-label="Institution">
-                                            <span v-if="department.hospital_id" class="dept-tbl-institution">
-                                                {{ hospitalsList.find(h => h.id === department.hospital_id)?.name || '—' }}
-                                            </span>
-                                            <span v-else class="dept-tbl-empty">—</span>
-                                        </td>
-
-                                        <!-- Units with occupancy mini-bars -->
-                                        <td data-label="Units" style="text-align:center">
-                                            <div v-if="getDepartmentUnits(department.id).length > 0"
-                                                 class="dept-tbl-units"
-                                                 @click="switchView('training_units', { department: department.id })"
-                                                 title="View units">
-                                                <span class="dept-tbl-count">{{ getDepartmentUnits(department.id).length }}</span>
-                                                <div class="dept-tbl-occ-bars">
-                                                    <div v-for="unit in getDepartmentUnits(department.id).slice(0,8)" :key="unit.id"
-                                                         class="dept-tbl-occ-bar"
-                                                         :class="{
-                                                           'occ-full':    getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
-                                                           'occ-partial': getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) < unit.maximum_residents,
-                                                           'occ-free':    getUnitActiveRotationCount(unit.id) === 0
-                                                         }"
-                                                         :title="unit.unit_name + ': ' + getUnitActiveRotationCount(unit.id) + '/' + unit.maximum_residents">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <span v-else class="dept-tbl-empty">0</span>
-                                        </td>
-
-                                        <!-- Residents pills - only show non-zero counts -->
-                                        <td data-label="Residents" style="text-align:center">
-                                            <div class="dept-tbl-res" v-if="getDeptResidentStats(department.id).total > 0">
-                                                <span v-if="getDeptResidentStats(department.id).internal > 0"
-                                                      class="dept-tbl-res-pill res-int"
-                                                      @click="switchView('medical_staff', { department: department.id, residentCategory: 'department_internal' })"
-                                                      title="Internal residents">
-                                                    {{ getDeptResidentStats(department.id).internal }} Int
-                                                </span>
-                                                <span v-if="getDeptResidentStats(department.id).rotating > 0"
-                                                      class="dept-tbl-res-pill res-rot"
-                                                      @click="switchView('medical_staff', { department: department.id, residentCategory: 'rotating_other_dept' })"
-                                                      title="Rotating residents">
-                                                    {{ getDeptResidentStats(department.id).rotating }} Rot
-                                                </span>
-                                                <span v-if="getDeptResidentStats(department.id).external > 0"
-                                                      class="dept-tbl-res-pill res-ext"
-                                                      @click="switchView('medical_staff', { department: department.id, residentCategory: 'external_resident' })"
-                                                      title="External residents">
-                                                    {{ getDeptResidentStats(department.id).external }} Ext
-                                                </span>
-                                                <span class="dept-tbl-code">{{ getDeptResidentStats(department.id).total }} total</span>
-                                            </div>
-                                            <span v-else class="dept-tbl-empty">—</span>
-                                        </td>
-
-                                        <!-- Status -->
-                                        <td data-label="Status" style="text-align:center">
-                                            <span class="status-indicator" :class="'status-' + department.status">{{ department.status }}</span>
-                                        </td>
-
-                                        <!-- Actions -->
-                                        <td data-label="" style="text-align:right">
-                                            <div class="row-actions">
-                                                <button class="btn-icon-sm" @click="viewDepartmentStaff(department)" title="View staff"><i class="fas fa-users"></i></button>
-                                                <button class="btn-icon-sm" @click="editDepartment(department)" v-if="hasPermission('system', 'manage_departments')" title="Edit"><i class="fas fa-edit"></i></button>
-                                                <button class="btn-icon-sm btn-icon-sm--danger" @click="deleteDepartment(department)" v-if="hasPermission('system', 'manage_departments')" title="Deactivate"><i class="fas fa-power-off"></i></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div v-if="filteredDepartments.length === 0" class="empty-state" style="padding:3rem">
-                                <i class="fas fa-sitemap empty-state-icon"></i>
-                                <div class="empty-state-title">No departments found</div>
-                                <div class="empty-state-description">Departments group your clinical staff and training units</div>
-                                <button class="btn btn-primary btn-sm" @click="showAddDepartmentModal" v-if="hasPermission('system', 'manage_departments')"><i class="fas fa-plus"></i> Add First Department</button>
-                            </div>
-                        </div>
-                        </template>
                     </div>
                 </div>
 
@@ -6182,10 +6010,10 @@
                         </div>
                     </div>
 
-                    <!-- Active Training Units Reassignment -->
+                    <!-- Active Clinical Units Reassignment -->
                     <div v-if="deptReassignModal.impact.activeUnits.length" class="rsm-section">
                         <div class="rsm-section-header">
-                            <i class="fas fa-layer-group"></i> Training Units
+                            <i class="fas fa-layer-group"></i> Clinical Units
                             <span class="rsm-count">{{ deptReassignModal.impact.activeUnits.length }}</span>
                         </div>
                         <div class="rsm-row rsm-row-header">
@@ -6731,7 +6559,7 @@
             <button class="mobile-nav-item" :class="{ active: currentView === 'staff_absence' }" @click="switchView('staff_absence')" v-if="hasPermission('staff_absence','read')">
                 <i class="fas fa-user-clock"></i><span>Absences</span>
             </button>
-            <button class="mobile-nav-item" :class="{ active: ['oncall_schedule','training_units','department_management','communications','research_hub','news','system_settings'].includes(currentView) }" @click="mobileMenuOpen = !mobileMenuOpen">
+            <button class="mobile-nav-item" :class="{ active: ['oncall_schedule','training_units','research_hub','news','system_settings'].includes(currentView) }" @click="mobileMenuOpen = !mobileMenuOpen">
                 <i class="fas fa-ellipsis-h"></i><span>More</span>
             </button>
         </nav>
@@ -6739,5 +6567,116 @@
     </div><!-- end app-layout -->
 
     <script src="app.js"></script>
+
+    <script>
+    /* ── Login page — anatomical bronchial tree ── */
+    (function(){
+        var canvas = document.getElementById('loginTreeCanvas');
+        if(!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+        var raf, frame = 0;
+
+        function resize(){
+            canvas.width  = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        function drawTree(breath){
+            var W = canvas.width, H = canvas.height;
+            ctx.clearRect(0,0,W,H);
+            if(W < 1 || H < 1) return;
+
+            var S  = Math.min(W,H) / 300;
+            var cx = W * 0.62; /* offset right — card is on the left */
+            ctx.lineCap = 'round';
+
+            /* anatomical coords at 300 base */
+            var segs = [
+                /* trunk */
+                [156,4,  156,108, 1.8,0.70, 0],
+                /* right main — short steep */
+                [156,108, 167,134, 1.5,0.65, 1],
+                /* right upper */
+                [167,134, 180,115, 1.1,0.52, 2],[180,115,200,109,0.85,0.42,3],[200,109,214,105,0.6,0.30,4],[214,105,222,98,0.42,0.20,5],
+                [180,115,196,100,0.75,0.38,3],[196,100,210,95,0.52,0.28,4],[210,95,220,88,0.38,0.18,5],
+                [180,115,184,98,0.68,0.36,3],[184,98,190,86,0.48,0.24,4],
+                /* right middle */
+                [167,134,176,148,1.0,0.48,2],[176,148,196,152,0.72,0.36,3],[196,152,210,148,0.50,0.26,4],
+                [176,148,188,162,0.65,0.34,3],[188,162,200,172,0.45,0.22,4],
+                /* right lower */
+                [167,134,170,160,1.2,0.52,2],[170,160,182,152,0.78,0.38,3],[182,152,196,148,0.52,0.28,4],
+                [170,160,188,180,0.78,0.38,3],[188,180,200,172,0.52,0.26,4],[200,172,212,166,0.38,0.18,5],
+                [170,160,178,190,0.70,0.35,3],[178,190,188,202,0.48,0.22,4],
+                [170,160,160,188,0.62,0.32,3],[160,188,154,202,0.43,0.20,4],
+                /* left main — long shallow */
+                [156,108,124,152,1.2,0.60,1],
+                /* left upper */
+                [124,152,112,132,1.0,0.50,2],[112,132,96,126,0.78,0.38,3],[96,126,80,122,0.54,0.28,4],[80,122,66,118,0.38,0.18,5],
+                [112,132,100,116,0.70,0.36,3],[100,116,88,106,0.48,0.24,4],[88,106,78,96,0.35,0.17,5],
+                [112,132,106,114,0.65,0.34,3],[106,114,102,98,0.45,0.22,4],
+                /* lingula */
+                [112,132,100,148,0.68,0.36,3],[100,148,86,144,0.48,0.24,4],[86,144,74,140,0.35,0.17,5],
+                [100,148,88,158,0.45,0.22,4],
+                /* left lower */
+                [124,152,118,176,1.1,0.50,2],[118,176,104,166,0.75,0.36,3],[104,166,90,160,0.50,0.26,4],
+                [118,176,100,196,0.72,0.36,3],[100,196,86,188,0.50,0.24,4],[86,188,74,182,0.35,0.16,5],
+                [118,176,108,200,0.65,0.32,3],[108,200,100,214,0.45,0.20,4],
+                [118,176,124,196,0.60,0.30,3],[124,196,126,210,0.42,0.18,4]
+            ];
+
+            var bo = breath * 0.03;
+            segs.forEach(function(s){
+                var alpha = s[5] + Math.sin(frame * 0.012 + s[2] * 0.4) * 0.04;
+                ctx.globalAlpha = Math.max(0.06, alpha);
+                ctx.lineWidth   = s[4] * S * 1.35;
+                ctx.strokeStyle = 'rgba(0,179,179,1)';
+                ctx.beginPath();
+                ctx.moveTo(s[0]*S + (W - 300*S)*0.5, s[1]*S);
+                ctx.lineTo(s[2]*S + (W - 300*S)*0.5, s[3]*S);
+                ctx.stroke();
+            });
+
+            /* lung silhouettes */
+            var offX = (W - 300*S) * 0.5;
+            var sc = Math.min(H*0.34, W*0.19);
+            var cxL = 156*S + offX, cyL = 108*S + 45*S*1.05;
+            ctx.lineWidth = 0.5*S; ctx.strokeStyle = 'rgba(0,179,179,1)';
+            /* right */
+            ctx.globalAlpha = 0.10 + breath*0.03;
+            ctx.beginPath();
+            ctx.moveTo(cxL+8*S, 14*S);
+            ctx.bezierCurveTo(cxL+38*S,2*S,cxL+128*S,22*S,cxL+132*S,54*S);
+            ctx.bezierCurveTo(cxL+144*S,96*S,cxL+140*S,156*S,cxL+124*S,200*S);
+            ctx.bezierCurveTo(cxL+112*S,228*S,cxL+80*S,232*S,cxL+56*S,230*S);
+            ctx.bezierCurveTo(cxL+34*S,228*S,cxL+22*S,216*S,cxL+18*S,196*S);
+            ctx.bezierCurveTo(cxL+15*S,170*S,cxL+16*S,130*S,cxL+16*S,14*S);
+            ctx.stroke();
+            /* left */
+            ctx.beginPath();
+            ctx.moveTo(cxL-8*S, 14*S);
+            ctx.bezierCurveTo(cxL-36*S,2*S,cxL-116*S,22*S,cxL-126*S,54*S);
+            ctx.bezierCurveTo(cxL-140*S,96*S,cxL-136*S,156*S,cxL-120*S,200*S);
+            ctx.bezierCurveTo(cxL-106*S,228*S,cxL-76*S,232*S,cxL-46*S,230*S);
+            ctx.bezierCurveTo(cxL-28*S,228*S,cxL-18*S,218*S,cxL-16*S,204*S);
+            ctx.bezierCurveTo(cxL-14*S,192*S,cxL-22*S,174*S,cxL-24*S,162*S);
+            ctx.bezierCurveTo(cxL-26*S,150*S,cxL-20*S,134*S,cxL-16*S,14*S);
+            ctx.stroke();
+
+            ctx.globalAlpha = 1;
+        }
+
+        function animate(){
+            frame++;
+            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;
+            drawTree(breath);
+            if(!REDUCED) raf = requestAnimationFrame(animate);
+        }
+
+        resize();
+        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });
+        if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
+    })();
+    </script>
 </body>
 </html>
