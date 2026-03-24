@@ -3743,6 +3743,11 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   border-color: rgba(99,102,241,.22);
   color: #818cf8;
 }
+.pd-hero-chip--resident {
+  background: rgba(99,102,241,.1);
+  border-color: rgba(99,102,241,.22);
+  color: #818cf8;
+}
 
 /* ── STATS STRIP ──────────────────────────────────────────── */
 .pd-stats-strip {
