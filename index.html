@@ -15,7 +15,7 @@
     <!-- ============- TOAST CONTAINER ==-=--=---======= -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
-             :class="['toast', `toast-${toast.type}`]" 
+             :class="['toast', `toast-${toast.type}`]"
              role="alert" aria-live="polite" aria-atomic="true"> 
             <div class="toast-icon"><i :class="toast.icon"></i></div>
             <div class="toast-content">
@@ -212,7 +212,7 @@
                             <a href="#" class="sidebar-menu-link" :class="{ active: currentView === 'dashboard' }"
                                @click.prevent="switchView('dashboard'); mobileMenuOpen = false"
                                :aria-current="currentView === 'dashboard' ? 'page' : null">
-                                <i class="fas fa-chart-line"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                                 <span v-if="!sidebarCollapsed">Overview</span>
                             </a>
                         </li>
@@ -235,7 +235,7 @@
                                @click.prevent="switchView('oncall_schedule'); mobileMenuOpen = false"
                                v-if="hasPermission('oncall_schedule', 'read')"
                                :aria-current="currentView === 'oncall_schedule' ? 'page' : null">
-                                <i class="fas fa-moon"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                                 <span v-if="!sidebarCollapsed">On-call</span>
                             </a>
                         </li>
@@ -249,7 +249,7 @@
                                @click.prevent="switchView('training_units'); mobileMenuOpen = false"
                                v-if="hasPermission('training_units', 'read')"
                                :aria-current="currentView === 'training_units' ? 'page' : null">
-                                <i class="fas fa-hospital-user"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg>
                                 <span v-if="!sidebarCollapsed">Clinical Units</span>
                             </a>
                         </li>
@@ -258,7 +258,7 @@
                                @click.prevent="switchView('resident_rotations'); mobileMenuOpen = false"
                                v-if="hasPermission('resident_rotations', 'read')"
                                :aria-current="currentView === 'resident_rotations' ? 'page' : null">
-                                <i class="fas fa-calendar-check"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
                                 <span v-if="!sidebarCollapsed">Rotations</span>
                             </a>
                         </li>
@@ -272,7 +272,7 @@
                                @click.prevent="switchView('staff_absence'); mobileMenuOpen = false"
                                v-if="hasPermission('staff_absence', 'read')"
                                :aria-current="currentView === 'staff_absence' ? 'page' : null">
-                                <i class="fas fa-user-clock"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10H21M8 3V7M16 3V7M10 14L14 18M14 14L10 18"/></svg>
                                 <span v-if="!sidebarCollapsed">Absence</span>
                             </a>
                         </li>
@@ -282,7 +282,7 @@
                                v-if="hasPermission('system_settings', 'read')"
                                :aria-current="currentView === 'system_settings' ? 'page' : null"
                                data-tooltip="Settings">
-                                <i class="fas fa-cog"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
                                 <span v-if="!sidebarCollapsed">System Settings</span>
                             </a>
                         </li>
@@ -296,7 +296,7 @@
                                :class="{ active: currentView === 'research_hub' }"
                                @click.prevent="switchView('research_hub'); mobileMenuOpen = false"
                                :aria-current="currentView === 'research_hub' ? 'page' : null">
-                                <i class="fas fa-microscope"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
                                 <span v-if="!sidebarCollapsed">Research Hub</span>
                             </a>
                         </li>
@@ -305,7 +305,7 @@
                                :class="{ active: currentView === 'news' }"
                                @click.prevent="switchView('news'); mobileMenuOpen = false"
                                :aria-current="currentView === 'news' ? 'page' : null">
-                                <i class="fas fa-newspaper"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
                                 <span v-if="!sidebarCollapsed">News & Posts</span>
                             </a>
                         </li>
@@ -1624,7 +1624,7 @@
                     </nav>
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title"><i class="fas fa-hospital-user"></i> Clinical Units</div>
+                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg> Clinical Units</div>
                             <div style="display:flex;gap:8px;align-items:center">
                                 <button class="btn btn-ghost uop-trigger-btn" @click="occupancyPanel.show = true" title="View units availability at a glance">
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg> Units Occupancy
@@ -2047,7 +2047,7 @@
                             <span class="rhub-tab-count">{{ clinicalTrials.length }}</span>
                         </button>
                         <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'projects' }" @click="researchHubTab = 'projects'">
-                            <i class="fas fa-microscope"></i>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
                             <span>Projects</span>
                             <span class="rhub-tab-count">{{ innovationProjects.length }}</span>
                         </button>
@@ -2280,7 +2280,7 @@
                                         <i class="fas fa-vial"></i> Trials
                                     </button>
                                     <button class="btn btn-sm btn-outline" @click="drillToProjects(activeMissionLine.id)">
-                                        <i class="fas fa-microscope"></i> Projects
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg> Projects
                                     </button>
                                     <button class="btn btn-primary btn-sm" @click="showAddTrialModal(activeMissionLine)" v-if="hasPermission('research_lines','create')" style="margin-left:auto">
                                         <i class="fas fa-plus"></i> Add Trial
@@ -2452,7 +2452,7 @@
                                 </div>
                             </div>
                             <div v-if="filteredProjects.length === 0" class="rhub-empty col-span-full">
-                                <i class="fas fa-microscope"></i><p>No projects found</p>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg><p>No projects found</p>
                             </div>
                         </div>
                         <div class="pagination" v-if="projectTotalPages > 1">
@@ -2469,7 +2469,7 @@
                         <!-- Analytics sub-tabs -->
                         <div class="rha-subtabs">
                             <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'dashboard' }" @click="analyticsActiveTab = 'dashboard'"><i class="fas fa-chart-pie"></i> Dashboard</button>
-                            <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'performance' }" @click="analyticsActiveTab = 'performance'"><i class="fas fa-chart-line"></i> Performance</button>
+                            <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'performance' }" @click="analyticsActiveTab = 'performance'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Performance</button>
                             <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'partners' }" @click="analyticsActiveTab = 'partners'"><i class="fas fa-handshake"></i> Partners</button>
                         </div>
 
@@ -2565,7 +2565,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div v-else class="rhub-empty"><i class="fas fa-chart-line"></i><p>No performance data</p></div>
+                            <div v-else class="rhub-empty"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><p>No performance data</p></div>
                         </div>
 
                         <!-- PARTNERS -->
@@ -2659,7 +2659,7 @@
                             <div class="rldp-footer">
                                 <button class="btn btn-outline btn-sm" @click="editResearchLine(selectedResearchLine); closeLineDetail()" v-if="hasPermission('research_lines','update')"><i class="fas fa-edit"></i> Edit Line</button>
                                 <button class="btn btn-primary btn-sm" @click="showAddTrialModal(selectedResearchLine); closeLineDetail()"><i class="fas fa-vial"></i> Add Trial</button>
-                                <button class="btn btn-primary btn-sm" @click="showAddProjectModal(selectedResearchLine); closeLineDetail()"><i class="fas fa-microscope"></i> Add Project</button>
+                                <button class="btn btn-primary btn-sm" @click="showAddProjectModal(selectedResearchLine); closeLineDetail()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg> Add Project</button>
                             </div>
                         </template>
                     </div>
@@ -2852,7 +2852,7 @@
                         <!-- Attending: active trials + residents supervised -->
                         <template v-if="!isResidentType(staffProfileModal.staff.staff_type)">
                             <div class="pd-stat">
-                                <div class="pd-stat-n pd-stat-n--teal">{{ staffProfileModal.staff.is_research_coordinator ? researchOps?.researchLines?.filter(l=>l.coordinator_id===staffProfileModal.staff.id).length || 0 : getResearchForStaff(staffProfileModal.staff.id).length }}</div>
+                                <div class="pd-stat-n pd-stat-n--teal">{{ researchOps.clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).length }}</div>
                                 <div class="pd-stat-l">Trials</div>
                             </div>
                             <div class="pd-stat">
@@ -3273,7 +3273,7 @@
                             <!-- Innovation Projects -->
                             <div v-if="staffProfileModal.researchProfile.projects?.list?.length" class="pd-card">
                                 <div class="pd-card-head">
-                                    <span class="pd-card-icon pd-card-icon--purple"><i class="fas fa-microscope"></i></span>
+                                    <span class="pd-card-icon pd-card-icon--purple"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg></span>
                                     <span class="pd-card-title">Innovation Projects</span>
                                 </div>
                                 <div v-for="project in staffProfileModal.researchProfile.projects.list" :key="project.id" class="pd-trial-row">
@@ -3393,7 +3393,7 @@
             <!-- Posts list -->
             <div class="news-list" v-if="!newsLoading">
                 <div v-if="filteredNews.length === 0" class="news-empty">
-                    <i class="fas fa-newspaper"></i>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
                     <p>No posts yet. Create your first post to get started.</p>
                     <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('research_lines','create')">
                         <i class="fas fa-plus"></i> New Post
@@ -3503,7 +3503,7 @@
             <div class="modal-container modal-lg">
                 <div class="modal-header">
                     <h3>
-                        <i class="fas fa-newspaper"></i>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
                         {{ newsModal.mode === 'add' ? 'New Post' : 'Edit Post' }}
                     </h3>
                     <button class="modal-close" @click="newsModal.show = false">&times;</button>
@@ -4435,7 +4435,7 @@
                             <!-- Overnight indicator -->
                             <div v-if="onCallModal.form.end_time && onCallModal.form.start_time && onCallModal.form.end_time < onCallModal.form.start_time && onCallModal.form.duty_date"
                                  class="oc-overnight-hint">
-                                <i class="fas fa-moon"></i>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                                 Ends next day ·
                                 <strong>{{ new Date(new Date(onCallModal.form.duty_date + 'T12:00:00').getTime() + 86400000).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) }}</strong>
                             </div>
@@ -5139,7 +5139,7 @@
                 <div class="modal-body">
                     <div class="comms-tabs" v-if="communicationsModal.mode !== 'edit'">
                         <button class="comms-tab" :class="{ active: communicationsModal.activeTab === 'announcement' }" @click="communicationsModal.activeTab = 'announcement'"><i class="fas fa-bullhorn"></i><span>Announcement</span></button>
-                        <button class="comms-tab" :class="{ active: communicationsModal.activeTab === 'stats_update' }" @click="communicationsModal.activeTab = 'stats_update'" v-if="hasPermission('communications', 'create')"><i class="fas fa-chart-line"></i><span>Clinical Update</span></button>
+                        <button class="comms-tab" :class="{ active: communicationsModal.activeTab === 'stats_update' }" @click="communicationsModal.activeTab = 'stats_update'" v-if="hasPermission('communications', 'create')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Clinical Update</span></button>
                     </div>
                     <div v-if="communicationsModal.activeTab === 'announcement'" class="comms-content">
                         <div class="form-preview" v-if="communicationsModal.form.title || communicationsModal.form.content">
@@ -5711,7 +5711,7 @@
             <div class="modal-container modal-wide">
                 <div class="modal-header">
                     <div class="modal-title">
-                        <i class="fas fa-microscope"></i>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
                         {{ innovationProjectModal.mode === 'add' ? 'New Innovation Project' : 'Edit Innovation Project' }}
                     </div>
                     <button class="modal-close" @click="innovationProjectModal.show = false"><i class="fas fa-times"></i></button>
@@ -5895,7 +5895,7 @@
                     <!-- ON-CALL SHIFTS -->
                     <div v-if="reassignmentModal.affectedShifts.length" class="rsm-section">
                         <div class="rsm-section-header">
-                            <i class="fas fa-moon"></i>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                             On-call Shifts
                             <span class="rsm-count">{{ reassignmentModal.affectedShifts.length }}</span>
                         </div>
@@ -6583,7 +6583,7 @@
         <!-- Mobile bottom navigation (shows on ≤1024px) -->
         <nav class="mobile-bottom-nav" aria-label="Mobile navigation" v-if="currentUser">
             <button class="mobile-nav-item" :class="{ active: currentView === 'dashboard' }" @click="switchView('dashboard')">
-                <i class="fas fa-chart-line"></i><span>Overview</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Overview</span>
             </button>
             <button class="mobile-nav-item" :class="{ active: currentView === 'medical_staff' }" @click="switchView('medical_staff')" v-if="hasPermission('medical_staff','read')">
                 <i class="fas fa-user-md"></i><span>Staff</span>
