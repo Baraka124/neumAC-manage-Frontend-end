@@ -2831,17 +2831,25 @@
 
                         <!-- Compact meta chips -->
                         <div class="pd-hero-meta">
-                            <span class="pd-hero-chip" v-if="getDepartmentName(staffProfileModal.staff.department_id)">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg>
-                                {{ getDepartmentName(staffProfileModal.staff.department_id) }}
-                            </span>
-                            <span class="pd-hero-chip" v-if="staffProfileModal.staff.specialization">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 4C7 4 5 4 5 7V13C5 17 9 19 12 19C15 19 19 17 19 13"/><circle cx="19" cy="11" r="2"/><path d="M5 9H9"/></svg>
+                            <!-- Specialization — for attendings -->
+                            <span class="pd-hero-chip" v-if="!isResidentType(staffProfileModal.staff.staff_type) && staffProfileModal.staff.specialization">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 4C7 4 5 4 5 7V13C5 17 9 19 12 19C15 19 19 17 19 13"/><circle cx="19" cy="11" r="2"/><path d="M5 9H9"/></svg>
                                 {{ formatSpecialization(staffProfileModal.staff.specialization) }}
                             </span>
-                            <span class="pd-hero-chip" v-if="isResidentType(staffProfileModal.staff.staff_type) && staffProfileModal.staff.training_year">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg>
-                                {{ formatTrainingYear(staffProfileModal.staff.training_year) }}
+                            <!-- Training year — for residents -->
+                            <span class="pd-hero-chip" v-if="isResidentType(staffProfileModal.staff.staff_type) && (staffProfileModal.staff.residency_year_calc || staffProfileModal.staff.training_year)">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6L3 11L12 16L21 11L12 6Z"/><path d="M8 13.5V17C8 17 10 19 12 19C14 19 16 17 16 13.5"/></svg>
+                                {{ staffProfileModal.staff.residency_year_calc || formatTrainingYear(staffProfileModal.staff.training_year) }}
+                            </span>
+                            <!-- Resident category pill -->
+                            <span class="pd-hero-chip pd-hero-chip--resident" v-if="isResidentType(staffProfileModal.staff.staff_type) && staffProfileModal.staff.resident_category">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    v-if="staffProfileModal.staff.resident_category==='rotating_other_dept'"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    v-if="staffProfileModal.staff.resident_category==='external_resident'"><circle cx="12" cy="12" r="9"/><path d="M2 12H22M12 2C12 2 8 7 8 12C8 17 12 22 12 22M12 2C12 2 16 7 16 12C16 17 12 22 12 22"/></svg>
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    v-if="staffProfileModal.staff.resident_category==='department_internal'"><path d="M3 21H21M5 21V8L12 4L19 8V21"/></svg>
+                                {{ staffProfileModal.staff.resident_category==='department_internal' ? 'Internal' : staffProfileModal.staff.resident_category==='rotating_other_dept' ? 'Rotating' : 'External' }}
                             </span>
                         </div>
                     </div>
