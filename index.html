@@ -2852,7 +2852,7 @@
                         <!-- Attending: active trials + residents supervised -->
                         <template v-if="!isResidentType(staffProfileModal.staff.staff_type)">
                             <div class="pd-stat">
-                                <div class="pd-stat-n pd-stat-n--teal">{{ researchOps.clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).length }}</div>
+                                <div class="pd-stat-n pd-stat-n--teal">{{ clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).length }}</div>
                                 <div class="pd-stat-l">Trials</div>
                             </div>
                             <div class="pd-stat">
