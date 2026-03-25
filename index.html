@@ -3796,15 +3796,15 @@
 
               <!-- Prev / Next navigation -->
               <div v-if="newsDrawerPrev || newsDrawerNext" style="display:flex;justify-content:space-between;margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--border);gap:1rem;">
-                <div v-if="newsDrawerPrev" class="news-card-title" style="font-size:12px;cursor:pointer;max-width:44%;color:rgba(255,255,255,.72);transition:color .2s;" @click="openNewsDrawer(newsDrawerPrev)">
-                  <div style="font-size:12px;color:rgba(255,255,255,.45);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;gap:4px">
+                <div v-if="newsDrawerPrev" class="news-card-title" style="font-size:12px;cursor:pointer;max-width:44%;color:rgba(255,255,255,.88);transition:color .2s;" @click="openNewsDrawer(newsDrawerPrev)">
+                  <div style="font-size:12px;color:rgba(255,255,255,.65);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;gap:4px">
                     <i class="fas fa-arrow-left" style="font-size:13px"></i> Previous
                   </div>
                   {{ newsDrawerPrev.title }}
                 </div>
                 <div v-else></div>
-                <div v-if="newsDrawerNext" class="news-card-title" style="font-size:12px;cursor:pointer;max-width:44%;color:rgba(255,255,255,.72);text-align:right;transition:color .2s;" @click="openNewsDrawer(newsDrawerNext)">
-                  <div style="font-size:12px;color:rgba(255,255,255,.45);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;justify-content:flex-end;gap:4px">
+                <div v-if="newsDrawerNext" class="news-card-title" style="font-size:12px;cursor:pointer;max-width:44%;color:rgba(255,255,255,.88);text-align:right;transition:color .2s;" @click="openNewsDrawer(newsDrawerNext)">
+                  <div style="font-size:12px;color:rgba(255,255,255,.65);font-family:var(--font-data);margin-bottom:4px;display:flex;align-items:center;justify-content:flex-end;gap:4px">
                     Next <i class="fas fa-arrow-right" style="font-size:13px"></i>
                   </div>
                   {{ newsDrawerNext.title }}
@@ -4359,63 +4359,39 @@
                                 </div>
                             </div>
 
-                            <!-- ── TIER 2: Research Coordinator ── -->
+                            <!-- ── TIER 2: Research ── -->
                             <div class="sm-roles-section">
                                 <div class="sm-roles-section-label">Research</div>
 
-                                <!-- Research Coordinator -->
-                                <div class="sm-role-row" :class="{ active: medicalStaffModal.form.is_research_coordinator }">
-                                    <div class="sm-role-left">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" :stroke="medicalStaffModal.form.is_research_coordinator ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                                        <div>
-                                            <div class="sm-role-name">Research Coordinator</div>
-                                            <div class="sm-role-hint">
-                                                <span v-if="medicalStaffModal.form.is_research_coordinator && medicalStaffModal.form._coordLineId">neumAC L{{ researchLines.find(l=>l.id===medicalStaffModal.form._coordLineId)?.line_number || '?' }} — {{ (researchLines.find(l=>l.id===medicalStaffModal.form._coordLineId)?.research_line_name || researchLines.find(l=>l.id===medicalStaffModal.form._coordLineId)?.name || '').slice(0,28) }}</span>
-                                                <span v-else>Coordinates a specific research line</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="sm-toggle" :class="{ on: medicalStaffModal.form.is_research_coordinator }"
-                                         @click="medicalStaffModal.form.is_research_coordinator = !medicalStaffModal.form.is_research_coordinator; if(!medicalStaffModal.form.is_research_coordinator) medicalStaffModal.form._coordLineId = null">
-                                        <div class="sm-toggle-thumb"></div>
-                                    </div>
-                                </div>
-                                <!-- Line picker — shown when coordinator is ON -->
-                                <div v-if="medicalStaffModal.form.is_research_coordinator" class="sm-role-sub">
-                                    <div class="sm-role-sub-label">Coordinating research line</div>
-                                    <div v-for="line in researchLines" :key="line.id"
-                                         class="sm-role-line-item" :class="{ selected: medicalStaffModal.form._coordLineId === line.id }"
-                                         @click="medicalStaffModal.form._coordLineId = line.id">
-                                        <span class="sm-role-line-n">L{{ line.line_number }}</span>
-                                        <span class="sm-role-line-name">{{ line.research_line_name || line.name }}</span>
-                                        <svg v-if="medicalStaffModal.form._coordLineId === line.id" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17L4 12"/></svg>
-                                    </div>
-                                    <div v-if="!researchLines.length" style="font-size:.72rem;color:var(--text-3);font-style:italic;padding:6px 0;">No research lines defined yet</div>
-                                </div>
-
-                                <!-- Investigador -->
+                                <!-- Investigador toggle — parent role -->
                                 <div class="sm-role-row" :class="{ active: medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi }">
                                     <div class="sm-role-left">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" :stroke="(medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi) ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
                                         <div>
                                             <div class="sm-role-name">Investigador</div>
                                             <div class="sm-role-hint">
-                                                <span v-if="medicalStaffModal.form.can_be_pi && medicalStaffModal.form.can_be_coi">PI + Co-Investigator</span>
-                                                <span v-else-if="medicalStaffModal.form.can_be_pi">Principal Investigator</span>
-                                                <span v-else-if="medicalStaffModal.form.can_be_coi">Co-Investigator</span>
-                                                <span v-else>Can participate in clinical trials</span>
+                                                <template v-if="medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi">
+                                                    <span v-if="medicalStaffModal.form.can_be_pi && medicalStaffModal.form.can_be_coi">PI + Co-I</span>
+                                                    <span v-else-if="medicalStaffModal.form.can_be_pi">Principal Investigator</span>
+                                                    <span v-else>Co-Investigator</span>
+                                                    <span v-if="medicalStaffModal.form._investigadorLines && medicalStaffModal.form._investigadorLines.length"> · {{ medicalStaffModal.form._investigadorLines.length }} line{{ medicalStaffModal.form._investigadorLines.length > 1 ? 's' : '' }}</span>
+                                                </template>
+                                                <span v-else>Participates in clinical trials</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="sm-toggle" :class="{ on: medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi }"
-                                         @click="const isOn = medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi; medicalStaffModal.form.can_be_pi = !isOn; medicalStaffModal.form.can_be_coi = !isOn">
+                                         @click="const isOn = medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi; medicalStaffModal.form.can_be_pi = !isOn; medicalStaffModal.form.can_be_coi = !isOn; if(isOn){ medicalStaffModal.form._investigadorLines = []; medicalStaffModal.form.is_research_coordinator = false; medicalStaffModal.form._coordLineId = null; }">
                                         <div class="sm-toggle-thumb"></div>
                                     </div>
                                 </div>
-                                <!-- PI/CoI sub-toggles — shown when investigador is ON -->
+
+                                <!-- Investigador sub-panel — appears when toggled ON -->
                                 <div v-if="medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi" class="sm-role-sub">
+
+                                    <!-- PI / CoI capability pills -->
                                     <div class="sm-role-sub-label">Role in trials</div>
-                                    <div class="sm-role-cap-row">
+                                    <div class="sm-role-cap-row" style="margin-bottom:10px;">
                                         <label class="sm-role-cap-opt" :class="{ active: medicalStaffModal.form.can_be_pi }" @click="medicalStaffModal.form.can_be_pi = !medicalStaffModal.form.can_be_pi">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20H22M3 9L8 14L12 5L16 14L21 9L19 20H5L3 9Z"/></svg>
                                             Principal Investigator
@@ -4427,12 +4403,58 @@
                                             <svg v-if="medicalStaffModal.form.can_be_coi" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17L4 12"/></svg>
                                         </label>
                                     </div>
-                                    <!-- can_supervise_residents — only for attendings -->
-                                    <label v-if="!isResidentType(medicalStaffModal.form.staff_type)" class="sm-role-cap-opt" :class="{ active: medicalStaffModal.form.can_supervise_residents }" @click="medicalStaffModal.form.can_supervise_residents = !medicalStaffModal.form.can_supervise_residents" style="margin-top:6px;">
+
+                                    <!-- Research lines they participate in — multiselect list -->
+                                    <div class="sm-role-sub-label">Research lines <span style="color:rgba(0,179,179,.5);font-size:.52rem;">— select all that apply</span></div>
+                                    <div v-if="researchLines.length">
+                                        <div v-for="line in researchLines" :key="line.id"
+                                             class="sm-role-line-item"
+                                             :class="{ selected: (medicalStaffModal.form._investigadorLines||[]).includes(line.id) }"
+                                             @click="const lines = medicalStaffModal.form._investigadorLines || []; const idx = lines.indexOf(line.id); if(idx > -1){ lines.splice(idx,1) } else { lines.push(line.id) }; medicalStaffModal.form._investigadorLines = [...lines]">
+                                            <span class="sm-role-line-n">L{{ line.line_number }}</span>
+                                            <span class="sm-role-line-name">{{ line.research_line_name || line.name }}</span>
+                                            <svg v-if="(medicalStaffModal.form._investigadorLines||[]).includes(line.id)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17L4 12"/></svg>
+                                        </div>
+                                    </div>
+                                    <div v-else style="font-size:.72rem;color:var(--text-3);font-style:italic;padding:4px 0;">No research lines defined yet</div>
+
+                                    <!-- Supervisor toggle -->
+                                    <label v-if="!isResidentType(medicalStaffModal.form.staff_type)" class="sm-role-cap-opt" :class="{ active: medicalStaffModal.form.can_supervise_residents }" @click="medicalStaffModal.form.can_supervise_residents = !medicalStaffModal.form.can_supervise_residents" style="margin-top:8px;">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M4 19C4 16 5.7 14 9 14C12.3 14 15 16 15 19"/><path d="M17 11V17M14 14H20"/></svg>
                                         Can supervise residents
                                         <svg v-if="medicalStaffModal.form.can_supervise_residents" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17L4 12"/></svg>
                                     </label>
+
+                                    <!-- ── Coordinator sub-role — nested inside Investigador ── -->
+                                    <div style="height:0.5px;background:rgba(0,179,179,.15);margin:10px 0;"></div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                                        <div>
+                                            <div style="font-size:.75rem;font-weight:500;color:var(--text-1,#111827);display:flex;align-items:center;gap:6px;">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" :stroke="medicalStaffModal.form.is_research_coordinator ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M12 12v8M9 16h6"/></svg>
+                                                Also Research Coordinator?
+                                            </div>
+                                            <div style="font-size:.62rem;font-family:monospace;color:var(--text-3,#6b7280);margin-top:1px;">
+                                                <span v-if="medicalStaffModal.form.is_research_coordinator && medicalStaffModal.form._coordLineId">neumAC L{{ researchLines.find(l=>l.id===medicalStaffModal.form._coordLineId)?.line_number }} — {{ (researchLines.find(l=>l.id===medicalStaffModal.form._coordLineId)?.research_line_name || researchLines.find(l=>l.id===medicalStaffModal.form._coordLineId)?.name || '').slice(0,30) }}</span>
+                                                <span v-else>Not all investigators are coordinators</span>
+                                            </div>
+                                        </div>
+                                        <div class="sm-toggle" :class="{ on: medicalStaffModal.form.is_research_coordinator }"
+                                             @click="medicalStaffModal.form.is_research_coordinator = !medicalStaffModal.form.is_research_coordinator; if(!medicalStaffModal.form.is_research_coordinator) medicalStaffModal.form._coordLineId = null">
+                                            <div class="sm-toggle-thumb"></div>
+                                        </div>
+                                    </div>
+                                    <!-- Coordinator line picker — which line they coordinate -->
+                                    <div v-if="medicalStaffModal.form.is_research_coordinator" style="margin-top:6px;">
+                                        <div class="sm-role-sub-label">Coordinating line <span style="color:rgba(0,179,179,.5);font-size:.52rem;">— one line only</span></div>
+                                        <div v-for="line in researchLines" :key="'coord-'+line.id"
+                                             class="sm-role-line-item"
+                                             :class="{ selected: medicalStaffModal.form._coordLineId === line.id }"
+                                             @click="medicalStaffModal.form._coordLineId = line.id">
+                                            <span class="sm-role-line-n">L{{ line.line_number }}</span>
+                                            <span class="sm-role-line-name">{{ line.research_line_name || line.name }}</span>
+                                            <svg v-if="medicalStaffModal.form._coordLineId === line.id" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17L4 12"/></svg>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -4512,11 +4534,11 @@
                                 {{ (allStaffLookup.find(s=>s.id===onCallModal.form.backup_physician_id)?.full_name||'').split(' ').slice(0,2).map(n=>n[0]).join('') }}
                             </div>
                             <div>
-                                <div style="font-size:.7rem;color:rgba(255,255,255,.55);">{{ allStaffLookup.find(s=>s.id===onCallModal.form.backup_physician_id)?.full_name }}</div>
+                                <div style="font-size:.7rem;color:rgba(255,255,255,.73);">{{ allStaffLookup.find(s=>s.id===onCallModal.form.backup_physician_id)?.full_name }}</div>
                                 <div style="font-size:.58rem;font-family:monospace;color:rgba(255,255,255,.3);">Backup</div>
                             </div>
                         </div>
-                        <div v-if="!onCallModal.form.primary_physician_id && !onCallModal.form.backup_physician_id" style="font-size:.7rem;color:rgba(255,255,255,.18);font-style:italic;">No staff assigned yet</div>
+                        <div v-if="!onCallModal.form.primary_physician_id && !onCallModal.form.backup_physician_id" style="font-size:.7rem;color:rgba(255,255,255,.30);font-style:italic;">No staff assigned yet</div>
                     </div>
                     <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
                 </div>
@@ -4750,12 +4772,12 @@
                                 <div style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0;"></div>
                                 <div style="flex:1;min-width:0;">
                                     <div style="font-size:.7rem;color:rgba(255,255,255,.7);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ getTrainingUnitName(rot.training_unit_id) }}</div>
-                                    <div style="font-size:.58rem;font-family:monospace;color:rgba(255,255,255,.25);">{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</div>
+                                    <div style="font-size:.58rem;font-family:monospace;color:rgba(255,255,255,.42);">{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</div>
                                 </div>
                             </div>
                             <div v-if="!getRotationHistory(rotationModal.form.resident_id).length" style="font-size:.7rem;color:rgba(255,255,255,.2);font-style:italic;">No previous rotations</div>
                         </template>
-                        <div v-else style="font-size:.7rem;color:rgba(255,255,255,.18);font-style:italic;">Select a resident to see history</div>
+                        <div v-else style="font-size:.7rem;color:rgba(255,255,255,.30);font-style:italic;">Select a resident to see history</div>
                     </div>
                     <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
                 </div>
@@ -4836,81 +4858,163 @@
 
         <!-- ============ ADD/EDIT TRAINING UNIT MODAL ============ -->
         <div v-if="trainingUnitModal.show" class="modal-overlay">
-            <div class="modal-container">
-                <div class="modal-header">
-                    <div class="modal-title">
-                        <i class="fas" :class="trainingUnitModal.mode === 'add' ? 'fa-plus-circle' : 'fa-clinic-medical'"></i>
-                        {{ trainingUnitModal.mode === 'add' ? 'New Training Unit' : 'Edit Training Unit' }}
-                    </div>
-                    <button class="modal-close" @click="trainingUnitModal.show = false"><i class="fas fa-times"></i></button>
-                </div>
-                <div v-if="trainingUnitModal.mode === 'edit'" class="modal-edit-context">
-                    <div class="mec-icon role-icon--attending_physician"><i class="fas fa-clinic-medical"></i></div>
-                    <div class="mec-info">
-                        <div class="mec-name">{{ trainingUnitModal.form.unit_name }}</div>
-                        <div class="mec-meta">{{ trainingUnitModal.form.unit_code }} <span class="mec-sep">·</span>
-                            <span class="status-indicator" :class="'status-' + trainingUnitModal.form.unit_status">{{ trainingUnitModal.form.unit_status }}</span>
+            <div class="sm-modal" style="max-width:min(760px,calc(100vw - 32px));">
+
+                <!-- LEFT: unit preview -->
+                <div class="sm-left">
+                    <div class="sm-preview">
+                        <!-- Unit type icon -->
+                        <div style="width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;transition:all .3s;"
+                             :style="trainingUnitModal.form.unit_name ? 'background:linear-gradient(135deg,#00B3B3,#0e7490);box-shadow:0 0 0 2.5px rgba(0,179,179,.2),0 0 0 5px rgba(0,179,179,.06)' : 'background:rgba(255,255,255,.05);border:1.5px dashed rgba(255,255,255,.12)'">
+                            <svg v-if="trainingUnitModal.form.unit_type === 'research'" width="24" height="24" viewBox="0 0 24 24" fill="none" :stroke="trainingUnitModal.form.unit_name ? '#fff' : 'rgba(255,255,255,.2)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
+                            <svg v-else-if="trainingUnitModal.form.unit_type === 'icu'" width="24" height="24" viewBox="0 0 24 24" fill="none" :stroke="trainingUnitModal.form.unit_name ? '#fff' : 'rgba(255,255,255,.2)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12H7L9 6L13 18L15 12H21"/></svg>
+                            <svg v-else-if="trainingUnitModal.form.unit_type === 'outpatient'" width="24" height="24" viewBox="0 0 24 24" fill="none" :stroke="trainingUnitModal.form.unit_name ? '#fff' : 'rgba(255,255,255,.2)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" :stroke="trainingUnitModal.form.unit_name ? '#fff' : 'rgba(255,255,255,.2)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg>
+                        </div>
+
+                        <div class="sm-preview-name" :class="{'sm-preview-name--empty': !trainingUnitModal.form.unit_name}">
+                            {{ trainingUnitModal.form.unit_name || 'Unit name…' }}
+                        </div>
+                        <div class="sm-preview-role" v-if="trainingUnitModal.form.unit_code">
+                            {{ trainingUnitModal.form.unit_code }}
+                        </div>
+                        <div class="sm-preview-chips">
+                            <span v-if="trainingUnitModal.form.unit_type" class="sm-preview-chip">
+                                {{ {'training_unit':'Training','clinical_unit':'Clinical','icu':'ICU','outpatient':'Outpatient','surgical':'Surgical','research':'Research'}[trainingUnitModal.form.unit_type] || trainingUnitModal.form.unit_type }}
+                            </span>
+                            <span v-if="trainingUnitModal.form.unit_status && trainingUnitModal.form.unit_status !== 'active'" class="sm-preview-chip" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2);color:#f59e0b;">
+                                {{ trainingUnitModal.form.unit_status === 'under_renovation' ? 'Renovation' : 'Inactive' }}
+                            </span>
                         </div>
                     </div>
-                    <button class="mec-delete-btn" v-if="hasPermission('training_units', 'delete')"
-                            @click="deleteTrainingUnit(trainingUnitModal.form); trainingUnitModal.show = false">
-                        <i class="fas fa-trash-alt"></i> Delete
-                    </button>
+
+                    <!-- Unit details preview -->
+                    <div style="padding:12px 16px;flex:1;display:flex;flex-direction:column;gap:10px;">
+                        <div v-if="trainingUnitModal.form.maximum_residents">
+                            <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:5px;">Capacity</div>
+                            <div style="display:flex;align-items:baseline;gap:4px;">
+                                <span style="font-size:1.5rem;font-weight:700;color:#00B3B3;line-height:1;">{{ trainingUnitModal.form.maximum_residents }}</span>
+                                <span style="font-size:.65rem;font-family:monospace;color:rgba(255,255,255,.3);">max residents</span>
+                            </div>
+                        </div>
+
+                        <div v-if="trainingUnitModal.form.supervising_attending_id">
+                            <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:5px;">Supervisor</div>
+                            <div style="display:flex;align-items:center;gap:7px;">
+                                <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#00B3B3,#4A9EE8);display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:700;color:#fff;flex-shrink:0;">
+                                    {{ (availableAttendings.find(a=>a.id===trainingUnitModal.form.supervising_attending_id)?.full_name||'').split(' ').slice(0,2).map(n=>n[0]).join('') }}
+                                </div>
+                                <span style="font-size:.72rem;color:rgba(255,255,255,.83);font-weight:500;">
+                                    {{ availableAttendings.find(a=>a.id===trainingUnitModal.form.supervising_attending_id)?.full_name }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div v-if="trainingUnitModal.form.specialty">
+                            <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;">Specialty</div>
+                            <div style="font-size:.72rem;color:rgba(255,255,255,.73);">{{ trainingUnitModal.form.specialty }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Delete button in edit mode -->
+                    <div v-if="trainingUnitModal.mode==='edit'" style="padding:0 12px 8px;">
+                        <button class="btn btn-sm btn-secondary" style="width:100%;font-size:.72rem;justify-content:center;display:flex;align-items:center;gap:6px;"
+                                v-if="hasPermission('training_units','delete')"
+                                @click="deleteTrainingUnit(trainingUnitModal.form); trainingUnitModal.show=false">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                            Delete Unit
+                        </button>
+                    </div>
+
+                    <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
                 </div>
-                <div class="modal-body">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group"><label class="form-label">Unit Name *</label><input type="text" class="form-control" v-model="trainingUnitModal.form.unit_name" required></div>
-                        <div class="form-group"><label class="form-label">Unit Code *</label><input type="text" class="form-control" v-model="trainingUnitModal.form.unit_code" required></div>
-                        <div class="form-group">
-                            <label class="form-label">Department *</label>
-                            <select class="form-select" v-model="trainingUnitModal.form.department_id" required>
-                                <option value="">Select Department</option>
-                                <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
-                            </select>
+
+                <!-- RIGHT: form -->
+                <div class="sm-right">
+                    <div class="sm-form-header">
+                        <div class="sm-form-title">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg>
+                            {{ trainingUnitModal.mode === 'add' ? 'New Clinical Unit' : 'Edit Clinical Unit' }}
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Unit Type *</label>
-                            <select class="form-select" v-model="trainingUnitModal.form.unit_type" required>
-                                <option value="training_unit">Training Unit (rotation slot)</option>
-                                <option value="clinical_unit">Clinical Unit (ward)</option>
-                                <option value="icu">ICU / Critical Care</option>
-                                <option value="outpatient">Outpatient / Clinic</option>
-                                <option value="surgical">Surgical</option>
-                                <option value="research">Research Block</option>
-                            </select>
+                        <button class="sm-form-close" @click="trainingUnitModal.show = false">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                        </button>
+                    </div>
+                    <div class="sm-form-body">
+
+                        <div class="sm-row">
+                            <div class="sm-field" :class="{'has-error': fieldErrors.trainingUnit?.unit_name}">
+                                <div class="sm-label">Unit Name <span class="req">·</span></div>
+                                <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.unit_name}" v-model="trainingUnitModal.form.unit_name" placeholder="e.g. UCRI – Critical Care" required>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Unit Code <span class="req">·</span></div>
+                                <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.unit_code}" v-model="trainingUnitModal.form.unit_code" placeholder="e.g. UCRI" required>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Status *</label>
-                            <select class="form-select" v-model="trainingUnitModal.form.unit_status" required>
-                                <option value="active">Active</option>
-                                <option value="under_renovation">Under Renovation</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Unit Type <span class="req">·</span></div>
+                                <select class="sm-select" v-model="trainingUnitModal.form.unit_type" required>
+                                    <option value="training_unit">Training Unit</option>
+                                    <option value="clinical_unit">Clinical Unit (ward)</option>
+                                    <option value="icu">ICU / Critical Care</option>
+                                    <option value="outpatient">Outpatient / Clinic</option>
+                                    <option value="surgical">Surgical</option>
+                                    <option value="research">Research Block</option>
+                                </select>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Status <span class="req">·</span></div>
+                                <select class="sm-select" v-model="trainingUnitModal.form.unit_status" required>
+                                    <option value="active">Active</option>
+                                    <option value="under_renovation">Under Renovation</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-group"><label class="form-label">Max Residents *</label><input type="number" class="form-control" v-model="trainingUnitModal.form.maximum_residents" min="1" max="50" required></div>
-                        <div class="form-group"><label class="form-label">Specialty</label><input type="text" class="form-control" v-model="trainingUnitModal.form.specialty" placeholder="e.g. Respiratory Medicine"></div>
-                        <div class="form-group">
-                            <label class="form-label">Supervising Attending</label>
-                            <select class="form-select" v-model="trainingUnitModal.form.supervising_attending_id">
-                                <option value="">Select Supervisor</option>
+
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Max Residents <span class="req">·</span></div>
+                                <input type="number" class="sm-input" :class="{filled: trainingUnitModal.form.maximum_residents}" v-model="trainingUnitModal.form.maximum_residents" min="1" max="50" required>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Specialty</div>
+                                <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.specialty}" v-model="trainingUnitModal.form.specialty" placeholder="e.g. Respiratory Medicine">
+                            </div>
+                        </div>
+
+                        <div class="sm-field">
+                            <div class="sm-label">Supervising Attending</div>
+                            <select class="sm-select" v-model="trainingUnitModal.form.supervising_attending_id">
+                                <option value="">None assigned</option>
                                 <option v-for="a in availableAttendings" :key="a.id" :value="a.id">{{ a.full_name }}</option>
                             </select>
                         </div>
-                        <div class="form-group col-span-2">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" v-model="trainingUnitModal.form.unit_description" rows="2" placeholder="Brief description of this unit's scope…"></textarea>
+
+                        <div class="sm-field">
+                            <div class="sm-label">Description</div>
+                            <textarea class="sm-input" v-model="trainingUnitModal.form.unit_description"
+                                      rows="2" style="height:auto;resize:none;padding-top:8px;padding-bottom:8px;"
+                                      placeholder="Brief description of this unit's scope…"></textarea>
                         </div>
+
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="trainingUnitModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveTrainingUnit" :disabled="saving">
-                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i>
-                        {{ saving ? 'Saving...' : (trainingUnitModal.mode === 'add' ? 'Add Unit' : 'Save Changes') }}
-                    </button>
+                    <div class="sm-form-footer">
+                        <button class="sm-btn-back" @click="trainingUnitModal.show = false">Cancel</button>
+                        <button class="sm-btn-save" @click="saveTrainingUnit" :disabled="saving">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            {{ saving ? 'Saving…' : trainingUnitModal.mode === 'add' ? 'Add Unit' : 'Save Changes' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+
+
+        
 
         <!-- ============ ABSENCE RESOLUTION MODAL ============ -->
         <div v-if="absenceResolutionModal.show && absenceResolutionModal.absence" class="modal-overlay" @click.self="absenceResolutionModal.show = false">
@@ -5063,21 +5167,21 @@
                             <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:8px;">Period</div>
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                                 <div style="display:flex;flex-direction:column;gap:1px;">
-                                    <span style="font-size:.52rem;font-family:monospace;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:.08em;">From</span>
-                                    <span style="font-size:.825rem;font-weight:700;color:rgba(255,255,255,.78);">
+                                    <span style="font-size:.52rem;font-family:monospace;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:.08em;">From</span>
+                                    <span style="font-size:.825rem;font-weight:700;color:rgba(255,255,255,.93);">
                                         {{ absenceModal.form.start_date ? new Date(absenceModal.form.start_date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '—' }}
                                     </span>
                                 </div>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                                 <div style="display:flex;flex-direction:column;gap:1px;text-align:right;">
-                                    <span style="font-size:.52rem;font-family:monospace;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:.08em;">Until</span>
-                                    <span style="font-size:.825rem;font-weight:700;color:rgba(255,255,255,.78);">
+                                    <span style="font-size:.52rem;font-family:monospace;color:rgba(255,255,255,.38);text-transform:uppercase;letter-spacing:.08em;">Until</span>
+                                    <span style="font-size:.825rem;font-weight:700;color:rgba(255,255,255,.93);">
                                         {{ absenceModal.form.end_date ? new Date(absenceModal.form.end_date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '—' }}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                        <div v-else style="font-size:.7rem;color:rgba(255,255,255,.18);font-style:italic;">No dates selected yet</div>
+                        <div v-else style="font-size:.7rem;color:rgba(255,255,255,.30);font-style:italic;">No dates selected yet</div>
 
                         <!-- Reason display -->
                         <div v-if="absenceModal.form.absence_reason">
@@ -5101,7 +5205,7 @@
                             <div v-if="absenceModal.form.coverage_arranged" style="display:flex;align-items:center;gap:6px;">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17L4 12"/></svg>
                                 <span style="font-size:.72rem;color:#10b981;font-family:monospace;">Arranged</span>
-                                <span v-if="absenceModal.form.covering_staff_id" style="font-size:.65rem;color:rgba(255,255,255,.45);">— {{ allStaffLookup.find(s=>s.id===absenceModal.form.covering_staff_id)?.full_name?.split(' ')[0] }}</span>
+                                <span v-if="absenceModal.form.covering_staff_id" style="font-size:.65rem;color:rgba(255,255,255,.65);">— {{ allStaffLookup.find(s=>s.id===absenceModal.form.covering_staff_id)?.full_name?.split(' ')[0] }}</span>
                             </div>
                             <div v-else style="display:flex;align-items:center;gap:6px;">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
@@ -5802,93 +5906,140 @@
 
         <!-- ============ RESEARCH LINE MODAL ============ -->
         <div v-if="researchLineModal.show" class="modal-overlay">
-            <div class="modal-container">
-                <div class="modal-header">
-                    <div class="modal-title">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                        {{ researchLineModal.mode === 'add' ? 'Add Research Line' : 'Edit Research Line' }}
-                    </div>
-                    <button class="modal-close" @click="researchLineModal.show = false"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div v-if="researchLineModal.mode === 'edit'" class="modal-edit-context">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                        <span>Editing: <strong>{{ researchLineModal.form.research_line_name || researchLineModal.form.name }}</strong></span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.researchLine?.line_number }">
-                            <label class="form-label">Line Number *</label>
-                            <input type="number" class="form-control" v-model="researchLineModal.form.line_number"
-                                   min="1" required @input="clearFieldError('researchLine', 'line_number')"
-                                   :class="{ 'is-invalid': fieldErrors.researchLine?.line_number }">
-                            <small v-if="fieldErrors.researchLine?.line_number" class="error-text">
-                                <i class="fas fa-exclamation-circle"></i> {{ fieldErrors.researchLine.line_number }}
-                            </small>
+            <div class="sm-modal" style="max-width:min(740px,calc(100vw - 32px));">
+
+                <!-- LEFT: research line preview -->
+                <div class="sm-left">
+                    <div class="sm-preview" style="padding-top:32px;">
+                        <!-- Editorial line number -->
+                        <div style="font-size:3rem;font-weight:700;font-style:italic;line-height:1;color:#00B3B3;letter-spacing:-.03em;font-family:'Fraunces',serif;filter:drop-shadow(0 0 18px rgba(0,179,179,.35));">
+                            <span v-if="researchLineModal.form.line_number">L{{ researchLineModal.form.line_number }}</span>
+                            <span v-else style="color:rgba(255,255,255,.1);">L?</span>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Status</label>
-                            <div class="flex gap-4 mt-1">
-                                <label class="flex items-center gap-2">
-                                    <input type="radio" v-model="researchLineModal.form.active" :value="true">
-                                    <span>Active</span>
-                                </label>
-                                <label class="flex items-center gap-2">
-                                    <input type="radio" v-model="researchLineModal.form.active" :value="false">
-                                    <span>Inactive</span>
-                                </label>
+                        <div class="sm-preview-name" :class="{'sm-preview-name--empty': !researchLineModal.form.research_line_name}" style="margin-top:8px;">
+                            {{ researchLineModal.form.research_line_name || 'Line name…' }}
+                        </div>
+                        <div class="sm-preview-chips">
+                            <span class="sm-preview-chip"
+                                  :style="researchLineModal.form.active === false ? 'background:rgba(107,114,128,.1);border-color:rgba(107,114,128,.2);color:rgba(255,255,255,.55);' : ''">
+                                {{ researchLineModal.form.active === false ? 'Inactive' : 'Active' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Capabilities preview -->
+                    <div style="padding:12px 16px;flex:1;">
+                        <div v-if="researchLineModal.form.capabilities">
+                            <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:7px;">Scope</div>
+                            <div style="font-size:.72rem;color:rgba(255,255,255,.5);line-height:1.6;">{{ researchLineModal.form.capabilities }}</div>
+                        </div>
+                        <div v-if="researchLineModal.form.keywords && researchLineModal.form.keywords.length" style="margin-top:12px;">
+                            <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:7px;">Keywords</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                <span v-for="kw in researchLineModal.form.keywords" :key="kw"
+                                      style="font-size:.58rem;font-family:monospace;padding:2px 7px;border-radius:99px;background:rgba(0,179,179,.08);border:0.5px solid rgba(0,179,179,.15);color:rgba(0,179,179,.7);">
+                                    {{ kw }}
+                                </span>
                             </div>
                         </div>
-                        <div class="form-group col-span-2" :class="{ 'has-error': fieldErrors.researchLine?.research_line_name }">
-                            <label class="form-label">Research Line Name *</label>
-                            <input type="text" class="form-control" v-model="researchLineModal.form.research_line_name"
-                                   required @input="clearFieldError('researchLine', 'research_line_name')"
-                                   :class="{ 'is-invalid': fieldErrors.researchLine?.research_line_name }"
-                                   placeholder="e.g. Oncologia Toracica">
-                            <small v-if="fieldErrors.researchLine?.research_line_name" class="error-text">
-                                <i class="fas fa-exclamation-circle"></i> {{ fieldErrors.researchLine.research_line_name }}
-                            </small>
+                    </div>
+                    <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
+                </div>
+
+                <!-- RIGHT: form -->
+                <div class="sm-right">
+                    <div class="sm-form-header">
+                        <div class="sm-form-title">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
+                            {{ researchLineModal.mode === 'add' ? 'New Research Line' : 'Edit Research Line' }}
                         </div>
-                        <div class="form-group col-span-2">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" v-model="researchLineModal.form.description" rows="3"
-                                      placeholder="Brief description of this research line's focus and goals..."></textarea>
+                        <button class="sm-form-close" @click="researchLineModal.show = false">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                        </button>
+                    </div>
+                    <div class="sm-form-body">
+
+                        <div class="sm-row">
+                            <div class="sm-field" :class="{'has-error': fieldErrors.researchLine?.line_number}">
+                                <div class="sm-label">Line Number <span class="req">·</span></div>
+                                <input type="number" class="sm-input" :class="{filled: researchLineModal.form.line_number}"
+                                       v-model="researchLineModal.form.line_number" min="1" required
+                                       @input="clearFieldError('researchLine','line_number')">
+                                <small v-if="fieldErrors.researchLine?.line_number" class="error-text">{{ fieldErrors.researchLine.line_number }}</small>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Status</div>
+                                <div class="sm-network" style="grid-template-columns:1fr 1fr;">
+                                    <div class="sm-network-opt" :class="{ active: researchLineModal.form.active !== false }" @click="researchLineModal.form.active = true">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17L4 12"/></svg>
+                                        Active
+                                    </div>
+                                    <div class="sm-network-opt" :class="{ active: researchLineModal.form.active === false }" @click="researchLineModal.form.active = false">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                                        Inactive
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group col-span-2">
-                            <label class="form-label">Scope / Capabilities <span class="form-hint">(shown on research line card)</span></label>
-                            <input type="text" class="form-control" v-model="researchLineModal.form.capabilities"
-                                   placeholder="e.g. Trasplante, HTP, Fibrosis Pulmonar, Enfermedades Raras">
-                            <small class="form-help">Brief summary of this line's clinical and research scope</small>
+
+                        <div class="sm-field" :class="{'has-error': fieldErrors.researchLine?.research_line_name}">
+                            <div class="sm-label">Line Name <span class="req">·</span></div>
+                            <input type="text" class="sm-input" :class="{filled: researchLineModal.form.research_line_name}"
+                                   v-model="researchLineModal.form.research_line_name" required
+                                   placeholder="e.g. Oncología Torácica"
+                                   @input="clearFieldError('researchLine','research_line_name')">
+                            <small v-if="fieldErrors.researchLine?.research_line_name" class="error-text">{{ fieldErrors.researchLine.research_line_name }}</small>
                         </div>
-                        <!-- FIX 13: Coordinator field removed from edit modal — use the dedicated "Assign Coordinator" button on the card instead to avoid divergent code paths -->
-                        <div class="form-group col-span-2">
-                            <label class="form-label">Keywords <span class="form-hint">press Enter or comma to add</span></label>
+
+                        <div class="sm-field">
+                            <div class="sm-label">Description</div>
+                            <textarea class="sm-input" v-model="researchLineModal.form.description"
+                                      rows="2" style="height:auto;resize:none;padding-top:8px;padding-bottom:8px;"
+                                      placeholder="Brief description of focus and goals…"></textarea>
+                        </div>
+
+                        <div class="sm-field">
+                            <div class="sm-label">Scope / Capabilities <span class="hint">— shown on the research line card</span></div>
+                            <input type="text" class="sm-input" :class="{filled: researchLineModal.form.capabilities}"
+                                   v-model="researchLineModal.form.capabilities"
+                                   placeholder="e.g. Trasplante, HTP, Fibrosis Pulmonar">
+                        </div>
+
+                        <div class="sm-field">
+                            <div class="sm-label">Keywords <span class="hint">— press Enter or comma to add</span></div>
                             <div class="kw-editor">
                                 <div class="kw-chips-area" @click="$refs.rlKwInput.focus()">
                                     <transition-group name="kw-chip" tag="span">
-                                        <span v-for="(kw, i) in researchLineModal.form.keywords" :key="kw" class="kw-chip-edit">
+                                        <span v-for="(kw,i) in researchLineModal.form.keywords" :key="kw" class="kw-chip-edit">
                                             <span class="kw-chip-text">{{ kw }}</span>
-                                            <button type="button" class="kw-chip-remove" @click.stop="removeKeyword(researchLineModal.form, i)" title="Remove"><i class="fas fa-times"></i></button>
+                                            <button type="button" class="kw-chip-remove" @click.stop="removeKeyword(researchLineModal.form,i)" title="Remove">
+                                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                                            </button>
                                         </span>
                                     </transition-group>
-                                    <input ref="rlKwInput" class="kw-input-inline" v-model="researchLineModal.form.keywordsInput"
-                                           placeholder="Add keyword..."
+                                    <input ref="rlKwInput" class="kw-input-inline"
+                                           v-model="researchLineModal.form.keywordsInput"
+                                           placeholder="Add keyword…"
                                            @keydown="handleKeywordKey($event, researchLineModal.form)"
                                            @blur="addKeyword(researchLineModal.form)">
                                 </div>
                             </div>
-                            <small class="form-help">Keywords make this line discoverable through search</small>
                         </div>
+
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="researchLineModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveResearchLine" :disabled="saving">
-                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i>
-                        {{ saving ? 'Saving...' : (researchLineModal.mode === 'add' ? 'Add Research Line' : 'Save Changes') }}
-                    </button>
+                    <div class="sm-form-footer">
+                        <button class="sm-btn-back" @click="researchLineModal.show = false">Cancel</button>
+                        <button class="sm-btn-save" @click="saveResearchLine" :disabled="saving">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            {{ saving ? 'Saving…' : researchLineModal.mode === 'add' ? 'Add Research Line' : 'Save Changes' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+
+
+        
 
         <!-- ============ CLINICAL TRIAL MODAL ============ -->
         <div v-if="clinicalTrialModal.show" class="modal-overlay">
