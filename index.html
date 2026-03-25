@@ -4000,10 +4000,10 @@
                                            @input="clearFieldError('staff','full_name')">
                                     <small v-if="fieldErrors.staff?.full_name" class="error-text">{{ fieldErrors.staff.full_name }}</small>
                                 </div>
-                                <div class="sm-field">
+                                <div class="sm-field" :class="{ 'has-error': fieldErrors.staff?.staff_type }">
                                     <div class="sm-label">Staff Type <span class="req">·</span></div>
                                     <div style="display:flex;gap:7px;align-items:center;">
-                                        <select class="sm-select" v-model="medicalStaffModal.form.staff_type" style="flex:1;">
+                                        <select class="sm-select" v-model="medicalStaffModal.form.staff_type" style="flex:1;" :class="{'is-invalid': fieldErrors.staff?.staff_type}" @change="clearFieldError('staff','staff_type')">
                                             <option value="" disabled>Select type…</option>
                                             <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
                                         </select>
@@ -4011,6 +4011,7 @@
                                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path :d="medicalStaffModal._addingStaffType ? 'M7 7L17 17M17 7L7 17' : 'M12 5v14M5 12h14'"/></svg>
                                         </button>
                                     </div>
+                                    <small v-if="fieldErrors.staff?.staff_type" class="error-text">{{ fieldErrors.staff.staff_type }}</small>
                                     <div v-if="medicalStaffModal._addingStaffType" class="sm-inline-add">
                                         <div class="sm-inline-add-label">New staff type</div>
                                         <div style="display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:end;">
@@ -4442,7 +4443,10 @@
                     <!-- Footer -->
                     <div class="sm-form-footer">
                         <div class="sm-footer-actions" style="order:0;">
-                            <button class="sm-btn-back" @click="medicalStaffModal.show = false">Cancel</button>
+                            <button class="sm-btn-back"
+                                @click="(medicalStaffModal.form.full_name || medicalStaffModal.form.professional_email || medicalStaffModal.form.staff_type) && medicalStaffModal.mode==='add' ? showConfirmation({ title: 'Discard changes?', message: 'You have unsaved enrollment data. Are you sure you want to cancel?', confirmText: 'Discard', cancelText: 'Keep editing', onConfirm: () => { medicalStaffModal.show = false } }) : medicalStaffModal.show = false">
+                                Cancel
+                            </button>
                         </div>
                         <span class="sm-footer-progress" v-if="medicalStaffModal.mode==='add'">
                             {{ medicalStaffModal.activeTab==='basic' ? 'Step 1 of 3' : medicalStaffModal.activeTab==='professional' ? 'Step 2 of 3' : 'Step 3 of 3' }}
@@ -4472,80 +4476,115 @@
         
 <!-- ============ ADD/EDIT ON-CALL MODAL ============ -->
         <div v-if="onCallModal.show" class="modal-overlay">
-            <div class="modal-container">
-                <div class="modal-header">
-                    <div class="modal-title"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>{{ onCallModal.mode === 'add' ? 'Schedule On-call' : 'Edit On-call' }}</div>
-                    <button class="modal-close" @click="onCallModal.show = false"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.oncall?.duty_date }">
-                            <label class="form-label">Start Date *</label>
-                            <input type="date" class="form-control" v-model="onCallModal.form.duty_date" required @input="clearFieldError('oncall', 'duty_date')" :class="{ 'is-invalid': fieldErrors.oncall?.duty_date }">
-                            <small v-if="fieldErrors.oncall?.duty_date" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.oncall.duty_date }}</small>
+            <div class="sm-modal" style="max-width:min(740px,calc(100vw - 32px));">
+
+                <!-- LEFT: shift preview -->
+                <div class="sm-left">
+                    <div class="sm-preview">
+                        <div style="margin-bottom:4px;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" :stroke="onCallModal.form.duty_date ? '#00B3B3' : 'rgba(255,255,255,.15)'" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Shift Type *</label>
-                            <select class="form-select" v-model="onCallModal.form.shift_type">
-                                <option value="primary_call">Primary Call</option><option value="backup_call">Backup Call</option>
-                            </select>
+                        <div class="sm-preview-name" :class="{'sm-preview-name--empty': !onCallModal.form.duty_date}">
+                            {{ onCallModal.form.duty_date ? new Date(onCallModal.form.duty_date + 'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}) : 'Select date…' }}
                         </div>
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.oncall?.primary_physician_id }">
-                            <label class="form-label">Primary Physician *</label>
-                            <select class="form-select" v-model="onCallModal.form.primary_physician_id" required @change="clearFieldError('oncall', 'primary_physician_id')" :class="{ 'is-invalid': fieldErrors.oncall?.primary_physician_id }">
-                                <option value="">Select Physician</option>
-                                <optgroup label="Attending / Fellow / NP">
-                                    <option v-for="p in availablePhysicians.filter(x => x.staff_type !== 'medical_resident')" :key="p.id" :value="p.id">{{ p.full_name }}</option>
-                                </optgroup>
-                                <optgroup label="Residents">
-                                    <option v-for="p in availablePhysicians.filter(x => x.staff_type === 'medical_resident')" :key="p.id" :value="p.id">{{ p.full_name }}</option>
-                                </optgroup>
-                            </select>
-                            <small v-if="fieldErrors.oncall?.primary_physician_id" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.oncall.primary_physician_id }}</small>
+                        <div class="sm-preview-role" v-if="onCallModal.form.start_time && onCallModal.form.end_time">
+                            {{ onCallModal.form.start_time }} — {{ onCallModal.form.end_time }}
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Backup Physician</label>
-                            <select class="form-select" v-model="onCallModal.form.backup_physician_id">
-                                <option value="">No Backup</option>
-                                <optgroup label="Attending / Fellow / NP">
-                                    <option v-for="p in availablePhysicians.filter(x => x.staff_type !== 'medical_resident')" :key="p.id" :value="p.id">{{ p.full_name }}</option>
-                                </optgroup>
-                                <optgroup label="Residents">
-                                    <option v-for="p in availablePhysicians.filter(x => x.staff_type === 'medical_resident')" :key="p.id" :value="p.id">{{ p.full_name }}</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.oncall?.start_time }">
-                            <label class="form-label">Start Time *</label>
-                            <input type="time" class="form-control" v-model="onCallModal.form.start_time" required @input="clearFieldError('oncall', 'start_time')" :class="{ 'is-invalid': fieldErrors.oncall?.start_time }">
-                            <small v-if="fieldErrors.oncall?.start_time" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.oncall.start_time }}</small>
-                        </div>
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.oncall?.end_time }">
-                            <label class="form-label">End Time *</label>
-                            <input type="time" class="form-control" v-model="onCallModal.form.end_time" required @input="clearFieldError('oncall', 'end_time')" :class="{ 'is-invalid': fieldErrors.oncall?.end_time }">
-                            <small v-if="fieldErrors.oncall?.end_time" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.oncall.end_time }}</small>
-                            <!-- Overnight indicator -->
-                            <div v-if="onCallModal.form.end_time && onCallModal.form.start_time && onCallModal.form.end_time < onCallModal.form.start_time && onCallModal.form.duty_date"
-                                 class="oc-overnight-hint">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
-                                Ends next day ·
-                                <strong>{{ new Date(new Date(onCallModal.form.duty_date + 'T12:00:00').getTime() + 86400000).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) }}</strong>
-                            </div>
-                        </div>
-                        <div class="form-group col-span-2">
-                            <label class="form-label">Coverage Area</label>
-                            <select class="form-select" v-model="onCallModal.form.coverage_area">
-                                <option value="emergency">Emergency Department</option><option value="icu">ICU</option><option value="ward">General Ward</option><option value="consultation">Consultations</option><option value="all">All Areas</option>
-                            </select>
+                        <div class="sm-preview-chips" v-if="onCallModal.form.shift_type">
+                            <span class="sm-preview-chip">{{ onCallModal.form.shift_type === 'primary_call' ? 'Primary Call' : 'Backup Call' }}</span>
                         </div>
                     </div>
+
+                    <!-- Assigned staff preview -->
+                    <div style="padding:12px 14px;flex:1;">
+                        <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:8px;">Assignment</div>
+                        <div v-if="onCallModal.form.primary_physician_id" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#00B3B3,#4A9EE8);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:#fff;flex-shrink:0;">
+                                {{ (allStaffLookup.find(s=>s.id===onCallModal.form.primary_physician_id)?.full_name||'').split(' ').slice(0,2).map(n=>n[0]).join('') }}
+                            </div>
+                            <div>
+                                <div style="font-size:.7rem;color:rgba(255,255,255,.7);font-weight:600;">{{ allStaffLookup.find(s=>s.id===onCallModal.form.primary_physician_id)?.full_name }}</div>
+                                <div style="font-size:.58rem;font-family:monospace;color:#00B3B3;">Primary</div>
+                            </div>
+                        </div>
+                        <div v-if="onCallModal.form.backup_physician_id" style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:rgba(255,255,255,.6);flex-shrink:0;">
+                                {{ (allStaffLookup.find(s=>s.id===onCallModal.form.backup_physician_id)?.full_name||'').split(' ').slice(0,2).map(n=>n[0]).join('') }}
+                            </div>
+                            <div>
+                                <div style="font-size:.7rem;color:rgba(255,255,255,.55);">{{ allStaffLookup.find(s=>s.id===onCallModal.form.backup_physician_id)?.full_name }}</div>
+                                <div style="font-size:.58rem;font-family:monospace;color:rgba(255,255,255,.3);">Backup</div>
+                            </div>
+                        </div>
+                        <div v-if="!onCallModal.form.primary_physician_id && !onCallModal.form.backup_physician_id" style="font-size:.7rem;color:rgba(255,255,255,.18);font-style:italic;">No staff assigned yet</div>
+                    </div>
+                    <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="onCallModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveOnCallSchedule" :disabled="saving">
-                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i>
-                        {{ saving ? 'Saving...' : (onCallModal.mode === 'add' ? 'Schedule' : 'Save Changes') }}
-                    </button>
+
+                <!-- RIGHT: form -->
+                <div class="sm-right">
+                    <div class="sm-form-header">
+                        <div class="sm-form-title">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
+                            {{ onCallModal.mode === 'add' ? 'Schedule On-Call' : 'Edit On-Call Shift' }}
+                        </div>
+                        <button class="sm-form-close" @click="onCallModal.show = false">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                        </button>
+                    </div>
+                    <div class="sm-form-body">
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Date <span class="req">·</span></div>
+                                <input type="date" class="sm-input" v-model="onCallModal.form.duty_date" :class="{'is-invalid': fieldErrors.oncall?.duty_date}" @change="clearFieldError('oncall','duty_date')">
+                                <small v-if="fieldErrors.oncall?.duty_date" class="error-text">{{ fieldErrors.oncall.duty_date }}</small>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Shift Type <span class="req">·</span></div>
+                                <select class="sm-select" v-model="onCallModal.form.shift_type">
+                                    <option value="primary_call">Primary Call</option>
+                                    <option value="backup_call">Backup Call</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Start Time</div>
+                                <input type="time" class="sm-input" v-model="onCallModal.form.start_time">
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">End Time</div>
+                                <input type="time" class="sm-input" v-model="onCallModal.form.end_time">
+                            </div>
+                        </div>
+                        <div class="sm-divider">Staff assignment</div>
+                        <div class="sm-field">
+                            <div class="sm-label">Primary Physician <span class="req">·</span></div>
+                            <select class="sm-select" v-model="onCallModal.form.primary_physician_id" :class="{'is-invalid': fieldErrors.oncall?.primary_physician_id}" @change="clearFieldError('oncall','primary_physician_id')">
+                                <option value="">Select physician…</option>
+                                <option v-for="s in medicalStaff.filter(s=>s.employment_status==='active')" :key="s.id" :value="s.id">{{ s.full_name }} — {{ formatStaffType(s.staff_type) }}</option>
+                            </select>
+                            <small v-if="fieldErrors.oncall?.primary_physician_id" class="error-text">{{ fieldErrors.oncall.primary_physician_id }}</small>
+                        </div>
+                        <div class="sm-field">
+                            <div class="sm-label">Backup Physician</div>
+                            <select class="sm-select" v-model="onCallModal.form.backup_physician_id">
+                                <option value="">None</option>
+                                <option v-for="s in medicalStaff.filter(s=>s.employment_status==='active' && s.id!==onCallModal.form.primary_physician_id)" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                            </select>
+                        </div>
+                        <div class="sm-field">
+                            <div class="sm-label">Coverage Area</div>
+                            <input type="text" class="sm-input" v-model="onCallModal.form.coverage_area" placeholder="e.g. UCRI, Ward 3B…">
+                        </div>
+                    </div>
+                    <div class="sm-form-footer">
+                        <button class="sm-btn-back" @click="onCallModal.show = false">Cancel</button>
+                        <button class="sm-btn-save" @click="saveOnCall(saving)" :disabled="saving">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            {{ saving ? 'Saving…' : onCallModal.mode === 'add' ? 'Schedule Shift' : 'Save Changes' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4678,142 +4717,119 @@
 
         <!-- ============ ROTATION EDIT MODAL ============ -->
         <div v-if="rotationModal.show" class="modal-overlay">
-            <div class="modal-container">
-                <div class="modal-header">
-                    <div class="modal-title"><i class="fas fa-calendar-check"></i>{{ rotationModal.mode === 'add' ? 'Add Rotation' : 'Edit Rotation' }}</div>
-                    <button class="modal-close" @click="rotationModal.show = false"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group">
-                            <label class="form-label">Status</label>
-                            <!-- Status is derived from dates — not manually selectable -->
-                            <div class="rot-status-derived"
-                                 :class="{
-                                   'rot-status-active':    rotationModal.form.rotation_status === 'active',
-                                   'rot-status-scheduled': rotationModal.form.rotation_status === 'scheduled',
-                                   'rot-status-completed': rotationModal.form.rotation_status === 'completed'
-                                 }">
-                                <i class="fas"
-                                   :class="{
-                                     'fa-play-circle':  rotationModal.form.rotation_status === 'active',
-                                     'fa-clock':        rotationModal.form.rotation_status === 'scheduled',
-                                     'fa-check-circle': rotationModal.form.rotation_status === 'completed'
-                                   }"></i>
-                                <span>{{ rotationModal.form.rotation_status === 'active' ? 'Active' : rotationModal.form.rotation_status === 'scheduled' ? 'Scheduled' : 'Completed' }}</span>
-                            </div>
-                            <!-- Friendly explanation based on dates -->
-                            <p class="rot-status-hint" v-if="rotationModal.form.start_date && rotationModal.form.end_date">
-                                <template v-if="rotationModal.form.rotation_status === 'active'">
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8V12M12 16H12.01"/></svg>
-                                    Set to <strong>Active</strong> — start date is today, the resident begins this rotation now.
-                                </template>
-                                <template v-else-if="rotationModal.form.rotation_status === 'scheduled'">
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8V12M12 16H12.01"/></svg>
-                                    Set to <strong>Scheduled</strong> — start date is in the future. Will automatically become Active on {{ rotationModal.form.start_date }}.
-                                </template>
-                                <template v-else-if="rotationModal.form.rotation_status === 'completed'">
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8V12M12 16H12.01"/></svg>
-                                    Set to <strong>Completed</strong> — end date has already passed.
-                                </template>
-                            </p>
+            <div class="sm-modal" style="max-width:min(780px,calc(100vw - 32px));">
+
+                <!-- LEFT: resident preview -->
+                <div class="sm-left">
+                    <div class="sm-preview">
+                        <div class="sm-preview-avatar sm-preview-avatar--resident" v-if="rotationModal.form.resident_id">
+                            {{ (allStaffLookup.find(s=>s.id===rotationModal.form.resident_id)?.full_name||'').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() || '?' }}
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Category *</label>
-                            <select class="form-select" v-model="rotationModal.form.rotation_category" required>
-                                <option value="clinical_rotation">Clinical Rotation</option>
-                                <option value="elective_rotation">Elective</option>
-                                <option value="research_block">Research Block</option>
-                                <option value="administrative_duty">Administrative Duty</option>
-                            </select>
+                        <div class="sm-preview-avatar sm-preview-avatar--empty" v-else>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.4" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         </div>
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.resident_id }">
-                            <label class="form-label">Resident *</label>
-                            <select class="form-select" v-model="rotationModal.form.resident_id" required
-                                    @change="clearFieldError('rotation', 'resident_id'); checkRotationAvailability()"
-                                    :class="{ 'is-invalid': fieldErrors.rotation?.resident_id }">
-                                <option value="">Select Resident</option>
-                                <option v-for="r in availableResidents" :key="r.id" :value="r.id">
-                                    {{ r.full_name }}{{ rotations.find(rot => rot.resident_id === r.id && rot.rotation_status === 'active') ? ' · rotating' : '' }}
-                                </option>
-                            </select>
-                            <small v-if="fieldErrors.rotation?.resident_id" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.rotation.resident_id }}</small>
+                        <div class="sm-preview-name" :class="{'sm-preview-name--empty': !rotationModal.form.resident_id}">
+                            {{ allStaffLookup.find(s=>s.id===rotationModal.form.resident_id)?.full_name || 'Select resident…' }}
                         </div>
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.training_unit_id }">
-                            <label class="form-label">Training Unit *</label>
-                            <select class="form-select" v-model="rotationModal.form.training_unit_id" required
-                                    @change="clearFieldError('rotation', 'training_unit_id'); checkRotationAvailability()"
-                                    :class="{ 'is-invalid': fieldErrors.rotation?.training_unit_id }">
-                                <option value="">Select Unit</option>
-                                <option v-for="u in trainingUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
-                            </select>
-                            <small v-if="fieldErrors.rotation?.training_unit_id" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.rotation.training_unit_id }}</small>
-                            <!-- Live availability panel -->
-                            <div v-if="rotationModal.checkingAvailability" style="font-size:12px;color:var(--text-3);margin-top:6px">
-                                <i class="fas fa-spinner fa-spin"></i> Checking availability…
-                            </div>
-                            <template v-if="rotationModal.availability && !rotationModal.checkingAvailability">
-                                <!-- Unit slot status -->
-                                <div class="conflict-badge" :class="rotationModal.availability.unit_has_slot ? 'conflict-badge--ok' : 'conflict-badge--err'" style="margin-top:6px">
-                                    <i class="fas" :class="rotationModal.availability.unit_has_slot ? 'fa-check-circle' : 'fa-ban'"></i>
-                                    <span v-if="rotationModal.availability.unit_has_slot">
-                                        <strong>Slot available</strong> — {{ rotationModal.availability.unit_slots_used }}/{{ rotationModal.availability.unit_max }} used in this period
-                                    </span>
-                                    <span v-else>
-                                        <strong>Unit full</strong> — {{ rotationModal.availability.unit_slots_used }}/{{ rotationModal.availability.unit_max }} slots occupied:
-                                        {{ (rotationModal.availability.unit_conflicts || []).map(c => c.resident_name).join(', ') }}
-                                    </span>
-                                </div>
-                                <!-- Resident conflict -->
-                                <div v-if="rotationModal.form.resident_id && !rotationModal.availability.resident_free"
-                                     class="conflict-badge conflict-badge--warn" style="margin-top:4px">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span><strong>Resident conflict:</strong>
-                                        already assigned to {{ (rotationModal.availability.resident_conflicts || []).map(c => c.unit_name).join(', ') }}
-                                        during this period
-                                    </span>
-                                </div>
-                            </template>
-                            <!-- Legacy capacity bar (hidden when availability check active) -->
-                            <div v-if="selectedUnitCapacity && !rotationModal.availability" class="unit-capacity-hint" :class="{ 'unit-capacity-hint--full': selectedUnitCapacity.full, 'unit-capacity-hint--warn': selectedUnitCapacity.warn && !selectedUnitCapacity.full }">
-                                <div class="ucap-row">
-                                    <span v-if="selectedUnitCapacity.full"><i class="fas fa-ban"></i> Full — {{ selectedUnitCapacity.current }}/{{ selectedUnitCapacity.max }} residents</span>
-                                    <span v-else-if="selectedUnitCapacity.warn"><i class="fas fa-exclamation-triangle"></i> Nearly full — {{ selectedUnitCapacity.current }}/{{ selectedUnitCapacity.max }} residents</span>
-                                    <span v-else><i class="fas fa-check-circle"></i> {{ selectedUnitCapacity.current }}/{{ selectedUnitCapacity.max }} residents assigned</span>
-                                    <span class="ucap-pct">{{ selectedUnitCapacity.pct }}%</span>
-                                </div>
-                                <div class="ucap-bar-track"><div class="ucap-bar-fill" :style="{ width: selectedUnitCapacity.pct + '%' }"></div></div>
-                            </div>
+                        <div class="sm-preview-role" v-if="rotationModal.form.resident_id">
+                            {{ formatStaffType(allStaffLookup.find(s=>s.id===rotationModal.form.resident_id)?.staff_type) }}
                         </div>
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.start_date }">
-                            <label class="form-label">Start Date *</label>
-                            <input type="date" class="form-control" v-model="rotationModal.form.start_date" required
-                                   @input="clearFieldError('rotation', 'start_date'); checkRotationAvailability()"
-                                   :class="{ 'is-invalid': fieldErrors.rotation?.start_date }">
-                            <small v-if="fieldErrors.rotation?.start_date" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.rotation.start_date }}</small>
-                        </div>
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.rotation?.end_date }">
-                            <label class="form-label">End Date *</label>
-                            <input type="date" class="form-control" v-model="rotationModal.form.end_date" required
-                                   @input="clearFieldError('rotation', 'end_date'); checkRotationAvailability()"
-                                   :class="{ 'is-invalid': fieldErrors.rotation?.end_date }">
-                            <small v-if="fieldErrors.rotation?.end_date" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.rotation.end_date }}</small>
-                        </div>
-                        <div class="form-group col-span-2">
-                            <label class="form-label">Supervising Attending</label>
-                            <select class="form-select" v-model="rotationModal.form.supervising_attending_id">
-                                <option value="">Select Supervisor</option>
-                                <option v-for="a in availableAttendings" :key="a.id" :value="a.id">{{ a.full_name }}</option>
-                            </select>
+                        <div class="sm-preview-chips" v-if="rotationModal.form.training_unit_id">
+                            <span class="sm-preview-chip">
+                                {{ getTrainingUnitName(rotationModal.form.training_unit_id) }}
+                            </span>
                         </div>
                     </div>
+
+                    <!-- Rotation history preview -->
+                    <div style="padding:12px 14px;flex:1;overflow-y:auto;">
+                        <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:8px;">Past rotations</div>
+                        <template v-if="rotationModal.form.resident_id">
+                            <div v-for="rot in getRotationHistory(rotationModal.form.resident_id).slice(0,5)" :key="rot.id"
+                                 style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:0.5px solid rgba(255,255,255,.05);">
+                                <div style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0;"></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:.7rem;color:rgba(255,255,255,.7);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ getTrainingUnitName(rot.training_unit_id) }}</div>
+                                    <div style="font-size:.58rem;font-family:monospace;color:rgba(255,255,255,.25);">{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</div>
+                                </div>
+                            </div>
+                            <div v-if="!getRotationHistory(rotationModal.form.resident_id).length" style="font-size:.7rem;color:rgba(255,255,255,.2);font-style:italic;">No previous rotations</div>
+                        </template>
+                        <div v-else style="font-size:.7rem;color:rgba(255,255,255,.18);font-style:italic;">Select a resident to see history</div>
+                    </div>
+                    <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="rotationModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveRotation" :disabled="saving">
-                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i>
-                        {{ saving ? 'Saving...' : (rotationModal.mode === 'add' ? 'Add Rotation' : 'Save Changes') }}
-                    </button>
+
+                <!-- RIGHT: form -->
+                <div class="sm-right">
+                    <div class="sm-form-header">
+                        <div class="sm-form-title">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
+                            {{ rotationModal.mode === 'add' ? 'Add Rotation' : 'Edit Rotation' }}
+                        </div>
+                        <button class="sm-form-close" @click="rotationModal.show = false">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                        </button>
+                    </div>
+                    <div class="sm-form-body">
+                        <div class="sm-row">
+                            <div class="sm-field full" style="grid-column:1/-1">
+                                <div class="sm-label">Resident <span class="req">·</span></div>
+                                <select class="sm-select" v-model="rotationModal.form.resident_id" :class="{'is-invalid': fieldErrors.rotation?.resident_id}" @change="clearFieldError('rotation','resident_id')" :disabled="rotationModal.mode==='edit'">
+                                    <option value="">Select resident…</option>
+                                    <option v-for="s in medicalStaff.filter(s=>isResidentType(s.staff_type))" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                </select>
+                                <small v-if="fieldErrors.rotation?.resident_id" class="error-text">{{ fieldErrors.rotation.resident_id }}</small>
+                            </div>
+                        </div>
+                        <div class="sm-row">
+                            <div class="sm-field" style="grid-column:1/-1">
+                                <div class="sm-label">Clinical Unit <span class="req">·</span></div>
+                                <select class="sm-select" v-model="rotationModal.form.training_unit_id" :class="{'is-invalid': fieldErrors.rotation?.training_unit_id}" @change="clearFieldError('rotation','training_unit_id')">
+                                    <option value="">Select unit…</option>
+                                    <option v-for="u in trainingUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
+                                </select>
+                                <small v-if="fieldErrors.rotation?.training_unit_id" class="error-text">{{ fieldErrors.rotation.training_unit_id }}</small>
+                            </div>
+                        </div>
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Start Date <span class="req">·</span></div>
+                                <input type="date" class="sm-input" v-model="rotationModal.form.start_date" :class="{'is-invalid': fieldErrors.rotation?.start_date}" @change="clearFieldError('rotation','start_date')">
+                                <small v-if="fieldErrors.rotation?.start_date" class="error-text">{{ fieldErrors.rotation.start_date }}</small>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">End Date <span class="req">·</span></div>
+                                <input type="date" class="sm-input" v-model="rotationModal.form.end_date" :class="{'is-invalid': fieldErrors.rotation?.end_date}" @change="clearFieldError('rotation','end_date')">
+                                <small v-if="fieldErrors.rotation?.end_date" class="error-text">{{ fieldErrors.rotation.end_date }}</small>
+                            </div>
+                        </div>
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Category</div>
+                                <select class="sm-select" v-model="rotationModal.form.rotation_category">
+                                    <option value="clinical_rotation">Clinical Rotation</option>
+                                    <option value="elective_rotation">Elective Rotation</option>
+                                    <option value="research_block">Research Block</option>
+                                    <option value="administrative_duty">Administrative Duty</option>
+                                </select>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Supervising Attending</div>
+                                <select class="sm-select" v-model="rotationModal.form.supervising_attending_id">
+                                    <option value="">None assigned</option>
+                                    <option v-for="s in medicalStaff.filter(s=>s.staff_type==='attending_physician')" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sm-form-footer">
+                        <button class="sm-btn-back" @click="rotationModal.show = false">Cancel</button>
+                        <button class="sm-btn-save" @click="saveRotation(saving)" :disabled="saving">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            {{ saving ? 'Saving…' : rotationModal.mode === 'add' ? 'Add Rotation' : 'Save Changes' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -5002,93 +5018,292 @@
 
         <!-- ============ ADD/EDIT ABSENCE MODAL ============ -->
         <div v-if="absenceModal.show" class="modal-overlay">
-            <div class="modal-container">
-                <div class="modal-header">
-                    <div class="modal-title"><i class="fas fa-user-clock"></i>{{ absenceModal.mode === 'add' ? 'Record Absence' : 'Edit Absence' }}</div>
-                    <button class="modal-close" @click="absenceModal.show = false"><i class="fas fa-times"></i></button>
+            <div class="sm-modal" style="max-width:min(760px,calc(100vw - 32px));">
+
+                <!-- ══ LEFT: staff + absence preview ══ -->
+                <div class="sm-left">
+                    <div class="sm-preview">
+                        <!-- Avatar — teal for attending, blue for resident -->
+                        <div class="sm-preview-avatar"
+                             :class="absenceModal.form.staff_member_id
+                                ? (isResidentType(allStaffLookup.find(s=>s.id===absenceModal.form.staff_member_id)?.staff_type) ? 'sm-preview-avatar--resident' : 'sm-preview-avatar--attending')
+                                : 'sm-preview-avatar--empty'">
+                            <span v-if="absenceModal.form.staff_member_id">
+                                {{ (allStaffLookup.find(s=>s.id===absenceModal.form.staff_member_id)?.full_name||'').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
+                            </span>
+                            <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+
+                        <div class="sm-preview-name" :class="{'sm-preview-name--empty': !absenceModal.form.staff_member_id}">
+                            {{ allStaffLookup.find(s=>s.id===absenceModal.form.staff_member_id)?.full_name || 'Select staff member…' }}
+                        </div>
+                        <div class="sm-preview-role" v-if="absenceModal.form.staff_member_id">
+                            {{ formatStaffType(allStaffLookup.find(s=>s.id===absenceModal.form.staff_member_id)?.staff_type) }}
+                        </div>
+
+                        <!-- Chips: leave type + duration -->
+                        <div class="sm-preview-chips">
+                            <span v-if="absenceModal.form.absence_type" class="sm-preview-chip"
+                                  :style="absenceModal.form.absence_type==='unplanned' ? 'background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.25);color:#f59e0b;' : ''">
+                                {{ absenceModal.form.absence_type === 'planned' ? 'Planned' : 'Unplanned' }}
+                            </span>
+                            <span v-if="absenceModal.form.start_date && absenceModal.form.end_date" class="sm-preview-chip">
+                                {{ calculateAbsenceDuration(absenceModal.form.start_date, absenceModal.form.end_date) }} days
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Period + reason summary — updates live -->
+                    <div style="padding:12px 16px;flex:1;display:flex;flex-direction:column;gap:14px;">
+
+                        <!-- Date range display -->
+                        <div v-if="absenceModal.form.start_date || absenceModal.form.end_date">
+                            <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:8px;">Period</div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                <div style="display:flex;flex-direction:column;gap:1px;">
+                                    <span style="font-size:.52rem;font-family:monospace;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:.08em;">From</span>
+                                    <span style="font-size:.825rem;font-weight:700;color:rgba(255,255,255,.78);">
+                                        {{ absenceModal.form.start_date ? new Date(absenceModal.form.start_date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '—' }}
+                                    </span>
+                                </div>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                <div style="display:flex;flex-direction:column;gap:1px;text-align:right;">
+                                    <span style="font-size:.52rem;font-family:monospace;color:rgba(255,255,255,.22);text-transform:uppercase;letter-spacing:.08em;">Until</span>
+                                    <span style="font-size:.825rem;font-weight:700;color:rgba(255,255,255,.78);">
+                                        {{ absenceModal.form.end_date ? new Date(absenceModal.form.end_date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}) : '—' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else style="font-size:.7rem;color:rgba(255,255,255,.18);font-style:italic;">No dates selected yet</div>
+
+                        <!-- Reason display -->
+                        <div v-if="absenceModal.form.absence_reason">
+                            <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:6px;">Reason</div>
+                            <div style="display:flex;align-items:center;gap:7px;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path v-if="absenceModal.form.absence_reason==='vacation'"          d="M12 2C12 2 8 8 8 13C8 16 10 18 12 18C14 18 16 16 16 13C16 8 12 2 12 2Z"/>
+                                    <path v-else-if="absenceModal.form.absence_reason==='sick_leave'"   d="M12 8v4M12 16h.01M22 12c0 5.5-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2s10 4.5 10 10z"/>
+                                    <path v-else-if="absenceModal.form.absence_reason==='conference'"   d="M3 4h18M3 9h18M3 14h11M3 19h7"/>
+                                    <path v-else-if="absenceModal.form.absence_reason==='training'"     d="M12 6L3 11L12 16L21 11L12 6Z"/>
+                                    <path v-else-if="absenceModal.form.absence_reason==='personal'"     d="M3 21H21M5 21V8L12 4L19 8V21"/>
+                                    <circle v-else cx="12" cy="12" r="9"/>
+                                </svg>
+                                <span style="font-size:.78rem;font-weight:500;color:#00B3B3;">{{ formatAbsenceReason(absenceModal.form.absence_reason) }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Coverage status -->
+                        <div v-if="absenceModal.form.coverage_arranged !== null && absenceModal.form.coverage_arranged !== ''">
+                            <div style="font-size:.56rem;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:6px;">Coverage</div>
+                            <div v-if="absenceModal.form.coverage_arranged" style="display:flex;align-items:center;gap:6px;">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17L4 12"/></svg>
+                                <span style="font-size:.72rem;color:#10b981;font-family:monospace;">Arranged</span>
+                                <span v-if="absenceModal.form.covering_staff_id" style="font-size:.65rem;color:rgba(255,255,255,.45);">— {{ allStaffLookup.find(s=>s.id===absenceModal.form.covering_staff_id)?.full_name?.split(' ')[0] }}</span>
+                            </div>
+                            <div v-else style="display:flex;align-items:center;gap:6px;">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+                                <span style="font-size:.72rem;color:#f59e0b;font-family:monospace;">Gap — no cover</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
                 </div>
-                <div class="modal-body">
-                    <div class="space-y-4">
-                        <div class="form-group" :class="{ 'has-error': fieldErrors.absence?.staff_member_id }">
-                            <label class="form-label">Staff Member *</label>
-                            <select class="form-select" v-model="absenceModal.form.staff_member_id" required @change="clearFieldError('absence', 'staff_member_id')" :class="{ 'is-invalid': fieldErrors.absence?.staff_member_id }">
-                                <option value="">Select Staff Member</option>
-                                <!-- Active staff first -->
+
+                <!-- ══ RIGHT: FORM ══ -->
+                <div class="sm-right">
+                    <div class="sm-form-header">
+                        <div class="sm-form-title">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <path d="M3 10H21M8 3V7M16 3V7M10 14L14 18M14 14L10 18"/>
+                            </svg>
+                            {{ absenceModal.mode === 'add' ? 'Record Absence' : 'Edit Absence' }}
+                        </div>
+                        <button class="sm-form-close" @click="absenceModal.show = false">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="sm-form-body">
+
+                        <!-- Staff member -->
+                        <div class="sm-field" :class="{ 'has-error': fieldErrors.absence?.staff_member_id }">
+                            <div class="sm-label">Staff Member <span class="req">·</span></div>
+                            <select class="sm-select" v-model="absenceModal.form.staff_member_id"
+                                    :class="{ 'is-invalid': fieldErrors.absence?.staff_member_id }"
+                                    @change="clearFieldError('absence','staff_member_id')">
+                                <option value="">Select staff member…</option>
                                 <option v-for="s in medicalStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
-                                <!-- If editing and the current person is inactive, include them -->
-                                <template v-if="absenceModal.mode === 'edit' && absenceModal.form.staff_member_id && !medicalStaff.find(s => s.id === absenceModal.form.staff_member_id)">
+                                <template v-if="absenceModal.mode==='edit' && absenceModal.form.staff_member_id && !medicalStaff.find(s=>s.id===absenceModal.form.staff_member_id)">
                                     <option :value="absenceModal.form.staff_member_id">{{ getStaffName(absenceModal.form.staff_member_id) }}</option>
                                 </template>
                             </select>
-                            <small v-if="fieldErrors.absence?.staff_member_id" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.absence.staff_member_id }}</small>
+                            <small v-if="fieldErrors.absence?.staff_member_id" class="error-text">{{ fieldErrors.absence.staff_member_id }}</small>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Leave Type *</label>
-                            <div class="toggle-row">
-                                <button type="button" :class="['toggle-opt', absenceModal.form.absence_type === 'planned' && 'active']" @click="absenceModal.form.absence_type = 'planned'"><i class="fas fa-calendar-alt"></i> Planned</button>
-                                <button type="button" :class="['toggle-opt', absenceModal.form.absence_type === 'unplanned' && 'active-warn']" @click="absenceModal.form.absence_type = 'unplanned'"><i class="fas fa-exclamation-circle"></i> Unplanned</button>
+
+                        <!-- Leave type — pill switcher matching enrollment style -->
+                        <div class="sm-field">
+                            <div class="sm-label">Leave Type <span class="req">·</span></div>
+                            <div class="sm-network" style="grid-template-columns:1fr 1fr;">
+                                <div class="sm-network-opt" :class="{ active: absenceModal.form.absence_type === 'planned' }"
+                                     @click="absenceModal.form.absence_type = 'planned'">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10H21M8 3V7M16 3V7M8 14H16"/></svg>
+                                    Planned
+                                </div>
+                                <div class="sm-network-opt" :class="{ active: absenceModal.form.absence_type === 'unplanned' }"
+                                     style="--active-color:#f59e0b;"
+                                     :style="absenceModal.form.absence_type==='unplanned' ? 'border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.06);color:#d97706;' : ''"
+                                     @click="absenceModal.form.absence_type = 'unplanned'">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                    Unplanned
+                                </div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="form-group" :class="{ 'has-error': fieldErrors.absence?.start_date }">
-                                <label class="form-label">Start Date *</label>
-                                <input type="date" class="form-control" v-model="absenceModal.form.start_date" required @input="clearFieldError('absence', 'start_date')" :class="{ 'is-invalid': fieldErrors.absence?.start_date }">
-                                <small v-if="fieldErrors.absence?.start_date" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.absence.start_date }}</small>
+
+                        <!-- Dates -->
+                        <div class="sm-row">
+                            <div class="sm-field" :class="{ 'has-error': fieldErrors.absence?.start_date }">
+                                <div class="sm-label">Start Date <span class="req">·</span></div>
+                                <input type="date" class="sm-input" v-model="absenceModal.form.start_date"
+                                       :class="{ 'is-invalid': fieldErrors.absence?.start_date }"
+                                       @input="clearFieldError('absence','start_date')">
+                                <small v-if="fieldErrors.absence?.start_date" class="error-text">{{ fieldErrors.absence.start_date }}</small>
                             </div>
-                            <div class="form-group" :class="{ 'has-error': fieldErrors.absence?.end_date }">
-                                <label class="form-label">End Date *</label>
-                                <input type="date" class="form-control" v-model="absenceModal.form.end_date" required @input="clearFieldError('absence', 'end_date')" :class="{ 'is-invalid': fieldErrors.absence?.end_date }">
-                                <small v-if="fieldErrors.absence?.end_date" class="error-text"><i class="fas fa-exclamation-circle"></i> {{ fieldErrors.absence.end_date }}</small>
+                            <div class="sm-field" :class="{ 'has-error': fieldErrors.absence?.end_date }">
+                                <div class="sm-label">End Date <span class="req">·</span></div>
+                                <input type="date" class="sm-input" v-model="absenceModal.form.end_date"
+                                       :class="{ 'is-invalid': fieldErrors.absence?.end_date }"
+                                       @input="clearFieldError('absence','end_date')">
+                                <small v-if="fieldErrors.absence?.end_date" class="error-text">{{ fieldErrors.absence.end_date }}</small>
                             </div>
                         </div>
-                        <div v-if="absenceModal.form.start_date && absenceModal.form.end_date" class="duration-preview">
+
+                        <!-- Duration + overlap warning inline -->
+                        <div v-if="absenceModal.form.start_date && absenceModal.form.end_date"
+                             class="duration-preview">
                             <span class="dp-label">Duration</span>
                             <span class="dp-value">{{ calculateAbsenceDuration(absenceModal.form.start_date, absenceModal.form.end_date) }} days</span>
                         </div>
                         <div v-if="absenceOverlapWarning" class="absence-overlap-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                             <div>
                                 <strong>Overlapping absence exists</strong>
                                 <span>{{ absenceOverlapWarning.reason }} already recorded {{ absenceOverlapWarning.start }} – {{ absenceOverlapWarning.end }}</span>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Reason *</label>
-                            <div class="reason-grid">
-                                <label class="reason-option" :class="{ 'reason-selected': absenceModal.form.absence_reason === 'vacation' }"><input type="radio" v-model="absenceModal.form.absence_reason" value="vacation" class="hidden"><div><i class="fas fa-umbrella-beach"></i><span>Vacation</span></div></label>
-                                <label class="reason-option" :class="{ 'reason-selected': absenceModal.form.absence_reason === 'conference' }"><input type="radio" v-model="absenceModal.form.absence_reason" value="conference" class="hidden"><div><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21H16M12 17V21"/></svg><span>Conference</span></div></label>
-                                <label class="reason-option" :class="{ 'reason-selected': absenceModal.form.absence_reason === 'sick_leave' }"><input type="radio" v-model="absenceModal.form.absence_reason" value="sick_leave" class="hidden"><div><i class="fas fa-heartbeat"></i><span>Sick Leave</span></div></label>
-                                <label class="reason-option" :class="{ 'reason-selected': absenceModal.form.absence_reason === 'training' }"><input type="radio" v-model="absenceModal.form.absence_reason" value="training" class="hidden"><div><i class="fas fa-graduation-cap"></i><span>Training</span></div></label>
-                                <label class="reason-option" :class="{ 'reason-selected': absenceModal.form.absence_reason === 'personal' }"><input type="radio" v-model="absenceModal.form.absence_reason" value="personal" class="hidden"><div><i class="fas fa-home"></i><span>Personal</span></div></label>
-                                <label class="reason-option" :class="{ 'reason-selected': absenceModal.form.absence_reason === 'other' }"><input type="radio" v-model="absenceModal.form.absence_reason" value="other" class="hidden"><div><i class="fas fa-ellipsis-h"></i><span>Other</span></div></label>
+
+                        <!-- Reason — category cards matching enrollment style -->
+                        <div class="sm-field">
+                            <div class="sm-label">Reason <span class="req">·</span></div>
+                            <div class="sm-reason-grid">
+                                <div class="sm-cat-card" :class="{ active: absenceModal.form.absence_reason === 'vacation' }"
+                                     @click="absenceModal.form.absence_reason = 'vacation'">
+                                    <div class="sm-cat-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" :stroke="absenceModal.form.absence_reason==='vacation' ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21H4M12 3v18M12 3C12 3 8 9 8 14C8 17.3 10 19 12 19C14 19 16 17.3 16 14C16 9 12 3 12 3Z"/></svg>
+                                    </div>
+                                    <div class="sm-cat-name">Vacation</div>
+                                </div>
+                                <div class="sm-cat-card" :class="{ active: absenceModal.form.absence_reason === 'sick_leave' }"
+                                     @click="absenceModal.form.absence_reason = 'sick_leave'">
+                                    <div class="sm-cat-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" :stroke="absenceModal.form.absence_reason==='sick_leave' ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12c0 5.5-4.5 10-10 10S2 17.5 2 12 6.5 2 12 2s10 4.5 10 10z"/><path d="M12 8v4M12 16h.01"/></svg>
+                                    </div>
+                                    <div class="sm-cat-name">Sick Leave</div>
+                                </div>
+                                <div class="sm-cat-card" :class="{ active: absenceModal.form.absence_reason === 'conference' }"
+                                     @click="absenceModal.form.absence_reason = 'conference'">
+                                    <div class="sm-cat-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" :stroke="absenceModal.form.absence_reason==='conference' ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21H16M12 17V21"/></svg>
+                                    </div>
+                                    <div class="sm-cat-name">Conference</div>
+                                </div>
+                                <div class="sm-cat-card" :class="{ active: absenceModal.form.absence_reason === 'training' }"
+                                     @click="absenceModal.form.absence_reason = 'training'">
+                                    <div class="sm-cat-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" :stroke="absenceModal.form.absence_reason==='training' ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6L3 11L12 16L21 11L12 6Z"/><path d="M8 13.5V17C8 17 10 19 12 19C14 19 16 17 16 13.5"/></svg>
+                                    </div>
+                                    <div class="sm-cat-name">Training</div>
+                                </div>
+                                <div class="sm-cat-card" :class="{ active: absenceModal.form.absence_reason === 'personal' }"
+                                     @click="absenceModal.form.absence_reason = 'personal'">
+                                    <div class="sm-cat-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" :stroke="absenceModal.form.absence_reason==='personal' ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg>
+                                    </div>
+                                    <div class="sm-cat-name">Personal</div>
+                                </div>
+                                <div class="sm-cat-card" :class="{ active: absenceModal.form.absence_reason === 'other' }"
+                                     @click="absenceModal.form.absence_reason = 'other'">
+                                    <div class="sm-cat-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" :stroke="absenceModal.form.absence_reason==='other' ? '#00B3B3' : 'var(--text-3,#6b7280)'" stroke-width="1.6" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                                    </div>
+                                    <div class="sm-cat-name">Other</div>
+                                </div>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Coverage Arranged</label>
-                            <div class="flex gap-4 mb-3">
-                                <label class="flex items-center gap-2"><input type="radio" v-model="absenceModal.form.coverage_arranged" :value="true"><span>Yes</span></label>
-                                <label class="flex items-center gap-2"><input type="radio" v-model="absenceModal.form.coverage_arranged" :value="false"><span>No</span></label>
+
+                        <!-- Coverage — toggle + covering staff -->
+                        <div class="sm-divider">Coverage</div>
+                        <div class="sm-field">
+                            <div class="sm-label">Coverage arranged?</div>
+                            <div class="sm-network" style="grid-template-columns:1fr 1fr;">
+                                <div class="sm-network-opt" :class="{ active: absenceModal.form.coverage_arranged === true }"
+                                     @click="absenceModal.form.coverage_arranged = true">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17L4 12"/></svg>
+                                    Yes
+                                </div>
+                                <div class="sm-network-opt" :class="{ active: absenceModal.form.coverage_arranged === false }"
+                                     :style="absenceModal.form.coverage_arranged===false ? 'border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.06);color:#d97706;' : ''"
+                                     @click="absenceModal.form.coverage_arranged = false">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                                    No
+                                </div>
                             </div>
-                            <select v-if="absenceModal.form.coverage_arranged" class="form-select" v-model="absenceModal.form.covering_staff_id">
-                                <option value="">Select covering staff</option>
+                        </div>
+
+                        <div v-if="absenceModal.form.coverage_arranged" class="sm-field">
+                            <div class="sm-label">Covering Staff</div>
+                            <select class="sm-select" v-model="absenceModal.form.covering_staff_id">
+                                <option value="">Select covering staff…</option>
                                 <option v-for="s in availableReplacementStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                             </select>
-                            <div v-if="absenceModal.form.coverage_arranged === false" class="coverage-warning">
-                                <i class="fas fa-exclamation-triangle"></i> This will create a coverage gap
-                            </div>
                         </div>
-                        <div class="form-group"><label class="form-label">Notes</label><textarea class="form-control" v-model="absenceModal.form.coverage_notes" rows="2" placeholder="Optional handover notes…"></textarea></div>
+
+                        <div v-if="absenceModal.form.coverage_arranged === false" class="coverage-warning">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+                            This will create a coverage gap
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="sm-field">
+                            <div class="sm-label">Handover Notes</div>
+                            <textarea class="sm-input" v-model="absenceModal.form.coverage_notes"
+                                      rows="2" style="height:auto;resize:none;padding-top:8px;padding-bottom:8px;"
+                                      placeholder="Optional handover or context notes…"></textarea>
+                        </div>
+
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="absenceModal.show = false">Cancel</button>
-                    <button class="btn btn-primary" @click="saveAbsence" :disabled="saving">
-                        <i class="fas fa-save" :class="{ 'fa-spinner fa-spin': saving }"></i>
-                        {{ saving ? 'Saving...' : (absenceModal.mode === 'add' ? 'Record' : 'Save Changes') }}
-                    </button>
+
+                    <!-- ── Footer — same buttons as enrollment ── -->
+                    <div class="sm-form-footer">
+                        <button class="sm-btn-back" @click="absenceModal.show = false">Cancel</button>
+                        <button class="sm-btn-save" @click="saveAbsence" :disabled="saving">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            {{ saving ? 'Saving…' : absenceModal.mode === 'add' ? 'Record Absence' : 'Save Changes' }}
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
+
 
         <!-- ============ ADD/EDIT DEPARTMENT MODAL ============ -->
         <div v-if="departmentModal.show" class="modal-overlay">
