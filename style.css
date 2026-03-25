@@ -5,7 +5,7 @@
 .form-hint--auto     { color: var(--ok); }
 .form-hint--override { color: var(--warn); }
 
-.ryear-auto-row { 
+.ryear-auto-row {
   display: flex; align-items: center; gap: 8px;
 }
 .ryear-chip {
@@ -589,18 +589,18 @@
 
   /* ── Surfaces & borders ─────────────────────────────────────── */
   --canvas:    #f0f4f8;
-  --surface:   #ffffff;
-  --surface-2: #f8fafc;
-  --surface-3: #f1f5f9;
-  --border:    #e2e8f0;
-  --border-2:  #cbd5e1;
-  --border-3:  #94a3b8;
+  --surface:   #fdfcfb;
+  --surface-2: #f5f4f0;
+  --surface-3: #edebe5;
+  --border:    #e3dfd6;
+  --border-2:  #cac5ba;
+  --border-3:  #9a9690;
 
   /* ── Text — ALL pass WCAG AA on white ──────────────────────── */
   --text-1: #07111f;   /* 19.3:1  — headings, primary content  */
-  --text-2: #2d4a6e;   /* 7.4:1   — secondary content           */
-  --text-3: #4a6585;   /* 4.8:1   — labels, meta (was #7a90b0 = 3.8 FAIL) */
-  --text-4: #7a93ae;   /* 3.1:1   — placeholders only           */
+  --text-2: #344154;   /* 7.4:1   — secondary content           */
+  --text-3: #5a6472;   /* 4.8:1   — labels, meta (was #7a90b0 = 3.8 FAIL) */
+  --text-4: #909399;   /* 3.1:1   — placeholders only           */
 
   /* ── Semantic colours (capacity / status) ──────────────────── */
   --ok:        #059669; --ok-lt:    #d1fae5; --ok-mid: #6ee7b7;
@@ -608,7 +608,7 @@
   --warn:      #d97706; --warn-lt:  #fef3c7; --warn-mid:#fcd34d;
   --danger:    #dc2626; --danger-lt:#fee2e2; --danger-mid:#fca5a5;
   --info:      #2563eb; --info-lt:  #eff6ff;
-  --neutral:   #64748b; --neutral-lt:#f8fafc; --neutral-mid:#cbd5e1;
+  --neutral:   #64748b; --neutral-lt:#f5f4f0; --neutral-mid:#cac5ba;
   --teal:      #0891b2; --teal-lt:  #e0f7fa;
   --purple:    #7c3aed; --purple-lt:#ede9fe;
   --violet:    #6d28d9; --violet-lt:#f5f3ff;
@@ -9785,7 +9785,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 /* ── RIGHT: form panel ── */
 .sm-right {
   flex: 1; min-width: 0;
-  background: var(--surface, #fff);
+  background: var(--surface, #fdfcfb);
   display: flex; flex-direction: column;
 }
 
@@ -9853,10 +9853,10 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .sm-input:focus {
   border-color: #00B3B3;
   box-shadow: 0 0 0 3px rgba(0,179,179,.1);
-  background: var(--surface, #fff);
+  background: var(--surface, #fdfcfb);
 }
 .sm-input.filled {
-  background: var(--surface, #fff);
+  background: var(--surface, #fdfcfb);
   border-color: var(--border-2, rgba(0,0,0,.1));
 }
 .sm-select {
@@ -9872,7 +9872,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   font-family: var(--font-ui, inherit);
   cursor: pointer;
 }
-.sm-select:focus { border-color: #00B3B3; box-shadow: 0 0 0 3px rgba(0,179,179,.1); background: var(--surface, #fff); }
+.sm-select:focus { border-color: #00B3B3; box-shadow: 0 0 0 3px rgba(0,179,179,.1); background: var(--surface, #fdfcfb); }
 
 /* Section divider */
 .sm-divider {
@@ -10082,7 +10082,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   display: flex; align-items: center; gap: 10px; cursor: pointer;
   padding: 8px 10px; border-radius: 8px;
   border: 1px solid var(--border,rgba(0,0,0,.08));
-  background: var(--surface,#fff); transition: all .15s;
+  background: var(--surface,#fdfcfb); transition: all .15s;
 }
 .sm-degree-phd-check:hover { border-color: rgba(99,102,241,.3); background: rgba(99,102,241,.03); }
 .sm-degree-phd-info { display: flex; align-items: center; gap: 8px; }
@@ -10101,7 +10101,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; border-radius: 8px;
   border: 1px solid var(--border,rgba(0,0,0,.08));
-  background: var(--surface,#fff); transition: all .15s;
+  background: var(--surface,#fdfcfb); transition: all .15s;
   cursor: pointer;
 }
 .sm-role-row:hover { border-color: rgba(0,179,179,.25); }
@@ -10163,7 +10163,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   padding: 6px 10px; border-radius: 7px;
   border: 1px solid var(--border,rgba(0,0,0,.08));
   font-size: .75rem; color: var(--text-2,#374151);
-  cursor: pointer; transition: all .15s; background: var(--surface,#fff);
+  cursor: pointer; transition: all .15s; background: var(--surface,#fdfcfb);
   flex: 1;
 }
 .sm-role-cap-opt:hover { border-color: rgba(0,179,179,.3); }
