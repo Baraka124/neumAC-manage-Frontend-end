@@ -11160,3 +11160,113 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   font-size: 14px !important; font-weight: 500 !important;
   line-height: 1.35 !important;
 }
+
+/* ════════════════════════════════════════════════════════
+   ROTATIONS VIEW — FIXES
+   ════════════════════════════════════════════════════════ */
+
+/* ── Unit name — no italic (it's operational, not editorial) ── */
+.udd-unit-name {
+  font-style: normal !important;
+  font-family: var(--font-ui, 'DM Sans', sans-serif) !important;
+  font-weight: 500 !important;
+  font-size: 15px !important;
+}
+.tuc-name {
+  font-style: normal !important;
+  font-family: var(--font-ui, 'DM Sans', sans-serif) !important;
+  font-weight: 500 !important;
+}
+
+/* ── Gap warning strip — full names, proper wrap ── */
+.rgw-name {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  line-height: 1.3 !important;
+}
+.rgw-item {
+  align-items: flex-start !important;
+  max-width: 200px;
+}
+.rgw-info {
+  flex: 1; min-width: 0;
+}
+
+/* ── Dashboard gap chips — full names ── */
+.db-gap-name {
+  white-space: normal !important;
+  word-break: break-word !important;
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+.db-gap-item {
+  align-items: flex-start !important;
+  max-width: 220px;
+}
+
+/* ── Rotation who column — full name always visible ── */
+.rot-who { width: 220px !important; }
+.rot-who-name {
+  white-space: normal !important;
+  word-break: break-word !important;
+  line-height: 1.3 !important;
+}
+.rot-who-avatar {
+  background: linear-gradient(135deg,#1e40af,#0e7490) !important;
+  font-style: normal !important;
+}
+
+/* ── Breadcrumb separator ── */
+.breadcrumb-sep { margin: 0 6px; color: var(--text-4); }
+
+/* ════════════════════════════════════════════════════════
+   UNIT OCCUPANCY — ACTIVE vs SCHEDULED
+   ════════════════════════════════════════════════════════ */
+
+/* Scheduled count badge next to capacity numbers */
+.tuc-cap-sched {
+  font-size: 10px; font-family: monospace; font-weight: 600;
+  color: #534ab7; background: rgba(83,74,183,.08);
+  border: .5px solid rgba(83,74,183,.2);
+  padding: 1px 5px; border-radius: 3px; margin-left: 4px;
+}
+
+/* Secondary scheduled fill on progress bar */
+.tuc-cap-bar { position: relative; }
+.tuc-cap-sched-fill {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: rgba(83,74,183,.2); border-radius: 3px;
+  pointer-events: none;
+}
+.tuc-cap-fill { position: relative; z-index: 1; }
+
+/* Overlap conflict warning on card */
+.tuc-overlap-warn {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 9.5px; color: #854f0b; font-family: monospace;
+  margin-top: 4px;
+}
+
+/* Drawer status chips */
+.udd-sched-chip {
+  font-size: 10px; font-family: monospace; font-weight: 600;
+  color: #534ab7; background: rgba(83,74,183,.08);
+  border: .5px solid rgba(83,74,183,.2);
+  padding: 2px 8px; border-radius: 4px;
+}
+.udd-overlap-chip {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; font-family: monospace; font-weight: 600;
+  color: #854f0b; background: rgba(239,159,39,.08);
+  border: .5px solid rgba(239,159,39,.25);
+  padding: 2px 8px; border-radius: 4px;
+}
+
+/* tuc card stripe — only active occupancy drives colour */
+.tuc--active { border-left-color: var(--ok); }
+.tuc--warn   { border-left-color: var(--warn); }
+.tuc--full   { border-left-color: var(--danger); }
+/* Scheduled-only (no active now) — neutral stripe */
+.tuc--scheduled-only { border-left-color: rgba(83,74,183,.4); }
