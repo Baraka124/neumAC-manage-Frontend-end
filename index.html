@@ -4836,12 +4836,15 @@
                                     <option value="administrative_duty">Administrative Duty</option>
                                 </select>
                             </div>
-                            <div class="sm-field">
-                                <div class="sm-label">Supervising Attending</div>
-                                <select class="sm-select" v-model="rotationModal.form.supervising_attending_id">
-                                    <option value="">None assigned</option>
+                            <div class="sm-field" :class="{'has-error': fieldErrors.rotation?.supervising_attending_id}">
+                                <div class="sm-label">Supervising Attending <span class="req">·</span></div>
+                                <select class="sm-select" v-model="rotationModal.form.supervising_attending_id"
+                                        :class="{'is-invalid': fieldErrors.rotation?.supervising_attending_id}"
+                                        @change="clearFieldError('rotation','supervising_attending_id')">
+                                    <option value="">Select attending…</option>
                                     <option v-for="s in medicalStaff.filter(s=>s.staff_type==='attending_physician')" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                                 </select>
+                                <small v-if="fieldErrors.rotation?.supervising_attending_id" class="error-text">{{ fieldErrors.rotation.supervising_attending_id }}</small>
                             </div>
                         </div>
                     </div>
@@ -7153,7 +7156,7 @@
             ctx.bezierCurveTo(cxL-106*S,228*S,cxL-76*S,232*S,cxL-46*S,230*S);
             ctx.bezierCurveTo(cxL-28*S,228*S,cxL-18*S,218*S,cxL-16*S,204*S);
             ctx.bezierCurveTo(cxL-14*S,192*S,cxL-22*S,174*S,cxL-24*S,162*S);
-            ctx.bezierCurveTo(cxL-26*S,150*S,cxL-20*S,134*S,cxL-16*S,14*S);
+            ctx.bezierCurveTo(cxL-26*S,150*S,cxL-20*S,134*S,cxL-16*S,14*S); 
             ctx.stroke();
 
             ctx.globalAlpha = 1;
