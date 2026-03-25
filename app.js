@@ -163,13 +163,13 @@ document.addEventListener('DOMContentLoaded', () => {
       training_units: 'Clinical units and resident assignments',
       staff_absence: 'Track staff absences and coverage assignments',
       department_management: 'Organizational structure and clinical units',
-      research_hub: 'Research lines, trials, projects and analytics',
-      research_lines: 'Research lines, trials, projects and analytics',
-      clinical_trials: 'Research lines, trials, projects and analytics',
-      innovation_projects: 'Research lines, trials, projects and analytics',
-      analytics_dashboard: 'Research lines, trials, projects and analytics',
-      analytics_performance: 'Research lines, trials, projects and analytics',
-      analytics_partners: 'Research lines, trials, projects and analytics'
+      research_hub: 'Research lines, studies, projects and analytics',
+      research_lines: 'Research lines, studies, projects and analytics',
+      clinical_trials: 'Research lines, studies, projects and analytics',
+      innovation_projects: 'Research lines, studies, projects and analytics',
+      analytics_dashboard: 'Research lines, studies, projects and analytics',
+      analytics_performance: 'Research lines, studies, projects and analytics',
+      analytics_partners: 'Research lines, studies, projects and analytics'
     }
 
     // ============ 3. ENHANCED UTILS CLASS ============
@@ -3761,7 +3761,7 @@ document.addEventListener('DOMContentLoaded', () => {
           onConfirm: async () => { await API.deleteResearchLine(line.id); await loadResearchLines(); showToast('Success', 'Research line deleted', 'success'); loadAnalyticsSummary() }
         })
       }
-      const deleteClinicalTrial = (trial) => showConfirmation({ title: 'Delete Trial', message: `Delete "${trial.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', details: `Protocol: ${trial.protocol_id}`, onConfirm: async () => { await API.deleteClinicalTrial(trial.id); await loadClinicalTrials(); showToast('Success', 'Trial deleted', 'success'); loadAnalyticsSummary() } })
+      const deleteClinicalTrial = (trial) => showConfirmation({ title: 'Delete Study', message: `Delete "${trial.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', details: `Protocol: ${trial.protocol_id}`, onConfirm: async () => { await API.deleteClinicalTrial(trial.id); await loadClinicalTrials(); showToast('Success', 'Study deleted', 'success'); loadAnalyticsSummary() } })
       const deleteInnovationProject = (project) => showConfirmation({ title: 'Delete Project', message: `Delete "${project.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', onConfirm: async () => { await API.deleteInnovationProject(project.id); await loadInnovationProjects(); showToast('Success', 'Project deleted', 'success'); loadAnalyticsSummary(); loadPartnerCollaborations() } })
 
       // ── Quick research profile built entirely from local refs (no API call) ──
