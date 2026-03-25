@@ -601,19 +601,35 @@
                         <div class="db-greeting-left">
                             <div class="db-greeting-time">{{ formatDate(currentTime) }}</div>
                             <div class="db-greeting-title">
-                                Good morning, <span>{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Doctor' }}</span>
+                                {{ new Date().getHours() < 12 ? 'Good morning,' : new Date().getHours() < 19 ? 'Good afternoon,' : 'Good evening,' }}
+                                <span>{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Doctor' }}</span>
                             </div>
                         </div>
-                        <div class="quick-actions-bar" style="margin-bottom:0; flex:0 1 auto;">
-                            <button class="action-btn" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')"><i class="fas fa-user-plus"></i> Add Staff</button>
-                            <button class="action-btn" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg> Schedule On-call</button>
-                            <button class="action-btn" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')"><i class="fas fa-user-clock"></i> Record Absence</button>
-                            <button class="action-btn" @click="showAddRotationModal" v-if="hasPermission('resident_rotations', 'create')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg> Add Rotation</button>
-                            <div class="ml-auto">
-                                <button class="btn btn-primary btn-sm" @click="showCommunicationsModal" v-if="hasPermission('communications', 'create')">
-                                    <i class="fas fa-bullhorn"></i> Announce
-                                </button>
-                            </div>
+                        <div class="db-quick-actions">
+                            <button class="db-qa-btn" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+                                Add Staff
+                            </button>
+                            <div class="db-qa-divider"></div>
+                            <button class="db-qa-btn" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
+                                On-call
+                            </button>
+                            <div class="db-qa-divider"></div>
+                            <button class="db-qa-btn" @click="showAddRotationModal" v-if="hasPermission('resident_rotations', 'create')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 12C4 16.4 7.6 20 12 20S20 16.4 20 12 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
+                                Rotation
+                            </button>
+                            <div class="db-qa-divider"></div>
+                            <button class="db-qa-btn" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10H21M8 3V7M16 3V7"/></svg>
+                                Absence
+                            </button>
+                            <div class="db-qa-divider"></div>
+                            <button class="db-qa-btn db-qa-btn--primary" @click="showCommunicationsModal" v-if="hasPermission('communications', 'create')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                                Announce
+                            </button>
                         </div>
                     </div>
 
@@ -637,8 +653,8 @@
 
                     <!-- Compact KPI bar -->
                     <div class="db-kpi-bar">
-                        <div class="db-kpi" @click="switchView('medical_staff')">
-                            <div class="db-kpi-icon db-kpi-icon--blue"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 4C7 4 5 4 5 7V13C5 17 9 19 12 19C15 19 19 17 19 13"/><circle cx="19" cy="11" r="2"/><path d="M5 9H9"/></svg></div>
+                        <div class="db-kpi db-kpi--teal" @click="switchView('medical_staff')">
+                            <div class="db-kpi-icon db-kpi-icon--teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#009999" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
                             <div class="db-kpi-body" style="min-width:0;flex:1">
                                 <div class="db-kpi-val">{{ systemStats.totalStaff || 0 }}</div>
                                 <div class="db-kpi-label">Medical Staff</div>
@@ -649,8 +665,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="db-kpi" @click="switchView('resident_rotations')">
-                            <div class="db-kpi-icon db-kpi-icon--green"><i class="fas fa-calendar-check"></i></div>
+                        <div class="db-kpi db-kpi--navy" @click="switchView('resident_rotations')">
+                            <div class="db-kpi-icon db-kpi-icon--navy"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0f2d54" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20S20 16.4 20 12 16.4 4 12 4"/><path d="M8 4H12V8"/></svg></div>
                             <div class="db-kpi-body" style="min-width:0;flex:1">
                                 <div class="db-kpi-val">{{ systemStats.activeRotations || 0 }}</div>
                                 <div class="db-kpi-label">Active Rotations</div>
@@ -660,8 +676,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="db-kpi" @click="switchView('oncall_schedule')">
-                            <div class="db-kpi-icon db-kpi-icon--amber"><i class="fas fa-phone-alt"></i></div>
+                        <div class="db-kpi db-kpi--amber" @click="switchView('oncall_schedule')">
+                            <div class="db-kpi-icon db-kpi-icon--amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ba7517" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg></div>
                             <div class="db-kpi-body" style="min-width:0;flex:1">
                                 <div class="db-kpi-val">{{ todaysOnCallCount || 0 }}</div>
                                 <div class="db-kpi-label">On-call Today</div>
@@ -674,8 +690,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="db-kpi" @click="switchView('research_lines')">
-                            <div class="db-kpi-icon db-kpi-icon--purple"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg></div>
+                        <div class="db-kpi db-kpi--indigo" @click="switchView('research_lines')">
+                            <div class="db-kpi-icon db-kpi-icon--indigo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#534ab7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg></div>
                             <div class="db-kpi-body" style="min-width:0;flex:1">
                                 <div class="db-kpi-val">{{ analyticsSummary?.researchLines || researchLines.length || 0 }}</div>
                                 <div class="db-kpi-label">Research Lines</div>
@@ -725,7 +741,7 @@
                                             <span class="db-oc-badge db-oc-badge--backup">Backup</span>
                                         </template>
                                         <template v-else>
-                                            <span class="db-oc-gap db-oc-gap--soft">No backup</span>
+                                            <span class="db-oc-gap db-oc-gap--warn">⚠ No backup</span>
                                         </template>
                                     </div>
                                 </div>
@@ -872,19 +888,24 @@
                             </div>
                             <div v-else class="scc-grid">
 
-                            <div v-for="staff in filteredMedicalStaff" :key="staff.id"
+                            <template v-for="(item, idx) in compactStaffWithDividers" :key="item.id || 'div-'+idx">
+                                <div v-if="item._divider" class="scc-section-divider">{{ item._divider }}</div>
+                                <div v-else
                                  class="scc"
                                  :class="{
-                                     'scc--leave':    staff.employment_status === 'on_leave',
-                                     'scc--inactive': staff.employment_status === 'inactive'
+                                     'scc--leave':    item.employment_status === 'on_leave',
+                                     'scc--inactive': item.employment_status === 'inactive'
                                  }"
-                                 @click="viewStaffDetails(staff)">
+                                 @click="viewStaffDetails(item)">
 
                                 <!-- Left: avatar with initials -->
-                                <div class="scc-avatar" :class="'scc-avatar--' + (staff.staff_type || 'default')">
-                                    <span class="scc-initials">{{ (staff.full_name || '').split(' ').filter(Boolean).map(w => w[0]).slice(0,2).join('') }}</span>
-                                    <span class="scc-dot" :class="'scc-dot--' + staff.employment_status"
-                                          :title="formatEmploymentStatus(staff.employment_status)"></span>
+                                <div class="scc-avatar"
+                                     :class="item.employment_status === 'on_leave'    ? 'scc-avatar--leave'
+                                           : isResidentType(item.staff_type)           ? 'scc-avatar--resident'
+                                           : 'scc-avatar--attending'">
+                                    <span class="scc-initials">{{ (item.full_name || '').split(' ').filter(Boolean).map(w => w[0]).slice(0,2).join('') }}</span>
+                                    <span class="scc-dot" :class="'scc-dot--' + item.employment_status"
+                                          :title="formatEmploymentStatus(item.employment_status)"></span>
                                 </div>
 
                                 <!-- Right: all text info -->
@@ -892,31 +913,32 @@
 
                                     <!-- Row 1: full name (never truncates) + warn icon -->
                                     <div class="scc-name-row">
-                                        <span class="scc-name">{{ staff.full_name }}</span>
-                                        <span v-if="!staff.professional_email || !staff.department_id"
-                                              class="scc-warn" title="Profile incomplete — missing email or department">
-                                            <i class="fas fa-exclamation-circle"></i>
+                                        <span class="scc-name">{{ item.full_name }}</span>
+                                        <span v-if="!item.professional_email"
+                                              class="scc-warn" title="Profile incomplete — missing email">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8V12M12 16H12.01"/></svg>
                                         </span>
                                     </div>
+                                    <div v-if="item.specialization && !isResidentType(item.staff_type)" class="scc-spec-text">{{ item.specialization }}</div>
 
                                     <!-- Row 2: badge + int/ext pill + dept -->
                                     <div class="scc-meta-row">
-                                        <span class="badge scc-type-badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffTypeShortFn(staff.staff_type) }}</span>
-                                        <span v-if="staff.resident_category" class="scc-cat-pill"
-                                              :class="staff.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'">
-                                            {{ staff.resident_category === 'external_resident' ? 'Ext' : staff.resident_category === 'rotating_other_dept' ? 'Rot' : 'Int' }}
+                                        <span class="badge scc-type-badge" :class="getStaffTypeClass(item.staff_type)">{{ formatStaffTypeShortFn(item.staff_type) }}</span>
+                                        <span v-if="item.resident_category" class="scc-cat-pill"
+                                              :class="item.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'">
+                                            {{ item.resident_category === 'external_resident' ? 'Ext' : item.resident_category === 'rotating_other_dept' ? 'Rot' : 'Int' }}
                                         </span>
-                                        <span v-if="getDepartmentName(staff.department_id)" class="scc-dept-text">
-                                            · {{ getDepartmentName(staff.department_id) }}
+                                        <span v-if="item.external_institution" class="scc-dept-text" style="color:var(--warn);">
+                                            · {{ item.external_institution }}
                                         </span>
                                     </div>
 
                                     <!-- Row 3: rotation chip ONLY if active — silent otherwise -->
-                                    <div v-if="getCurrentRotationForStaff(staff.id)" class="scc-rotation-row">
+                                    <div v-if="getCurrentRotationForStaff(item.id)" class="scc-rotation-row">
                                         <div class="staff-rotation-chip">
                                             <span class="src-dot"></span>
-                                            <span class="src-unit">{{ getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) }}</span>
-                                            <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(staff.id).start_date, getCurrentRotationForStaff(staff.id).end_date) }}</span>
+                                            <span class="src-unit">{{ getTrainingUnitName(getCurrentRotationForStaff(item.id).training_unit_id) }}</span>
+                                            <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(item.id).start_date, getCurrentRotationForStaff(item.id).end_date) }}</span>
                                         </div>
                                     </div>
 
@@ -924,7 +946,7 @@
 
                                 <!-- Action buttons -->
                                 <div class="scc-actions" @click.stop>
-                                    <button class="rot-action-btn" @click.stop="viewStaffDetails(staff)"
+                                    <button class="rot-action-btn" @click.stop="viewStaffDetails(item)"
                                             title="View profile">
                                         <i class="fas fa-eye"></i>
                                     </button>
@@ -943,6 +965,7 @@
                                 <i class="fas fa-user-md empty-state-icon"></i>
                                 <div class="empty-state-title">No staff found</div>
                             </div>
+                            </template>
                             </div><!-- end v-else scc-grid -->
                         </div><!-- end compact wrapper -->
 
@@ -952,35 +975,32 @@
                         <div v-if="staffView === 'table'" class="table-responsive">
                             <table class="table table-striped table-staff">
                                 <colgroup>
-                                    <col style="width:24%"><!-- Name -->
+                                    <col style="width:28%"><!-- Name — full names need room -->
                                     <col style="width:12%"><!-- Type -->
-                                    <col style="width:18%"><!-- Department -->
-                                    <col style="width:18%"><!-- Rotation -->
-                                    <col style="width:10%"><!-- Status -->
-                                    <col style="width:8%"> <!-- Actions -->
+                                    <col style="width:16%"><!-- Specialization -->
+                                    <col style="width:22%"><!-- Rotation -->
+                                    <col style="width:12%"><!-- Status -->
+                                    <col style="width:10%"><!-- Actions -->
                                 </colgroup>
                                 <thead>
                                     <tr>
                                         <th @click="sortBy('medical_staff', 'full_name')">Name <i class="fas" :class="sortIcon('medical_staff', 'full_name')"></i></th>
                                         <th style="text-align:center" @click="sortBy('medical_staff', 'staff_type')">Type <i class="fas" :class="sortIcon('medical_staff', 'staff_type')"></i></th>
-                                        <th style="padding-left:18px">Department</th>
+                                        <th style="padding-left:18px">Specialization</th>
                                         <th>Current Rotation</th>
                                         <th style="text-align:center" @click="sortBy('medical_staff', 'employment_status')">Status <i class="fas" :class="sortIcon('medical_staff', 'employment_status')"></i></th>
                                         <th style="text-align:center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="staff in filteredMedicalStaff" :key="staff.id" :class="'row-' + staff.employment_status" @click="viewStaffDetails(staff)">
+                                    <tr v-for="staff in filteredMedicalStaff" :key="staff.id" :class="['row-' + staff.employment_status, 'staff-table-row']" @click="viewStaffDetails(staff)">
                                         <td>
                                             <div class="staff-name-cell">
-                                                <div class="staff-role-icon" :class="'role-icon--' + staff.staff_type">
-                                                    <i class="fas" :class="{
-                                                        'fa-user-md':       staff.staff_type === 'attending_physician',
-                                                        'fa-user-graduate': isResidentType(staff.staff_type),
-                                                        'fa-stethoscope':   staff.staff_type === 'fellow',
-                                                        'fa-heartbeat':     staff.staff_type === 'nurse_practitioner',
-                                                        'fa-user':          !['attending_physician','fellow','nurse_practitioner'].includes(staff.staff_type) && !isResidentType(staff.staff_type)
-                                                    }"></i>
+                                                <div class="staff-table-av"
+                                                     :class="staff.employment_status === 'on_leave' ? 'staff-table-av--leave'
+                                                           : isResidentType(staff.staff_type) ? 'staff-table-av--resident'
+                                                           : 'staff-table-av--attending'">
+                                                    {{ (staff.full_name||'').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
                                                 </div>
                                                 <div class="staff-name-block">
                                                     <div class="staff-name-primary">
@@ -1003,8 +1023,9 @@
                                             <span class="badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffTypeShortFn(staff.staff_type) }}</span>
                                         </td>
                                         <td style="padding-left:18px">
-                                            <span v-if="getDepartmentName(staff.department_id)">{{ getDepartmentName(staff.department_id) }}</span>
-                                            <span v-else class="na-value" style="font-size:13px;color:var(--text-4);font-style:italic">Not assigned</span>
+                                            <span v-if="staff.specialization" class="staff-spec-text">{{ staff.specialization }}</span>
+                                            <span v-else-if="isResidentType(staff.staff_type)" class="staff-spec-text">MIR Neumología</span>
+                                            <span v-else class="na-value" style="font-size:12px;color:var(--text-4);font-style:italic">—</span>
                                         </td>
                                         <td>
                                             <template v-if="getCurrentRotationForStaff(staff.id)">
@@ -1017,7 +1038,8 @@
                                             <span v-else class="na-value" style="font-size:13px;color:var(--text-4);font-style:italic">None active</span>
                                         </td>
                                         <td style="text-align:center">
-                                            <span class="status-indicator" :class="'status-' + staff.employment_status">{{ formatEmploymentStatus(staff.employment_status) }}</span>
+                                            <span v-if="staff.employment_status !== 'active'" class="status-indicator" :class="'status-' + staff.employment_status">{{ formatEmploymentStatus(staff.employment_status) }}</span>
+                                            <span v-else class="status-indicator status-active-dot" title="Active"></span>
                                         </td>
                                         <td style="text-align:center">
                                             <div class="table-actions" style="justify-content:center">
@@ -7319,3 +7341,4 @@
     </script>
 </body>
 </html>
+                            </template>
