@@ -11270,3 +11270,21 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .tuc--full   { border-left-color: var(--danger); }
 /* Scheduled-only (no active now) — neutral stripe */
 .tuc--scheduled-only { border-left-color: rgba(83,74,183,.4); }
+
+/* ════════════════════════════════════════════════════════
+   GLOBAL NAME DISPLAY FIXES — no truncation on identity elements
+   ════════════════════════════════════════════════════════ */
+.oncall-tl-name  { white-space: normal !important; word-break: break-word !important; overflow: visible !important; text-overflow: unset !important; }
+.tl-popover-name { white-space: normal !important; word-break: break-word !important; overflow: visible !important; text-overflow: unset !important; }
+.uop-unit-name   { white-space: normal !important; word-break: break-word !important; overflow: visible !important; text-overflow: unset !important; }
+.tdm-inv-name    { white-space: normal !important; word-break: break-word !important; overflow: visible !important; text-overflow: unset !important; }
+.rline-coord-name{ white-space: normal !important; word-break: break-word !important; overflow: visible !important; text-overflow: unset !important; }
+.mv-resident-name{ white-space: normal !important; word-break: break-word !important; overflow: visible !important; text-overflow: unset !important; }
+.dept-card-name  { white-space: normal !important; word-break: break-word !important; overflow: visible !important; text-overflow: unset !important; }
+.mv-rot-label    { white-space: normal !important; word-break: break-word !important; overflow: visible !important; text-overflow: unset !important; }
+
+/* On-call compact names — give a little more room for "A. Maiso" format */
+.db-oc-name { font-size: 12px; overflow: visible; text-overflow: unset; white-space: normal; }
+
+/* Dashboard rotation name — "A. Varona" fits well */
+.db-rot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
