@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
-        : 'https://neumac-manage-back-end-production.up.railway.app', 
+        : 'https://neumac-manage-back-end-production.up.railway.app',
       TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
       CACHE_TTL: 300000
@@ -1332,6 +1332,7 @@ document.addEventListener('DOMContentLoaded', () => {
             office_phone: f.office_phone || null,
             years_experience: f.years_experience || null,
             coord_line_id: f._coordLineId || null,
+            investigador_lines: f._investigadorLines || [],
             hospital_id: f.hospital_id || null,
             clinical_study_certificates: f.clinical_study_certificates || []
           }
