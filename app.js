@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
-        ? 'http://localhost:3000' 
+        ? 'http://localhost:3000'
         : 'https://neumac-manage-back-end-production.up.railway.app',
       TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
@@ -2934,7 +2934,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.8 useTrainingUnits ============
-    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup, allDepartmentsLookup }) {
+    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup }) {
       // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', unit_type: 'training_unit', unit_description: '', specialty: '', supervising_attending_id: '' } })
@@ -3352,7 +3352,7 @@ document.addEventListener('DOMContentLoaded', () => {
         unitResidentsModal.show = true
       }
 
-      const saveTrainingUnit = async (saving) => {
+      const saveTrainingUnit = async (saving, deptLookup) => {
         const f = trainingUnitModal.form
         if (!f.unit_name?.trim()) { showToast('Validation Error', 'Unit name is required', 'error'); return }
         if (!f.unit_code?.trim()) { showToast('Validation Error', 'Unit code is required', 'error'); return }
@@ -3361,7 +3361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           // Exact fields from backend Joi trainingUnit schema — nothing more, nothing less
           // department_name is NOT NULL in schema — derive from departments list
-          const deptRecord = allDepartmentsLookup?.value?.find(d => d.id === f.department_id)
+          const deptRecord = deptLookup?.value?.find(d => d.id === f.department_id) || null
           const data = {
             unit_name: f.unit_name.trim(),
             unit_code: f.unit_code.trim().toUpperCase(),
@@ -3532,7 +3532,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await API.getMedicalStaff()
           activeMedicalStaff.value = data.filter(s => s.employment_status === 'active')
           if (currentUser.value) {
-            const found = activeMedicalStaff.value.find(s => s.professional_email === currentUser.value.email)
+            const found = activeMedicalStaff.value.find(s => s.professional_email === currentUser.value?.email)
             if (found) selectedAuthorId.value = found.id
           }
         } catch { activeMedicalStaff.value = [] }
@@ -3950,7 +3950,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const newsPosts      = ref([])
       const newsLoading    = ref(false)
       const newsModal      = reactive({
-        show: false, mode: 'add',
+        show: false, mode: 'add', _tab: 'meta',
         form: {
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
           author_id: '', research_line_id: '', is_public: false,
@@ -4410,7 +4410,7 @@ document.addEventListener('DOMContentLoaded', () => {
           tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
-        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup, allDepartmentsLookup })
+        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
@@ -5281,7 +5281,7 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           saveMedicalStaff: () => staffOps.saveMedicalStaff(saving),
           saveDepartment: () => saveDepartment(saving),
-          saveTrainingUnit: () => saveTrainingUnit(saving),
+          saveTrainingUnit: () => saveTrainingUnit(saving, allDepartmentsLookup),
           saveRotation: () => rotationOps.saveRotation(saving),
           saveOnCallSchedule: () => onCallOps.saveOnCallSchedule(saving),
           saveOnCall: () => onCallOps.saveOnCallSchedule(saving),
@@ -5307,7 +5307,7 @@ document.addEventListener('DOMContentLoaded', () => {
           rotationStartsInHorizon:       rotationOps.rotationStartsInHorizon,
           rotationEndsInHorizon:         rotationOps.rotationEndsInHorizon,
           isRotationActive: rotationOps.isRotationActive,
-          isShiftActive: onCallOps.isShiftActive,  
+          isShiftActive: onCallOps.isShiftActive,
           viewRotationDetails: rotationOps.viewRotationDetails,
           residentGapWarnings: rotationOps.residentGapWarnings,
         }
