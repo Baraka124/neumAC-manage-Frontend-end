@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : 'https://neumac-manage-back-end-production.up.railway.app',
       TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
-      CACHE_TTL: 300000 
+      CACHE_TTL: 300000
     }
 
     // ============ 2. CONSTANTS ====-========
