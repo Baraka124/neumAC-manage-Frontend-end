@@ -1291,6 +1291,14 @@ document.addEventListener('DOMContentLoaded', () => {
           has_phd: staff.has_phd || false, phd_field: staff.phd_field || '',
           office_phone: staff.office_phone || '', years_experience: staff.years_experience || null,
           _coordLineId: researchLines.value.find(l=>l.coordinator_id===staff.id)?.id || null,
+          _investigadorLines: [],
+          home_department_id: staff.home_department_id || null,
+          has_medical_license: staff.has_medical_license || false,
+          residency_start_date: staff.residency_start_date || null,
+          residency_year_override: staff.residency_year_override || null,
+          external_contact_name: staff.external_contact_name || null,
+          external_contact_email: staff.external_contact_email || null,
+          external_contact_phone: staff.external_contact_phone || null,
           clinical_study_certificates: Array.isArray(staff.clinical_study_certificates) ? [...staff.clinical_study_certificates] : [],
           hospital_id: staff.hospital_id || null,
           _networkHint: null
@@ -1327,23 +1335,38 @@ document.addEventListener('DOMContentLoaded', () => {
             external_contact_email: f.external_contact_email || null,
             external_contact_phone: f.external_contact_phone || null,
             is_research_coordinator: f.is_research_coordinator || false,
+            can_be_pi: f.can_be_pi || false,
+            can_be_coi: f.can_be_coi || false,
             has_phd: f.has_phd || false,
             phd_field: f.phd_field || null,
             office_phone: f.office_phone || null,
             years_experience: f.years_experience || null,
-            coord_line_id: f._coordLineId || null,
-            investigador_lines: f._investigadorLines || [],
             hospital_id: f.hospital_id || null,
             clinical_study_certificates: f.clinical_study_certificates || []
           }
+          let savedStaff
           if (medicalStaffModal.mode === 'add') {
-            medicalStaff.value.unshift(await API.createMedicalStaff(data))
+            savedStaff = await API.createMedicalStaff(data)
+            medicalStaff.value.unshift(savedStaff)
             showToast('Success', 'Medical staff added', 'success')
           } else {
-            const result = await API.updateMedicalStaff(f.id, data)
-            const idx = medicalStaff.value.findIndex(s => s.id === result.id)
-            if (idx !== -1) medicalStaff.value[idx] = result
+            savedStaff = await API.updateMedicalStaff(f.id, data)
+            const idx = medicalStaff.value.findIndex(s => s.id === savedStaff.id)
+            if (idx !== -1) medicalStaff.value[idx] = savedStaff
             showToast('Success', 'Medical staff updated', 'success')
+          }
+          // If marked as research coordinator with a specific line, update that line's coordinator_id
+          if (f.is_research_coordinator && f._coordLineId && savedStaff?.id) {
+            try {
+              await API.assignCoordinator(f._coordLineId, savedStaff.id)
+              await loadResearchLines()
+            } catch (e) { console.warn('Could not update research line coordinator:', e) }
+          } else if (!f.is_research_coordinator && savedStaff?.id) {
+            // If coordinator toggled OFF, clear coordinator_id from any line that had this person
+            const coordinated = researchLines.value.filter(l => l.coordinator_id === savedStaff.id)
+            for (const line of coordinated) {
+              try { await API.assignCoordinator(line.id, null) } catch {}
+            }
           }
           medicalStaffModal.show = false; clearAll('staff')
         } catch (e) { showToast('Error', e.message || 'Failed to save', 'error') }
@@ -1924,6 +1947,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!form.training_unit_id) { setErr('rotation', 'training_unit_id', 'Please select a training unit'); ok = false }
         if (!form.start_date) { setErr('rotation', 'start_date', 'Start date is required'); ok = false }
         if (!form.end_date) { setErr('rotation', 'end_date', 'End date is required'); ok = false }
+        if (!form.supervising_attending_id) { setErr('rotation', 'supervising_attending_id', 'Supervising attending is required'); ok = false }
         if (form.start_date && form.end_date) {
           const s = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
           const e = new Date(Utils.normalizeDate(form.end_date) + 'T00:00:00')
@@ -2910,7 +2934,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.8 useTrainingUnits ============
-    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup }) {
+    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup, allDepartmentsLookup }) {
       // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', unit_type: 'training_unit', unit_description: '', specialty: '', supervising_attending_id: '' } })
@@ -3329,18 +3353,28 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const saveTrainingUnit = async (saving) => {
+        const f = trainingUnitModal.form
+        if (!f.unit_name?.trim()) { showToast('Validation Error', 'Unit name is required', 'error'); return }
+        if (!f.unit_code?.trim()) { showToast('Validation Error', 'Unit code is required', 'error'); return }
+        if (!f.maximum_residents || f.maximum_residents < 1) { showToast('Validation Error', 'Maximum residents must be at least 1', 'error'); return }
         saving.value = true
         try {
-          const f = trainingUnitModal.form
           // Exact fields from backend Joi trainingUnit schema — nothing more, nothing less
+          // department_name is NOT NULL in schema — derive from departments list
+          const deptRecord = allDepartmentsLookup?.value?.find(d => d.id === f.department_id)
           const data = {
-            unit_name: f.unit_name, unit_code: f.unit_code, department_id: f.department_id,
-            maximum_residents: f.maximum_residents || 5, unit_status: f.unit_status || 'active',
+            unit_name: f.unit_name.trim(),
+            unit_code: f.unit_code.trim().toUpperCase(),
+            department_id: f.department_id || null,
+            department_name: deptRecord?.name || f.department_name || 'Pulmonology',
+            maximum_residents: parseInt(f.maximum_residents) || 5,
+            unit_status: f.unit_status || 'active',
+            unit_type: f.unit_type || 'training_unit',
+            unit_description: f.unit_description || '',
+            specialty: f.specialty || '',
+            supervisor_id: f.supervising_attending_id || null,
+            supervising_attending_id: f.supervising_attending_id || null,
           }
-          if (f.supervising_attending_id) data.supervising_attending_id = f.supervising_attending_id
-          if (f.specialty)         data.specialty         = f.specialty
-          if (f.location_building) data.location_building = f.location_building
-          if (f.location_floor)    data.location_floor    = f.location_floor
           if (trainingUnitModal.mode === 'add') { trainingUnits.value.unshift(await API.createTrainingUnit(data)); showToast('Success', 'Training unit created', 'success') }
           else { const result = await API.updateTrainingUnit(f.id, data); const idx = trainingUnits.value.findIndex(u => u.id === result.id); if (idx !== -1) trainingUnits.value[idx] = result; showToast('Success', 'Training unit updated', 'success') }
           trainingUnitModal.show = false
@@ -3609,7 +3643,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const showAddProjectModal = (line = null) => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
-      const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
+      const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, research_line_name: l.research_line_name || l.name || '', keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
       const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t, end_date: t.end_date || t.estimated_end_date || '', co_investigators: Array.isArray(t.co_investigators) ? [...t.co_investigators] : (t.co_investigator_id ? [t.co_investigator_id] : []), sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : []) }; clinicalTrialModal.show = true }
       const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '' }; innovationProjectModal.show = true }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.show = true }
@@ -4376,7 +4410,7 @@ document.addEventListener('DOMContentLoaded', () => {
           tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
-        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup })
+        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup, allDepartmentsLookup })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
@@ -5250,6 +5284,7 @@ document.addEventListener('DOMContentLoaded', () => {
           saveTrainingUnit: () => saveTrainingUnit(saving),
           saveRotation: () => rotationOps.saveRotation(saving),
           saveOnCallSchedule: () => onCallOps.saveOnCallSchedule(saving),
+          saveOnCall: () => onCallOps.saveOnCallSchedule(saving),
           saveAbsence: () => absenceOps.saveAbsence(saving),
           saveUserProfile, hasPermission,
           dismissAlert: ui.dismissAlert, activeAlertsCount: ui.activeAlertsCount,
