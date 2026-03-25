@@ -5307,7 +5307,7 @@ document.addEventListener('DOMContentLoaded', () => {
           rotationStartsInHorizon:       rotationOps.rotationStartsInHorizon,
           rotationEndsInHorizon:         rotationOps.rotationEndsInHorizon,
           isRotationActive: rotationOps.isRotationActive,
-          isShiftActive: onCallOps.isShiftActive,
+          isShiftActive: onCallOps.isShiftActive,  
           viewRotationDetails: rotationOps.viewRotationDetails,
           residentGapWarnings: rotationOps.residentGapWarnings,
         }
