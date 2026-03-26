@@ -11389,3 +11389,82 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .udd-callout-content { flex: 1; }
 .udd-callout-sub { font-size: 11.5px; opacity: .75; margin-top: 2px; }
 .udd-section { display: flex; flex-direction: column; }
+
+/* ════════════════════════════════════════════════════════
+   CLINICAL UNITS — KPI STRIP
+   ════════════════════════════════════════════════════════ */
+.tu-kpi-strip {
+  display: flex; align-items: stretch; gap: 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: 0;
+}
+.tu-kpi {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 12px 20px;
+  min-width: 100px;
+}
+.tu-kpi-num {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 28px; font-weight: 400; font-style: italic;
+  line-height: 1; letter-spacing: -.03em;
+}
+.tu-kpi--ok   .tu-kpi-num { color: var(--ok); }
+.tu-kpi--warn .tu-kpi-num { color: var(--warn); }
+.tu-kpi--full .tu-kpi-num { color: var(--danger); }
+.tu-kpi--danger .tu-kpi-num { color: #ef9f27; }
+.tu-kpi-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-3);
+}
+.tu-kpi-sub { font-size: 10px; color: var(--text-4); }
+.tu-kpi-div {
+  width: 1px; background: var(--border);
+  margin: 10px 0; flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════════════════════
+   CLINICAL UNITS — SUPERVISOR MISSING BADGE
+   ════════════════════════════════════════════════════════ */
+.tuc-overlap-strip {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.5px; font-weight: 600;
+  color: #854f0b;
+  background: #faeeda; border-top: 1px solid #f6c05c;
+  padding: 5px 14px;
+}
+
+/* ════════════════════════════════════════════════════════
+   ROTATION MODAL — UNIT AVAILABILITY PICKER
+   ════════════════════════════════════════════════════════ */
+.uap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px; margin-top: 4px;
+  max-height: 220px; overflow-y: auto;
+  padding: 2px;
+}
+.uap-card {
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 10px;
+  cursor: pointer; background: var(--surface);
+  transition: all .12s;
+  border-left: 3px solid var(--border);
+}
+.uap-card:hover { border-color: #009999; background: rgba(0,153,153,.03); }
+.uap-card--selected {
+  border-color: #009999 !important;
+  border-left-color: #009999 !important;
+  background: rgba(0,153,153,.06) !important;
+  box-shadow: 0 0 0 2px rgba(0,153,153,.15);
+}
+.uap-card--full { opacity: .65; border-left-color: #e24b4a; }
+.uap-card--full:hover { border-color: #e24b4a; }
+.uap-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 5px; }
+.uap-name { font-size: 11.5px; font-weight: 500; color: var(--text-1); line-height: 1.3; word-break: break-word; }
+.uap-cap { font-size: 12px; font-weight: 700; font-family: monospace; flex-shrink: 0; }
+.uap-bar { height: 4px; background: var(--surface-3, #e9e7e2); border-radius: 2px; overflow: hidden; margin-bottom: 5px; }
+.uap-bar-fill { height: 100%; border-radius: 2px; transition: width .3s; }
+.uap-meta { font-size: 10px; font-family: monospace; }
+
+.uap-card--overlap { border-left-color: #ef9f27; }
