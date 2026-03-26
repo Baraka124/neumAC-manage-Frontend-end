@@ -587,7 +587,8 @@
                 </div>
 
                 <!-- Breadcrumb -->
-                <nav class="breadcrumb" aria-label="Breadcrumb">
+                <nav class="breadcrumb" aria-label="Breadcrumb"
+                     v-if="!['resident_rotations'].includes(currentView)">
                     <button @click="switchView('dashboard')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg><span>Dashboard</span></button>
                     <span class="bc-sep">/</span>
                     <span class="bc-current">{{ getCurrentViewTitle() }}</span>
