@@ -1061,10 +1061,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ 6.3 useStaff ============
     function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser }) {
-            const staffView = ref('table') // 'table' | 'compact'
-      // allStaffLookup keeps ALL staff (including inactive) for name resolution
-      // so deleted staff don't ghost as "Not assigned" in historical records
-            const hospitalsList = ref([])   // all hospitals from DB
+      const medicalStaff    = ref([])
+      const allStaffLookup  = ref([])   // ALL staff including inactive, for name resolution
+      const staffView = ref('table') // 'table' | 'compact'
+      const hospitalsList = ref([])   // all hospitals from DB
       const clinicalUnits = ref([])   // clinical units (Pneumology + others)
       const staffFilters = reactive({ search: '', staffType: '', department: '', status: '', residentCategory: '', hospital: '', networkType: '' })
       const clearStaffFilters = () => { staffFilters.search = ''; staffFilters.staffType = ''; staffFilters.department = ''; staffFilters.status = ''; staffFilters.residentCategory = ''; staffFilters.hospital = ''; staffFilters.networkType = '' }
@@ -1318,7 +1318,7 @@ document.addEventListener('DOMContentLoaded', () => {
           is_oncall_manager: staff.is_oncall_manager || false,
           has_phd: staff.has_phd || false, phd_field: staff.phd_field || '',
           office_phone: staff.office_phone || '', years_experience: staff.years_experience || null,
-          _coordLineId: researchLines.value.find(l=>l.coordinator_id===staff.id)?.id || null,
+          _coordLineId: null, // resolved post-load by research composable
           _investigadorLines: [],
           home_department_id: staff.home_department_id || null,
           has_medical_license: staff.has_medical_license || false,
@@ -1391,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { console.warn('Could not update research line coordinator:', e) }
           } else if (!f.is_research_coordinator && savedStaff?.id) {
             // If coordinator toggled OFF, clear coordinator_id from any line that had this person
-            const coordinated = researchLines.value.filter(l => l.coordinator_id === savedStaff.id)
+            const coordinated = [] // cross-composable update handled by research composable
             for (const line of coordinated) {
               try { await API.assignCoordinator(line.id, null) } catch {}
             }
@@ -1481,6 +1481,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ 6.4 useOnCall ============
     function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences }) {
+      const onCallSchedule = ref([])
             const todaysOnCall = ref([])
       const loadingSchedule = ref(false)
       const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
@@ -2422,6 +2423,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ 6.6 useAbsences ============
     function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule }) {
+      const absences = ref([])
             const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', hideReturned: true })
       const absenceModal = reactive({
         show: false, mode: 'add',
@@ -2758,6 +2760,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ 6.7 useDepartments ============
     function useDepartments({ showToast, showConfirmation, medicalStaff, trainingUnits, rotations }) {
+      const departments = ref([])
             const allDepartmentsLookup = ref([])  // includes inactive — for name resolution only
       const departmentFilters = reactive({ search: '', status: '' })
       const departmentModal = reactive({ show: false, mode: 'add', form: { name: '', code: '', status: 'active', head_of_department_id: '', hospital_id: '', description: '', contact_email: '', contact_phone: '' } })
@@ -3607,7 +3610,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await API.getMedicalStaff()
           activeMedicalStaff.value = data.filter(s => s.employment_status === 'active')
           if (currentUser.value) {
-            const found = activeMedicalStaff.value.find(s => s.professional_email === currentUser.value?.email)
+            const found = currentUser.value?.email ? activeMedicalStaff.value.find(s => s.professional_email === currentUser.value.email) : null
             if (found) selectedAuthorId.value = found.id
           }
         } catch { activeMedicalStaff.value = [] }
@@ -3641,6 +3644,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ 6.11 useResearch ============
     function useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations }) {
+      const researchLines         = ref([])
+      const clinicalTrials        = ref([])
+      const innovationProjects    = ref([])
                         const researchLineFilters = reactive({ search: '', active: '' })
       const trialFilters = reactive({ line: '', phase: '', status: '', search: '' })
       const projectFilters = reactive({ research_line_id: '', category: '', stage: '', funding_status: '', search: '' })
@@ -4465,20 +4471,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hoisting the refs here breaks the circular dependency cleanly:
         // both composables receive the same reactive container,
         // so when either load function fills it all consumers see it immediately.
-        // ── Shared refs — hoisted so all composables access them as closures ──────
-        const trainingUnits      = ref([])
-        const rotations          = ref([])
-        const medicalStaff       = ref([])
-        const allStaffLookup     = ref([])
-        const onCallSchedule     = ref([])
-        const absences           = ref([])
-        const departments        = ref([])
-        const researchLines      = ref([])
-        const clinicalTrials     = ref([])
-        const innovationProjects = ref([])
+        const trainingUnits = ref([])
+        const rotations     = ref([])
 
         const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser })
-        const { hospitalsList } = staffOps
+        const { medicalStaff, allStaffLookup, hospitalsList } = staffOps
 
         const { trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
           filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName,
@@ -4494,7 +4491,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
-        const { allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
+        const { departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
@@ -4520,12 +4517,12 @@ document.addEventListener('DOMContentLoaded', () => {
           return diff > 0 ? diff : 0
         }
 
-        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences: ref([]) })
-        const {} = onCallOps
+        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule: ref([]) })
+        const { absences } = absenceOps
+        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences })
+        const { onCallSchedule } = onCallOps
 
-        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule })
-        const {} = absenceOps
-
+        
         // ============ STAFF DEACTIVATION WORKFLOW ============
         // Professional reassignment flow: scan future records before deactivating
         const reassignmentModal = reactive({
@@ -4881,10 +4878,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const showUserProfileModal = () => {
           // Find linked staff record by email match
-          const linkedStaff = medicalStaff.value.find(s =>
-            s.professional_email === currentUser.value?.email ||
-            s.full_name === currentUser.value?.full_name
-          )
+          const linkedStaff = (currentUser.value?.email || currentUser.value?.full_name)
+            ? medicalStaff.value.find(s =>
+                s.professional_email === currentUser.value?.email ||
+                s.full_name === currentUser.value?.full_name)
+            : null
           userProfileModal.form = {
             full_name: currentUser.value?.full_name || '',
             email: currentUser.value?.email || '',
@@ -5236,7 +5234,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return {
           // Existing returns
-          loading, saving, currentUser, loginForm, loginLoading,
+          loading, saving, currentUser, loginForm, loginLoading, hasPermission,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
           ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
@@ -5292,6 +5290,8 @@ document.addEventListener('DOMContentLoaded', () => {
           activeMissionLine: researchOps.activeMissionLine,
           portfolioKPIs:     researchOps.portfolioKPIs,
           getLineAccent:     getLineAccentGlobal,
+          researchHubTab, openLineDetail, closeLineDetail,
+          selectedResearchLine,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           searchResultsOpen: ui.searchResultsOpen,
