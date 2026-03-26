@@ -11288,3 +11288,134 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 
 /* Dashboard rotation name — "A. Varona" fits well */
 .db-rot-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+
+/* ════════════════════════════════════════════════════════
+   ROTATIONS TABLE — consistent with medical staff table
+   ════════════════════════════════════════════════════════ */
+.table-rot { table-layout: fixed; }
+.table-rot .staff-table-row:hover {
+  background: rgba(0,153,153,.03);
+  box-shadow: inset 3px 0 0 #009999;
+}
+
+/* Rotation status badge — exceptions only */
+.rot-status-badge {
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+  display: inline-block;
+}
+.rot-status-badge--active    { background: rgba(0,153,153,.08); color: #009999; }
+.rot-status-badge--scheduled { background: rgba(83,74,183,.08); color: #534ab7; }
+.rot-status-badge--completed { background: var(--surface-2); color: var(--text-4); }
+.rot-status-badge--terminated_early { background: rgba(226,75,74,.07); color: #a32d2d; }
+.rot-status-badge--extended  { background: rgba(239,159,39,.08); color: #854f0b; }
+
+/* Days left chip */
+.rot-days-chip { font-family: monospace; font-size: 11px; color: var(--text-3); }
+.rot-days-chip--urgent { color: #e24b4a; font-weight: 700; }
+.rot-days-chip--soon   { color: #ef9f27; font-weight: 600; }
+
+/* ════════════════════════════════════════════════════════
+   ABSENCES TABLE — consistent with medical staff table
+   ════════════════════════════════════════════════════════ */
+.table-absence { table-layout: fixed; }
+.table-absence .staff-table-row:hover {
+  background: rgba(239,159,39,.03);
+  box-shadow: inset 3px 0 0 #ef9f27;
+}
+
+/* Absence status */
+.abs-status-badge {
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; display: inline-block;
+}
+.abs-status-badge--absent   { background: rgba(226,75,74,.07); color: #a32d2d; }
+.abs-status-badge--planned  { background: rgba(83,74,183,.08); color: #534ab7; }
+.abs-status-badge--returned { background: rgba(99,153,34,.08); color: #3b6d11; }
+
+/* Absence reason chip */
+.abs-reason-chip {
+  font-size: 10px; padding: 2px 7px; border-radius: 4px; display: inline-block;
+  background: var(--surface-2); color: var(--text-3);
+  border: 0.5px solid var(--border);
+}
+
+/* Coverage indicator */
+.abs-coverage-ok  { font-size: 11px; color: #009999; display: flex; align-items: center; gap: 4px; }
+.abs-coverage-no  { font-size: 11px; color: #854f0b; display: flex; align-items: center; gap: 4px; }
+
+/* ════════════════════════════════════════════════════════
+   ON-CALL TABLE
+   ════════════════════════════════════════════════════════ */
+.table-oncall .staff-table-row:hover {
+  background: rgba(239,159,39,.03);
+  box-shadow: inset 3px 0 0 #ef9f27;
+}
+.table-oncall { table-layout: fixed; }
+
+/* Primary physician cell with avatar */
+.oc-physician-cell { display: flex; align-items: center; gap: 9px; }
+.oc-physician-av   {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#009999,#4A9EE8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700; color: #fff;
+}
+.oc-physician-name { font-size: 12.5px; font-weight: 600; color: var(--text-1); }
+.oc-physician-time { font-size: 10px; font-family: monospace; color: var(--text-3); margin-top: 1px; }
+
+/* Shift type badge */
+.oc-type-badge {
+  font-size: 9.5px; font-weight: 600; padding: 2px 7px; border-radius: 4px; display: inline-block;
+}
+.oc-type-badge--primary_call    { background: rgba(0,153,153,.08); color: #009999; border: 0.5px solid rgba(0,153,153,.18); }
+.oc-type-badge--backup_call     { background: var(--surface-2); color: var(--text-3); }
+.oc-type-badge--weekend_coverage{ background: rgba(83,74,183,.08); color: #534ab7; }
+.oc-type-badge--float_physician { background: rgba(239,159,39,.08); color: #854f0b; }
+
+/* Today highlight */
+.oc-row-today { background: rgba(0,153,153,.03) !important; }
+.oc-today-tag {
+  font-size: 9px; font-family: monospace; font-weight: 700; color: #009999;
+  background: rgba(0,153,153,.1); padding: 1px 6px; border-radius: 3px; margin-left: 6px;
+}
+
+/* ════════════════════════════════════════════════════════
+   NEWS VIEW
+   ════════════════════════════════════════════════════════ */
+
+/* Author avatar initials */
+.news-author-av {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(135deg,#009999,#4A9EE8);
+  font-size: 7px; font-weight: 700; color: #fff;
+  margin-right: 4px; flex-shrink: 0; vertical-align: middle;
+}
+
+/* Status dot for published (exception badge only for draft/archived) */
+.news-status-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: #639922; vertical-align: middle;
+}
+
+/* News card hover — teal accent */
+.news-card:hover {
+  border-color: rgba(0,153,153,.3) !important;
+  box-shadow: inset 3px 0 0 #009999, 0 2px 8px rgba(0,153,153,.08) !important;
+}
+
+/* News tabs — teal active (override blue) */
+.news-view .rhub-tab--active {
+  color: #009999 !important;
+  border-bottom-color: #009999 !important;
+}
+.news-view .rhub-tab--active .rhub-tab-count {
+  background: rgba(0,153,153,.08) !important;
+  color: #009999 !important;
+  border-color: rgba(0,153,153,.2) !important;
+}
+
+/* Card title — no truncation */
+.news-card-title {
+  white-space: normal !important;
+  word-break: break-word !important;
+}
