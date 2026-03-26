@@ -1862,7 +1862,7 @@
                             </div>
                             <div class="tu-kpi-div"></div>
                             <div class="tu-kpi tu-kpi--warn">
-                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => { const c=getUnitActiveRotationCount(u.id); return c>0 && c<u.maximum_residents && c/u.maximum_residents>0.5 }).length }}</div>
+                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) > 0 && getUnitActiveRotationCount(u.id) < u.maximum_residents && getUnitActiveRotationCount(u.id) / u.maximum_residents > 0.5).length }}</div>
                                 <div class="tu-kpi-label">Filling up</div>
                                 <div class="tu-kpi-sub">&gt;50% occupied</div>
                             </div>
