@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>neuMAC | Pulmonology Management System</title>
@@ -1848,6 +1848,8 @@
                         </div>
                     </div>
                 </div>
+            </div><!-- /card mb-6 -->
+            </div><!-- /resident_rotations view -->
 
                 <!-- ============ TRAINING UNITS VIEW ============ -->
                 <div v-if="currentView === 'training_units'">
@@ -2070,7 +2072,7 @@
                                     </div>
                                 </template>
 
-                            empty-state">
+                            <div class="empty-state">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
                                 <div class="empty-state-title">No training units found</div>
                                 <div class="empty-state-description">Training units are the clinical areas where residents rotate</div>
@@ -2079,6 +2081,7 @@
                         </div><!-- end v-else -->
                     </div>
                 </div>
+            </div><!-- /training_units view -->
 
                 <!-- ============ STAFF ABSENCE VIEW ============ -->
                 <div v-if="currentView === 'staff_absence'">
@@ -7529,6 +7532,7 @@
         </nav>
 
     </div><!-- end app-layout -->
+    </div><!-- end #app -->
 
     <script src="app.js?v=5"></script>
 
@@ -7644,4 +7648,3 @@
     </script>
 </body>
 </html>
-                            </template>
