@@ -1,5 +1,5 @@
-<!DOCTYPE html> 
-<html lang="en"> 
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
@@ -2003,28 +2003,26 @@
                                         </div>
                                     </div>
                                     <div class="tuc-timeline-body">
-                                        <div v-for="(slot, idx) in getUnitSlots(unit.id)" :key="idx" class="tuc-tl-row">
+                                        <div v-for="(slot, idx) in getUnitSlots(unit.id, unit.maximum_residents, trainingUnitHorizon)" :key="idx" class="tuc-tl-row">
                                             <div class="tuc-tl-slot-label">
-                                                <div class="tuc-tl-avatar" v-if="slot.resident_id">{{ (getResidentShortName(slot.resident_id)||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                                <div class="tuc-tl-avatar" v-if="slot.initials">{{ slot.initials }}</div>
                                                 <div class="tuc-tl-slot-num" v-else>{{ idx + 1 }}</div>
                                             </div>
                                             <div class="tuc-tl-months">
-                                                <div v-for="m in getTimelineMonths(trainingUnitHorizon)" :key="m.key"
+                                                <div v-for="m in slot.months" :key="m.key"
                                                      class="tuc-tl-cell"
                                                      :class="{
-                                                       'tuc-tl-cell-name': slot.monthMap && slot.monthMap[m.key] && slot.monthMap[m.key].status === 'active',
-                                                       'tuc-tl-cell-scheduled': slot.monthMap && slot.monthMap[m.key] && slot.monthMap[m.key].status === 'scheduled',
-                                                       'tuc-tl-cell-free': !slot.monthMap || !slot.monthMap[m.key]
-                                                     }">
-                                                    <span v-if="slot.monthMap && slot.monthMap[m.key] && slot.monthMap[m.key].name" class="tuc-tl-cell-label">{{ slot.monthMap[m.key].name }}</span>
+                                                       'tuc-tl-cell-name':      m.status === 'occupied',
+                                                       'tuc-tl-cell-scheduled': m.status === 'partial',
+                                                       'tuc-tl-cell-free':      m.status === 'free'
+                                                     }"
+                                                     :title="m.tooltip">
+                                                    <span v-if="m.showName" class="tuc-tl-cell-label">{{ m.initials }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </template>
-
-                                <!-- ── DETAIL MODE (default) — clean card ── -->
-                                <template v-else>
+                                </template><template v-else>
                                     <div class="tuc-card-body">
 
                                         <!-- Unit name + type -->
@@ -3091,9 +3089,7 @@
                                 <div class="pd-stat-n">{{ trainingUnits.filter(u=>u.supervisor_id===staffProfileModal.staff.id).length }}</div>
                                 <div class="pd-stat-l">Supervising</div>
                             </div>
-                        </template>
-                        <!-- Resident: active + completed rotations -->
-                        <template v-else>
+                        </template><template v-else>
                             <div class="pd-stat">
                                 <div class="pd-stat-n pd-stat-n--teal">{{ rotations.filter(r=>r.resident_id===staffProfileModal.staff.id && r.rotation_status==='active').length }}</div>
                                 <div class="pd-stat-l">Active rot.</div>
