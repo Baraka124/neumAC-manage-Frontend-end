@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>neuMAC | Pulmonology Management System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -2325,7 +2325,7 @@
                                        'rp-nav-item--active':   activeMissionLine && activeMissionLine.id === line.id,
                                        'rp-nav-item--inactive': !line.active
                                      }"
-                                     @click="openLineDetail(line); activeMissionLine = line"
+                                     @click="activeMissionLine = line"
                                      :style="activeMissionLine && activeMissionLine.id === line.id ? { borderLeftColor: getLineAccent(line.line_number).color } : {}">
                                     <div class="rp-nav-badge"
                                          :style="activeMissionLine && activeMissionLine.id === line.id
@@ -2814,67 +2814,7 @@
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════════
-                         LINE DETAIL PANEL (slide-in from right)
-                    ══════════════════════════════════════════════════ -->
-                    <div v-if="researchDetailPanel && selectedResearchLine" class="rldp-backdrop" @click="closeLineDetail"></div>
-                    <div class="rldp" :class="{ 'rldp--open': researchDetailPanel && selectedResearchLine }">
-                        <template v-if="selectedResearchLine">
-                            <div class="rldp-header">
-                                <div style="display:flex;align-items:flex-end;gap:12px;flex:1;min-width:0;">
-                                    <span class="rldp-number-hero">L{{ selectedResearchLine.line_number }}</span>
-                                    <h2 class="rldp-title">{{ selectedResearchLine.research_line_name || selectedResearchLine.name }}</h2>
-                                </div>
-                                <button class="rldp-close" @click="closeLineDetail"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
-                            </div>
-                            <div class="rldp-body">
-                                <p class="rldp-description" v-if="selectedResearchLine.description">{{ selectedResearchLine.description }}</p>
-                                <!-- Coordinator -->
-                                <div class="rldp-section">
-                                    <div class="rldp-section-label">Coordinator</div>
-                                    <div v-if="selectedResearchLine.coordinator_id" class="rldp-coord">
-                                        <div class="rldp-coord-avatar">{{ selectedResearchLine.coordinator_name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
-                                        <span>{{ selectedResearchLine.coordinator_name }}</span>
-                                    </div>
-                                    <span v-else class="rldp-empty">Not assigned</span>
-                                </div>
-                                <!-- Stats -->
-                                <div class="rldp-stats-row">
-                                    <div class="rldp-stat-block" @click="drillToTrials(selectedResearchLine.id)">
-                                        <div class="rldp-stat-num">{{ selectedResearchLine.stats?.totalStudies || 0 }}</div>
-                                        <div class="rldp-stat-label">Total Studies</div>
-                                        <div class="rldp-stat-active" v-if="selectedResearchLine.stats?.activeTrials > 0">{{ selectedResearchLine.stats.activeStudies }} active</div>
-                                        <div class="rldp-stat-link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg> View</div>
-                                    </div>
-                                    <div class="rldp-stat-block" @click="drillToProjects(selectedResearchLine.id)">
-                                        <div class="rldp-stat-num">{{ selectedResearchLine.stats?.totalProjects || 0 }}</div>
-                                        <div class="rldp-stat-label">Total Projects</div>
-                                        <div class="rldp-stat-active" v-if="selectedResearchLine.stats?.activeProjects > 0">{{ selectedResearchLine.stats.activeProjects }} active</div>
-                                        <div class="rldp-stat-link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg> View</div>
-                                    </div>
-                                </div>
-                                <!-- Capabilities -->
-                                <div class="rldp-section" v-if="selectedResearchLine.capabilities && selectedResearchLine.capabilities !== 'Alcance y capacidades'">
-                                    <div class="rldp-section-label">Capabilities</div>
-                                    <p class="rldp-text">{{ selectedResearchLine.capabilities }}</p>
-                                </div>
-                                <!-- Keywords -->
-                                <div class="rldp-section" v-if="selectedResearchLine.keywords?.length">
-                                    <div class="rldp-section-label">Keywords</div>
-                                    <div class="rldp-keywords">
-                                        <span v-for="kw in selectedResearchLine.keywords" :key="kw" class="rhl-kw">{{ kw }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="rldp-footer">
-                                <button class="btn btn-outline btn-sm" @click="editResearchLine(selectedResearchLine); closeLineDetail()" v-if="hasPermission('research_lines','update')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Edit Line</button>
-                                <button class="btn btn-primary btn-sm" @click="showAddTrialModal(selectedResearchLine); closeLineDetail()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> Add Study</button>
-                                <button class="btn btn-primary btn-sm" @click="showAddProjectModal(selectedResearchLine); closeLineDetail()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg> Add Project</button>
-                            </div>
-                        </template>
-                    </div>
-
-                </div><!-- /research-hub -->
+                    v><!-- /research-hub -->
 
                 <!-- ============ SYSTEM SETTINGS VIEW ============ -->
                 <div v-if="currentView === 'system_settings'" v-cloak>
