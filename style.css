@@ -8351,41 +8351,40 @@ tr:not(:hover) .btn-pill-purge {
 
 /* LEFT — line navigator */
 .rp-nav {
-  border-right: 1px solid var(--border);
-  overflow-y: auto; background: var(--surface-2);
-  display: flex; flex-direction: column; padding: 8px;
+  border-right: 0.5px solid rgba(255,255,255,.08);
+  overflow-y: auto; background: #0f2d54;
+  display: flex; flex-direction: column; padding: 10px 8px;
   gap: 2px;
 }
 .rp-nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 10px; border-radius: 6px; cursor: pointer;
   transition: all var(--t); border-left: 3px solid transparent;
   background: transparent;
 }
-.rp-nav-item:hover { background: var(--surface); border-left-color: var(--border-2); }
+.rp-nav-item:hover { background: rgba(255,255,255,.06); border-left-color: rgba(255,255,255,.15); }
 .rp-nav-item--active {
-  background: var(--surface) !important;
-  box-shadow: var(--shadow-sm);
-  border-left-color: #009999 !important;
+  background: rgba(0,179,179,.12) !important;
+  border-left-color: #00B3B3 !important;
 }
-.rp-nav-item--active .rp-nav-badge { color: #009999; }
-.rp-nav-item--inactive { opacity: .55; }
+.rp-nav-item--active .rp-nav-badge { color: #00B3B3 !important; }
+.rp-nav-item--inactive { opacity: .4; }
 .rp-nav-badge {
   font-family: var(--font-display, Georgia, serif);
-  font-size: 18px; font-weight: 700; font-style: italic;
-  color: var(--text-4); flex-shrink: 0;
-  width: 32px; text-align: center; line-height: 1;
+  font-size: 18px; font-weight: 400; font-style: italic;
+  color: #00B3B3; flex-shrink: 0;
+  width: 36px; text-align: left; line-height: 1;
   transition: all var(--t); padding-top: 2px;
-  letter-spacing: -.02em;
+  letter-spacing: -.03em;
 }
 .rp-nav-info { flex: 1; min-width: 0; }
 .rp-nav-name {
-  font-size: 12.5px; font-weight: 500; color: var(--text-1);
+  font-size: 12px; font-weight: 400; color: rgba(255,255,255,.82);
   white-space: normal; word-break: break-word;
   line-height: 1.35; overflow: visible;
 }
 .rp-nav-meta {
-  font-size: 10px; color: var(--text-4); margin-top: 2px;
+  font-size: 10px; color: rgba(255,255,255,.35); margin-top: 2px;
   display: flex; align-items: center; gap: 5px;
 }
 .rp-nav-dot {
@@ -10896,110 +10895,6 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   border-color: rgba(0,179,179,.25);
 }
 
-/* Nav area — slightly warmer, less grey */
-.rp-nav {
-  border-right: 0.5px solid var(--border, #e3dfd6);
-  overflow-y: auto; background: var(--surface-2, #f5f4f0);
-  display: flex; flex-direction: column; padding: 10px 8px; gap: 2px;
-}
-.rp-nav-item {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px 12px; border-radius: 8px; cursor: pointer;
-  transition: all .12s; border-left: 3px solid transparent;
-  background: transparent;
-}
-.rp-nav-item:hover {
-  background: var(--surface, #fdfcfb);
-  border-left-color: var(--border-2, #cac5ba);
-}
-.rp-nav-item--active {
-  background: var(--surface, #fdfcfb) !important;
-  border-left-color: #009999 !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,.05);
-}
-.rp-nav-item--active .rp-nav-badge { color: #009999; }
-
-/* ── Study card (trials) — richer layout ── */
-.rp-trial-row {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 12px 0; border-bottom: 0.5px solid var(--border, #e3dfd6);
-}
-.rp-trial-row:last-child { border-bottom: none; }
-.rp-trial-info { flex: 1; min-width: 0; }
-.rp-trial-title {
-  font-size: 12px; font-weight: 500; color: var(--text-1, #07111f);
-  white-space: normal; line-height: 1.4; word-break: break-word;
-  margin-bottom: 3px;
-}
-.rp-trial-meta {
-  font-size: 10.5px; font-family: monospace; color: var(--text-3, #5a6472);
-  display: flex; align-items: center; gap: 6px;
-}
-.rp-trial-meta-sep { color: var(--border-2, #cac5ba); }
-.rp-trial-right {
-  display: flex; flex-direction: column; gap: 5px;
-  align-items: flex-end; flex-shrink: 0; min-width: 80px;
-}
-.rp-trial-status {
-  font-size: 10px; font-family: monospace; font-weight: 600;
-  padding: 3px 8px; border-radius: 4px;
-  display: flex; align-items: center;
-}
-.rp-trial-status--recruiting {
-  background: rgba(16,185,129,.08); color: #059669;
-  border: 0.5px solid rgba(16,185,129,.2);
-}
-.rp-trial-status--active {
-  background: rgba(0,179,179,.08); color: #009999;
-  border: 0.5px solid rgba(0,179,179,.2);
-}
-.rp-trial-status--done {
-  background: var(--surface-2, #f5f4f0); color: var(--text-4, #909399);
-  border: 0.5px solid var(--border, #e3dfd6); opacity: .7;
-}
-.rp-trial-bar {
-  width: 76px; height: 4px; border-radius: 2px;
-  background: var(--surface-3, #edebe5); overflow: hidden;
-}
-.rp-trial-bar-fill {
-  height: 100%; border-radius: 2px; transition: width .3s;
-}
-.rp-trial-enroll {
-  font-size: 9.5px; font-family: monospace; color: var(--text-3, #5a6472);
-}
-
-/* ── View all button ── */
-.rp-view-all {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11.5px; font-weight: 500; color: #009999;
-  background: none; border: none; cursor: pointer; padding: 8px 0 0;
-  font-family: monospace;
-}
-.rp-view-all:hover { opacity: .8; }
-
-/* ── Portfolio KPI numbers ── */
-.rp-kpi-val {
-  font-family: var(--font-display, 'Fraunces', Georgia, serif);
-  font-size: 30px; font-weight: 700; font-style: italic;
-  color: var(--text-1, #07111f); line-height: 1; letter-spacing: -.02em;
-}
-.rp-kpi-label {
-  font-size: 10px; font-weight: 500; text-transform: uppercase;
-  letter-spacing: .1em; color: var(--text-3, #5a6472);
-}
-.rp-kpi-sub { font-size: 10px; color: var(--text-4, #909399); margin-top: 1px; }
-
-/* ── Detail stats ── */
-.rp-ds-val {
-  font-family: var(--font-display, 'Fraunces', Georgia, serif);
-  font-size: 32px; font-weight: 700; font-style: italic;
-  color: var(--text-1, #07111f); line-height: 1; letter-spacing: -.02em;
-}
-.rp-ds-label {
-  font-size: 10px; font-weight: 500; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--text-3, #5a6472);
-}
-
 /* ════════════════════════════════════════════════════════
    RESEARCH HUB — CREATIVE TYPOGRAPHY SYSTEM
    Rule: Fraunces italic for numbers/codes · DM Sans for names/prose
@@ -11418,4 +11313,65 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .news-card-title {
   white-space: normal !important;
   word-break: break-word !important;
+}
+
+/* ════════════════════════════════════════════════════════
+   MONTHLY ROTATION VIEW — layout fixes
+   ════════════════════════════════════════════════════════ */
+
+/* Let the mv-view bleed to card edges */
+.card .mv-view {
+  margin: -22px -22px -22px -22px;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+
+/* mv-grid must clip properly inside the card */
+.mv-grid {
+  overflow-x: auto !important;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* mv-view must have enough height to show content */
+.mv-view {
+  min-height: 300px;
+}
+
+/* name cell explicit grid column */
+.mv-name-cell { grid-column: 1; }
+
+/* months area always spans remaining columns */
+.mv-months-area { grid-column: 2 / -1; }
+
+/* Rotation bar colours */
+.mv-rot-bar--active    { background: #009999; color: #fff; }
+.mv-rot-bar--scheduled { background: #534ab7; color: #fff; }
+.mv-rot-bar--completed { background: var(--text-4); color: #fff; opacity: .6; }
+.mv-rot-bar:hover { filter: brightness(1.1); }
+
+/* Month header current highlight */
+.mv-month-header--current {
+  background: rgba(0,153,153,.06) !important;
+  color: #009999 !important;
+}
+
+/* Navigator today button */
+.mv-nav-today {
+  font-size: 10px; font-family: monospace; font-weight: 600;
+  padding: 2px 8px; border-radius: 4px; cursor: pointer;
+  background: rgba(0,153,153,.1); color: #009999;
+  border: 0.5px solid rgba(0,153,153,.2);
+}
+
+/* Horizon selector */
+.mv-hz-btn { 
+  font-size: 10px; font-family: monospace; padding: 3px 8px;
+  border-radius: 4px; cursor: pointer;
+  border: 0.5px solid var(--border); background: var(--surface);
+  color: var(--text-3);
+}
+.mv-hz-btn.active {
+  background: rgba(0,153,153,.08); color: #009999;
+  border-color: rgba(0,153,153,.2);
 }
