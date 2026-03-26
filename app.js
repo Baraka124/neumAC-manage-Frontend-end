@@ -4472,7 +4472,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         const { pagination, resetPage, paginate, totalPages, goToPage } = makePagination([
-          ['medical_staff', 15], ['rotations', 15], ['oncall', 15], ['absences', 15], ['trials', 15]
+          ['medical_staff', 15], ['rotations', 15], ['oncall', 15], ['absences', 15], ['trials', 15], ['projects', 15]
         ])
 
         const { fieldErrors, setErr, clearErr: clearFieldError, clearAll } = makeValidation(['rotation', 'staff', 'absence', 'oncall', 'research'])
