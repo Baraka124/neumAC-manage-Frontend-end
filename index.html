@@ -1501,7 +1501,7 @@
                             </div>
 
                             <!-- Grid -->
-                            <div class="mv-grid" :style="{ '--mv-cols': monthHorizon }">
+                            <div class="mv-grid" :style="{ gridTemplateColumns: '200px repeat(' + monthHorizon + ', minmax(60px, 1fr))' }">
 
                                 <!-- Year label row -->
                                 <div class="mv-name-spacer"></div>
@@ -1527,7 +1527,7 @@
                                             <div class="mv-resident-year">{{ formatTrainingYear(resident.training_year) || 'PGY-?' }}</div>
                                         </div>
                                     </div>
-                                    <div class="mv-months-area" :style="{ '--mv-cols': monthHorizon }">
+                                    <div class="mv-months-area" :style="{ gridTemplateColumns: 'repeat(' + monthHorizon + ', minmax(60px, 1fr))' }">
                                         <div v-for="m in getHorizonMonths(monthHorizon, monthOffset)" :key="'bg-' + m.key"
                                              class="mv-month-bg"
                                              :class="{ 'mv-month-bg--current': m.isCurrent }">
@@ -2623,11 +2623,11 @@
                                 </div>
                                 <!-- Timeline -->
                                 <div class="rha-chart-card rha-chart-card--wide" v-if="trialsTimeline && trialsTimeline.timeline?.length">
-                                    <div class="rha-chart-title"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6H20M4 12H20M4 18H14"/></svg> Studies Added Over Time <span class="rha-chart-badge">{{ studiesTimeline.totalInPeriod }} in 3 yrs</span></div>
+                                    <div class="rha-chart-title"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6H20M4 12H20M4 18H14"/></svg> Studies Added Over Time <span class="rha-chart-badge">{{ trialsTimeline?.totalInPeriod || 0 }} in 3 yrs</span></div>
                                     <div class="timeline-chart">
-                                        <div v-for="item in trialsTimeline.timeline" :key="item.month" class="timeline-bar-col">
+                                        <div v-for="item in (trialsTimeline?.timeline || [])" :key="item.month" class="timeline-bar-col">
                                             <div class="timeline-bar-wrap">
-                                                <div class="timeline-bar-fill" :style="{ height: Math.max(4, Math.round((item.count / Math.max(...trialsTimeline.timeline.map(t=>t.count))) * 100)) + '%' }" :title="item.month + ': ' + item.count"></div>
+                                                <div class="timeline-bar-fill" :style="{ height: Math.max(4, Math.round((item.count / Math.max(...(trialsTimeline?.timeline||[{count:1}]).map(t=>t.count))) * 100)) + '%' }" :title="item.month + ': ' + item.count"></div>
                                                 <span v-if="item.count > 0" class="timeline-bar-val">{{ item.count }}</span>
                                             </div>
                                             <span class="timeline-bar-label">{{ item.month.slice(5) }}</span>
