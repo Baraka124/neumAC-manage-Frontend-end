@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
-      API_BASE_URL: window.location.hostname.includes('localhost') 
+      API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000'
         : 'https://neumac-manage-back-end-production.up.railway.app',
       TOKEN_KEY: 'neumocare_token',
@@ -1462,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', () => {
         getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
         isRoleTaken, getCurrentRoleHolder, handleRoleAssignment, toggleCertificate, availableCertificates,
         addStaffTypeInline,
-        staffView,
+        staffView, compactStaffWithDividers,
         clearStaffFilters,
         hasActiveStaffFilters
       }
@@ -1795,7 +1795,8 @@ document.addEventListener('DOMContentLoaded', () => {
         groupedOnCallSchedules,
         isShiftActive,
         staffWithOnCallOrbs,
-        upcomingOnCallDays
+        upcomingOnCallDays,
+        getPhysicianName
       }
     }
 
@@ -2403,7 +2404,9 @@ document.addEventListener('DOMContentLoaded', () => {
         getRotationBarStyle,
         rotationStartsInHorizon,
         rotationEndsInHorizon,
-        residentGapWarnings
+        residentGapWarnings,
+        getResidentName,
+        getTrainingUnitName
       }
     }
 
@@ -2739,7 +2742,8 @@ document.addEventListener('DOMContentLoaded', () => {
         absences, absenceFilters, absenceModal, absenceOverlapWarning,
         filteredAbsences, filteredAbsencesAll, absenceTotalPages,
         loadAbsences, showAddAbsenceModal, editAbsence, saveAbsence, deleteAbsence, purgeAbsence,
-        absenceResolutionModal, openResolutionModal, resolveAbsence
+        absenceResolutionModal, openResolutionModal, resolveAbsence,
+        getStaffName
       }
     }
 
