@@ -11468,3 +11468,68 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .uap-meta { font-size: 10px; font-family: monospace; }
 
 .uap-card--overlap { border-left-color: #ef9f27; }
+
+/* ════════════════════════════════════════════════════════
+   CLINICAL UNITS — REDESIGNED CARD
+   ════════════════════════════════════════════════════════ */
+
+.tuc-card-body {
+  display: flex; flex-direction: column; gap: 0;
+  padding: 0;
+}
+.tuc-card-title-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 8px; padding: 12px 14px 4px;
+}
+.tuc-card-meta {
+  padding: 0 14px 10px; font-size: 11px; color: var(--text-3);
+  min-height: 18px;
+}
+.tuc-resident-slots {
+  display: flex; flex-direction: column; gap: 0;
+  border-top: 1px solid var(--border);
+}
+.tuc-resident-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px;
+  border-bottom: .5px solid var(--border);
+  transition: background .1s;
+}
+.tuc-resident-row:last-child { border-bottom: none; }
+.tuc-resident-row--active { background: var(--surface); }
+.tuc-resident-row--free   { background: var(--surface-2); }
+.tuc-res-avatar {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#1e40af,#0e7490);
+  color: #fff; font-size: 7.5px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.tuc-res-avatar--free {
+  background: var(--surface-3, #e9e7e2);
+  color: var(--text-4); border: 1px dashed var(--border-2, #cac5ba);
+}
+.tuc-res-info { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.tuc-res-name { font-size: 12px; font-weight: 500; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tuc-resident-row--free .tuc-res-name { font-size: 11px; font-weight: 400; color: var(--text-4); font-style: italic; }
+.tuc-res-dates { font-size: 10px; color: var(--text-4); font-family: monospace; flex-shrink: 0; }
+.tuc-free-chip {
+  font-size: 9.5px; padding: 1px 6px; border-radius: 4px;
+  background: rgba(239,159,39,.1); color: #854f0b;
+  font-family: monospace; font-weight: 600; flex-shrink: 0;
+  border: .5px solid rgba(239,159,39,.3);
+}
+.tuc-card-footer {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.tuc-cap-label {
+  font-size: 11px; font-weight: 700; font-family: monospace; color: var(--text-3);
+  flex-shrink: 0;
+}
+.tuc-cap-bar {
+  height: 5px; background: var(--surface-3, #e9e7e2); border-radius: 3px; overflow: hidden;
+}
+.tuc-cap-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+.tuc:hover .tuc-name { color: #009999; }
