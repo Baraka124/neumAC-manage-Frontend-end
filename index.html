@@ -189,6 +189,25 @@
       .uap-bar-fill{height:100%;border-radius:2px;transition:width .3s;}
       .uap-meta{font-size:10px;font-family:monospace;}
 
+    
+      /* ── Clean card redesign ── */
+      .tuc-card-body{display:flex;flex-direction:column;gap:0;}
+      .tuc-card-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:12px 14px 4px;}
+      .tuc-card-meta{padding:0 14px 10px;font-size:11px;color:#909399;min-height:18px;}
+      .tuc-resident-slots{display:flex;flex-direction:column;gap:0;border-top:1px solid #e3dfd6;}
+      .tuc-resident-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:.5px solid #e3dfd6;transition:background .1s;}
+      .tuc-resident-row:last-child{border-bottom:none;}
+      .tuc-resident-row--free{background:#f5f4f0;}
+      .tuc-res-avatar{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#1e40af,#0e7490);color:#fff;font-size:7.5px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+      .tuc-res-avatar--free{background:#edebe5;color:#909399;border:1px dashed #cac5ba;}
+      .tuc-res-info{display:flex;align-items:center;gap:6px;flex:1;min-width:0;}
+      .tuc-res-name{font-size:12px;font-weight:500;color:#07111f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .tuc-resident-row--free .tuc-res-name{font-size:11px;font-weight:400;color:#b4b2a9;font-style:italic;}
+      .tuc-res-dates{font-size:10px;color:#b4b2a9;font-family:monospace;flex-shrink:0;}
+      .tuc-free-chip{font-size:9.5px;padding:1px 6px;border-radius:4px;background:rgba(239,159,39,.1);color:#854f0b;font-family:monospace;font-weight:600;flex-shrink:0;border:.5px solid rgba(239,159,39,.3);}
+      .tuc-card-footer{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid #e3dfd6;background:#f5f4f0;}
+      .tuc-cap-label{font-size:11px;font-weight:700;font-family:monospace;color:#909399;flex-shrink:0;}
+
     </style>
 </head>
 <body>
@@ -1945,186 +1964,115 @@
                                  class="tuc"
                                  :class="{
                                    'tuc--full':   getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
-                                   'tuc--warn':   getUnitActiveRotationCount(unit.id) / unit.maximum_residents > 0.75 && getUnitActiveRotationCount(unit.id) < unit.maximum_residents,
-                                   'tuc--active': getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) / unit.maximum_residents <= 0.75,
+                                   'tuc--warn':   getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) / unit.maximum_residents > 0.5,
+                                   'tuc--active': getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) / unit.maximum_residents <= 0.5,
                                    'tuc--timeline-mode': trainingUnitView === 'timeline'
                                  }"
                                  @click="openUnitDetail(unit)"
                                  style="cursor:pointer">
 
-                                <!-- ── HEADER (both modes) ── -->
-                               
-                                <!-- Overlap warning strip -->
+                                <!-- ── Overlap warning ── -->
                                 <div v-if="getUnitOverlapWarning(unit.id)" class="tuc-overlap-strip">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
                                     Scheduling overlap · {{ formatDateShort(getUnitOverlapWarning(unit.id).date) }}
-                                </div> <div class="tuc-head">
-                                    <div class="tuc-name-row">
-                                        <svg class="tuc-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg>
-                                        <div>
-                                            <div class="tuc-name">{{ unit.unit_name }}</div>
-                                            <div class="tuc-sub">
-                                            <span v-if="unit.specialty" class="tuc-specialty">{{ unit.specialty }}</span>
-                                            <span v-else-if="unit.unit_type" class="tuc-specialty">{{ {'clinical_unit':'Ward','icu':'Critical Care','outpatient':'Outpatient','surgical':'Surgical','research':'Research Block','training_unit':'Training'}[unit.unit_type] || 'Clinical Unit' }}</span>
-                                            <template v-if="unit.supervisor_id || unit.supervising_attending_id">
-                                                <span class="tuc-sub-sep">·</span>
-                                                <span class="tuc-supervisor">{{ (allStaffLookup.find(s=>s.id===(unit.supervisor_id||unit.supervising_attending_id))?.full_name||'').split(' ').slice(-1)[0] }}</span>
-                                            </template>
+                                </div>
 
+                                <!-- ── TIMELINE MODE ── -->
+                                <template v-if="trainingUnitView === 'timeline'">
+                                    <div class="tuc-head">
+                                        <div class="tuc-name-row">
+                                            <div>
+                                                <div class="tuc-name">{{ unit.unit_name }}</div>
+                                                <div class="tuc-sub">
+                                                    <span v-if="unit.specialty" class="tuc-specialty">{{ unit.specialty }}</span>
+                                                    <span v-else-if="unit.unit_type" class="tuc-specialty">{{ {'clinical_unit':'Ward','icu':'Critical Care','outpatient':'Outpatient','surgical':'Surgical','research':'Research Block','training_unit':'Training'}[unit.unit_type] || 'Clinical Unit' }}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                            <!-- Unit type badge -->
-                                            <span class="tuc-type-badge" :class="'tuc-type--' + (unit.unit_type || 'training_unit')">
-                                                {{ unit.unit_type === 'clinical_unit' ? 'Ward' :
-                                                   unit.unit_type === 'icu' ? 'ICU' :
-                                                   unit.unit_type === 'outpatient' ? 'Outpatient' :
-                                                   unit.unit_type === 'surgical' ? 'Surgical' :
-                                                   unit.unit_type === 'research' ? 'Research' : 'Training' }}
-                                            </span>
+                                        <div class="tuc-head-right">
+                                            <div class="tuc-cap-block">
+                                                <div class="tuc-cap-nums">
+                                                    <span class="tuc-cap-current" :style="getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? 'color:#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? 'color:#ef9f27' : 'color:#009999'">{{ getUnitActiveRotationCount(unit.id) }}</span>
+                                                    <span class="tuc-cap-sep">/</span>
+                                                    <span class="tuc-cap-max">{{ unit.maximum_residents }}</span>
+                                                </div>
+                                                <div class="tuc-cap-bar">
+                                                    <div class="tuc-cap-fill" :style="{ width: Math.min(100, Math.round((getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100))+'%', background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? '#ef9f27' : '#009999' }"></div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="tuc-head-right">
-                                        <div class="tuc-cap-block">
-                                            <div class="tuc-cap-nums">
-                                                <span class="tuc-cap-current"
-                                                      :style="getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? 'color:#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.75 ? 'color:#ef9f27' : 'color:#009999'">
-                                                    {{ getUnitActiveRotationCount(unit.id) }}
-                                                </span>
-                                                <span class="tuc-cap-sep">/</span>
-                                                <span class="tuc-cap-max">{{ unit.maximum_residents }}</span>
-                                                <span v-if="getUnitScheduledCount(unit.id) > 0" class="tuc-cap-sched" :title="getUnitScheduledCount(unit.id) + ' incoming scheduled'">
-                                                    +{{ getUnitScheduledCount(unit.id) }}
-                                                </span>
+                                    <div class="tuc-timeline-body">
+                                        <div v-for="(slot, idx) in getUnitSlots(unit.id)" :key="idx" class="tuc-tl-row">
+                                            <div class="tuc-tl-slot-label">
+                                                <div class="tuc-tl-avatar" v-if="slot.resident_id">{{ (getResidentShortName(slot.resident_id)||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                                <div class="tuc-tl-slot-num" v-else>{{ idx + 1 }}</div>
                                             </div>
-                                            <div class="tuc-cap-bar">
-                                                <div class="tuc-cap-fill"
-                                                     :style="{
-                                                       width: Math.min(100, Math.round((getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100)) + '%',
-                                                       background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a'
-                                                                 : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.75 ? '#ef9f27' : '#009999'
+                                            <div class="tuc-tl-months">
+                                                <div v-for="m in getTimelineMonths(trainingUnitHorizon)" :key="m.key"
+                                                     class="tuc-tl-cell"
+                                                     :class="{
+                                                       'tuc-tl-cell-name': slot.monthMap && slot.monthMap[m.key] && slot.monthMap[m.key].status === 'active',
+                                                       'tuc-tl-cell-scheduled': slot.monthMap && slot.monthMap[m.key] && slot.monthMap[m.key].status === 'scheduled',
+                                                       'tuc-tl-cell-free': !slot.monthMap || !slot.monthMap[m.key]
                                                      }">
-                                                </div>
-                                                <div v-if="getUnitScheduledCount(unit.id) > 0"
-                                                     class="tuc-cap-sched-fill"
-                                                     :style="{ width: Math.min(100, Math.round(((getUnitActiveRotationCount(unit.id)+getUnitScheduledCount(unit.id))/unit.maximum_residents)*100)) + '%' }">
+                                                    <span v-if="slot.monthMap && slot.monthMap[m.key] && slot.monthMap[m.key].name" class="tuc-tl-cell-label">{{ slot.monthMap[m.key].name }}</span>
                                                 </div>
                                             </div>
-                                            <div v-if="getUnitOverlapWarning(unit.id)" class="tuc-overlap-warn">
-                                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                                                Overlap conflict {{ formatDateShort(getUnitOverlapWarning(unit.id).date) }}
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- ── DETAIL MODE (default) — clean card ── -->
+                                <template v-else>
+                                    <div class="tuc-card-body">
+
+                                        <!-- Unit name + type -->
+                                        <div class="tuc-card-title-row">
+                                            <div class="tuc-name">{{ unit.unit_name }}</div>
+                                            <span class="tuc-type-badge" :class="'tuc-type--' + (unit.unit_type || 'training_unit')">
+                                                {{ {'clinical_unit':'Ward','icu':'ICU','outpatient':'OPD','surgical':'Surgery','research':'Research','training_unit':'Training'}[unit.unit_type] || 'Unit' }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Specialty + supervisor -->
+                                        <div class="tuc-card-meta">
+                                            <span v-if="unit.specialty" style="color:var(--text-3);font-size:11px">{{ unit.specialty }}</span>
+                                            <span v-if="unit.supervisor_id || unit.supervising_attending_id" style="color:var(--text-3);font-size:11px">
+                                                · {{ (allStaffLookup.find(s=>s.id===(unit.supervisor_id||unit.supervising_attending_id))?.full_name||'').split(' ').slice(-1)[0] }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Resident slots — the core information -->
+                                        <div class="tuc-resident-slots">
+                                            <div v-for="rot in getUnitRotations(unit.id)" :key="rot.id" class="tuc-resident-row tuc-resident-row--active">
+                                                <div class="tuc-res-avatar">{{ (getResidentShortName(rot.resident_id)||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                                <div class="tuc-res-info">
+                                                    <span class="tuc-res-name">{{ getResidentShortName(rot.resident_id) || '—' }}</span>
+                                                    <span class="tuc-res-dates">→ {{ new Date(rot.end_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}</span>
+                                                </div>
+                                                <span v-if="getDaysUntilFree(rot.end_date) <= 45 && getDaysUntilFree(rot.end_date) > 0" class="tuc-free-chip">Free in {{ getDaysUntilFree(rot.end_date) }}d</span>
+                                            </div>
+                                            <div v-for="i in Math.max(0, unit.maximum_residents - getUnitActiveRotationCount(unit.id))" :key="'free-'+i" class="tuc-resident-row tuc-resident-row--free">
+                                                <div class="tuc-res-avatar tuc-res-avatar--free">
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                                </div>
+                                                <span class="tuc-res-name" style="color:var(--text-4);font-style:italic">Available</span>
                                             </div>
                                         </div>
-                                        </span>
-                                        <span class="status-indicator" :class="'status-' + unit.unit_status">{{ unit.unit_status }}</span>
-                                    </div>
-                                </div>
 
-                                <!-- ══════════════════════════════════════
-                                     TIMELINE VIEW — month strip per slot
-                                     ══════════════════════════════════════ -->
-                                <div v-if="trainingUnitView === 'timeline'" class="tuc-timeline-body">
-
-                                    <!-- Month header suppressed per-card — rendered once above grid -->
-
-                                    <!-- One row per slot -->
-                                    <div v-for="(slot, si) in getUnitSlots(unit.id, unit.maximum_residents, trainingUnitHorizon)"
-                                         :key="si" class="tuc-tl-row">
-                                        <!-- Slot label: resident initials or slot number -->
-                                        <div class="tuc-tl-slot-label">
-                                            <span v-if="slot.residentId"
-                                                  class="tuc-tl-avatar"
-                                                  :title="slot.residentName">
-                                                {{ slot.initials }}
-                                            </span>
-                                            <span v-else class="tuc-tl-slot-num">{{ si + 1 }}</span>
-                                        </div>
-                                        <!-- Month blocks -->
-                                        <div class="tuc-tl-months">
-                                            <div v-for="m in slot.months" :key="m.key"
-                                                 class="tuc-tl-cell"
-                                                 :class="{
-                                                   'tuc-tl-cell--occupied':  m.status === 'occupied',
-                                                   'tuc-tl-cell--partial':   m.status === 'partial',
-                                                   'tuc-tl-cell--free':      m.status === 'free',
-                                                   'tuc-tl-cell--current':   m.isCurrent,
-                                                   'tuc-tl-cell--clickable': true
-                                                 }"
-                                                 @click="openCellPopover($event, unit.id, unit.unit_name, slot, m)">
-                                                <span v-if="m.status === 'occupied' && m.showName" class="tuc-tl-cell-name">{{ slot.initials }}</span>
-                                                <span v-if="m.status === 'free' && m.isCurrent" class="tuc-tl-cell-free">✓</span>
+                                        <!-- Capacity bar + next free date -->
+                                        <div class="tuc-card-footer">
+                                            <div class="tuc-cap-bar" style="flex:1">
+                                                <div class="tuc-cap-fill" :style="{ width: Math.min(100,Math.round((getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100))+'%', background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? '#ef9f27' : '#009999' }"></div>
                                             </div>
+                                            <span class="tuc-cap-label">{{ getUnitActiveRotationCount(unit.id) }}/{{ unit.maximum_residents }}</span>
+                                            <span v-if="getUnitScheduledCount(unit.id) > 0" style="font-size:9.5px;color:var(--text-4);font-family:monospace">+{{ getUnitScheduledCount(unit.id) }} sched</span>
                                         </div>
                                     </div>
+                                </template>
 
-                                    <!-- Legend suppressed per-card — shown once above grid -->
-                                </div>
-
-                                <!-- ══════════════════════════════════════
-                                     DETAIL VIEW — slot list with dates
-                                     ══════════════════════════════════════ -->
-                                <div v-if="trainingUnitView === 'detail'" class="tuc-occupancy">
-                                    <div class="tuc-slots">
-                                        <div v-for="rot in getUnitRotations(unit.id)" :key="rot.id" class="tuc-slot tuc-slot--occupied">
-                                            <span class="tuc-slot-dot tuc-slot-dot--active"></span>
-                                            <span class="tuc-slot-name">{{ getResidentShortName(rot.resident_id) }}</span>
-                                            <span class="tuc-slot-dates">
-                                                {{ new Date(rot.start_date).toLocaleDateString('es-ES', {day:'2-digit',month:'short'}) }}
-                                                →
-                                                {{ new Date(rot.end_date).toLocaleDateString('es-ES', {day:'2-digit',month:'short'}) }}
-                                            </span>
-                                            <!-- "Free from" chip if ending within 60 days -->
-                                            <span v-if="getDaysUntilFree(rot.end_date) <= 60 && getDaysUntilFree(rot.end_date) > 0"
-                                                  class="tuc-free-soon">
-                                                Free in {{ getDaysUntilFree(rot.end_date) }}d
-                                            </span>
-                                        </div>
-                                        <div v-for="i in Math.max(0, unit.maximum_residents - getUnitActiveRotationCount(unit.id))"
-                                             :key="'free-' + i" class="tuc-slot tuc-slot--free">
-                                            <span class="tuc-slot-dot tuc-slot-dot--free"></span>
-                                            <span class="tuc-slot-name tuc-slot-available">Available now</span>
-                                        </div>
-                                    </div>
-                                    <div class="tuc-occ-bar">
-                                        <div class="tuc-occ-fill"
-                                             :class="{
-                                               'tuc-occ-fill--full': getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
-                                               'tuc-occ-fill--warn': getUnitActiveRotationCount(unit.id) / unit.maximum_residents > 0.75
-                                             }"
-                                             :style="{ width: Math.min(100, (getUnitActiveRotationCount(unit.id) / unit.maximum_residents) * 100) + '%' }">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Supervisor -->
-                                <div class="tuc-supervisor" v-if="unit.supervisor_id || unit.supervising_attending_id">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 15v5M9 18h6"/></svg>
-                                    <span>{{ getSupervisorName(unit.supervisor_id || unit.supervising_attending_id) }}</span>
-                                    <span class="tuc-sup-badge">Supervisor</span>
-                                </div>
-                                <div class="tuc-supervisor tuc-supervisor--empty" v-else title="No supervisor assigned">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 15v5M9 18h6"/></svg>
-                                    <span class="tuc-sup-empty-label">No supervisor</span>
-                                </div>
-
-                                <!-- Actions -->
-                                <div class="tuc-actions">
-                                    <button class="tuc-btn tuc-btn--ghost" @click="viewUnitResidents(unit)" title="View residents">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6L3 11L12 16L21 11L12 6Z"/><path d="M8 13.5V17C8 17 10 19 12 19C14 19 16 17 16 13.5"/></svg>
-                                        <span>Residents</span>
-                                        <span v-if="getUnitActiveRotationCount(unit.id) > 0" class="tuc-count-badge">{{ getUnitActiveRotationCount(unit.id) }}</span>
-                                    </button>
-                                    <button class="tuc-btn tuc-btn--ghost" @click="openUnitClinicians(unit)" title="Assign supervisor" v-if="hasPermission('training_units', 'update')">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M18 8l2 1v4c0 2-2 4-2 4s-2-2-2-4V9l2-1z" stroke-linejoin="round"/></svg>
-                                        <span>Supervisor</span>
-                                    </button>
-                                    <button class="tuc-btn tuc-btn--edit" @click="editTrainingUnit(unit)" v-if="hasPermission('training_units', 'update')" title="Edit unit">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                                    </button>
-                                    <button class="tuc-btn tuc-btn--danger" @click="deleteTrainingUnit(unit)" v-if="hasPermission('training_units', 'delete')" title="Delete unit">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <div v-if="filteredTrainingUnits.length === 0" class="col-span-full empty-state">
+                            empty-state">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
                                 <div class="empty-state-title">No training units found</div>
                                 <div class="empty-state-description">Training units are the clinical areas where residents rotate</div>
@@ -2592,6 +2540,36 @@
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Study
                                     </button>
                                 </div>
+
+                                    <!-- Innovation Projects for this line -->
+                                    <div class="rp-detail-section" v-if="(innovationProjects||[]).filter(p=>p.research_line_id===activeMissionLine.id).length > 0 || hasPermission('research_lines','create')">
+                                        <div class="rp-detail-section-label" style="display:flex;align-items:center;gap:6px">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
+                                            Innovation Projects
+                                            <button class="btn btn-primary btn-sm" @click="showAddProjectModal(activeMissionLine)" v-if="hasPermission('research_lines','create')" style="margin-left:auto;font-size:10px;padding:3px 8px">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Project
+                                            </button>
+                                        </div>
+                                        <div v-if="(innovationProjects||[]).filter(p=>p.research_line_id===activeMissionLine.id).length > 0"
+                                             style="display:flex;flex-direction:column;gap:6px">
+                                            <div v-for="proj in (innovationProjects||[]).filter(p=>p.research_line_id===activeMissionLine.id).slice(0,4)"
+                                                 :key="proj.id"
+                                                 style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
+                                                <div style="flex:1;min-width:0">
+                                                    <div style="font-size:12px;font-weight:500;color:var(--text-1)">{{ proj.title }}</div>
+                                                    <div style="font-size:10px;color:var(--text-3);font-family:monospace;margin-top:1px">{{ proj.current_stage || proj.development_stage }}</div>
+                                                </div>
+                                                <div style="display:flex;gap:4px" @click.stop>
+                                                    <button class="btn-pill btn-pill-edit" @click.stop="editProject(proj)" v-if="hasPermission('research_lines','update')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                                    <button class="btn-pill btn-pill-delete" @click.stop="deleteInnovationProject(proj)" v-if="hasPermission('research_lines','delete')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div v-else style="font-size:12px;color:var(--text-4);padding:10px;background:var(--surface-2);border-radius:8px;border:1px dashed var(--border);text-align:center">
+                                            No projects yet for this line
+                                        </div>
+                                    </div>
+                            </div>
                             </div>
 
                             <!-- RIGHT: empty state when no line selected -->
