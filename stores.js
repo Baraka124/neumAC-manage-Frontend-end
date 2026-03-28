@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { API } from './api.js'
 import { Utils } from './utils.js'
-import {
+import {  
   PERMISSION_MATRIX,
   ABSENCE_REASON_LABELS,
   ROTATION_STATUS_LABELS,
