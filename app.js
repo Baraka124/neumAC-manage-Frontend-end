@@ -46,7 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
         clinical_trials: ['create', 'read', 'update', 'delete'], 
         innovation_projects: ['create', 'read', 'update', 'delete'],
         analytics: ['read', 'export'], 
-        system: ['manage_departments', 'manage_updates']
+        system: ['manage_departments', 'manage_updates'],
+        system_settings: ['create', 'read', 'update', 'delete'],
+        news_posts: ['create', 'read', 'update', 'delete']
       },
       department_head: {
         medical_staff: ['read', 'update'], 
@@ -55,11 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
         training_units: ['read', 'update'],
         staff_absence: ['create', 'read', 'update'],
         communications: ['create', 'read'], 
-        research_lines: ['read', 'update'],
-        clinical_trials: ['read', 'create', 'update'], 
-        innovation_projects: ['read', 'create', 'update'],
+        research_lines: ['create', 'read', 'update', 'delete'],
+        clinical_trials: ['read', 'create', 'update', 'delete'], 
+        innovation_projects: ['read', 'create', 'update', 'delete'],
         analytics: ['read'], 
-        system: ['manage_updates']
+        system: ['manage_updates'],
+        system_settings: ['read'],
+        news_posts: ['create', 'read', 'update', 'delete']
       },
       attending_physician: {
         medical_staff: ['read'], 
@@ -71,7 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
         research_lines: ['read'], 
         clinical_trials: ['read'],
         innovation_projects: ['read'], 
-        analytics: ['read']
+        analytics: ['read'],
+        system_settings: [],
+        news_posts: ['read']
       },
       resident_manager: {
         medical_staff: ['read', 'create', 'update'],
@@ -79,11 +85,13 @@ document.addEventListener('DOMContentLoaded', () => {
         resident_rotations: ['create', 'read', 'update', 'delete'],
         training_units: ['read', 'update'],
         staff_absence: ['create', 'read', 'update'],
-        communications: ['read'],
-        research_lines: ['read'],
-        clinical_trials: ['read'],
-        innovation_projects: ['read'],
-        analytics: ['read']
+        communications: ['create', 'read'],
+        research_lines: ['create', 'read', 'update', 'delete'],
+        clinical_trials: ['create', 'read', 'update', 'delete'],
+        innovation_projects: ['create', 'read', 'update', 'delete'],
+        analytics: ['read'],
+        system_settings: [],
+        news_posts: ['create', 'read', 'update', 'delete']
       },
       medical_resident: {
         medical_staff: ['read'], 
@@ -95,7 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
         research_lines: ['read'], 
         clinical_trials: ['read'],
         innovation_projects: ['read'], 
-        analytics: []
+        analytics: [],
+        system_settings: [],
+        news_posts: ['read']
       }
     }
 
