@@ -1,6 +1,4 @@
-// utils.js - All utility functions
-import { ACADEMIC_DEGREES_FALLBACK } from './config.js' 
-
+// utils.js - Complete Utility Functions
 export const Utils = {
   // Date utilities
   localDateStr(d) {
@@ -104,6 +102,7 @@ export const Utils = {
     return Math.max(0, Math.ceil((date - today) / 86400000))
   },
 
+  // ⭐ CRITICAL - ADD THIS METHOD
   formatClinicalDuration(startDate, endDate) {
     if (!startDate || !endDate) return 'N/A'
     try {
@@ -120,16 +119,7 @@ export const Utils = {
     } catch { return 'N/A' }
   },
 
-  // Resident utilities
-  effectiveResidentYear(staff) {
-    if (staff.residency_year_override) return staff.residency_year_override
-    if (staff.residency_year_calc) return staff.residency_year_calc
-    const t = staff.training_year
-    if (!t) return null
-    const map = { 'PGY-1':'R1','PGY-2':'R2','PGY-3':'R3','PGY-4':'R4','PGY-5':'R4+' }
-    return map[t] || t
-  },
-
+  // ⭐ CRITICAL - ADD THIS METHOD
   formatTrainingYear(year) {
     if (!year && year !== 0) return null
     const yearStr = String(year).trim()
@@ -140,6 +130,15 @@ export const Utils = {
       return yearStr.toUpperCase()
     }
     return yearStr
+  },
+
+  effectiveResidentYear(staff) {
+    if (staff.residency_year_override) return staff.residency_year_override
+    if (staff.residency_year_calc) return staff.residency_year_calc
+    const t = staff.training_year
+    if (!t) return null
+    const map = { 'PGY-1':'R1','PGY-2':'R2','PGY-3':'R3','PGY-4':'R4','PGY-5':'R4+' }
+    return map[t] || t
   },
 
   getResidentCategoryInfo(category, staff = {}) {
@@ -162,7 +161,6 @@ export const Utils = {
     return categories[category] || { icon: 'fa-user', text: 'Not categorized', shortText: 'Unknown', color: '#94a3b8', bgColor: 'rgba(148, 163, 184, 0.1)' }
   },
 
-  // Phone and license formatting
   formatPhone(phone) {
     if (!phone) return null
     const cleaned = String(phone).replace(/\D/g, '')
@@ -186,7 +184,6 @@ export const Utils = {
     }).join(' ')
   },
 
-  // Role utilities
   getRoleInfo(role) {
     const roles = {
       'chief_of_department': { icon: 'fa-crown', color: 'gold', bgColor: 'rgba(255, 215, 0, 0.1)', label: 'Chief of Department' },
@@ -206,7 +203,6 @@ export const Utils = {
     return roles
   },
 
-  // General utilities
   ensureArray(data) {
     if (Array.isArray(data)) return data
     if (data?.data && Array.isArray(data.data)) return data.data
@@ -238,8 +234,15 @@ export const Utils = {
   },
 
   getStageConfig(stage) {
-    const { PROJECT_STAGES } = require('./config.js')
-    return PROJECT_STAGES.find(s => s.key === stage) || { key: stage, label: stage, icon: 'fa-circle', color: '#7a90b0', bg: 'rgba(122,144,176,.1)', step: 0 }
+    const stages = [
+      { key: 'Idea', label: 'Idea', icon: 'fa-lightbulb', color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
+      { key: 'Prototipo', label: 'Prototipo', icon: 'fa-cube', color: '#60a5fa', bg: 'rgba(96,165,250,.12)', step: 2 },
+      { key: 'Piloto', label: 'Piloto', icon: 'fa-play-circle', color: '#34d399', bg: 'rgba(52,211,153,.12)', step: 3 },
+      { key: 'Validación', label: 'Validación', icon: 'fa-check-double', color: '#fbbf24', bg: 'rgba(251,191,36,.12)', step: 4 },
+      { key: 'Escalamiento', label: 'Escalamiento', icon: 'fa-chart-line', color: '#f97316', bg: 'rgba(249,115,22,.12)', step: 5 },
+      { key: 'Comercialización', label: 'Comercialización', icon: 'fa-rocket', color: '#10b981', bg: 'rgba(16,185,129,.12)', step: 6 }
+    ]
+    return stages.find(s => s.key === stage) || { key: stage, label: stage, icon: 'fa-circle', color: '#7a90b0', bg: 'rgba(122,144,176,.1)', step: 0 }
   },
 
   getStageColor(stage) {
