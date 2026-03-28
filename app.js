@@ -11,7 +11,7 @@ import { PROJECT_STAGES } from './config.js'
 
 const pinia = createPinia()
 
-const app = createApp({
+const app = createApp({  
   setup() {
     // ── Stores ─────────────────────────────────────────────────────────────
     const uiStore       = useUIStore()
