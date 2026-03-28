@@ -1,4 +1,5 @@
-// config.js - All static configuration
+// config.js - Complete file with all exports
+
 export const CONFIG = {
   API_BASE_URL: window.location.hostname.includes('localhost')
     ? 'http://localhost:3000' 
@@ -114,6 +115,7 @@ export const USER_ROLE_LABELS = {
   medical_resident: 'Medical Resident'
 }
 
+// ⭐ IMPORTANT - These were missing!
 export const VIEW_TITLES = {
   dashboard: 'Dashboard Overview', 
   medical_staff: 'Medical Staff Management',
@@ -124,6 +126,18 @@ export const VIEW_TITLES = {
   department_management: 'Department Management',
   research_hub: 'Research Hub',
   news: 'News & Posts'
+}
+
+export const VIEW_SUBTITLES = {
+  dashboard: 'Real-time department overview and analytics',
+  medical_staff: 'Manage physicians, residents, and clinical staff',
+  oncall_schedule: 'View and manage on-call physician schedules',
+  resident_rotations: 'Track and manage resident training rotations',
+  training_units: 'Clinical units and resident assignments',
+  staff_absence: 'Track staff absences and coverage assignments',
+  department_management: 'Organizational structure and clinical units',
+  research_hub: 'Research lines, studies, projects and analytics',
+  news: 'Department news and publications'
 }
 
 export const PROJECT_STAGES = [
