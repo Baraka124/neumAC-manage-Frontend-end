@@ -12,6 +12,298 @@ import { PROJECT_STAGES } from './config.js'
 const pinia = createPinia()
 
 const app = createApp({  
+  template: `
+    <div>
+      <!-- Login screen -->
+      <div v-if="currentView === 'login'" class="login-container">
+        <div class="login-card">
+          <div class="lc-brand">
+            <div class="lc-form">
+              <div class="lc-field">
+                <input v-model="loginForm.email" type="email" placeholder="Email" />
+              </div>
+              <div class="lc-field">
+                <input v-model="loginForm.password" type="password" placeholder="Password" />
+              </div>
+              <button @click="handleLogin" :disabled="loginLoading">Login</button>
+              <div v-if="loginError" class="login-error">{{ loginError }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main app layout -->
+      <div v-else class="app-layout">
+        <div class="sidebar">
+          <div class="sidebar-header">NeumoCare</div>
+          <div class="sidebar-nav">
+            <div @click="switchView('dashboard')" :class="{ active: currentView === 'dashboard' }">Dashboard</div>
+            <div @click="switchView('medical_staff')" :class="{ active: currentView === 'medical_staff' }">Staff</div>
+            <div @click="switchView('resident_rotations')" :class="{ active: currentView === 'resident_rotations' }">Rotations</div>
+            <div @click="switchView('oncall_schedule')" :class="{ active: currentView === 'oncall_schedule' }">On-Call</div>
+            <div @click="switchView('training_units')" :class="{ active: currentView === 'training_units' }">Training Units</div>
+            <div @click="switchView('staff_absence')" :class="{ active: currentView === 'staff_absence' }">Absences</div>
+            <div @click="switchView('research_hub')" :class="{ active: currentView === 'research_hub' }">Research</div>
+            <div @click="switchView('news')" :class="{ active: currentView === 'news' }">News</div>
+          </div>
+        </div>
+        
+        <div class="main-content">
+          <div class="top-navbar">
+            <div class="navbar-title">{{ getCurrentViewTitle() }}</div>
+          </div>
+          
+          <div class="content-area">
+            <!-- Dashboard View -->
+            <div v-if="currentView === 'dashboard'">
+              <h2>Dashboard</h2>
+              <div class="stats-grid">
+                <div class="stat-card">Active Staff: {{ systemStats.activeAttending + systemStats.activeResidents }}</div>
+                <div class="stat-card">On Call: {{ systemStats.onCallNow }}</div>
+                <div class="stat-card">Active Rotations: {{ systemStats.activeRotations }}</div>
+                <div class="stat-card">On Leave: {{ systemStats.onLeaveStaff }}</div>
+              </div>
+              <div v-if="dailyBriefing.length" class="daily-briefing">
+                <h3>Daily Briefing</h3>
+                <div v-for="item in dailyBriefing" :key="item.text" class="briefing-item">
+                  {{ item.text }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Staff View -->
+            <div v-if="currentView === 'medical_staff'">
+              <div class="filter-bar">
+                <input v-model="staffFilters.search" placeholder="Search staff..." />
+                <select v-model="staffFilters.staffType">
+                  <option value="">All Types</option>
+                  <option value="attending_physician">Attending</option>
+                  <option value="medical_resident">Resident</option>
+                  <option value="fellow">Fellow</option>
+                </select>
+                <select v-model="staffFilters.status">
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="on_leave">On Leave</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th @click="sortBy('medical_staff', 'full_name')">Name <i :class="sortIcon('medical_staff', 'full_name')"></i></th>
+                      <th @click="sortBy('medical_staff', 'staff_type')">Type <i :class="sortIcon('medical_staff', 'staff_type')"></i></th>
+                      <th>Department</th>
+                      <th @click="sortBy('medical_staff', 'employment_status')">Status <i :class="sortIcon('medical_staff', 'employment_status')"></i></th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="staff in filteredMedicalStaff" :key="staff.id" @click="viewStaffDetails(staff)">
+                      <td>{{ staff.full_name }}</td>
+                      <td><span :class="'badge ' + getStaffTypeClass(staff.staff_type)">{{ formatStaffType(staff.staff_type) }}</span></td>
+                      <td>{{ getDepartmentName(staff.department_id) }}</td>
+                      <td>{{ formatEmploymentStatus(staff.employment_status) }}</td>
+                      <td class="table-actions">
+                        <button class="btn-icon" @click.stop="editMedicalStaff(staff)"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" @click.stop="deleteMedicalStaff(staff)"><i class="fas fa-trash"></i></button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <button @click="goToPage('medical_staff', pagination.medical_staff.page - 1)" :disabled="pagination.medical_staff.page === 1">Previous</button>
+                <span>Page {{ pagination.medical_staff.page }} of {{ staffTotalPages }}</span>
+                <button @click="goToPage('medical_staff', pagination.medical_staff.page + 1)" :disabled="pagination.medical_staff.page === staffTotalPages">Next</button>
+              </div>
+            </div>
+
+            <!-- Rotations View -->
+            <div v-if="currentView === 'resident_rotations'">
+              <div class="filter-bar">
+                <input v-model="rotationFilters.search" placeholder="Search resident..." />
+                <select v-model="rotationFilters.status">
+                  <option value="">All Status</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th @click="sortBy('rotations', 'resident_id')">Resident <i :class="sortIcon('rotations', 'resident_id')"></i></th>
+                      <th>Unit</th>
+                      <th @click="sortBy('rotations', 'start_date')">Start Date <i :class="sortIcon('rotations', 'start_date')"></i></th>
+                      <th @click="sortBy('rotations', 'end_date')">End Date <i :class="sortIcon('rotations', 'end_date')"></i></th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="rot in filteredRotations" :key="rot.id" @click="viewRotationDetails(rot)">
+                      <td>{{ getResidentName(rot.resident_id) }}</td>
+                      <td>{{ getTrainingUnitName(rot.training_unit_id) }}</td>
+                      <td>{{ formatDate(rot.start_date) }}</td>
+                      <td>{{ formatDate(rot.end_date) }}</td>
+                      <td><span class="badge" :class="{ 'badge-success': rot.rotation_status === 'active', 'badge-info': rot.rotation_status === 'scheduled', 'badge-secondary': rot.rotation_status === 'completed' }">{{ formatRotationStatus(rot.rotation_status) }}</span></td>
+                      <td class="table-actions">
+                        <button class="btn-icon" @click.stop="editRotation(rot)"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" @click.stop="deleteRotation(rot)"><i class="fas fa-trash"></i></button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- On-Call View -->
+            <div v-if="currentView === 'oncall_schedule'">
+              <div class="filter-bar">
+                <input v-model="onCallFilters.search" placeholder="Search physician..." />
+                <input type="date" v-model="onCallFilters.date" />
+              </div>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th @click="sortBy('oncall', 'duty_date')">Date <i :class="sortIcon('oncall', 'duty_date')"></i></th>
+                      <th>Primary Physician</th>
+                      <th>Backup Physician</th>
+                      <th>Shift Type</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="schedule in filteredOnCallSchedules" :key="schedule.id">
+                      <td>{{ formatDate(schedule.duty_date) }} <span v-if="isToday(schedule.duty_date)" class="badge badge-success">Today</span></td>
+                      <td>{{ getPhysicianName(schedule.primary_physician_id) }}</td>
+                      <td>{{ getPhysicianName(schedule.backup_physician_id) || '—' }}</td>
+                      <td><span class="badge" :class="{ 'badge-primary': schedule.shift_type === 'primary_call', 'badge-secondary': schedule.shift_type === 'backup_call' }">{{ schedule.shift_type === 'primary_call' ? 'Primary' : 'Backup' }}</span></td>
+                      <td class="table-actions">
+                        <button class="btn-icon" @click.stop="editOnCallSchedule(schedule)"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" @click.stop="deleteOnCallSchedule(schedule)"><i class="fas fa-trash"></i></button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Training Units View -->
+            <div v-if="currentView === 'training_units'">
+              <div class="filter-bar">
+                <input v-model="trainingUnitFilters.search" placeholder="Search units..." />
+              </div>
+              <div class="training-units-grid">
+                <div v-for="unit in filteredTrainingUnits" :key="unit.id" class="training-unit-card" @click="openUnitDetail(unit)">
+                  <div class="training-unit-header">
+                    <div class="training-unit-title">
+                      <i class="fas fa-hospital-user"></i>
+                      <span>{{ unit.unit_name }}</span>
+                    </div>
+                    <span class="badge" :class="{ 'badge-success': unit.unit_status === 'active', 'badge-secondary': unit.unit_status !== 'active' }">{{ unit.unit_status }}</span>
+                  </div>
+                  <div class="training-unit-stats">
+                    <div class="training-unit-stat-row">
+                      <span class="training-unit-stat-label">Capacity</span>
+                      <span>{{ getUnitActiveRotationCount(unit.id) }} / {{ unit.maximum_residents }}</span>
+                    </div>
+                    <div class="training-unit-stat-row">
+                      <span class="training-unit-stat-label">Scheduled</span>
+                      <span>{{ getUnitScheduledCount(unit.id) }}</span>
+                    </div>
+                    <div class="training-unit-stat-row">
+                      <span class="training-unit-stat-label">Department</span>
+                      <span>{{ getDepartmentName(unit.department_id) }}</span>
+                    </div>
+                  </div>
+                  <div class="training-unit-actions">
+                    <button class="btn-sm btn-outline" @click.stop="editTrainingUnit(unit)">Edit</button>
+                    <button class="btn-sm btn-outline" @click.stop="viewUnitResidents(unit)">Residents</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Absences View -->
+            <div v-if="currentView === 'staff_absence'">
+              <div class="filter-bar">
+                <input v-model="absenceFilters.search" placeholder="Search staff..." />
+                <select v-model="absenceFilters.reason">
+                  <option value="">All Reasons</option>
+                  <option value="vacation">Vacation</option>
+                  <option value="sick_leave">Sick Leave</option>
+                  <option value="personal">Personal</option>
+                </select>
+              </div>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th @click="sortBy('absences', 'staff_member_id')">Staff <i :class="sortIcon('absences', 'staff_member_id')"></i></th>
+                      <th @click="sortBy('absences', 'start_date')">Start Date <i :class="sortIcon('absences', 'start_date')"></i></th>
+                      <th @click="sortBy('absences', 'end_date')">End Date <i :class="sortIcon('absences', 'end_date')"></i></th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="absence in filteredAbsences" :key="absence.id">
+                      <td>{{ getStaffName(absence.staff_member_id) }}</td>
+                      <td>{{ formatDate(absence.start_date) }}</td>
+                      <td>{{ formatDate(absence.end_date) }}</td>
+                      <td>{{ formatAbsenceReason(absence.absence_reason) }}</td>
+                      <td><span class="badge" :class="{ 'badge-warning': absence.current_status === 'currently_absent', 'badge-info': absence.current_status === 'upcoming', 'badge-success': absence.current_status === 'returned_to_duty' }">{{ absence.current_status }}</span></td>
+                      <td class="table-actions">
+                        <button class="btn-icon" @click.stop="editAbsence(absence)"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon" @click.stop="deleteAbsence(absence)"><i class="fas fa-trash"></i></button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Research Hub View -->
+            <div v-if="currentView === 'research_hub'">
+              <h2>Research Hub</h2>
+              <div class="research-lines-grid">
+                <div v-for="line in researchStore.researchLines" :key="line.id" class="research-line-card">
+                  <div class="research-line-header">
+                    <span class="research-line-number">L{{ line.line_number }}</span>
+                    <div class="research-line-actions">
+                      <button class="btn-icon" @click="editResearchLine(line)"><i class="fas fa-edit"></i></button>
+                    </div>
+                  </div>
+                  <div class="research-line-name">{{ line.research_line_name || line.name }}</div>
+                  <div class="research-line-description">{{ line.description }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- News View -->
+            <div v-if="currentView === 'news'">
+              <h2>News & Updates</h2>
+              <div v-for="post in newsStore.filteredNews" :key="post.id" class="news-card" @click="openNewsDrawer(post)">
+                <div class="news-card-body">
+                  <div class="news-card-title">{{ post.title }}</div>
+                  <div class="news-card-meta">
+                    <span class="news-meta-item"><i class="far fa-calendar-alt"></i> {{ formatNewsDate(post.created_at) }}</span>
+                    <span class="news-meta-item"><i class="far fa-user"></i> {{ newsAuthorName(post.author_id) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
   setup() {
     // ── Stores ─────────────────────────────────────────────────────────────
     const uiStore       = useUIStore()
