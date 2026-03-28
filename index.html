@@ -917,7 +917,7 @@
             </header>
 
             <!-- Content Area -->
-            <div class="content-area" style="display:flex;flex-direction:column;">
+            <div class="content-area" style="display:flex;flex-direction:column;overflow:hidden;flex:1;min-height:0;">
 
                 <!-- System Alert Banner -->
                 <div v-if="systemAlerts.length > 0" style="margin-bottom:24px;">
@@ -3101,6 +3101,385 @@
                     </div>
                 </div><!-- /system_settings view -->
 
+
+
+                <!-- ============================================================
+                     NEWS & POSTS VIEW
+                ============================================================ -->
+                <div v-if="currentView === 'news'" class="news-view" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+
+                    <!-- Tab bar + action -->
+                    <div class="rhub-tabs">
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === '' }" @click="newsFilters.status = ''">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg> All
+                            <span class="rhub-tab-count">{{ filteredNews.length }}</span>
+                        </button>
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'published' }" @click="newsFilters.status = 'published'">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Published
+                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'published').length }}</span>
+                        </button>
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'draft' }" @click="newsFilters.status = 'draft'">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Drafts
+                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'draft').length }}</span>
+                        </button>
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'archived' }" @click="newsFilters.status = 'archived'">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Archived
+                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'archived').length }}</span>
+                        </button>
+                        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-bottom:1px">
+                            <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter bar -->
+                    <div class="news-filter-bar">
+                        <input type="text" class="form-control" v-model="newsFilters.search" placeholder="Search posts…" style="flex:1;max-width:320px">
+                        <select class="form-select" v-model="newsFilters.type" style="max-width:140px">
+                            <option value="">All Types</option>
+                            <option value="update">Update</option>
+                            <option value="article">Article</option>
+                            <option value="publication">Publication</option>
+                        </select>
+                        <select class="form-select" v-model="newsFilters.scope" style="max-width:150px">
+                            <option value="">All Visibility</option>
+                            <option value="public">Public (website)</option>
+                            <option value="internal">Internal only</option>
+                        </select>
+                    </div>
+
+                    <!-- Posts list -->
+                    <div class="news-list" v-if="!newsLoading">
+                        <div v-if="filteredNews.length === 0" class="news-empty">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
+                            <p>No posts yet. Create your first post to get started.</p>
+                            <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
+                            </button>
+                        </div>
+
+                        <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="'news-card--' + post.post_type" @click.stop="openNewsDrawer(post)">
+
+                            <!-- Left accent + type -->
+                            <div class="news-card-left">
+                                <span class="news-type-badge" :class="'ntb--' + post.post_type">
+                                    <svg v-if="post.post_type==='update'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
+                                    <svg v-else-if="post.post_type==='article'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                                    <svg v-else-if="post.post_type==='publication'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                    <svg v-else width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                    {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'photo_story' ? 'Photo Story' : 'Publication' }}
+                                </span>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="news-card-body">
+                                <div class="news-card-title">{{ post.title }}</div>
+
+                                <!-- Publication fields -->
+                                <div v-if="post.post_type === 'publication'" class="news-pub-meta">
+                                    <span v-if="post.journal_name" class="news-journal">{{ post.journal_name }}</span>
+                                    <span v-if="post.authors_text" class="news-authors">{{ post.authors_text }}</span>
+                                    <a v-if="post.doi" :href="'https://doi.org/' + post.doi" target="_blank" class="news-doi">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg> DOI {{ post.doi }}
+                                    </a>
+                                </div>
+
+                                <!-- Body preview -->
+                                <div v-if="post.body && post.post_type !== 'publication'" class="news-card-excerpt">{{ post.body }}</div>
+
+                                <!-- Meta row -->
+                                <div class="news-card-meta">
+                                    <span v-if="post.author_id" class="news-meta-item">
+                                        <span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>
+                                        {{ newsAuthorName(post.author_id) }}
+                                    </span>
+                                    <span v-if="post.research_line_id" class="news-meta-item news-meta-line">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> {{ newsLineName(post.research_line_id) }}
+                                    </span>
+                                    <span class="news-meta-item">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14H10M8 18H10M14 14H16M14 18H16"/></svg>
+                                        {{ formatNewsDate(post.published_at || post.created_at) }}
+                                    </span>
+                                    <span v-if="post.word_count && post.post_type !== 'publication'" class="news-meta-item news-wc">
+                                        {{ post.word_count }}w
+                                    </span>
+                                    <span v-if="post.expires_at && post.post_type !== 'publication'" class="news-meta-item news-expiry"
+                                          :class="{ 'news-expiry--warn': new Date(post.expires_at) < new Date(Date.now() + 14*86400000) }">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Expires {{ formatDate(post.expires_at) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Right: status + visibility + actions -->
+                            <div class="news-card-right" @click.stop>
+                                <!-- Status badge -->
+                                <span v-if="post.status !== 'published'" class="news-status-badge" :class="'nsb--' + post.status">
+                                    {{ post.status === 'draft' ? 'Draft' : 'Archived' }}
+                                </span>
+                                <span v-else class="news-status-dot" title="Published"></span>
+
+                                <!-- Visibility toggle -->
+                                <button class="news-vis-btn" @click="toggleNewsPublic(post)"
+                                        :title="post.is_public ? 'Public on website — click to make internal' : 'Internal only — click to make public'"
+                                        v-if="post.status === 'published' && hasPermission('news_posts','update')">
+                                    <i class="fas" :class="post.is_public ? 'fa-globe' : 'fa-lock'"></i>
+                                    <span>{{ post.is_public ? 'Public' : 'Internal' }}</span>
+                                </button>
+
+                                <!-- Actions -->
+                                <div class="news-actions">
+                                    <button class="btn-icon" @click="editNews(post)" title="Edit" v-if="hasPermission('news_posts','update')">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-icon--ok" @click="publishNews(post)" title="Publish"
+                                            v-if="post.status === 'draft' && hasPermission('news_posts','update')">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                                    </button>
+                                    <button class="btn-icon" @click="archiveNews(post)" title="Archive"
+                                            v-if="post.status === 'published' && hasPermission('news_posts','update')">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-icon--danger" @click="deleteNews(post)" title="Delete"
+                                            v-if="hasPermission('news_posts','delete')">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading state -->
+                    <div v-if="newsLoading" class="news-loading">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Loading posts…
+                    </div>
+                </div>
+
+                <!-- ============================================================
+                     NEWS COMPOSE MODAL
+                ============================================================ -->
+                <div v-if="newsModal.show" class="modal-overlay" @click.self="newsModal.show = false">
+                    <div class="nm-modal">
+
+                        <!-- ══ TOP DARK HEADER STRIP ══ -->
+                        <div class="nm-header">
+                            <div class="nm-header-left">
+                                <!-- Post type icon -->
+                                <div class="nm-type-icon">
+                                    <svg v-if="newsModal.form.post_type==='update'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
+                                    <svg v-else-if="newsModal.form.post_type==='publication'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                    <svg v-else-if="newsModal.form.post_type==='photo_story'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
+                                </div>
+                                <div class="nm-header-meta">
+                                    <div class="nm-header-title">{{ newsModal.form.title || (newsModal.mode === 'add' ? 'New Post…' : 'Edit Post') }}</div>
+                                    <div class="nm-header-sub">
+                                        <span class="nm-type-badge"
+                                              :style="newsModal.form.post_type==='publication' ? 'color:#818cf8;' : newsModal.form.post_type==='photo_story' ? 'color:#f59e0b;' : ''">
+                                            {{ {'update':'Update','article':'Article','publication':'Publication','photo_story':'Photo Story'}[newsModal.form.post_type] || 'Post' }}
+                                        </span>
+                                        <span v-if="newsModal.form.author_id" style="color:rgba(255,255,255,.3);">·</span>
+                                        <span v-if="newsModal.form.author_id" style="font-size:.65rem;color:rgba(255,255,255,.45);">{{ allStaffLookup.find(s=>s.id===newsModal.form.author_id)?.full_name?.split(' ').slice(-1)[0] }}</span>
+                                        <span v-if="newsModal.form.research_line_id" style="color:rgba(255,255,255,.3);">·</span>
+                                        <span v-if="newsModal.form.research_line_id" style="font-size:.62rem;font-family:monospace;color:#00B3B3;">L{{ researchLines.find(l=>l.id===newsModal.form.research_line_id)?.line_number }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="nm-header-right">
+                                <span class="nm-status-badge"
+                                      :style="newsModal.form.status==='published' ? 'background:rgba(16,185,129,.12);color:#10b981;border-color:rgba(16,185,129,.22);'
+                                            : newsModal.form.status==='archived'  ? 'background:rgba(107,114,128,.1);color:rgba(255,255,255,.4);border-color:rgba(107,114,128,.2);'
+                                            : 'background:rgba(245,158,11,.1);color:#f59e0b;border-color:rgba(245,158,11,.2);'">
+                                    {{ newsModal.form.status || 'draft' }}
+                                </span>
+                                <button class="sm-form-close" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);" @click="newsModal.show = false">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ══ POST TYPE SWITCHER ══ -->
+                        <div class="nm-type-bar">
+                            <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='update'}" @click="newsModal.form.post_type='update'">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg> Update
+                            </button>
+                            <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='article'}" @click="newsModal.form.post_type='article'">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M12 13H16M12 17H16M8 13H9M8 17H9"/></svg> Article
+                            </button>
+                            <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='publication'}" @click="newsModal.form.post_type='publication'">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg> Publication
+                            </button>
+                            <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='photo_story'}" @click="newsModal.form.post_type='photo_story'">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Photo Story
+                            </button>
+                        </div>
+
+                        <!-- ══ TABS ══ -->
+                        <div class="nm-tabs">
+                            <button class="nm-tab" :class="{active: newsModal._tab==='meta'}"    @click="newsModal._tab='meta'">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M4 19C4 16 6.2 14 9 14"/><path d="M14 9H20M14 13H18M14 17H16"/></svg>
+                                Metadata
+                            </button>
+                            <button class="nm-tab" :class="{active: newsModal._tab==='content'}" @click="newsModal._tab='content'">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg>
+                                Content
+                            </button>
+                            <button class="nm-tab" :class="{active: newsModal._tab==='publish'}" @click="newsModal._tab='publish'">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                                Publication
+                            </button>
+                        </div>
+
+                        <!-- ══ TAB BODY ══ -->
+                        <div class="nm-body">
+
+                            <!-- ─── METADATA ─── -->
+                            <template v-if="newsModal._tab==='meta'">
+                                <div class="sm-field">
+                                    <div class="sm-label">Title <span class="req">·</span></div>
+                                    <input type="text" class="sm-input" :class="{filled: newsModal.form.title}"
+                                           v-model="newsModal.form.title" placeholder="Post title…">
+                                </div>
+
+                                <div class="sm-row">
+                                    <div class="sm-field" v-if="newsModal.form.post_type !== 'publication'">
+                                        <div class="sm-label">Author <span class="req">·</span></div>
+                                        <select class="sm-select" v-model="newsModal.form.author_id">
+                                            <option value="">Select author…</option>
+                                            <optgroup label="Attending Physicians">
+                                                <option v-for="s in medicalStaff.filter(m=>m.staff_type==='attending_physician'&&m.employment_status==='active')" :key="s.id" :value="s.id">
+                                                    {{ s.full_name }}
+                                                </option>
+                                            </optgroup>
+                                            <optgroup label="Other Staff">
+                                                <option v-for="s in medicalStaff.filter(m=>m.staff_type!=='attending_physician'&&m.employment_status==='active')" :key="s.id" :value="s.id">
+                                                    {{ s.full_name }}
+                                                </option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    <div class="sm-field">
+                                        <div class="sm-label">Research Line <span class="hint">— optional</span></div>
+                                        <select class="sm-select" v-model="newsModal.form.research_line_id">
+                                            <option value="">No specific line</option>
+                                            <option v-for="l in researchLines" :key="l.id" :value="l.id">
+                                                L{{ l.line_number }} — {{ l.research_line_name || l.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="sm-row">
+                                    <div class="sm-field">
+                                        <div class="sm-label">Status</div>
+                                        <select class="sm-select" v-model="newsModal.form.status">
+                                            <option value="draft">Draft</option>
+                                            <option value="published">Published</option>
+                                            <option value="archived">Archived</option>
+                                        </select>
+                                    </div>
+                                    <div class="sm-field">
+                                        <div class="sm-label">Visibility</div>
+                                        <div class="sm-network" style="grid-template-columns:1fr 1fr;">
+                                            <div class="sm-network-opt" :class="{active: !newsModal.form.is_public}" @click="newsModal.form.is_public=false">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                                                Internal
+                                            </div>
+                                            <div class="sm-network-opt" :class="{active: newsModal.form.is_public}" @click="newsModal.form.is_public=true">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2 12H22M12 2C12 2 8 7 8 12C8 17 12 22 12 22M12 2C12 2 16 7 16 12C16 17 12 22 12 22"/></svg>
+                                                Public
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="sm-field" v-if="newsModal.form.post_type !== 'publication'">
+                                    <div class="sm-label" style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span>Expiry Date <span class="hint">— auto: {{ newsModal.form.post_type==='update' ? '90 days' : newsModal.form.post_type==='photo_story' ? '12 months' : '18 months' }}</span></span>
+                                        <button type="button" style="font-size:.65rem;color:var(--teal,#009999);background:none;border:none;cursor:pointer;font-family:monospace;"
+                                                @click="newsModal.form.expires_at=autoExpiry(newsModal.form.post_type)">↺ reset</button>
+                                    </div>
+                                    <input type="date" class="sm-input" v-model="newsModal.form.expires_at" :min="new Date().toISOString().split('T')[0]">
+                                </div>
+                            </template>
+
+                            <!-- ─── CONTENT ─── -->
+                            <template v-if="newsModal._tab==='content'">
+                                <div class="sm-field" v-if="newsModal.form.post_type !== 'publication'">
+                                    <div class="sm-label" style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span>Content <span class="req">·</span></span>
+                                        <div class="news-wc-counter" :class="{'news-wc-counter--warn': newsWordCount > newsWordLimit*0.9, 'news-wc-counter--over': newsWordCount > newsWordLimit}">
+                                            <div class="news-wc-bar"><div class="news-wc-fill" :style="{width: Math.min(100,(newsWordCount/newsWordLimit)*100)+'%'}"></div></div>
+                                            <span>{{ newsWordCount }} / {{ newsWordLimit }}w</span>
+                                        </div>
+                                    </div>
+                                    <textarea class="sm-input" v-model="newsModal.form.body"
+                                              :rows="newsModal.form.post_type==='update' ? 4 : newsModal.form.post_type==='photo_story' ? 5 : 10"
+                                              style="height:auto;resize:vertical;padding-top:8px;padding-bottom:8px;min-height:120px;"
+                                              :placeholder="newsModal.form.post_type==='update' ? 'Short update — max 80 words…' : newsModal.form.post_type==='photo_story' ? 'Caption — what this photo tells us (max 120 words)…' : 'Article content — max 400 words…'">
+                                    </textarea>
+                                </div>
+                                <div v-else class="sm-field">
+                                    <div class="sm-label">Abstract / Summary</div>
+                                    <textarea class="sm-input" v-model="newsModal.form.body" rows="6"
+                                              style="height:auto;resize:vertical;padding-top:8px;padding-bottom:8px;min-height:120px;"
+                                              placeholder="Brief summary of the publication findings…"></textarea>
+                                </div>
+
+                                <!-- Image URL — articles + photo stories -->
+                                <div class="sm-field" v-if="newsModal.form.post_type==='article' || newsModal.form.post_type==='photo_story'">
+                                    <div class="sm-label">
+                                        Featured Image URL
+                                        <span v-if="newsModal.form.post_type==='photo_story'" class="req">·</span>
+                                        <span v-else class="hint">— optional</span>
+                                    </div>
+                                    <input type="url" class="sm-input" :class="{filled: newsModal.form.featured_image_url}"
+                                           v-model="newsModal.form.featured_image_url"
+                                           :placeholder="newsModal.form.post_type==='photo_story' ? 'https://… (required)' : 'https://…'">
+                                    <small v-if="newsModal.form.post_type==='photo_story'" class="sm-field-hint">
+                                        Separate multiple photos with commas. First becomes the hero.
+                                    </small>
+                                </div>
+                            </template>
+
+                            <!-- ─── PUBLICATION FIELDS ─── -->
+                            <template v-if="newsModal._tab==='publish'">
+                                <div v-if="newsModal.form.post_type === 'publication'" class="sm-row">
+                                    <div class="sm-field">
+                                        <div class="sm-label">Journal Name</div>
+                                        <input type="text" class="sm-input" :class="{filled: newsModal.form.journal_name}"
+                                               v-model="newsModal.form.journal_name" placeholder="European Respiratory Journal…">
+                                    </div>
+                                    <div class="sm-field">
+                                        <div class="sm-label">DOI</div>
+                                        <input type="text" class="sm-input" :class="{filled: newsModal.form.doi}"
+                                               v-model="newsModal.form.doi" placeholder="10.1183/13993003.xxxxx" style="font-family:monospace;font-size:.78rem;">
+                                    </div>
+                                </div>
+                                <div class="sm-field" v-if="newsModal.form.post_type === 'publication'">
+                                    <div class="sm-label">Authors <span class="hint">— citation format</span></div>
+                                    <input type="text" class="sm-input" :class="{filled: newsModal.form.authors_text}"
+                                           v-model="newsModal.form.authors_text" placeholder="Surname A, Surname B, et al.">
+                                </div>
+                                <div v-if="newsModal.form.post_type !== 'publication'" class="nm-tab-empty">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                                    <span>Publication fields only apply when post type is set to <strong>Publication</strong></span>
+                                </div>
+                            </template>
+
+                        </div>
+
+                        <!-- ══ FOOTER ══ -->
+                        <div class="nm-footer">
+                            <button class="sm-btn-back" @click="newsModal.show = false">Cancel</button>
+                            <button class="sm-btn-save" @click="saveNews" :disabled="saving">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                {{ saving ? 'Saving…' : newsModal.mode === 'add' ? 'Create Post' : 'Save Changes' }}
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
             </div><!-- /content-area -->
         </main>
 
@@ -3720,382 +4099,6 @@
                 </div><!-- /pd-content -->
             </div><!-- /profile-drawer -->
         </transition>
-
-
-        <!-- ============================================================
-             NEWS & POSTS VIEW
-        ============================================================ -->
-        <div v-if="currentView === 'news'" class="news-view" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
-
-            <!-- Tab bar + action -->
-            <div class="rhub-tabs">
-                <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === '' }" @click="newsFilters.status = ''">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg> All
-                    <span class="rhub-tab-count">{{ filteredNews.length }}</span>
-                </button>
-                <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'published' }" @click="newsFilters.status = 'published'">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Published
-                </button>
-                <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'draft' }" @click="newsFilters.status = 'draft'">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Drafts
-                </button>
-                <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'archived' }" @click="newsFilters.status = 'archived'">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Archived
-                </button>
-                <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-bottom:1px">
-                    <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
-                    </button>
-                </div>
-            </div>
-
-            <!-- Filter bar -->
-            <div class="news-filter-bar">
-                <input type="text" class="form-control" v-model="newsFilters.search" placeholder="Search posts…" style="flex:1;max-width:320px">
-                <select class="form-select" v-model="newsFilters.type" style="max-width:140px">
-                    <option value="">All Types</option>
-                    <option value="update">Update</option>
-                    <option value="article">Article</option>
-                    <option value="publication">Publication</option>
-                </select>
-                <select class="form-select" v-model="newsFilters.scope" style="max-width:150px">
-                    <option value="">All Visibility</option>
-                    <option value="public">Public (website)</option>
-                    <option value="internal">Internal only</option>
-                </select>
-            </div>
-
-            <!-- Posts list -->
-            <div class="news-list" v-if="!newsLoading">
-                <div v-if="filteredNews.length === 0" class="news-empty">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
-                    <p>No posts yet. Create your first post to get started.</p>
-                    <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
-                    </button>
-                </div>
-
-                <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="'news-card--' + post.post_type" @click.stop="openNewsDrawer(post)">
-
-                    <!-- Left accent + type -->
-                    <div class="news-card-left">
-                        <span class="news-type-badge" :class="'ntb--' + post.post_type">
-                            <svg v-if="post.post_type==='update'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
-                            <svg v-else-if="post.post_type==='article'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-                            <svg v-else-if="post.post_type==='publication'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                            <svg v-else width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                            {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'photo_story' ? 'Photo Story' : 'Publication' }}
-                        </span>
-                    </div>
-
-                    <!-- Content -->
-                    <div class="news-card-body">
-                        <div class="news-card-title">{{ post.title }}</div>
-
-                        <!-- Publication fields -->
-                        <div v-if="post.post_type === 'publication'" class="news-pub-meta">
-                            <span v-if="post.journal_name" class="news-journal">{{ post.journal_name }}</span>
-                            <span v-if="post.authors_text" class="news-authors">{{ post.authors_text }}</span>
-                            <a v-if="post.doi" :href="'https://doi.org/' + post.doi" target="_blank" class="news-doi">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg> DOI {{ post.doi }}
-                            </a>
-                        </div>
-
-                        <!-- Body preview -->
-                        <div v-if="post.body && post.post_type !== 'publication'" class="news-card-excerpt">{{ post.body }}</div>
-
-                        <!-- Meta row -->
-                        <div class="news-card-meta">
-                            <span v-if="post.author_id" class="news-meta-item">
-                                <span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>
-                                {{ newsAuthorName(post.author_id) }}
-                            </span>
-                            <span v-if="post.research_line_id" class="news-meta-item news-meta-line">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> {{ newsLineName(post.research_line_id) }}
-                            </span>
-                            <span class="news-meta-item">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14H10M8 18H10M14 14H16M14 18H16"/></svg>
-                                {{ formatNewsDate(post.published_at || post.created_at) }}
-                            </span>
-                            <span v-if="post.word_count && post.post_type !== 'publication'" class="news-meta-item news-wc">
-                                {{ post.word_count }}w
-                            </span>
-                            <span v-if="post.expires_at && post.post_type !== 'publication'" class="news-meta-item news-expiry"
-                                  :class="{ 'news-expiry--warn': new Date(post.expires_at) < new Date(Date.now() + 14*86400000) }">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Expires {{ formatDate(post.expires_at) }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Right: status + visibility + actions -->
-                    <div class="news-card-right" @click.stop>
-                        <!-- Status badge -->
-                        <span v-if="post.status !== 'published'" class="news-status-badge" :class="'nsb--' + post.status">
-                            {{ post.status === 'draft' ? 'Draft' : 'Archived' }}
-                        </span>
-                        <span v-else class="news-status-dot" title="Published"></span>
-
-                        <!-- Visibility toggle -->
-                        <button class="news-vis-btn" @click="toggleNewsPublic(post)"
-                                :title="post.is_public ? 'Public on website — click to make internal' : 'Internal only — click to make public'"
-                                v-if="post.status === 'published' && hasPermission('news_posts','update')">
-                            <i class="fas" :class="post.is_public ? 'fa-globe' : 'fa-lock'"></i>
-                            <span>{{ post.is_public ? 'Public' : 'Internal' }}</span>
-                        </button>
-
-                        <!-- Actions -->
-                        <div class="news-actions">
-                            <button class="btn-icon" @click="editNews(post)" title="Edit" v-if="hasPermission('news_posts','update')">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
-                            </button>
-                            <button class="btn-icon btn-icon--ok" @click="publishNews(post)" title="Publish"
-                                    v-if="post.status === 'draft' && hasPermission('news_posts','update')">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                            </button>
-                            <button class="btn-icon" @click="archiveNews(post)" title="Archive"
-                                    v-if="post.status === 'published' && hasPermission('news_posts','update')">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
-                            </button>
-                            <button class="btn-icon btn-icon--danger" @click="deleteNews(post)" title="Delete"
-                                    v-if="hasPermission('news_posts','delete')">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Loading state -->
-            <div v-if="newsLoading" class="news-loading">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Loading posts…
-            </div>
-        </div>
-
-        <!-- ============================================================
-             NEWS COMPOSE MODAL
-        ============================================================ -->
-        <div v-if="newsModal.show" class="modal-overlay" @click.self="newsModal.show = false">
-            <div class="nm-modal">
-
-                <!-- ══ TOP DARK HEADER STRIP ══ -->
-                <div class="nm-header">
-                    <div class="nm-header-left">
-                        <!-- Post type icon -->
-                        <div class="nm-type-icon">
-                            <svg v-if="newsModal.form.post_type==='update'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
-                            <svg v-else-if="newsModal.form.post_type==='publication'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                            <svg v-else-if="newsModal.form.post_type==='photo_story'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
-                        </div>
-                        <div class="nm-header-meta">
-                            <div class="nm-header-title">{{ newsModal.form.title || (newsModal.mode === 'add' ? 'New Post…' : 'Edit Post') }}</div>
-                            <div class="nm-header-sub">
-                                <span class="nm-type-badge"
-                                      :style="newsModal.form.post_type==='publication' ? 'color:#818cf8;' : newsModal.form.post_type==='photo_story' ? 'color:#f59e0b;' : ''">
-                                    {{ {'update':'Update','article':'Article','publication':'Publication','photo_story':'Photo Story'}[newsModal.form.post_type] || 'Post' }}
-                                </span>
-                                <span v-if="newsModal.form.author_id" style="color:rgba(255,255,255,.3);">·</span>
-                                <span v-if="newsModal.form.author_id" style="font-size:.65rem;color:rgba(255,255,255,.45);">{{ allStaffLookup.find(s=>s.id===newsModal.form.author_id)?.full_name?.split(' ').slice(-1)[0] }}</span>
-                                <span v-if="newsModal.form.research_line_id" style="color:rgba(255,255,255,.3);">·</span>
-                                <span v-if="newsModal.form.research_line_id" style="font-size:.62rem;font-family:monospace;color:#00B3B3;">L{{ researchLines.find(l=>l.id===newsModal.form.research_line_id)?.line_number }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="nm-header-right">
-                        <span class="nm-status-badge"
-                              :style="newsModal.form.status==='published' ? 'background:rgba(16,185,129,.12);color:#10b981;border-color:rgba(16,185,129,.22);'
-                                    : newsModal.form.status==='archived'  ? 'background:rgba(107,114,128,.1);color:rgba(255,255,255,.4);border-color:rgba(107,114,128,.2);'
-                                    : 'background:rgba(245,158,11,.1);color:#f59e0b;border-color:rgba(245,158,11,.2);'">
-                            {{ newsModal.form.status || 'draft' }}
-                        </span>
-                        <button class="sm-form-close" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);" @click="newsModal.show = false">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- ══ POST TYPE SWITCHER ══ -->
-                <div class="nm-type-bar">
-                    <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='update'}" @click="newsModal.form.post_type='update'">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg> Update
-                    </button>
-                    <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='article'}" @click="newsModal.form.post_type='article'">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M12 13H16M12 17H16M8 13H9M8 17H9"/></svg> Article
-                    </button>
-                    <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='publication'}" @click="newsModal.form.post_type='publication'">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg> Publication
-                    </button>
-                    <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='photo_story'}" @click="newsModal.form.post_type='photo_story'">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Photo Story
-                    </button>
-                </div>
-
-                <!-- ══ TABS ══ -->
-                <div class="nm-tabs">
-                    <button class="nm-tab" :class="{active: newsModal._tab==='meta'}"    @click="newsModal._tab='meta'">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M4 19C4 16 6.2 14 9 14"/><path d="M14 9H20M14 13H18M14 17H16"/></svg>
-                        Metadata
-                    </button>
-                    <button class="nm-tab" :class="{active: newsModal._tab==='content'}" @click="newsModal._tab='content'">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h10M4 18h7"/></svg>
-                        Content
-                    </button>
-                    <button class="nm-tab" :class="{active: newsModal._tab==='publish'}" @click="newsModal._tab='publish'">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                        Publication
-                    </button>
-                </div>
-
-                <!-- ══ TAB BODY ══ -->
-                <div class="nm-body">
-
-                    <!-- ─── METADATA ─── -->
-                    <template v-if="newsModal._tab==='meta'">
-                        <div class="sm-field">
-                            <div class="sm-label">Title <span class="req">·</span></div>
-                            <input type="text" class="sm-input" :class="{filled: newsModal.form.title}"
-                                   v-model="newsModal.form.title" placeholder="Post title…">
-                        </div>
-
-                        <div class="sm-row">
-                            <div class="sm-field" v-if="newsModal.form.post_type !== 'publication'">
-                                <div class="sm-label">Author <span class="req">·</span></div>
-                                <select class="sm-select" v-model="newsModal.form.author_id">
-                                    <option value="">Select author…</option>
-                                    <optgroup label="Attending Physicians">
-                                        <option v-for="s in medicalStaff.filter(m=>m.staff_type==='attending_physician'&&m.employment_status==='active')" :key="s.id" :value="s.id">
-                                            {{ s.full_name }}
-                                        </option>
-                                    </optgroup>
-                                    <optgroup label="Other Staff">
-                                        <option v-for="s in medicalStaff.filter(m=>m.staff_type!=='attending_physician'&&m.employment_status==='active')" :key="s.id" :value="s.id">
-                                            {{ s.full_name }}
-                                        </option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            <div class="sm-field">
-                                <div class="sm-label">Research Line <span class="hint">— optional</span></div>
-                                <select class="sm-select" v-model="newsModal.form.research_line_id">
-                                    <option value="">No specific line</option>
-                                    <option v-for="l in researchLines" :key="l.id" :value="l.id">
-                                        L{{ l.line_number }} — {{ l.research_line_name || l.name }}
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="sm-row">
-                            <div class="sm-field">
-                                <div class="sm-label">Status</div>
-                                <select class="sm-select" v-model="newsModal.form.status">
-                                    <option value="draft">Draft</option>
-                                    <option value="published">Published</option>
-                                    <option value="archived">Archived</option>
-                                </select>
-                            </div>
-                            <div class="sm-field">
-                                <div class="sm-label">Visibility</div>
-                                <div class="sm-network" style="grid-template-columns:1fr 1fr;">
-                                    <div class="sm-network-opt" :class="{active: !newsModal.form.is_public}" @click="newsModal.form.is_public=false">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                                        Internal
-                                    </div>
-                                    <div class="sm-network-opt" :class="{active: newsModal.form.is_public}" @click="newsModal.form.is_public=true">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2 12H22M12 2C12 2 8 7 8 12C8 17 12 22 12 22M12 2C12 2 16 7 16 12C16 17 12 22 12 22"/></svg>
-                                        Public
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="sm-field" v-if="newsModal.form.post_type !== 'publication'">
-                            <div class="sm-label" style="display:flex;justify-content:space-between;align-items:center;">
-                                <span>Expiry Date <span class="hint">— auto: {{ newsModal.form.post_type==='update' ? '90 days' : newsModal.form.post_type==='photo_story' ? '12 months' : '18 months' }}</span></span>
-                                <button type="button" style="font-size:.65rem;color:var(--teal,#009999);background:none;border:none;cursor:pointer;font-family:monospace;"
-                                        @click="newsModal.form.expires_at=autoExpiry(newsModal.form.post_type)">↺ reset</button>
-                            </div>
-                            <input type="date" class="sm-input" v-model="newsModal.form.expires_at" :min="new Date().toISOString().split('T')[0]">
-                        </div>
-                    </template>
-
-                    <!-- ─── CONTENT ─── -->
-                    <template v-if="newsModal._tab==='content'">
-                        <div class="sm-field" v-if="newsModal.form.post_type !== 'publication'">
-                            <div class="sm-label" style="display:flex;justify-content:space-between;align-items:center;">
-                                <span>Content <span class="req">·</span></span>
-                                <div class="news-wc-counter" :class="{'news-wc-counter--warn': newsWordCount > newsWordLimit*0.9, 'news-wc-counter--over': newsWordCount > newsWordLimit}">
-                                    <div class="news-wc-bar"><div class="news-wc-fill" :style="{width: Math.min(100,(newsWordCount/newsWordLimit)*100)+'%'}"></div></div>
-                                    <span>{{ newsWordCount }} / {{ newsWordLimit }}w</span>
-                                </div>
-                            </div>
-                            <textarea class="sm-input" v-model="newsModal.form.body"
-                                      :rows="newsModal.form.post_type==='update' ? 4 : newsModal.form.post_type==='photo_story' ? 5 : 10"
-                                      style="height:auto;resize:vertical;padding-top:8px;padding-bottom:8px;min-height:120px;"
-                                      :placeholder="newsModal.form.post_type==='update' ? 'Short update — max 80 words…' : newsModal.form.post_type==='photo_story' ? 'Caption — what this photo tells us (max 120 words)…' : 'Article content — max 400 words…'">
-                            </textarea>
-                        </div>
-                        <div v-else class="sm-field">
-                            <div class="sm-label">Abstract / Summary</div>
-                            <textarea class="sm-input" v-model="newsModal.form.body" rows="6"
-                                      style="height:auto;resize:vertical;padding-top:8px;padding-bottom:8px;min-height:120px;"
-                                      placeholder="Brief summary of the publication findings…"></textarea>
-                        </div>
-
-                        <!-- Image URL — articles + photo stories -->
-                        <div class="sm-field" v-if="newsModal.form.post_type==='article' || newsModal.form.post_type==='photo_story'">
-                            <div class="sm-label">
-                                Featured Image URL
-                                <span v-if="newsModal.form.post_type==='photo_story'" class="req">·</span>
-                                <span v-else class="hint">— optional</span>
-                            </div>
-                            <input type="url" class="sm-input" :class="{filled: newsModal.form.featured_image_url}"
-                                   v-model="newsModal.form.featured_image_url"
-                                   :placeholder="newsModal.form.post_type==='photo_story' ? 'https://… (required)' : 'https://…'">
-                            <small v-if="newsModal.form.post_type==='photo_story'" class="sm-field-hint">
-                                Separate multiple photos with commas. First becomes the hero.
-                            </small>
-                        </div>
-                    </template>
-
-                    <!-- ─── PUBLICATION FIELDS ─── -->
-                    <template v-if="newsModal._tab==='publish'">
-                        <div v-if="newsModal.form.post_type === 'publication'" class="sm-row">
-                            <div class="sm-field">
-                                <div class="sm-label">Journal Name</div>
-                                <input type="text" class="sm-input" :class="{filled: newsModal.form.journal_name}"
-                                       v-model="newsModal.form.journal_name" placeholder="European Respiratory Journal…">
-                            </div>
-                            <div class="sm-field">
-                                <div class="sm-label">DOI</div>
-                                <input type="text" class="sm-input" :class="{filled: newsModal.form.doi}"
-                                       v-model="newsModal.form.doi" placeholder="10.1183/13993003.xxxxx" style="font-family:monospace;font-size:.78rem;">
-                            </div>
-                        </div>
-                        <div class="sm-field" v-if="newsModal.form.post_type === 'publication'">
-                            <div class="sm-label">Authors <span class="hint">— citation format</span></div>
-                            <input type="text" class="sm-input" :class="{filled: newsModal.form.authors_text}"
-                                   v-model="newsModal.form.authors_text" placeholder="Surname A, Surname B, et al.">
-                        </div>
-                        <div v-if="newsModal.form.post_type !== 'publication'" class="nm-tab-empty">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-                            <span>Publication fields only apply when post type is set to <strong>Publication</strong></span>
-                        </div>
-                    </template>
-
-                </div>
-
-                <!-- ══ FOOTER ══ -->
-                <div class="nm-footer">
-                    <button class="sm-btn-back" @click="newsModal.show = false">Cancel</button>
-                    <button class="sm-btn-save" @click="saveNews" :disabled="saving">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        {{ saving ? 'Saving…' : newsModal.mode === 'add' ? 'Create Post' : 'Save Changes' }}
-                    </button>
-                </div>
-
-            </div>
-        </div>
 
 
         
