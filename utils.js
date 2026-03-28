@@ -1,5 +1,5 @@
 // utils.js - All utility functions
-import { ACADEMIC_DEGREES_FALLBACK } from './config.js'
+import { ACADEMIC_DEGREES_FALLBACK } from './config.js' 
 
 export const Utils = {
   // Date utilities
