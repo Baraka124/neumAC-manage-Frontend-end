@@ -904,6 +904,9 @@ const app = createApp({
     // ============================================================
     // RETURN - ALL DATA AND METHODS EXPOSED TO TEMPLATE
     // ============================================================
+    // ============================================================
+    // RETURN - ALL DATA AND METHODS EXPOSED TO TEMPLATE
+    // ============================================================
     return {
       // Stores
       uiStore, userStore, staffStore, rotationStore, trainingStore, onCallStore, absenceStore, researchStore, newsStore,
@@ -990,7 +993,6 @@ const app = createApp({
   }
 })
 
-// Create and mount app
-const app = createApp(App)
+// Create and mount app - ONLY ONE, using the app variable we already have!
 app.use(pinia)
 app.mount('#app')
