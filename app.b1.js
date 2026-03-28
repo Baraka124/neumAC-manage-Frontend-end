@@ -2,12 +2,12 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
 
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
-        ? 'http://localhost:3000'
+        ? 'http://localhost:3000' 
         : 'https://neumac-manage-back-end-production.up.railway.app',
       TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ROLES = {
       ADMIN: 'system_admin',
       HEAD: 'department_head',
+      MANAGER: 'resident_manager',
       ATTENDING: 'attending_physician',
       RESIDENT: 'medical_resident'
     }
@@ -39,54 +40,72 @@ document.addEventListener('DOMContentLoaded', () => {
         oncall_schedule: ['create', 'read', 'update', 'delete'],
         resident_rotations: ['create', 'read', 'update', 'delete'], 
         training_units: ['create', 'read', 'update', 'delete'],
-        staff_absence: ['create', 'read', 'update', 'delete'], 
-        department_management: ['create', 'read', 'update', 'delete'],
+        staff_absence: ['create', 'read', 'update', 'delete'],
         communications: ['create', 'read', 'update', 'delete'], 
         research_lines: ['create', 'read', 'update', 'delete'],
         clinical_trials: ['create', 'read', 'update', 'delete'], 
         innovation_projects: ['create', 'read', 'update', 'delete'],
         analytics: ['read', 'export'], 
-        system: ['manage_departments', 'manage_updates']
+        system: ['manage_departments', 'manage_updates'],
+        system_settings: ['create', 'read', 'update', 'delete'],
+        news_posts: ['create', 'read', 'update', 'delete']
       },
       department_head: {
         medical_staff: ['read', 'update'], 
         oncall_schedule: ['create', 'read', 'update'],
         resident_rotations: ['create', 'read', 'update'], 
         training_units: ['read', 'update'],
-        staff_absence: ['create', 'read', 'update'], 
-        department_management: ['read'],
+        staff_absence: ['create', 'read', 'update'],
         communications: ['create', 'read'], 
-        research_lines: ['read', 'update'],
-        clinical_trials: ['read', 'create', 'update'], 
-        innovation_projects: ['read', 'create', 'update'],
+        research_lines: ['create', 'read', 'update', 'delete'],
+        clinical_trials: ['read', 'create', 'update', 'delete'], 
+        innovation_projects: ['read', 'create', 'update', 'delete'],
         analytics: ['read'], 
-        system: ['manage_updates']
+        system: ['manage_updates'],
+        system_settings: ['read'],
+        news_posts: ['create', 'read', 'update', 'delete']
       },
       attending_physician: {
         medical_staff: ['read'], 
         oncall_schedule: ['read'], 
         resident_rotations: ['read'],
         training_units: ['read'], 
-        staff_absence: ['read'], 
-        department_management: ['read'],
+        staff_absence: ['read'],
         communications: ['read'], 
         research_lines: ['read'], 
         clinical_trials: ['read'],
         innovation_projects: ['read'], 
-        analytics: ['read']
+        analytics: ['read'],
+        system_settings: [],
+        news_posts: ['read']
+      },
+      resident_manager: {
+        medical_staff: ['read', 'create', 'update'],
+        oncall_schedule: ['create', 'read', 'update', 'delete'],
+        resident_rotations: ['create', 'read', 'update', 'delete'],
+        training_units: ['read', 'update'],
+        staff_absence: ['create', 'read', 'update'],
+        communications: ['create', 'read'],
+        research_lines: ['create', 'read', 'update', 'delete'],
+        clinical_trials: ['create', 'read', 'update', 'delete'],
+        innovation_projects: ['create', 'read', 'update', 'delete'],
+        analytics: ['read'],
+        system_settings: [],
+        news_posts: ['create', 'read', 'update', 'delete']
       },
       medical_resident: {
         medical_staff: ['read'], 
         oncall_schedule: ['read'], 
         resident_rotations: ['read'],
         training_units: ['read'], 
-        staff_absence: ['read'], 
-        department_management: [],
+        staff_absence: ['read'],
         communications: ['read'], 
         research_lines: ['read'], 
         clinical_trials: ['read'],
         innovation_projects: ['read'], 
-        analytics: []
+        analytics: [],
+        system_settings: [],
+        news_posts: ['read']
       }
     }
 
@@ -147,10 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
       medical_staff: 'Medical Staff Management',
       oncall_schedule: 'On-call Schedule', 
       resident_rotations: 'Resident Rotations',
-      training_units: 'Training Units', 
+      training_units: 'Clinical Units', 
       staff_absence: 'Staff Absence Management',
-      department_management: 'Department Management', 
-      communications: 'Communications Center',
+      department_management: 'Department Management',
       research_hub: 'Research Hub',
       research_lines: 'Research Hub', 
       clinical_trials: 'Research Hub',
@@ -165,17 +183,16 @@ document.addEventListener('DOMContentLoaded', () => {
       medical_staff: 'Manage physicians, residents, and clinical staff',
       oncall_schedule: 'View and manage on-call physician schedules',
       resident_rotations: 'Track and manage resident training rotations',
-      training_units: 'Clinical training units and resident assignments',
+      training_units: 'Clinical units and resident assignments',
       staff_absence: 'Track staff absences and coverage assignments',
       department_management: 'Organizational structure and clinical units',
-      communications: 'Department announcements and capacity updates',
-      research_hub: 'Research lines, trials, projects and analytics',
-      research_lines: 'Research lines, trials, projects and analytics',
-      clinical_trials: 'Research lines, trials, projects and analytics',
-      innovation_projects: 'Research lines, trials, projects and analytics',
-      analytics_dashboard: 'Research lines, trials, projects and analytics',
-      analytics_performance: 'Research lines, trials, projects and analytics',
-      analytics_partners: 'Research lines, trials, projects and analytics'
+      research_hub: 'Research lines, studies, projects and analytics',
+      research_lines: 'Research lines, studies, projects and analytics',
+      clinical_trials: 'Research lines, studies, projects and analytics',
+      innovation_projects: 'Research lines, studies, projects and analytics',
+      analytics_dashboard: 'Research lines, studies, projects and analytics',
+      analytics_performance: 'Research lines, studies, projects and analytics',
+      analytics_partners: 'Research lines, studies, projects and analytics'
     }
 
     // ============ 3. ENHANCED UTILS CLASS ============
@@ -189,9 +206,18 @@ document.addEventListener('DOMContentLoaded', () => {
     ]
     class Utils {
       // Date utilities
+      static localDateStr(d) {
+        // Returns YYYY-MM-DD in LOCAL timezone — prevents UTC offset issues
+        const dt = d instanceof Date ? d : new Date(d)
+        if (isNaN(dt.getTime())) return ''
+        const y = dt.getFullYear()
+        const m = String(dt.getMonth() + 1).padStart(2, '0')
+        const day = String(dt.getDate()).padStart(2, '0')
+        return `${y}-${m}-${day}`
+      }
       static normalizeDate(d) {
         if (!d) return ''
-        if (d instanceof Date) return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0]
+        if (d instanceof Date) return isNaN(d.getTime()) ? '' : Utils.localDateStr(d)
         const s = String(d).trim()
         if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
         if (s.includes('T')) return s.split('T')[0]
@@ -547,6 +573,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.status === 401) {
               localStorage.removeItem(CONFIG.TOKEN_KEY)
               localStorage.removeItem(CONFIG.USER_KEY)
+              // Force Vue app back to login — dispatch custom event picked up in setup()
+              window.dispatchEvent(new CustomEvent('neumax:session-expired'))
               throw new Error('Session expired. Please login again.')
             }
             const err = await res.text().catch(() => `HTTP ${res.status}`)
@@ -1042,12 +1070,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.3 useStaff ============
-    function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll }) {
-      const medicalStaff = ref([])
+    function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser }) {
+      const medicalStaff    = ref([])
+      const allStaffLookup  = ref([])   // ALL staff including inactive, for name resolution
       const staffView = ref('table') // 'table' | 'compact'
-      // allStaffLookup keeps ALL staff (including inactive) for name resolution
-      // so deleted staff don't ghost as "Not assigned" in historical records
-      const allStaffLookup = ref([])
       const hospitalsList = ref([])   // all hospitals from DB
       const clinicalUnits = ref([])   // clinical units (Pneumology + others)
       const staffFilters = reactive({ search: '', staffType: '', department: '', status: '', residentCategory: '', hospital: '', networkType: '' })
@@ -1082,8 +1108,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const validateStaff = (form) => {
         clearAll('staff'); let ok = true
         if (!form.full_name?.trim()) { setErr('staff', 'full_name', 'Full name is required'); ok = false }
+        if (!form.staff_type) { setErr('staff', 'staff_type', 'Staff type is required'); ok = false }
         if (form.professional_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.professional_email)) {
           setErr('staff', 'professional_email', 'Invalid email address'); ok = false
+        }
+        // External resident: needs institution + contact
+        if (form.resident_category === 'external_resident') {
+          if (!form.external_institution?.trim())  { setErr('staff', 'external_institution', 'Institution required'); ok = false }
+          if (!form.external_contact_name?.trim()) { setErr('staff', 'external_contact_name', 'Contact person required'); ok = false }
+          if (!form.external_contact_email?.trim()){ setErr('staff', 'external_contact_email', 'Contact email required'); ok = false }
+        }
+        // Rotating resident: needs origin department
+        if (form.resident_category === 'rotating_other_dept') {
+          if (!form.home_department_id) { setErr('staff', 'home_department_id', 'Origin department required'); ok = false }
         }
         return ok
       }
@@ -1108,6 +1145,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const filteredMedicalStaff = computed(() => paginate(filteredMedicalStaffAll.value, 'medical_staff'))
       const staffTotalPages = computed(() => totalPages(filteredMedicalStaffAll.value, 'medical_staff'))
+
+      // Compact view: staff grouped by role with section dividers
+      const compactStaffWithDividers = computed(() => {
+        const staff = filteredMedicalStaff.value
+        const attendings = staff.filter(s => !isResidentType(s.staff_type))
+        const residents  = staff.filter(s =>  isResidentType(s.staff_type))
+        const result = []
+        if (attendings.length) {
+          result.push({ _divider: `Attending Physicians · ${attendings.length}` })
+          result.push(...attendings)
+        }
+        if (residents.length) {
+          result.push({ _divider: `Medical Residents · ${residents.length}` })
+          result.push(...residents)
+        }
+        return result
+      })
 
       watch(staffFilters, () => resetPage('medical_staff'), { deep: true })
 
@@ -1182,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      const showAddMedicalStaffModal = () => {
+      const showAddMedicalStaffModal = (opts = {}) => {
         clearAll('staff')
         medicalStaffModal.mode = 'add'
         medicalStaffModal.activeTab = 'basic'
@@ -1193,9 +1247,14 @@ document.addEventListener('DOMContentLoaded', () => {
         medicalStaffModal._newStaffTypeName = ''
         medicalStaffModal._newStaffTypeIsResident = false
         medicalStaffModal._savingStaffType = false
+        // Context-aware department default:
+        // 1. Explicit opts.department_id (e.g. opened from dept panel)
+        // 2. Current user's own department
+        // 3. Blank — user must select
+        const defaultDeptId = opts.department_id || null
         Object.assign(medicalStaffModal.form, {
           full_name: '', staff_type: 'medical_resident', staff_id: `MD-${Date.now().toString().slice(-6)}`,
-          employment_status: 'active', professional_email: '', department_id: '', academic_degree: '',
+          employment_status: 'active', professional_email: '', department_id: defaultDeptId || '', academic_degree: '',
           specialization: '', training_year: '', clinical_certificate: '', certificate_status: '',
           mobile_phone: '', medical_license: '', can_supervise_residents: false, special_notes: '',
           can_be_pi: false, can_be_coi: false, other_certificate: '',
@@ -1267,6 +1326,17 @@ document.addEventListener('DOMContentLoaded', () => {
           is_research_coordinator: staff.is_research_coordinator || false,
           is_resident_manager: staff.is_resident_manager || false,
           is_oncall_manager: staff.is_oncall_manager || false,
+          has_phd: staff.has_phd || false, phd_field: staff.phd_field || '',
+          office_phone: staff.office_phone || '', years_experience: staff.years_experience || null,
+          _coordLineId: null, // resolved post-load by research composable
+          _investigadorLines: [],
+          home_department_id: staff.home_department_id || null,
+          has_medical_license: staff.has_medical_license || false,
+          residency_start_date: staff.residency_start_date || null,
+          residency_year_override: staff.residency_year_override || null,
+          external_contact_name: staff.external_contact_name || null,
+          external_contact_email: staff.external_contact_email || null,
+          external_contact_phone: staff.external_contact_phone || null,
           clinical_study_certificates: Array.isArray(staff.clinical_study_certificates) ? [...staff.clinical_study_certificates] : [],
           hospital_id: staff.hospital_id || null,
           _networkHint: null
@@ -1283,7 +1353,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = {
             full_name: f.full_name.trim(), staff_type: f.staff_type || 'medical_resident',
             staff_id: f.staff_id || Utils.generateId('MD'), employment_status: f.employment_status || 'active',
-            professional_email: f.professional_email || '', department_id: f.department_id || null,
+            professional_email: f.professional_email || '', department_id: f.department_id || currentUser?.value?.department_id || null,
             academic_degree: clean(f.academic_degree), academic_degree_id: f.academic_degree_id || null,
             specialization: clean(f.specialization),
             training_year: clean(f.training_year),
@@ -1303,17 +1373,38 @@ document.addEventListener('DOMContentLoaded', () => {
             external_contact_email: f.external_contact_email || null,
             external_contact_phone: f.external_contact_phone || null,
             is_research_coordinator: f.is_research_coordinator || false,
+            can_be_pi: f.can_be_pi || false,
+            can_be_coi: f.can_be_coi || false,
+            has_phd: f.has_phd || false,
+            phd_field: f.phd_field || null,
+            office_phone: f.office_phone || null,
+            years_experience: f.years_experience || null,
             hospital_id: f.hospital_id || null,
             clinical_study_certificates: f.clinical_study_certificates || []
           }
+          let savedStaff
           if (medicalStaffModal.mode === 'add') {
-            medicalStaff.value.unshift(await API.createMedicalStaff(data))
+            savedStaff = await API.createMedicalStaff(data)
+            medicalStaff.value.unshift(savedStaff)
             showToast('Success', 'Medical staff added', 'success')
           } else {
-            const result = await API.updateMedicalStaff(f.id, data)
-            const idx = medicalStaff.value.findIndex(s => s.id === result.id)
-            if (idx !== -1) medicalStaff.value[idx] = result
+            savedStaff = await API.updateMedicalStaff(f.id, data)
+            const idx = medicalStaff.value.findIndex(s => s.id === savedStaff.id)
+            if (idx !== -1) medicalStaff.value[idx] = savedStaff
             showToast('Success', 'Medical staff updated', 'success')
+          }
+          // If marked as research coordinator with a specific line, update that line's coordinator_id
+          if (f.is_research_coordinator && f._coordLineId && savedStaff?.id) {
+            try {
+              await API.assignCoordinator(f._coordLineId, savedStaff.id)
+              await loadResearchLines()
+            } catch (e) { console.warn('Could not update research line coordinator:', e) }
+          } else if (!f.is_research_coordinator && savedStaff?.id) {
+            // If coordinator toggled OFF, clear coordinator_id from any line that had this person
+            const coordinated = [] // cross-composable update handled by research composable
+            for (const line of coordinated) {
+              try { await API.assignCoordinator(line.id, null) } catch {}
+            }
           }
           medicalStaffModal.show = false; clearAll('staff')
         } catch (e) { showToast('Error', e.message || 'Failed to save', 'error') }
@@ -1392,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
         isRoleTaken, getCurrentRoleHolder, handleRoleAssignment, toggleCertificate, availableCertificates,
         addStaffTypeInline,
-        staffView,
+        staffView, compactStaffWithDividers,
         clearStaffFilters,
         hasActiveStaffFilters
       }
@@ -1401,7 +1492,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 6.4 useOnCall ============
     function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences }) {
       const onCallSchedule = ref([])
-      const todaysOnCall = ref([])
+            const todaysOnCall = ref([])
       const loadingSchedule = ref(false)
       const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
       const onCallModal = reactive({
@@ -1725,13 +1816,14 @@ document.addEventListener('DOMContentLoaded', () => {
         groupedOnCallSchedules,
         isShiftActive,
         staffWithOnCallOrbs,
-        upcomingOnCallDays
+        upcomingOnCallDays,
+        getPhysicianName
       }
     }
 
     // ============ 6.5 useRotations ============
-    function useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, currentUser }) {
-      const rotations = ref([])
+    function useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser }) {
+      // rotations is a shared ref hoisted in main setup — do not redeclare
       const rotationFilters = reactive({ resident: '', status: '', trainingUnit: '', supervisor: '', search: '' })
       const rotationModal = reactive({
         show: false, mode: 'add',
@@ -1787,7 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const checkAndUpdateRotations = async (requireValidation = true) => {
         const today = new Date(); today.setHours(0, 0, 0, 0)
-        const todayStr = Utils.normalizeDate(today)
+        const todayStr = Utils.localDateStr(today)  // local date — not UTC
         const updates = [], pending = []
 
         rotations.value.forEach(rotation => {
@@ -1875,12 +1967,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const initAutoCheck = () => {
-        setTimeout(() => checkAndUpdateRotations(true), 2000)
+        // Silent: scheduled→active and active→completed are date facts, not decisions
+        setTimeout(() => checkAndUpdateRotations(false), 2000)
         const interval = setInterval(() => {
           const lastCheck = localStorage.getItem('last_rotation_check')
           const now = new Date()
           if (!lastCheck || (now - new Date(lastCheck)) > 4 * 60 * 60 * 1000) {
-            checkAndUpdateRotations(true); localStorage.setItem('last_rotation_check', now.toISOString())
+            checkAndUpdateRotations(false)
+            localStorage.setItem('last_rotation_check', now.toISOString())
           }
         }, 60 * 60 * 1000)
         return interval
@@ -1892,6 +1986,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!form.training_unit_id) { setErr('rotation', 'training_unit_id', 'Please select a training unit'); ok = false }
         if (!form.start_date) { setErr('rotation', 'start_date', 'Start date is required'); ok = false }
         if (!form.end_date) { setErr('rotation', 'end_date', 'End date is required'); ok = false }
+        if (!form.supervising_attending_id) { setErr('rotation', 'supervising_attending_id', 'Supervising attending is required'); ok = false }
         if (form.start_date && form.end_date) {
           const s = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
           const e = new Date(Utils.normalizeDate(form.end_date) + 'T00:00:00')
@@ -1916,6 +2011,32 @@ document.addEventListener('DOMContentLoaded', () => {
       const rotationTotalPages = computed(() => totalPages(filteredRotationsAll.value, 'rotations'))
 
       watch(rotationFilters, () => resetPage('rotations'), { deep: true })
+
+      // Auto-derive rotation status from dates as user edits them
+      // Uses local date (not UTC) to handle timezone offsets correctly
+      watch(() => [rotationModal.form.start_date, rotationModal.form.end_date], ([start, end]) => {
+        if (!start || !end) return
+        const todayStr = Utils.localDateStr(new Date())
+        const startStr = Utils.normalizeDate(start)
+        const endStr   = Utils.normalizeDate(end)
+        const terminal = ['terminated_early', 'completed', 'extended']
+        if (terminal.includes(rotationModal.form.rotation_status)) return
+        if (startStr > todayStr)       rotationModal.form.rotation_status = 'scheduled'
+        else if (endStr < todayStr)    rotationModal.form.rotation_status = 'completed'
+        else                           rotationModal.form.rotation_status = 'active'
+      })
+
+      // Auto-fill supervisor when unit is selected — reads supervisor_id from the unit
+      watch(() => rotationModal.form.training_unit_id, (unitId) => {
+        if (!unitId) return
+        const unit = trainingUnits.value.find(u => u.id === unitId)
+        if (unit && (unit.supervisor_id || unit.default_supervisor_id)) {
+          // Only auto-fill if supervisor is not already manually set
+          if (!rotationModal.form.supervising_attending_id) {
+            rotationModal.form.supervising_attending_id = unit.supervisor_id || unit.default_supervisor_id
+          }
+        }
+      })
 
       const loadRotations = async () => {
         try {
@@ -1996,12 +2117,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+          // Derive status from dates — never trust what the form says.
+          // If the user picked today as start date, it should be active immediately.
+          // Only terminal states (terminated_early, extended, completed) are preserved
+          // when editing an existing rotation.
+          const todayStr = Utils.localDateStr(new Date())  // local date — not UTC
+          const terminalStatuses = ['terminated_early', 'completed', 'extended']
+          let derivedStatus
+          if (rotationModal.mode === 'edit' && terminalStatuses.includes(f.rotation_status)) {
+            // Keep terminal status when editing
+            derivedStatus = f.rotation_status
+          } else if (startISO > todayStr) {
+            derivedStatus = 'scheduled'
+          } else if (endISO < todayStr) {
+            derivedStatus = 'completed'
+          } else {
+            // start_date <= today <= end_date
+            derivedStatus = 'active'
+          }
+
           const data = {
             rotation_id: f.rotation_id || Utils.generateId('ROT'), resident_id: f.resident_id,
             training_unit_id: f.training_unit_id, supervising_attending_id: f.supervising_attending_id || null,
             start_date: startISO, end_date: endISO,
             rotation_category: f.rotation_category || 'clinical_rotation',
-            rotation_status: (f.rotation_status || 'scheduled').toLowerCase()
+            rotation_status: derivedStatus
           }
           const normalize = r => ({ ...r, start_date: Utils.normalizeDate(r.start_date), end_date: Utils.normalizeDate(r.end_date) })
           if (rotationModal.mode === 'add') {
@@ -2244,7 +2384,7 @@ document.addEventListener('DOMContentLoaded', () => {
               new Date(r.start_date) <= mEnd && new Date(r.end_date) >= mStart
             )
             if (!covered) {
-              gaps.push(mStart.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }))
+              gaps.push(mStart.toLocaleDateString('es-ES', { month: 'short' }))
             }
           }
           if (gaps.length > 0) {
@@ -2285,14 +2425,16 @@ document.addEventListener('DOMContentLoaded', () => {
         getRotationBarStyle,
         rotationStartsInHorizon,
         rotationEndsInHorizon,
-        residentGapWarnings
+        residentGapWarnings,
+        getResidentName,
+        getTrainingUnitName
       }
     }
 
     // ============ 6.6 useAbsences ============
     function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule }) {
       const absences = ref([])
-      const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', hideReturned: true })
+            const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', hideReturned: true })
       const absenceModal = reactive({
         show: false, mode: 'add',
         form: { staff_member_id: '', absence_type: 'planned', absence_reason: 'vacation', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 7 * 86400000)), covering_staff_id: '', coverage_notes: '', coverage_arranged: false, hod_notes: '' }
@@ -2621,14 +2763,15 @@ document.addEventListener('DOMContentLoaded', () => {
         absences, absenceFilters, absenceModal, absenceOverlapWarning,
         filteredAbsences, filteredAbsencesAll, absenceTotalPages,
         loadAbsences, showAddAbsenceModal, editAbsence, saveAbsence, deleteAbsence, purgeAbsence,
-        absenceResolutionModal, openResolutionModal, resolveAbsence
+        absenceResolutionModal, openResolutionModal, resolveAbsence,
+        getStaffName
       }
     }
 
     // ============ 6.7 useDepartments ============
     function useDepartments({ showToast, showConfirmation, medicalStaff, trainingUnits, rotations }) {
       const departments = ref([])
-      const allDepartmentsLookup = ref([])  // includes inactive — for name resolution only
+            const allDepartmentsLookup = ref([])  // includes inactive — for name resolution only
       const departmentFilters = reactive({ search: '', status: '' })
       const departmentModal = reactive({ show: false, mode: 'add', form: { name: '', code: '', status: 'active', head_of_department_id: '', hospital_id: '', description: '', contact_email: '', contact_phone: '' } })
 
@@ -2833,8 +2976,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.8 useTrainingUnits ============
-    function useTrainingUnits({ showToast, showConfirmation, rotations, allStaffLookup }) {
-      const trainingUnits = ref([])
+    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup }) {
+      // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', unit_type: 'training_unit', unit_description: '', specialty: '', supervising_attending_id: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
@@ -2845,10 +2988,60 @@ document.addEventListener('DOMContentLoaded', () => {
         if (trainingUnitFilters.search) { const q = trainingUnitFilters.search.toLowerCase(); f = f.filter(u => u.unit_name?.toLowerCase().includes(q)) }
         if (trainingUnitFilters.department) f = f.filter(u => u.department_id === trainingUnitFilters.department)
         if (trainingUnitFilters.status) f = f.filter(u => u.unit_status === trainingUnitFilters.status)
-        return f
+        // Sort by urgency: overlap > full > partial > available
+        return [...f].sort((a, b) => {
+          const score = (u) => {
+            if (getUnitOverlapWarning(u.id)) return 0
+            const ratio = getUnitActiveRotationCount(u.id) / (u.maximum_residents || 1)
+            if (ratio >= 1) return 1
+            if (ratio > 0.5) return 2
+            if (ratio > 0) return 3
+            return 4
+          }
+          return score(a) - score(b)
+        })
       })
 
-      const getUnitActiveRotationCount = (id) => rotations.value.filter(r => r.training_unit_id === id && ['active', 'scheduled'].includes(r.rotation_status)).length
+      const getUnitActiveRotationCount = (id) => {
+        const today = new Date(); today.setHours(0,0,0,0)
+        return rotations.value.filter(r =>
+          r.training_unit_id === id &&
+          r.rotation_status === 'active' &&
+          new Date(r.start_date) <= today &&
+          new Date(r.end_date)   >= today
+        ).length
+      }
+
+      const getUnitScheduledCount = (id) => {
+        const today = new Date(); today.setHours(0,0,0,0)
+        return rotations.value.filter(r =>
+          r.training_unit_id === id &&
+          r.rotation_status === 'scheduled' &&
+          new Date(r.start_date) > today
+        ).length
+      }
+
+      // Check for future overlap conflicts: will scheduled + active exceed capacity at any point?
+      const getUnitOverlapWarning = (id) => {
+        const unit = trainingUnits.value.find(u => u.id === id)
+        if (!unit) return null
+        const maxSlots = unit.maximum_residents
+        const upcoming = rotations.value.filter(r =>
+          r.training_unit_id === id &&
+          ['active','scheduled'].includes(r.rotation_status)
+        )
+        // Check each rotation's start date — how many others overlap at that moment?
+        for (const rot of upcoming) {
+          const checkDate = new Date(rot.start_date)
+          const concurrent = upcoming.filter(r =>
+            new Date(r.start_date) <= checkDate && new Date(r.end_date) >= checkDate
+          ).length
+          if (concurrent > maxSlots) {
+            return { date: rot.start_date, concurrent, max: maxSlots }
+          }
+        }
+        return null
+      }
 
       const getUnitRotations = (id) => rotations.value
         .filter(r => r.training_unit_id === id && ['active', 'scheduled'].includes(r.rotation_status))
@@ -3043,14 +3236,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const mStart = new Date(year, month, 1)
         const mEnd   = new Date(year, month + 1, 0)
         const unit   = trainingUnits.value.find(u => u.id === unitId)
-        if (!unit) return { status: 'free', occupied: 0, total: 0 }
+        if (!unit) return { status: 'free', occupied: 0, scheduled: 0, total: 0 }
         const maxSlots = unit.maximum_residents
         const touching = rotations.value.filter(r =>
           r.training_unit_id === unitId &&
           ['active','scheduled'].includes(r.rotation_status) &&
           new Date(r.start_date) <= mEnd && new Date(r.end_date) >= mStart
         )
-        const occupied = touching.length
+        // Separate truly active (date range covers any day in month) from scheduled future
+        const today = new Date(); today.setHours(0,0,0,0)
+        const isCurrentMonth = mStart <= today && mEnd >= today
+        const active    = isCurrentMonth
+          ? touching.filter(r => r.rotation_status === 'active' && new Date(r.start_date) <= today && new Date(r.end_date) >= today).length
+          : touching.filter(r => ['active','scheduled'].includes(r.rotation_status)).length
+        const scheduled = touching.filter(r => r.rotation_status === 'scheduled').length
+        const occupied  = isCurrentMonth ? active : touching.length
         if (occupied === 0) return { status: 'free', occupied: 0, total: maxSlots }
         const isClosing = touching.some(r => {
           const e = new Date(r.end_date)
@@ -3174,8 +3374,47 @@ document.addEventListener('DOMContentLoaded', () => {
       const openUnitClinicians = (unit, allStaff) => {
         unitCliniciansModal.unit = unit
         unitCliniciansModal.clinicians = (unit.clinician_ids || []).slice()
-        unitCliniciansModal.supervisorId = unit.supervising_attending_id || ''
-        unitCliniciansModal.allStaff = allStaff.filter(s => ['attending_physician','fellow'].includes(s.staff_type))
+        unitCliniciansModal.supervisorId = unit.supervisor_id || unit.supervising_attending_id || ''
+        // Filter to same-department attendings/fellows only
+        // If unit has a department_id, only show staff from that department
+        const deptFilter = unit.department_id
+          ? s => s.department_id === unit.department_id
+          : () => true
+        unitCliniciansModal.allStaff = allStaff.filter(s =>
+          (staffTypeMap.value[s.staff_type]?.can_supervise ||
+           ['attending_physician','fellow'].includes(s.staff_type)) &&
+          s.employment_status === 'active' &&
+          deptFilter(s)
+        )
+        unitCliniciansModal.show = true
+      }
+
+      // Open clinicians modal from dept panel attending row — assign attending to a unit
+      const assignAttendingToUnit = (staff) => {
+        // Find all units in the same department as this attending
+        const deptUnits = trainingUnits.value.filter(u =>
+          u.department_id === staff.department_id && u.unit_status === 'active'
+        )
+        if (deptUnits.length === 0) {
+          showToast('No Units', 'No active units in this department', 'warning')
+          return
+        }
+        // If attending already supervises a unit, open that unit's clinicians modal
+        const currentUnit = deptUnits.find(u => u.supervisor_id === staff.id)
+        const targetUnit = currentUnit || deptUnits[0]
+        // Pre-select this attending
+        unitCliniciansModal.unit = targetUnit
+        unitCliniciansModal.clinicians = (targetUnit.clinician_ids || []).slice()
+        unitCliniciansModal.supervisorId = staff.id  // pre-select this attending
+        const deptFilter = targetUnit.department_id
+          ? s => s.department_id === targetUnit.department_id
+          : () => true
+        unitCliniciansModal.allStaff = medicalStaff.value.filter(s =>
+          (staffTypeMap.value[s.staff_type]?.can_supervise ||
+           ['attending_physician','fellow'].includes(s.staff_type)) &&
+          s.employment_status === 'active' &&
+          deptFilter(s)
+        )
         unitCliniciansModal.show = true
       }
 
@@ -3212,19 +3451,29 @@ document.addEventListener('DOMContentLoaded', () => {
         unitResidentsModal.show = true
       }
 
-      const saveTrainingUnit = async (saving) => {
+      const saveTrainingUnit = async (saving, deptLookup) => {
+        const f = trainingUnitModal.form
+        if (!f.unit_name?.trim()) { showToast('Validation Error', 'Unit name is required', 'error'); return }
+        if (!f.unit_code?.trim()) { showToast('Validation Error', 'Unit code is required', 'error'); return }
+        if (!f.maximum_residents || f.maximum_residents < 1) { showToast('Validation Error', 'Maximum residents must be at least 1', 'error'); return }
         saving.value = true
         try {
-          const f = trainingUnitModal.form
           // Exact fields from backend Joi trainingUnit schema — nothing more, nothing less
+          // department_name is NOT NULL in schema — derive from departments list
+          const deptRecord = deptLookup?.value?.find(d => d.id === f.department_id) || null
           const data = {
-            unit_name: f.unit_name, unit_code: f.unit_code, department_id: f.department_id,
-            maximum_residents: f.maximum_residents || 5, unit_status: f.unit_status || 'active',
+            unit_name: f.unit_name.trim(),
+            unit_code: f.unit_code.trim().toUpperCase(),
+            department_id: f.department_id || null,
+            department_name: deptRecord?.name || f.department_name || 'Pulmonology',
+            maximum_residents: parseInt(f.maximum_residents) || 5,
+            unit_status: f.unit_status || 'active',
+            unit_type: f.unit_type || 'training_unit',
+            unit_description: f.unit_description || '',
+            specialty: f.specialty || '',
+            supervisor_id: f.supervising_attending_id || null,
+            supervising_attending_id: f.supervising_attending_id || null,
           }
-          if (f.supervising_attending_id) data.supervising_attending_id = f.supervising_attending_id
-          if (f.specialty)         data.specialty         = f.specialty
-          if (f.location_building) data.location_building = f.location_building
-          if (f.location_floor)    data.location_floor    = f.location_floor
           if (trainingUnitModal.mode === 'add') { trainingUnits.value.unshift(await API.createTrainingUnit(data)); showToast('Success', 'Training unit created', 'success') }
           else { const result = await API.updateTrainingUnit(f.id, data); const idx = trainingUnits.value.findIndex(u => u.id === result.id); if (idx !== -1) trainingUnits.value[idx] = result; showToast('Success', 'Training unit updated', 'success') }
           trainingUnitModal.show = false
@@ -3232,7 +3481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
         occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
     }
 
@@ -3242,7 +3491,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const communicationsFilters = reactive({ search: '', priority: '', audience: '' })
       const communicationsModal = reactive({
         show: false, activeTab: 'announcement', mode: 'add',
-        form: { id: null, title: '', content: '', priority: 'normal', target_audience: 'all_staff', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } }
+        form: { id: null, title: '', content: '', priority: 'normal', target_audience: 'all_staff', target_department_id: '', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } }
       })
 
       const filteredAnnouncements = computed(() => {
@@ -3382,7 +3631,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = await API.getMedicalStaff()
           activeMedicalStaff.value = data.filter(s => s.employment_status === 'active')
           if (currentUser.value) {
-            const found = activeMedicalStaff.value.find(s => s.professional_email === currentUser.value.email)
+            const found = currentUser.value?.email ? activeMedicalStaff.value.find(s => s.professional_email === currentUser.value.email) : null
             if (found) selectedAuthorId.value = found.id
           }
         } catch { activeMedicalStaff.value = [] }
@@ -3416,10 +3665,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ 6.11 useResearch ============
     function useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations }) {
-      const researchLines = ref([])
-      const clinicalTrials = ref([])
-      const innovationProjects = ref([])
-      const researchLineFilters = reactive({ search: '', active: '' })
+      const researchLines         = ref([])
+      const clinicalTrials        = ref([])
+      const innovationProjects    = ref([])
+                        const researchLineFilters = reactive({ search: '', active: '' })
       const trialFilters = reactive({ line: '', phase: '', status: '', search: '' })
       const projectFilters = reactive({ research_line_id: '', category: '', stage: '', funding_status: '', search: '' })
 
@@ -3493,7 +3742,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const showAddProjectModal = (line = null) => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
-      const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
+      const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, research_line_name: l.research_line_name || l.name || '', keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
       const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t, end_date: t.end_date || t.estimated_end_date || '', co_investigators: Array.isArray(t.co_investigators) ? [...t.co_investigators] : (t.co_investigator_id ? [t.co_investigator_id] : []), sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : []) }; clinicalTrialModal.show = true }
       const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '' }; innovationProjectModal.show = true }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.show = true }
@@ -3536,10 +3785,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (payload.end_date) payload.estimated_end_date = payload.end_date
           delete payload.co_investigator_id // legacy field
           delete payload.sub_investigator_id // legacy field
-          if (clinicalTrialModal.mode === 'add') { clinicalTrials.value.unshift(await API.createClinicalTrial(payload)); showToast('Success', 'Clinical trial created', 'success') }
-          else { const result = await API.updateClinicalTrial(payload.id, payload); const idx = clinicalTrials.value.findIndex(t => t.id === result.id); if (idx !== -1) clinicalTrials.value[idx] = result; showToast('Success', 'Clinical trial updated', 'success') }
+          if (clinicalTrialModal.mode === 'add') { clinicalTrials.value.unshift(await API.createClinicalTrial(payload)); showToast('Success', 'Clinical study created', 'success') }
+          else { const result = await API.updateClinicalTrial(payload.id, payload); const idx = clinicalTrials.value.findIndex(t => t.id === result.id); if (idx !== -1) clinicalTrials.value[idx] = result; showToast('Success', 'Clinical study updated', 'success') }
           clinicalTrialModal.show = false; await loadClinicalTrials(); loadAnalyticsSummary()
-        } catch (e) { showToast('Error', e?.message || 'Failed to save trial', 'error') }
+        } catch (e) { showToast('Error', e?.message || 'Failed to save study', 'error') }
         finally { saving.value = false }
       }
 
@@ -3594,7 +3843,7 @@ document.addEventListener('DOMContentLoaded', () => {
           onConfirm: async () => { await API.deleteResearchLine(line.id); await loadResearchLines(); showToast('Success', 'Research line deleted', 'success'); loadAnalyticsSummary() }
         })
       }
-      const deleteClinicalTrial = (trial) => showConfirmation({ title: 'Delete Trial', message: `Delete "${trial.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', details: `Protocol: ${trial.protocol_id}`, onConfirm: async () => { await API.deleteClinicalTrial(trial.id); await loadClinicalTrials(); showToast('Success', 'Trial deleted', 'success'); loadAnalyticsSummary() } })
+      const deleteClinicalTrial = (trial) => showConfirmation({ title: 'Delete Study', message: `Delete "${trial.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', details: `Protocol: ${trial.protocol_id}`, onConfirm: async () => { await API.deleteClinicalTrial(trial.id); await loadClinicalTrials(); showToast('Success', 'Study deleted', 'success'); loadAnalyticsSummary() } })
       const deleteInnovationProject = (project) => showConfirmation({ title: 'Delete Project', message: `Delete "${project.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', onConfirm: async () => { await API.deleteInnovationProject(project.id); await loadInnovationProjects(); showToast('Success', 'Project deleted', 'success'); loadAnalyticsSummary(); loadPartnerCollaborations() } })
 
       // ── Quick research profile built entirely from local refs (no API call) ──
@@ -3681,7 +3930,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const openLineDetail = (line) => {
         selectedResearchLine.value = line
-        researchDetailPanel.value = true
         activeMissionLine.value = line
       }
       const closeLineDetail = () => {
@@ -3800,7 +4048,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const newsPosts      = ref([])
       const newsLoading    = ref(false)
       const newsModal      = reactive({
-        show: false, mode: 'add',
+        show: false, mode: 'add', _tab: 'meta',
         form: {
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
           author_id: '', research_line_id: '', is_public: false,
@@ -4096,7 +4344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (endingThisWeek.length > 0) {
           const names = endingThisWeek.slice(0,2).map(r => {
             const s = medicalStaff.value.find(x => x.id === r.resident_id)
-            return s ? s.full_name.split(' ').slice(-1)[0] : 'Unknown'
+            return s ? s.full_name : 'Unknown'
           }).join(', ')
           const more = endingThisWeek.length > 2 ? ` +${endingThisWeek.length-2}` : ''
           items.push({ icon: 'fa-clock', type: 'warn', text: `${endingThisWeek.length} rotation${endingThisWeek.length>1?'s':''} ending this week — ${names}${more}`, action: 'resident_rotations', actionFilter: { rotationStatus: 'active' } })
@@ -4141,7 +4389,7 @@ document.addEventListener('DOMContentLoaded', () => {
           )
         })
         if (unassigned.length > 0) {
-          const names = unassigned.slice(0,2).map(s => s.full_name.split(' ').slice(-1)[0]).join(', ')
+          const names = unassigned.slice(0,2).map(s => s.full_name || '').join(', ')
           const more  = unassigned.length > 2 ? ` +${unassigned.length - 2}` : ''
           items.push({ icon: 'fa-user-clock', type: 'warn', text: `${unassigned.length} resident${unassigned.length>1?'s':''} unassigned next month — ${names}${more}`, action: 'resident_rotations', urgent: unassigned.length > 2 })
         }
@@ -4156,6 +4404,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (ocGaps.length > 0) {
           items.push({ icon: 'fa-phone-slash', type: 'danger', text: `${ocGaps.length} day${ocGaps.length>1?'s':''} without primary on-call — ${ocGaps.slice(0,2).join(', ')}${ocGaps.length>2?'…':''}`, action: 'oncall_schedule', urgent: true })
+        }
+
+        // Gap + slot match — pair residents finishing soon with units opening soon
+        const gapSlotMatches = []
+        const endingSoon = rotations.value.filter(r => {
+          if (r.rotation_status !== 'active') return false
+          const e = new Date(r.end_date + 'T00:00:00')
+          return e >= todayDate && e <= in30
+        })
+        endingSoon.forEach(rot => {
+          const resident = medicalStaff.value.find(s => s.id === rot.resident_id)
+          if (!resident) return
+          // Find units with free slots opening around the same time
+          trainingUnits.value.forEach(unit => {
+            const active = rotations.value.filter(r =>
+              r.training_unit_id === unit.id && r.rotation_status === 'active'
+            )
+            if (active.length < unit.maximum_residents) {
+              gapSlotMatches.push({
+                residentName: resident.full_name,
+                residentId: resident.id,
+                unitName: unit.unit_name,
+                unitId: unit.id,
+                endDate: rot.end_date
+              })
+            }
+          })
+        })
+        if (gapSlotMatches.length > 0) {
+          const m = gapSlotMatches[0]
+          items.push({
+            icon: 'fa-link', type: 'info',
+            text: `${m.residentName} finishing rotation — ${m.unitName} has a free slot`,
+            action: 'resident_rotations',
+            actionFilter: { resident: m.residentId }
+          })
         }
 
         return items.sort((a,b) => {
@@ -4203,11 +4487,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { fieldErrors, setErr, clearErr: clearFieldError, clearAll } = makeValidation(['rotation', 'staff', 'absence', 'oncall', 'research'])
 
-        const deptOps = useDepartments({ showToast, showConfirmation: () => {}, medicalStaff: ref([]), trainingUnits: ref([]), rotations: ref([]) })
-        const tuOps = useTrainingUnits({ showToast, showConfirmation: () => {}, rotations: ref([]) })
+        // ── Shared refs hoisted above all composables ──────────────────────
+        // Both useTrainingUnits and useRotations need each other's data.
+        // Hoisting the refs here breaks the circular dependency cleanly:
+        // both composables receive the same reactive container,
+        // so when either load function fills it all consumers see it immediately.
+        const trainingUnits = ref([])
+        const rotations     = ref([])
 
-        const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll })
-        const { medicalStaff, allStaffLookup, hospitalsList, clinicalUnits } = staffOps
+        const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser })
+        const { medicalStaff, allStaffLookup, hospitalsList } = staffOps
+
+        const { trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
+          filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName,
+          loadTrainingUnits, showAddTrainingUnitModal,
+          editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
+          assignAttendingToUnit,
+          viewUnitResidents, saveTrainingUnit,
+          trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
+          tlPopover, openCellPopover, closeCellPopover,
+          occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
+          getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
+        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup })
+
+        const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
         const { departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
@@ -4216,20 +4519,10 @@ document.addEventListener('DOMContentLoaded', () => {
           deptPanel, openDeptPanel, closeDeptPanel,
           deptPanelAttending, deptPanelResidents, deptPanelUnits,
           getUnitSupervisorName } = useDepartments({
-          showToast, showConfirmation, medicalStaff, trainingUnits: tuOps.trainingUnits, rotations: ref([])
+          showToast, showConfirmation, medicalStaff, trainingUnits, rotations
         })
 
-        const _absencesStub = ref([])
-        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences: _absencesStub })
-        const { onCallSchedule } = onCallOps
-
-        // useTrainingUnits needs a stub here so trainingUnits ref is available for rotationOps
-        const { trainingUnits: _tuStub } = useTrainingUnits({ showToast, showConfirmation: () => {}, rotations: ref([]) })
-
-        const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits: _tuStub, currentUser })
-        const { rotations } = rotationOps
-
-        // deptPanelRotations — defined here because rotations is now available
+        // deptPanelRotations — uses the shared rotations ref, needs deptPanelUnits
         const deptPanelRotations = computed(() => {
           if (!deptPanel.dept) return []
           const unitIds = new Set(deptPanelUnits.value.map(u => u.id))
@@ -4245,27 +4538,12 @@ document.addEventListener('DOMContentLoaded', () => {
           return diff > 0 ? diff : 0
         }
 
-        // Full useTrainingUnits with real rotations ref (now declared above)
-        const { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
-          filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getResidentShortName,
-          loadTrainingUnits, showAddTrainingUnitModal,
-          editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
-          viewUnitResidents, saveTrainingUnit,
-          trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
-          tlPopover, openCellPopover, closeCellPopover,
-          occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
-          getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
-        } = useTrainingUnits({
-          showToast, showConfirmation, rotations, allStaffLookup
-        })
-
-        // Sync real trainingUnits into the stub so rotationOps.getTrainingUnitName resolves correctly
-        watch(trainingUnits, (v) => { _tuStub.value = v }, { immediate: true })
-
-        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule })
+        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule: ref([]) })
         const { absences } = absenceOps
-        watch(absences, (v) => { _absencesStub.value = v }, { immediate: true })
+        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences })
+        const { onCallSchedule } = onCallOps
 
+        
         // ============ STAFF DEACTIVATION WORKFLOW ============
         // Professional reassignment flow: scan future records before deactivating
         const reassignmentModal = reactive({
@@ -4456,17 +4734,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const onCallView = ref('detailed')
 
         // ============ EXISTING COMPUTED PROPERTIES ============
-        const getStaffName = (id) => {
-          if (!id) return 'Not assigned'
-          const s = allStaffLookup.value.find(x => x.id === id) || medicalStaff.value.find(x => x.id === id)
-          return s?.full_name || 'Not assigned'
-        }
-        const getSupervisorName = (id) => getStaffName(id)
-        const getPhysicianName = (id) => getStaffName(id)
-        const getResidentName = (id) => getStaffName(id)
+        // Name lookups — canonical versions live in their composables and are
+        // exposed via ...staffOps / ...rotationOps spreads in the return below.
+        // These aliases unify access from templates that call them directly.
+        const getStaffName       = (id) => { if (!id) return 'Not assigned'; const s = allStaffLookup.value.find(x => x.id === id) || medicalStaff.value.find(x => x.id === id); return s?.full_name || 'Not assigned' }
+        const getSupervisorName  = (id) => getStaffName(id)
+        const getPhysicianName   = (id) => getStaffName(id)
+        const getResidentName    = (id) => getStaffName(id)
         const getTrainingUnitName = (id) => trainingUnits.value.find(u => u.id === id)?.unit_name || 'Not assigned'
         const calculateAbsenceDuration = (s, e) => Utils.dateDiff(s, e)
         const getDaysRemaining = (d) => Utils.daysUntil(d)
+
+        // isToday(dateStr) — true if the given YYYY-MM-DD string is today's date
+        const isToday = (dateStr) => {
+          if (!dateStr) return false
+          const today = new Date(); today.setHours(0,0,0,0)
+          const d = new Date(dateStr); d.setHours(0,0,0,0)
+          return d.getTime() === today.getTime()
+        }
 
         const getRotationProgress = (rotation) => {
           if (!rotation) return { pct: 0, label: '', urgent: false, done: false }
@@ -4542,15 +4827,24 @@ document.addEventListener('DOMContentLoaded', () => {
           finally { staffOps.staffProfileModal.loadingLeave = false }
         }
 
-        const formatStaffType = (t) => formatStaffTypeGlobal(t)
+        const formatStaffType = (t) => formatStaffTypeGlobal(t)  // single definition — composable copies removed
         const formatStaffTypeShortFn = (t) => formatStaffTypeShort(t)
         const getStaffTypeClass = (t) => getStaffTypeClassGlobal(t)
         const formatEmploymentStatus = (s) => ({ active: 'Active', on_leave: 'On Leave', inactive: 'Inactive' }[s] || s)
         const formatAbsenceReason = (r) => ABSENCE_REASON_LABELS[r] || r
         const formatRotationStatus = (s) => ROTATION_STATUS_LABELS[s] || s
         const getUserRoleDisplay = (r) => USER_ROLE_LABELS[r] || r
-        const formatAudience = (a) => ({ all_staff: 'All Staff', all: 'All (incl. admin)', residents_only: 'Residents Only', attending_only: 'Attendings Only', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attendings' }[a] || a || '—')
-        const formatTrialStatus = (s) => ({ 'Reclutando': 'Recruiting', 'Activo': 'Active', 'Completado': 'Completed', 'Suspendido': 'Suspended', 'Pendiente': 'Pending', 'Cerrado': 'Closed' }[s] || s)
+        const formatAudience = (a) => {
+          const base = { all_staff: 'All Staff', all: 'All (incl. admin)', residents_only: 'Residents Only', attending_only: 'Attendings Only', medical_staff: 'Medical Staff', residents: 'Residents', attendings: 'Attendings' }
+          if (base[a]) return base[a]
+          if (a?.startsWith('dept_')) {
+            const deptId = a.replace('dept_', '')
+            const dept = departments.value.find(d => d.id === deptId) || allDepartmentsLookup.value.find(d => d.id === deptId)
+            return dept ? `${dept.name} — All` : 'Department'
+          }
+          return a || '—'
+        }
+        const formatStudyStatus = (s) => ({ 'Reclutando': 'Recruiting', 'Activo': 'Active', 'Completado': 'Completed', 'Suspendido': 'Suspended', 'Pendiente': 'Pending', 'Cerrado': 'Closed' }[s] || s)
         const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'NeumoCare Dashboard'
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
         const getSearchPlaceholder = () => 'Search...'
@@ -4575,12 +4869,25 @@ document.addEventListener('DOMContentLoaded', () => {
             ? true  // any active known type is eligible for scheduling
             : ['attending_physician','fellow','nurse_practitioner','medical_resident'].includes(s.staff_type))
         ))
-        const availableResidents = computed(() => medicalStaff.value.filter(s =>
-          s.employment_status === 'active' && s.staff_type &&
-          (staffTypeMap.value[s.staff_type] != null
-            ? staffTypeMap.value[s.staff_type].is_resident_type
-            : s.staff_type === 'medical_resident')
-        ))
+        const availableResidents = computed(() => {
+          const residents = medicalStaff.value.filter(s =>
+            s.employment_status === 'active' && s.staff_type &&
+            (staffTypeMap.value[s.staff_type] != null
+              ? staffTypeMap.value[s.staff_type].is_resident_type
+              : s.staff_type === 'medical_resident')
+          )
+          // Sort: free residents first, currently rotating last
+          const activeRotatingIds = new Set(
+            rotations.value
+              .filter(r => r.rotation_status === 'active')
+              .map(r => r.resident_id)
+          )
+          return residents.sort((a, b) => {
+            const aRot = activeRotatingIds.has(a.id) ? 1 : 0
+            const bRot = activeRotatingIds.has(b.id) ? 1 : 0
+            return aRot - bRot
+          })
+        })
         const availableAttendings = computed(() => medicalStaff.value.filter(s =>
           s.employment_status === 'active' && s.staff_type &&
           (staffTypeMap.value[s.staff_type] != null
@@ -4591,13 +4898,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const availableReplacementStaff = computed(() => medicalStaff.value.filter(s => s.employment_status === 'active'))
 
         const showUserProfileModal = () => {
-          userProfileModal.form = { full_name: currentUser.value?.full_name || '', email: currentUser.value?.email || '', department_id: currentUser.value?.department_id || '' }
+          // Find linked staff record by email match
+          const linkedStaff = (currentUser.value?.email || currentUser.value?.full_name)
+            ? medicalStaff.value.find(s =>
+                s.professional_email === currentUser.value?.email ||
+                s.full_name === currentUser.value?.full_name)
+            : null
+          userProfileModal.form = {
+            full_name: currentUser.value?.full_name || '',
+            email: currentUser.value?.email || '',
+            department_id: currentUser.value?.department_id || '',
+            linked_staff_id: linkedStaff?.id || null
+          }
           userProfileModal.show = true; userMenuOpen.value = false
         }
 
         const saveUserProfile = async () => {
           saving.value = true
-          try { currentUser.value.full_name = userProfileModal.form.full_name; currentUser.value.department_id = userProfileModal.form.department_id; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value)); userProfileModal.show = false; showToast('Success', 'Profile updated', 'success') }
+          try {
+            // Update display name in app_users
+            currentUser.value.full_name = userProfileModal.form.full_name
+            currentUser.value.department_id = userProfileModal.form.department_id
+            localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value))
+            // If this user has a linked staff record, open it for full profile editing
+            if (userProfileModal.form.linked_staff_id) {
+              const staffRecord = medicalStaff.value.find(s => s.id === userProfileModal.form.linked_staff_id)
+              if (staffRecord) {
+                userProfileModal.show = false
+                viewStaffDetails(staffRecord)
+                showToast('Profile', 'Edit your full clinical profile below', 'info')
+                return
+              }
+            }
+            userProfileModal.show = false; showToast('Success', 'Profile updated', 'success')
+          }
           catch (e) { showToast('Error', e?.message || 'An unexpected error occurred', 'error') }
           finally { saving.value = false }
         }
@@ -4632,7 +4966,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (filters.department) {
             if (staffFilters && staffFilters.department !== undefined) staffFilters.department = filters.department
             if (trainingUnitFilters && trainingUnitFilters.department !== undefined) trainingUnitFilters.department = filters.department
-            if (rotationFilters && rotationFilters.trainingUnit === undefined && view === 'department_management') {} // no-op
           }
           if (filters.residentCategory && staffFilters) { staffFilters.staffType = 'medical_resident'; staffFilters.residentCategory = filters.residentCategory }
           if (filters.rotationStatus && rotationFilters) rotationFilters.status = filters.rotationStatus
@@ -4642,28 +4975,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Trigger entrance animation on content area
           const ca = document.querySelector('.content-area')
           if (ca) { ca.classList.remove('content-view-enter'); void ca.offsetWidth; ca.classList.add('content-view-enter') }
-          if (view === 'analytics_dashboard' && hasPermission('analytics', 'read')) {
-            analyticsOps.analyticsActiveTab.value = 'dashboard'
-            analyticsOps.researchHubTab.value = 'analytics'
-            currentView.value = 'research_hub'
-            await Promise.all([
-              analyticsOps.loadResearchDashboard(researchOps.researchLines, researchOps.clinicalTrials, researchOps.innovationProjects),
-              analyticsOps.loadTrialsTimeline()
-            ])
-            return
-          } else if (view === 'analytics_performance' && hasPermission('analytics', 'read')) {
-            analyticsOps.analyticsActiveTab.value = 'performance'
-            analyticsOps.researchHubTab.value = 'analytics'
-            currentView.value = 'research_hub'
-            await analyticsOps.loadResearchLinesPerformance()
-            return
-          } else if (view === 'analytics_partners' && hasPermission('analytics', 'read')) {
-            analyticsOps.analyticsActiveTab.value = 'partners'
-            analyticsOps.researchHubTab.value = 'analytics'
-            currentView.value = 'research_hub'
-            await analyticsOps.loadPartnerCollaborations()
-            return
-          } else if (view === 'research_hub') {
+          if (view === 'research_hub') {
             // Direct navigation — default to lines tab
             if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
@@ -4824,18 +5136,59 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e) { showToast('Error', 'Failed to update staff type', 'error') }
         }
 
+        const warmBackend = async () => {
+          // Fire a lightweight ping to wake Railway from sleep before the real requests hit.
+          // /health requires no auth and returns immediately once the container is warm.
+          // We don't await the result — just send and move on. By the time the main
+          // requests arrive the container will already be processing.
+          try { fetch(`${CONFIG.API_BASE_URL}/health`).catch(() => {}) } catch {}
+        }
+
         const loadAllData = async () => {
           loading.value = true
           try {
-            // Load staff types FIRST — all dropdowns depend on them
-            await loadStaffTypes()
-            await loadAcademicDegrees()
-            await Promise.all([staffOps.loadMedicalStaff(), loadDepartments(), loadTrainingUnits()])
-            await Promise.all([rotationOps.loadRotations(), onCallOps.loadOnCallSchedule(), absenceOps.loadAbsences()])
+            // Wake Railway immediately — runs in background while we set up
+            warmBackend()
+
+            // loadAcademicDegrees is synchronous (uses fallback data) — free.
+            // loadStaffTypes needs ONE network call — run it in parallel with the
+            // first main batch. staffTypeMap will be populated by the time any
+            // staff dropdown renders because Vue defers rendering until microtasks settle.
+            await Promise.all([
+              loadStaffTypes(),
+              loadAcademicDegrees(),
+              staffOps.loadMedicalStaff(),
+              loadDepartments(),
+              loadTrainingUnits()
+            ])
+
+            // Second batch: depends on staff + units being loaded
+            await Promise.all([
+              rotationOps.loadRotations(),
+              onCallOps.loadOnCallSchedule(),
+              absenceOps.loadAbsences()
+            ])
+
             updateDashboardStats()
-            Promise.all([onCallOps.loadTodaysOnCall(), commsOps.loadAnnouncements(), liveOps.loadClinicalStatus(), liveOps.loadActiveMedicalStaff(), researchOps.loadResearchLines(), loadSystemStats(), loadNews()]).then(() => updateDashboardStats())
-            Promise.all([researchOps.loadClinicalTrials(), researchOps.loadInnovationProjects(), analyticsOps.loadAnalyticsSummary()])
-            showToast('Success', 'System data loaded', 'success')
+
+            // Third batch: non-critical, fire and forget
+            Promise.all([
+              onCallOps.loadTodaysOnCall(),
+              commsOps.loadAnnouncements(),
+              liveOps.loadClinicalStatus(),
+              liveOps.loadActiveMedicalStaff(),
+              researchOps.loadResearchLines(),
+              loadSystemStats(),
+              loadNews()
+            ]).then(() => updateDashboardStats())
+
+            // Low priority — research analytics
+            Promise.all([
+              researchOps.loadClinicalTrials(),
+              researchOps.loadInnovationProjects(),
+              analyticsOps.loadAnalyticsSummary()
+            ])
+
           } catch { showToast('Error', 'Failed to load some data', 'error') }
           finally { loading.value = false }
         }
@@ -4846,9 +5199,44 @@ document.addEventListener('DOMContentLoaded', () => {
           const token = localStorage.getItem(CONFIG.TOKEN_KEY)
           const user = localStorage.getItem(CONFIG.USER_KEY)
           if (token && user) {
-            try { currentUser.value = JSON.parse(user); loadAllData(); currentView.value = 'dashboard' }
+            try {
+              // Validate token with backend before showing the app.
+              // This blocks access from shared/QR sessions with expired tokens.
+              const parsed = JSON.parse(user)
+              currentUser.value = parsed  // optimistic — show splash while validating
+              currentView.value = 'dashboard'
+              // Validate in background — if invalid, session-expired event fires
+              API.request('/api/auth/me').then(data => {
+                if (data && data.id) {
+                  currentUser.value = { ...parsed, ...data }
+                  loadAllData()
+                } else {
+                  window.dispatchEvent(new CustomEvent('neumax:session-expired'))
+                }
+              }).catch(() => {
+                window.dispatchEvent(new CustomEvent('neumax:session-expired'))
+              })
+            }
             catch { currentView.value = 'login' }
           } else { currentView.value = 'login' }
+
+          // Session expiry — redirect to login cleanly from anywhere in the app
+          window.addEventListener('neumax:session-expired', () => {
+            currentUser.value = null
+            currentView.value = 'login'
+            // Close all open panels/modals
+            try {
+              const modals = [staffOps.medicalStaffModal, staffOps.staffProfileModal,
+                departmentModal, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
+                rotationOps.rotationModal, rotationOps.rotationViewModal,
+                onCallOps.onCallModal, absenceOps.absenceModal, commsOps.communicationsModal]
+              modals.forEach(m => { if (m && 'show' in m) m.show = false })
+              if (deptPanel) deptPanel.show = false
+            } catch {}
+            // Set friendly message on login page
+            loginError.value = 'Your session has expired. Please log in again.'
+            showToast('Session Expired', 'Your session has expired. Please log in again.', 'warning', 6000)
+          })
 
           const statusInterval = setInterval(() => { if (currentUser.value && !liveOps.isLoadingStatus.value) liveOps.loadClinicalStatus() }, 60000)
           const timeInterval = setInterval(() => { dashOps.currentTime.value = new Date() }, 60000)
@@ -4867,21 +5255,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return {
           // Existing returns
-          loading, saving, currentUser, loginForm, loginLoading,
+          loading, saving, currentUser, loginForm, loginLoading, hasPermission,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
-          ...staffOps,
+          ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
           deleteMedicalStaff,          // override useStaff's deactivateStaffMember with full workflow
           reassignmentModal, confirmReassignAndDeactivate,
           ...onCallOps,
           ...rotationOps,
           ...absenceOps,
-          formatTrainingYear: Utils.formatTrainingYear, formatSpecialization: Utils.formatSpecialization, effectiveResidentYear: Utils.effectiveResidentYear,
+          formatTrainingYear: Utils.formatTrainingYear, formatStudyStatus, formatSpecialization: Utils.formatSpecialization, effectiveResidentYear: Utils.effectiveResidentYear,
           formatPhone: Utils.formatPhone, formatLicense: Utils.formatLicense,
           getResidentCategoryInfo: Utils.getResidentCategoryInfo, formatResidentCategorySimple: Utils.formatResidentCategorySimple,
           formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed, getResidentCategoryIcon: Utils.getResidentCategoryIcon,
           getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
-          getDaysRemainingColor: Utils.getDaysRemainingColor,
+          getDaysRemainingColor: Utils.getDaysRemainingColor, isToday,
           departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
@@ -4890,11 +5278,11 @@ document.addEventListener('DOMContentLoaded', () => {
           deptPanelAttending, deptPanelResidents, deptPanelUnits, deptPanelRotations,
           getUnitSupervisorName, rotDaysLeft,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
-          getUnitActiveRotationCount, getUnitRotations, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
+          getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
         trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
-          editTrainingUnit, deleteTrainingUnit, saveTrainingUnit,
+          editTrainingUnit, deleteTrainingUnit, saveTrainingUnit, assignAttendingToUnit,
           openUnitClinicians: (unit) => openUnitClinicians(unit, medicalStaff.value),
           saveUnitClinicians,
           viewUnitResidents: (unit) => viewUnitResidents(unit, rotations.value),
@@ -4920,9 +5308,9 @@ document.addEventListener('DOMContentLoaded', () => {
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
           newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName,
           drillToTrials, drillToProjects,
-          activeMissionLine: researchOps.activeMissionLine,
           portfolioKPIs:     researchOps.portfolioKPIs,
           getLineAccent:     getLineAccentGlobal,
+
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           searchResultsOpen: ui.searchResultsOpen,
@@ -4939,6 +5327,7 @@ document.addEventListener('DOMContentLoaded', () => {
             goToPage(view, page, arrMap[view] || [])
           },
           staffTotalPages: staffOps.staffTotalPages,
+          compactStaffWithDividers: staffOps.compactStaffWithDividers,
           rotationTotalPages: rotationOps.rotationTotalPages,
           oncallTotalPages: onCallOps.oncallTotalPages,
           absenceTotalPages: absenceOps.absenceTotalPages,
@@ -4955,7 +5344,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
           getCurrentRotationSupervisor, hasProfessionalCredentials,
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
-          formatRotationStatus, getUserRoleDisplay, formatAudience, formatTrialStatus,
+          formatRotationStatus, getUserRoleDisplay, formatAudience, formatStudyStatus,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
           showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword,
           normalizeDate: (d) => Utils.normalizeDate(d),
@@ -5000,9 +5389,10 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           saveMedicalStaff: () => staffOps.saveMedicalStaff(saving),
           saveDepartment: () => saveDepartment(saving),
-          saveTrainingUnit: () => saveTrainingUnit(saving),
+          saveTrainingUnit: () => saveTrainingUnit(saving, allDepartmentsLookup),
           saveRotation: () => rotationOps.saveRotation(saving),
           saveOnCallSchedule: () => onCallOps.saveOnCallSchedule(saving),
+          saveOnCall: () => onCallOps.saveOnCallSchedule(saving),
           saveAbsence: () => absenceOps.saveAbsence(saving),
           saveUserProfile, hasPermission,
           dismissAlert: ui.dismissAlert, activeAlertsCount: ui.activeAlertsCount,
