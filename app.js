@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue    
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
 
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
@@ -175,8 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
       innovation_projects: 'Research Hub', 
       analytics_dashboard: 'Research Hub',
       analytics_performance: 'Research Hub', 
-      analytics_partners: 'Research Hub',
-      news: 'News & Posts'
+      analytics_partners: 'Research Hub'
     }
     
     const VIEW_SUBTITLES = {
@@ -193,8 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
       innovation_projects: 'Research lines, studies, projects and analytics',
       analytics_dashboard: 'Research lines, studies, projects and analytics',
       analytics_performance: 'Research lines, studies, projects and analytics',
-      analytics_partners: 'Research lines, studies, projects and analytics',
-      news: 'Departmental updates, articles and publications'
+      analytics_partners: 'Research lines, studies, projects and analytics'
     }
 
     // ============ 3. ENHANCED UTILS CLASS ============
@@ -4711,17 +4709,17 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return chunks
         })
-        const newsDrawerAuthorFull = computed(() => {
-          const id = newsDrawer.post?.author_id
-          if (!id) return ''
-          const s = (medicalStaff.value || []).find(m => m.id === id)
-          return s?.full_name || ''
-        })
         const newsDrawerInitials = computed(() => {
           const name = newsDrawerAuthorFull.value || ''
           const parts = name.trim().split(/\s+/).filter(w => w.replace('.','').length > 1)
           if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
           return name[0]?.toUpperCase() || '?'
+        })
+        const newsDrawerAuthorFull = computed(() => {
+          const id = newsDrawer.post?.author_id
+          if (!id) return ''
+          const s = (medicalStaff.value || []).find(m => m.id === id)
+          return s?.full_name || ''
         })
         const newsDrawerReadMins = computed(() => {
           const wc = newsDrawer.post?.word_count
@@ -4994,6 +4992,16 @@ document.addEventListener('DOMContentLoaded', () => {
           // Trigger entrance animation on content area
           const ca = document.querySelector('.content-area')
           if (ca) { ca.classList.remove('content-view-enter'); void ca.offsetWidth; ca.classList.add('content-view-enter') }
+          if (view === 'news') {
+            currentView.value = 'news'
+            if (!newsPosts.value.length && !newsLoading.value) loadNews()
+            return
+          }
+          if (view === 'system_settings') {
+            currentView.value = 'system_settings'
+            if (!staffTypesList.value.length) loadStaffTypes(true)
+            return
+          }
           if (view === 'research_hub') {
             // Direct navigation — default to lines tab
             if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
@@ -5024,13 +5032,6 @@ document.addEventListener('DOMContentLoaded', () => {
             currentView.value = 'research_hub'
             if (!researchOps.innovationProjects.value.length && !researchOps.researchLoading.value) {
               researchOps.loadAllResearch()
-            }
-            return
-          } else if (view === 'news') {
-            currentView.value = 'news'
-            // Always refresh news when navigating to the module
-            if (!newsLoading.value) {
-              loadNews()
             }
             return
           }
