@@ -622,9 +622,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // ============ 4.1 MEDICAL STAFF ENDPOINTS ============
       
       async getMedicalStaff() { 
+        // B9 FIX: Removed redundant .filter(employment_status !== 'inactive') —
+        // the backend already excludes inactive staff by default (neq query).
+        // Keeping it here would silently drop inactive staff even when fetched intentionally.
         const data = await this.getList('/api/medical-staff');
         return data
-          .filter(staff => staff.employment_status !== 'inactive')
           .map(staff => ({
           ...staff,
           resident_category: staff.resident_category || null,
@@ -703,8 +705,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Staff Types (dynamic) ─────────────────────────────────────────────
       async getStaffTypes(includeInactive = false) {
+        // B3 FIX: GET /api/staff-types returns { success: true, data: [] } not a raw array.
+        // Using getList() risks hitting ensureArray's Object.values() fallback which would
+        // return [true, [...]] — corrupting the staffTypeMap used for badges app-wide.
         const url = '/api/staff-types' + (includeInactive ? '?include_inactive=true' : '')
-        return this.getList(url)
+        try {
+          const r = await this.request(url)
+          return (r?.success && Array.isArray(r.data)) ? r.data : Utils.ensureArray(r)
+        } catch { return [] }
       }
       async createStaffType(data) { this.invalidate('/api/staff-types'); return this.request('/api/staff-types', { method: 'POST', body: data }) }
       async updateStaffType(id, data) { this.invalidate('/api/staff-types'); return this.request(`/api/staff-types/${id}`, { method: 'PUT', body: data }) }
@@ -1006,7 +1014,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const loginLoading = ref(false)
 
       const hasPermission = (module, action = 'read') => {
-        const role = currentUser.value?.user_role
+        // B13 FIX: Backend DB returns 'user_role'; JWT payload uses 'role'.
+        // After auth/me merge both should be present, but defensively check both
+        // so a race condition or unexpected response shape never silently breaks permissions.
+        const role = currentUser.value?.user_role || currentUser.value?.role
         if (!role) return false
         if (role === ROLES.ADMIN) return true
         return PERMISSION_MATRIX[role]?.[module]?.includes(action) ?? false
