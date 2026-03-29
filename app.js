@@ -4139,10 +4139,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadNews = async () => {
         newsLoading.value = true
         try {
-          const data = await API.getList('/api/news')
-          newsPosts.value = data || []
+          // CRITICAL FIX: GET /api/news returns { data: [...] } not a raw array.
+          // Must unwrap .data — if we use getList/ensureArray the Object.values()
+          // fallback would flatten the nested author/research_line join objects.
+          const res = await API.request('/api/news')
+          newsPosts.value = res?.data || Utils.ensureArray(res) || []
         } catch { newsPosts.value = [] }
-        finally { newsLoading.value = false; newsLoaded.value = true } // FIX Bug4: mark as loaded regardless of result
+        finally { newsLoading.value = false; newsLoaded.value = true }
       }
 
       const showAddNewsModal = () => {
