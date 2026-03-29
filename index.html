@@ -239,13 +239,10 @@
          ═══════════════════════════════════════════════════════ */
 
       /* ── content-area: full-height for hub/news views ── */
-      .content-area:has(.research-hub),
-      .content-area:has(.news-view) { padding:0; display:flex; flex-direction:column; overflow:hidden; }
       .content-area:has(.research-hub) > nav.breadcrumb,
       .content-area:has(.news-view) > nav.breadcrumb { padding:10px 20px 0; margin-bottom:8px; }
 
       /* ── research-hub: full height, columns visible ── */
-      .research-hub { display:flex !important; flex-direction:column !important; gap:0 !important; flex:1 !important; min-height:0 !important; overflow:hidden !important; }
       .rhub-panel--mc { padding:0 !important; display:flex !important; flex-direction:column !important; gap:0 !important; flex:1 !important; min-height:0 !important; overflow:hidden !important; }
       .rp-mc { display:grid !important; grid-template-columns:260px 1fr !important; flex:1 !important; min-height:0 !important; height:100% !important; border-top:none !important; overflow:hidden !important; }
       .rp-nav { border-right:.5px solid rgba(255,255,255,.08); overflow-y:auto !important; background:#0f2d54; display:flex !important; flex-direction:column !important; padding:10px 8px; gap:2px; min-height:0 !important; }
@@ -279,7 +276,7 @@
       .mb-6 { margin-bottom:24px; }
 
       /* ── news-view layout ── */
-      .news-view { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; overflow:hidden; height:100%; }
+      .news-view { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; overflow:hidden; height:100% !important; }
       .news-list { display:flex; flex-direction:column; gap:8px; padding:12px 20px 24px; overflow-y:auto; flex:1; min-height:0; }
       .news-filter-bar { display:flex; align-items:center; gap:8px; padding:10px 20px 10px; border-bottom:1px solid var(--border,#e3dfd6); flex-wrap:wrap; flex-shrink:0; }
       .news-empty { display:flex; flex-direction:column; align-items:center; gap:12px; padding:60px 20px; text-align:center; color:var(--text-3,#909399); font-size:13px; }
@@ -365,6 +362,23 @@
       .rhub-filter-bar { display:flex; align-items:center; gap:8px; padding:10px 0 12px; flex-wrap:wrap; }
       .rhub-empty { display:flex; align-items:center; gap:8px; padding:20px; color:var(--text-3,#909399); font-size:12px; justify-content:center; }
       .rhub-trials-list { display:flex; flex-direction:column; gap:0; }
+
+
+      /* ════════════════════════════════════════════════════════════════════
+         LAYOUT CHAIN FIX — ensures html→body→app-layout→content-area
+         form a proper full-height flex chain so that views with
+         height:100% (research-hub, news-view) resolve correctly.
+         Without this, flex children with height:100% resolve to 0
+         and content appears collapsed or off-screen.
+         ════════════════════════════════════════════════════════════════════ */
+      html { height:100%; }
+      body { height:100%; min-height:100vh; }
+      .app-layout { display:flex !important; height:100vh !important; max-height:100vh !important; overflow:hidden !important; }
+      .sidebar { flex-shrink:0 !important; height:100vh !important; overflow-y:auto !important; }
+      .content-area { flex:1 !important; min-width:0 !important; height:100vh !important; max-height:100vh !important; overflow-y:auto !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; }
+      /* Views that need full-height flex layout (not standard scroll) */
+      .content-area:has(.research-hub) { overflow:hidden !important; padding:0 !important; }
+      .content-area:has(.news-view)    { overflow:hidden !important; padding:0 !important; }
 
     </style>
 </head>
@@ -930,7 +944,7 @@
             </header>
 
             <!-- Content Area -->
-            <div class="content-area" style="display:flex;flex-direction:column;overflow-y:auto;flex:1;min-height:0;">
+            <div class="content-area" style="display:flex;flex-direction:column;flex:1;min-height:0;">
 
                 <!-- System Alert Banner -->
                 <div v-if="systemAlerts.length > 0" style="margin-bottom:24px;">
@@ -2455,7 +2469,7 @@
                 </div>
 
                 <!-- ============ RESEARCH HUB (unified) ============ -->
-                <div v-if="currentView === 'research_hub'" class="research-hub" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+                <div v-if="currentView === 'research_hub'" class="research-hub" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;height:100%;">
 
                     <!-- Tab bar + contextual action button — no redundant title needed -->
                     <div class="rhub-tabs">
@@ -3165,7 +3179,7 @@
                 <!-- ============================================================
                      NEWS & POSTS VIEW
                 ============================================================ -->
-                <div v-if="currentView === 'news'" class="news-view" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+                <div v-if="currentView === 'news'" class="news-view" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;height:100%;">
 
                     <!-- Tab bar + action -->
                     <div class="rhub-tabs">
@@ -3210,7 +3224,7 @@
                     </div>
 
                     <!-- Posts list — v-show keeps DOM stable during background refresh -->
-                    <div class="news-list" v-show="!newsLoading">
+                    <div class="news-list" v-show="!newsLoading" style="flex:1;overflow-y:auto;min-height:0;">
                         <div v-if="filteredNews.length === 0" class="news-empty">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
                             <p>No posts yet. Create your first post to get started.</p>
