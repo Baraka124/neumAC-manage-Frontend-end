@@ -368,7 +368,8 @@ const app = createApp({
                     <button class="db-cc-link" @click="switchView('resident_rotations')">View all <i class="fas fa-arrow-right"></i></button>
                   </div>
                   <div class="db-rot-list">
-                    <div v-for="rot in rotationStore.activeRotations.slice(0, 4)" :key="rot.id" class="db-rot-row" @click="viewRotationDetails(rot)">
+                    // CORRECT - use computed property directly
+                    <div v-for="rot in (rotationStore.activeRotations || []).slice(0, 4)" :key="rot.id" class="db-rot-row" @click="viewRotationDetails(rot)">
                       <div class="db-rot-avatar" :class="{ 'db-rot-avatar--start': getRotationProgress(rot).daysLeft <= 7 }">{{ getInitials(getResidentName(rot.resident_id)) }}</div>
                       <div class="db-rot-info">
                         <div class="db-rot-name">{{ getResidentShortName(rot.resident_id) }}</div>
@@ -2119,41 +2120,39 @@ const app = createApp({
     }
     
     // ── Load all data ───────────────────────────────────────────────────────
-    const loadAllData = async () => {
-      loading.value = true
-      try {
-        await Promise.all([
-          staffStore.loadStaff(),
-          staffStore.loadAcademicDegrees(),
-          rotationStore.loadRotations(),
-          trainingStore.loadTrainingUnits(),
-          onCallStore.loadOnCallSchedule(),
-          absenceStore.loadAbsences(),
-          researchStore.loadResearchLines(),
-          researchStore.loadClinicalTrials(),
-          researchStore.loadInnovationProjects(),
-          newsStore.loadNews(),
-          API.getDepartments().then(data => { departments.value = data })
-        ])
-        await onCallStore.loadTodaysOnCall()
-        await Promise.all([
-          API.getAnnouncements().then(data => { announcements.value = data }),
-          loadClinicalStatus(),
-          loadClinicalStatusHistory(),
-          API.getSystemStats().then(data => { Object.assign(systemStats, data) }),
-          API.getAnalyticsSummary().then(data => { analyticsSummary.value = data }),
-          API.getResearchDashboard().then(data => { researchDashboard.value = data }),
-          researchStore.loadResearchLinesPerformance().then(() => { researchLinesPerformance.value = researchStore.researchLinesPerformance }),
-          researchStore.loadPartnerCollaborations().then(() => { partnerCollaborations.value = researchStore.partnerCollaborations }),
-          API.getClinicalTrialsTimeline().then(data => { trialsTimeline.value = data })
-        ])
-        updateDashboardStats()
-      } catch {
-        uiStore.showToast('Error', 'Failed to load some data', 'error')
-      } finally {
-        loading.value = false
-      }
-    }
+const loadAllData = async () => {
+  loading.value = true
+  try {
+    // Load each one individually with error handling
+    try { await staffStore.loadStaff() } catch(e) { console.warn('Staff load failed', e) }
+    try { await staffStore.loadAcademicDegrees() } catch(e) { console.warn('Degrees load failed', e) }
+    try { await rotationStore.loadRotations() } catch(e) { console.warn('Rotations load failed', e) }
+    try { await trainingStore.loadTrainingUnits() } catch(e) { console.warn('Training units load failed', e) }
+    try { await onCallStore.loadOnCallSchedule() } catch(e) { console.warn('On-call load failed', e) }
+    try { await absenceStore.loadAbsences() } catch(e) { console.warn('Absences load failed', e) }
+    try { await researchStore.loadResearchLines() } catch(e) { console.warn('Research lines load failed', e) }
+    try { await researchStore.loadClinicalTrials() } catch(e) { console.warn('Trials load failed', e) }
+    try { await researchStore.loadInnovationProjects() } catch(e) { console.warn('Projects load failed', e) }
+    try { await newsStore.loadNews() } catch(e) { console.warn('News load failed', e) }
+    
+    try { const depts = await API.getDepartments(); departments.value = depts } catch(e) { console.warn('Departments load failed', e) }
+    await onCallStore.loadTodaysOnCall()
+    
+    try { announcements.value = await API.getAnnouncements() } catch(e) { console.warn('Announcements load failed', e) }
+    try { await loadClinicalStatus() } catch(e) { console.warn('Clinical status load failed', e) }
+    try { await loadClinicalStatusHistory() } catch(e) { console.warn('Status history load failed', e) }
+    try { Object.assign(systemStats, await API.getSystemStats()) } catch(e) { console.warn('System stats load failed', e) }
+    try { analyticsSummary.value = await API.getAnalyticsSummary() } catch(e) { console.warn('Analytics load failed', e) }
+    try { researchDashboard.value = await API.getResearchDashboard() } catch(e) { console.warn('Research dashboard load failed', e) }
+    
+    updateDashboardStats()
+  } catch (e) {
+    console.error('Error loading data:', e)
+    uiStore.showToast('Warning', 'Some data failed to load, but the app is still usable', 'warning')
+  } finally {
+    loading.value = false
+  }
+}
     
     // ── Computed filtered lists ─────────────────────────────────────────────
     const filteredMedicalStaff = computed(() => {
