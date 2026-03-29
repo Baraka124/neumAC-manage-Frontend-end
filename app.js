@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const staffTypesList = ref([])
     const staffTypeMap   = ref({})
     const academicDegrees = ref([])   // loaded from /api/academic-degrees
+    const rotationServices = ref([])  // loaded from /api/rotation-services (departments with service_type='rotation_service')
 
     // Fallbacks for display while loading or for unknown keys
     const STAFF_TYPE_LABELS_FALLBACK = {
@@ -128,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Global helpers used throughout the app
     const formatStaffTypeGlobal   = (key) => staffTypeMap.value[key]?.display_name || STAFF_TYPE_LABELS_FALLBACK[key] || key
+    const getRotationServiceName  = (id) => rotationServices.value.find(s => s.id === id)?.name || null
     // Short labels for table badges — keeps columns from overflowing
     const SHORT_LABELS = {
       attending_physician: 'Attending', medical_resident: 'Resident',
@@ -738,6 +740,15 @@ document.addEventListener('DOMContentLoaded', () => {
       // ============ 4.4 EXISTING ENDPOINTS ============
 
       // ── Staff Types (dynamic) ─────────────────────────────────────────────
+      // ── Rotation Services ────────────────────────────────────────────
+      async getRotationServices(includeHome = false) {
+        const url = '/api/rotation-services' + (includeHome ? '?include_home=true' : '')
+        try { const r = await this.request(url); return (r?.success && Array.isArray(r.data)) ? r.data : [] } catch { return [] }
+      }
+      async createRotationService(d) { this.invalidate('/api/rotation-services'); const r = await this.request('/api/rotation-services', { method: 'POST', body: d }); return r?.data || r }
+      async updateRotationService(id, d) { this.invalidate('/api/rotation-services'); const r = await this.request(`/api/rotation-services/${id}`, { method: 'PUT', body: d }); return r?.data || r }
+      async deleteRotationService(id) { this.invalidate('/api/rotation-services'); return this.request(`/api/rotation-services/${id}`, { method: 'DELETE' }) }
+
       async getStaffTypes(includeInactive = false) {
         // B3 FIX: GET /api/staff-types returns { success: true, data: [] } not a raw array.
         // Using getList() risks hitting ensureArray's Object.values() fallback which would
@@ -2275,24 +2286,31 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { saving.value = false }
       }
 
-      const deleteRotation = (rotation) => showConfirmation({
-        title: 'Terminate Rotation', message: 'This will mark the rotation as terminated early. The record is kept for audit and reporting purposes.',
-        icon: 'fa-stop-circle', confirmButtonText: 'Terminate', confirmButtonClass: 'btn-danger',
-        details: `Resident: ${getResidentName(rotation.resident_id)}`,
-        onConfirm: async () => {
-          try {
-            await API.deleteRotation(rotation.id)
-            // Update local state immediately — backend sets rotation_status to 'terminated_early'
-            const idx = rotations.value.findIndex(r => r.id === rotation.id)
-            if (idx !== -1) rotations.value[idx] = { ...rotations.value[idx], rotation_status: 'terminated_early' }
-            showToast('Success', 'Rotation terminated', 'success')
-            await loadRotations()
-          } catch (e) {
-            showToast('Error', e?.message || 'Failed to terminate rotation', 'error')
-            await loadRotations()
+      const deleteRotation = (rotation) => {
+        const isActive = ['active', 'scheduled'].includes(rotation.rotation_status)
+        showConfirmation({
+          title: isActive ? 'Terminate Rotation' : 'Remove Rotation Record',
+          message: isActive
+            ? 'This will terminate the rotation early and mark it as ended. The record is kept for audit purposes.'
+            : `This rotation is already ${rotation.rotation_status}. Permanently remove it from the list?`,
+          icon: isActive ? 'fa-stop-circle' : 'fa-trash',
+          confirmButtonText: isActive ? 'Terminate' : 'Remove',
+          confirmButtonClass: 'btn-danger',
+          details: `${formatDrName(getResidentName(rotation.resident_id))} · ${getTrainingUnitName(rotation.training_unit_id)}`,
+          onConfirm: async () => {
+            try {
+              await API.deleteRotation(rotation.id)
+              const idx = rotations.value.findIndex(r => r.id === rotation.id)
+              if (idx !== -1) rotations.value[idx] = { ...rotations.value[idx], rotation_status: 'terminated_early' }
+              showToast('Success', isActive ? 'Rotation terminated' : 'Rotation removed', 'success')
+              await loadRotations()
+            } catch (e) {
+              showToast('Error', e?.message || 'Failed to terminate rotation', 'error')
+              await loadRotations()
+            }
           }
-        }
-      })
+        })
+      }
 
       // ============ [NEW] Compact view computed properties for Rotations ============
       const residentsWithRotations = computed(() => {
@@ -3096,12 +3114,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup }) {
       // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
-      const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', unit_type: 'training_unit', unit_description: '', specialty: '', supervising_attending_id: '' } })
+      const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 2, unit_status: 'active', unit_type: 'clinical_unit', supervising_attending_id: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
       const unitCliniciansModal = reactive({ show: false, unit: null, clinicians: [], supervisorId: '', allStaff: [] })
 
       const filteredTrainingUnits = computed(() => {
-        let f = trainingUnits.value
+        // Only show units linked to Neumología/Pulmonology — filter out rotation destinations
+        // A unit belongs to Neumología if: specialty=Pulmonology/Surgery/Critical Care etc (our units)
+        // OR department_name contains Neumología/Pulmonology
+        // Exclude units from external services (Cardiología, Medicina Interna etc that are rotation DESTINATIONS)
+        // We identify ours by dept_name matching the home department name pattern
+        let f = trainingUnits.value.filter(u => {
+          const deptName = (u.department?.name || u.department_name || '').toLowerCase()
+          const specialty = (u.specialty || '').toLowerCase()
+          // Include if linked to our home dept or is a clinical specialty unit we own
+          return deptName.includes('neumolog') || deptName.includes('pulmonolog') ||
+                 deptName.includes('cirugía torácica') ||
+                 specialty.includes('pulmonolog') || specialty.includes('surgery') ||
+                 specialty.includes('critical') || specialty.includes('radiol') ||
+                 specialty.includes('sleep') || specialty.includes('external') ||
+                 u.unit_code === 'UCRI' || u.unit_code === 'PFR' || u.unit_code === 'UTB' ||
+                 u.unit_code === 'SUEÑO' || u.unit_code === 'TRANSP'
+        })
         if (trainingUnitFilters.search) { const q = trainingUnitFilters.search.toLowerCase(); f = f.filter(u => u.unit_name?.toLowerCase().includes(q)) }
         if (trainingUnitFilters.department) f = f.filter(u => u.department_id === trainingUnitFilters.department)
         if (trainingUnitFilters.status) f = f.filter(u => u.unit_status === trainingUnitFilters.status)
@@ -3450,7 +3484,16 @@ document.addEventListener('DOMContentLoaded', () => {
         catch { showToast('Error', 'Failed to load training units', 'error') }
       }
 
-      const showAddTrainingUnitModal = () => { trainingUnitModal.mode = 'add'; Object.assign(trainingUnitModal.form, { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', unit_type: 'training_unit', unit_description: '', specialty: '', supervising_attending_id: '' }); trainingUnitModal.show = true }
+      const showAddTrainingUnitModal = (opts = {}) => {
+        trainingUnitModal.mode = 'add'
+        Object.assign(trainingUnitModal.form, {
+          unit_name: '', unit_code: '',
+          department_id: opts.department_id || '',
+          maximum_residents: 2, unit_status: 'active',
+          unit_type: 'clinical_unit', supervising_attending_id: ''
+        })
+        trainingUnitModal.show = true
+      }
       const editTrainingUnit = (u) => { trainingUnitModal.mode = 'edit'; trainingUnitModal.form = { ...u }; trainingUnitModal.show = true }
 
       const deleteTrainingUnit = (unit) => {
@@ -3572,6 +3615,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const f = trainingUnitModal.form
         if (!f.unit_name?.trim()) { showToast('Validation Error', 'Unit name is required', 'error'); return }
         if (!f.unit_code?.trim()) { showToast('Validation Error', 'Unit code is required', 'error'); return }
+        if (!f.department_id) { showToast('Validation Error', 'Please select a department / service', 'error'); return }
         if (!f.maximum_residents || f.maximum_residents < 1) { showToast('Validation Error', 'Maximum residents must be at least 1', 'error'); return }
         saving.value = true
         try {
@@ -5134,6 +5178,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (view === 'system_settings') {
             currentView.value = 'system_settings'
             if (!staffTypesList.value.length) loadStaffTypes(true)
+            if (!rotationServices.value.length) loadRotationServices()
             return
           }
           if (view === 'research_hub') {
@@ -5224,6 +5269,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── Staff Types Management ─────────────────────────────────────────────
         // Loads dynamic staff types from DB and builds the reactive lookup map
+        // ── Rotation Services ────────────────────────────────────────────
+        const rotationServicesLoading = ref(false)
+        const rotationServiceModal = reactive({
+          show: false, mode: 'add',
+          form: { name: '', service_type: 'rotation_service', contact_name: '', contact_email: '', contact_phone: '' }
+        })
+
+        const loadRotationServices = async () => {
+          rotationServicesLoading.value = true
+          try { rotationServices.value = await API.getRotationServices() }
+          catch { console.error('Failed to load rotation services') }
+          finally { rotationServicesLoading.value = false }
+        }
+
+        const openAddRotationService = () => {
+          rotationServiceModal.mode = 'add'
+          Object.assign(rotationServiceModal.form, { name: '', service_type: 'rotation_service', contact_name: '', contact_email: '', contact_phone: '' })
+          rotationServiceModal.show = true
+        }
+
+        const openEditRotationService = (svc) => {
+          rotationServiceModal.mode = 'edit'
+          Object.assign(rotationServiceModal.form, { id: svc.id, name: svc.name, service_type: svc.service_type, contact_name: svc.contact_name || '', contact_email: svc.contact_email || '', contact_phone: svc.contact_phone || '' })
+          rotationServiceModal.show = true
+        }
+
+        const saveRotationService = async () => {
+          const f = rotationServiceModal.form
+          if (!f.name?.trim()) { showToast('Validation', 'Service name is required', 'warn'); return }
+          try {
+            if (rotationServiceModal.mode === 'add') {
+              await API.createRotationService(f)
+              showToast('Success', 'Rotation service added', 'success')
+            } else {
+              await API.updateRotationService(f.id, f)
+              showToast('Success', 'Rotation service updated', 'success')
+            }
+            rotationServiceModal.show = false
+            await loadRotationServices()
+          } catch (e) { showToast('Error', e?.message || 'Failed to save', 'error') }
+        }
+
+        const deleteRotationService = async (svc) => {
+          showConfirmation({
+            title: 'Remove Rotation Service',
+            message: `Remove "${svc.name}" from the rotation services list?`,
+            icon: 'fa-trash', confirmButtonText: 'Remove', confirmButtonClass: 'btn-danger',
+            details: 'If residents are linked to this service, it will be deactivated instead of deleted.',
+            onConfirm: async () => {
+              try {
+                await API.deleteRotationService(svc.id)
+                await loadRotationServices()
+                showToast('Done', 'Rotation service removed', 'success')
+              } catch (e) { showToast('Error', e?.message || 'Failed to remove', 'error') }
+            }
+          })
+        }
+
         const staffTypesLoading = ref(false) // FIX Bug6: dedicated loading flag for Settings skeleton
         const loadStaffTypes = async (includeInactive = false) => {
           staffTypesLoading.value = true
@@ -5334,6 +5437,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await Promise.all([
               loadStaffTypes(),
               loadAcademicDegrees(),
+              loadRotationServices(),
               staffOps.loadMedicalStaff(),
               loadDepartments(),
               loadTrainingUnits()
@@ -5491,6 +5595,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
+          rotationServices, rotationServicesLoading, rotationServiceModal,
+          loadRotationServices, openAddRotationService, openEditRotationService, saveRotationService, deleteRotationService,
           searchResultsOpen: ui.searchResultsOpen,
           sortState, sortBy, sortIcon, pagination,
           goToPage: (view, page) => {
@@ -5521,6 +5627,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
           getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
           getCurrentRotationSupervisor, hasProfessionalCredentials,
+          getRotationServiceName,
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
           formatRotationStatus, getUserRoleDisplay, formatAudience, formatStudyStatus,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
