@@ -6,9 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
-      API_BASE_URL: window.location.hostname.includes('localhost') 
+      API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000' 
-        : 'https://neumac-manage-back-end-production.up.railway.app',   
+        : 'https://neumac-manage-back-end-production.up.railway.app',
       TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
       CACHE_TTL: 300000
@@ -3733,9 +3733,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      const researchLoading = ref(false)
+
       const loadResearchLines = async () => { try { researchLines.value = await API.getResearchLines() } catch { } }
       const loadClinicalTrials = async () => { try { clinicalTrials.value = await API.getAllClinicalTrials() } catch { } }
       const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch { } }
+
+      // Load all three research datasets together — used by on-demand navigation
+      const loadAllResearch = async () => {
+        if (researchLoading.value) return  // already in flight
+        researchLoading.value = true
+        try {
+          await Promise.all([
+            loadResearchLines(),
+            loadClinicalTrials(),
+            loadInnovationProjects()
+          ])
+        } finally {
+          researchLoading.value = false
+        }
+      }
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: '', sort_order: researchLines.value.length + 1, active: true, keywords: [], keywordsInput: '' }); researchLineModal.show = true }
       const showAddTrialModal = (line = null) => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1, start_date: '', end_date: '' }); clinicalTrialModal.show = true }
@@ -3907,7 +3924,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick }
+      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick }
     }
 
     // ============ 6.12 useAnalytics ============
@@ -4979,20 +4996,33 @@ document.addEventListener('DOMContentLoaded', () => {
             // Direct navigation — default to lines tab
             if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
+            // Load on-demand if background batch hasn't completed yet
+            if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) {
+              researchOps.loadAllResearch()
+            }
             return
           } else if (view === 'research_lines') {
             analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
             if (filters.line) researchOps.trialFilters.line = filters.line
+            if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) {
+              researchOps.loadAllResearch()
+            }
             return
           } else if (view === 'clinical_trials') {
             analyticsOps.researchHubTab.value = 'trials'
             currentView.value = 'research_hub'
             if (filters.line) researchOps.trialFilters.line = filters.line
+            if (!researchOps.clinicalTrials.value.length && !researchOps.researchLoading.value) {
+              researchOps.loadAllResearch()
+            }
             return
           } else if (view === 'innovation_projects') {
             analyticsOps.researchHubTab.value = 'projects'
             currentView.value = 'research_hub'
+            if (!researchOps.innovationProjects.value.length && !researchOps.researchLoading.value) {
+              researchOps.loadAllResearch()
+            }
             return
           }
         }
@@ -5292,6 +5322,7 @@ document.addEventListener('DOMContentLoaded', () => {
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
           ...liveOps,
           ...researchOps,
+          researchLoading: researchOps.researchLoading,
           saveResearchLine: () => researchOps.saveResearchLine(saving),
           saveClinicalTrial: () => researchOps.saveClinicalTrial(saving),
           saveInnovationProject: () => researchOps.saveInnovationProject(saving),
