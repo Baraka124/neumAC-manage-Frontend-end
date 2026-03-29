@@ -1666,7 +1666,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (onCallFilters.coverageArea) f = f.filter(s => (s.coverage_notes || '').toLowerCase().includes(onCallFilters.coverageArea.toLowerCase()))
         if (onCallFilters.search) {
           const q = onCallFilters.search.toLowerCase()
-          f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_area || '').toLowerCase().includes(q))
+          f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_notes || '').toLowerCase().includes(q))
         }
         return applySort(f, 'oncall')
       })
@@ -1740,7 +1740,7 @@ document.addEventListener('DOMContentLoaded', () => {
               shiftTypeClass: isPrimary ? 'badge-primary' : 'badge-secondary',
               shiftType: isPrimary ? 'Primary' : 'Backup',
               staffType: matchingStaff ? formatStaffType(matchingStaff.staff_type) : 'Physician',
-              coverageArea: item.coverage_area || 'General Coverage',
+              coverageArea: item.coverage_notes || 'General Coverage',
               backupPhysician: item.backup_physician?.full_name || null,
               contactInfo: item.primary_physician?.professional_email || 'No contact info', raw: item
             }
@@ -1828,12 +1828,12 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           if (onCallModal.mode === 'add') {
             const result = await API.createOnCall(data);
-            onCallSchedule.value.unshift({ ...result, duty_date: Utils.normalizeDate(result.duty_date), coverage_area: f.coverage_area });
+            onCallSchedule.value.unshift({ ...result, duty_date: Utils.normalizeDate(result.duty_date) });
             showToast('Success', 'On-call scheduled', 'success');
           } else {
             const result = await API.updateOnCall(f.id, data);
             const idx = onCallSchedule.value.findIndex(s => s.id === result.id);
-            if (idx !== -1) onCallSchedule.value[idx] = { ...result, duty_date: Utils.normalizeDate(result.duty_date), coverage_area: f.coverage_area };
+            if (idx !== -1) onCallSchedule.value[idx] = { ...result, duty_date: Utils.normalizeDate(result.duty_date) };
             showToast('Success', 'On-call updated', 'success');
           }
           onCallModal.show = false; clearAll('oncall'); await loadTodaysOnCall();
@@ -5087,11 +5087,9 @@ document.addEventListener('DOMContentLoaded', () => {
             : ['attending_physician','fellow','nurse_practitioner','medical_resident'].includes(s.staff_type))
         ))
         const availableResidents = computed(() => {
+          // Use isResidentType() which handles both staffTypeMap lookup AND fallback
           const residents = medicalStaff.value.filter(s =>
-            s.employment_status === 'active' && s.staff_type &&
-            (staffTypeMap.value[s.staff_type] != null
-              ? staffTypeMap.value[s.staff_type].is_resident_type
-              : s.staff_type === 'medical_resident')
+            s.employment_status === 'active' && isResidentType(s.staff_type)
           )
           // Sort: free residents first, currently rotating last
           const activeRotatingIds = new Set(
