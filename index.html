@@ -1925,7 +1925,7 @@
                                                 </div>
                                                 <div class="staff-name-block">
                                                     <div class="staff-name-primary"
-                                                         @click.stop="{ const _s = medicalStaff.find(s => s.id === rotation.resident_id); if (_s) viewStaffDetails(_s) }"
+                                                         @click.stop="openResidentProfile(rotation.resident_id)"
                                                          style="cursor:pointer;color:#009999">
                                                         {{ getResidentName(rotation.resident_id) }}
                                                     </div>
@@ -4599,7 +4599,7 @@
                                     <div class="sm-field" :class="{'has-error': fieldErrors.staff?.home_department_id}">
                                         <div class="sm-label">Origin Service / Department <span class="req">·</span></div>
                                         <select class="sm-select" v-model="medicalStaffModal.form.home_department_id"
-                                                @change="const svc=rotationServices.find(s=>s.id===medicalStaffModal.form.home_department_id); if(svc){ if(!medicalStaffModal.form.external_contact_name && svc.contact_name) medicalStaffModal.form.external_contact_name=svc.contact_name; if(!medicalStaffModal.form.external_contact_email && svc.contact_email) medicalStaffModal.form.external_contact_email=svc.contact_email; if(!medicalStaffModal.form.external_contact_phone && svc.contact_phone) medicalStaffModal.form.external_contact_phone=svc.contact_phone }">
+                                                @change="onRotationServiceChange()">
                                             <option value="">Select service…</option>
                                             <option v-for="svc in rotationServices" :key="svc.id" :value="svc.id">{{ svc.name }}</option>
                                         </select>
@@ -4667,7 +4667,7 @@
                                 <div style="display:grid;grid-template-columns:1fr 120px auto;gap:7px;align-items:end;">
                                     <div class="sm-field" style="margin:0;"><div class="sm-label" style="font-size:.65rem;">Name *</div><input type="text" class="sm-input" v-model="medicalStaffModal._newHospitalName" placeholder="Hospital name"></div>
                                     <div class="sm-field" style="margin:0;"><div class="sm-label" style="font-size:.65rem;">Network</div><select class="sm-select" v-model="medicalStaffModal._newHospitalNetwork"><option value="CHUAC">CHUAC</option><option value="SERGAS">SERGAS</option><option value="external">External</option></select></div>
-                                    <button type="button" class="sm-btn-save" style="height:34px;margin-top:18px;" @click="addHospitalInline(medicalStaffModal._newHospitalName, medicalStaffModal._newHospitalNetwork).then(h => { if(h){ medicalStaffModal.form.hospital_id = h.id; medicalStaffModal.form._networkHint = h.parent_complex; medicalStaffModal._addingHospital = false; medicalStaffModal._newHospitalName = ''; } })">
+                                    <button type="button" class="sm-btn-save" style="height:34px;margin-top:18px;" @click="onAddHospitalInline()">
                                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                                         Save
                                     </button>
@@ -4715,7 +4715,7 @@
                                         <div class="sm-label">Academic Degree</div>
                                         <select class="sm-select"
                                                 :value="medicalStaffModal.form.academic_degree_id || medicalStaffModal.form.academic_degree"
-                                                @change="e => { const d = academicDegrees.find(x=>x.id===e.target.value); if(d && d.id.includes('-')){ medicalStaffModal.form.academic_degree_id=d.id; medicalStaffModal.form.academic_degree=d.name }else{ medicalStaffModal.form.academic_degree_id=null; medicalStaffModal.form.academic_degree=e.target.value } }">
+                                                @change="medicalStaffModal.form.academic_degree_id = academicDegrees.find(x=>x.id===$event.target.value)?.id || null; medicalStaffModal.form.academic_degree = academicDegrees.find(x=>x.id===$event.target.value)?.name || $event.target.value">
                                             <option value="">Select degree</option>
                                             <option v-for="d in academicDegrees" :key="d.id" :value="d.id">{{ d.name }}{{ d.abbreviation ? ' (' + d.abbreviation + ')' : '' }}</option>
                                         </select>
@@ -4910,7 +4910,7 @@
                                         </div>
                                     </div>
                                     <div class="sm-toggle" :class="{ on: medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi }"
-                                         @click="const isOn = medicalStaffModal.form.can_be_pi || medicalStaffModal.form.can_be_coi; medicalStaffModal.form.can_be_pi = !isOn; medicalStaffModal.form.can_be_coi = !isOn; if(isOn){ medicalStaffModal.form._investigadorLines = []; medicalStaffModal.form.is_research_coordinator = false; medicalStaffModal.form._coordLineId = null; }">
+                                         @click="toggleInvestigadorRole()">
                                         <div class="sm-toggle-thumb"></div>
                                     </div>
                                 </div>
@@ -4939,7 +4939,7 @@
                                         <div v-for="line in researchLines" :key="line.id"
                                              class="sm-role-line-item"
                                              :class="{ selected: (medicalStaffModal.form._investigadorLines||[]).includes(line.id) }"
-                                             @click="const lines = medicalStaffModal.form._investigadorLines || []; const idx = lines.indexOf(line.id); if(idx > -1){ lines.splice(idx,1) } else { lines.push(line.id) }; medicalStaffModal.form._investigadorLines = [...lines]">
+                                             @click="toggleInvestigadorLine(line.id)">
                                             <span class="sm-role-line-n">L{{ line.line_number }}</span>
                                             <span class="sm-role-line-name">{{ line.research_line_name || line.name }}</span>
                                             <svg v-if="(medicalStaffModal.form._investigadorLines||[]).includes(line.id)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17L4 12"/></svg>
@@ -5510,7 +5510,7 @@
                                 <div class="sm-label">Unit Name <span class="req">·</span></div>
                                 <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.unit_name}"
                                        v-model="trainingUnitModal.form.unit_name"
-                                       @input="if(trainingUnitModal.mode==='add'){ trainingUnitModal.form.unit_code = trainingUnitModal.form.unit_name.split(/\s+/).map(w=>w[0]||'').join('').toUpperCase().slice(0,6) }"
+                                       @input="onUnitNameInput()"
                                        placeholder="e.g. UCI Respiratoria" required>
                             </div>
                             <div class="sm-field">
@@ -6362,7 +6362,7 @@
                     <div v-if="unitResidentsModal.rotations.length > 0" class="urm-list">
                         <div v-for="rotation in unitResidentsModal.rotations" :key="rotation.id"
                              class="urm-row"
-                             @click="{ const _s = medicalStaff.find(s => s.id === rotation.resident_id); if (_s) viewStaffDetails(_s); }"
+                             @click="openResidentProfile(rotation.resident_id)"
                              title="View profile">
                             <div class="urm-avatar" :class="'role-icon--medical_resident'">
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6L3 11L12 16L21 11L12 6Z"/><path d="M8 13.5V17C8 17 10 19 12 19C14 19 16 17 16 13.5"/></svg>
