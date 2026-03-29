@@ -1,4 +1,4 @@
-<!DOCTYPE html>         
+<!DOCTYPE html>       
 <html lang="en"> 
 <head>
     <meta charset="UTF-8">
@@ -373,15 +373,11 @@
          ════════════════════════════════════════════════════════════════════ */
       html { height:100%; }
       body { height:100%; min-height:100vh; }
-      /* app-layout: sidebar + main-content side by side, full viewport height */
       .app-layout { display:flex !important; height:100vh !important; max-height:100vh !important; overflow:hidden !important; }
-      /* sidebar: fixed-width column, does not grow */
       .sidebar { flex-shrink:0 !important; height:100vh !important; overflow-y:auto !important; }
-      /* main-content: takes all remaining width, scrolls internally via content-area */
-      .main-content { flex:1 !important; min-width:0 !important; display:flex !important; flex-direction:column !important; height:100vh !important; overflow:hidden !important; }
-      /* content-area: scrollable body inside main-content — NO margin-left (main-content handles sidebar offset) */
-      .content-area { flex:1 !important; min-width:0 !important; min-height:0 !important; overflow-y:auto !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; }
-      /* Views that need full-height internal flex layout (Research Hub, News) */
+      /* content-area owns the scroll chain — height:100vh keeps flex children from collapsing */
+      .content-area { flex:1 !important; min-width:0 !important; height:100vh !important; max-height:100vh !important; overflow-y:auto !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; }
+      /* Views that need full-height flex layout (Research Hub, News) */
       .content-area:has(.research-hub) { overflow:hidden !important; padding:0 !important; }
       .content-area:has(.news-view)    { overflow:hidden !important; padding:0 !important; }
 
