@@ -3153,6 +3153,29 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       })
 
+      // Groups filteredTrainingUnits by department for section-header card layout
+      const DEPT_NAME_MAP = {
+        'Department of Pulmonology': 'Neumología',
+        'Cirugía Torácica y Trasplante Pulmonar': 'Cirugía Torácica y Trasplante',
+        'General Medicine': 'Medicina General',
+        'INT. MEDICINE': 'Medicina Interna'
+      }
+      const unitsByDepartment = computed(() => {
+        const depts = {}
+        filteredTrainingUnits.value.forEach(u => {
+          const key = u.department_id || '__none__'
+          const rawName = u.department?.name || u.department_name || 'Sin departamento'
+          const displayName = DEPT_NAME_MAP[rawName] || rawName
+          if (!depts[key]) depts[key] = { deptId: key, deptName: displayName, units: [] }
+          depts[key].units.push(u)
+        })
+        return Object.values(depts).sort((a, b) => {
+          if (a.deptName === 'Neumología') return -1
+          if (b.deptName === 'Neumología') return 1
+          return a.deptName.localeCompare(b.deptName, 'es')
+        })
+      })
+
       const getUnitActiveRotationCount = (id) => {
         const today = new Date(); today.setHours(0,0,0,0)
         return rotations.value.filter(r =>
@@ -3642,7 +3665,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
         occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
     }
 
@@ -5558,7 +5581,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deptPanel, openDeptPanel, closeDeptPanel,
           deptPanelAttending, deptPanelResidents, deptPanelUnits, deptPanelRotations,
           getUnitSupervisorName, rotDaysLeft,
-          trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
+          trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
           getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
         trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
@@ -5628,6 +5651,63 @@ document.addEventListener('DOMContentLoaded', () => {
           getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
           getCurrentRotationSupervisor, hasProfessionalCredentials,
           getRotationServiceName,
+
+          // ── Inline handler methods (extracted from templates — Vue doesn't allow const/if inline) ──
+          // ── view resident from rotation row (lines 1928, 6365) ──
+          openResidentProfile: (residentId) => {
+            const s = medicalStaff.value.find(x => x.id === residentId)
+            if (s) staffOps.viewStaffDetails(s)
+          },
+          // ── toggle PI/CoI investigator role on staff form (line 4913) ──
+          toggleInvestigadorRole: () => {
+            const f = staffOps.medicalStaffModal.form
+            const isOn = f.can_be_pi || f.can_be_coi
+            f.can_be_pi = !isOn
+            f.can_be_coi = !isOn
+            if (isOn) {
+              f._investigadorLines = []
+              f.is_research_coordinator = false
+              f._coordLineId = null
+            }
+          },
+          // ── toggle a research line on the investigador list (line 4942) ──
+          toggleInvestigadorLine: (lineId) => {
+            const f = staffOps.medicalStaffModal.form
+            const lines = f._investigadorLines || []
+            const idx = lines.indexOf(lineId)
+            if (idx > -1) lines.splice(idx, 1)
+            else lines.push(lineId)
+            f._investigadorLines = [...lines]
+          },
+
+          onAddHospitalInline: async () => {
+            const h = await staffOps.addHospitalInline(
+              staffOps.medicalStaffModal._newHospitalName,
+              staffOps.medicalStaffModal._newHospitalNetwork
+            )
+            if (h) {
+              staffOps.medicalStaffModal.form.hospital_id = h.id
+              staffOps.medicalStaffModal.form._networkHint = h.parent_complex
+              staffOps.medicalStaffModal._addingHospital = false
+              staffOps.medicalStaffModal._newHospitalName = ''
+            }
+          },
+          onRotationServiceChange: () => {
+            const id = staffOps.medicalStaffModal.form.home_department_id
+            const svc = rotationServices.value.find(s => s.id === id)
+            if (!svc) return
+            const f = staffOps.medicalStaffModal.form
+            if (!f.external_contact_name  && svc.contact_name)  f.external_contact_name  = svc.contact_name
+            if (!f.external_contact_email && svc.contact_email) f.external_contact_email = svc.contact_email
+            if (!f.external_contact_phone && svc.contact_phone) f.external_contact_phone = svc.contact_phone
+          },
+          onUnitNameInput: () => {
+            if (trainingUnitModal.mode === 'add') {
+              trainingUnitModal.form.unit_code = trainingUnitModal.form.unit_name
+                .split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0, 6)
+            }
+          },
+
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
           formatRotationStatus, getUserRoleDisplay, formatAudience, formatStudyStatus,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
