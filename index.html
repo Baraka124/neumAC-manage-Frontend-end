@@ -170,6 +170,14 @@
       .tu-dept-header-count { font-size:10px; color:var(--text-4,#b5b0a8); font-family:monospace; }
 
       .tuc { cursor:pointer; transition:box-shadow .15s, transform .15s; }
+      /* ── Type badge colours ── */
+      .tuc-type-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; text-transform:uppercase; letter-spacing:.06em; flex-shrink:0; }
+      .tuc-type--clinical_unit  { background:rgba(0,179,179,.10); color:#007a7a; border:.5px solid rgba(0,179,179,.25); }
+      .tuc-type--icu            { background:rgba(226,75,74,.10);  color:#b91c1c; border:.5px solid rgba(226,75,74,.25); }
+      .tuc-type--outpatient     { background:rgba(99,102,241,.10); color:#4338ca; border:.5px solid rgba(99,102,241,.25); }
+      .tuc-type--surgical       { background:rgba(245,158,11,.10); color:#b45309; border:.5px solid rgba(245,158,11,.25); }
+      .tuc-type--research       { background:rgba(139,92,246,.10); color:#6d28d9; border:.5px solid rgba(139,92,246,.25); }
+      .tuc-type--training_unit  { background:rgba(107,114,128,.10);color:#374151; border:.5px solid rgba(107,114,128,.25); }
       .tuc:hover { box-shadow:0 4px 20px rgba(0,0,0,.10); transform:translateY(-2px); }
       .tuc:hover .tuc-name { color:#009999; }
 
@@ -2117,9 +2125,11 @@
                                 </div>
                             </div>
                             <!-- Group by department — section header + cards -->
-                            <template v-for="deptGroup in (()=>{ const depts={}; filteredTrainingUnits.forEach(u=>{ const key=u.department_id||'__none__'; if(!depts[key]) depts[key]={deptId:u.department_id,deptName:u.department?.name||u.department_name||'Unassigned',units:[]}; depts[key].units.push(u) }); return Object.values(depts) })()" :key="deptGroup.deptId">
+                            <template v-for="deptGroup in unitsByDepartment" :key="deptGroup.deptId">
                                 <div class="tu-dept-header">
-                                    <span class="tu-dept-header-name">{{ deptGroup.deptName }}</span>
+                                    <span class="tu-dept-header-name">
+                                        {{ deptGroup.deptName === 'Department of Pulmonology' ? 'Neumología' : deptGroup.deptName || 'Sin departamento' }}
+                                    </span>
                                     <span class="tu-dept-header-count">{{ deptGroup.units.length }} unit{{ deptGroup.units.length !== 1 ? 's' : '' }}</span>
                                 </div>
                                 <div class="training-units-grid" style="margin-bottom:8px">
@@ -2211,13 +2221,13 @@
                                                     <span class="tuc-res-name">{{ getResidentShortName(rot.resident_id) || '—' }}</span>
                                                     <span class="tuc-res-dates">→ {{ new Date(rot.end_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}</span>
                                                 </div>
-                                                <span v-if="getDaysUntilFree(rot.end_date) <= 45 && getDaysUntilFree(rot.end_date) > 0" class="tuc-free-chip">Free in {{ getDaysUntilFree(rot.end_date) }}d</span>
+                                                <span v-if="getDaysUntilFree(rot.end_date) <= 45 && getDaysUntilFree(rot.end_date) > 0" class="tuc-free-chip">Libre en {{ getDaysUntilFree(rot.end_date) }}d</span>
                                             </div>
                                             <div v-for="i in Math.max(0, unit.maximum_residents - getUnitActiveRotationCount(unit.id))" :key="'free-'+i" class="tuc-resident-row tuc-resident-row--free">
                                                 <div class="tuc-res-avatar tuc-res-avatar--free">
                                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                                                 </div>
-                                                <span class="tuc-res-name" style="color:var(--text-4);font-style:italic">Available</span>
+                                                <span class="tuc-res-name" style="color:var(--text-4);font-style:italic">Libre</span>
                                             </div>
                                         </div>
 
@@ -2232,12 +2242,6 @@
                                     </div>
                                 </template>
 
-                            <div class="empty-state">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
-                                <div class="empty-state-title">No training units found</div>
-                                <div class="empty-state-description">Training units are the clinical areas where residents rotate</div>
-                                <button class="btn btn-primary btn-sm" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add First Unit</button>
-                            </div>
                                 </div><!-- /training-units-grid for dept -->
                             </template><!-- /dept group -->
                             <!-- Empty state when no units at all -->
