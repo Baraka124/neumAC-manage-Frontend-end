@@ -1386,7 +1386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         medicalStaffModal.form = {
           ...staff,
           full_name: staff.full_name || '',
-          professional_email: staff.professional_email || '',
+          professional_email: staff.professional_email || '', // empty string for the input field — null from DB becomes ''
           mobile_phone: staff.mobile_phone || '',
           department_id: staff.department_id || '',
           academic_degree: staff.academic_degree || '',
@@ -1434,7 +1434,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = {
             full_name: f.full_name.trim(), staff_type: f.staff_type || 'medical_resident',
             staff_id: f.staff_id || Utils.generateId('MD'), employment_status: f.employment_status || 'active',
-            professional_email: f.professional_email || '', department_id: f.department_id || currentUser?.value?.department_id || null,
+            professional_email: f.professional_email?.trim() || null, // send null not '' — Joi now accepts null
+            department_id: f.department_id || currentUser?.value?.department_id || null,
             academic_degree: clean(f.academic_degree), academic_degree_id: f.academic_degree_id || null,
             specialization: clean(f.specialization),
             training_year: clean(f.training_year),
