@@ -1,5 +1,5 @@
 <!DOCTYPE html>       
-<html lang="en">    
+<html lang="en"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
@@ -1417,9 +1417,9 @@
                                         </td>
                                         <td style="text-align:center">
                                             <div class="table-actions" style="justify-content:center">
-                                                <button class="btn btn-sm btn-outline" @click.stop="viewStaffDetails(staff)" aria-label="View profile"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                                                <button class="btn btn-sm btn-outline" @click.stop="editMedicalStaff(staff)" v-if="hasPermission('medical_staff', 'update')" aria-label="Edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                                <button class="btn btn-sm btn-outline btn-outline-danger" @click.stop="deleteMedicalStaff(staff)" v-if="hasPermission('medical_staff', 'delete')" aria-label="Delete"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+                                                <button class="btn-icon" @click.stop="viewStaffDetails(staff)" title="View profile"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                                                <button class="btn-icon" @click.stop="editMedicalStaff(staff)" v-if="hasPermission('medical_staff', 'update')" title="Edit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                                <button class="btn-icon btn-icon--danger" @click.stop="deleteMedicalStaff(staff)" v-if="hasPermission('medical_staff', 'delete')" title="Deactivate"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -1552,6 +1552,20 @@
                                     <button class="rot-action-btn" @click.stop="viewStaffDetails(physician)" title="View profile">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                     </button>
+                                    <!-- Edit most recent shift for this physician -->
+                                    <button v-if="(physician.shifts||[]).length && hasPermission('oncall_schedule','update')"
+                                            class="rot-action-btn"
+                                            @click.stop="editOnCallSchedule(physician.shifts[physician.shifts.length-1])"
+                                            title="Edit latest shift">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
+                                    </button>
+                                    <!-- Delete most recent shift -->
+                                    <button v-if="(physician.shifts||[]).length && hasPermission('oncall_schedule','delete')"
+                                            class="rot-action-btn rot-action-btn--danger"
+                                            @click.stop="deleteOnCallSchedule(physician.shifts[physician.shifts.length-1])"
+                                            title="Delete latest shift">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                    </button>
                                 </div>
                             </div>
 
@@ -1574,12 +1588,11 @@
                                 </colgroup>
                                 <thead>
                                     <tr>
-                                        <th style="width:18%">Shift Period</th>
-                                        <th style="width:24%">Physician</th>
-                                        <th style="width:12%">Type</th>
-                                        <th style="width:16%">Coverage</th>
-                                        <th style="width:20%">Backup</th>
-                                        <th style="width:10%">Actions</th>
+                                        <th style="width:22%">Shift Period</th>
+                                        <th style="width:28%">Physician</th>
+                                        <th style="width:14%">Type</th>
+                                        <th style="width:22%">Backup</th>
+                                        <th style="width:14%">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1605,17 +1618,15 @@
                                                 </div>
                                                 <div>
                                                     <div class="oc-physician-name">{{ getPhysicianName(schedule.primary_physician_id) }}</div>
-                                                    <div class="oc-physician-time">{{ (schedule.start_time||'').slice(0,5) }} – {{ (schedule.end_time||'').slice(0,5) }}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td :data-label="'Type'"><span class="oc-type-badge" :class="'oc-type-badge--' + schedule.shift_type">{{ {'primary_call':'Primary','backup_call':'Backup','weekend_coverage':'Weekend','float_physician':'Float'}[schedule.shift_type] || schedule.shift_type }}</span></td>
-                                        <td :data-label="'Coverage'">{{ schedule.coverage_notes || '—' }}</td>
                                         <td :data-label="'Backup'"><span v-if="schedule.backup_physician_id">{{ getPhysicianName(schedule.backup_physician_id) }}</span><span v-else class="na-value">—</span></td>
                                         <td :data-label="'Actions'">
-                                            <div class="table-actions">
-                                                <button class="btn-pill btn-pill-edit" @click="editOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule', 'update')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                                <button class="btn-pill btn-pill-danger" @click.stop="deleteOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule', 'delete')" title="Delete shift"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                            <div class="table-actions" style="display:flex;gap:4px;align-items:center;">
+                                                <button class="btn-icon" @click="editOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule', 'update')" title="Edit shift"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                                <button class="btn-icon btn-icon--danger" @click.stop="deleteOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule', 'delete')" title="Delete shift"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -1968,11 +1979,11 @@
                                                 {{ rotation.training_unit.dept.name }}
                                             </div>
                                         </td>
-                                        <td>
+                                        <td style="white-space:nowrap">
                                             <div class="rotation-period">
-                                                <span class="rp-date">{{ formatDate(rotation.start_date) }}</span>
+                                                <span class="rp-date">{{ formatDateShort(rotation.start_date) }}</span>
                                                 <span class="rp-arrow">→</span>
-                                                <span class="rp-date">{{ formatDate(rotation.end_date) }}</span>
+                                                <span class="rp-date">{{ formatDateShort(rotation.end_date) }}</span>
                                             </div>
                                         </td>
                                         <td>
@@ -1998,8 +2009,8 @@
                                         </td>
                                         <td>
                                             <div class="table-actions">
-                                                <button class="btn-pill btn-pill-edit" @click="editRotation(rotation)" v-if="hasPermission('resident_rotations', 'update')" title="Edit rotation"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                                <button class="btn-pill btn-pill-danger" @click.stop="deleteRotation(rotation)" v-if="hasPermission('resident_rotations', 'delete') && ['active','scheduled'].includes(rotation.rotation_status)" title="Terminate rotation"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                                <button class="btn-icon" title="Edit rotation" @click="editRotation(rotation)" v-if="hasPermission('resident_rotations', 'update')" title="Edit rotation"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                                <button class="btn-icon btn-icon--danger" title="Terminate rotation" @click.stop="deleteRotation(rotation)" v-if="hasPermission('resident_rotations', 'delete') && ['active','scheduled'].includes(rotation.rotation_status)" title="Terminate rotation"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -2235,13 +2246,13 @@
                                                     <span class="tuc-res-name">{{ getResidentShortName(rot.resident_id) || '—' }}</span>
                                                     <span class="tuc-res-dates">→ {{ new Date(rot.end_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}</span>
                                                 </div>
-                                                <span v-if="getDaysUntilFree(rot.end_date) <= 45 && getDaysUntilFree(rot.end_date) > 0" class="tuc-free-chip">Libre en {{ getDaysUntilFree(rot.end_date) }}d</span>
+                                                <span v-if="getDaysUntilFree(rot.end_date) <= 45 && getDaysUntilFree(rot.end_date) > 0" class="tuc-free-chip">Free in {{ getDaysUntilFree(rot.end_date) }}d</span>
                                             </div>
                                             <div v-for="i in Math.max(0, unit.maximum_residents - getUnitActiveRotationCount(unit.id))" :key="'free-'+i" class="tuc-resident-row tuc-resident-row--free">
                                                 <div class="tuc-res-avatar tuc-res-avatar--free">
                                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                                                 </div>
-                                                <span class="tuc-res-name" style="color:var(--text-4);font-style:italic">Libre</span>
+                                                <span class="tuc-res-name" style="color:var(--text-4);font-style:italic">Available</span>
                                             </div>
                                         </div>
 
@@ -2388,7 +2399,7 @@
                                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12l2 2 4-4"/></svg> Resolve
                                                 </button>
                                                 <button class="btn-pill btn-pill-edit" @click.stop="editAbsence(absence)" v-if="hasPermission('staff_absence', 'update') && absence.current_status !== 'completed'"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Edit</button>
-                                                <button class="btn-pill btn-pill-danger" @click.stop="deleteAbsence(absence)" v-if="hasPermission('staff_absence', 'delete') && absence.current_status !== 'completed'" title="Cancel — keeps record for audit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></button>
+                                                <button class="btn-icon btn-icon--danger" title="Cancel absence" @click.stop="deleteAbsence(absence)" v-if="hasPermission('staff_absence', 'delete') && absence.current_status !== 'completed'" title="Cancel — keeps record for audit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></button>
                                                 <button class="btn-pill btn-pill-purge" @click.stop="purgeAbsence(absence)" v-if="currentUser && ['system_admin','department_head'].includes(currentUser.user_role)" title="Permanently delete this record"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
                                             </div>
                                         </td>
@@ -3130,6 +3141,44 @@
                         </div>
                     </div>
 
+                    <!-- ACADEMIC DEGREES ══════════════════════════════════ -->
+                    <div class="card mb-6" style="margin-top:16px">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                                Academic Degrees
+                            </div>
+                            <button class="btn btn-primary btn-sm" @click="openAddAcademicDegree" v-if="hasPermission('system_settings','create')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add Degree
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr><th>Degree Name</th><th>Abbreviation</th><th>Order</th><th>Status</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="deg in academicDegrees" :key="deg.id" :class="{'opacity-50': !deg.is_active}">
+                                        <td><strong>{{ deg.name }}</strong></td>
+                                        <td><span class="badge badge-secondary" style="font-family:monospace;font-size:10px">{{ deg.abbreviation || '—' }}</span></td>
+                                        <td style="font-size:12px;color:var(--text-3)">{{ deg.display_order }}</td>
+                                        <td><span class="badge" :class="deg.is_active ? 'badge-success' : 'badge-secondary'">{{ deg.is_active ? 'ACTIVE' : 'INACTIVE' }}</span></td>
+                                        <td class="text-end" style="display:flex;gap:4px;justify-content:flex-end">
+                                            <button class="btn-icon" @click="openEditAcademicDegree(deg)" title="Edit" v-if="hasPermission('system_settings','update')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                            <button class="btn-icon btn-icon--danger" @click="deleteAcademicDegree(deg)" title="Remove" v-if="hasPermission('system_settings','delete')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!academicDegrees.length">
+                                        <td colspan="5" class="empty-state">
+                                            <div class="empty-state-title">No academic degrees defined</div>
+                                            <div class="empty-state-description">Add degree titles like MD, PhD, etc.</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- ROTATION SERVICES ══════════════════════════════════ -->
                     <div class="card mb-6" style="margin-top:16px">
                         <div class="card-header">
@@ -3570,6 +3619,43 @@
                 </div>
             </div><!-- /content-area -->
         </main>
+
+        <!-- ============ ACADEMIC DEGREE ADD/EDIT MODAL ============ -->
+        <div class="modal-overlay" v-if="academicDegreeModal?.show" @click.self="academicDegreeModal.show = false">
+            <div class="modal-container" style="max-width:420px">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
+                        {{ academicDegreeModal?.mode === 'add' ? 'Add Academic Degree' : 'Edit Academic Degree' }}
+                    </div>
+                    <button class="modal-close" @click="academicDegreeModal.show = false"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Degree Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" v-model="academicDegreeModal.form.name" placeholder="e.g. Doctor of Medicine">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Abbreviation</label>
+                        <input type="text" class="form-control" v-model="academicDegreeModal.form.abbreviation" placeholder="e.g. MD" style="font-family:monospace;max-width:120px">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Display Order</label>
+                        <input type="number" class="form-control" v-model="academicDegreeModal.form.display_order" min="0" style="max-width:100px">
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" :id="'deg-active'" v-model="academicDegreeModal.form.is_active">
+                        <label class="form-check-label" for="deg-active">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="academicDegreeModal.show = false">Cancel</button>
+                    <button class="btn btn-primary" @click="saveAcademicDegree">
+                        {{ academicDegreeModal?.mode === 'add' ? 'Add Degree' : 'Save Changes' }}
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- ============ ROTATION SERVICE ADD/EDIT MODAL ============ -->
         <div class="modal-overlay" v-if="rotationServiceModal.show" @click.self="rotationServiceModal.show = false">
