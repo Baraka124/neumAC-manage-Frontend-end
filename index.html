@@ -1530,7 +1530,7 @@
                                         <div class="rot-orb-tooltip">
                                             <div class="rot-tt-unit">{{ shift.shift_type === 'primary_call' ? 'Primary Call' : 'Backup Call' }}</div>
                                             <div class="rot-tt-dates"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> {{ shift.start_time }} – {{ shift.end_time }}</div>
-                                            <div v-if="shift.coverage_area" class="rot-tt-dates"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> {{ shift.coverage_area }}</div>
+                                            <div v-if="shift.coverage_notes" class="rot-tt-dates"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> {{ shift.coverage_notes }}</div>
                                             <div v-if="shift.backupName" class="rot-tt-dates"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M18 8l2 1v4c0 2-2 4-2 4s-2-2-2-4V9l2-1z" stroke-linejoin="round"/></svg> Backup: {{ shift.backupName }}</div>
                                             <div v-if="shift.isToday"  class="rot-tt-tag rot-tt-tag--active">● On call today</div>
                                             <div v-else-if="shift.isPast" class="rot-tt-tag rot-tt-tag--done">Completed</div>
@@ -1610,7 +1610,7 @@
                                             </div>
                                         </td>
                                         <td :data-label="'Type'"><span class="oc-type-badge" :class="'oc-type-badge--' + schedule.shift_type">{{ {'primary_call':'Primary','backup_call':'Backup','weekend_coverage':'Weekend','float_physician':'Float'}[schedule.shift_type] || schedule.shift_type }}</span></td>
-                                        <td :data-label="'Coverage'">{{ schedule.coverage_area || '—' }}</td>
+                                        <td :data-label="'Coverage'">{{ schedule.coverage_notes || '—' }}</td>
                                         <td :data-label="'Backup'"><span v-if="schedule.backup_physician_id">{{ getPhysicianName(schedule.backup_physician_id) }}</span><span v-else class="na-value">—</span></td>
                                         <td :data-label="'Actions'">
                                             <div class="table-actions">
@@ -3332,6 +3332,11 @@
                     <div v-if="newsLoading && !newsLoaded" class="news-loading">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Loading posts…
                     </div>
+                    <!-- Subtle sync indicator when refreshing in background (already loaded) -->
+                    <div v-if="newsLoading && newsLoaded" style="display:flex;align-items:center;gap:5px;padding:5px 20px;font-size:10.5px;color:var(--text-4);flex-shrink:0;">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                        Syncing…
+                    </div>
                     <!-- Subtle refresh indicator when already loaded (background sync) -->
                     <div v-if="newsLoading && newsLoaded" style="padding:6px 20px;font-size:10px;color:var(--text-4);display:flex;align-items:center;gap:5px;">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Syncing…
@@ -3924,8 +3929,8 @@
                         <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'research' }" @click="staffProfileModal.activeTab = 'research'" v-if="hasPermission('analytics', 'read')">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> Research
                         </button>
-                        <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'supervision' }" @click="staffProfileModal.activeTab = 'supervision'" v-if="staffProfileModal.staff.staff_type === 'attending_physician'">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19C3 16 5.7 14 9 14C12.3 14 15 16 15 19M17 14C18.7 14 20.5 15 21 17"/></svg> Supervision
+                        <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'supervision' }" @click="staffProfileModal.activeTab = 'supervision'" v-if="staffProfileModal.staff && (staffProfileModal.staff.staff_type === 'attending_physician' || staffTypeMap[staffProfileModal.staff.staff_type]?.can_supervise)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" rcle cx="17" cy="9" r="2.5"/><path d="M3 19C3 16 5.7 14 9 14C12.3 14 15 16 15 19M17 14C18.7 14 20.5 15 21 17"/></svg> Supervision
                         </button>
                         <div class="pd-tabs-spacer"></div>
                         <!-- Contextual actions — right side of tab bar -->
@@ -5144,7 +5149,7 @@
                         </div>
                         <div class="sm-field">
                             <div class="sm-label">Coverage Area</div>
-                            <input type="text" class="sm-input" v-model="onCallModal.form.coverage_area" placeholder="e.g. UCRI, Ward 3B…">
+                            <input type="text" class="sm-input" v-model="onCallModal.form.coverage_notes" placeholder="e.g. UCRI, Urgencias, Guardia…">
                         </div>
                     </div>
                     <div class="sm-form-footer">
@@ -7056,7 +7061,7 @@
                             <div v-for="shift in reassignmentModal.affectedShifts" :key="'s'+shift.id" class="rsm-row">
                                 <span class="rsm-cell-date"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> {{ formatDate(shift.duty_date) }}</span>
                                 <span class="rsm-cell-meta">{{ shift.shift_type === 'primary_call' ? 'Primary' : 'Backup' }}</span>
-                                <span class="rsm-cell-meta">{{ shift.coverage_area || '—' }}</span>
+                                <span class="rsm-cell-meta">{{ shift.coverage_notes || '—' }}</span>
                                 <span><span class="rsm-role-badge" :class="shift.role === 'primary' ? 'rsm-role--primary' : 'rsm-role--backup'">{{ shift.role }}</span></span>
                                 <span>
                                     <select class="rsm-select"
@@ -7667,7 +7672,13 @@
                         </div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
-                        <button v-if="hasPermission('training_units','update')" @click.stop="editTrainingUnit(unitDetailDrawer.unit); unitDetailDrawer.show=false" style="background:rgba(255,255,255,.1);border:none;border-radius:7px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7)" title="Edit unit">
+                        <button v-if="hasPermission('training_units','delete')"
+                                        @click.stop="deleteTrainingUnit(unitDetailDrawer.unit); unitDetailDrawer.show=false"
+                                        style="background:rgba(239,68,68,.15);border:none;border-radius:7px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(239,100,100,.9)"
+                                        title="Delete unit">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                    </button>
+                                    <button v-if="hasPermission('training_units','update')" @click.stop="editTrainingUnit(unitDetailDrawer.unit); unitDetailDrawer.show=false" style="background:rgba(255,255,255,.1);border:none;border-radius:7px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7)" title="Edit unit">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
                         </button>
                         <button class="udd-close" @click="unitDetailDrawer.show = false">
