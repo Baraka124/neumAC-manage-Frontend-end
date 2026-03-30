@@ -5784,7 +5784,7 @@ document.addEventListener('DOMContentLoaded', () => {
           isShiftActive: onCallOps.isShiftActive,
           viewRotationDetails: rotationOps.viewRotationDetails,
           residentGapWarnings: rotationOps.residentGapWarnings,
-        }    
+        }
       }
     })
 
