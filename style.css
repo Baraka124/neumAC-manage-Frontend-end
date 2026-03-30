@@ -11635,7 +11635,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .db-oc-badge { font-size: 11px !important; }
 
 /* ════════════════════════════════════════════════════════════════
-   COMPACT VIEW ACTION BUTTONS — rot-action-btn  
+   COMPACT VIEW ACTION BUTTONS — rot-action-btn
    Make them always visible with good contrast
    ════════════════════════════════════════════════════════════════ */
 .rot-action-btn {
@@ -11650,4 +11650,18 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 }
 .rot-action-btn--danger:hover {
   background: var(--danger-lt) !important;
+}
+
+/* ── Panel view layout (research_hub, news) ──────────────────── */
+/* These views are direct children of main-content, AFTER content-area */
+.main-content--panel > .content-area {
+  display: none !important;
+}
+.main-content--panel > .research-hub,
+.main-content--panel > .news-view {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
