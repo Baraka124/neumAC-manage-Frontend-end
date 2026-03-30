@@ -3301,141 +3301,160 @@
                         </div>
                     </div>
 
-                    <!-- Filter bar -->
+                    <!-- Filter bar — pill buttons replace dropdowns -->
                     <div class="news-filter-bar">
-                        <input type="text" class="form-control" v-model="newsFilters.search" placeholder="Search posts…" style="flex:1;max-width:320px">
-                        <select class="form-select" v-model="newsFilters.type" style="max-width:140px">
-                            <option value="">All Types</option>
-                            <option value="update">Update</option>
-                            <option value="article">Article</option>
-                            <option value="publication">Publication</option>
-                            <option value="photo_story">Photo Story</option>
-                        </select>
-                        <select class="form-select" v-model="newsFilters.scope" style="max-width:150px">
+                        <input type="text" class="form-control" v-model="newsFilters.search" placeholder="Search posts…" style="flex:1;max-width:280px">
+                        <div class="news-type-pills">
+                            <button class="news-type-pill" :class="{'news-type-pill--active': newsFilters.type === ''}" @click="newsFilters.type = ''">All</button>
+                            <button class="news-type-pill" :class="{'news-type-pill--active': newsFilters.type === 'update'}" @click="newsFilters.type = 'update'">Update</button>
+                            <button class="news-type-pill" :class="{'news-type-pill--active': newsFilters.type === 'article'}" @click="newsFilters.type = 'article'">Article</button>
+                            <button class="news-type-pill" :class="{'news-type-pill--active': newsFilters.type === 'publication'}" @click="newsFilters.type = 'publication'">Publication</button>
+                            <button class="news-type-pill" :class="{'news-type-pill--active': newsFilters.type === 'photo_story'}" @click="newsFilters.type = 'photo_story'">Photo Story</button>
+                        </div>
+                        <select class="form-select" v-model="newsFilters.scope" style="max-width:140px;font-size:12px">
                             <option value="">All Visibility</option>
-                            <option value="public">Public (website)</option>
-                            <option value="internal">Internal only</option>
+                            <option value="public">Public</option>
+                            <option value="internal">Internal</option>
                         </select>
                     </div>
 
-                    <!-- Posts list — v-show keeps DOM stable during background refresh -->
-                    <div class="news-list" v-show="!newsLoading" style="flex:1;overflow-y:auto;min-height:0;">
-                        <div v-if="filteredNews.length === 0" class="news-empty">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
-                            <p>No posts yet. Create your first post to get started.</p>
-                            <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
-                            </button>
-                        </div>
-
-                        <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="'news-card--' + post.post_type" @click.stop="openNewsDrawer(post)">
-
-                            <!-- Left accent + type -->
-                            <div class="news-card-left">
-                                <span class="news-type-badge" :class="'ntb--' + post.post_type">
-                                    <svg v-if="post.post_type==='update'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
-                                    <svg v-else-if="post.post_type==='article'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-                                    <svg v-else-if="post.post_type==='publication'" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                                    <svg v-else width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                                    {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'photo_story' ? 'Photo Story' : 'Publication' }}
-                                </span>
-                            </div>
-
-                            <!-- Content -->
-                            <div class="news-card-body">
-                                <div class="news-card-title">{{ post.title }}</div>
-
-                                <!-- Publication fields -->
-                                <div v-if="post.post_type === 'publication'" class="news-pub-meta">
-                                    <span v-if="post.journal_name" class="news-journal">{{ post.journal_name }}</span>
-                                    <span v-if="post.authors_text" class="news-authors">{{ post.authors_text }}</span>
-                                    <a v-if="post.doi" :href="'https://doi.org/' + post.doi" target="_blank" class="news-doi">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg> DOI {{ post.doi }}
-                                    </a>
-                                    <!-- Fallback: show body as excerpt if no publication metadata is filled -->
-                                    <span v-if="!post.journal_name && !post.authors_text && !post.doi && post.body"
-                                          class="news-card-excerpt" style="margin:0">{{ post.body }}</span>
-                                    <span v-if="!post.journal_name && !post.authors_text && !post.doi && !post.body"
-                                          style="font-size:11px;color:var(--text-4);font-style:italic;">No publication details added yet</span>
-                                </div>
-
-                                <!-- Body preview (non-publications) -->
-                                <div v-if="post.body && post.post_type !== 'publication'" class="news-card-excerpt">{{ post.body }}</div>
-
-                                <!-- Meta row -->
-                                <div class="news-card-meta">
-                                    <span v-if="post.author_id" class="news-meta-item">
-                                        <span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>
-                                        {{ newsAuthorName(post.author_id) }}
-                                    </span>
-                                    <span v-if="post.research_line_id" class="news-meta-item news-meta-line">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> {{ newsLineName(post.research_line_id) }}
-                                    </span>
-                                    <span class="news-meta-item">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14H10M8 18H10M14 14H16M14 18H16"/></svg>
-                                        {{ formatNewsDate(post.published_at || post.created_at) }}
-                                    </span>
-                                    <span v-if="post.word_count && post.post_type !== 'publication'" class="news-meta-item news-wc">
-                                        {{ post.word_count }}w
-                                    </span>
-                                    <span v-if="post.expires_at && post.post_type !== 'publication'" class="news-meta-item news-expiry"
-                                          :class="{ 'news-expiry--warn': new Date(post.expires_at) < new Date(Date.now() + 14*86400000) }">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Expires {{ formatDate(post.expires_at) }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Right: status + visibility + actions -->
-                            <div class="news-card-right" @click.stop>
-                                <!-- Status badge -->
-                                <span v-if="post.status !== 'published'" class="news-status-badge" :class="'nsb--' + post.status">
-                                    {{ post.status === 'draft' ? 'Draft' : 'Archived' }}
-                                </span>
-                                <span v-else class="news-status-dot" title="Published"></span>
-
-                                <!-- Visibility toggle -->
-                                <button class="news-vis-btn" @click="toggleNewsPublic(post)"
-                                        :title="post.is_public ? 'Public on website — click to make internal' : 'Internal only — click to make public'"
-                                        v-if="post.status === 'published' && hasPermission('news_posts','update')">
-                                    <i class="fas" :class="post.is_public ? 'fa-globe' : 'fa-lock'"></i>
-                                    <span>{{ post.is_public ? 'Public' : 'Internal' }}</span>
-                                </button>
-
-                                <!-- Actions -->
-                                <div class="news-actions">
-                                    <button class="btn-icon" @click="editNews(post)" title="Edit" v-if="hasPermission('news_posts','update')">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
-                                    </button>
-                                    <button class="btn-icon btn-icon--ok" @click="publishNews(post)" title="Publish"
-                                            v-if="post.status === 'draft' && hasPermission('news_posts','update')">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                                    </button>
-                                    <button class="btn-icon" @click="archiveNews(post)" title="Archive"
-                                            v-if="post.status === 'published' && hasPermission('news_posts','update')">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
-                                    </button>
-                                    <button class="btn-icon btn-icon--danger" @click="deleteNews(post)" title="Delete"
-                                            v-if="hasPermission('news_posts','delete')">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Loading state — inline top bar, doesn't wipe card list -->
-                    <div v-if="newsLoading && !newsLoaded" class="news-loading">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Loading posts…
-                    </div>
-                    <!-- Subtle sync indicator when refreshing in background (already loaded) -->
-                    <div v-if="newsLoading && newsLoaded" style="display:flex;align-items:center;gap:5px;padding:5px 20px;font-size:10.5px;color:var(--text-4);flex-shrink:0;">
+                    <!-- Syncing indicator -->
+                    <div v-if="newsLoading && newsLoaded" style="display:flex;align-items:center;gap:5px;padding:4px 16px;font-size:11px;color:var(--text-4);flex-shrink:0;">
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
                         Syncing…
                     </div>
-                    <!-- Subtle refresh indicator when already loaded (background sync) -->
-                    <div v-if="newsLoading && newsLoaded" style="padding:6px 20px;font-size:10px;color:var(--text-4);display:flex;align-items:center;gap:5px;">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Syncing…
+
+                    <!-- Two-panel body -->
+                    <div class="news-body" v-show="!newsLoading || newsLoaded">
+
+                        <!-- LEFT: editorial list -->
+                        <div style="display:flex;flex-direction:column;min-height:0;overflow:hidden;">
+
+                            <!-- Empty state -->
+                            <div v-if="filteredNews.length === 0" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 20px;color:var(--text-3);">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
+                                <div style="font-size:14px;">No posts match your filters</div>
+                                <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">Create your first post</button>
+                            </div>
+
+                            <!-- Hero card — most recent published post -->
+                            <div v-if="filteredNews.filter(p => p.status === 'published').length > 0" class="news-hero"
+                                 @click="openNewsDrawer(filteredNews.filter(p => p.status === 'published')[0])">
+                                <div class="news-hero-img">
+                                    <div class="news-hero-img-icon">
+                                        <svg v-if="filteredNews.filter(p=>p.status==='published')[0].post_type==='publication'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(196,181,253,.7)" stroke-width="1.4" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                        <svg v-else-if="filteredNews.filter(p=>p.status==='published')[0].post_type==='article'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(94,234,212,.7)" stroke-width="1.4" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+                                        <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(147,197,253,.7)" stroke-width="1.4" stroke-linecap="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
+                                    </div>
+                                    <span class="news-hero-badge" :class="'news-hero-badge--' + filteredNews.filter(p=>p.status==='published')[0].post_type">
+                                        {{ {'update':'Update','article':'Article','publication':'Publication','photo_story':'Photo Story'}[filteredNews.filter(p=>p.status==='published')[0].post_type] || filteredNews.filter(p=>p.status==='published')[0].post_type }}
+                                    </span>
+                                    <span v-if="filteredNews.filter(p=>p.status==='published')[0].is_public" class="news-hero-public">Public</span>
+                                </div>
+                                <div class="news-hero-body">
+                                    <div class="news-hero-title">{{ filteredNews.filter(p=>p.status==='published')[0].title }}</div>
+                                    <div v-if="filteredNews.filter(p=>p.status==='published')[0].post_type==='publication'" class="news-hero-pub-meta">
+                                        <span v-if="filteredNews.filter(p=>p.status==='published')[0].journal_name">{{ filteredNews.filter(p=>p.status==='published')[0].journal_name }}</span>
+                                        <span v-if="filteredNews.filter(p=>p.status==='published')[0].authors_text"> · {{ filteredNews.filter(p=>p.status==='published')[0].authors_text }}</span>
+                                        <span v-if="filteredNews.filter(p=>p.status==='published')[0].doi"> · DOI {{ filteredNews.filter(p=>p.status==='published')[0].doi }}</span>
+                                    </div>
+                                    <div v-else-if="filteredNews.filter(p=>p.status==='published')[0].body" class="news-hero-excerpt">{{ filteredNews.filter(p=>p.status==='published')[0].body }}</div>
+                                    <div class="news-hero-foot">
+                                        <div class="news-hero-av">{{ (newsAuthorName(filteredNews.filter(p=>p.status==='published')[0].author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('') }}</div>
+                                        <span class="news-hero-meta-text">{{ newsAuthorName(filteredNews.filter(p=>p.status==='published')[0].author_id) }} · {{ new Date(filteredNews.filter(p=>p.status==='published')[0].published_at||filteredNews.filter(p=>p.status==='published')[0].created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) }}</span>
+                                        <div class="news-hero-actions" @click.stop>
+                                            <button class="news-hero-btn" @click.stop="editNews(filteredNews.filter(p=>p.status==='published')[0])" v-if="hasPermission('news_posts','update')">Edit</button>
+                                            <button class="news-hero-btn" @click.stop="openNewsDrawer(filteredNews.filter(p=>p.status==='published')[0])">View</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Compact rows for remaining posts -->
+                            <div class="news-rows-list">
+                                <template v-for="(post, idx) in filteredNews" :key="post.id">
+                                    <!-- Skip the hero post (first published) -->
+                                    <div v-if="!(post.status === 'published' && idx === filteredNews.findIndex(p => p.status === 'published'))"
+                                         class="news-row" @click="openNewsDrawer(post)">
+                                        <div class="news-row-accent" :class="'news-row-accent--' + post.post_type"></div>
+                                        <div class="news-row-body">
+                                            <div class="news-row-title">{{ post.title }}</div>
+                                            <div class="news-row-meta">
+                                                <span>{{ newsAuthorName(post.author_id) }}</span>
+                                                <span class="news-row-dot"></span>
+                                                <span>{{ new Date(post.published_at || post.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) }}</span>
+                                                <span class="news-row-dot"></span>
+                                                <span :style="post.is_public ? 'color:var(--ok)' : ''">{{ post.is_public ? 'Public' : 'Internal' }}</span>
+                                                <span v-if="post.status === 'draft'" class="news-row-draft">· Draft</span>
+                                                <span v-if="post.status === 'archived'" class="news-row-draft">· Archived</span>
+                                            </div>
+                                        </div>
+                                        <span class="news-row-badge" :class="'news-row-badge--' + post.post_type">
+                                            {{ {'update':'Update','article':'Article','publication':'Publication','photo_story':'Photo Story'}[post.post_type] || post.post_type }}
+                                        </span>
+                                        <div class="news-row-actions" @click.stop>
+                                            <button class="btn-icon" @click.stop="editNews(post)" v-if="hasPermission('news_posts','update')" title="Edit">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
+                                            </button>
+                                            <button class="btn-icon btn-icon--danger" @click.stop="deleteNews(post)" v-if="hasPermission('news_posts','delete')" title="Delete">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                        </div><!-- /left -->
+
+                        <!-- RIGHT: insights sidebar -->
+                        <div class="news-sidebar">
+
+                            <!-- Content stats -->
+                            <div>
+                                <div class="news-sb-head">Content stats</div>
+                                <div class="news-sb-kpis">
+                                    <div class="news-sb-kpi"><div class="news-sb-num">{{ newsPosts.length }}</div><div class="news-sb-lbl">Total</div></div>
+                                    <div class="news-sb-kpi"><div class="news-sb-num">{{ newsPosts.filter(p=>p.status==='published').length }}</div><div class="news-sb-lbl">Published</div></div>
+                                    <div class="news-sb-kpi"><div class="news-sb-num">{{ newsPosts.filter(p=>p.status==='draft').length }}</div><div class="news-sb-lbl">Drafts</div></div>
+                                    <div class="news-sb-kpi"><div class="news-sb-num">{{ newsPosts.filter(p=>p.is_public).length }}</div><div class="news-sb-lbl">Public</div></div>
+                                </div>
+                            </div>
+
+                            <div class="news-sb-divider"></div>
+
+                            <!-- By type -->
+                            <div>
+                                <div class="news-sb-head">By type</div>
+                                <div style="display:flex;flex-direction:column;gap:4px">
+                                    <div class="news-sb-type-row"><div class="news-sb-type-dot news-sb-type-dot--update"></div><div class="news-sb-type-lbl">Updates</div><div class="news-sb-type-cnt">{{ newsPosts.filter(p=>p.post_type==='update').length }}</div></div>
+                                    <div class="news-sb-type-row"><div class="news-sb-type-dot news-sb-type-dot--publication"></div><div class="news-sb-type-lbl">Publications</div><div class="news-sb-type-cnt">{{ newsPosts.filter(p=>p.post_type==='publication').length }}</div></div>
+                                    <div class="news-sb-type-row"><div class="news-sb-type-dot news-sb-type-dot--article"></div><div class="news-sb-type-lbl">Articles</div><div class="news-sb-type-cnt">{{ newsPosts.filter(p=>p.post_type==='article').length }}</div></div>
+                                    <div class="news-sb-type-row"><div class="news-sb-type-dot news-sb-type-dot--photo_story"></div><div class="news-sb-type-lbl">Photo Stories</div><div class="news-sb-type-cnt">{{ newsPosts.filter(p=>p.post_type==='photo_story').length }}</div></div>
+                                </div>
+                            </div>
+
+                            <div class="news-sb-divider"></div>
+
+                            <!-- Recently edited -->
+                            <div>
+                                <div class="news-sb-head">Recently edited</div>
+                                <div>
+                                    <div v-for="post in newsPosts.slice().sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at)).slice(0,4)" :key="post.id" class="news-sb-recent-item">
+                                        {{ post.title.length > 32 ? post.title.slice(0,32)+'…' : post.title }}
+                                        <span class="news-sb-recent-when"> · {{ new Date(post.updated_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div><!-- /sidebar -->
+
+                    </div><!-- /news-body -->
+
+                    <!-- Initial loading state -->
+                    <div v-if="newsLoading && !newsLoaded" class="news-loading">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Loading posts…
                     </div>
+
                 </div>
 
                 <!-- ============================================================
