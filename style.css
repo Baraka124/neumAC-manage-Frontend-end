@@ -1080,7 +1080,6 @@ a { color: var(--blue); text-decoration: none; }
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  height: 100vh;
   box-sizing: border-box;
   /* .main-content already handles margin-left and height — 
      content-area just needs flex:1 + overflow-y:auto to scroll */
@@ -9678,6 +9677,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 /* Shell */
 .sm-modal {
   display: flex;
+  flex-direction: column;
   max-width: min(820px, calc(100vw - 32px));
   width: 100%;
   max-height: 90vh;
@@ -11656,9 +11656,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 
 /* ── Panel view layout (research_hub, news) ──────────────────── */
 /* These views are direct children of main-content, AFTER content-area */
-.main-content--panel > .content-area {
-  display: none !important;
-}
+.main-content--panel > /* removed bad display:none rule */
 .main-content--panel > .research-hub,
 .main-content--panel > .news-view {
   flex: 1 !important;
@@ -11675,17 +11673,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
    ════════════════════════════════════════════════════════════════ */
 
 /* ── Full-height panel views (research hub, news) ─────────────── */
-.content-area:has(.research-hub),
-.content-area:has(.news-view) {
-  overflow: hidden !important;
-  padding: 0 !important;
-}
-.research-hub,
-.news-view {
-  flex: 1 !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-}
+/* research-hub and news-view are siblings of content-area, not children */
 
 /* ── Tab bars: dark navy (research hub + news) ─────────────────── */
 .rhub-tabs {
@@ -11745,14 +11733,8 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .rp-kpi-search { padding: 8px 14px !important; display: flex; align-items: center; }
 
 /* ── Dashboard — view wrapper (no extra padding) ───────────────── */
-.view-dashboard {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-.content-area:has(.view-dashboard) {
+/* view-dashboard: handled via content-area padding removal below */
+.content-area.view-dashboard-active {
   padding: 0 !important;
   overflow: hidden !important;
 }
@@ -11895,3 +11877,128 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .db-oc-name   { font-size: 14px !important; }
 .db-oc-time   { font-size: 12px !important; }
 .db-oc-badge  { font-size: 11px !important; }
+
+
+/* ── Dashboard: remove content-area padding (hero goes edge-to-edge) ── */
+/* duplicate removed */
+.view-dashboard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── Research Hub + News: full height as main-content flex children ── */
+/* They are siblings of content-area, not children */
+/* Their inline styles handle flex:1 min-height:0 overflow:hidden */
+/* Just ensure they're consistent */
+.research-hub {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.news-view {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   LAYOUT & UX FIXES — final pass
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Content area: flex:1 child, no explicit height ──────────── */
+/* main-content owns height:100vh. content-area just takes flex:1 */
+.content-area {
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+/* Remove the height:100vh we accidentally added */
+/* (The !important on flex:1 + min-height:0 overrides it) */
+
+/* ── Research Hub and News: main-content flex siblings ────────── */
+/* Both are direct children of main-content, siblings of content-area */
+/* They take flex:1 and fill remaining space after top-navbar */
+.research-hub {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* No margin-left needed — they're inside main-content which has it */
+}
+.news-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Dashboard: content-area should have no padding ───────────── */
+/* Dashboard uses view-dashboard class on its inner div */
+/* Use the :has() selector (supported in all modern browsers) */
+.content-area:has(.view-dashboard) {
+  padding: 0;
+  overflow: hidden;
+}
+.view-dashboard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── Settings: ensure all sections visible, proper spacing ────── */
+.content-area [v-cloak],
+.content-area > div[style*="padding:20px"] {
+  min-height: 0;
+}
+
+/* ── Absence / other views: breadcrumb doesn't shift content ──── */
+/* The breadcrumb + view header should be part of normal scroll */
+/* No position:sticky or fixed that would detach */
+
+/* ── Modals: ensure scrollability in all modal types ─────────── */
+/* Standard modal-container already has flex-direction:column ✓ */
+/* sm-modal now has flex-direction:column (fixed above) */
+/* Ensure modal-body is scrollable in all cases */
+.modal-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+/* Profile drawer */
+.pd-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+/* Unit detail drawer */
+.udd-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+/* Research line detail */
+.rp-detail {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Top navbar: never moves, always flex-shrink:0 ───────────── */
+.top-navbar {
+  flex-shrink: 0 !important;
+  position: relative;
+  z-index: 100;
+}
