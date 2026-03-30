@@ -12404,7 +12404,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .nm-footer { flex-shrink: 0 !important; }
 
 /* ── Rotation detail view (rds) ─────────────────────────────────── */
-.rds-body {
+.rds-body {    
   flex: 1 !important;
   min-height: 0 !important;
   overflow-y: auto !important;
