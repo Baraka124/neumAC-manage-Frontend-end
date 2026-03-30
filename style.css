@@ -11557,8 +11557,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
    For panel views: disable content-area's own padding/scroll so
    the inner panel controls its own layout.
    ════════════════════════════════════════════════════════════════ */
-.content-area:has(.research-hub),
-.content-area:has(.news-view) {
+.content-area--panel {
   overflow: hidden !important;
   padding: 0 !important;
 }
