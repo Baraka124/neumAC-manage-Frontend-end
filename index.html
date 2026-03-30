@@ -373,7 +373,7 @@
       .app-layout { display:flex !important; height:100vh !important; max-height:100vh !important; overflow:hidden !important; }
       .sidebar { flex-shrink:0 !important; height:100vh !important; overflow-y:auto !important; }
       .main-content { display:flex !important; flex-direction:column !important; height:100vh !important; overflow:hidden !important; }
-      .content-area { flex:1 !important; min-width:0 !important; height:100vh !important; max-height:100vh !important; overflow-y:auto !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; }
+      .content-area { flex:1 !important; min-width:0 !important; min-height:0 !important; overflow-y:auto !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; }
       /* Views that need full-height flex layout (not standard scroll) */
       .content-area--panel { overflow:hidden !important; padding:0 !important; }
 
@@ -2611,7 +2611,7 @@
             </div><!-- /content-area -->
 
                 <!-- ============ RESEARCH HUB (unified) ============ -->
-                <div v-if="currentView === 'research_hub'" class="research-hub" style="display:flex;flex-direction:column;flex:1 1 0%;min-height:0;overflow:hidden;height:calc(100vh - 60px);">
+                <div v-if="currentView === 'research_hub'" class="research-hub" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
                     <!-- Tab bar + contextual action button — no redundant title needed -->
                     <div class="rhub-tabs">
@@ -3227,7 +3227,7 @@
                 <!-- ============================================================
                      NEWS & POSTS VIEW
                 ============================================================ -->
-                <div v-if="currentView === 'news'" class="news-view" style="display:flex;flex-direction:column;flex:1 1 0%;min-height:0;overflow:hidden;height:calc(100vh - 60px);">
+                <div v-if="currentView === 'news'" class="news-view" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
                     <!-- Tab bar + action -->
                     <div class="rhub-tabs">
