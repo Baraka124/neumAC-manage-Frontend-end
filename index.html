@@ -1,5 +1,5 @@
 <!DOCTYPE html>       
-<html lang="en">   
+<html lang="en"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
@@ -1178,7 +1178,7 @@
                                     <div v-for="unit in trainingUnits.filter(u => u.unit_status === 'active').slice(0,6)"
                                          :key="unit.id"
                                          class="db-unit-cell"
-                                         :class="(()=>{ const cur=rotations.filter(r=>r.training_unit_id===unit.id&&['active','scheduled'].includes(r.rotation_status)).length; const max=unit.maximum_residents||5; const pct=max>0?cur/max:0; if(cur===0) return 'db-unit-cell--empty'; if(pct>=1) return 'db-unit-cell--full'; if(pct>=0.75) return 'db-unit-cell--warn'; return 'db-unit-cell--ok'; })()"
+                                         :class="rotations.filter(r=>r.training_unit_id===unit.id&&['active','scheduled'].includes(r.rotation_status)).length===0 ? 'db-unit-cell--empty' : rotations.filter(r=>r.training_unit_id===unit.id&&['active','scheduled'].includes(r.rotation_status)).length>=(unit.maximum_residents||5) ? 'db-unit-cell--full' : rotations.filter(r=>r.training_unit_id===unit.id&&['active','scheduled'].includes(r.rotation_status)).length/(unit.maximum_residents||5)>=0.75 ? 'db-unit-cell--warn' : 'db-unit-cell--ok'"
                                          @click="switchView('training_units')"
                                          :title="unit.unit_name + ' — ' + rotations.filter(r=>r.training_unit_id===unit.id&&['active','scheduled'].includes(r.rotation_status)).length + ' of ' + (unit.maximum_residents||5) + ' slots filled'">
                                         <div class="db-unit-name">{{ unit.unit_name }}</div>
