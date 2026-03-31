@@ -10801,9 +10801,10 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   .sm-preview-chips { display: none; }
   .sm-step-nav      { display: none; }
   .sm-req-note      { display: none; }
-  .sm-right         { flex: 1; overflow-y: auto; }
-  .sm-form-body     { padding: 14px 16px; }
   .sm-row           { grid-template-columns: 1fr; }
+  .sm-right         { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+  .sm-form-body     { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; }
+  .sm-footer        { flex-shrink: 0; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
   /* News modal at mobile */
   .nm-modal {
