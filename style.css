@@ -9856,6 +9856,17 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .sm-form-body::-webkit-scrollbar-thumb { background: var(--border, rgba(0,0,0,.1)); border-radius: 2px; }
 
 /* Field grid */
+/* Form footer — Save / Cancel buttons — must never be hidden */
+.sm-footer {
+  flex-shrink: 0;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  background: var(--surface, #fdfcfb);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .sm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .sm-field { display: flex; flex-direction: column; gap: 4px; }
 .sm-field.full { grid-column: 1 / -1; }
