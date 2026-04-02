@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000' 
         : 'https://neumac-manage-back-end-production.up.railway.app',   
-      TOKEN_KEY: 'neumocare_token',  
+      TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
       CACHE_TTL: 300000
     }
@@ -3659,6 +3659,8 @@ document.addEventListener('DOMContentLoaded', () => {
             unit_type: f.unit_type || 'training_unit',
             unit_description: f.unit_description || '',
             specialty: f.specialty || '',
+            location_building: f.location_building || '',
+            location_floor: f.location_floor || '',
             supervisor_id: f.supervising_attending_id || null,
             supervising_attending_id: f.supervising_attending_id || null,
           }
