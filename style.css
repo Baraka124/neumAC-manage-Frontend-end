@@ -9677,7 +9677,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 /* Shell */
 .sm-modal {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   max-width: min(820px, calc(100vw - 32px));
   width: 100%;
   max-height: 90vh;
@@ -11656,9 +11656,8 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 
 /* ── Panel view layout (research_hub, news) ──────────────────── */
 /* These views are direct children of main-content, AFTER content-area */
-.main-content--panel > /* removed bad display:none rule */
-.main-content--panel > .research-hub,
-.main-content--panel > .news-view {
+.main-content > .research-hub,
+.main-content > .news-view {
   flex: 1 !important;
   min-height: 0 !important;
   overflow: hidden !important;
@@ -11968,7 +11967,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 
 /* ── Modals: ensure scrollability in all modal types ─────────── */
 /* Standard modal-container already has flex-direction:column ✓ */
-/* sm-modal now has flex-direction:column (fixed above) */
+/* sm-modal uses flex-direction:row (left preview + right form side by side) */
 /* Ensure modal-body is scrollable in all cases */
 .modal-body {
   overflow-y: auto;
@@ -12165,7 +12164,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 .db-unit-cell--empty .db-unit-meta { color: var(--text-4); font-style: italic; }
 
 /* ── Legend ───────────────────────────────────────────────────── */
-.db-unit-legend {
+.db-unit-legend {   
   display: flex;
   gap: 12px;
   padding: 0 14px 12px;
@@ -12173,7 +12172,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 }
 .db-unit-leg-item {
   display: flex;
-  align-items: center;   
+  align-items: center;
   gap: 5px;
   font-size: 10px;
   color: var(--text-3);
