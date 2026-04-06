@@ -362,20 +362,81 @@
 
 
       /* ════════════════════════════════════════════════════════════════════
-         LAYOUT CHAIN FIX — ensures html→body→app-layout→content-area
-         form a proper full-height flex chain so that views with
-         height:100% (research-hub, news-view) resolve correctly.
-         Without this, flex children with height:100% resolve to 0
-         and content appears collapsed or off-screen.
+         LAYOUT OVERRIDES — surgical fixes for scroll, centering, and
+         view containment. style.css handles the main flex chain;
+         these rules patch the remaining per-view issues.
          ════════════════════════════════════════════════════════════════════ */
-      html { height:100%; }
-      body { height:100%; min-height:100vh; }
-      .app-layout { display:flex !important; height:100vh !important; max-height:100vh !important; overflow:hidden !important; }
-      .sidebar { flex-shrink:0 !important; height:100vh !important; overflow-y:auto !important; }
-      .main-content { display:flex !important; flex-direction:column !important; height:100vh !important; overflow:hidden !important; }
-      .content-area { flex:1 !important; min-width:0 !important; min-height:0 !important; overflow-y:auto !important; display:flex !important; flex-direction:column !important; box-sizing:border-box !important; }
-      /* Views that need full-height flex layout (not standard scroll) */
-      .content-area--panel { overflow:hidden !important; padding:0 !important; }
+
+      /* ── 1. Full height chain (style.css already sets most of this,
+              but re-enforce here in case of cascade order issues) ── */
+      html, body { height:100%; }
+      .app-layout   { height:100vh !important; overflow:hidden !important; }
+      .main-content { height:100vh !important; overflow:hidden !important;
+                      display:flex !important; flex-direction:column !important; flex:1 !important; min-width:0 !important; }
+      .sidebar      { height:100vh !important; flex-shrink:0 !important; overflow-y:auto !important; }
+
+      /* ── 2. Content area: scrollable page for standard views ── */
+      .content-area {
+        flex:1 !important; min-height:0 !important; min-width:0 !important;
+        overflow-y:auto !important; overflow-x:hidden !important;
+        display:block !important;   /* block, not flex — so children stack top-to-bottom naturally */
+        box-sizing:border-box !important;
+      }
+
+      /* ── 3. Research-hub and news-view: fill remaining height beside sidebar ── */
+      .main-content > .research-hub,
+      .main-content > .news-view {
+        flex:1 1 0% !important; min-height:0 !important; width:100% !important;
+        max-height:calc(100vh - var(--topbar-h, 60px)) !important;
+        display:flex !important; flex-direction:column !important;
+        overflow:hidden !important; margin:0 !important; padding:0 !important;
+        box-sizing:border-box !important;
+      }
+
+      /* ── 4. Tab bars inside research-hub and news-view ── */
+      .main-content > .research-hub > .rhub-tabs,
+      .main-content > .news-view   > .rhub-tabs {
+        flex-shrink:0 !important; width:100% !important;
+        background:#0f2d54 !important; border-bottom:none !important;
+        overflow-x:auto !important; overflow-y:hidden !important;
+      }
+
+      /* ── 5. Panel content inside research-hub scrolls internally ── */
+      .main-content > .research-hub > [class*="rhub-panel"],
+      .main-content > .research-hub > .rhub-panel {
+        flex:1 1 0% !important; min-height:0 !important;
+        overflow-y:auto !important; overflow-x:hidden !important;
+      }
+      /* Mission-control panel: overflow:hidden so its two child columns scroll independently */
+      .main-content > .research-hub > .rhub-panel--mc {
+        overflow:hidden !important;
+        display:flex !important; flex-direction:column !important;
+      }
+
+      /* ── 6. News list fills remaining height below filter bar ── */
+      .main-content > .news-view > .news-filter-bar { flex-shrink:0 !important; }
+      .main-content > .news-view > .news-list       { flex:1 1 0% !important; min-height:0 !important; overflow-y:auto !important; }
+
+      /* ── 7. Training-units card body: scrollable so all units are reachable ── */
+      div[v-if*="training_units"] > .card,
+      .content-area .training-units-grid-wrapper {
+        overflow-y:auto;
+      }
+
+      /* ── 8. All standard view cards: max-height cap so the card body scrolls
+              rather than growing the page infinitely ── */
+      .content-area .table-responsive {
+        overflow-x:auto !important;
+        max-height:calc(100vh - 260px);
+        overflow-y:auto !important;
+      }
+
+      /* ── 9. Absence, System Settings, Comms — cards stack from top, never stretch ── */
+      .content-area > div {
+        /* keep display:block context from rule 2, just ensure width is full */
+        width:100%;
+        box-sizing:border-box;
+      }
 
     </style>
 </head>
@@ -941,7 +1002,7 @@
             </header>
 
             <!-- Content Area -->
-            <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard'}" v-if="!['research_hub','news'].includes(currentView)" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+            <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard'}" v-if="!['research_hub','news'].includes(currentView)" style="flex:1;min-height:0;">
 
                 <!-- System Alert Banner -->
                 <div v-if="systemAlerts.length > 0" style="margin-bottom:24px;">
@@ -2181,7 +2242,7 @@
                         <div v-if="loading" class="skeleton-grid" style="padding:16px">
                             <div v-for="i in 4" :key="i" class="skeleton-card"></div>
                         </div>
-                        <div v-else>
+                        <div v-else class="training-units-grid-wrapper" style="overflow-y:auto;max-height:calc(100vh - 260px)">
                             <!-- Shared legend -->
                             <div v-if="trainingUnitView === 'timeline'" class="tuc-shared-legend" style="margin:0 16px 4px;">
                                 <span class="tuc-tl-leg-item"><span class="tuc-tl-leg-dot tuc-tl-leg-dot--occupied"></span>Occupied</span>
