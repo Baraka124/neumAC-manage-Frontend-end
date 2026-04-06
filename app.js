@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000' 
         : 'https://neumac-manage-back-end-production.up.railway.app',   
-      TOKEN_KEY: 'neumocare_token',  
+      TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
       CACHE_TTL: 300000
     }
@@ -3151,7 +3151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.8 useTrainingUnits ============
-    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup }) {
+    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup, allDepartmentsLookup }) {
       // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 2, unit_status: 'active', unit_type: 'clinical_unit', supervising_attending_id: '', unit_description: '', specialty: '', location_building: '', location_floor: '' } })
@@ -4755,6 +4755,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotations     = ref([])
         // researchLines hoisted so useStaff can clear coordinator assignments on role revoke
         const researchLinesShared = ref([])
+        // allDepartmentsLookup hoisted so useTrainingUnits can filter units by department
+        // without requiring useDepartments to be initialised first
+        const allDepartmentsLookupShared = ref([])
 
         const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser, researchLines: researchLinesShared, loadResearchLines: async () => { try { researchLinesShared.value = await API.getResearchLines() } catch {} } })
         const { medicalStaff, allStaffLookup, hospitalsList } = staffOps
@@ -4769,7 +4772,7 @@ document.addEventListener('DOMContentLoaded', () => {
           tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
-        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup })
+        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
@@ -4922,6 +4925,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
+        // Keep hoisted dept lookup in sync so useTrainingUnits filteredTrainingUnits always has fresh data
+        watch(allDepartmentsLookup, (v) => { allDepartmentsLookupShared.value = v }, { immediate: true })
         // Wrap loadResearchDashboard so it always receives the live research data refs —
         // the raw function takes parameters; calling it bare from the template passes nothing.
         const loadResearchDashboard = () => analyticsOps.loadResearchDashboard(
