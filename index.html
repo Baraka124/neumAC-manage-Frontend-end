@@ -361,81 +361,131 @@
       .rhub-trials-list { display:flex; flex-direction:column; gap:0; }
 
 
+
       /* ════════════════════════════════════════════════════════════════════
-         LAYOUT OVERRIDES — surgical fixes for scroll, centering, and
-         view containment. style.css handles the main flex chain;
-         these rules patch the remaining per-view issues.
+         LAYOUT OVERRIDES — These rules use #app prefix for specificity
+         high enough to beat the !important rules in style.css that force
+         display:flex on .content-area (see style.css ~L12252).
          ════════════════════════════════════════════════════════════════════ */
 
-      /* ── 1. Full height chain (style.css already sets most of this,
-              but re-enforce here in case of cascade order issues) ── */
+      /* ── 1. Root height chain ── */
       html, body { height:100%; }
-      .app-layout   { height:100vh !important; overflow:hidden !important; }
-      .main-content { height:100vh !important; overflow:hidden !important;
-                      display:flex !important; flex-direction:column !important; flex:1 !important; min-width:0 !important; }
-      .sidebar      { height:100vh !important; flex-shrink:0 !important; overflow-y:auto !important; }
 
-      /* ── 2. Content area: scrollable page for standard views ── */
-      .content-area {
-        flex:1 !important; min-height:0 !important; min-width:0 !important;
-        overflow-y:auto !important; overflow-x:hidden !important;
-        display:block !important;   /* block, not flex — so children stack top-to-bottom naturally */
-        box-sizing:border-box !important;
-      }
-
-      /* ── 3. Research-hub and news-view: fill remaining height beside sidebar ── */
-      .main-content > .research-hub,
-      .main-content > .news-view {
-        flex:1 1 0% !important; min-height:0 !important; width:100% !important;
-        max-height:calc(100vh - var(--topbar-h, 60px)) !important;
-        display:flex !important; flex-direction:column !important;
-        overflow:hidden !important; margin:0 !important; padding:0 !important;
-        box-sizing:border-box !important;
-      }
-
-      /* ── 4. Tab bars inside research-hub and news-view ── */
-      .main-content > .research-hub > .rhub-tabs,
-      .main-content > .news-view   > .rhub-tabs {
-        flex-shrink:0 !important; width:100% !important;
-        background:#0f2d54 !important; border-bottom:none !important;
-        overflow-x:auto !important; overflow-y:hidden !important;
-      }
-
-      /* ── 5. Panel content inside research-hub scrolls internally ── */
-      .main-content > .research-hub > [class*="rhub-panel"],
-      .main-content > .research-hub > .rhub-panel {
-        flex:1 1 0% !important; min-height:0 !important;
-        overflow-y:auto !important; overflow-x:hidden !important;
-      }
-      /* Mission-control panel: overflow:hidden so its two child columns scroll independently */
-      .main-content > .research-hub > .rhub-panel--mc {
+      /* ── 2. App shell ── */
+      #app .app-layout {
+        display:flex !important;
+        height:100vh !important;
+        max-height:100vh !important;
         overflow:hidden !important;
-        display:flex !important; flex-direction:column !important;
       }
 
-      /* ── 6. News list fills remaining height below filter bar ── */
-      .main-content > .news-view > .news-filter-bar { flex-shrink:0 !important; }
-      .main-content > .news-view > .news-list       { flex:1 1 0% !important; min-height:0 !important; overflow-y:auto !important; }
-
-      /* ── 7. Training-units card body: scrollable so all units are reachable ── */
-      div[v-if*="training_units"] > .card,
-      .content-area .training-units-grid-wrapper {
-        overflow-y:auto;
-      }
-
-      /* ── 8. All standard view cards: max-height cap so the card body scrolls
-              rather than growing the page infinitely ── */
-      .content-area .table-responsive {
-        overflow-x:auto !important;
-        max-height:calc(100vh - 260px);
+      /* ── 3. Sidebar ── */
+      #app .sidebar {
+        flex-shrink:0 !important;
+        height:100vh !important;
         overflow-y:auto !important;
       }
 
-      /* ── 9. Absence, System Settings, Comms — cards stack from top, never stretch ── */
-      .content-area > div {
-        /* keep display:block context from rule 2, just ensure width is full */
-        width:100%;
-        box-sizing:border-box;
+      /* ── 4. Main content column ── */
+      #app .main-content {
+        display:flex !important;
+        flex-direction:column !important;
+        flex:1 !important;
+        min-width:0 !important;
+        height:100vh !important;
+        overflow:hidden !important;
+      }
+
+      /* ── 5. CONTENT-AREA: normal block-layout scrollable container.
+              The key fix: display:block so children (view divs) stack
+              from the TOP naturally, not stretched in a flex column.
+              #app prefix beats the display:flex !important in style.css. ── */
+      #app .main-content > .content-area {
+        display:block !important;          /* ← THE FIX: not flex */
+        flex:1 !important;
+        min-height:0 !important;
+        min-width:0 !important;
+        width:100% !important;
+        overflow-y:auto !important;
+        overflow-x:hidden !important;
+        box-sizing:border-box !important;
+      }
+
+      /* ── 6. View divs inside content-area: natural height, no stretching ── */
+      #app .main-content > .content-area > div {
+        display:block !important;
+        width:100% !important;
+        box-sizing:border-box !important;
+        /* Do NOT set flex:1 here — that would make one div fill all space */
+      }
+
+      /* ── 7. Research Hub: full-height flex column beside content-area ── */
+      #app .main-content > .research-hub {
+        display:flex !important;
+        flex-direction:column !important;
+        flex:1 1 0% !important;
+        min-height:0 !important;
+        width:100% !important;
+        max-height:calc(100vh - var(--topbar-h, 60px)) !important;
+        overflow:hidden !important;
+        margin:0 !important;
+        padding:0 !important;
+        box-sizing:border-box !important;
+      }
+
+      /* ── 8. News view: same as research hub ── */
+      #app .main-content > .news-view {
+        display:flex !important;
+        flex-direction:column !important;
+        flex:1 1 0% !important;
+        min-height:0 !important;
+        width:100% !important;
+        max-height:calc(100vh - var(--topbar-h, 60px)) !important;
+        overflow:hidden !important;
+        margin:0 !important;
+        padding:0 !important;
+        box-sizing:border-box !important;
+      }
+
+      /* ── 9. Research Hub tab bar ── */
+      #app .main-content > .research-hub > .rhub-tabs,
+      #app .main-content > .news-view   > .rhub-tabs {
+        flex-shrink:0 !important;
+        width:100% !important;
+        background:#0f2d54 !important;
+        border-bottom:none !important;
+        overflow-x:auto !important;
+        overflow-y:hidden !important;
+      }
+
+      /* ── 10. Research Hub panel content: fills space, scrolls ── */
+      #app .main-content > .research-hub > [class*="rhub-panel"] {
+        flex:1 1 0% !important;
+        min-height:0 !important;
+        overflow-y:auto !important;
+        overflow-x:hidden !important;
+      }
+      #app .main-content > .research-hub > .rhub-panel--mc {
+        overflow:hidden !important;
+        display:flex !important;
+        flex-direction:column !important;
+      }
+
+      /* ── 11. News list: fills remaining height, scrolls ── */
+      #app .main-content > .news-view > .news-filter-bar {
+        flex-shrink:0 !important;
+      }
+      #app .main-content > .news-view > .news-list {
+        flex:1 1 0% !important;
+        min-height:0 !important;
+        overflow-y:auto !important;
+      }
+
+      /* ── 12. Tables inside content-area views: max-height cap ── */
+      #app .main-content > .content-area .table-responsive {
+        overflow-x:auto !important;
+        overflow-y:auto !important;
+        max-height:calc(100vh - 260px);
       }
 
     </style>
@@ -1002,7 +1052,7 @@
             </header>
 
             <!-- Content Area -->
-            <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard'}" v-if="!['research_hub','news'].includes(currentView)" style="flex:1;min-height:0;">
+            <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard'}" v-if="!['research_hub','news'].includes(currentView)">
 
                 <!-- System Alert Banner -->
                 <div v-if="systemAlerts.length > 0" style="margin-bottom:24px;">
