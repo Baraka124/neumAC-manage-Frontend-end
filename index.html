@@ -2434,9 +2434,8 @@
                                             <span v-else-if="absence.coverage_arranged" class="coverage-ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Covered</span>
                                             <span v-else class="coverage-gap"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> No coverage</span>
                                         </td>
-                                        <td>
+                                        <td @click.stop>
                                             <div class="table-actions">
-                                                <!-- Resolve button shown for returned staff — absence ended, pending confirmation -->
                                                 <button v-if="absence.current_status === 'returned_to_duty'"
                                                         class="btn-pill btn-pill-resolve"
                                                         @click.stop="openResolutionModal(absence)"
@@ -2654,6 +2653,70 @@
                         </div>
                     </div>
 
+                    <!-- CORE SETTINGS ══════════════════════════════════ -->
+                    <div class="card mb-6" style="margin-top:16px" v-if="hasPermission('system_settings','read')">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                General Settings
+                            </div>
+                        </div>
+                        <div class="card-body" style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
+
+                            <!-- Read-only info block while we haven't loaded settings yet -->
+                            <div style="font-size:12px;color:var(--text-3);padding:8px 12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                                These settings apply system-wide. Changes take effect immediately.
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Hospital / Department Name</label>
+                                    <input type="text" class="form-control" v-model="systemSettings.hospital_name" :disabled="!hasPermission('system_settings','update')" placeholder="NeumoCare Hospital">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Max Residents per Unit</label>
+                                    <input type="number" class="form-control" v-model.number="systemSettings.max_residents_per_unit" :disabled="!hasPermission('system_settings','update')" min="1" max="20" style="max-width:100px">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Default Rotation Duration (weeks)</label>
+                                    <input type="number" class="form-control" v-model.number="systemSettings.default_rotation_duration" :disabled="!hasPermission('system_settings','update')" min="1" max="52" style="max-width:100px">
+                                </div>
+                            </div>
+
+                            <div style="display:flex;flex-direction:column;gap:10px;padding-top:4px;border-top:1px solid var(--border);">
+                                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:4px">Feature Flags</div>
+                                <label class="license-toggle">
+                                    <input type="checkbox" v-model="systemSettings.enable_audit_logging" :disabled="!hasPermission('system_settings','update')">
+                                    <span class="license-toggle-track"><span class="license-toggle-thumb"></span></span>
+                                    <span class="license-toggle-label">Enable Audit Logging</span>
+                                </label>
+                                <label class="license-toggle">
+                                    <input type="checkbox" v-model="systemSettings.notifications_enabled" :disabled="!hasPermission('system_settings','update')">
+                                    <span class="license-toggle-track"><span class="license-toggle-thumb"></span></span>
+                                    <span class="license-toggle-label">Notifications Enabled</span>
+                                </label>
+                                <label class="license-toggle">
+                                    <input type="checkbox" v-model="systemSettings.absence_notifications" :disabled="!hasPermission('system_settings','update')">
+                                    <span class="license-toggle-track"><span class="license-toggle-thumb"></span></span>
+                                    <span class="license-toggle-label">Absence Notifications</span>
+                                </label>
+                                <label class="license-toggle">
+                                    <input type="checkbox" v-model="systemSettings.maintenance_mode" :disabled="!hasPermission('system_settings','update')">
+                                    <span class="license-toggle-track"><span class="license-toggle-thumb"></span></span>
+                                    <span class="license-toggle-label">Maintenance Mode</span>
+                                </label>
+                            </div>
+
+                            <div v-if="hasPermission('system_settings','update')" style="display:flex;justify-content:flex-end;padding-top:4px;border-top:1px solid var(--border)">
+                                <button class="btn btn-primary btn-sm" @click="saveSystemSettings">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                    Save Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
             </div><!-- /content-area -->
@@ -2679,7 +2742,7 @@
                             <span class="rhub-tab-count">{{ innovationProjects.length }}</span>
                         </button>
                         <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'analytics' }"
-                                @click="researchHubTab = 'analytics'; loadResearchDashboard(); loadTrialsTimeline(); loadResearchLinesPerformance(); loadPartnerCollaborations()">
+                        @click="researchHubTab = 'analytics'; loadResearchDashboard(); loadTrialsTimeline(); loadResearchLinesPerformance(); loadPartnerCollaborations()"
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
                             <span>Analytics</span>
                         </button>
@@ -2712,10 +2775,10 @@
                             </div>
                             <div class="rp-kpi-div"></div>
                             <div class="rp-kpi">
-                                <div class="rp-kpi-val" :class="{ 'rp-kpi-val--ok': portfolioKPIs?.activeTrials > 0 }">{{ portfolioKPIs?.activeStudies || 0 }}</div>
+                                <div class="rp-kpi-val" :class="{ 'rp-kpi-val--ok': portfolioKPIs?.activeTrials > 0 }">{{ portfolioKPIs?.activeTrials || 0 }}</div>
                                 <div class="rp-kpi-label">Active Studies</div>
-                                <div class="rp-kpi-sub" v-if="portfolioKPIs?.recruitingTrials > 0" style="color:var(--ok)">{{ portfolioKPIs?.recruitingStudies || 0 }} recruiting</div>
-                                <div class="rp-kpi-sub" v-else>of {{ portfolioKPIs?.totalStudies || 0 }} total</div>
+                                <div class="rp-kpi-sub" v-if="portfolioKPIs?.recruitingTrials > 0" style="color:var(--ok)">{{ portfolioKPIs?.recruitingTrials || 0 }} recruiting</div>
+                                <div class="rp-kpi-sub" v-else>of {{ portfolioKPIs?.totalTrials || 0 }} total</div>
                             </div>
                             <div class="rp-kpi-div"></div>
                             <div class="rp-kpi">
@@ -2908,23 +2971,7 @@
                                         </div>
                                     </div>
 
-                                </div><!-- end main sections -->
-                                </div><!-- end rp-detail-body -->
-
-                                <!-- Footer actions -->
-                                <div class="rp-detail-footer">
-                                    <button class="btn btn-sm btn-outline" @click="drillToTrials(activeMissionLine.id)">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> Studies
-                                    </button>
-                                    <button class="btn btn-sm btn-outline" @click="drillToProjects(activeMissionLine.id)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg> Projects
-                                    </button>
-                                    <button class="btn btn-primary btn-sm" @click="showAddTrialModal(activeMissionLine)" v-if="hasPermission('research_lines','create')" style="margin-left:auto">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Study
-                                    </button>
-                                </div>
-                                
-<!-- Innovation Projects for this line -->
+                                    <!-- Innovation Projects for this line -->
                                     <div class="rp-detail-section" v-if="(innovationProjects||[]).filter(p=>p.research_line_id===activeMissionLine.id).length > 0 || hasPermission('research_lines','create')">
                                         <div class="rp-detail-section-label" style="display:flex;align-items:center;gap:6px">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
@@ -2952,6 +2999,21 @@
                                             No projects yet for this line
                                         </div>
                                     </div>
+
+                                </div><!-- end rp-detail-body -->
+
+                                <!-- Footer actions -->
+                                <div class="rp-detail-footer">
+                                    <button class="btn btn-sm btn-outline" @click="drillToTrials(activeMissionLine.id)">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> Studies
+                                    </button>
+                                    <button class="btn btn-sm btn-outline" @click="drillToProjects(activeMissionLine.id)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg> Projects
+                                    </button>
+                                    <button class="btn btn-primary btn-sm" @click="showAddTrialModal(activeMissionLine)" v-if="hasPermission('research_lines','create')" style="margin-left:auto">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Study
+                                    </button>
+                                </div>
                             </div>
 
                                     
@@ -2987,7 +3049,7 @@
                                 <option value="Reclutando">Recruiting</option>
                                 <option value="Activo">Active</option>
                                 <option value="Completado">Completed</option>
-                                <option value="Suspendido">Suspended</option>
+                                <option value="En preparación">In Preparation</option>
                             </select>
                             <input type="text" class="form-control" v-model="trialFilters.search" placeholder="Search protocol or title…">
                         </div>
@@ -3437,10 +3499,6 @@
                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
                         Syncing…
                     </div>
-                    <!-- Subtle refresh indicator when already loaded (background sync) -->
-                    <div v-if="newsLoading && newsLoaded" style="padding:6px 20px;font-size:10px;color:var(--text-4);display:flex;align-items:center;gap:5px;">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Syncing…
-                    </div>
                 </div>
 
                 <!-- ============================================================
@@ -3625,7 +3683,7 @@
                                            v-model="newsModal.form.featured_image_url"
                                            :placeholder="newsModal.form.post_type==='photo_story' ? 'https://… (required)' : 'https://…'">
                                     <small v-if="newsModal.form.post_type==='photo_story'" class="sm-field-hint">
-                                        Separate multiple photos with commas. First becomes the hero.
+                                        Enter the URL of the hero image for this story.
                                     </small>
                                 </div>
                             </template>
