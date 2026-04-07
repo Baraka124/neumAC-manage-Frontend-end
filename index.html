@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -2129,6 +2129,8 @@
                                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
                                                 </a>
                                             </div>
+                                                </div><!-- /staff-name-block -->
+                                            </div><!-- /staff-name-cell -->
                                         </td>
                                         <td>
                                             <div class="font-medium">{{ getTrainingUnitName(rotation.training_unit_id) }}</div>
@@ -2194,8 +2196,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                </div>
                 </div><!-- /resident_rotations -->
                 <!-- ============ TRAINING UNITS VIEW ============ -->
                 <div v-if="currentView === 'training_units'">
@@ -2426,6 +2426,7 @@
                                     </div>
                                 </template>
 
+                                </div><!-- /tuc unit card -->
                                 </div><!-- /training-units-grid for dept -->
                             </template><!-- /dept group -->
                             <!-- Empty state when no units at all -->
@@ -2439,7 +2440,6 @@
                             </div>
                         </div><!-- end grouped view -->
                     </div>
-                </div>
                 </div><!-- /training_units -->
                 <!-- ============ STAFF ABSENCE VIEW ============ -->
                 <div v-if="currentView === 'staff_absence'">
@@ -4237,7 +4237,7 @@
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> Research
                         </button>
                         <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'supervision' }" @click="staffProfileModal.activeTab = 'supervision'" v-if="staffProfileModal.staff && (staffProfileModal.staff.staff_type === 'attending_physician' || staffTypeMap[staffProfileModal.staff.staff_type]?.can_supervise)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" rcle cx="17" cy="9" r="2.5"/><path d="M3 19C3 16 5.7 14 9 14C12.3 14 15 16 15 19M17 14C18.7 14 20.5 15 21 17"/></svg> Supervision
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19C3 16 5.7 14 9 14C12.3 14 15 16 15 19M17 14C18.7 14 20.5 15 21 17"/></svg> Supervision
                         </button>
                         <div class="pd-tabs-spacer"></div>
                         <!-- Contextual actions — right side of tab bar -->
@@ -8202,7 +8202,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=10"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
