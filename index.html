@@ -1476,7 +1476,7 @@
                                 </div>
 
                                 <!-- Action buttons -->
-                                <div class="scc-actions" @click.stop>
+                                <div class="scc-actions" @click.stop="() => {}">
                                     <button class="rot-action-btn" @click.stop="viewStaffDetails(item)"
                                             title="View profile">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -2125,7 +2125,7 @@
                                                 {{ rotation.resident.external_contact_name }}
                                                 <a v-if="rotation.resident.external_contact_email"
                                                    :href="'mailto:' + rotation.resident.external_contact_email"
-                                                   @click.stop title="Email contact">
+                                                   @click.stop="() => {}" title="Email contact">
                                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
                                                 </a>
                                             </div>
@@ -2970,7 +2970,7 @@
                                     </div>
                                         <h2 class="rp-detail-title">{{ activeMissionLine.research_line_name || activeMissionLine.name }}</h2>
                                     </div>
-                                    <div class="rp-detail-head-actions" @click.stop>
+                                    <div class="rp-detail-head-actions" @click.stop="() => {}">
                                         <button class="rp-detail-btn" @click="editResearchLine(activeMissionLine)" v-if="hasPermission('research_lines','update')" title="Edit">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
                                         </button>
@@ -3102,7 +3102,7 @@
                                                     <div style="font-size:12px;font-weight:500;color:var(--text-1)">{{ proj.title }}</div>
                                                     <div style="font-size:10px;color:var(--text-3);font-family:monospace;margin-top:1px">{{ proj.current_stage || proj.development_stage }}</div>
                                                 </div>
-                                                <div style="display:flex;gap:4px" @click.stop>
+                                                <div style="display:flex;gap:4px" @click.stop="() => {}">
                                                     <button class="btn-pill btn-pill-edit" @click.stop="editProject(proj)" v-if="hasPermission('research_lines','update')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
                                                     <button class="btn-pill btn-pill-delete" @click.stop="deleteInnovationProject(proj)" v-if="hasPermission('research_lines','delete')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                                 </div>
@@ -3191,7 +3191,7 @@
                                       :class="{ 'status-recruiting': trial.status==='Reclutando', 'status-active': trial.status==='Activo', 'status-completed': trial.status==='Completado', 'status-suspended': trial.status==='Suspendido' }">
                                     {{ formatStudyStatus(trial.status) }}
                                 </span>
-                                <div class="rht-actions" @click.stop>
+                                <div class="rht-actions" @click.stop="() => {}">
                                     <button class="btn-pill btn-pill-edit" @click.stop="editTrial(trial)" v-if="hasPermission('research_lines','update')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
                                     <button class="btn-pill btn-pill-delete" @click.stop="deleteClinicalTrial(trial)" v-if="hasPermission('research_lines','delete')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                 </div>
@@ -3566,7 +3566,7 @@
                             </div>
 
                             <!-- Right: status + visibility + actions -->
-                            <div class="news-card-right" @click.stop>
+                            <div class="news-card-right" @click.stop="() => {}">
                                 <!-- Status badge -->
                                 <span v-if="post.status !== 'published'" class="news-status-badge" :class="'nsb--' + post.status">
                                     {{ post.status === 'draft' ? 'Draft' : 'Archived' }}
@@ -6440,7 +6440,7 @@
         <div v-if="tlPopover.show"
              class="tl-popover"
              :style="{ left: tlPopover.x + 'px', top: tlPopover.y + 'px' }"
-             @click.stop>
+             @click.stop="() => {}">
             <div class="tl-popover-header">
                 <span class="tl-popover-unit">{{ tlPopover.unitName }}</span>
                 <span class="tl-popover-sep">·</span>
@@ -6778,7 +6778,7 @@
                                         {{ medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_name }}
                                         <a v-if="medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_email"
                                            :href="'mailto:' + medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_email"
-                                           @click.stop style="color:inherit"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 9L12 15L21 9"/></svg></a>
+                                           @click.stop="() => {}" style="color:inherit"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 9L12 15L21 9"/></svg></a>
                                     </span>
                                 </div>
                             </div>
