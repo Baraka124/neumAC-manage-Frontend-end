@@ -1154,6 +1154,132 @@
         color:#fff !important;
       }
 
+      /* ══════════════════════════════════════════════════════════════
+         COLOUR TOKEN PROPAGATION — Make every view use the same
+         semantic colours: active=green, scheduled=blue, done=grey
+         ══════════════════════════════════════════════════════════════ */
+
+      /* ── Monthly rotation view bars ── */
+      #app .mv-rot-bar--active    { background:#10b981 !important; }
+      #app .mv-rot-bar--scheduled { background:#3b82f6 !important; }
+      #app .mv-rot-bar--completed { background:#a0a09b !important; opacity:.7 !important; }
+
+      /* ── Rotation orbs (compact view) — global override, not just rot-compact ── */
+      #app .rot-orb--active {
+        background:#10b981 !important; border:none !important; color:#fff !important;
+        box-shadow:0 0 0 3px rgba(16,185,129,.25), 0 2px 8px rgba(16,185,129,.3) !important;
+        animation:orb-pulse-green 2.5s ease-in-out infinite !important;
+      }
+      @keyframes orb-pulse-green {
+        0%,100% { box-shadow:0 0 0 3px rgba(16,185,129,.25),0 3px 10px rgba(16,185,129,.3); }
+        50%      { box-shadow:0 0 0 6px rgba(16,185,129,.12),0 3px 14px rgba(16,185,129,.4); }
+      }
+      #app .rot-orb--scheduled {
+        background:transparent !important; border:2px solid #3b82f6 !important; color:#3b82f6 !important;
+      }
+      #app .rot-orb--scheduled:hover { background:#dbeafe !important; }
+      #app .rot-orb--done {
+        background:#f5f4f0 !important; border:1.5px solid #d1d0ca !important; color:#a0a09b !important;
+        box-shadow:none !important; animation:none !important;
+      }
+
+      /* ── Staff rotation chip (medical staff table) ── */
+      #app .staff-rotation-chip {
+        background:#dcfce7 !important; border-color:#86efac !important; color:#14532d !important;
+      }
+      #app .src-dot {
+        background:#10b981 !important; box-shadow:0 0 5px rgba(16,185,129,.6) !important;
+      }
+      #app .src-dur { color:#14532d !important; }
+
+      /* ── Detail view card rows — redesigned ── */
+      #app .tuc-resident-row {
+        display:flex !important; align-items:center !important; gap:10px !important;
+        padding:8px 14px !important; border-bottom:0.5px solid rgba(0,0,0,.05) !important;
+        transition:background .1s !important;
+      }
+      #app .tuc-resident-row:hover { background:rgba(0,0,0,.02) !important; }
+      #app .tuc-resident-row:last-child { border-bottom:none !important; }
+      #app .tuc-resident-row--free { background:transparent !important; }
+
+      /* Active slot avatar — green */
+      #app .tuc-res-avatar {
+        width:26px !important; height:26px !important;
+        border-radius:50% !important; flex-shrink:0 !important;
+        background:#10b981 !important; color:#fff !important;
+        font-size:8px !important; font-weight:700 !important;
+        display:flex !important; align-items:center !important; justify-content:center !important;
+        border:none !important;
+      }
+      /* Scheduled slot avatar — blue */
+      #app .tuc-resident-row--scheduled .tuc-res-avatar {
+        background:#3b82f6 !important;
+      }
+      /* Vacant slot avatar — dashed ring */
+      #app .tuc-res-avatar--free {
+        background:transparent !important;
+        border:1.5px dashed rgba(0,0,0,.15) !important;
+        color:rgba(0,0,0,.25) !important;
+      }
+
+      /* Slot name — full weight, no truncation in detail view */
+      #app .tuc-res-name {
+        font-size:12px !important; font-weight:500 !important;
+        color:var(--nm-text1,#111110) !important;
+        white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important;
+      }
+      #app .tuc-resident-row--free .tuc-res-name {
+        color:rgba(0,0,0,.3) !important; font-style:italic !important; font-weight:400 !important;
+        font-size:11px !important;
+      }
+
+      /* Date chip — right-aligned, monospace */
+      #app .tuc-res-dates {
+        font-size:10px !important; color:rgba(0,0,0,.3) !important;
+        font-family:monospace !important; flex-shrink:0 !important;
+        margin-left:auto !important;
+      }
+      #app .tuc-resident-row--scheduled .tuc-res-dates { color:#3b82f6 !important; }
+
+      /* "Free in Xd" chip — amber */
+      #app .tuc-free-chip {
+        font-size:9px !important; padding:2px 6px !important;
+        border-radius:4px !important; font-family:monospace !important;
+        font-weight:600 !important; flex-shrink:0 !important;
+        background:#fef3c7 !important; color:#92400e !important;
+        border:0.5px solid #fde68a !important;
+      }
+
+      /* Status badge for scheduled rows */
+      #app .tuc-sched-badge {
+        font-size:9px !important; padding:2px 6px !important;
+        border-radius:4px !important; font-family:monospace !important;
+        font-weight:600 !important; flex-shrink:0 !important;
+        background:#dbeafe !important; color:#1e40af !important;
+        border:0.5px solid #bfdbfe !important;
+      }
+
+      /* Card-level border top separator */
+      #app .tuc-resident-slots { border-top:0.5px solid rgba(0,0,0,.07) !important; }
+
+      /* ── Units Occupancy panel — hide useless icon, improve rows ── */
+      #app .uop-unit-icon { display:none !important; }
+      #app .uop-row {
+        padding:12px 16px !important;
+        gap:14px !important;
+      }
+      #app .uop-unit-name { font-size:13px !important; font-weight:500 !important; }
+      #app .uop-unit-sub  { font-size:11px !important; color:var(--nm-text3,#a0a09b) !important; }
+      #app .uop-status-pill--free     { background:#dcfce7 !important; color:#14532d !important; border-color:#86efac !important; }
+      #app .uop-status-pill--closing  { background:#fef3c7 !important; color:#92400e !important; border-color:#fde68a !important; }
+      #app .uop-status-pill--occupied { background:#fee2e2 !important; color:#991b1b !important; border-color:#fca5a5 !important; }
+
+      /* ── Row hover on rotation compact view ── */
+      #app .rot-row:hover { background:rgba(16,185,129,.025) !important; }
+
+      /* ── Resident row in compact view — dept text ── */
+      #app .rot-who-dept { font-size:10px !important; color:var(--nm-text3,#a0a09b) !important; }
+
     </style>
 </head>
 <body>
@@ -3034,12 +3160,12 @@
                                         <div class="tuc-head-right">
                                             <div class="tuc-cap-block">
                                                 <div class="tuc-cap-nums">
-                                                    <span class="tuc-cap-current" :style="getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? 'color:#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? 'color:#ef9f27' : 'color:#009999'">{{ getUnitActiveRotationCount(unit.id) }}</span>
+                                                    <span class="tuc-cap-current" :style="getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? 'color:#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? 'color:#ef9f27' : 'color:#10b981'">{{ getUnitActiveRotationCount(unit.id) }}</span>
                                                     <span class="tuc-cap-sep">/</span>
                                                     <span class="tuc-cap-max">{{ unit.maximum_residents }}</span>
                                                 </div>
                                                 <div class="tuc-cap-bar">
-                                                    <div class="tuc-cap-fill" :style="{ width: Math.min(100, Math.round((getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100))+'%', background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? '#ef9f27' : '#009999' }"></div>
+                                                    <div class="tuc-cap-fill" :style="{ width: Math.min(100, Math.round((getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100))+'%', background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? '#ef9f27' : '#10b981' }"></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -3083,31 +3209,42 @@
                                             </span>
                                         </div>
 
-                                        <!-- Resident slots — the core information -->
+                                        <!-- Resident slots — active first, then scheduled, then vacant -->
                                         <div class="tuc-resident-slots">
-                                            <div v-for="rot in getUnitRotations(unit.id)" :key="rot.id" class="tuc-resident-row tuc-resident-row--active">
-                                                <div class="tuc-res-avatar">{{ (getResidentShortName(rot.resident_id)||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
+                                            <!-- Active rotations -->
+                                            <div v-for="rot in getUnitRotations(unit.id).filter(r => r.rotation_status === 'active')" :key="'a-'+rot.id" class="tuc-resident-row tuc-resident-row--active">
+                                                <div class="tuc-res-avatar">{{ (getResidentShortName(rot.resident_id)||'??').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</div>
                                                 <div class="tuc-res-info">
                                                     <span class="tuc-res-name">{{ getResidentShortName(rot.resident_id) || '—' }}</span>
                                                     <span class="tuc-res-dates">→ {{ new Date(rot.end_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}</span>
                                                 </div>
                                                 <span v-if="getDaysUntilFree(rot.end_date) <= 45 && getDaysUntilFree(rot.end_date) > 0" class="tuc-free-chip">Free in {{ getDaysUntilFree(rot.end_date) }}d</span>
                                             </div>
+                                            <!-- Scheduled rotations -->
+                                            <div v-for="rot in getUnitRotations(unit.id).filter(r => r.rotation_status === 'scheduled')" :key="'s-'+rot.id" class="tuc-resident-row tuc-resident-row--scheduled">
+                                                <div class="tuc-res-avatar">{{ (getResidentShortName(rot.resident_id)||'??').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</div>
+                                                <div class="tuc-res-info">
+                                                    <span class="tuc-res-name">{{ getResidentShortName(rot.resident_id) || '—' }}</span>
+                                                    <span class="tuc-res-dates">{{ new Date(rot.start_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}</span>
+                                                </div>
+                                                <span class="tuc-sched-badge">Sched</span>
+                                            </div>
+                                            <!-- Vacant slots -->
                                             <div v-for="i in Math.max(0, unit.maximum_residents - getUnitActiveRotationCount(unit.id))" :key="'free-'+i" class="tuc-resident-row tuc-resident-row--free">
                                                 <div class="tuc-res-avatar tuc-res-avatar--free">
                                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                                                 </div>
-                                                <span class="tuc-res-name" style="color:var(--text-4);font-style:italic">Available</span>
+                                                <span class="tuc-res-name">Available</span>
                                             </div>
                                         </div>
 
-                                        <!-- Capacity bar + next free date -->
+                                        <!-- Capacity bar + count -->
                                         <div class="tuc-card-footer">
                                             <div class="tuc-cap-bar" style="flex:1">
-                                                <div class="tuc-cap-fill" :style="{ width: Math.min(100,Math.round((getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100))+'%', background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? '#ef9f27' : '#009999' }"></div>
+                                                <div class="tuc-cap-fill" :style="{ width: Math.min(100,Math.round((getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100))+'%', background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? '#ef9f27' : '#10b981' }"></div>
                                             </div>
                                             <span class="tuc-cap-label">{{ getUnitActiveRotationCount(unit.id) }}/{{ unit.maximum_residents }}</span>
-                                            <span v-if="getUnitScheduledCount(unit.id) > 0" style="font-size:9.5px;color:var(--text-4);font-family:monospace">+{{ getUnitScheduledCount(unit.id) }} sched</span>
+                                            <span v-if="getUnitScheduledCount(unit.id) > 0" style="font-size:9.5px;color:#3b82f6;font-family:monospace;font-weight:600">+{{ getUnitScheduledCount(unit.id) }} sched</span>
                                         </div>
                                     </div>
                                 </template>
