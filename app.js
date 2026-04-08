@@ -1158,6 +1158,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const activeAlertsCount = computed(() => systemAlerts.value.filter(a => !a.status || a.status === 'active').length)
 
+      // ── ⌘K Command Palette (open/close only — logic in main setup) ──
+      const cmdPaletteOpen = ref(false)
+
+      // keyboard toggle
+      if (typeof window !== 'undefined') {
+        window.addEventListener('keydown', (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault()
+            cmdPaletteOpen.value = !cmdPaletteOpen.value
+          }
+          if (e.key === 'Escape' && cmdPaletteOpen.value) {
+            cmdPaletteOpen.value = false
+          }
+        })
+      }
+
       const sidebarLiveStatus = computed(() => {
         try {
           const absentNow  = absences.value
@@ -1176,7 +1192,8 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmationModal, showConfirmation, confirmAction, cancelConfirmation,
         userProfileModal, systemAlerts, activeAlertsCount, dismissAlert,
         sidebarCollapsed, mobileMenuOpen, userMenuOpen, statsSidebarOpen, searchResultsOpen,
-        globalSearchQuery, currentView, sidebarLiveStatus
+        globalSearchQuery, currentView, sidebarLiveStatus,
+        cmdPaletteOpen
       }
     }
 
@@ -5742,6 +5759,54 @@ document.addEventListener('DOMContentLoaded', () => {
           onUnmounted(() => { clearInterval(statusInterval); clearInterval(timeInterval); if (rotationCheckInterval) clearInterval(rotationCheckInterval) })
         })
 
+        // ── ⌘K Command Palette (defined here — full access to all refs) ──
+        const cmdQuery       = ref('')
+        const cmdSelectedIdx = ref(0)
+        watch(cmdQuery, () => { cmdSelectedIdx.value = 0 })
+
+        const cmdItems = computed(() => {
+          const q = cmdQuery.value.toLowerCase().trim()
+          const views = [
+            { type:'view', id:'dashboard',         label:'Overview',       sub:'Dashboard'       },
+            { type:'view', id:'medical_staff',      label:'Medical Staff',  sub:'Clinical'        },
+            { type:'view', id:'oncall_schedule',    label:'On-call',        sub:'Clinical · live' },
+            { type:'view', id:'training_units',     label:'Clinical Units', sub:'Structure'       },
+            { type:'view', id:'resident_rotations', label:'Rotations',      sub:'Structure'       },
+            { type:'view', id:'staff_absence',      label:'Absence',        sub:'Administration'  },
+            { type:'view', id:'system_settings',    label:'Settings',       sub:'Administration'  },
+            { type:'view', id:'research_hub',       label:'Research Hub',   sub:'Research'        },
+            { type:'view', id:'news',               label:'News & Posts',   sub:'Research'        },
+          ]
+          const staffItems = !q ? [] : medicalStaff.value
+            .filter(s => s.full_name?.toLowerCase().includes(q))
+            .slice(0,5)
+            .map(s => ({ type:'staff', id:s.id, label:s.full_name, sub:formatStaffType(s.staff_type) || 'Staff member' }))
+          const unitItems = !q ? [] : trainingUnits.value
+            .filter(u => u.unit_name?.toLowerCase().includes(q))
+            .slice(0,3)
+            .map(u => ({ type:'unit', id:u.id, label:u.unit_name, sub:'Clinical unit' }))
+          const viewItems = views.filter(v => !q || v.label.toLowerCase().includes(q) || v.sub.toLowerCase().includes(q))
+          return [...staffItems, ...unitItems, ...viewItems].slice(0, 10)
+        })
+
+        const executeCmdItem = (item) => {
+          if (!item) return
+          ui.cmdPaletteOpen.value = false
+          cmdQuery.value = ''
+          if (item.type === 'view')  switchView(item.id)
+          else if (item.type === 'unit')  switchView('training_units')
+          else if (item.type === 'staff') switchView('medical_staff')
+        }
+
+        // Arrow key navigation for palette (needs cmdItems in scope)
+        window.addEventListener('keydown', (e) => {
+          if (!ui.cmdPaletteOpen.value) return
+          if (e.key === 'ArrowDown') { e.preventDefault(); cmdSelectedIdx.value = Math.min(cmdSelectedIdx.value + 1, Math.max(cmdItems.value.length - 1, 0)) }
+          if (e.key === 'ArrowUp')   { e.preventDefault(); cmdSelectedIdx.value = Math.max(cmdSelectedIdx.value - 1, 0) }
+          if (e.key === 'Enter') { e.preventDefault(); executeCmdItem(cmdItems.value[cmdSelectedIdx.value]) }
+        })
+
+
         return {
           // Existing returns
           loading, saving, currentUser, loginForm, loginLoading, hasPermission,
@@ -5972,6 +6037,7 @@ document.addEventListener('DOMContentLoaded', () => {
           isShiftActive: onCallOps.isShiftActive,
           viewRotationDetails: rotationOps.viewRotationDetails,
           residentGapWarnings: rotationOps.residentGapWarnings,
+          cmdQuery, cmdSelectedIdx, cmdItems, executeCmdItem,
         }    
       }
     })
