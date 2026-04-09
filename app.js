@@ -5002,6 +5002,99 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const newsOps = useNews({ showToast, showConfirmation, medicalStaff, researchLines: researchOps.researchLines })
 
+        // ── EMERGENCY CALLOUTS (DUTY LOG) ─────────────────────────────
+        const callouts        = ref([])
+        const calloutsLoading = ref(false)
+        const calloutSummary  = ref([])
+        const calloutPeriod   = reactive({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 })
+        const calloutModal    = reactive({
+          show: false, mode: 'add',
+          form: { id: null, staff_id: '', called_at: '', end_time: '', reason_category: 'respiratory_emergency', time_type: 'night', notes: '' }
+        })
+        const calloutReasonLabels = {
+          respiratory_emergency: 'Respiratory emergency',
+          bronchospasm:          'Bronchospasm',
+          haemoptysis:           'Haemoptysis',
+          post_procedure:        'Post-procedure complication',
+          icu_transfer:          'ICU transfer support',
+          patient_deterioration: 'Patient deterioration',
+          other:                 'Other'
+        }
+        const calloutTimeTypes = { night:'Night', weekend:'Weekend', daytime:'Daytime', holiday:'Holiday' }
+
+        const loadCallouts = async () => {
+          calloutsLoading.value = true
+          try {
+            const p = new URLSearchParams({ year: calloutPeriod.year, month: calloutPeriod.month, limit: 200 })
+            const res = await API.request(`/api/emergency-callouts?${p}`)
+            callouts.value = res.data || []
+          } catch(e) { showToast('Error', 'Failed to load duty log', 'error') }
+          finally { calloutsLoading.value = false }
+        }
+
+        const loadCalloutSummary = async () => {
+          try {
+            const p = new URLSearchParams({ year: calloutPeriod.year, month: calloutPeriod.month })
+            calloutSummary.value = await API.request(`/api/emergency-callouts/summary?${p}`) || []
+          } catch(e) { /* silently ignore */ }
+        }
+
+        const openLogCalloutModal = () => {
+          const now = new Date()
+          const pad = n => String(n).padStart(2,'0')
+          Object.assign(calloutModal.form, { id:null, staff_id:'', called_at:`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`, end_time:'', reason_category:'respiratory_emergency', time_type: now.getHours() >= 22 || now.getHours() < 7 ? 'night' : now.getDay() === 0 || now.getDay() === 6 ? 'weekend' : 'daytime', notes:'' })
+          calloutModal.mode = 'add'; calloutModal.show = true
+        }
+
+        const editCallout = (c) => {
+          Object.assign(calloutModal.form, { id:c.id, staff_id:c.staff_id, called_at:c.called_at?.slice(0,16)||'', end_time:c.end_time?.slice(0,16)||'', reason_category:c.reason_category||'other', time_type:c.time_type||'night', notes:c.notes||'' })
+          calloutModal.mode = 'edit'; calloutModal.show = true
+        }
+
+        const saveCallout = async () => {
+          const f = calloutModal.form
+          if (!f.staff_id || !f.called_at) { showToast('Validation', 'Physician and call time are required', 'warning'); return }
+          try {
+            const payload = { staff_id:f.staff_id, called_at:f.called_at, end_time:f.end_time||null, reason_category:f.reason_category, time_type:f.time_type, notes:f.notes }
+            if (calloutModal.mode === 'add') {
+              await API.request('/api/emergency-callouts', { method:'POST', body: payload })
+              showToast('Logged', 'Emergency call-out recorded', 'success')
+            } else {
+              await API.request(`/api/emergency-callouts/${f.id}`, { method:'PUT', body: payload })
+              showToast('Updated', 'Call-out record updated', 'success')
+            }
+            calloutModal.show = false
+            await loadCallouts(); await loadCalloutSummary()
+          } catch(e) { showToast('Error', e.message || 'Failed to save', 'error') }
+        }
+
+        const deleteCallout = async (c) => {
+          showConfirmation({ title:'Delete call-out record', message:`Remove this call-out entry for ${c.staff?.full_name || 'this physician'}?`, confirmButtonText:'Delete', confirmButtonClass:'btn-danger',
+            onConfirm: async () => {
+              await API.request(`/api/emergency-callouts/${c.id}`, { method:'DELETE' })
+              showToast('Deleted', 'Call-out record removed', 'success')
+              await loadCallouts(); await loadCalloutSummary()
+            }
+          })
+        }
+
+        const calloutKPIs = computed(() => {
+          const c = callouts.value
+          const now = new Date()
+          const thisMonth = c.filter(x => { const d = new Date(x.called_at); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() })
+          const ytd = c.filter(x => new Date(x.called_at).getFullYear() === now.getFullYear())
+          return {
+            thisMonth: thisMonth.length,
+            night:     thisMonth.filter(x => x.time_type === 'night').length,
+            weekend:   thisMonth.filter(x => x.time_type === 'weekend').length,
+            holiday:   thisMonth.filter(x => x.time_type === 'holiday').length,
+            ytd:       ytd.length,
+          }
+        })
+
+        // auto-load when on-call view is active
+        watch(() => currentView.value, v => { if (v === 'oncall_schedule') { loadCallouts(); loadCalloutSummary() } }, { immediate: false })
+
         // ── NEWS READER DRAWER ────────────────────────────────────────
         const newsDrawer = reactive({ show: false, post: null })
         const openNewsDrawer = (post) => { newsDrawer.post = post; newsDrawer.show = true }
@@ -5072,6 +5165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // ============ NEW COMPACT VIEW STATE ============
         const rotationView = ref('detailed') // 'compact', 'detailed', 'month'
         const onCallView = ref('detailed')
+        const oncallTab  = ref('schedule')
 
         // ============ EXISTING COMPUTED PROPERTIES ============
         // Name lookups — canonical versions live in their composables and are
@@ -6018,7 +6112,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // NEW: Compact view properties - now coming from composables
           rotationView,
-          onCallView,
+          onCallView, oncallTab,
           residentsWithRotations: rotationOps.residentsWithRotations,
           groupedOnCallSchedules: onCallOps.groupedOnCallSchedules,
           staffWithOnCallOrbs: onCallOps.staffWithOnCallOrbs,
@@ -6038,6 +6132,10 @@ document.addEventListener('DOMContentLoaded', () => {
           viewRotationDetails: rotationOps.viewRotationDetails,
           residentGapWarnings: rotationOps.residentGapWarnings,
           cmdQuery, cmdSelectedIdx, cmdItems, executeCmdItem,
+          callouts, calloutsLoading, calloutSummary, calloutPeriod, calloutModal,
+          calloutKPIs, calloutReasonLabels, calloutTimeTypes,
+          openLogCalloutModal, editCallout, saveCallout, deleteCallout,
+          loadCallouts, loadCalloutSummary,
         }    
       }
     })
