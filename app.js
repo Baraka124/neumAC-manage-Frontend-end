@@ -611,9 +611,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.status === 401) {
               localStorage.removeItem(CONFIG.TOKEN_KEY)
               localStorage.removeItem(CONFIG.USER_KEY)
-              // Force Vue app back to login — dispatch custom event picked up in setup()
               window.dispatchEvent(new CustomEvent('neumax:session-expired'))
               throw new Error('Session expired. Please login again.')
+            }
+            if (res.status === 503) {
+              window.dispatchEvent(new CustomEvent('neumax:maintenance'))
+              throw new Error('System is under maintenance. Please try again shortly.')
             }
             const err = await res.text().catch(() => `HTTP ${res.status}`)
             throw new Error(err)
@@ -1160,6 +1163,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── ⌘K Command Palette (open/close only — logic in main setup) ──
       const cmdPaletteOpen = ref(false)
+      const isOffline = ref(!navigator.onLine)
+      const isMaintenanceMode = ref(false)
+      window.addEventListener('online',  () => { isOffline.value = false })
+      window.addEventListener('offline', () => { isOffline.value = true  })
 
       // keyboard toggle
       if (typeof window !== 'undefined') {
@@ -1193,7 +1200,9 @@ document.addEventListener('DOMContentLoaded', () => {
         userProfileModal, systemAlerts, activeAlertsCount, dismissAlert,
         sidebarCollapsed, mobileMenuOpen, userMenuOpen, statsSidebarOpen, searchResultsOpen,
         globalSearchQuery, currentView, sidebarLiveStatus,
-        cmdPaletteOpen
+        cmdPaletteOpen,
+        isOffline,
+        isMaintenanceMode
       }
     }
 
@@ -5851,6 +5860,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Session Expired', 'Your session has expired. Please log in again.', 'warning', 6000)
           })
 
+          window.addEventListener('neumax:maintenance', () => { ui.isMaintenanceMode.value = true })
+
           const statusInterval = setInterval(() => { if (currentUser.value && !liveOps.isLoadingStatus.value) liveOps.loadClinicalStatus() }, 60000)
           const timeInterval = setInterval(() => { dashOps.currentTime.value = new Date() }, 60000)
 
@@ -5892,14 +5903,39 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(u => u.unit_name?.toLowerCase().includes(q))
             .slice(0,3)
             .map(u => ({ type:'unit', id:u.id, label:u.unit_name, sub:'Clinical unit' }))
+          // Action items — shown when query matches action keywords or staff name with action verb
+          const actionItems = []
+          const actionKeywords = ['add','new','log','create','assign','absence','rotation','callout','call-out','duty','guardia','aviso']
+          const hasActionWord = actionKeywords.some(k => q.includes(k))
+          if (q.includes('rotation') || q.includes('assign') || (hasActionWord && q.includes('rotat'))) {
+            actionItems.push({ type:'action', id:'add_rotation', label:'Add rotation', sub:'Assign a resident to a unit', icon:'fa-calendar-plus', fn: () => rotationOps.showAddRotationModal() })
+          }
+          if (q.includes('absence') || q.includes('ausencia') || (hasActionWord && q.includes('abs'))) {
+            actionItems.push({ type:'action', id:'add_absence', label:'Log absence', sub:'Record a new absence', icon:'fa-user-minus', fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.()) } })
+          }
+          if (q.includes('callout') || q.includes('call-out') || q.includes('aviso') || q.includes('guardia') || (hasActionWord && q.includes('call'))) {
+            actionItems.push({ type:'action', id:'log_callout', label:'Log call-out', sub:'Record an emergency duty call', icon:'fa-phone', fn: () => { switchView('oncall_schedule'); Vue.nextTick(() => oncallOps?.openLogCalloutModal?.()) } })
+          }
+          if (!q || q.includes('staff') || q.includes('medico') || q.includes('doctor') || (hasActionWord && (q.includes('new') || q.includes('add')))) {
+            if (q && hasActionWord) actionItems.push({ type:'action', id:'add_staff', label:'Add staff member', sub:'Register a new physician or resident', icon:'fa-user-plus', fn: () => { switchView('medical_staff'); Vue.nextTick(() => staffOps?.showAddStaffModal?.()) } })
+          }
+          // Staff action items — when query contains a staff name + action word
+          const staffActionItems = !q ? [] : medicalStaff.value
+            .filter(s => s.full_name?.toLowerCase().includes(q) && hasActionWord)
+            .slice(0,3)
+            .flatMap(s => [
+              { type:'action', id:, label:, sub:'Open rotation modal pre-filled', icon:'fa-calendar-plus', fn: () => rotationOps.showAddRotationModal(s) },
+              { type:'action', id:, label:, sub:'Open absence modal pre-filled', icon:'fa-user-minus', fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.(s)) } },
+            ])
           const viewItems = views.filter(v => !q || v.label.toLowerCase().includes(q) || v.sub.toLowerCase().includes(q))
-          return [...staffItems, ...unitItems, ...viewItems].slice(0, 10)
+          return [...actionItems, ...staffActionItems, ...staffItems, ...unitItems, ...viewItems].slice(0, 12)
         })
 
         const executeCmdItem = (item) => {
           if (!item) return
           ui.cmdPaletteOpen.value = false
           cmdQuery.value = ''
+          if (item.type === 'action' && item.fn) { item.fn(); return }
           if (item.type === 'view')  switchView(item.id)
           else if (item.type === 'unit')  switchView('training_units')
           else if (item.type === 'staff') switchView('medical_staff')
@@ -6155,6 +6191,7 @@ document.addEventListener('DOMContentLoaded', () => {
           viewRotationDetails: rotationOps.viewRotationDetails,
           residentGapWarnings: rotationOps.residentGapWarnings,
           cmdQuery, cmdSelectedIdx, cmdItems, executeCmdItem,
+          isOffline: ui.isOffline, isMaintenanceMode: ui.isMaintenanceMode,
           callouts, calloutsLoading, calloutSummary, calloutPeriod, calloutModal,
           calloutFairnessAlert,
           calloutKPIs, calloutReasonLabels, calloutTimeTypes,
