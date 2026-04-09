@@ -1592,12 +1592,42 @@
       }
 
 
+      /* Banner slide transition */
+      .banner-slide-enter-active, .banner-slide-leave-active { transition: transform .2s ease, opacity .2s ease; }
+      .banner-slide-enter-from, .banner-slide-leave-to { transform: translateY(-100%); opacity: 0; }
+      /* On-call status pills */
+      .oc-status-pill { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:500; padding:2px 8px; border-radius:20px; white-space:nowrap; }
+      .oc-status-dot  { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+      .oc-status-pill--upcoming { background:rgba(37,99,235,.08); color:#2563eb; }
+      .oc-status-pill--upcoming .oc-status-dot { background:#2563eb; }
+      .oc-status-pill--live { background:rgba(16,185,129,.1); color:#059669; }
+      .oc-status-pill--live .oc-status-dot { background:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,.25); animation:pulse-dot 1.5s infinite; }
+      .oc-status-pill--done { background:rgba(107,114,128,.08); color:#9ca3af; }
+      .oc-status-pill--done .oc-status-dot { background:#9ca3af; }
+      @keyframes pulse-dot { 0%,100% { box-shadow:0 0 0 2px rgba(16,185,129,.25); } 50% { box-shadow:0 0 0 5px rgba(16,185,129,.08); } }
     </style>
 </head>
 <body>
 <div id="app" v-cloak>
 
-    <!-- ============- TOAST CONTAINER ==-=--=---======= -->
+    <!-- OFFLINE BANNER -->
+    <transition name="banner-slide">
+      <div v-if="isOffline" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#1c1917;color:#fef3c7;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-bottom:1px solid #78350f;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+        No connection — working offline. Some features may be unavailable.
+      </div>
+    </transition>
+
+    <!-- MAINTENANCE BANNER -->
+    <transition name="banner-slide">
+      <div v-if="isMaintenanceMode" style="position:fixed;top:0;left:0;right:0;z-index:9998;background:#0f172a;color:#e2e8f0;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-bottom:1px solid #334155;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        System maintenance in progress — read-only mode. Changes may not be saved.
+        <button @click="isMaintenanceMode = false" style="margin-left:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;">Dismiss</button>
+      </div>
+    </transition>
+
+    <!-- ============- TOAST CONTAINER ==-=--=---=======-->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id"
              :class="['toast', `toast-${toast.type}`]"
@@ -1758,18 +1788,21 @@
                     <template v-if="cmdItems.length > 0">
                         <div v-for="(item, idx) in cmdItems" :key="String(item.id) + item.type"
                              class="cmd-item"
-                             :class="{ selected: cmdSelectedIdx === idx }"
+                             :class="{ selected: cmdSelectedIdx === idx, 'cmd-item--action': item.type === 'action' }"
                              @click="executeCmdItem(item)">
-                            <div class="cmd-item-icon">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                                    <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"></path>
-                                </svg>
+                            <div class="cmd-item-icon" :style="item.type === 'action' ? 'background:rgba(0,179,179,.1);color:#00b3b3;' : ''">
+                                <i v-if="item.icon" :class="['fa', item.icon]" style="font-size:13px;"></i>
+                                <svg v-else-if="item.type === 'staff'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <svg v-else-if="item.type === 'unit'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
                             </div>
                             <div class="cmd-item-info">
                                 <div class="cmd-item-label">{{ item.label }}</div>
                                 <div class="cmd-item-sub">{{ item.sub }}</div>
                             </div>
-                            <span class="cmd-item-type">{{ item.type === 'staff' ? 'Staff' : item.type === 'unit' ? 'Unit' : 'View' }}</span>
+                            <span class="cmd-item-type" :style="item.type === 'action' ? 'background:rgba(0,179,179,.1);color:#00b3b3;border-color:rgba(0,179,179,.2);' : ''">
+                                {{ item.type === 'action' ? 'Action' : item.type === 'staff' ? 'Staff' : item.type === 'unit' ? 'Unit' : 'View' }}
+                            </span>
                         </div>
                     </template>
                     <div v-else style="padding:32px;text-align:center;font-size:13px;color:var(--nm-text3);">
@@ -2916,11 +2949,12 @@
                             <table class="table table-striped table-oncall">
                                 <thead>
                                     <tr>
-                                        <th style="width:22%">Shift Period</th>
-                                        <th style="width:28%">Physician</th>
-                                        <th style="width:14%">Type</th>
-                                        <th style="width:22%">Backup</th>
-                                        <th style="width:14%">Actions</th>
+                                        <th style="width:20%">Shift Period</th>
+                                        <th style="width:25%">Physician</th>
+                                        <th style="width:11%">Type</th>
+                                        <th style="width:11%">Status</th>
+                                        <th style="width:20%">Backup</th>
+                                        <th style="width:13%">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2950,6 +2984,17 @@
                                             </div>
                                         </td>
                                         <td :data-label="'Type'"><span class="oc-type-badge" :class="'oc-type-badge--' + schedule.shift_type">{{ {'primary_call':'Primary','backup_call':'Backup','weekend_coverage':'Weekend','float_physician':'Float'}[schedule.shift_type] || schedule.shift_type }}</span></td>
+                                        <td :data-label="'Status'">
+                                            <span :class="[
+                                              'oc-status-pill',
+                                              new Date(schedule.duty_date + 'T' + (schedule.start_time||'00:00')) > new Date() ? 'oc-status-pill--upcoming' :
+                                              isToday(schedule.duty_date) ? 'oc-status-pill--live' :
+                                              'oc-status-pill--done'
+                                            ]">
+                                              <span class="oc-status-dot"></span>
+                                              {{ new Date(schedule.duty_date + 'T' + (schedule.start_time||'00:00')) > new Date() ? 'Upcoming' : isToday(schedule.duty_date) ? 'Live' : 'Done' }}
+                                            </span>
+                                        </td>
                                         <td :data-label="'Backup'"><span v-if="schedule.backup_physician_id">{{ getPhysicianName(schedule.backup_physician_id) }}</span><span v-else class="na-value">—</span></td>
                                         <td :data-label="'Actions'">
                                             <div class="table-actions">
@@ -5105,6 +5150,10 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
                                 Publication
                             </button>
+                            <button class="nm-tab" :class="{active: newsModal._tab==='preview'}" @click="newsModal._tab='preview'" style="margin-left:auto;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                Preview
+                            </button>
                         </div>
 
                         <!-- ══ TAB BODY ══ -->
@@ -5241,6 +5290,39 @@
                                 <div v-if="newsModal.form.post_type !== 'publication'" class="nm-tab-empty">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
                                     <span>Publication fields only apply when post type is set to <strong>Publication</strong></span>
+                                </div>
+                            </template>
+
+                            <!-- ══ PREVIEW TAB ══ -->
+                            <template v-if="newsModal._tab==='preview'">
+                                <div style="padding:24px;min-height:300px;">
+                                    <div v-if="!newsModal.form.title && !newsModal.form.body" class="nm-tab-empty">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        <span>Nothing to preview yet — add a title and content first</span>
+                                    </div>
+                                    <div v-else>
+                                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                            <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:4px;background:rgba(0,179,179,.1);color:#00b3b3;">
+                                                {{ {update:'Update',article:'Article',publication:'Publication',photo_story:'Photo Story'}[newsModal.form.post_type] || 'Post' }}
+                                            </span>
+                                            <span v-if="newsModal.form.status" style="font-size:10px;color:#909399;">{{ newsModal.form.status }}</span>
+                                        </div>
+                                        <h2 style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;color:#07111f;line-height:1.3;margin:0 0 8px;">
+                                            {{ newsModal.form.title || 'Untitled' }}
+                                        </h2>
+                                        <div v-if="newsModal.form.author_id" style="font-size:12px;color:#909399;margin-bottom:16px;">
+                                            {{ allStaffLookup.find(s=>s.id===newsModal.form.author_id)?.full_name }} · {{ new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}) }}
+                                        </div>
+                                        <div v-if="newsModal.form.featured_image_url" style="margin-bottom:16px;">
+                                            <img :src="newsModal.form.featured_image_url" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;" onerror="this.style.display='none'">
+                                        </div>
+                                        <div style="font-size:14px;line-height:1.7;color:#374151;white-space:pre-wrap;">{{ newsModal.form.body }}</div>
+                                        <div v-if="newsModal.form.journal_name || newsModal.form.doi" style="margin-top:20px;padding:12px;background:#f8f7f5;border-radius:8px;border-left:3px solid #00b3b3;">
+                                            <div v-if="newsModal.form.journal_name" style="font-size:12px;font-weight:600;color:#07111f;">{{ newsModal.form.journal_name }}</div>
+                                            <div v-if="newsModal.form.authors_text" style="font-size:11px;color:#909399;margin-top:2px;">{{ newsModal.form.authors_text }}</div>
+                                            <div v-if="newsModal.form.doi" style="font-size:11px;font-family:monospace;color:#00b3b3;margin-top:4px;">DOI: {{ newsModal.form.doi }}</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </template>
 
