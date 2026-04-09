@@ -440,8 +440,9 @@
       #app .app-layout { display:flex !important; height:100vh !important; max-height:100vh !important; overflow:hidden !important; }
 
       /* ── SIDEBAR ── */
-      #app .sidebar { width:260px !important; background:var(--nm-navy) !important; display:flex !important; flex-direction:column !important; height:100vh !important; flex-shrink:0 !important; overflow:hidden !important; border-right:1px solid rgba(255,255,255,.06) !important; transition:width .2s !important; }
-      #app .sidebar.sidebar-collapsed { width:64px !important; }
+      #app .sidebar { position:relative !important; width:clamp(220px,16vw,240px) !important; background:var(--nm-navy) !important; display:flex !important; flex-direction:column !important; height:100vh !important; flex-shrink:0 !important; overflow:hidden !important; border-right:1px solid rgba(255,255,255,.06) !important; transition:width .2s !important; }
+      #app .sidebar.sidebar-collapsed { width:56px !important; }
+      #app .main-content { margin-left:0 !important; }
       #app .sidebar .sidebar-header { padding:14px 14px 12px !important; border-bottom:1px solid rgba(255,255,255,.06) !important; flex-shrink:0 !important; }
       #app .sidebar .sidebar-logo { display:flex; align-items:center; gap:10px; }
       #app .sidebar .sidebar-toggle { margin-left:auto; width:24px; height:24px; background:rgba(255,255,255,.06) !important; border:none !important; border-radius:6px !important; color:rgba(255,255,255,.35) !important; cursor:pointer; display:flex; align-items:center; justify-content:center; }
@@ -2134,17 +2135,40 @@
 
                 <!-- ============ ON-CALL SCHEDULE VIEW (ENHANCED) ============ -->
                 <div v-if="currentView === 'oncall_schedule'">
+
+                    <!-- ── Tab bar ── -->
+                    <div class="rhub-tabs" style="display:flex;align-items:center;background:#0f2d54;flex-shrink:0;">
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': oncallTab === 'schedule' }" @click="oncallTab = 'schedule'">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                            Schedule
+                        </button>
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': oncallTab === 'callouts' }" @click="oncallTab = 'callouts'; loadCallouts()">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5"/><path d="M4 19h16"/></svg>
+                            Duty log
+                            <span class="rhub-tab-count">{{ callouts.length }}</span>
+                        </button>
+                        <button class="rhub-tab" :class="{ 'rhub-tab--active': oncallTab === 'summary' }" @click="oncallTab = 'summary'; loadCalloutSummary(); loadCallouts()">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                            On-call summary
+                        </button>
+                        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 16px;">
+                            <button class="btn btn-primary btn-sm" @click="openLogCalloutModal" v-if="hasPermission('oncall_schedule','create')">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Log call-out
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ══ TAB 1: SCHEDULE (existing) ══ -->
+                    <div v-show="oncallTab === 'schedule'">
                     <div class="card mb-6">
                         <div class="card-header">
                             <div class="card-title"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg> On-call Schedule</div>
                             <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
                                 <div class="view-toggle">
-                                    <button class="btn-pill" :class="{ active: onCallView === 'compact' }" 
-                                            @click="onCallView = 'compact'">
+                                    <button class="btn-pill" :class="{ active: onCallView === 'compact' }" @click="onCallView = 'compact'">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg> Compact
                                     </button>
-                                    <button class="btn-pill" :class="{ active: onCallView === 'detailed' }" 
-                                            @click="onCallView = 'detailed'">
+                                    <button class="btn-pill" :class="{ active: onCallView === 'detailed' }" @click="onCallView = 'detailed'">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9H21M3 15H21M9 3V21M15 3V21"/></svg> Detailed
                                     </button>
                                 </div>
@@ -2153,7 +2177,6 @@
                                 </button>
                             </div>
                         </div>
-
                         <!-- Filter Bar -->
                         <div class="filter-bar">
                             <input type="date" class="form-control" style="max-width:180px" v-model="onCallFilters.date">
@@ -2337,6 +2360,212 @@
                             </div>
                         </div>
                     </div>
+                    </div><!-- /schedule tab -->
+
+                    <!-- ══ TAB 2: DUTY LOG ══ -->
+                    <div v-show="oncallTab === 'callouts'" style="padding:24px;">
+
+                        <!-- KPI strip -->
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+                            <div class="absence-kpi">
+                                <div class="absence-kpi-num" style="color:#e24b4a;">{{ calloutKPIs.thisMonth }}</div>
+                                <div class="absence-kpi-label">This month</div>
+                                <div class="absence-kpi-sub">Emergency call-outs</div>
+                            </div>
+                            <div class="absence-kpi">
+                                <div class="absence-kpi-num" style="color:#7c3aed;">{{ calloutKPIs.night }}</div>
+                                <div class="absence-kpi-label">Night calls</div>
+                                <div class="absence-kpi-sub">After 22:00</div>
+                            </div>
+                            <div class="absence-kpi">
+                                <div class="absence-kpi-num" style="color:#ef9f27;">{{ calloutKPIs.weekend }}</div>
+                                <div class="absence-kpi-label">Weekend calls</div>
+                                <div class="absence-kpi-sub">Sat / Sun</div>
+                            </div>
+                            <div class="absence-kpi">
+                                <div class="absence-kpi-num">{{ calloutKPIs.ytd }}</div>
+                                <div class="absence-kpi-label">Year to date</div>
+                                <div class="absence-kpi-sub">All call-outs</div>
+                            </div>
+                        </div>
+
+                        <!-- Log table -->
+                        <div class="card mb-6">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5"/><path d="M4 19h16"/></svg>
+                                    Emergency call-out log
+                                    <span style="font-size:11px;color:var(--nm-text3);font-style:normal;background:var(--nm-surface2);padding:2px 8px;border-radius:5px;">{{ callouts.length }} records</span>
+                                </div>
+                                <button class="btn btn-primary" @click="openLogCalloutModal" v-if="hasPermission('oncall_schedule','create')">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Log call-out
+                                </button>
+                            </div>
+
+                            <!-- Loading skeleton -->
+                            <div v-if="calloutsLoading" style="display:flex;flex-direction:column;gap:0;">
+                                <div v-for="i in 5" :key="i" class="nm-skel-row nm-skeleton" style="height:60px;margin:0;border-radius:0;"></div>
+                            </div>
+
+                            <div v-else-if="callouts.length === 0" class="nm-empty">
+                                <div class="nm-empty-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5"/><path d="M4 19h16"/></svg></div>
+                                <div class="nm-empty-title">No call-outs logged</div>
+                                <div class="nm-empty-sub">Record unscheduled emergency call-outs to track duty load across the team</div>
+                                <button class="btn btn-primary btn-sm nm-empty-btn" @click="openLogCalloutModal" v-if="hasPermission('oncall_schedule','create')">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Log first call-out
+                                </button>
+                            </div>
+
+                            <div v-else class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:24%">Physician</th>
+                                            <th style="width:16%">Called at</th>
+                                            <th style="width:10%">Type</th>
+                                            <th style="width:16%">Duration</th>
+                                            <th style="width:22%">Reason</th>
+                                            <th style="width:12%"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="c in callouts" :key="c.id" class="staff-table-row">
+                                            <td>
+                                                <div class="staff-name-cell">
+                                                    <div class="staff-table-av staff-table-av--attending">
+                                                        {{ (c.staff?.full_name || c.staff_id || '??').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
+                                                    </div>
+                                                    <div class="staff-name-primary">{{ c.staff?.full_name || '—' }}</div>
+                                                </div>
+                                            </td>
+                                            <td class="date-cell">
+                                                <div>{{ c.called_at ? new Date(c.called_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : '—' }}</div>
+                                                <div style="font-size:11px;color:var(--nm-text3);font-family:monospace;">{{ c.called_at ? new Date(c.called_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : '' }}</div>
+                                            </td>
+                                            <td>
+                                                <span class="badge" :style="c.time_type==='night' ? 'background:#EDE9FE;color:#4C1D95' : c.time_type==='weekend' ? 'background:#FEF3C7;color:#92400E' : c.time_type==='holiday' ? 'background:#FEE2E2;color:#991B1B' : 'background:#DCFCE7;color:#14532D'">
+                                                    {{ calloutTimeTypes[c.time_type] || c.time_type }}
+                                                </span>
+                                            </td>
+                                            <td style="font-family:monospace;font-size:12px;">
+                                                <span v-if="c.called_at && c.end_time">
+                                                    {{ Math.round((new Date(c.end_time) - new Date(c.called_at)) / 60000) }}m
+                                                </span>
+                                                <span v-else style="color:var(--nm-text3);">—</span>
+                                            </td>
+                                            <td>
+                                                <span style="font-size:12px;color:var(--nm-text2);">{{ calloutReasonLabels[c.reason_category] || c.reason_category }}</span>
+                                                <div v-if="c.notes" style="font-size:11px;color:var(--nm-text3);margin-top:2px;">{{ c.notes }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="table-actions">
+                                                    <button class="btn-icon" @click.stop="editCallout(c)" v-if="hasPermission('oncall_schedule','update')" title="Edit">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
+                                                    </button>
+                                                    <button class="btn-icon btn-icon--danger" @click.stop="deleteCallout(c)" v-if="hasPermission('oncall_schedule','delete')" title="Delete">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div><!-- /callouts tab -->
+
+                    <!-- ══ TAB 3: ON-CALL SUMMARY ══ -->
+                    <div v-show="oncallTab === 'summary'" style="padding:24px;">
+                        <div class="card mb-6">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                                    On-call summary per physician
+                                </div>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <select class="form-select" v-model="calloutPeriod.month" style="max-width:140px;" @change="loadCallouts(); loadCalloutSummary()">
+                                        <option v-for="m in 12" :key="m" :value="m">{{ new Date(2000,m-1,1).toLocaleDateString('es-ES',{month:'long'}) }}</option>
+                                    </select>
+                                    <select class="form-select" v-model="calloutPeriod.year" style="max-width:100px;" @change="loadCallouts(); loadCalloutSummary()">
+                                        <option v-for="y in [2024,2025,2026,2027]" :key="y" :value="y">{{ y }}</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div v-if="calloutsLoading" style="display:flex;flex-direction:column;gap:0;">
+                                <div v-for="i in 6" :key="i" class="nm-skel-row nm-skeleton" style="height:52px;margin:0;border-radius:0;"></div>
+                            </div>
+
+                            <div v-else-if="medicalStaff.length === 0" class="nm-empty">
+                                <div class="nm-empty-title">No data yet</div>
+                                <div class="nm-empty-sub">Log call-outs in the duty log tab to see the summary</div>
+                            </div>
+
+                            <div v-else class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:26%">Physician</th>
+                                            <th style="width:13%;text-align:center">Scheduled on-call</th>
+                                            <th style="width:11%;text-align:center">Call-outs</th>
+                                            <th style="width:10%;text-align:center">Night</th>
+                                            <th style="width:10%;text-align:center">Weekend</th>
+                                            <th style="width:11%;text-align:center">Total</th>
+                                            <th style="width:19%">vs avg</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="staff in availablePhysicians.slice(0,12)" :key="staff.id" class="staff-table-row">
+                                            <td>
+                                                <div class="staff-name-cell">
+                                                    <div class="staff-table-av staff-table-av--attending">
+                                                        {{ (staff.full_name||'??').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
+                                                    </div>
+                                                    <div>
+                                                        <div class="staff-name-primary">{{ staff.full_name }}</div>
+                                                        <div style="font-size:11px;color:var(--nm-text3);">{{ formatStaffType(staff.staff_type) }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style="text-align:center;font-family:monospace;font-weight:500;">
+                                                {{ filteredOnCallSchedules.filter(s => (s.primary_physician_id===staff.id || s.backup_physician_id===staff.id)).length }}
+                                            </td>
+                                            <td style="text-align:center;font-family:monospace;font-weight:500;">
+                                                <span :style="(calloutSummary.find(s=>s.staff_id===staff.id)?.total||0) > 3 ? 'color:#e24b4a' : (calloutSummary.find(s=>s.staff_id===staff.id)?.total||0) > 1 ? 'color:#ef9f27' : 'color:#10b981'">
+                                                    {{ calloutSummary.find(s=>s.staff_id===staff.id)?.total || 0 }}
+                                                </span>
+                                            </td>
+                                            <td style="text-align:center;font-family:monospace;font-size:12px;color:#7c3aed;">
+                                                {{ calloutSummary.find(s=>s.staff_id===staff.id)?.night || 0 }}
+                                            </td>
+                                            <td style="text-align:center;font-family:monospace;font-size:12px;color:#92400e;">
+                                                {{ calloutSummary.find(s=>s.staff_id===staff.id)?.weekend || 0 }}
+                                            </td>
+                                            <td style="text-align:center;">
+                                                <span style="font-size:12px;font-weight:600;font-family:monospace;background:var(--nm-surface2);padding:3px 9px;border-radius:5px;">
+                                                    {{ (filteredOnCallSchedules.filter(s=>s.primary_physician_id===staff.id||s.backup_physician_id===staff.id).length) + (calloutSummary.find(s=>s.staff_id===staff.id)?.total||0) }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div style="width:80px;height:5px;background:var(--nm-surface3);border-radius:3px;overflow:hidden;">
+                                                    <div :style="{ width: Math.min(100, Math.round(((filteredOnCallSchedules.filter(s=>s.primary_physician_id===staff.id||s.backup_physician_id===staff.id).length)+(calloutSummary.find(s=>s.staff_id===staff.id)?.total||0)) / Math.max(1, availablePhysicians.reduce((a,p) => a + (filteredOnCallSchedules.filter(s=>s.primary_physician_id===p.id||s.backup_physician_id===p.id).length)+(calloutSummary.find(s=>s.staff_id===p.id)?.total||0), 0) / Math.max(1, availablePhysicians.length) * 2) * 100))+'%', height:'100%', borderRadius:'3px', background:'#07111f' }"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Fairness alert -->
+                            <div v-if="(()=>{ const totals = availablePhysicians.map(p=>(filteredOnCallSchedules.filter(s=>s.primary_physician_id===p.id||s.backup_physician_id===p.id).length)+(calloutSummary.find(s=>s.staff_id===p.id)?.total||0)); const avg = totals.reduce((a,b)=>a+b,0)/Math.max(1,totals.length); return totals.some(t=>t>avg*1.5 && avg>0); })()"
+                                 style="display:flex;align-items:center;gap:10px;padding:10px 18px;background:#fef3c7;border-top:0.5px solid #fde68a;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+                                <span style="font-size:12px;font-weight:500;color:#92400e;">Uneven distribution detected</span>
+                                <span style="font-size:12px;color:#92400e;opacity:.8;">— one or more physicians are significantly above the team average this period</span>
+                            </div>
+                        </div>
+                    </div><!-- /summary tab -->
+
                 </div>
 
                 <!-- ============ RESIDENT ROTATIONS VIEW (ENHANCED) ============ -->
@@ -4482,6 +4711,72 @@
                     <button class="btn btn-secondary" @click="rotationServiceModal.show = false">Cancel</button>
                     <button class="btn btn-primary" @click="saveRotationService">
                         {{ rotationServiceModal.mode === 'add' ? 'Add Service' : 'Save Changes' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ EMERGENCY CALLOUT LOG MODAL ============ -->
+        <div v-if="calloutModal.show" class="modal-overlay" @click.self="calloutModal.show = false">
+            <div class="modal-container" style="max-width:480px">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5"/><path d="M4 19h16"/></svg>
+                        {{ calloutModal.mode === 'add' ? 'Log emergency call-out' : 'Edit call-out record' }}
+                    </div>
+                    <button class="modal-close" @click="calloutModal.show = false">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Physician <span style="color:#e24b4a">*</span></label>
+                        <select class="form-select" v-model="calloutModal.form.staff_id">
+                            <option value="">Select physician…</option>
+                            <optgroup label="Attending / Fellow">
+                                <option v-for="p in availablePhysicians.filter(x => !isResidentType(x.staff_type))" :key="p.id" :value="p.id">{{ p.full_name }}</option>
+                            </optgroup>
+                            <optgroup label="Residents">
+                                <option v-for="p in availablePhysicians.filter(x => isResidentType(x.staff_type))" :key="p.id" :value="p.id">{{ p.full_name }}</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="mb-3">
+                        <div class="form-group">
+                            <label class="form-label">Called at <span style="color:#e24b4a">*</span></label>
+                            <input type="datetime-local" class="form-control" v-model="calloutModal.form.called_at">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Returned at</label>
+                            <input type="datetime-local" class="form-control" v-model="calloutModal.form.end_time">
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="mb-3">
+                        <div class="form-group">
+                            <label class="form-label">Time type</label>
+                            <select class="form-select" v-model="calloutModal.form.time_type">
+                                <option value="night">Night (after 22:00)</option>
+                                <option value="weekend">Weekend</option>
+                                <option value="holiday">Public holiday</option>
+                                <option value="daytime">Daytime</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reason</label>
+                            <select class="form-select" v-model="calloutModal.form.reason_category">
+                                <option v-for="(label, key) in calloutReasonLabels" :key="key" :value="key">{{ label }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <input type="text" class="form-control" v-model="calloutModal.form.notes" placeholder="Brief description of the situation…">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="calloutModal.show = false">Cancel</button>
+                    <button class="btn btn-primary" @click="saveCallout">
+                        {{ calloutModal.mode === 'add' ? 'Log call-out' : 'Save changes' }}
                     </button>
                 </div>
             </div>
