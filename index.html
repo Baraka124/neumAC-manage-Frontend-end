@@ -1609,6 +1609,11 @@
 </head>
 <body>
 <div id="app" v-cloak>
+    <!-- Offline banner -->
+    <div v-if="!isOnline" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#07111f;color:#fde68a;font-size:13px;font-weight:500;padding:8px 20px;display:flex;align-items:center;justify-content:center;gap:10px;border-bottom:1px solid rgba(253,230,138,.2);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+        You are offline — changes cannot be saved until your connection is restored
+    </div>
 
     <!-- OFFLINE BANNER -->
     <transition name="banner-slide">
@@ -2998,6 +3003,11 @@
                                         <td :data-label="'Backup'"><span v-if="schedule.backup_physician_id">{{ getPhysicianName(schedule.backup_physician_id) }}</span><span v-else class="na-value">—</span></td>
                                         <td :data-label="'Actions'">
                                             <div class="table-actions">
+                                                <button class="tbl-btn tbl-btn--success" v-if="isToday(schedule.duty_date) && hasPermission('oncall_schedule','create')"
+                                                        title="Log call-out for this shift"
+                                                        @click.stop="openLogCalloutModal(); calloutModal.form.staff_id = schedule.primary_physician_id">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5"/><path d="M4 19h16"/></svg>
+                                                </button>
                                                 <button class="tbl-btn" @click.stop="editOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule','update')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
                                                 <button class="tbl-btn tbl-btn--danger" @click.stop="deleteOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule','delete')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                             </div>
