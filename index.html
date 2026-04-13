@@ -1829,6 +1829,173 @@
       }
 
 
+      /* ════════════════════════════════════════════════════════════════
+         CRUD ACTION BUTTON SYSTEM — authoritative, always visible
+         One design language across every table, card, and orb view
+         ════════════════════════════════════════════════════════════════ */
+
+      /* ── Kill ALL opacity hiding on action buttons everywhere ── */
+      #app .table-actions                  { opacity:1 !important; }
+      #app .table-actions .btn-sm          { opacity:1 !important; }
+      #app .table .table-actions           { opacity:1 !important; }
+      #app .content-area .table-actions    { opacity:1 !important; }
+      #app tr:hover .table-actions         { opacity:1 !important; }
+      #app .scc-actions                    { opacity:1 !important; }
+
+      /* ── tbl-btn — primary action button used in all tables ── */
+      #app .tbl-btn {
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        height:32px !important;
+        min-width:32px !important;
+        padding:0 10px !important;
+        border-radius:6px !important;
+        border:1px solid var(--nm-border) !important;
+        background:var(--nm-surface) !important;
+        color:var(--nm-text2) !important;
+        font-size:12px !important;
+        font-weight:500 !important;
+        cursor:pointer !important;
+        white-space:nowrap !important;
+        gap:5px !important;
+        transition:background .1s, border-color .1s, color .1s !important;
+        flex-shrink:0 !important;
+      }
+      #app .tbl-btn:hover {
+        background:var(--nm-surface2) !important;
+        border-color:rgba(0,0,0,.18) !important;
+        color:var(--nm-text1) !important;
+      }
+      #app .tbl-btn svg { width:14px !important; height:14px !important; flex-shrink:0; }
+
+      /* Semantic variants */
+      #app .tbl-btn--danger {
+        color:#a32d2d !important;
+        border-color:#f7c1c1 !important;
+        background:#fcebeb !important;
+      }
+      #app .tbl-btn--danger:hover {
+        background:#fee2e2 !important;
+        border-color:#f09595 !important;
+        color:#7f1d1d !important;
+      }
+      #app .tbl-btn--success {
+        color:#065f46 !important;
+        border-color:#6ee7b7 !important;
+        background:#d1fae5 !important;
+      }
+      #app .tbl-btn--success:hover {
+        background:#a7f3d0 !important;
+        border-color:#34d399 !important;
+        color:#064e3b !important;
+      }
+      #app .tbl-btn--primary {
+        color:#1e40af !important;
+        border-color:#93c5fd !important;
+        background:#eff6ff !important;
+      }
+      #app .tbl-btn--primary:hover {
+        background:#dbeafe !important;
+        border-color:#60a5fa !important;
+        color:#1e3a8a !important;
+      }
+
+      /* ── table-actions container ── */
+      #app .table-actions {
+        display:flex !important;
+        align-items:center !important;
+        gap:4px !important;
+        flex-wrap:nowrap !important;
+        opacity:1 !important;
+      }
+
+      /* ── btn-icon — alias to tbl-btn for consistency ── */
+      #app .btn-icon {
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        width:32px !important;
+        height:32px !important;
+        padding:0 !important;
+        border-radius:6px !important;
+        border:1px solid var(--nm-border) !important;
+        background:var(--nm-surface) !important;
+        color:var(--nm-text2) !important;
+        cursor:pointer !important;
+        flex-shrink:0 !important;
+        transition:background .1s, border-color .1s, color .1s !important;
+        opacity:1 !important;
+      }
+      #app .btn-icon:hover {
+        background:var(--nm-surface2) !important;
+        border-color:rgba(0,0,0,.18) !important;
+        color:var(--nm-text1) !important;
+      }
+      #app .btn-icon--danger:hover {
+        background:#fee2e2 !important;
+        border-color:#f09595 !important;
+        color:#7f1d1d !important;
+      }
+      #app .btn-icon svg { width:14px !important; height:14px !important; }
+
+      /* ── rot-action-btn — orb view (on-call, rotation compact) ── */
+      /* Override style.css's circular design with our flat system */
+      #app .rot-action-btn {
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        width:32px !important;
+        height:32px !important;
+        padding:0 !important;
+        border-radius:6px !important;
+        border:1px solid var(--nm-border) !important;
+        background:var(--nm-surface) !important;
+        color:var(--nm-text2) !important;
+        cursor:pointer !important;
+        flex-shrink:0 !important;
+        opacity:1 !important;
+        transition:background .1s, border-color .1s, color .1s !important;
+      }
+      #app .rot-action-btn:hover {
+        background:var(--nm-surface2) !important;
+        border-color:rgba(0,0,0,.18) !important;
+        color:var(--nm-text1) !important;
+      }
+      #app .rot-action-btn--danger:hover {
+        background:#fee2e2 !important;
+        border-color:#f09595 !important;
+        color:#7f1d1d !important;
+      }
+      #app .rot-action-btn svg { width:14px !important; height:14px !important; }
+      /* scc-actions within compact cards */
+      #app .scc-actions .rot-action-btn {
+        width:32px !important; height:32px !important;
+        border-radius:6px !important;
+        opacity:1 !important;
+      }
+
+      /* ── Spacing around action cells in tables ── */
+      #app .table td:last-child,
+      #app .table td.actions-cell {
+        white-space:nowrap !important;
+        overflow:visible !important;
+        padding-right:12px !important;
+      }
+
+      /* ── Touch devices: larger targets ── */
+      @media (hover: none) and (pointer: coarse) {
+        #app .tbl-btn       { height:40px !important; min-width:40px !important; padding:0 12px !important; }
+        #app .btn-icon      { width:40px !important; height:40px !important; }
+        #app .rot-action-btn{ width:40px !important; height:40px !important; }
+      }
+
+      /* ── Duplicate override removal — earlier conflicting rules ── */
+      /* These are intentionally re-stated here to win specificity order */
+      #app .table .btn-icon { opacity:1 !important; }
+      #app .table .btn-pill { opacity:1 !important; font-size:12px !important; height:32px !important; padding:0 10px !important; }
+
+
     </style>
 </head>
 <body>
@@ -3834,8 +4001,8 @@
                                         </td>
                                         <td>
                                             <div class="table-actions">
-                                                <button class="btn-icon" @click="editRotation(rotation)" v-if="hasPermission('resident_rotations', 'update')" title="Edit rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                                <button class="btn-icon btn-icon--danger" @click.stop="deleteRotation(rotation)" v-if="hasPermission('resident_rotations', 'delete') && ['active','scheduled'].includes(rotation.rotation_status)" title="Terminate rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                                <button class="tbl-btn" @click.stop="editRotation(rotation)" v-if="hasPermission('resident_rotations', 'update')" title="Edit rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteRotation(rotation)" v-if="hasPermission('resident_rotations', 'delete') && ['active','scheduled'].includes(rotation.rotation_status)" title="Terminate rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                             </div>
                                         </td>
                                     </tr>
