@@ -5278,6 +5278,18 @@ document.addEventListener('DOMContentLoaded', () => {
           staffOps.staffProfileModal.collapsed[key] = !staffOps.staffProfileModal.collapsed[key]
         }
 
+        // Load certificates into profile modal on demand
+        const loadStaffCertificates = async (staffId) => {
+          if (!staffId) return
+          staffOps.staffProfileModal.loadingCerts = true
+          staffOps.staffProfileModal.certificates = []
+          try {
+            const data = await API.request(`/api/medical-staff/${staffId}/certificates`)
+            staffOps.staffProfileModal.certificates = Array.isArray(data) ? data : []
+          } catch { staffOps.staffProfileModal.certificates = [] }
+          finally { staffOps.staffProfileModal.loadingCerts = false }
+        }
+
         const viewStaffDetails = async (staff) => {
           // Guard: staff might be undefined if medicalStaff.find() returned nothing
           if (!staff || !staff.id) { console.warn('viewStaffDetails: staff object is undefined or missing id'); return; }
@@ -6053,6 +6065,8 @@ document.addEventListener('DOMContentLoaded', () => {
           ...dashOps,
           handleLogin, handleLogout,
           switchView, situationItems, dailyBriefing, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch, isOnline,
+          getPhaseColor: (p) => Utils.getPhaseColor(p),
+          getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates,
           newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
           newsWordCount, newsWordLimit,
           loadNews, showAddNewsModal, editNews, saveNews,
