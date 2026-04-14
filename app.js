@@ -1295,6 +1295,19 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!form.home_department_id) { setErr('staff', 'home_department_id', 'Origin department required'); ok = false }
         }
         if (!ok) jumpToFirstStaffError()
+        
+        // Duplicate email check
+        if (ok && form.professional_email?.trim()) {
+          const editId = form.id
+          const dup = medicalStaff.value.find(s =>
+            s.id !== editId &&
+            s.professional_email?.toLowerCase() === form.professional_email.toLowerCase()
+          )
+          if (dup) {
+            setErr('staff', 'professional_email', `Email already used by ${dup.full_name}`)
+            ok = false
+          }
+        }
         return ok
       }
 
@@ -1562,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (medicalStaffModal.mode === 'add') {
             savedStaff = await API.createMedicalStaff(data)
             medicalStaff.value.unshift(savedStaff)
-            showToast('Success', 'Medical staff added', 'success')
+            showToast('Success', 'Medical staff added', 'success'); Vue.nextTick(() => updateDashboardStats())
           } else {
             savedStaff = await API.updateMedicalStaff(f.id, data)
             const idx = medicalStaff.value.findIndex(s => s.id === savedStaff.id)
@@ -1913,7 +1926,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (onCallModal.mode === 'add') {
             const result = await API.createOnCall(data);
             onCallSchedule.value.unshift({ ...result, duty_date: Utils.normalizeDate(result.duty_date) });
-            showToast('Success', 'On-call scheduled', 'success');
+            showToast('Success', 'On-call scheduled', 'success'); Vue.nextTick(() => updateDashboardStats());
           } else {
             const result = await API.updateOnCall(f.id, data);
             const idx = onCallSchedule.value.findIndex(s => s.id === result.id);
@@ -2205,6 +2218,44 @@ document.addEventListener('DOMContentLoaded', () => {
           const e = new Date(Utils.normalizeDate(form.end_date) + 'T00:00:00')
           if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e <= s) { setErr('rotation', 'end_date', 'End date must be after start date'); ok = false }
         }
+        
+        // Overlap check — resident can't have two rotations overlapping
+        if (ok && form.resident_id && form.start_date && form.end_date) {
+          const newStart = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
+          const newEnd   = new Date(Utils.normalizeDate(form.end_date)   + 'T23:59:59')
+          const editId   = form.id || form.rotation_id
+          const overlap  = rotations.value.find(r =>
+            r.resident_id === form.resident_id &&
+            r.id !== editId &&
+            ['active','scheduled'].includes(r.rotation_status) &&
+            new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00') <= newEnd &&
+            new Date(Utils.normalizeDate(r.end_date)   + 'T23:59:59') >= newStart
+          )
+          if (overlap) {
+            setErr('rotation', 'start_date', `Overlaps with existing rotation at ${getTrainingUnitName(overlap.training_unit_id) || 'another unit'}`)
+            ok = false
+          }
+        }
+        // Capacity check — unit has a max_residents limit
+        if (ok && form.training_unit_id && form.start_date && form.end_date) {
+          const unit = trainingUnits.value.find(u => u.id === form.training_unit_id)
+          if (unit?.maximum_residents) {
+            const newStart = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
+            const newEnd   = new Date(Utils.normalizeDate(form.end_date)   + 'T23:59:59')
+            const editId   = form.id || form.rotation_id
+            const concurrent = rotations.value.filter(r =>
+              r.training_unit_id === form.training_unit_id &&
+              r.id !== editId &&
+              ['active','scheduled'].includes(r.rotation_status) &&
+              new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00') <= newEnd &&
+              new Date(Utils.normalizeDate(r.end_date)   + 'T23:59:59') >= newStart
+            ).length
+            if (concurrent >= unit.maximum_residents) {
+              setErr('rotation', 'training_unit_id', `${unit.unit_name} is at full capacity (${unit.maximum_residents} residents)`)
+              ok = false
+            }
+          }
+        }
         return ok
       }
 
@@ -2359,7 +2410,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const normalize = r => ({ ...r, start_date: Utils.normalizeDate(r.start_date), end_date: Utils.normalizeDate(r.end_date) })
           if (rotationModal.mode === 'add') {
             rotations.value.unshift(normalize(await API.createRotation(data)))
-            showToast('Success', 'Rotation scheduled', 'success')
+            showToast('Success', 'Rotation scheduled', 'success'); Vue.nextTick(() => updateDashboardStats())
           } else {
             const result = normalize(await API.updateRotation(f.id, data))
             const idx = rotations.value.findIndex(r => r.id === result.id)
@@ -2861,6 +2912,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveAbsence = async (saving) => {
         if (!validateAbsence(absenceModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
+        if (saving?.value) return
+        if (saving) saving.value = true
 
         // ── On-call conflict check ──────────────────────────────────────────
         const f = absenceModal.form
@@ -2921,7 +2974,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (idx !== -1) absences.value[idx] = record
             showToast('Success', 'Absence updated', 'success')
           }
-          absenceModal.show = false; clearAll('absence'); await loadAbsences()
+          absenceModal.show = false; clearAll('absence'); await loadAbsences(); Vue.nextTick(() => updateDashboardStats())
         } catch (e) { showToast('Error', e.message || 'Failed to save absence', 'error') }
         finally { saving.value = false }
       }
@@ -3091,6 +3144,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const editDepartment = (d) => { departmentModal.mode = 'edit'; Object.assign(departmentModal.form, { ...d }); departmentModal.show = true }
 
       const saveDepartment = async (saving) => {
+        const f = departmentModal?.form || {}
+        if (!f.name?.trim()) { showToast('Validation Error', 'Department name is required', 'error'); return }
         saving.value = true
         try {
           if (departmentModal.mode === 'add') {
@@ -3730,6 +3785,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveUnitClinicians = async () => {
         const u = unitCliniciansModal.unit
+        if (!u?.id) { showToast('Error', 'No unit selected', 'error'); return }
+        try {
         // Backend Joi schema: unit_name, unit_code, department_id (req), supervising_attending_id (opt uuid),
         // maximum_residents, unit_status, specialty/location_building/location_floor (opt — no empty strings).
         // stripUnknown:true drops anything else silently.
@@ -3753,6 +3810,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         unitCliniciansModal.show = false
         showToast('Saved', 'Supervisor assignment updated', 'success')
+        } catch(e) { showToast('Error', e.message || 'Failed to save unit staff', 'error') }
       }
 
       const viewUnitResidents = (unit, allRotations) => {
@@ -3840,6 +3898,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const viewAnnouncement = (a) => { announcementReadModal.announcement = a; announcementReadModal.show = true }
 
       const saveCommunication = async (saving, saveClinicalStatus) => {
+        // Validate before setting loading — better UX
+        if (communicationsModal.activeTab === 'announcement') {
+          const f = communicationsModal.form
+          if (!f.title?.trim()) { showToast('Validation Error', 'Title is required', 'error'); return }
+          if (!f.content?.trim()) { showToast('Validation Error', 'Content is required', 'error'); return }
+        }
         saving.value = true
         try {
           if (communicationsModal.activeTab === 'announcement') {
@@ -4117,6 +4181,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveClinicalTrial = async (saving) => {
         const f = clinicalTrialModal.form
+        if (!f.title?.trim()) { showToast('Validation Error', 'Trial title is required', 'error'); return }
+        if (!f.principal_investigator_id) { showToast('Validation Error', 'Principal investigator is required', 'error'); return }
         // FIX 8: date relationship validation
         if (f.start_date && f.end_date && f.end_date < f.start_date) { showToast('Validation Error', 'End date cannot be before start date', 'error'); return }
         saving.value = true
@@ -4480,6 +4546,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const editNews = (post) => {
         newsModal.mode = 'edit'
+        newsModal._tab = 'content'  // open on content tab when editing
         const _s = (v) => v == null ? '' : String(v)
         Object.assign(newsModal.form, {
           ...post,
@@ -4746,7 +4813,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 7; i++) {
           const d = new Date(todayDate.getTime() + i * 86400000)
           const ds = Utils.normalizeDate(d)
-          const hasPrimary = onCallSchedule.value.some(s => Utils.normalizeDate(s.duty_date) === ds && ['primary_call','primary'].includes(s.shift_type))
+          const hasPrimary = onCallSchedule.value.some(s => Utils.normalizeDate(s.duty_date) === ds && ['primary_call','primary','weekend_coverage'].includes(s.shift_type))
           if (!hasPrimary) ocGaps.push(d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }))
         }
         if (ocGaps.length > 0) {
@@ -4789,6 +4856,25 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         }
 
+        // Add "all covered" positive if nothing is wrong but we have data
+        if (items.length === 0 && medicalStaff.value.length > 0) {
+          const todayStr = Utils.normalizeDate(new Date())
+          const hasCoverage = onCallSchedule.value.some(s =>
+            Utils.normalizeDate(s.duty_date) === todayStr &&
+            ['primary_call','primary','weekend_coverage'].includes(s.shift_type)
+          )
+          const hasActiveRotations = rotations.value.some(r => r.rotation_status === 'active')
+          items.push({
+            icon: 'fa-check-circle',
+            type: 'ok',
+            text: [
+              hasCoverage ? 'On-call covered' : null,
+              hasActiveRotations ? `${rotations.value.filter(r=>r.rotation_status==='active').length} rotations active` : null,
+              `${medicalStaff.value.filter(s=>s.employment_status==='active').length} staff available`,
+            ].filter(Boolean).join(' · '),
+            action: null
+          })
+        }
         return items.sort((a,b) => {
           const p = { danger: 0, warn: 1, info: 2, ok: 3 }
           return (p[a.type] ?? 4) - (p[b.type] ?? 4)
@@ -4796,7 +4882,37 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       // Top 3 priority items for the dashboard briefing card
-      const dailyBriefing = computed(() => situationItems.value.slice(0, 3))
+      const dailyBriefing = computed(() => {
+        const dataReady = medicalStaff.value.length > 0 || rotations.value.length > 0 || onCallSchedule.value.length > 0
+        if (!dataReady) return []
+        return situationItems.value.slice(0, 4)
+      })
+
+      // systemSummary — department health overview for dashboard
+      const systemSummary = computed(() => {
+        const today = Utils.normalizeDate(new Date())
+        const activeStaff     = medicalStaff.value.filter(s => s.employment_status === 'active').length
+        const onLeave         = medicalStaff.value.filter(s => s.employment_status === 'on_leave').length
+        const activeRotations = rotations.value.filter(r => r.rotation_status === 'active').length
+        const scheduledRots   = rotations.value.filter(r => r.rotation_status === 'scheduled').length
+        const todayHasCoverage= onCallSchedule.value.some(s =>
+          Utils.normalizeDate(s.duty_date) === today &&
+          ['primary_call','primary','weekend_coverage'].includes(s.shift_type)
+        )
+        const dangerAlerts = situationItems.value.filter(i => i.type === 'danger').length
+        const warnAlerts   = situationItems.value.filter(i => i.type === 'warn').length
+        const healthScore  = Math.max(0, 100
+          - (dangerAlerts * 25)
+          - (warnAlerts   * 10)
+          - (onLeave > 0 && !todayHasCoverage ? 15 : 0)
+        )
+        return {
+          activeStaff, onLeave, activeRotations, scheduledRots, todayHasCoverage,
+          dangerAlerts, warnAlerts, healthScore,
+          healthLabel: healthScore >= 80 ? 'Optimal' : healthScore >= 60 ? 'Good' : healthScore >= 40 ? 'Attention' : 'Action required',
+          healthColor: healthScore >= 80 ? 'var(--nm-teal,#00b3b3)' : healthScore >= 60 ? '#3b82f6' : healthScore >= 40 ? '#f59e0b' : '#ef4444',
+        }
+      })
 
       const currentTimeFormatted = computed(() => Utils.formatTime(currentTime.value))
       return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems, dailyBriefing }
@@ -5121,13 +5237,34 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         const calloutFairnessAlert = computed(() => {
-          if (!availablePhysicians || !availablePhysicians.value) return false
+          if (!availablePhysicians?.value?.length) return false
           const totals = availablePhysicians.value.map(p =>
             (filteredOnCallSchedules.value || []).filter(s => s.primary_physician_id === p.id || s.backup_physician_id === p.id).length +
             (calloutSummary.value.find(s => s.staff_id === p.id)?.total || 0)
           )
           const avg = totals.reduce((a,b) => a+b, 0) / Math.max(1, totals.length)
           return avg > 0 && totals.some(t => t > avg * 1.5)
+        })
+
+        // calloutDistribution — per-physician duty load with deviation from avg
+        const calloutDistribution = computed(() => {
+          if (!availablePhysicians?.value?.length) return []
+          const physicians = availablePhysicians.value
+          const items = physicians.map(p => {
+            const scheduled = (filteredOnCallSchedules.value || []).filter(
+              s => s.primary_physician_id === p.id || s.backup_physician_id === p.id
+            ).length
+            const summary = calloutSummary.value.find(s => s.staff_id === p.id) || {}
+            const callouts = summary.total || 0
+            const night    = summary.night || 0
+            const weekend  = summary.weekend || 0
+            const total    = scheduled + callouts
+            return { id: p.id, name: p.full_name, staffType: p.staff_type, scheduled, callouts, night, weekend, total }
+          })
+          const avg = items.reduce((s,i) => s + i.total, 0) / Math.max(1, items.length)
+          return items
+            .map(i => ({ ...i, avg, deviation: avg > 0 ? Math.round((i.total / avg - 1) * 100) : 0 }))
+            .sort((a,b) => b.total - a.total)
         })
 
         // auto-load when on-call view is active
@@ -5456,6 +5593,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (trainingUnitFilters && trainingUnitFilters.department !== undefined) trainingUnitFilters.department = filters.department
           }
           if (filters.residentCategory && staffFilters) { staffFilters.staffType = 'medical_resident'; staffFilters.residentCategory = filters.residentCategory }
+          if (filters.status && staffFilters) staffFilters.status = filters.status
+          if (filters.staffType && staffFilters) staffFilters.staffType = filters.staffType
           if (filters.rotationStatus && rotationFilters) rotationFilters.status = filters.rotationStatus
           if (filters.trainingUnit && rotationFilters) rotationFilters.trainingUnit = filters.trainingUnit
           ui.searchResultsOpen.value = false
@@ -5939,6 +6078,106 @@ document.addEventListener('DOMContentLoaded', () => {
         const cmdSelectedIdx = ref(0)
         watch(cmdQuery, () => { cmdSelectedIdx.value = 0 })
 
+        // ── GLOBAL PHYSICIAN POPOVER ──────────────────────────────────────────
+        const popover = Vue.reactive({ staff: null, visible: false })
+        let _popoverTimer = null
+
+        const showPopover = (staffObj, event) => {
+          if (!staffObj) return
+          clearTimeout(_popoverTimer)
+          _popoverTimer = setTimeout(() => {
+            popover.staff = staffObj
+            const el = document.getElementById('staffPopover')
+            if (!el) return
+            const rect = event.currentTarget?.getBoundingClientRect?.() || event.target?.getBoundingClientRect?.() || { top: event.clientY, left: event.clientX, width: 0, height: 0 }
+            const vpW = window.innerWidth, vpH = window.innerHeight
+            const pw = 300, ph = 360  // approx popover size
+            let left = rect.left + rect.width / 2 - pw / 2
+            let top  = rect.bottom + 8
+            if (left + pw > vpW - 12) left = vpW - pw - 12
+            if (left < 12) left = 12
+            if (top + ph > vpH - 12) top = rect.top - ph - 8
+            el.style.left = left + 'px'
+            el.style.top  = top  + 'px'
+            el.classList.add('visible')
+            popover.visible = true
+          }, 220)
+        }
+
+        const hidePopover = () => {
+          clearTimeout(_popoverTimer)
+          const el = document.getElementById('staffPopover')
+          if (el) el.classList.remove('visible')
+          setTimeout(() => { popover.staff = null; popover.visible = false }, 200)
+        }
+
+        // Keep popover open when hovering over it
+        if (typeof document !== 'undefined') {
+          document.addEventListener('mouseover', (e) => {
+            const pop = document.getElementById('staffPopover')
+            if (pop && pop.contains(e.target)) return  // inside popover = stay
+            if (!e.target.closest('[data-popover-staff]')) hidePopover()
+          }, { passive: true })
+        }
+
+        // ── ABSENCE COVERAGE CALENDAR ─────────────────────────────────────────
+        const absenceCalendarOffset = Vue.ref(0) // months from now
+
+        const absenceMoveMonth = (delta) => { absenceCalendarOffset.value += delta }
+
+        const absenceCalendarTitle = Vue.computed(() => {
+          const d = new Date()
+          d.setMonth(d.getMonth() + absenceCalendarOffset.value)
+          return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+        })
+
+        const absenceCalendarCells = Vue.computed(() => {
+          const d = new Date()
+          d.setMonth(d.getMonth() + absenceCalendarOffset.value)
+          const year = d.getFullYear(), month = d.getMonth()
+          const firstDay = new Date(year, month, 1).getDay()  // 0=Sun
+          const startOffset = (firstDay === 0) ? 6 : firstDay - 1  // Mon-first
+          const daysInMonth  = new Date(year, month+1, 0).getDate()
+          const daysInPrev   = new Date(year, month, 0).getDate()
+          const cells = []
+          const today = new Date(); today.setHours(0,0,0,0)
+
+          // Fill prev month overflow
+          for (let i = startOffset; i > 0; i--) {
+            cells.push({ date: null, day: daysInPrev - i + 1, otherMonth: true, absences: [] })
+          }
+          // Fill current month
+          for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+            const cellDate = new Date(year, month, day)
+            const dayAbsences = (absences?.value || []).filter(a => {
+              if (!a.start_date || !a.end_date) return false
+              const s = new Date(a.start_date + 'T00:00:00')
+              const e = new Date(a.end_date + 'T23:59:59')
+              return cellDate >= s && cellDate <= e
+            })
+            const isToday = cellDate.getTime() === today.getTime()
+            // Coverage risk: multiple senior staff absent = risk
+            const seniorAbsent = dayAbsences.filter(a => {
+              const staff = medicalStaff.value.find(s => s.id === a.staff_member_id)
+              return staff && !isResidentType(staff.staff_type)
+            }).length
+            cells.push({
+              date: dateStr, day, otherMonth: false, isToday,
+              absences: dayAbsences,
+              riskLevel: seniorAbsent >= 2 ? 'gap' : seniorAbsent === 1 ? 'risk' : dayAbsences.length > 0 ? 'covered' : 'clear'
+            })
+          }
+          // Fill to complete grid (multiple of 7)
+          let next = 1
+          while (cells.length % 7 !== 0) {
+            cells.push({ date: null, day: next++, otherMonth: true, absences: [] })
+          }
+          return cells
+        })
+
+
+
         const cmdItems = computed(() => {
           const q = cmdQuery.value.toLowerCase().trim()
           const views = [
@@ -5971,10 +6210,10 @@ document.addEventListener('DOMContentLoaded', () => {
             actionItems.push({ type:'action', id:'add_absence', label:'Log absence', sub:'Record a new absence', icon:'fa-user-minus', fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.()) } })
           }
           if (q.includes('callout') || q.includes('call-out') || q.includes('aviso') || q.includes('guardia') || (hasActionWord && q.includes('call'))) {
-            actionItems.push({ type:'action', id:'log_callout', label:'Log call-out', sub:'Record an emergency duty call', icon:'fa-phone', fn: () => { switchView('oncall_schedule'); Vue.nextTick(() => oncallOps?.openLogCalloutModal?.()) } })
+            actionItems.push({ type:'action', id:'log_callout', label:'Log call-out', sub:'Record an emergency duty call', icon:'fa-phone', fn: () => { switchView('oncall_schedule'); Vue.nextTick(() => { if (typeof openLogCalloutModal === 'function') openLogCalloutModal() }) } })
           }
           if (!q || q.includes('staff') || q.includes('medico') || q.includes('doctor') || (hasActionWord && (q.includes('new') || q.includes('add')))) {
-            if (q && hasActionWord) actionItems.push({ type:'action', id:'add_staff', label:'Add staff member', sub:'Register a new physician or resident', icon:'fa-user-plus', fn: () => { switchView('medical_staff'); Vue.nextTick(() => staffOps?.showAddStaffModal?.()) } })
+            if (q && hasActionWord) actionItems.push({ type:'action', id:'add_staff', label:'Add staff member', sub:'Register a new physician or resident', icon:'fa-user-plus', fn: () => { switchView('medical_staff'); Vue.nextTick(() => staffOps?.showAddMedicalStaffModal?.()) } })
           }
           // Staff action items — when query contains a staff name + action word
           const staffActionItems = !q ? [] : medicalStaff.value
@@ -6015,6 +6254,248 @@ document.addEventListener('DOMContentLoaded', () => {
           if (e.key === 'ArrowUp')   { e.preventDefault(); cmdSelectedIdx.value = Math.max(cmdSelectedIdx.value - 1, 0) }
           if (e.key === 'Enter') { e.preventDefault(); executeCmdItem(cmdItems.value[cmdSelectedIdx.value]) }
         })
+
+
+
+      // ═══════════════════════════════════════════════════════════════
+      //  CLINICAL INTELLIGENCE LAYER — hover popovers + availability
+      // ═══════════════════════════════════════════════════════════════
+
+      // ── Hover popover system ──
+      const hoverPopover = Vue.reactive({
+        show: false, x: 0, y: 0,
+        staffId: null, data: null, entering: false,
+        _timer: null, _hideTimer: null
+      })
+
+      const getStaffPulseState = (staffId) => {
+        if (!staffId) return 'inactive'
+        const staff = medicalStaff.value.find(s => s.id === staffId)
+        if (!staff) return 'inactive'
+        if (staff.employment_status === 'on_leave') return 'leave'
+        const today = Utils.normalizeDate(new Date())
+        const onCallToday = onCallSchedule.value.some(s =>
+          Utils.normalizeDate(s.duty_date) === today && s.primary_physician_id === staffId
+        )
+        if (onCallToday) return 'oncall'
+        const rot = rotations.value.find(r => r.resident_id === staffId && r.rotation_status === 'active')
+        if (rot) {
+          const daysLeft = Math.ceil((new Date(rot.end_date) - new Date()) / 86400000)
+          if (daysLeft <= 7) return 'ending'
+        }
+        if (staff.employment_status === 'inactive') return 'inactive'
+        return 'available'
+      }
+
+      const getStaffNextEvent = (staffId) => {
+        if (!staffId) return null
+        const today = new Date(); today.setHours(0,0,0,0)
+        // Check current rotation ending soon
+        const rot = rotations.value.find(r =>
+          r.resident_id === staffId && r.rotation_status === 'active'
+        )
+        if (rot) {
+          const end = new Date(rot.end_date + 'T00:00:00')
+          const daysLeft = Math.ceil((end - today) / 86400000)
+          if (daysLeft <= 14) return { type: 'ending', label: `Rotation ends in ${daysLeft}d`, color: 'ending' }
+        }
+        // Check next on-call
+        const nextOC = onCallSchedule.value
+          .filter(s => s.primary_physician_id === staffId)
+          .filter(s => new Date(s.duty_date + 'T00:00:00') >= today)
+          .sort((a,b) => a.duty_date.localeCompare(b.duty_date))[0]
+        if (nextOC) {
+          const d = new Date(nextOC.duty_date + 'T00:00:00')
+          const diff = Math.ceil((d - today) / 86400000)
+          const label = diff === 0 ? 'On call today' : diff === 1 ? 'On call tomorrow' : `On call ${d.toLocaleDateString('en-GB', {weekday:'short',day:'numeric',month:'short'})}`
+          return { type: 'oncall', label, color: 'oncall' }
+        }
+        // Check upcoming leave
+        const nextLeave = absences.value
+          .filter(a => a.staff_member_id === staffId)
+          .filter(a => new Date(a.end_date + 'T00:00:00') >= today && a.current_status !== 'returned_to_duty')
+          .sort((a,b) => a.start_date.localeCompare(b.start_date))[0]
+        if (nextLeave) {
+          const start = new Date(nextLeave.start_date + 'T00:00:00')
+          const diff = Math.ceil((start - today) / 86400000)
+          const label = diff <= 0 ? 'On leave now' : `Leave in ${diff}d`
+          return { type: 'leave', label, color: 'leave' }
+        }
+        // Check scheduled rotation
+        const nextRot = rotations.value.find(r =>
+          r.resident_id === staffId && r.rotation_status === 'scheduled'
+        )
+        if (nextRot) {
+          const start = new Date(nextRot.start_date + 'T00:00:00')
+          const diff = Math.ceil((start - today) / 86400000)
+          if (diff <= 30) return { type: 'rotation', label: `Rotation starts in ${diff}d`, color: 'rotation' }
+        }
+        return null
+      }
+
+      const buildStaffPopoverData = (staffId) => {
+        const staff = medicalStaff.value.find(s => s.id === staffId)
+        if (!staff) return null
+        const pulse = getStaffPulseState(staffId)
+        const nextEvent = getStaffNextEvent(staffId)
+        const currentRot = rotations.value.find(r => r.resident_id === staffId && r.rotation_status === 'active')
+        const upcomingOC = onCallSchedule.value
+          .filter(s => s.primary_physician_id === staffId)
+          .filter(s => new Date(s.duty_date + 'T00:00:00') >= new Date())
+          .sort((a,b) => a.duty_date.localeCompare(b.duty_date))
+          .slice(0, 3)
+        const currentLeave = absences.value.find(a => {
+          const today = Utils.normalizeDate(new Date())
+          return a.staff_member_id === staffId &&
+            Utils.normalizeDate(a.start_date) <= today &&
+            Utils.normalizeDate(a.end_date) >= today
+        })
+        const certCount = 0 // loaded separately on drawer open
+        return { staff, pulse, nextEvent, currentRot, upcomingOC, currentLeave }
+      }
+
+      const showIntelPopover = (staffId, event) => {
+        if (hoverPopover._timer) clearTimeout(hoverPopover._timer)
+        if (hoverPopover._hideTimer) clearTimeout(hoverPopover._hideTimer)
+        hoverPopover._timer = setTimeout(() => {
+          const data = buildStaffPopoverData(staffId)
+          if (!data) return
+          const rect = event.currentTarget?.getBoundingClientRect?.() || { right: event.clientX, top: event.clientY, bottom: event.clientY }
+          hoverPopover.x = Math.min(rect.right + 10, window.innerWidth - 300)
+          hoverPopover.y = Math.min(rect.top - 10, window.innerHeight - 280)
+          hoverPopover.staffId = staffId
+          hoverPopover.data = data
+          hoverPopover.show = true
+          hoverPopover.entering = true
+          setTimeout(() => { hoverPopover.entering = false }, 200)
+        }, 280)
+      }
+
+      const hideIntelPopover = () => {
+        if (hoverPopover._timer) { clearTimeout(hoverPopover._timer); hoverPopover._timer = null }
+        hoverPopover._hideTimer = setTimeout(() => { hoverPopover.show = false }, 150)
+      }
+
+      // ── Absence calendar computed ──
+      const absCalendarMonth = Vue.ref(new Date().getMonth())
+      const absCalendarYear  = Vue.ref(new Date().getFullYear())
+
+      const absCalendarDays = Vue.computed(() => {
+        const year = absCalendarYear.value
+        const month = absCalendarMonth.value
+        const firstDay = new Date(year, month, 1)
+        const lastDay  = new Date(year, month + 1, 0)
+        const startDow = (firstDay.getDay() + 6) % 7 // Mon=0
+        const days = []
+        // Pad with previous month days
+        for (let i = startDow - 1; i >= 0; i--) {
+          const d = new Date(year, month, -i)
+          days.push({ date: Utils.normalizeDate(d), day: d.getDate(), otherMonth: true, absences: [], risk: 'low' })
+        }
+        // Current month days
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+          const date = new Date(year, month, d)
+          const dateStr = Utils.normalizeDate(date)
+          const dayAbsences = absences.value.filter(a => {
+            const s = Utils.normalizeDate(a.start_date)
+            const e = Utils.normalizeDate(a.end_date)
+            return s <= dateStr && e >= dateStr &&
+              a.current_status !== 'returned_to_duty' && a.current_status !== 'cancelled'
+          })
+          // Risk: high if senior staff absent, medium if any
+          const seniorAbsent = dayAbsences.filter(a => {
+            const staff = medicalStaff.value.find(s => s.id === a.staff_member_id)
+            return staff && !isResidentType(staff.staff_type)
+          }).length
+          const risk = seniorAbsent >= 2 ? 'high' : seniorAbsent === 1 ? 'medium' : dayAbsences.length > 0 ? 'low' : 'none'
+          const isToday = dateStr === Utils.normalizeDate(new Date())
+          days.push({ date: dateStr, day: d, otherMonth: false, absences: dayAbsences, risk, isToday })
+        }
+        // Pad to complete grid (multiples of 7)
+        const remaining = (7 - (days.length % 7)) % 7
+        for (let d = 1; d <= remaining; d++) {
+          const date = new Date(year, month + 1, d)
+          days.push({ date: Utils.normalizeDate(date), day: d, otherMonth: true, absences: [], risk: 'low' })
+        }
+        return days
+      })
+
+      const absCalendarTitle = Vue.computed(() => {
+        return new Date(absCalendarYear.value, absCalendarMonth.value, 1)
+          .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      })
+
+      const absCalPrevMonth = () => {
+        if (absCalendarMonth.value === 0) { absCalendarMonth.value = 11; absCalendarYear.value-- }
+        else absCalendarMonth.value--
+      }
+      const absCalNextMonth = () => {
+        if (absCalendarMonth.value === 11) { absCalendarMonth.value = 0; absCalendarYear.value++ }
+        else absCalendarMonth.value++
+      }
+
+      // Absence view mode
+      const absenceViewMode = Vue.ref('table') // 'table' | 'calendar'
+
+      // ── 30-day coverage strip for absence ──
+      const absCoverage30 = Vue.computed(() => {
+        const days = []
+        const total = medicalStaff.value.filter(s => s.employment_status === 'active').length
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(); d.setDate(d.getDate() + i); d.setHours(0,0,0,0)
+          const dateStr = Utils.normalizeDate(d)
+          const absent = absences.value.filter(a => {
+            const s = Utils.normalizeDate(a.start_date)
+            const e = Utils.normalizeDate(a.end_date)
+            return s <= dateStr && e >= dateStr &&
+              a.current_status !== 'returned_to_duty' && a.current_status !== 'cancelled'
+          }).length
+          const available = Math.max(0, total - absent)
+          const pct = total > 0 ? (available / total) : 1
+          const label = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })
+          days.push({ date: dateStr, absent, available, pct, label, isToday: i === 0 })
+        }
+        return days
+      })
+
+      // ── Unit 30-day timeline ──
+      const getUnit30DayTimeline = (unitId) => {
+        const unit = trainingUnits.value.find(u => u.id === unitId)
+        if (!unit) return []
+        const days = []
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(); d.setDate(d.getDate() + i)
+          const dateStr = Utils.normalizeDate(d)
+          const active = rotations.value.filter(r =>
+            r.training_unit_id === unitId &&
+            ['active','scheduled'].includes(r.rotation_status) &&
+            Utils.normalizeDate(r.start_date) <= dateStr &&
+            Utils.normalizeDate(r.end_date) >= dateStr
+          ).length
+          const full = active >= (unit.maximum_residents || 1)
+          const isToday = i === 0
+          days.push({ active, full, isToday })
+        }
+        return days
+      }
+
+      // ── Dept pulse bar stats ──
+      const deptPulseStats = Vue.computed(() => {
+        const today = Utils.normalizeDate(new Date())
+        const active = medicalStaff.value.filter(s => s.employment_status === 'active').length
+        const onLeave = absences.value.filter(a => {
+          const s = Utils.normalizeDate(a.start_date)
+          const e = Utils.normalizeDate(a.end_date)
+          return s <= today && e >= today && a.current_status !== 'returned_to_duty'
+        }).length
+        const onCallToday = [...new Set(
+          onCallSchedule.value
+            .filter(s => Utils.normalizeDate(s.duty_date) === today)
+            .map(s => s.primary_physician_id)
+        )].length
+        const rotationCount = rotations.value.filter(r => r.rotation_status === 'active').length
+        return { active, onLeave, onCallToday, rotationCount }
+      })
 
 
         return {
@@ -6064,7 +6545,14 @@ document.addEventListener('DOMContentLoaded', () => {
           loadResearchDashboard, // override with wired wrapper that passes research data refs
           ...dashOps,
           handleLogin, handleLogout,
-          switchView, situationItems, dailyBriefing, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch, isOnline,
+          switchView, situationItems, dailyBriefing, systemSummary, toggleStatsSidebar,
+          popover, showPopover, hidePopover,
+          absenceCalendarOffset, absenceCalendarCells, absenceCalendarTitle, absenceMoveMonth,
+          hoverPopover, showIntelPopover, hideIntelPopover,
+          getStaffPulseState, getStaffNextEvent,
+          absCalendarDays, absCalendarTitle, absCalendarMonth, absCalendarYear,
+          absCalPrevMonth, absCalNextMonth, absenceViewMode,
+          absCoverage30, getUnit30DayTimeline, deptPulseStats, handleGlobalSearch, globalSearchResults, clearSearch, isOnline,
           getPhaseColor: (p) => Utils.getPhaseColor(p),
           getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates,
           newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
@@ -6253,7 +6741,7 @@ document.addEventListener('DOMContentLoaded', () => {
           isOffline: ui.isOffline, isMaintenanceMode: ui.isMaintenanceMode,
           callouts, calloutsLoading, calloutSummary, calloutPeriod, calloutModal,
           calloutFairnessAlert,
-          calloutKPIs, calloutReasonLabels, calloutTimeTypes,
+          calloutKPIs, calloutDistribution, calloutFairnessAlert, calloutReasonLabels, calloutTimeTypes,
           openLogCalloutModal, editCallout, saveCallout, deleteCallout,
           loadCallouts, loadCalloutSummary,
         }    
