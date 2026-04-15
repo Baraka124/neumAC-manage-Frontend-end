@@ -5215,9 +5215,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const deleteCallout = async (c) => {
           showConfirmation({ title:'Delete call-out record', message:`Remove this call-out entry for ${c.staff?.full_name || 'this physician'}?`, confirmButtonText:'Delete', confirmButtonClass:'btn-danger',
             onConfirm: async () => {
-              await API.request(`/api/emergency-callouts/${c.id}`, { method:'DELETE' })
-              showToast('Deleted', 'Call-out record removed', 'success')
-              await loadCallouts(); await loadCalloutSummary()
+              try {
+                await API.request(`/api/emergency-callouts/${c.id}`, { method:'DELETE' })
+                showToast('Deleted', 'Call-out record removed', 'success')
+                await loadCallouts(); await loadCalloutSummary()
+              } catch(e) { showToast('Error', e.message || 'Failed to delete', 'error') }
             }
           })
         }
