@@ -6753,7 +6753,7 @@ document.addEventListener('DOMContentLoaded', () => {
           callouts, calloutsLoading, calloutSummary, calloutPeriod, calloutModal,
           calloutFairnessAlert,
           calloutKPIs, calloutDistribution, calloutFairnessAlert, calloutReasonLabels, calloutTimeTypes,
-          openLogCalloutModal, editCallout, saveCallout, deleteCallout,   
+          openLogCalloutModal, editCallout, saveCallout, deleteCallout,
           loadCallouts, loadCalloutSummary,
         }    
       }
@@ -6773,4 +6773,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;
   }
-});      
+});
