@@ -4915,7 +4915,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       const currentTimeFormatted = computed(() => Utils.formatTime(currentTime.value))
-      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems, dailyBriefing }
+      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems, dailyBriefing, systemSummary }
     }
 
     // ============ 7. ROOT APP ============
