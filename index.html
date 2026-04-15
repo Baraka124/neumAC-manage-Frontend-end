@@ -5366,8 +5366,8 @@
                                         </td>
                                         <td :data-label="'Physician'">
                                             <div class="oc-physician-cell"
-                                                 @mouseenter.stop="showIntelPopover(schedule.primary_physician_id, $event)"
-                                                 @mouseleave.stop="hideIntelPopover()">
+                                                 @mouseenter="showIntelPopover(schedule.primary_physician_id, $event)"
+                                                 @mouseleave="hideIntelPopover()">
                                                 <div class="oc-physician-av" style="position:relative;">
                                                     {{ (getPhysicianName(schedule.primary_physician_id)||'??').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
                                                     <span class="pulse-dot pulse-dot--oncall"
@@ -5949,8 +5949,8 @@
                                         @click="hasPermission('resident_rotations', 'update') && editRotation(rotation)">
                                         <td>
                                             <div class="staff-name-cell"
-                                                 @mouseenter.stop="showIntelPopover(rotation.resident_id, $event)"
-                                                 @mouseleave.stop="hideIntelPopover()">
+                                                 @mouseenter="showIntelPopover(rotation.resident_id, $event)"
+                                                 @mouseleave="hideIntelPopover()">
                                                 <div class="staff-table-av staff-table-av--resident" style="position:relative;">
                                                     {{ (getResidentName(rotation.resident_id)||'??').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
                                                     <span class="pulse-dot" :class="'pulse-dot--' + getStaffPulseState(rotation.resident_id)"
@@ -6426,8 +6426,8 @@
                                         @click="hasPermission('staff_absence', 'update') && editAbsence(absence)">
                                         <td>
                                             <div class="staff-name-cell"
-                                                 @mouseenter.stop="showIntelPopover(absence.staff_member_id, $event)"
-                                                 @mouseleave.stop="hideIntelPopover()">
+                                                 @mouseenter="showIntelPopover(absence.staff_member_id, $event)"
+                                                 @mouseleave="hideIntelPopover()">
                                                 <div class="staff-table-av"
                                                      :class="absence.current_status === 'currently_absent' ? 'staff-table-av--leave' : 'staff-table-av--attending'"
                                                      style="position:relative;">
@@ -7183,8 +7183,8 @@
                                         <span>{{ getResearchLineName(trial.research_line_id) }}</span>
                                         <span v-if="trial.principal_investigator_id" class="rht-sep">·</span>
                                         <span v-if="trial.principal_investigator_id"
-                                                  @mouseenter.stop="showIntelPopover(trial.principal_investigator_id, $event)"
-                                                  @mouseleave.stop="hideIntelPopover()"
+                                                  @mouseenter="showIntelPopover(trial.principal_investigator_id, $event)"
+                                                  @mouseleave="hideIntelPopover()"
                                                   class="intel-name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 15v3M10.5 17h3"/></svg> {{ getStaffName(trial.principal_investigator_id) }}</span>
                                     </div>
                                 </div>
