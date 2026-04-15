@@ -5335,7 +5335,7 @@ document.addEventListener('DOMContentLoaded', () => {
           rotationOps.showAddRotationModal(null, unit)
           if (startDate) rotationOps.rotationModal.form.start_date = startDate
         }
-        const { systemStats, updateDashboardStats, loadSystemStats, situationItems, dailyBriefing } = dashOps
+        const { systemStats, updateDashboardStats, loadSystemStats, situationItems, dailyBriefing, systemSummary } = dashOps
 
         // ============ NEW COMPACT VIEW STATE ============
         const rotationView = ref('detailed') // 'compact', 'detailed', 'month'
