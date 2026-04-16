@@ -4881,6 +4881,295 @@
 }
 #app .ops-feed-empty p { margin: 0; }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   QUALITY PASS — Analytics, News Drawer footer, Research timeline
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Analytics Timeline chart (column chart with pulse on hover) ── */
+#app .timeline-chart {
+  display: flex; align-items: flex-end; gap: 3px;
+  height: 100px; padding: 0 0 4px; overflow-x: auto;
+  scrollbar-width: none;
+}
+#app .timeline-chart::-webkit-scrollbar { display: none; }
+#app .timeline-bar-col {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px; flex-shrink: 0; min-width: 28px;
+}
+#app .timeline-bar-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; height: 88px; position: relative;
+}
+#app .timeline-bar-fill {
+  width: 18px; border-radius: 4px 4px 2px 2px;
+  background: var(--nm-teal);
+  opacity: .7; transition: opacity .15s, transform .15s;
+  min-height: 4px;
+}
+#app .timeline-bar-col:hover .timeline-bar-fill {
+  opacity: 1; transform: scaleX(1.1);
+}
+#app .timeline-bar-val {
+  position: absolute; top: -16px;
+  font-size: 9px; font-weight: 700; color: var(--nm-teal);
+  opacity: 0; transition: opacity .15s;
+}
+#app .timeline-bar-col:hover .timeline-bar-val { opacity: 1; }
+#app .timeline-bar-label {
+  font-size: 9px; color: rgba(255,255,255,.3);
+  white-space: nowrap; writing-mode: vertical-rl;
+  transform: rotate(180deg); height: 24px;
+  text-align: right;
+}
+#app .rha-chart-badge {
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 3px;
+  background: rgba(0,179,179,.12); color: var(--nm-teal); margin-left: 8px;
+}
+
+/* ── Research lines table in analytics ── */
+#app .rha-lines-table { width: 100%; }
+#app .rha-lt-header {
+  display: grid; grid-template-columns: 40px 1fr 160px 70px 70px 80px;
+  gap: 8px; padding: 6px 12px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: rgba(255,255,255,.25);
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+#app .rha-lt-row {
+  display: grid; grid-template-columns: 40px 1fr 160px 70px 70px 80px;
+  gap: 8px; padding: 9px 12px; align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  font-size: 12px; color: rgba(255,255,255,.7);
+  transition: background .1s;
+}
+#app .rha-lt-row:hover { background: rgba(255,255,255,.03); }
+#app .rha-lt-name  { font-weight: 500; color: rgba(255,255,255,.88); }
+#app .rha-lt-coord { font-size: 11px; color: rgba(255,255,255,.4); }
+
+/* ── News drawer footer — was unstyled ── */
+#app .nrd-footer {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 20px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.15);
+  flex-shrink: 0;
+}
+#app .nrd-footer-spacer { flex: 1; }
+#app .nrd-footer .btn {
+  font-size: 12px; padding: 5px 14px;
+}
+#app .nrd-footer .btn-success {
+  background: var(--nm-teal); border-color: var(--nm-teal); color: #fff;
+}
+#app .nrd-footer .btn-success:hover { filter: brightness(1.1); }
+
+/* ── Absence calendar improvements ── */
+#app .abs-calendar-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+#app .abs-cal-day {
+  aspect-ratio: 1; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; position: relative; cursor: default;
+  transition: transform .1s;
+}
+#app .abs-cal-day:hover { transform: scale(1.15); z-index: 2; }
+#app .abs-cal-day--absent     { background: rgba(239,68,68,.18); color: #fca5a5; }
+#app .abs-cal-day--partial    { background: rgba(245,158,11,.15); color: #fcd34d; }
+#app .abs-cal-day--clear      { background: rgba(16,185,129,.1); color: rgba(255,255,255,.3); }
+#app .abs-cal-day--empty      { opacity: .15; }
+#app .abs-cal-day--today      { ring: 2px solid var(--nm-teal); outline: 2px solid var(--nm-teal); outline-offset: -2px; }
+#app .abs-cal-day-num         { font-size: 10px; font-weight: 600; }
+#app .abs-cal-day-count       {
+  position: absolute; top: 2px; right: 3px;
+  font-size: 8px; font-weight: 800; color: #ef4444;
+}
+
+/* ── Coverage forecast strip ── */
+#app .abs-coverage-strip {
+  display: flex; gap: 1px; margin-top: 8px; height: 6px;
+  border-radius: 3px; overflow: hidden;
+}
+#app .abs-cov-seg {
+  flex: 1; transition: opacity .15s;
+}
+#app .abs-cov-seg:hover { opacity: .7; }
+#app .acs-full     { background: rgba(16,185,129,.6); }
+#app .acs-partial  { background: rgba(245,158,11,.5); }
+#app .acs-critical { background: rgba(239,68,68,.6); }
+#app .acs-empty    { background: rgba(255,255,255,.08); }
+
+/* ── Research line detail — staff profile card ── */
+#app .rp-staff-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  margin-bottom: 6px; transition: background .12s;
+}
+#app .rp-staff-card:hover { background: rgba(255,255,255,.07); }
+#app .rp-staff-av {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(0,179,179,.15); color: var(--nm-teal);
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+#app .rp-staff-name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,.85); }
+#app .rp-staff-role { font-size: 10px; color: rgba(255,255,255,.35); margin-top: 1px; }
+
+/* ── Innovation project card — improved footer ── */
+#app .inno-card-foot {
+  padding: 9px 14px 10px; border-top: 1px solid var(--nm-border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--nm-surface2);
+}
+#app .inno-card-pi {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--nm-text2);
+}
+#app .inno-card-pi-av {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(0,179,179,.1); color: var(--nm-teal);
+  font-size: 8px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+#app .inno-card-actions { display: flex; gap: 3px; opacity: 0; transition: opacity .12s; }
+#app .inno-card:hover .inno-card-actions { opacity: 1; }
+
+/* ── Staff type chips — improved ── */
+#app .stype-chip-badge {
+  background: rgba(0,179,179,.1); color: var(--nm-teal);
+  font-size: 11px; font-weight: 800;
+}
+#app .stype-chip:hover .stype-chip-badge {
+  background: rgba(0,179,179,.2);
+}
+
+/* ── Callout modal — pulse dot animation ── */
+#app .duty-log-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 20px 0; flex-shrink: 0;
+}
+#app .dl-period-nav {
+  display: flex; align-items: center; gap: 6px; margin-left: auto;
+}
+
+/* ── General table improvements ── */
+#app .table th {
+  font-size: 10px; letter-spacing: .05em; font-weight: 700;
+  text-transform: uppercase;
+}
+#app .table-callouts td,
+#app .table-callouts th { padding: 10px 12px; }
+
+/* ── Responsive grid fix for ops room ── */
+@media (max-width: 680px) {
+  #app .ops-tiles { grid-template-columns: 1fr; }
+  #app .ops-tile--lg { grid-column: span 1; }
+}
+
+/* ── Return to Duty button ── */
+#app .tbl-btn--teal {
+  background: rgba(0,179,179,.08);
+  border-color: rgba(0,179,179,.25);
+  color: var(--nm-teal);
+}
+#app .tbl-btn--teal:hover {
+  background: rgba(0,179,179,.15);
+  border-color: var(--nm-teal);
+}
+
+/* ── Absence calendar day hover tooltip ── */
+#app .abs-cal-day[title]:hover::after {
+  content: attr(title);
+  position: absolute; bottom: calc(100% + 5px); left: 50%;
+  transform: translateX(-50%);
+  background: #0a1628; color: rgba(255,255,255,.85);
+  font-size: 10px; padding: 3px 7px; border-radius: 5px;
+  white-space: nowrap; z-index: 10; pointer-events: none;
+}
+
+/* ── Research line navigation active state polish ── */
+#app .rp-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  transition: background .1s;
+  border-left: 3px solid transparent;
+}
+#app .rp-nav-item:hover    { background: rgba(255,255,255,.04); }
+#app .rp-nav-item.active   {
+  background: rgba(0,179,179,.07);
+  border-left-color: var(--nm-teal);
+}
+#app .rp-nav-num {
+  font-size: 10px; font-weight: 800; letter-spacing: .05em;
+  color: var(--nm-teal); width: 24px; flex-shrink: 0;
+}
+#app .rp-nav-name {
+  font-size: 12px; font-weight: 500; color: rgba(255,255,255,.75);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#app .rp-nav-counts {
+  margin-left: auto; display: flex; gap: 4px; flex-shrink: 0;
+}
+#app .rp-nav-count-badge {
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+  border-radius: 3px; background: rgba(255,255,255,.07);
+  color: rgba(255,255,255,.4);
+}
+
+/* ── Callout table improved ── */
+#app .callout-type-pill {
+  font-size: 9px; font-weight: 800; padding: 2px 7px;
+  border-radius: 3px; text-transform: uppercase; letter-spacing: .05em;
+}
+#app .ctp--night   { background: rgba(99,102,241,.1); color: #818cf8; }
+#app .ctp--weekend { background: rgba(245,158,11,.1); color: #fbbf24; }
+#app .ctp--daytime { background: rgba(16,185,129,.1); color: #34d399; }
+#app .ctp--holiday { background: rgba(239,68,68,.1);  color: #f87171; }
+
+/* ── On-call schedule row improved ── */
+#app .oc-row-shift-type {
+  font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+#app .ocs-primary  { background: rgba(0,179,179,.1); color: var(--nm-teal); }
+#app .ocs-backup   { background: rgba(99,102,241,.1); color: #818cf8; }
+#app .ocs-float    { background: rgba(245,158,11,.1); color: #fbbf24; }
+#app .ocs-weekend  { background: rgba(59,130,246,.1); color: #60a5fa; }
+
+/* ── Global scrollbar style ── */
+#app *::-webkit-scrollbar       { width: 5px; height: 5px; }
+#app *::-webkit-scrollbar-track { background: transparent; }
+#app *::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,.15); border-radius: 3px;
+}
+#app *::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.25); }
+
+/* ── Loading skeleton pulse ── */
+@keyframes nm-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+#app .skeleton-row, #app .nm-skeleton {
+  background: linear-gradient(90deg,
+    var(--nm-surface2) 25%,
+    var(--nm-surface3) 50%,
+    var(--nm-surface2) 75%);
+  background-size: 200% 100%;
+  animation: nm-shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* ── Modal overlay backdrop blur ── */
+#app .modal-overlay {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
     </style>
 </head>
 <body>
@@ -5793,14 +6082,14 @@
                                          @mouseleave="$event.currentTarget.style.background=''"
                                          @click="switchView('training_units')">
                                         <div style="width:8px;height:8px;border-radius:2px;flex-shrink:0;"
-                                             :style="(()=>{ const cur=rotations.filter(r=>r.training_unit_id===unit.id&&r.rotation_status==='active').length; const max=unit.maximum_residents||1; const pct=cur/max; return { background: pct>=1?'#e24b4a': pct>=0.75?'#ef9f27': cur===0?'var(--nm-surface3)':'#10b981' }; })()">
+                                             :style="{ background: getUnitFillColor(unit, rotations) }">
                                         </div>
                                         <span style="flex:1;font-size:13px;font-weight:400;color:var(--nm-text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ unit.unit_name }}</span>
                                         <span style="font-size:12px;color:var(--nm-text3);font-family:monospace;flex-shrink:0;">
                                             {{ rotations.filter(r=>r.training_unit_id===unit.id&&r.rotation_status==='active').length }}/{{ unit.maximum_residents||0 }}
                                         </span>
                                         <div style="width:56px;height:4px;background:var(--nm-surface3);border-radius:2px;overflow:hidden;flex-shrink:0;">
-                                            <div :style="{ width: Math.min(100,Math.round(rotations.filter(r=>r.training_unit_id===unit.id&&r.rotation_status==='active').length/(unit.maximum_residents||1)*100))+'%', height:'100%', borderRadius:'2px', background: rotations.filter(r=>r.training_unit_id===unit.id&&r.rotation_status==='active').length>=(unit.maximum_residents||1)?'#e24b4a':rotations.filter(r=>r.training_unit_id===unit.id&&r.rotation_status==='active').length/(unit.maximum_residents||1)>=0.75?'#ef9f27':'#10b981' }"></div>
+                                            <div :style="{ width: Math.min(100, Math.round(rotations.filter(r=>r.training_unit_id===unit.id&&r.rotation_status==='active').length / (unit.maximum_residents||1) * 100)) + '%', height:'100%', borderRadius:'2px', background: getUnitFillColor(unit, rotations) }"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -5973,7 +6262,7 @@
                                                         <circle class="pig-ring-fill"
                                                                 :class="isOnCallToday(item.id) ? 'oncall' : item.employment_status === 'on_leave' ? 'leave' : item.employment_status === 'inactive' ? 'inactive' : isResidentType(item.staff_type) ? 'resident' : 'active'"
                                                                 cx="28" cy="28" r="24"
-                                                                :stroke-dasharray="`${isOnCallToday(item.id) ? 151 : item.employment_status==='inactive' ? 0 : 151} 200`"
+                                                                :stroke-dasharray="(isOnCallToday(item.id) ? '151 200' : item.employment_status==='inactive' ? '0 200' : '151 200')"
                                                                 stroke-dashoffset="0"/>
                                                     </svg>
                                                     <div class="pig-avatar"
@@ -7487,6 +7776,12 @@
                                             <div class="table-actions">
                                                 <button v-if="absence.current_status==='returned_to_duty'" class="tbl-btn tbl-btn--success" @click.stop="openResolutionModal(absence)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Resolve</button>
                                                 <button class="tbl-btn" @click.stop="editAbsence(absence)" v-if="hasPermission('staff_absence','update') && absence.current_status!=='returned_to_duty' && absence.current_status!=='cancelled'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Edit</button>
+                                                <button class="tbl-btn tbl-btn--teal" @click.stop="returnToDuty(absence)"
+                                                        v-if="hasPermission('staff_absence','update') && absence.current_status === 'currently_absent'"
+                                                        title="Return to Duty">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
+                                                    Return
+                                                </button>
                                                 <button class="tbl-btn tbl-btn--danger" @click.stop="deleteAbsence(absence)" v-if="hasPermission('staff_absence','delete') && absence.current_status!=='returned_to_duty' && absence.current_status!=='cancelled'" title="Cancel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></button>
                                                 <button class="tbl-btn tbl-btn--danger" @click.stop="purgeAbsence(absence)" v-if="currentUser && ['system_admin','department_head'].includes(currentUser.user_role)" title="Permanently delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                             </div>
@@ -7823,7 +8118,7 @@
                                     </div>
                                     <textarea class="oco-textarea"
                                               v-model="broadcastForm.text"
-                                              :placeholder="broadcastForm.type === 'broadcast' ? 'Urgent — keep it short and clear…' : broadcastForm.type === 'kudos' ? 'Recognise someone's contribution…' : broadcastForm.type === 'protocol' ? 'Describe the protocol update…' : 'What does the department need to know?'"
+                                              :placeholder="broadcastForm.type === 'broadcast' ? 'Urgent — keep it short and clear…' : broadcastForm.type === 'kudos' ? 'Recognise someone&#39;s contribution…' : broadcastForm.type === 'protocol' ? 'Describe the protocol update…' : 'What does the department need to know?'"
                                               rows="3"></textarea>
                                     <div class="oco-footer">
                                         <div class="oco-expiry">
@@ -10094,7 +10389,7 @@
           <div class="nrd-backdrop" @click="closeNewsDrawer()"></div>
           <div class="nrd-drawer" :class="'nrd--' + newsDrawer.post.post_type"
                @keydown.esc="closeNewsDrawer()" tabindex="-1"
-               :ref="el => { if (el) $nextTick(() => el.focus()) }">
+               ref="nrdDrawer">
 
             <!-- Progress bar -->
             <div class="nrd-progress">
