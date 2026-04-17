@@ -6680,8 +6680,8 @@
                                     </span>
                                     <button class="db-panel-link" @click="switchView('resident_rotations')">All rotations <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
                                 </div>
-                                <template v-if="rotations.filter(r => (r.rotation_status==='active'||r.rotation_status==='scheduled') && new Date(r.end_date||r.start_date) >= new Date() && new Date(r.end_date||r.start_date) <= new Date(Date.now()+7*86400000)).length > 0">
-                                    <div v-for="rot in rotations.filter(r => r.rotation_status==='active' && new Date(r.end_date) >= new Date() && new Date(r.end_date) <= new Date(Date.now()+7*86400000)).slice(0,2)" :key="'end-'+rot.id" class="db-rot-row">
+                                <template v-if="rotations.filter(r => (r.rotation_status==='active'||r.rotation_status==='scheduled') && getDaysRemaining(r.end_date||r.start_date) >= 0 && getDaysRemaining(r.end_date||r.start_date) <= 7).length > 0">
+                                    <div v-for="rot in rotations.filter(r => r.rotation_status==='active' && getDaysRemaining(r.end_date) >= 0 && getDaysRemaining(r.end_date) <= 7).slice(0,2)" :key="'end-'+rot.id" class="db-rot-row">
                                         <div class="db-rot-av db-rot-av--end">{{ (getResidentName(rot.resident_id)||'??').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() }}</div>
                                         <div class="db-rot-info">
                                             <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
@@ -6689,7 +6689,7 @@
                                         </div>
                                         <span class="db-rot-chip db-rot-chip--ending">ends {{ formatDateShort(rot.end_date) }}</span>
                                     </div>
-                                    <div v-for="rot in rotations.filter(r => r.rotation_status==='scheduled' && new Date(r.start_date) >= new Date() && new Date(r.start_date) <= new Date(Date.now()+7*86400000)).slice(0,2)" :key="'start-'+rot.id" class="db-rot-row">
+                                    <div v-for="rot in rotations.filter(r => r.rotation_status==='scheduled' && getDaysUntilStart(r.start_date) >= 0 && getDaysUntilStart(r.start_date) <= 7).slice(0,2)" :key="'start-'+rot.id" class="db-rot-row">
                                         <div class="db-rot-av db-rot-av--start">{{ (getResidentName(rot.resident_id)||'??').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() }}</div>
                                         <div class="db-rot-info">
                                             <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
@@ -8885,7 +8885,7 @@
                                             {{ rotations?.filter(r => r.rotation_status === 'active').length || 0 }}
                                         </div>
                                         <div class="ot-sub" style="color:rgba(0,179,179,.6)">
-                                            {{ rotations?.filter(r => r.rotation_status === 'active' && Utils.normalizeDate(r.end_date) <= Utils.normalizeDate(new Date(Date.now()+7*86400000))).length || 0 }} terminan pronto
+                                            {{ rotations?.filter(r => r.rotation_status === 'active' && getDaysRemaining(r.end_date) <= 7 && getDaysRemaining(r.end_date) >= 0).length || 0 }} terminan pronto
                                         </div>
                                     </div>
                                 </div>
@@ -12273,9 +12273,9 @@
                         <div class="rds-field" v-if="medicalStaff.find(s => s.id === rotationViewModal.rotation.resident_id)?.external_contact_name">
                             <span class="rds-field-key"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 14l-1 4h2l-1 4M11 14l1 4h-2l1 4"/></svg> Contact</span>
                             <span class="rds-field-val">
-                                {{ medicalStaff.find(s => s.id === rotationViewModal.rotation.resident_id).external_contact_name }}
+                                {{ medicalStaff.find(s => s.id === rotationViewModal.rotation.resident_id)?.external_contact_name }}
                                 <a v-if="medicalStaff.find(s => s.id === rotationViewModal.rotation.resident_id)?.external_contact_email"
-                                   :href="'mailto:' + medicalStaff.find(s => s.id === rotationViewModal.rotation.resident_id).external_contact_email"
+                                   :href="'mailto:' + medicalStaff.find(s => s.id === rotationViewModal.rotation.resident_id)?.external_contact_email"
                                    class="rds-mail-link" title="Email contact">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 9L12 15L21 9"/></svg>
                                 </a>
@@ -13459,9 +13459,9 @@
                                 <div v-if="medicalStaff.find(s=>s.id===rotation.resident_id)?.external_contact_name" style="margin-top:3px">
                                     <span class="ext-contact-chip">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                                        {{ medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_name }}
-                                        <a v-if="medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_email"
-                                           :href="'mailto:' + medicalStaff.find(s=>s.id===rotation.resident_id).external_contact_email"
+                                        {{ medicalStaff.find(s=>s.id===rotation.resident_id)?.external_contact_name }}
+                                        <a v-if="medicalStaff.find(s=>s.id===rotation.resident_id)?.external_contact_email"
+                                           :href="'mailto:' + medicalStaff.find(s=>s.id===rotation.resident_id)?.external_contact_email"
                                            @click.stop="() => {}" style="color:inherit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 9L12 15L21 9"/></svg></a>
                                     </span>
                                 </div>
@@ -14536,7 +14536,7 @@
                                 <div class="dp-staff-rotation" v-if="rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
                                     <span>{{ rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')?.training_unit?.unit_name || '—' }}</span>
-                                    <span class="dp-days-left">{{ rotDaysLeft(rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')) }}d</span>
+                                    <span class="dp-days-left" v-if="rotDaysLeft(rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')) > 0">{{ rotDaysLeft(rotations.find(r => r.resident_id === s.id && r.rotation_status === 'active')) }}d</span>
                                 </div>
                                 <button v-if="hasPermission('resident_rotations','create')"
                                         class="dp-assign-btn"
