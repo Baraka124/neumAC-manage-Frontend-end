@@ -6623,7 +6623,133 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Absence view mode
-      const absenceViewMode = Vue.ref('table') // 'table' | 'calendar'
+      const absenceViewMode = Vue.ref('table') // 'table' | 'calendar' | 'timeline'
+      const absTimelineHorizon  = Vue.ref(3)   // 1 | 3 | 6 months
+      const absTimelineOffset   = Vue.ref(0)   // months from today
+      const absTimelinePlanning = Vue.ref(false) // false=review, true=planning
+
+      // ── Absence colour map ───────────────────────────────────────────
+      const ABS_COLOURS = {
+        vacation:   { bg: '#0ea5e9', label: 'Vacation'   },
+        sick_leave: { bg: '#ef4444', label: 'Sick leave' },
+        conference: { bg: '#10b981', label: 'Conference' },
+        training:   { bg: '#8b5cf6', label: 'Training'   },
+        personal:   { bg: '#64748b', label: 'Personal'   },
+        other:      { bg: '#94a3b8', label: 'Other'      },
+      }
+
+      // ── Staff rows for timeline ──────────────────────────────────────
+      // Review: only staff with absences in horizon
+      // Planning: all active staff
+      const absTimelineStaff = Vue.computed(() => {
+        const months   = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        if (!months.length) return { attendings: [], residents: [] }
+        const hStart   = new Date(months[0].year, months[0].month, 1)
+        const hEnd     = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
+        const allStaff = (medicalStaff?.value || []).filter(s => s.employment_status !== 'inactive')
+
+        const hasAbsInHorizon = (staffId) =>
+          (absences?.value || []).some(a => {
+            const s = new Date(a.start_date + 'T00:00:00')
+            const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
+            return a.staff_member_id === staffId && s <= hEnd && e >= hStart
+          })
+
+        const eligible = absTimelinePlanning.value
+          ? allStaff
+          : allStaff.filter(s => hasAbsInHorizon(s.id))
+
+        const attendings = eligible.filter(s => !isResidentType(s.staff_type))
+        const residents  = eligible.filter(s =>  isResidentType(s.staff_type))
+        return { attendings, residents }
+      })
+
+      // ── Get absence bars for one staff member in the horizon ─────────
+      const getStaffAbsencesInHorizon = (staffId) => {
+        const months = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        if (!months.length) return []
+        const hStart = new Date(months[0].year, months[0].month, 1)
+        const hEnd   = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
+        return (absences?.value || []).filter(a => {
+          if (a.staff_member_id !== staffId) return false
+          const s = new Date(a.start_date + 'T00:00:00')
+          const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
+          return s <= hEnd && e >= hStart
+        })
+      }
+
+      // ── Bar style (reuses rotation logic exactly) ────────────────────
+      const getAbsenceBarStyle = (absence) => {
+        const months    = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        const n         = months.length
+        if (!n) return { display: 'none' }
+        const hStart    = new Date(months[0].year, months[0].month, 1)
+        const hEnd      = new Date(months[n-1].year, months[n-1].month + 1, 0)
+        const absStart  = new Date(absence.start_date + 'T00:00:00')
+        const absEnd    = new Date((absence.end_date || absence.start_date) + 'T00:00:00')
+        const cs        = absStart < hStart ? hStart : absStart
+        const ce        = absEnd   > hEnd   ? hEnd   : absEnd
+        if (cs > ce) return { display: 'none' }
+        const totalDays = months.reduce((s, m) => s + m.daysInMonth, 0)
+        const daysToStart = Math.round((cs - hStart) / 86400000)
+        const daysToEnd   = Math.round((ce - hStart) / 86400000) + 1
+        const leftPct   = (daysToStart / totalDays) * 100
+        const widthPct  = ((daysToEnd - daysToStart) / totalDays) * 100
+        const clippedL  = absStart < hStart
+        const clippedR  = absEnd   > hEnd
+        return {
+          left:         `calc(${leftPct.toFixed(2)}% + ${clippedL ? '0' : '3'}px)`,
+          width:        `calc(${widthPct.toFixed(2)}% - ${clippedL || clippedR ? '3' : '6'}px)`,
+          background:   ABS_COLOURS[absence.absence_reason]?.bg || '#94a3b8',
+          borderRadius: clippedL && clippedR ? '0' : clippedL ? '0 4px 4px 0' : clippedR ? '4px 0 0 4px' : '4px',
+        }
+      }
+
+      // ── Coverage lane: attendings NOT absent per month ───────────────
+      const absTimelineCoverage = Vue.computed(() => {
+        const months     = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        const totalAtt   = (medicalStaff?.value || []).filter(s =>
+          !isResidentType(s.staff_type) && s.employment_status === 'active').length
+        return months.map(m => {
+          const mStart = new Date(m.year, m.month, 1)
+          const mEnd   = new Date(m.year, m.month + 1, 0)
+          const mid    = new Date(m.year, m.month, 15)
+          const absentAtt = (absences?.value || []).filter(a => {
+            if (isResidentType((medicalStaff?.value || []).find(s => s.id === a.staff_member_id)?.staff_type)) return false
+            const s = new Date(a.start_date + 'T00:00:00')
+            const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
+            return s <= mEnd && e >= mStart
+          }).length
+          const available = Math.max(0, totalAtt - absentAtt)
+          const pct       = totalAtt > 0 ? available / totalAtt : 1
+          const state     = pct >= 0.7 ? 'ok' : pct >= 0.4 ? 'warn' : 'critical'
+          return { ...m, available, total: totalAtt, pct, state }
+        })
+      })
+
+      // ── Today position as % across the horizon ───────────────────────
+      const absTimelineTodayPct = Vue.computed(() => {
+        const months = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        if (!months.length) return -1
+        const hStart     = new Date(months[0].year, months[0].month, 1)
+        const hEnd       = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
+        const today      = new Date()
+        if (today < hStart || today > hEnd) return -1
+        const totalDays  = months.reduce((s, m) => s + m.daysInMonth, 0)
+        const daysToday  = Math.round((today - hStart) / 86400000)
+        return (daysToday / totalDays) * 100
+      })
+
+      // ── Horizon label (reuse rotation logic) ────────────────────────
+      const getAbsHorizonLabel = () => {
+        const months = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        if (!months.length) return ''
+        if (months.length === 1) return `${months[0].label} ${months[0].year}`
+        const first = months[0]; const last = months[months.length-1]
+        if (first.year === last.year)
+          return `${first.label} – ${last.label} ${last.year}`
+        return `${first.label} ${first.year} – ${last.label} ${last.year}`
+      }
 
       // ── 30-day coverage strip for absence ──
       const absCoverage30 = Vue.computed(() => {
@@ -6739,7 +6865,7 @@ document.addEventListener('DOMContentLoaded', () => {
           hoverPopover, showIntelPopover, hideIntelPopover,
           getStaffPulseState, getStaffNextEvent,
           absCalendarDays, absCalendarTitle, absCalendarMonth, absCalendarYear,
-          absCalPrevMonth, absCalNextMonth, absenceViewMode,
+          absCalPrevMonth, absCalNextMonth, absenceViewMode, absTimelineHorizon, absTimelineOffset, absTimelinePlanning, absTimelineStaff, getStaffAbsencesInHorizon, getAbsenceBarStyle, absTimelineCoverage, absTimelineTodayPct, getAbsHorizonLabel, ABS_COLOURS,
           absCoverage30, getUnit30DayTimeline, deptPulseStats, handleGlobalSearch, globalSearchResults, clearSearch, isOnline,
           getPhaseColor: (p) => Utils.getPhaseColor(p),
           getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates,
