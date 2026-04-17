@@ -6164,6 +6164,114 @@ tr.staff-table-row .tbl-btn {
 .nm-svc-btn, .nm-deg-btn, .inno-action-btn {
   opacity: 1;
 }
+
+/* ── Coverage area chips (Settings) ────────────────────────── */
+.nm-cov-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--nm-surface2);
+  border: 1px solid var(--nm-border);
+  transition: border-color .12s;
+}
+.nm-cov-chip:hover { border-color: rgba(0,179,179,.3); }
+.nm-cov-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.nm-cov-body { flex: 1; min-width: 0; }
+.nm-cov-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--nm-text1);
+}
+.nm-cov-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.nm-cov-code {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--nm-text3);
+  font-family: monospace;
+}
+.nm-cov-tag {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(16,185,129,.1);
+  color: #059669;
+}
+
+/* ── Coverage area badge in schedule table ───────────────── */
+.oc-area-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid;
+  margin-top: 4px;
+}
+
+/* ── Float orb colour ────────────────────────────────────── */
+.rot-orb--float {
+  background: rgba(139,92,246,.15);
+  border-color: rgba(139,92,246,.3);
+  color: #a78bfa;
+}
+.rot-orb--float:hover {
+  background: rgba(139,92,246,.25);
+}
+
+/* ── Coverage area modal ─────────────────────────────────── */
+.nm-modal {
+  background: var(--nm-surface);
+  border-radius: 14px;
+  border: 1px solid var(--nm-border);
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,.14);
+}
+.nm-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--nm-border);
+  background: var(--nm-surface2);
+}
+.nm-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nm-text1);
+}
+.nm-modal-body {
+  padding: 18px 18px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.nm-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--nm-border);
+  background: var(--nm-surface2);
+}
 </style>
 </head>
 <body>
@@ -7594,9 +7702,14 @@ tr.staff-table-row .tbl-btn {
                         <div class="filter-bar">
                             <input type="date" class="form-control" style="max-width:180px" v-model="onCallFilters.date">
                             <select class="form-select" v-model="onCallFilters.shiftType">
-                                <option value="">All Shift Types</option>
-                                <option value="primary_call">Primary</option>
-                                <option value="backup_call">Backup</option>
+                                <option value="">All Roles</option>
+                                <option value="primary_call">Primary Call</option>
+                                <option value="backup_call">Backup Call</option>
+                                <option value="float_physician">Float Physician</option>
+                            </select>
+                            <select class="form-select" v-model="onCallFilters.coverageArea">
+                                <option value="">All Areas</option>
+                                <option v-for="area in coverageAreas" :key="area.id" :value="area.id">{{ area.name }}</option>
                             </select>
                             <select class="form-select" v-model="onCallFilters.physician">
                                 <option value="">All Physicians</option>
@@ -7642,13 +7755,20 @@ tr.staff-table-row .tbl-btn {
                                          :class="{
                                              'rot-orb--active':    shift.isToday,
                                              'rot-orb--scheduled': !shift.isToday && !shift.isPast && shift.shift_type === 'primary_call',
-                                             'rot-orb--backup-oc': !shift.isToday && !shift.isPast && shift.shift_type !== 'primary_call',
+                                             'rot-orb--backup-oc': !shift.isToday && !shift.isPast && shift.shift_type === 'backup_call',
+                                             'rot-orb--float':      !shift.isToday && !shift.isPast && shift.shift_type === 'float_physician',
                                              'rot-orb--done':       shift.isPast && !shift.isToday,
                                          }"
                                          @click.stop="editOnCallSchedule(shift)">
                                         <span class="rot-orb-label">{{ shift.dayLabel }} {{ shift.dateLabel }}</span>
                                         <div class="rot-orb-tooltip">
-                                            <div class="rot-tt-unit">{{ shift.shift_type === 'primary_call' ? 'Primary Call' : 'Backup Call' }}</div>
+                                            <div class="rot-tt-unit">{{ shift.shift_type === 'float_physician' ? 'Float Physician' : shift.shift_type === 'primary_call' ? 'Primary Call' : 'Backup Call' }}</div>
+                                            <div v-if="shift.coverage_area_id || shift.coverage_area"
+                                                 class="rot-tt-dates"
+                                                 :style="{ color: shift.coverage_area?.color || coverageAreas.find(a=>a.id===shift.coverage_area_id)?.color || 'var(--nm-teal)' }">
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3"/></svg>
+                                                {{ shift.coverage_area?.name || coverageAreas.find(a=>a.id===shift.coverage_area_id)?.name }}
+                                            </div>
                                             <div class="rot-tt-dates"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> {{ shift.start_time }} – {{ shift.end_time }}</div>
                                             <div v-if="shift.coverage_notes" class="rot-tt-dates"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> {{ shift.coverage_notes }}</div>
                                             <div v-if="shift.backupName" class="rot-tt-dates"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M18 8l2 1v4c0 2-2 4-2 4s-2-2-2-4V9l2-1z" stroke-linejoin="round"/></svg> Backup: {{ shift.backupName }}</div>
@@ -7722,6 +7842,12 @@ tr.staff-table-row .tbl-btn {
                                                     <span class="oncall-shift-arrow">→</span>
                                                     <span class="oncall-shift-time">{{ (schedule.end_time||'').slice(0,5) }}</span>
                                                 </div>
+                                            </div>
+                                            <!-- Coverage area badge -->
+                                            <div v-if="schedule.coverage_area || schedule.coverage_area_id"
+                                                 class="oc-area-badge"
+                                                 :style="{ background: (schedule.coverage_area?.color || coverageAreas.find(a=>a.id===schedule.coverage_area_id)?.color || '#00b3b3') + '18', color: schedule.coverage_area?.color || coverageAreas.find(a=>a.id===schedule.coverage_area_id)?.color || '#00b3b3', borderColor: (schedule.coverage_area?.color || coverageAreas.find(a=>a.id===schedule.coverage_area_id)?.color || '#00b3b3') + '40' }">
+                                                {{ schedule.coverage_area?.name || coverageAreas.find(a=>a.id===schedule.coverage_area_id)?.name }}
                                             </div>
                                         </td>
                                         <td :data-label="'Physician'">
@@ -9686,6 +9812,71 @@ tr.staff-table-row .tbl-btn {
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                                     Save Settings
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- ══ COVERAGE AREAS ══════════════════════════════════════════ -->
+                    <div class="card mb-6" v-if="hasPermission('system_settings','read')" style="margin-top:16px">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/><circle cx="18.5" cy="5.5" r="2.5"/></svg>
+                                Coverage Areas
+                            </div>
+                            <button class="btn btn-primary btn-sm" @click="showAddCoverageAreaModal"
+                                    v-if="hasPermission('system_settings','create')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                Add Area
+                            </button>
+                        </div>
+                        <div style="padding:16px">
+                            <p style="font-size:12px;color:var(--nm-text3);margin-bottom:14px;line-height:1.6">
+                                Define the coverage areas for on-call assignments (e.g. ICU, Hospitalization, General). Each shift is assigned to one area, allowing multiple primaries per day — one per area.
+                            </p>
+
+                            <!-- Area chips -->
+                            <div class="stype-grid" v-if="coverageAreas.length > 0">
+                                <div v-for="area in coverageAreas" :key="area.id" class="nm-cov-chip">
+                                    <div class="nm-cov-dot" :style="{ background: area.color || '#00b3b3' }"></div>
+                                    <div class="nm-cov-body">
+                                        <div class="nm-cov-name">{{ area.name }}</div>
+                                        <div class="nm-cov-meta">
+                                            <span class="nm-cov-code">{{ area.code }}</span>
+                                            <span v-if="area.applies_weekends" class="nm-cov-tag">Weekends ✓</span>
+                                        </div>
+                                    </div>
+                                    <div class="stype-chip-actions" v-if="hasPermission('system_settings','update')">
+                                        <button class="btn-icon" @click="editCoverageArea(area)" title="Edit">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
+                                        </button>
+                                        <button class="btn-icon btn-icon--danger" @click="deleteCoverageArea(area)" title="Remove"
+                                                v-if="hasPermission('system_settings','delete')">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Empty state -->
+                            <div v-if="coverageAreas.length === 0" class="nm-empty" style="padding:28px">
+                                <div class="nm-empty-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3"/></svg>
+                                </div>
+                                <div class="nm-empty-title">No coverage areas defined</div>
+                                <div class="nm-empty-sub">Add areas like ICU, Hospitalization, General to enable per-area on-call scheduling</div>
+                                <button v-if="hasPermission('system_settings','create')"
+                                        class="btn btn-primary btn-sm" style="margin-top:12px"
+                                        @click="showAddCoverageAreaModal">
+                                    Add first area
+                                </button>
+                            </div>
+
+                            <!-- Migration notice if table not found -->
+                            <div v-if="coverageAreas._tableNotFound" class="nm-empty" style="padding:16px;background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.2);border-radius:8px;margin-top:8px">
+                                <div style="font-size:12px;color:#d97706">
+                                    <strong>Migration needed:</strong> Run the <code>coverage_areas</code> SQL in Supabase before using this feature.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -12498,7 +12689,10 @@ tr.staff-table-row .tbl-btn {
                             {{ onCallModal.form.start_time }} — {{ onCallModal.form.end_time }}
                         </div>
                         <div class="sm-preview-chips" v-if="onCallModal.form.shift_type">
-                            <span class="sm-preview-chip">{{ {'primary_call':'Primary Call','backup_call':'Backup Call','float_physician':'Float Physician','weekend_coverage':'Weekend Coverage'}[onCallModal.form.shift_type] || onCallModal.form.shift_type }}</span>
+                            <span class="sm-preview-chip">{{ {'primary_call':'Primary Call','backup_call':'Backup Call','float_physician':'Float Physician'}[onCallModal.form.shift_type] || onCallModal.form.shift_type }}</span>
+                            <span class="sm-preview-chip sm-preview-chip--resident" v-if="onCallModal.form.coverage_area_id">
+                                {{ coverageAreas.find(a=>a.id===onCallModal.form.coverage_area_id)?.name || '' }}
+                            </span>
                         </div>
                     </div>
 
@@ -12547,15 +12741,30 @@ tr.staff-table-row .tbl-btn {
                                 <small v-if="fieldErrors.oncall?.duty_date" class="error-text">{{ fieldErrors.oncall.duty_date }}</small>
                             </div>
                             <div class="sm-field">
-                                <div class="sm-label">Shift Type <span class="req">·</span></div>
+                                <div class="sm-label">Role <span class="req">·</span></div>
                                 <select class="sm-select" v-model="onCallModal.form.shift_type" :class="{'is-invalid': fieldErrors.oncall?.shift_type}">
                                     <option value="primary_call">Primary Call</option>
                                     <option value="backup_call">Backup Call</option>
                                     <option value="float_physician">Float Physician</option>
-                                    <option value="weekend_coverage">Weekend Coverage</option>
                                 </select>
+                                <small style="font-size:10px;color:var(--nm-text3);margin-top:3px;display:block">Weekend shifts use the same roles — date determines weekend/weekday</small>
                             </div>
                         </div>
+                        <!-- Coverage area field -->
+                        <div class="sm-field">
+                            <div class="sm-label">Coverage Area</div>
+                            <select class="sm-select" v-model="onCallModal.form.coverage_area_id">
+                                <option value="">No specific area</option>
+                                <option v-for="area in coverageAreas" :key="area.id" :value="area.id">
+                                    {{ area.name }}
+                                </option>
+                            </select>
+                            <small style="font-size:10px;color:var(--nm-text3);margin-top:3px;display:block"
+                                   v-if="coverageAreas.length === 0">
+                                Add coverage areas in Settings → Coverage Areas
+                            </small>
+                        </div>
+
                         <div class="sm-row">
                             <div class="sm-field">
                                 <div class="sm-label">Start Time</div>
@@ -15386,7 +15595,67 @@ tr.staff-table-row .tbl-btn {
           </div>
         </div>
       </div>
-    </teleport>
+    
+      <!-- ═══ COVERAGE AREA ADD/EDIT MODAL ═══════════════════════════════ -->
+      <div v-if="coverageAreaModal.show" class="modal-overlay" @click.self="coverageAreaModal.show = false">
+          <div class="nm-modal" style="max-width:460px;width:100%">
+              <div class="nm-modal-head">
+                  <div class="nm-modal-title">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
+                      {{ coverageAreaModal.mode === 'add' ? 'New Coverage Area' : 'Edit Coverage Area' }}
+                  </div>
+                  <button class="tbl-btn" @click="coverageAreaModal.show = false">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7l10 10M17 7l-10 10"/></svg>
+                  </button>
+              </div>
+              <div class="nm-modal-body">
+                  <div class="sm-field">
+                      <div class="sm-label">Area Name <span class="req">·</span></div>
+                      <input type="text" class="sm-input" v-model="coverageAreaModal.form.name"
+                             placeholder="e.g. ICU, Hospitalization, General"
+                             @keyup.enter="saveCoverageArea">
+                  </div>
+                  <div class="sm-field">
+                      <div class="sm-label">Colour</div>
+                      <div style="display:flex;align-items:center;gap:10px">
+                          <input type="color" v-model="coverageAreaModal.form.color"
+                                 style="width:40px;height:32px;border-radius:6px;border:1px solid var(--nm-border);cursor:pointer;padding:2px">
+                          <div class="nm-cov-chip" style="flex:1;pointer-events:none;opacity:0.9">
+                              <div class="nm-cov-dot" :style="{ background: coverageAreaModal.form.color }"></div>
+                              <div class="nm-cov-body">
+                                  <div class="nm-cov-name">{{ coverageAreaModal.form.name || 'Preview' }}</div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="sm-field">
+                      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                          <div class="nm-toggle" :class="{ active: coverageAreaModal.form.applies_weekends }"
+                               @click="coverageAreaModal.form.applies_weekends = !coverageAreaModal.form.applies_weekends">
+                              <div class="nm-toggle-thumb"></div>
+                          </div>
+                          <div>
+                              <div style="font-size:13px;font-weight:500;color:var(--nm-text1)">Active on weekends</div>
+                              <div style="font-size:11px;color:var(--nm-text3)">Include this area in weekend on-call scheduling</div>
+                          </div>
+                      </label>
+                  </div>
+                  <div class="sm-field">
+                      <div class="sm-label">Display Order</div>
+                      <input type="number" class="sm-input" v-model.number="coverageAreaModal.form.display_order"
+                             min="0" max="99" style="max-width:80px" placeholder="0">
+                  </div>
+              </div>
+              <div class="nm-modal-foot">
+                  <button class="btn btn-outline" @click="coverageAreaModal.show = false">Cancel</button>
+                  <button class="btn btn-primary" @click="saveCoverageArea">
+                      {{ coverageAreaModal.mode === 'add' ? 'Add Area' : 'Save Changes' }}
+                  </button>
+              </div>
+          </div>
+      </div>
+
+</teleport>
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
