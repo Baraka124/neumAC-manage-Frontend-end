@@ -968,7 +968,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return this.request(`/api/ops-metrics/${id}`, { method: 'DELETE' })
       }
 
-    async getStaffResearchProfile(staffId) {
+    async getCoverageAreas() {
+        return this.getList('/api/coverage-areas')
+      }
+      async createCoverageArea(data) {
+        this.invalidate('/api/coverage-areas')
+        return this.request('/api/coverage-areas', { method: 'POST', body: data })
+      }
+      async updateCoverageArea(id, data) {
+        this.invalidate('/api/coverage-areas')
+        return this.request(`/api/coverage-areas/${id}`, { method: 'PUT', body: data })
+      }
+      async deleteCoverageArea(id) {
+        this.invalidate('/api/coverage-areas')
+        return this.request(`/api/coverage-areas/${id}`, { method: 'DELETE' })
+      }
+
+      async getStaffResearchProfile(staffId) {
         try {
           const [performance, allTrials, allProjects, researchLines, rotations] = await Promise.all([
             this.getResearchLinesPerformance(), this.getAllClinicalTrials(),
@@ -1724,7 +1740,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const onCallModal = reactive({
         show: false, mode: 'add',
         // M6 FIX: removed coverage_area (not a real DB column — DB has coverage_notes)
-        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_notes: '' }
+        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', coverage_area_id: '', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_notes: '' }
       })
 
       const getPhysicianName = (id) => {
@@ -1867,6 +1883,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onCallModal.mode = 'add'
         Object.assign(onCallModal.form, {
           duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
+          coverage_area_id: '',
           start_time: '15:00', end_time: '08:00',
           primary_physician_id: physician?.id || '',
           backup_physician_id: '', coverage_notes: '',
@@ -1881,7 +1898,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const raw = schedule.shift_type || 'primary_call'
         onCallModal.form = {
           ...schedule, duty_date: Utils.normalizeDate(schedule.duty_date),
-          shift_type: ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
+          shift_type: raw === 'float_physician' ? 'float_physician' : ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
+          coverage_area_id: schedule.coverage_area_id || schedule.coverage_area?.id || '',
           coverage_notes: schedule.coverage_notes || ''
         }
         onCallModal.show = true
@@ -2050,7 +2068,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
         filteredOnCallSchedules, filteredOnCallAll, oncallTotalPages, todaysOnCallCount,
-        loadOnCallSchedule, loadTodaysOnCall, showAddOnCallModal,
+        loadOnCallSchedule, loadCoverageAreas, coverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal,
         editOnCallSchedule, saveOnCallSchedule, deleteOnCallSchedule, contactPhysician,
         // NEW compact view properties
         groupedOnCallSchedules,
@@ -5466,7 +5484,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // auto-load when on-call view is active
         watch(() => currentView.value, v => {
-          if (v === 'oncall_schedule')  { loadCallouts(); loadCalloutSummary() }
+          if (v === 'oncall_schedule')  { loadCallouts(); loadCalloutSummary(); loadCoverageAreas() }
           if (v === 'communications')   { commsOps.loadAnnouncements(); commsOps.loadOpsMetrics() }
         }, { immediate: false })
 
@@ -6153,6 +6171,7 @@ document.addEventListener('DOMContentLoaded', () => {
               loadStaffTypes(),
               loadAcademicDegrees(),
               loadRotationServices(),
+              loadCoverageAreas(),
               loadSystemSettings(),
               staffOps.loadMedicalStaff(),
               loadDepartments(),
