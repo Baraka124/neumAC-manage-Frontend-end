@@ -6358,7 +6358,7 @@ document.addEventListener('DOMContentLoaded', () => {
           for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
             const cellDate = new Date(year, month, day)
-            const dayAbsences = (absences?.value || []).filter(a => {
+            const dayAbsences = (absences.value || []).filter(a => {
               if (!a.start_date || !a.end_date) return false
               const s = new Date(a.start_date + 'T00:00:00')
               const e = new Date(a.end_date + 'T23:59:59')
@@ -6670,10 +6670,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!months.length) return { attendings: [], residents: [] }
         const hStart   = new Date(months[0].year, months[0].month, 1)
         const hEnd     = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
-        const allStaff = (medicalStaff?.value || []).filter(s => s.employment_status !== 'inactive')
+        const allStaff = (medicalStaff.value || []).filter(s => s.employment_status !== 'inactive')
 
         // In Review mode: only show active/planned absences (skip returned_to_duty)
-        const relevantAbsences = (absences?.value || []).filter(a =>
+        const relevantAbsences = (absences.value || []).filter(a =>
           !['returned_to_duty', 'cancelled'].includes(a.current_status)
         )
 
@@ -6699,7 +6699,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!months.length) return []
         const hStart = new Date(months[0].year, months[0].month, 1)
         const hEnd   = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
-        return (absences?.value || []).filter(a => {
+        return (absences.value || []).filter(a => {
           if (a.staff_member_id !== staffId) return false
           if (['returned_to_duty', 'cancelled'].includes(a.current_status)) return false
           const s = new Date(a.start_date + 'T00:00:00')
@@ -6738,14 +6738,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Coverage lane: attendings NOT absent per month ───────────────
       const absTimelineCoverage = Vue.computed(() => {
         const months     = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
-        const totalAtt   = (medicalStaff?.value || []).filter(s =>
+        const totalAtt   = (medicalStaff.value || []).filter(s =>
           !isResidentType(s.staff_type) && s.employment_status === 'active').length
         return months.map(m => {
           const mStart = new Date(m.year, m.month, 1)
           const mEnd   = new Date(m.year, m.month + 1, 0)
-          const mid    = new Date(m.year, m.month, 15)
-          const absentAtt = (absences?.value || []).filter(a => {
-            if (isResidentType((medicalStaff?.value || []).find(s => s.id === a.staff_member_id)?.staff_type)) return false
+          const absentAtt = (absences.value || []).filter(a => {
+            if (['returned_to_duty', 'cancelled'].includes(a.current_status)) return false
+            if (isResidentType((medicalStaff.value || []).find(s => s.id === a.staff_member_id)?.staff_type)) return false
             const s = new Date(a.start_date + 'T00:00:00')
             const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
             return s <= mEnd && e >= mStart
