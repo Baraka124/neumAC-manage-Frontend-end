@@ -4189,6 +4189,52 @@
 
 /* Rotation service cards — fully redesigned, see inline styles above */
 
+/* ── ACADEMIC DEGREE CARDS ── */
+#app .nm-deg-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--nm-border);
+  border-radius: 10px;
+  background: var(--nm-surface);
+  transition: border-color .12s, box-shadow .12s;
+}
+#app .nm-deg-card:hover {
+  border-color: rgba(0,179,179,.3);
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+#app .nm-deg-card--inactive { opacity: .45; }
+#app .nm-deg-abbr {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; font-weight: 700;
+  color: var(--nm-teal);
+  background: rgba(0,179,179,.08);
+  border: 1px solid rgba(0,179,179,.2);
+  border-radius: 6px;
+  padding: 3px 7px;
+  white-space: nowrap; flex-shrink: 0;
+  min-width: 36px; text-align: center;
+}
+#app .nm-deg-body { flex: 1; min-width: 0; }
+#app .nm-deg-name {
+  font-size: 12px; font-weight: 500; color: var(--nm-text1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#app .nm-deg-inactive {
+  font-size: 10px; color: var(--nm-text3); font-style: italic; margin-top: 1px;
+}
+#app .nm-deg-actions { display: flex; gap: 3px; flex-shrink: 0; }
+#app .nm-deg-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid transparent;
+  color: var(--nm-text3); cursor: pointer;
+  transition: background .1s, color .1s, border-color .1s;
+}
+#app .nm-deg-btn:hover { background: var(--nm-surface2); border-color: var(--nm-border); color: var(--nm-text1); }
+#app .nm-deg-btn--del:hover { background: rgba(185,28,28,.06); border-color: rgba(185,28,28,.2); color: #b91c1c; }
+
+
+
 /* ═══════════════════════════════════════════════════════════
    NEWS & POSTS — REDESIGNED
    ═══════════════════════════════════════════════════════════ */
@@ -5325,7 +5371,12 @@
 /* Wrapper */
 #app .abs-timeline-view {
   display: flex; flex-direction: column;
-  flex: 1 1 0; min-height: 0; overflow: hidden;
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--nm-border);
+  border-radius: 12px;
+  background: var(--nm-surface);
+  margin-top: 2px;
 }
 
 /* ── Nav bar ── */
@@ -5376,7 +5427,7 @@
 
 /* ── Scrollable grid wrap ── */
 #app .abs-tl-wrap {
-  flex: 1 1 0; min-height: 0; overflow: auto;
+  flex: 1 1 0; min-height: 200px; overflow: auto;
 }
 
 /* ── Main grid — 2 columns: name | months-area ── */
@@ -9268,25 +9319,27 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add Degree
                             </button>
                         </div>
-                        <div style="padding:16px 20px;">
+                        <div style="padding:16px 20px 20px;">
                             <div v-if="!academicDegrees.length" class="nm-empty" style="padding:32px;">
                                 <div class="nm-empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
                                 <div class="nm-empty-title">No academic degrees defined</div>
                                 <div class="nm-empty-sub">Add degree titles such as MD, PhD, MIR</div>
                             </div>
-                            <div v-else style="display:flex;flex-wrap:wrap;gap:8px;">
+                            <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
                                 <div v-for="deg in academicDegrees" :key="deg.id"
-                                     style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:0.5px solid var(--nm-border);border-radius:8px;background:var(--nm-surface);"
-                                     :style="!deg.is_active ? 'opacity:.45;' : ''">
-                                    <span style="font-family:monospace;font-size:13px;font-weight:600;color:var(--nm-text1);">{{ deg.abbreviation || '—' }}</span>
-                                    <span style="font-size:12px;color:var(--nm-text2);">{{ deg.name }}</span>
-                                    <span v-if="!deg.is_active" style="font-size:11px;color:var(--nm-text3);font-style:italic;">inactive</span>
-                                    <div style="display:flex;gap:3px;margin-left:4px;">
-                                        <button class="btn-icon" style="width:22px;height:22px;" @click="openEditAcademicDegree(deg)" v-if="hasPermission('system_settings','update')" title="Edit">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
+                                     class="nm-deg-card"
+                                     :class="{ 'nm-deg-card--inactive': !deg.is_active }">
+                                    <div class="nm-deg-abbr">{{ deg.abbreviation || '??' }}</div>
+                                    <div class="nm-deg-body">
+                                        <div class="nm-deg-name">{{ deg.name }}</div>
+                                        <div v-if="!deg.is_active" class="nm-deg-inactive">inactive</div>
+                                    </div>
+                                    <div class="nm-deg-actions">
+                                        <button class="nm-deg-btn" @click.stop="openEditAcademicDegree(deg)" v-if="hasPermission('system_settings','update')" title="Edit">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
                                         </button>
-                                        <button class="btn-icon btn-icon--danger" style="width:22px;height:22px;" @click="deleteAcademicDegree(deg)" v-if="hasPermission('system_settings','delete')" title="Remove">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                        <button class="nm-deg-btn nm-deg-btn--del" @click.stop="deleteAcademicDegree(deg)" v-if="hasPermission('system_settings','delete')" title="Remove">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                                         </button>
                                     </div>
                                 </div>
@@ -9370,77 +9423,77 @@
                                 General Settings
                             </div>
                         </div>
-                        <div class="card-body" style="padding:20px 24px;display:flex;flex-direction:column;gap:20px;">
+                        <div class="card-body" style="padding:0;display:flex;flex-direction:column;">
 
-                            <!-- Read-only info block while we haven't loaded settings yet -->
-                            <div style="font-size:12px;color:var(--text-3);padding:8px 12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border);">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                            <!-- Info banner -->
+                            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--nm-text3);padding:12px 24px;background:var(--nm-surface2);border-bottom:1px solid var(--nm-border);">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
                                 These settings apply system-wide. Changes take effect immediately.
                             </div>
 
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                                <div class="form-group">
-                                    <label class="form-label">Hospital / Department Name</label>
-                                    <input type="text" class="form-control" v-model="systemSettings.hospital_name" :disabled="!hasPermission('system_settings','update')" placeholder="NeumoCare Hospital">
+                            <!-- Fields section -->
+                            <div style="padding:20px 24px 4px;display:grid;grid-template-columns:1fr auto auto;gap:16px 20px;align-items:end;">
+                                <div class="form-group" style="margin:0">
+                                    <label class="form-label" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--nm-text3);margin-bottom:6px;display:block">Hospital / Department Name</label>
+                                    <input type="text" class="form-control" v-model="systemSettings.hospital_name" :disabled="!hasPermission('system_settings','update')" placeholder="NeumoCare Hospital" style="height:38px;font-size:13px;">
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Max Residents per Unit</label>
-                                    <input type="number" class="form-control" v-model.number="systemSettings.max_residents_per_unit" :disabled="!hasPermission('system_settings','update')" min="1" max="20" style="max-width:100px">
+                                <div class="form-group" style="margin:0;min-width:120px">
+                                    <label class="form-label" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--nm-text3);margin-bottom:6px;display:block">Max Residents / Unit</label>
+                                    <input type="number" class="form-control" v-model.number="systemSettings.max_residents_per_unit" :disabled="!hasPermission('system_settings','update')" min="1" max="20" style="height:38px;font-size:13px;width:100%;text-align:center;-moz-appearance:textfield;">
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Default Rotation Duration (weeks)</label>
-                                    <input type="number" class="form-control" v-model.number="systemSettings.default_rotation_duration" :disabled="!hasPermission('system_settings','update')" min="1" max="52" style="max-width:100px">
-                                </div>
-                            </div>
-
-                            <div style="display:flex;flex-direction:column;gap:10px;padding-top:4px;border-top:1px solid var(--border);">
-                                <div class="settings-toggles" style="margin:0 -24px;">
-                                    <div class="settings-toggle-row">
-                                        <div>
-                                            <div class="stl-label">Audit Logging</div>
-                                            <div class="stl-sub">Record all user actions to the audit log</div>
-                                        </div>
-                                        <label class="nm-toggle">
-                                            <input type="checkbox" v-model="systemSettings.enable_audit_logging" :disabled="!hasPermission('system_settings','update')">
-                                            <span class="nm-toggle-track"></span>
-                                        </label>
-                                    </div>
-                                    <div class="settings-toggle-row">
-                                        <div>
-                                            <div class="stl-label">Email Notifications</div>
-                                            <div class="stl-sub">Send email alerts for key events</div>
-                                        </div>
-                                        <label class="nm-toggle">
-                                            <input type="checkbox" v-model="systemSettings.notifications_enabled" :disabled="!hasPermission('system_settings','update')">
-                                            <span class="nm-toggle-track"></span>
-                                        </label>
-                                    </div>
-                                    <div class="settings-toggle-row">
-                                        <div>
-                                            <div class="stl-label">Absence Notifications</div>
-                                            <div class="stl-sub">Alert coordinators when absences are recorded</div>
-                                        </div>
-                                        <label class="nm-toggle">
-                                            <input type="checkbox" v-model="systemSettings.absence_notifications" :disabled="!hasPermission('system_settings','update')">
-                                            <span class="nm-toggle-track"></span>
-                                        </label>
-                                    </div>
-                                    <div class="settings-toggle-row stl-danger">
-                                        <div>
-                                            <div class="stl-label">Maintenance Mode</div>
-                                            <div class="stl-sub">Blocks all non-admin API access</div>
-                                        </div>
-                                        <label class="nm-toggle">
-                                            <input type="checkbox" v-model="systemSettings.maintenance_mode" :disabled="!hasPermission('system_settings','update')">
-                                            <span class="nm-toggle-track"></span>
-                                        </label>
-                                    </div>
+                                <div class="form-group" style="margin:0;min-width:130px">
+                                    <label class="form-label" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--nm-text3);margin-bottom:6px;display:block">Rotation Duration (wks)</label>
+                                    <input type="number" class="form-control" v-model.number="systemSettings.default_rotation_duration" :disabled="!hasPermission('system_settings','update')" min="1" max="52" style="height:38px;font-size:13px;width:100%;text-align:center;-moz-appearance:textfield;">
                                 </div>
                             </div>
 
-                            <div v-if="hasPermission('system_settings','update')" style="display:flex;justify-content:flex-end;padding-top:4px;border-top:1px solid var(--border)">
-                                <button class="btn btn-primary btn-sm" @click="saveSystemSettings">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            <!-- Toggle rows -->
+                            <div class="settings-toggles" style="margin:16px 0 0">
+                                <div class="settings-toggle-row">
+                                    <div>
+                                        <div class="stl-label">Audit Logging</div>
+                                        <div class="stl-sub">Record all user actions to the audit log</div>
+                                    </div>
+                                    <label class="nm-toggle">
+                                        <input type="checkbox" v-model="systemSettings.enable_audit_logging" :disabled="!hasPermission('system_settings','update')">
+                                        <span class="nm-toggle-track"></span>
+                                    </label>
+                                </div>
+                                <div class="settings-toggle-row">
+                                    <div>
+                                        <div class="stl-label">Email Notifications</div>
+                                        <div class="stl-sub">Send email alerts for key events</div>
+                                    </div>
+                                    <label class="nm-toggle">
+                                        <input type="checkbox" v-model="systemSettings.notifications_enabled" :disabled="!hasPermission('system_settings','update')">
+                                        <span class="nm-toggle-track"></span>
+                                    </label>
+                                </div>
+                                <div class="settings-toggle-row">
+                                    <div>
+                                        <div class="stl-label">Absence Notifications</div>
+                                        <div class="stl-sub">Alert coordinators when absences are recorded</div>
+                                    </div>
+                                    <label class="nm-toggle">
+                                        <input type="checkbox" v-model="systemSettings.absence_notifications" :disabled="!hasPermission('system_settings','update')">
+                                        <span class="nm-toggle-track"></span>
+                                    </label>
+                                </div>
+                                <div class="settings-toggle-row stl-danger">
+                                    <div>
+                                        <div class="stl-label">Maintenance Mode</div>
+                                        <div class="stl-sub">Blocks all non-admin API access</div>
+                                    </div>
+                                    <label class="nm-toggle">
+                                        <input type="checkbox" v-model="systemSettings.maintenance_mode" :disabled="!hasPermission('system_settings','update')">
+                                        <span class="nm-toggle-track"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div v-if="hasPermission('system_settings','update')" style="display:flex;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--nm-border)">
+                                <button class="btn btn-primary" @click="saveSystemSettings" style="gap:8px;padding:9px 20px;font-size:13px;font-weight:600;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                                     Save Settings
                                 </button>
                             </div>
