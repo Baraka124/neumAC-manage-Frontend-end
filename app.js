@@ -2867,7 +2867,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadAbsences = async () => {
         try {
           const raw = await API.getAbsences()
-          const today = Utils.normalizeDate(new Date())
           const stalePatches = []
 
           // Filter cancelled (soft-deleted) records — they must not reappear after refresh
@@ -2877,18 +2876,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const normalized = { ...a, start_date: Utils.normalizeDate(a.start_date), end_date: Utils.normalizeDate(a.end_date) }
             const derived = deriveAbsenceStatus(normalized)
             // Silently patch stale records (ended but still 'currently_absent' in DB)
-            // Skip records already formally resolved — returned_to_duty must never be overwritten
-            if (derived === 'completed' && a.current_status && a.current_status !== 'completed' && a.current_status !== 'cancelled' && a.current_status !== 'returned_to_duty') {
+            // deriveAbsenceStatus returns 'returned_to_duty' for past absences — never 'completed'
+            if (derived === 'returned_to_duty' &&
+                a.current_status &&
+                a.current_status !== 'returned_to_duty' &&
+                a.current_status !== 'cancelled') {
               const patch = {
-                staff_member_id: a.staff_member_id,
-                absence_type:    a.absence_type,
-                absence_reason:  a.absence_reason,
-                start_date:      Utils.normalizeDate(a.start_date),
-                end_date:        Utils.normalizeDate(a.end_date),
+                staff_member_id:   a.staff_member_id,
+                absence_type:      a.absence_type,
+                absence_reason:    a.absence_reason,
+                start_date:        Utils.normalizeDate(a.start_date),
+                end_date:          Utils.normalizeDate(a.end_date),
                 coverage_arranged: a.coverage_arranged || false,
                 covering_staff_id: a.covering_staff_id || null,
-                coverage_notes:  a.coverage_notes || '',
-                hod_notes:       a.hod_notes || ''
+                coverage_notes:    a.coverage_notes || '',
+                hod_notes:         a.hod_notes || ''
               }
               stalePatches.push(API.updateAbsence(a.id, patch).catch(() => {}))
             }
@@ -6670,8 +6672,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const hEnd     = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
         const allStaff = (medicalStaff?.value || []).filter(s => s.employment_status !== 'inactive')
 
+        // In Review mode: only show active/planned absences (skip returned_to_duty)
+        const relevantAbsences = (absences?.value || []).filter(a =>
+          !['returned_to_duty', 'cancelled'].includes(a.current_status)
+        )
+
         const hasAbsInHorizon = (staffId) =>
-          (absences?.value || []).some(a => {
+          relevantAbsences.some(a => {
             const s = new Date(a.start_date + 'T00:00:00')
             const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
             return a.staff_member_id === staffId && s <= hEnd && e >= hStart
@@ -6694,6 +6701,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hEnd   = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
         return (absences?.value || []).filter(a => {
           if (a.staff_member_id !== staffId) return false
+          if (['returned_to_duty', 'cancelled'].includes(a.current_status)) return false
           const s = new Date(a.start_date + 'T00:00:00')
           const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
           return s <= hEnd && e >= hStart
