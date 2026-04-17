@@ -968,7 +968,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return this.request(`/api/ops-metrics/${id}`, { method: 'DELETE' })
       }
 
-    async getStaffResearchProfile(staffId) {
+    async getCoverageAreas() {
+        return this.getList('/api/coverage-areas')
+      }
+      async createCoverageArea(data) {
+        this.invalidate('/api/coverage-areas')
+        return this.request('/api/coverage-areas', { method: 'POST', body: data })
+      }
+      async updateCoverageArea(id, data) {
+        this.invalidate('/api/coverage-areas')
+        return this.request(`/api/coverage-areas/${id}`, { method: 'PUT', body: data })
+      }
+      async deleteCoverageArea(id) {
+        this.invalidate('/api/coverage-areas')
+        return this.request(`/api/coverage-areas/${id}`, { method: 'DELETE' })
+      }
+
+      async getStaffResearchProfile(staffId) {
         try {
           const [performance, allTrials, allProjects, researchLines, rotations] = await Promise.all([
             this.getResearchLinesPerformance(), this.getAllClinicalTrials(),
@@ -1724,7 +1740,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const onCallModal = reactive({
         show: false, mode: 'add',
         // M6 FIX: removed coverage_area (not a real DB column — DB has coverage_notes)
-        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_notes: '' }
+        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', coverage_area_id: '', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_notes: '' }
       })
 
       const getPhysicianName = (id) => {
@@ -1743,20 +1759,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return ok
       }
 
-      const checkExistingSchedule = async (date, shiftType, excludeId = null) => {
-        // FIX: Use the already-loaded local reactive array instead of a network call.
-        // The old approach called getOnCallSchedule({ start_date, end_date }) but that
-        // method ignores its argument — always fetching ALL schedules with no date filter,
-        // causing false positives when ANY date had a matching shift_type.
+      const checkExistingSchedule = async (date, shiftType, excludeId = null, coverageAreaId = null) => {
+        // Per-area uniqueness: one primary per coverage area per day (not one primary globally).
+        // If no coverage area is set, falls back to one primary per day (original behaviour).
         try {
-          const normalizedDate = Utils.normalizeDate(date);
+          const normalizedDate = Utils.normalizeDate(date)
+          if (shiftType === 'primary_call' && coverageAreaId) {
+            return onCallSchedule.value.some(s =>
+              Utils.normalizeDate(s.duty_date) === normalizedDate &&
+              s.shift_type === 'primary_call' &&
+              (s.coverage_area_id === coverageAreaId || s.coverage_area?.id === coverageAreaId) &&
+              (!excludeId || s.id !== excludeId)
+            )
+          }
           return onCallSchedule.value.some(s =>
             Utils.normalizeDate(s.duty_date) === normalizedDate &&
             s.shift_type === shiftType &&
+            (!coverageAreaId || (s.coverage_area_id === coverageAreaId || s.coverage_area?.id === coverageAreaId)) &&
             (!excludeId || s.id !== excludeId)
-          );
-        } catch (error) { console.error('Failed to check existing schedule:', error); return false; }
-      };
+          )
+        } catch (error) { console.error('Failed to check existing schedule:', error); return false }
+      }
 
       const deriveOnCallStatus = (s) => {
         const today = Utils.normalizeDate(new Date())
@@ -1777,7 +1800,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (onCallFilters.shiftType) f = f.filter(s => s.shift_type === onCallFilters.shiftType)
         if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
         // M6 FIX: coverage_area is not a real DB column — filter on coverage_notes instead
-        if (onCallFilters.coverageArea) f = f.filter(s => (s.coverage_notes || '').toLowerCase().includes(onCallFilters.coverageArea.toLowerCase()))
+        if (onCallFilters.coverageArea) f = f.filter(s => s.coverage_area_id === onCallFilters.coverageArea || s.coverage_area?.id === onCallFilters.coverageArea)
         if (onCallFilters.search) {
           const q = onCallFilters.search.toLowerCase()
           f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_notes || '').toLowerCase().includes(q))
@@ -1867,6 +1890,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onCallModal.mode = 'add'
         Object.assign(onCallModal.form, {
           duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
+          coverage_area_id: '',
           start_time: '15:00', end_time: '08:00',
           primary_physician_id: physician?.id || '',
           backup_physician_id: '', coverage_notes: '',
@@ -1881,7 +1905,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const raw = schedule.shift_type || 'primary_call'
         onCallModal.form = {
           ...schedule, duty_date: Utils.normalizeDate(schedule.duty_date),
-          shift_type: ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
+          shift_type: raw === 'float_physician' ? 'float_physician' : ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
+          coverage_area_id: schedule.coverage_area_id || schedule.coverage_area?.id || '',
           coverage_notes: schedule.coverage_notes || ''
         }
         onCallModal.show = true
@@ -1930,15 +1955,27 @@ document.addEventListener('DOMContentLoaded', () => {
             duty_date: Utils.normalizeDate(f.duty_date), shift_type: f.shift_type || 'primary_call',
             start_time: f.start_time || '15:00', end_time: f.end_time || '08:00',
             primary_physician_id: f.primary_physician_id, backup_physician_id: f.backup_physician_id || null,
-            coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH')
+            coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH'),
+            coverage_area_id: f.coverage_area_id || null
           }
+          const coverageAreaId = data.coverage_area_id
           if (onCallModal.mode === 'add') {
-            const exists = await checkExistingSchedule(data.duty_date, data.shift_type);
-            if (exists) { showToast('Duplicate Schedule', `A ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 'warning'); saving.value = false; return; }
+            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, null, coverageAreaId)
+            if (exists) {
+              const areaName = coverageAreas.value.find(a => a.id === coverageAreaId)?.name
+              const areaLabel = areaName ? ` for ${areaName}` : ''
+              showToast('Duplicate Schedule', `A ${data.shift_type === 'primary_call' ? 'primary' : data.shift_type.replace('_',' ')} shift already exists${areaLabel} on this date.`, 'warning')
+              saving.value = false; return
+            }
           }
           if (onCallModal.mode === 'edit') {
-            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id);
-            if (exists) { showToast('Duplicate Schedule', `Another ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 'warning'); saving.value = false; return; }
+            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id, coverageAreaId)
+            if (exists) {
+              const areaName = coverageAreas.value.find(a => a.id === coverageAreaId)?.name
+              const areaLabel = areaName ? ` for ${areaName}` : ''
+              showToast('Duplicate Schedule', `Another ${data.shift_type === 'primary_call' ? 'primary' : data.shift_type.replace('_',' ')} shift already exists${areaLabel} on this date.`, 'warning')
+              saving.value = false; return
+            }
           }
           if (onCallModal.mode === 'add') {
             const result = await API.createOnCall(data);
@@ -2047,10 +2084,101 @@ document.addEventListener('DOMContentLoaded', () => {
         return Object.values(map).sort((a,b) => a.date.localeCompare(b.date))
       })
 
+      // ── Coverage Areas ────────────────────────────────────────────────
+      const coverageAreas = ref([])
+      const coverageAreaModal = reactive({
+        show: false, mode: 'add',
+        form: { id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, display_order: 0 }
+      })
+
+      const loadCoverageAreas = async () => {
+        try {
+          const data = await API.getCoverageAreas()
+          if (Array.isArray(data)) {
+            coverageAreas.value = data
+          } else if (data?.data && Array.isArray(data.data)) {
+            coverageAreas.value = data.data
+          }
+        } catch (e) {
+          // Table may not exist yet — migration hasn't been run
+          if (e.message?.includes('not found') || e.message?.includes('42P01')) {
+            coverageAreas.value = []
+          }
+        }
+      }
+
+      const showAddCoverageAreaModal = () => {
+        coverageAreaModal.mode = 'add'
+        Object.assign(coverageAreaModal.form, {
+          id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, display_order: 0
+        })
+        coverageAreaModal.show = true
+      }
+
+      const editCoverageArea = (area) => {
+        coverageAreaModal.mode = 'edit'
+        Object.assign(coverageAreaModal.form, { ...area })
+        coverageAreaModal.show = true
+      }
+
+      const saveCoverageArea = async () => {
+        const f = coverageAreaModal.form
+        if (!f.name?.trim()) { showToast('Validation', 'Area name is required', 'error'); return }
+        // Auto-generate code from name if not set
+        if (!f.code?.trim()) {
+          f.code = f.name.toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_').slice(0, 10)
+        }
+        try {
+          const payload = {
+            name:             f.name.trim(),
+            code:             f.code.trim().toUpperCase(),
+            color:            f.color || '#00b3b3',
+            applies_weekends: f.applies_weekends !== false,
+            display_order:    parseInt(f.display_order) || 0
+          }
+          if (coverageAreaModal.mode === 'add') {
+            const result = await API.createCoverageArea(payload)
+            const newArea = result?.data || result
+            if (newArea?.id) coverageAreas.value.push(newArea)
+            else await loadCoverageAreas()
+          } else {
+            const result = await API.updateCoverageArea(f.id, payload)
+            const updated = result?.data || result
+            const idx = coverageAreas.value.findIndex(a => a.id === f.id)
+            if (idx !== -1 && updated?.id) coverageAreas.value[idx] = updated
+            else await loadCoverageAreas()
+          }
+          coverageAreaModal.show = false
+          showToast('Success', coverageAreaModal.mode === 'add' ? 'Coverage area added' : 'Coverage area updated', 'success')
+        } catch (e) {
+          showToast('Error', e.message || 'Failed to save coverage area', 'error')
+        }
+      }
+
+      const deleteCoverageArea = (area) => {
+        showConfirmation({
+          title:              'Delete Coverage Area',
+          message:            `Delete "${area.name}"?`,
+          icon:               'fa-trash',
+          confirmButtonText:  'Delete',
+          confirmButtonClass: 'btn-danger',
+          details:            'Existing on-call shifts using this area will have their area cleared.',
+          onConfirm: async () => {
+            try {
+              await API.deleteCoverageArea(area.id)
+              coverageAreas.value = coverageAreas.value.filter(a => a.id !== area.id)
+              showToast('Deleted', `${area.name} removed`, 'success')
+            } catch (e) {
+              showToast('Error', e.message || 'Failed to delete coverage area', 'error')
+            }
+          }
+        })
+      }
+
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
         filteredOnCallSchedules, filteredOnCallAll, oncallTotalPages, todaysOnCallCount,
-        loadOnCallSchedule, loadTodaysOnCall, showAddOnCallModal,
+        loadOnCallSchedule, loadCoverageAreas, coverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal,
         editOnCallSchedule, saveOnCallSchedule, deleteOnCallSchedule, contactPhysician,
         // NEW compact view properties
         groupedOnCallSchedules,
@@ -2867,7 +2995,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadAbsences = async () => {
         try {
           const raw = await API.getAbsences()
-          const today = Utils.normalizeDate(new Date())
           const stalePatches = []
 
           // Filter cancelled (soft-deleted) records — they must not reappear after refresh
@@ -2877,18 +3004,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const normalized = { ...a, start_date: Utils.normalizeDate(a.start_date), end_date: Utils.normalizeDate(a.end_date) }
             const derived = deriveAbsenceStatus(normalized)
             // Silently patch stale records (ended but still 'currently_absent' in DB)
-            // Skip records already formally resolved — returned_to_duty must never be overwritten
-            if (derived === 'completed' && a.current_status && a.current_status !== 'completed' && a.current_status !== 'cancelled' && a.current_status !== 'returned_to_duty') {
+            // deriveAbsenceStatus returns 'returned_to_duty' for past absences — never 'completed'
+            if (derived === 'returned_to_duty' &&
+                a.current_status &&
+                a.current_status !== 'returned_to_duty' &&
+                a.current_status !== 'cancelled') {
               const patch = {
-                staff_member_id: a.staff_member_id,
-                absence_type:    a.absence_type,
-                absence_reason:  a.absence_reason,
-                start_date:      Utils.normalizeDate(a.start_date),
-                end_date:        Utils.normalizeDate(a.end_date),
+                staff_member_id:   a.staff_member_id,
+                absence_type:      a.absence_type,
+                absence_reason:    a.absence_reason,
+                start_date:        Utils.normalizeDate(a.start_date),
+                end_date:          Utils.normalizeDate(a.end_date),
                 coverage_arranged: a.coverage_arranged || false,
                 covering_staff_id: a.covering_staff_id || null,
-                coverage_notes:  a.coverage_notes || '',
-                hod_notes:       a.hod_notes || ''
+                coverage_notes:    a.coverage_notes || '',
+                hod_notes:         a.hod_notes || ''
               }
               stalePatches.push(API.updateAbsence(a.id, patch).catch(() => {}))
             }
@@ -5464,7 +5594,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // auto-load when on-call view is active
         watch(() => currentView.value, v => {
-          if (v === 'oncall_schedule')  { loadCallouts(); loadCalloutSummary() }
+          if (v === 'oncall_schedule')  { loadCallouts(); loadCalloutSummary(); onCallOps.loadCoverageAreas() }
           if (v === 'communications')   { commsOps.loadAnnouncements(); commsOps.loadOpsMetrics() }
         }, { immediate: false })
 
@@ -5811,6 +5941,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentView.value = 'system_settings'
             if (!staffTypesList.value.length) loadStaffTypes(true)
             if (!rotationServices.value.length) loadRotationServices()
+            if (!onCallOps.coverageAreas.value.length) onCallOps.loadCoverageAreas()
             return
           }
           if (view === 'research_hub') {
@@ -6151,6 +6282,7 @@ document.addEventListener('DOMContentLoaded', () => {
               loadStaffTypes(),
               loadAcademicDegrees(),
               loadRotationServices(),
+              onCallOps.loadCoverageAreas(),
               loadSystemSettings(),
               staffOps.loadMedicalStaff(),
               loadDepartments(),
@@ -6356,7 +6488,7 @@ document.addEventListener('DOMContentLoaded', () => {
           for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
             const cellDate = new Date(year, month, day)
-            const dayAbsences = (absences?.value || []).filter(a => {
+            const dayAbsences = (absences.value || []).filter(a => {
               if (!a.start_date || !a.end_date) return false
               const s = new Date(a.start_date + 'T00:00:00')
               const e = new Date(a.end_date + 'T23:59:59')
@@ -6668,10 +6800,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!months.length) return { attendings: [], residents: [] }
         const hStart   = new Date(months[0].year, months[0].month, 1)
         const hEnd     = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
-        const allStaff = (medicalStaff?.value || []).filter(s => s.employment_status !== 'inactive')
+        const allStaff = (medicalStaff.value || []).filter(s => s.employment_status !== 'inactive')
+
+        // In Review mode: only show active/planned absences (skip returned_to_duty)
+        const relevantAbsences = (absences.value || []).filter(a =>
+          !['returned_to_duty', 'cancelled'].includes(a.current_status)
+        )
 
         const hasAbsInHorizon = (staffId) =>
-          (absences?.value || []).some(a => {
+          relevantAbsences.some(a => {
             const s = new Date(a.start_date + 'T00:00:00')
             const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
             return a.staff_member_id === staffId && s <= hEnd && e >= hStart
@@ -6692,8 +6829,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!months.length) return []
         const hStart = new Date(months[0].year, months[0].month, 1)
         const hEnd   = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
-        return (absences?.value || []).filter(a => {
+        return (absences.value || []).filter(a => {
           if (a.staff_member_id !== staffId) return false
+          if (['returned_to_duty', 'cancelled'].includes(a.current_status)) return false
           const s = new Date(a.start_date + 'T00:00:00')
           const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
           return s <= hEnd && e >= hStart
@@ -6730,14 +6868,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Coverage lane: attendings NOT absent per month ───────────────
       const absTimelineCoverage = Vue.computed(() => {
         const months     = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
-        const totalAtt   = (medicalStaff?.value || []).filter(s =>
+        const totalAtt   = (medicalStaff.value || []).filter(s =>
           !isResidentType(s.staff_type) && s.employment_status === 'active').length
         return months.map(m => {
           const mStart = new Date(m.year, m.month, 1)
           const mEnd   = new Date(m.year, m.month + 1, 0)
-          const mid    = new Date(m.year, m.month, 15)
-          const absentAtt = (absences?.value || []).filter(a => {
-            if (isResidentType((medicalStaff?.value || []).find(s => s.id === a.staff_member_id)?.staff_type)) return false
+          const absentAtt = (absences.value || []).filter(a => {
+            if (['returned_to_duty', 'cancelled'].includes(a.current_status)) return false
+            if (isResidentType((medicalStaff.value || []).find(s => s.id === a.staff_member_id)?.staff_type)) return false
             const s = new Date(a.start_date + 'T00:00:00')
             const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
             return s <= mEnd && e >= mStart
