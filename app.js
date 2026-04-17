@@ -1086,6 +1086,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!s?.field) return arr
         return [...arr].sort((a, b) => {
           let va = a[s.field] ?? '', vb = b[s.field] ?? ''
+          // Numeric comparison prevents "9" > "10" string-sort bugs
+          if (typeof va === 'number' && typeof vb === 'number') {
+            return s.dir === 'asc' ? va - vb : vb - va
+          }
           if (typeof va === 'string' && /\d{4}-\d{2}-\d{2}/.test(va)) {
             va = Utils.normalizeDate(va); vb = Utils.normalizeDate(vb)
           }
@@ -1367,7 +1371,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadMedicalStaff = async () => {
         try {
           const [raw, hospitals, units] = await Promise.all([
-            API.getList('/api/medical-staff'),
+            API.getList('/api/medical-staff?limit=500&employment_status=all'),
             API.getHospitals(),
             API.getClinicalUnits()
           ])
@@ -1895,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (a.staff_member_id !== f0.primary_physician_id) return false
             const s = Utils.normalizeDate(a.start_date)
             const e = Utils.normalizeDate(a.end_date)
-            return dutyDate >= s && dutyDate <= e && !['cancelled','resolved'].includes(a.current_status)
+            return dutyDate >= s && dutyDate <= e && !['cancelled','returned_to_duty'].includes(a.current_status)
           })
           if (onAbsence.length > 0) {
             const abs     = onAbsence[0]
@@ -2829,7 +2833,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const absenceKPIs = computed(() => {
         const today = Utils.normalizeDate(new Date())
-        const all   = absences.value.map(a => ({ ...a, ...deriveAbsenceStatus(a) }))
+        const all   = absences.value.map(a => ({ ...a, current_status: deriveAbsenceStatus(a) }))
         const absentNow  = all.filter(a => a.current_status === 'currently_absent')
         const upcoming   = all.filter(a => a.current_status === 'planned_leave')
         const now        = new Date()
@@ -2841,7 +2845,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextAbs    = upcoming.sort((a,b) => new Date(a.start_date)-new Date(b.start_date))[0]
         return {
           absentNow:    absentNow.length,
-          absentName:   absentNow[0] ? (allStaffLookup.value[absentNow[0].staff_member_id]?.full_name || '') : '',
+          absentName:   absentNow[0] ? (allStaffLookup.value.find(s => s.id === absentNow[0].staff_member_id)?.full_name || '') : '',
           absentDay:    absentNow[0] ? (()=>{
             try {
               const s = new Date(absentNow[0].start_date + 'T00:00:00')
@@ -2852,7 +2856,7 @@ document.addEventListener('DOMContentLoaded', () => {
           })() : 0,
           upcoming:     upcoming.length,
           nextDate:     nextAbs ? Utils.formatDate(nextAbs.start_date) : '',
-          nextName:     nextAbs ? (allStaffLookup.value[nextAbs.staff_member_id]?.full_name||'') : '',
+          nextName:     nextAbs ? (allStaffLookup.value.find(s => s.id === nextAbs.staff_member_id)?.full_name||'') : '',
           thisMonth:    thisMonth.length,
           coveredCount: thisMonth.filter(a=>a.coverage_arranged).length,
           noCoverage:   noCoverage.length,
@@ -3375,8 +3379,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return rotations.value.filter(r =>
           r.training_unit_id === id &&
           r.rotation_status === 'active' &&
-          new Date(r.start_date) <= today &&
-          new Date(r.end_date)   >= today
+          new Date(r.start_date + 'T00:00:00') <= today &&
+          new Date(r.end_date   + 'T00:00:00') >= today
         ).length
       }
 
@@ -3385,7 +3389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return rotations.value.filter(r =>
           r.training_unit_id === id &&
           r.rotation_status === 'scheduled' &&
-          new Date(r.start_date) > today
+          new Date(r.start_date + 'T00:00:00') > today
         ).length
       }
 
@@ -3400,9 +3404,9 @@ document.addEventListener('DOMContentLoaded', () => {
         )
         // Check each rotation's start date — how many others overlap at that moment?
         for (const rot of upcoming) {
-          const checkDate = new Date(rot.start_date)
+          const checkDate = new Date(rot.start_date + 'T00:00:00')
           const concurrent = upcoming.filter(r =>
-            new Date(r.start_date) <= checkDate && new Date(r.end_date) >= checkDate
+            new Date(r.start_date + 'T00:00:00') <= checkDate && new Date(r.end_date + 'T00:00:00') >= checkDate
           ).length
           if (concurrent > maxSlots) {
             return { date: rot.start_date, concurrent, max: maxSlots }
@@ -3417,7 +3421,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const getResidentShortName = (id) => {
         const s = allStaffLookup.value.find(x => x.id === id)
-        if (!s) return '—'
+               || medicalStaff.value.find(x => x.id === id)
+        if (!s) {
+          // Last resort: use the joined resident object already on the rotation record
+          const rot = rotations.value.find(r => r.resident_id === id)
+          if (rot?.resident?.full_name) {
+            const parts = rot.resident.full_name.trim().split(' ')
+            return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : rot.resident.full_name
+          }
+          return '—'
+        }
         const parts = (s.full_name || '').trim().split(' ')
         return parts.length > 1 ? `${parts[0]} ${parts[parts.length-1][0]}.` : s.full_name
       }
@@ -3529,7 +3542,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Days until a rotation ends (for "Free in Xd" chip)
       const getDaysUntilFree = (endDate) => {
         const today = new Date(); today.setHours(0,0,0,0)
-        const end   = new Date(endDate)
+        const end   = new Date(Utils.normalizeDate(endDate) + 'T00:00:00')
         return Math.ceil((end - today) / (1000 * 60 * 60 * 24))
       }
 
@@ -3609,19 +3622,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const touching = rotations.value.filter(r =>
           r.training_unit_id === unitId &&
           ['active','scheduled'].includes(r.rotation_status) &&
-          new Date(r.start_date) <= mEnd && new Date(r.end_date) >= mStart
+          new Date(r.start_date + 'T00:00:00') <= mEnd && new Date(r.end_date + 'T00:00:00') >= mStart
         )
         // Separate truly active (date range covers any day in month) from scheduled future
         const today = new Date(); today.setHours(0,0,0,0)
         const isCurrentMonth = mStart <= today && mEnd >= today
         const active    = isCurrentMonth
-          ? touching.filter(r => r.rotation_status === 'active' && new Date(r.start_date) <= today && new Date(r.end_date) >= today).length
+          ? touching.filter(r => r.rotation_status === 'active' && new Date(r.start_date + 'T00:00:00') <= today && new Date(r.end_date + 'T00:00:00') >= today).length
           : touching.filter(r => ['active','scheduled'].includes(r.rotation_status)).length
         const scheduled = touching.filter(r => r.rotation_status === 'scheduled').length
         const occupied  = isCurrentMonth ? active : touching.length
         if (occupied === 0) return { status: 'free', occupied: 0, total: maxSlots }
         const isClosing = touching.some(r => {
-          const e = new Date(r.end_date)
+          const e = new Date(r.end_date + 'T00:00:00')
           return e.getFullYear() === year && e.getMonth() === month && e < mEnd
         })
         if (occupied >= maxSlots) return { status: isClosing ? 'closing' : 'occupied', occupied, total: maxSlots }
@@ -5112,7 +5125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         const { pagination, resetPage, paginate, totalPages, goToPage } = makePagination([
-          ['medical_staff', 15], ['rotations', 15], ['oncall', 15], ['absences', 15], ['trials', 15]
+          ['medical_staff', 15], ['rotations', 15], ['oncall', 15], ['absences', 15], ['trials', 15], ['projects', 15], ['research_lines', 20]
         ])
 
         const { fieldErrors, setErr, clearErr: clearFieldError, clearAll } = makeValidation(['rotation', 'staff', 'absence', 'oncall', 'research'])
@@ -5147,6 +5160,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
+        // Destructure getHorizonMonths so absence timeline functions can use it without qualification
+        const { getHorizonMonths } = rotationOps
+
         const { departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
@@ -5164,12 +5180,12 @@ document.addEventListener('DOMContentLoaded', () => {
           return rotations.value.filter(r =>
             unitIds.has(r.training_unit_id) &&
             ['active','scheduled'].includes(r.rotation_status)
-          ).sort((a,b) => new Date(a.end_date) - new Date(b.end_date))
+          ).sort((a,b) => new Date(a.end_date + 'T00:00:00') - new Date(b.end_date + 'T00:00:00'))
         })
 
         const rotDaysLeft = (r) => {
           if (!r) return 0
-          const diff = Math.ceil((new Date(r.end_date) - new Date()) / 86400000)
+          const diff = Math.ceil((new Date(Utils.normalizeDate(r.end_date) + 'T00:00:00') - new Date()) / 86400000)
           return diff > 0 ? diff : 0
         }
 
@@ -5252,7 +5268,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 backup_physician_id:  shift.role === 'backup'  ? newId : existing.backup_physician_id,
                 duty_date: existing.duty_date, shift_type: existing.shift_type,
                 start_time: existing.start_time, end_time: existing.end_time,
-                coverage_area: existing.coverage_area, coverage_notes: existing.coverage_notes || ''
+                coverage_notes: existing.coverage_notes || ''
               }
               await API.updateOnCall(shift.id, payload)
               const idx = onCallSchedule.value.findIndex(s => s.id === shift.id)
@@ -5449,7 +5465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // auto-load when on-call view is active
         watch(() => currentView.value, v => {
           if (v === 'oncall_schedule')  { loadCallouts(); loadCalloutSummary() }
-          if (v === 'communications')   { loadAnnouncements(); loadOpsMetrics() }
+          if (v === 'communications')   { commsOps.loadAnnouncements(); commsOps.loadOpsMetrics() }
         }, { immediate: false })
 
         // ── NEWS READER DRAWER ────────────────────────────────────────
@@ -5783,6 +5799,12 @@ document.addEventListener('DOMContentLoaded', () => {
             currentView.value = 'news'
             // FIX Bug4: use newsLoaded flag, not length — empty result shouldn't trigger refetch
             if (!newsLoaded.value && !newsLoading.value) loadNews()
+            return
+          }
+          if (view === 'communications') {
+            currentView.value = 'communications'
+            commsOps.loadAnnouncements()
+            commsOps.loadOpsMetrics()
             return
           }
           if (view === 'system_settings') {
@@ -6829,6 +6851,7 @@ document.addEventListener('DOMContentLoaded', () => {
           formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed, getResidentCategoryIcon: Utils.getResidentCategoryIcon,
           getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
           getDaysRemainingColor: Utils.getDaysRemainingColor, isToday,
+          normalizeDate: Utils.normalizeDate, formatDateShort: Utils.formatDateShort,
           departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
