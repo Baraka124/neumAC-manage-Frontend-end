@@ -968,7 +968,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return this.request(`/api/ops-metrics/${id}`, { method: 'DELETE' })
       }
 
-    async getCoverageAreas() {
+    async batchCreateOnCall(shifts) {
+        this.invalidate('/api/oncall')
+        return this.request('/api/oncall/batch', { method: 'POST', body: { shifts } })
+      }
+      async getCoverageAreas() {
         return this.getList('/api/coverage-areas')
       }
       async createCoverageArea(data) {
@@ -1737,7 +1741,159 @@ document.addEventListener('DOMContentLoaded', () => {
             const todaysOnCall = ref([])
       const loadingSchedule = ref(false)
       const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
-      const onCallModal = reactive({
+      // ── Bulk On-call Scheduler ───────────────────────────────────
+      const bulkOncall = Vue.reactive({
+        show:     false,
+        step:     1,         // 1=who/area/role  2=dates  3=review
+        // Current block being configured
+        current: {
+          physician_id:   '',
+          coverage_area_id: '',
+          shift_type:     'primary_call',
+          start_time:     '15:00',
+          end_time:       '08:00',
+        },
+        // Calendar nav
+        calYear:  new Date().getFullYear(),
+        calMonth: new Date().getMonth(),   // 0-indexed
+        // Queue: array of { physician_id, coverage_area_id, shift_type, start_time, end_time, dates[], conflicts[] }
+        queue:    [],
+        saving:   false,
+        // Clone target
+        cloneSource: null,  // queue index to clone dates from
+      })
+
+      // Calendar days for bulk picker
+      const bulkCalDays = Vue.computed(() => {
+        const year  = bulkOncall.calYear
+        const month = bulkOncall.calMonth
+        const firstDay = new Date(year, month, 1)
+        const lastDay  = new Date(year, month + 1, 0)
+        const startDow = (firstDay.getDay() + 6) % 7  // Mon=0
+        const days = []
+        // Pad start
+        for (let i = startDow - 1; i >= 0; i--) {
+          const d = new Date(year, month, -i)
+          days.push({ date: Utils.normalizeDate(d), day: d.getDate(), otherMonth: true, selected: false, hasConflict: false })
+        }
+        // Real days
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+          const dt   = new Date(year, month, d)
+          const dateStr = Utils.normalizeDate(dt)
+          const physId  = bulkOncall.current.physician_id
+          // Check absence conflict
+          const hasAbs = physId ? (absences?.value || []).some(a => {
+            if (a.staff_member_id !== physId) return false
+            const s = Utils.normalizeDate(a.start_date)
+            const e = Utils.normalizeDate(a.end_date)
+            return dateStr >= s && dateStr <= e && !['cancelled','returned_to_duty'].includes(a.current_status)
+          }) : false
+          // Is this date already selected in current block?
+          const curBlock = bulkOncall.current._dates || []
+          const selected = curBlock.includes(dateStr)
+          days.push({ date: dateStr, day: d, otherMonth: false, selected, hasConflict: selected && hasAbs, isAbsent: hasAbs, isToday: dateStr === Utils.normalizeDate(new Date()) })
+        }
+        // Pad end
+        const remaining = 42 - days.length
+        for (let d = 1; d <= remaining; d++) {
+          const dt = new Date(year, month + 1, d)
+          days.push({ date: Utils.normalizeDate(dt), day: d, otherMonth: true, selected: false, hasConflict: false })
+        }
+        return days
+      })
+
+      const bulkToggleDate = (day) => {
+        if (day.otherMonth) return
+        if (!bulkOncall.current._dates) Vue.set ? Vue.set(bulkOncall.current, '_dates', []) : (bulkOncall.current._dates = [])
+        const idx = bulkOncall.current._dates.indexOf(day.date)
+        if (idx >= 0) bulkOncall.current._dates.splice(idx, 1)
+        else bulkOncall.current._dates.push(day.date)
+      }
+
+      const bulkAddToQueue = () => {
+        const cur = bulkOncall.current
+        if (!cur.physician_id) { showToast('Validation', 'Select a clinician', 'warning'); return }
+        if (!cur._dates || cur._dates.length === 0) { showToast('Validation', 'Select at least one date', 'warning'); return }
+        const physId = cur.physician_id
+        const absList = absences?.value || []
+        const dates = [...(cur._dates || [])].sort()
+        const conflicts = dates.filter(dateStr => absList.some(a => {
+          if (a.staff_member_id !== physId) return false
+          const s = Utils.normalizeDate(a.start_date)
+          const e = Utils.normalizeDate(a.end_date)
+          return dateStr >= s && dateStr <= e && !['cancelled','returned_to_duty'].includes(a.current_status)
+        }))
+        bulkOncall.queue.push({
+          physician_id:     cur.physician_id,
+          coverage_area_id: cur.coverage_area_id || null,
+          shift_type:       cur.shift_type,
+          start_time:       cur.start_time,
+          end_time:         cur.end_time,
+          dates,
+          conflicts,
+        })
+        // Reset current for next clinician
+        Object.assign(bulkOncall.current, { physician_id: '', coverage_area_id: '', shift_type: 'primary_call', start_time: '15:00', end_time: '08:00', _dates: [] })
+        bulkOncall.step = 1
+      }
+
+      const bulkClone = (sourceIdx) => {
+        const source = bulkOncall.queue[sourceIdx]
+        if (!source) return
+        bulkOncall.current._dates = [...source.dates]
+        bulkOncall.current.coverage_area_id = source.coverage_area_id
+        bulkOncall.current.shift_type = source.shift_type
+        bulkOncall.current.start_time = source.start_time
+        bulkOncall.current.end_time   = source.end_time
+        bulkOncall.step = 1
+      }
+
+      const bulkTotalShifts = Vue.computed(() => bulkOncall.queue.reduce((sum, b) => sum + b.dates.length, 0))
+      const bulkTotalConflicts = Vue.computed(() => bulkOncall.queue.reduce((sum, b) => sum + b.conflicts.length, 0))
+
+      const bulkSave = async () => {
+        if (bulkOncall.queue.length === 0) { showToast('Empty', 'Add at least one block to the queue', 'warning'); return }
+        bulkOncall.saving = true
+        try {
+          const shifts = []
+          bulkOncall.queue.forEach(block => {
+            block.dates.forEach(dateStr => {
+              shifts.push({
+                duty_date:            dateStr,
+                shift_type:           block.shift_type,
+                coverage_area_id:     block.coverage_area_id,
+                primary_physician_id: block.physician_id,
+                start_time:           block.start_time,
+                end_time:             block.end_time,
+                has_conflict:         block.conflicts.includes(dateStr),
+              })
+            })
+          })
+          await API.batchCreateOnCall(shifts)
+          showToast('Saved', `${shifts.length} on-call shifts created`, 'success')
+          bulkOncall.show = false
+          bulkOncall.queue = []
+          bulkOncall.step = 1
+          await loadOnCallSchedule()
+        } catch(e) {
+          if (e.message?.includes('Duplicate')) {
+            showToast('Conflict', 'Some dates already have a primary for that area. Review and retry.', 'error')
+          } else {
+            showToast('Error', e.message || 'Batch save failed', 'error')
+          }
+        } finally { bulkOncall.saving = false }
+      }
+
+      const openBulkOncall = () => {
+        bulkOncall.show  = true
+        bulkOncall.step  = 1
+        bulkOncall.queue = []
+        Object.assign(bulkOncall.current, { physician_id: '', coverage_area_id: '', shift_type: 'primary_call', start_time: '15:00', end_time: '08:00', _dates: [] })
+        bulkOncall.calYear  = new Date().getFullYear()
+        bulkOncall.calMonth = new Date().getMonth()
+      }
+
+      onCallModal = reactive({
         show: false, mode: 'add',
         // M6 FIX: removed coverage_area (not a real DB column — DB has coverage_notes)
         form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', coverage_area_id: '', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_notes: '' }
@@ -1955,27 +2111,15 @@ document.addEventListener('DOMContentLoaded', () => {
             duty_date: Utils.normalizeDate(f.duty_date), shift_type: f.shift_type || 'primary_call',
             start_time: f.start_time || '15:00', end_time: f.end_time || '08:00',
             primary_physician_id: f.primary_physician_id, backup_physician_id: f.backup_physician_id || null,
-            coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH'),
-            coverage_area_id: f.coverage_area_id || null
+            coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH')
           }
-          const coverageAreaId = data.coverage_area_id
           if (onCallModal.mode === 'add') {
-            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, null, coverageAreaId)
-            if (exists) {
-              const areaName = coverageAreas.value.find(a => a.id === coverageAreaId)?.name
-              const areaLabel = areaName ? ` for ${areaName}` : ''
-              showToast('Duplicate Schedule', `A ${data.shift_type === 'primary_call' ? 'primary' : data.shift_type.replace('_',' ')} shift already exists${areaLabel} on this date.`, 'warning')
-              saving.value = false; return
-            }
+            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, null, data.coverage_area_id);
+            if (exists) { showToast('Duplicate', `A ${data.shift_type === 'primary_call' ? 'Primary Call' : data.shift_type === 'backup_call' ? 'Backup Call' : 'Float'} shift already exists for this date${data.coverage_area_id ? ' and area' : ''}.`, 'warning'); saving.value = false; return; }
           }
           if (onCallModal.mode === 'edit') {
-            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id, coverageAreaId)
-            if (exists) {
-              const areaName = coverageAreas.value.find(a => a.id === coverageAreaId)?.name
-              const areaLabel = areaName ? ` for ${areaName}` : ''
-              showToast('Duplicate Schedule', `Another ${data.shift_type === 'primary_call' ? 'primary' : data.shift_type.replace('_',' ')} shift already exists${areaLabel} on this date.`, 'warning')
-              saving.value = false; return
-            }
+            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id, data.coverage_area_id);
+            if (exists) { showToast('Duplicate Schedule', `Another ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 'warning'); saving.value = false; return; }
           }
           if (onCallModal.mode === 'add') {
             const result = await API.createOnCall(data);
@@ -2077,14 +2221,26 @@ document.addEventListener('DOMContentLoaded', () => {
         ;(onCallSchedule.value || []).forEach(s => {
           const d = Utils.normalizeDate(s.duty_date)
           if (d < today || d > cutoff) return
-          if (!map[d]) map[d] = { date: d, label: dayLabel(d), isToday: d === today, primary: null, backup: null }
-          if (['primary_call','primary'].includes(s.shift_type)) map[d].primary = s
-          else map[d].backup = s
+          if (!map[d]) map[d] = { date: d, label: dayLabel(d), isToday: d === today, areas: [], noArea: { primary: null, backup: null } }
+          const areaId    = s.coverage_area_id || null
+          const areaObj   = s.coverage_area || (coverageAreas?.value || []).find(a => a.id === areaId) || null
+          const areaName  = areaObj?.name  || null
+          const areaColor = areaObj?.color || '#00b3b3'
+          if (areaId) {
+            let slot = map[d].areas.find(a => a.id === areaId)
+            if (!slot) { slot = { id: areaId, name: areaName, color: areaColor, primary: null, backup: null }; map[d].areas.push(slot) }
+            if (['primary_call','primary'].includes(s.shift_type)) slot.primary = s
+            else if (s.shift_type === 'backup_call') slot.backup = s
+          } else {
+            // No area — goes into the generic slot
+            if (['primary_call','primary'].includes(s.shift_type)) map[d].noArea.primary = s
+            else if (s.shift_type === 'backup_call') map[d].noArea.backup = s
+          }
         })
         return Object.values(map).sort((a,b) => a.date.localeCompare(b.date))
       })
 
-      // ── Coverage Areas ────────────────────────────────────────────────
+      // ── Coverage Areas ──────────────────────────────────────────────────
       const coverageAreas = ref([])
       const coverageAreaModal = reactive({
         show: false, mode: 'add',
@@ -2100,7 +2256,6 @@ document.addEventListener('DOMContentLoaded', () => {
             coverageAreas.value = data.data
           }
         } catch (e) {
-          // Table may not exist yet — migration hasn't been run
           if (e.message?.includes('not found') || e.message?.includes('42P01')) {
             coverageAreas.value = []
           }
@@ -2124,32 +2279,30 @@ document.addEventListener('DOMContentLoaded', () => {
       const saveCoverageArea = async () => {
         const f = coverageAreaModal.form
         if (!f.name?.trim()) { showToast('Validation', 'Area name is required', 'error'); return }
-        // Auto-generate code from name if not set
         if (!f.code?.trim()) {
           f.code = f.name.toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_').slice(0, 10)
         }
         try {
           const payload = {
-            name:             f.name.trim(),
-            code:             f.code.trim().toUpperCase(),
-            color:            f.color || '#00b3b3',
-            applies_weekends: f.applies_weekends !== false,
-            display_order:    parseInt(f.display_order) || 0
+            name: f.name.trim(), code: f.code.trim().toUpperCase(),
+            color: f.color || '#00b3b3', applies_weekends: f.applies_weekends !== false,
+            display_order: parseInt(f.display_order) || 0
           }
           if (coverageAreaModal.mode === 'add') {
             const result = await API.createCoverageArea(payload)
             const newArea = result?.data || result
             if (newArea?.id) coverageAreas.value.push(newArea)
             else await loadCoverageAreas()
+            showToast('Success', 'Coverage area added', 'success')
           } else {
             const result = await API.updateCoverageArea(f.id, payload)
             const updated = result?.data || result
             const idx = coverageAreas.value.findIndex(a => a.id === f.id)
             if (idx !== -1 && updated?.id) coverageAreas.value[idx] = updated
             else await loadCoverageAreas()
+            showToast('Success', 'Coverage area updated', 'success')
           }
           coverageAreaModal.show = false
-          showToast('Success', coverageAreaModal.mode === 'add' ? 'Coverage area added' : 'Coverage area updated', 'success')
         } catch (e) {
           showToast('Error', e.message || 'Failed to save coverage area', 'error')
         }
@@ -2157,12 +2310,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const deleteCoverageArea = (area) => {
         showConfirmation({
-          title:              'Delete Coverage Area',
-          message:            `Delete "${area.name}"?`,
-          icon:               'fa-trash',
-          confirmButtonText:  'Delete',
-          confirmButtonClass: 'btn-danger',
-          details:            'Existing on-call shifts using this area will have their area cleared.',
+          title: 'Delete Coverage Area', message: `Delete "${area.name}"?`,
+          icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger',
+          details: 'Existing on-call shifts using this area will have their area cleared.',
           onConfirm: async () => {
             try {
               await API.deleteCoverageArea(area.id)
@@ -2179,7 +2329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
         filteredOnCallSchedules, filteredOnCallAll, oncallTotalPages, todaysOnCallCount,
         loadOnCallSchedule, loadCoverageAreas, coverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal,
-        editOnCallSchedule, saveOnCallSchedule, deleteOnCallSchedule, contactPhysician,
+        editOnCallSchedule, saveOnCallSchedule, bulkOncall, bulkCalDays, bulkToggleDate, bulkAddToQueue, bulkClone, bulkTotalShifts, bulkTotalConflicts, bulkSave, openBulkOncall, deleteOnCallSchedule, contactPhysician,
         // NEW compact view properties
         groupedOnCallSchedules,
         isShiftActive,
@@ -5462,8 +5612,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const calloutPeriod   = reactive({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 })
         const calloutModal    = reactive({
           show: false, mode: 'add',
-          form: { id: null, staff_id: '', called_at: '', end_time: '', reason_category: 'respiratory_emergency', time_type: 'night', notes: '' }
+          form: { id: null, staff_id: '', called_at: '', end_time: '', reason_category: 'respiratory_emergency', time_type: 'night', notes: '', coverage_area_id: '' }
         })
+        const suggestCalloutArea = (staffId) => {
+          if (!staffId) return
+          const today = Utils.normalizeDate(new Date())
+          // Find the shift this physician is on tonight
+          const shift = (onCallSchedule?.value || []).find(s =>
+            s.primary_physician_id === staffId &&
+            Utils.normalizeDate(s.duty_date) === today &&
+            s.coverage_area_id
+          )
+          if (shift?.coverage_area_id && !calloutModal.form.coverage_area_id) {
+            calloutModal.form.coverage_area_id = shift.coverage_area_id
+          }
+        }
+
         const calloutReasonLabels = {
           respiratory_emergency: 'Respiratory emergency',
           bronchospasm:          'Bronchospasm',
@@ -5502,7 +5666,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const openLogCalloutModal = () => {
           const now = new Date()
           const pad = n => String(n).padStart(2,'0')
-          Object.assign(calloutModal.form, { id:null, staff_id:'', called_at:`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`, end_time:'', reason_category:'respiratory_emergency', time_type: now.getHours() >= 22 || now.getHours() < 7 ? 'night' : now.getDay() === 0 || now.getDay() === 6 ? 'weekend' : 'daytime', notes:'' })
+          Object.assign(calloutModal.form, { id:null, staff_id:'', called_at:`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`, end_time:'', reason_category:'respiratory_emergency', time_type: now.getHours() >= 22 || now.getHours() < 7 ? 'night' : now.getDay() === 0 || now.getDay() === 6 ? 'weekend' : 'daytime', notes:'', coverage_area_id:'' })
           calloutModal.mode = 'add'; calloutModal.show = true
         }
 
@@ -7217,7 +7381,7 @@ document.addEventListener('DOMContentLoaded', () => {
           callouts, calloutsLoading, calloutSummary, calloutPeriod, calloutModal,
           calloutFairnessAlert,
           calloutKPIs, calloutDistribution, calloutFairnessAlert, calloutReasonLabels, calloutTimeTypes,
-          openLogCalloutModal, editCallout, saveCallout, deleteCallout,
+          openLogCalloutModal, suggestCalloutArea, editCallout, saveCallout, deleteCallout,
           loadCallouts, loadCalloutSummary,
         }    
       }
