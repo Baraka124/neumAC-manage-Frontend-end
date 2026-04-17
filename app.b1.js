@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   try {
-    if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')
+    if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
 
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000' 
-        : 'https://neumac-manage-back-end-production.up.railway.app',
+        : 'https://neumac-manage-back-end-production.up.railway.app',      
       TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
       CACHE_TTL: 300000
@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const staffTypesList = ref([])
     const staffTypeMap   = ref({})
     const academicDegrees = ref([])   // loaded from /api/academic-degrees
+    const rotationServices = ref([])  // loaded from /api/rotation-services (departments with service_type='rotation_service')
 
     // Fallbacks for display while loading or for unknown keys
     const STAFF_TYPE_LABELS_FALLBACK = {
@@ -128,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Global helpers used throughout the app
     const formatStaffTypeGlobal   = (key) => staffTypeMap.value[key]?.display_name || STAFF_TYPE_LABELS_FALLBACK[key] || key
+    const getRotationServiceName  = (id) => rotationServices.value.find(s => s.id === id)?.name || null
     // Short labels for table badges — keeps columns from overflowing
     const SHORT_LABELS = {
       attending_physician: 'Attending', medical_resident: 'Resident',
@@ -148,10 +150,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const ROTATION_STATUS_LABELS = {
-      scheduled: 'Scheduled', 
-      active: 'Active', 
-      completed: 'Completed', 
-      cancelled: 'Cancelled'
+      scheduled: 'Scheduled',
+      active: 'Active',
+      completed: 'Completed',
+      extended: 'Extended',
+      terminated_early: 'Terminated'
     }
     
     const USER_ROLE_LABELS = {
@@ -175,7 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
       innovation_projects: 'Research Hub', 
       analytics_dashboard: 'Research Hub',
       analytics_performance: 'Research Hub', 
-      analytics_partners: 'Research Hub'
+      analytics_partners: 'Research Hub',
+      // FIX Bug5: missing view titles for news and system_settings
+      news: 'News & Posts',
+      system_settings: 'System Settings'
     }
     
     const VIEW_SUBTITLES = {
@@ -192,7 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
       innovation_projects: 'Research lines, studies, projects and analytics',
       analytics_dashboard: 'Research lines, studies, projects and analytics',
       analytics_performance: 'Research lines, studies, projects and analytics',
-      analytics_partners: 'Research lines, studies, projects and analytics'
+      analytics_partners: 'Research lines, studies, projects and analytics',
+      // FIX Bug5: missing subtitles for news and system_settings
+      news: 'Departmental news, announcements and publications',
+      system_settings: 'Configure staff types and system-wide settings'
     }
 
     // ============ 3. ENHANCED UTILS CLASS ============
@@ -521,11 +530,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!name || typeof name !== 'string') return '??'
         return name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2)
       }
+
+      // Format a clinician name for compact display in the dashboard.
+      // Respects whatever title the user stored (Dr., Dra., Prof., etc.)
+      // Shortens to: <title> <LastName>  e.g. "Dr. Pedro J. Marcos" → "Dr. Marcos"
+      //                                       "Dra. María García"   → "Dra. García"
+      //                                       "Pedro Marcos"        → "Pedro Marcos" (no title detected)
+      static formatDrName(fullName) {
+        if (!fullName || typeof fullName !== 'string') return '—'
+        const parts = fullName.trim().split(/\s+/).filter(Boolean)
+        if (parts.length === 0) return '—'
+        if (parts.length === 1) return parts[0]
+
+        // Check if the first word looks like a title (Dr., Dra., Prof., etc.)
+        const titlePattern = /^(Dr\.?|Dra\.?|Prof\.?|Mr\.?|Ms\.?|Mrs\.?)$/i
+        const hasTitle = titlePattern.test(parts[0])
+
+        if (hasTitle) {
+          // "Dr. Pedro J. Marcos" → ["Dr.", "Pedro", "J.", "Marcos"] → "Dr. Marcos"
+          const title    = parts[0]
+          const lastName = parts[parts.length - 1]
+          return `${title} ${lastName}`
+        } else {
+          // No title stored — just show first + last, skip middle initials
+          // "Pedro Juan Marcos" → "Pedro Marcos"
+          return parts.length > 2
+            ? `${parts[0]} ${parts[parts.length - 1]}`
+            : fullName.trim()
+        }
+      }
     }
 
     // ============ 4. ENHANCED API SERVICE ============
     class ApiService {
-      constructor() { this.cache = new Map() }
+      constructor() {
+        this.cache = new Map()
+        this._isOnline = navigator.onLine
+        this._sessionExpired = false
+        window.addEventListener('online',  () => { this._isOnline = true;  window.dispatchEvent(new CustomEvent('neumax:online'))  })
+        window.addEventListener('offline', () => { this._isOnline = false; window.dispatchEvent(new CustomEvent('neumax:offline')) })
+      }
+      get isOnline() { return this._isOnline }
 
       get token() { return localStorage.getItem(CONFIG.TOKEN_KEY) }
 
@@ -571,16 +616,27 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res.status === 204) return null
           if (!res.ok) {
             if (res.status === 401) {
-              localStorage.removeItem(CONFIG.TOKEN_KEY)
-              localStorage.removeItem(CONFIG.USER_KEY)
-              // Force Vue app back to login — dispatch custom event picked up in setup()
-              window.dispatchEvent(new CustomEvent('neumax:session-expired'))
-              throw new Error('Session expired. Please login again.')
+              if (!this._sessionExpired) {
+                this._sessionExpired = true
+                localStorage.removeItem(CONFIG.TOKEN_KEY)
+                localStorage.removeItem(CONFIG.USER_KEY)
+                window.dispatchEvent(new CustomEvent('neumax:session-expired'))
+              }
+              throw new Error('Session expired. Please log in again.')
             }
-            const err = await res.text().catch(() => `HTTP ${res.status}`)
-            throw new Error(err)
-          }
-          const ct = res.headers.get('content-type')
+            if (res.status === 403) throw new Error('You do not have permission to perform this action.')
+            if (res.status === 404) throw new Error('The requested resource was not found.')
+            if (res.status === 503) {
+              window.dispatchEvent(new CustomEvent('neumax:maintenance'))
+              throw new Error('System is under maintenance. Please try again shortly.')
+            }
+            if (res.status >= 500) throw new Error('A server error occurred. Please try again in a moment.')
+            const errBody = await res.text().catch(() => `HTTP ${res.status}`)
+            let errMsg = errBody
+            try { const j = JSON.parse(errBody); errMsg = j.message || j.error || errBody } catch {}
+            throw new Error(errMsg)
+            }
+            const ct = res.headers.get('content-type')
           const result = ct?.includes('application/json') ? await res.json() : await res.text()
           if (isGet && !options.skipCache) this.setCached(cacheKey, result)
           return result
@@ -601,6 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
           localStorage.setItem(CONFIG.TOKEN_KEY, data.token)
           localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(data.user))
           this.clearCache()
+          this._sessionExpired = false
         }
         return data
       }
@@ -616,9 +673,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // ============ 4.1 MEDICAL STAFF ENDPOINTS ============
       
       async getMedicalStaff() { 
-        const data = await this.getList('/api/medical-staff');
+        // B9 FIX: Removed redundant .filter(employment_status !== 'inactive') —
+        // the backend already excludes inactive staff by default (neq query).
+        // Keeping it here would silently drop inactive staff even when fetched intentionally.
+        const data = await this.getList('/api/medical-staff?limit=500');
         return data
-          .filter(staff => staff.employment_status !== 'inactive')
           .map(staff => ({
           ...staff,
           resident_category: staff.resident_category || null,
@@ -635,8 +694,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       async createMedicalStaff(d) { this.invalidate('/api/medical-staff'); return this.request('/api/medical-staff', { method: 'POST', body: d }) }
-      async updateMedicalStaff(id, d) { this.invalidate('/api/medical-staff'); return this.request(`/api/medical-staff/${id}`, { method: 'PUT', body: d }) }
-      async deleteMedicalStaff(id) { this.invalidate('/api/medical-staff'); return this.request(`/api/medical-staff/${id}`, { method: 'DELETE' }) }
+      async updateMedicalStaff(id, d) {
+        // FIX: invalidate both the paginated list and the individual record cache keys
+        this.invalidate('/api/medical-staff')
+        this.invalidate(`/api/medical-staff/${id}`)
+        return this.request(`/api/medical-staff/${id}`, { method: 'PUT', body: d })
+      }
+      async deleteMedicalStaff(id) { this.invalidate('/api/medical-staff'); this.invalidate(`/api/medical-staff/${id}`); return this.request(`/api/medical-staff/${id}`, { method: 'DELETE' }) }
 
       // ============ 4.2 SUPERVISION ENDPOINTS ============
       
@@ -680,28 +744,64 @@ document.addEventListener('DOMContentLoaded', () => {
       
       async getLeaveBalance(staffId) {
         try {
-          const staff = (await this.getMedicalStaff()).find(s => s.id === staffId);
-          const isAttending = staff?.staff_type === 'attending_physician';
+          const [allStaff, allAbsences] = await Promise.all([this.getMedicalStaff(), this.getAbsences()])
+          const staff = allStaff.find(s => s.id === staffId)
+          const isAttending = staff?.staff_type === 'attending_physician'
+          const TOTALS = {
+            vacation:   isAttending ? 25 : 20,
+            sick_leave: 12,
+            conference: isAttending ? 15 : 10,
+            personal:   5,
+          }
+          const currentYear = new Date().getFullYear()
+          const myAbsences = allAbsences.filter(a =>
+            a.staff_member_id === staffId &&
+            !['cancelled'].includes(a.current_status) &&
+            new Date(a.start_date).getFullYear() === currentYear
+          )
+          const used = { vacation: 0, sick_leave: 0, conference: 0, personal: 0 }
+          myAbsences.forEach(a => {
+            const reason = a.absence_reason
+            if (used[reason] !== undefined) {
+              const days = Math.ceil(Math.abs(new Date(a.end_date) - new Date(a.start_date)) / 86400000) + 1
+              used[reason] += days
+            }
+          })
           return {
-            vacation: { used: 5, total: isAttending ? 25 : 20, remaining: isAttending ? 20 : 15 },
-            sick: { used: 2, total: 12, remaining: 10 },
-            conference: { used: 3, total: isAttending ? 15 : 10, remaining: isAttending ? 12 : 7 },
-            personal: { used: 1, total: 5, remaining: 4 }
-          };
+            vacation:   { used: used.vacation,   total: TOTALS.vacation,   remaining: Math.max(0, TOTALS.vacation   - used.vacation)   },
+            sick:       { used: used.sick_leave,  total: TOTALS.sick_leave, remaining: Math.max(0, TOTALS.sick_leave - used.sick_leave) },
+            conference: { used: used.conference,  total: TOTALS.conference, remaining: Math.max(0, TOTALS.conference - used.conference) },
+            personal:   { used: used.personal,    total: TOTALS.personal,   remaining: Math.max(0, TOTALS.personal   - used.personal)   },
+          }
         } catch {
-          return { vacation: { used: 5, total: 20, remaining: 15 }, sick: { used: 2, total: 10, remaining: 8 }, conference: { used: 3, total: 10, remaining: 7 }, personal: { used: 1, total: 5, remaining: 4 } };
+          return { vacation:{used:0,total:20,remaining:20}, sick:{used:0,total:12,remaining:12}, conference:{used:0,total:10,remaining:10}, personal:{used:0,total:5,remaining:5} }
         }
       }
 
       // ============ 4.4 EXISTING ENDPOINTS ============
 
       // ── Staff Types (dynamic) ─────────────────────────────────────────────
-      async getStaffTypes(includeInactive = false) {
-        const url = '/api/staff-types' + (includeInactive ? '?include_inactive=true' : '')
-        return this.getList(url)
+      // ── Rotation Services ────────────────────────────────────────────
+      async getRotationServices(includeHome = false) {
+        const url = '/api/rotation-services' + (includeHome ? '?include_home=true' : '')
+        try { const r = await this.request(url); return (r?.success && Array.isArray(r.data)) ? r.data : [] } catch { return [] }
       }
-      async createStaffType(data) { this.invalidate('/api/staff-types'); return this.request('/api/staff-types', { method: 'POST', body: data }) }
-      async updateStaffType(id, data) { this.invalidate('/api/staff-types'); return this.request(`/api/staff-types/${id}`, { method: 'PUT', body: data }) }
+      async createRotationService(d) { this.invalidate('/api/rotation-services'); const r = await this.request('/api/rotation-services', { method: 'POST', body: d }); return r?.data || r }
+      async updateRotationService(id, d) { this.invalidate('/api/rotation-services'); const r = await this.request(`/api/rotation-services/${id}`, { method: 'PUT', body: d }); return r?.data || r }
+      async deleteRotationService(id) { this.invalidate('/api/rotation-services'); return this.request(`/api/rotation-services/${id}`, { method: 'DELETE' }) }
+
+      async getStaffTypes(includeInactive = false) {
+        // B3 FIX: GET /api/staff-types returns { success: true, data: [] } not a raw array.
+        // Using getList() risks hitting ensureArray's Object.values() fallback which would
+        // return [true, [...]] — corrupting the staffTypeMap used for badges app-wide.
+        const url = '/api/staff-types' + (includeInactive ? '?include_inactive=true' : '')
+        try {
+          const r = await this.request(url)
+          return (r?.success && Array.isArray(r.data)) ? r.data : Utils.ensureArray(r)
+        } catch { return [] }
+      }
+      async createStaffType(data) { this.invalidate('/api/staff-types'); const r = await this.request('/api/staff-types', { method: 'POST', body: data }); return r?.data || r } // unwrap { success, data }
+      async updateStaffType(id, data) { this.invalidate('/api/staff-types'); const r = await this.request(`/api/staff-types/${id}`, { method: 'PUT', body: data }); return r?.data || r } // unwrap { success, data }
       async deleteStaffType(id) { this.invalidate('/api/staff-types'); return this.request(`/api/staff-types/${id}`, { method: 'DELETE' }) }
 
       // ── Academic Degrees ─────────────────────────────────────────────────
@@ -770,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
       async deleteTrainingUnit(id) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'DELETE' }) }
 
       async getRotations() {
-        try { const r = await this.request('/api/rotations'); return Utils.ensureArray(r?.data ?? r) } catch { return [] }
+        try { const r = await this.request('/api/rotations?limit=500'); return Utils.ensureArray(r?.data ?? r) } catch { return [] }
       }
       async createRotation(d) { this.invalidate('/api/rotations'); return this.request('/api/rotations', { method: 'POST', body: d }) }
       async updateRotation(id, d) { this.invalidate('/api/rotations'); return this.request(`/api/rotations/${id}`, { method: 'PUT', body: d }) }
@@ -784,7 +884,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       async getAbsences() {
         try {
-          const r = await this.request('/api/absence-records')
+          const r = await this.request('/api/absence-records?limit=500')
           return (r?.success && Array.isArray(r.data)) ? r.data : Utils.ensureArray(r)
         } catch { return [] }
       }
@@ -812,8 +912,8 @@ document.addEventListener('DOMContentLoaded', () => {
       async getResearchLines() {
         try { const r = await this.request('/api/research-lines'); return r?.data || Utils.ensureArray(r) } catch { return [] }
       }
-      async createResearchLine(d) { this.invalidate('/api/research-lines'); return this.request('/api/research-lines', { method: 'POST', body: d }) }
-      async updateResearchLine(id, d) { this.invalidate('/api/research-lines'); return this.request(`/api/research-lines/${id}`, { method: 'PUT', body: d }) }
+      async createResearchLine(d) { this.invalidate('/api/research-lines'); const r = await this.request('/api/research-lines', { method: 'POST', body: d }); return r?.data || r } // C1 FIX: unwrap { success, data }
+      async updateResearchLine(id, d) { this.invalidate('/api/research-lines'); const r = await this.request(`/api/research-lines/${id}`, { method: 'PUT', body: d }); return r?.data || r } // C1 FIX
       async deleteResearchLine(id) { this.invalidate('/api/research-lines'); return this.request(`/api/research-lines/${id}`, { method: 'DELETE' }) }
       async assignCoordinator(lineId, coordinatorId) {
         this.invalidate('/api/research-lines')
@@ -823,15 +923,15 @@ document.addEventListener('DOMContentLoaded', () => {
       async getAllClinicalTrials() {
         try { const r = await this.request('/api/clinical-trials'); return r?.data || Utils.ensureArray(r) } catch { return [] }
       }
-      async createClinicalTrial(d) { this.invalidate('/api/clinical-trials'); return this.request('/api/clinical-trials', { method: 'POST', body: d }) }
-      async updateClinicalTrial(id, d) { this.invalidate('/api/clinical-trials'); return this.request(`/api/clinical-trials/${id}`, { method: 'PUT', body: d }) }
+      async createClinicalTrial(d) { this.invalidate('/api/clinical-trials'); const r = await this.request('/api/clinical-trials', { method: 'POST', body: d }); return r?.data || r } // C1 FIX
+      async updateClinicalTrial(id, d) { this.invalidate('/api/clinical-trials'); const r = await this.request(`/api/clinical-trials/${id}`, { method: 'PUT', body: d }); return r?.data || r } // C1 FIX
       async deleteClinicalTrial(id) { this.invalidate('/api/clinical-trials'); return this.request(`/api/clinical-trials/${id}`, { method: 'DELETE' }) }
 
       async getAllInnovationProjects() {
         try { const r = await this.request('/api/innovation-projects'); return r?.data || Utils.ensureArray(r) } catch { return [] }
       }
-      async createInnovationProject(d) { this.invalidate('/api/innovation-projects'); return this.request('/api/innovation-projects', { method: 'POST', body: d }) }
-      async updateInnovationProject(id, d) { this.invalidate('/api/innovation-projects'); return this.request(`/api/innovation-projects/${id}`, { method: 'PUT', body: d }) }
+      async createInnovationProject(d) { this.invalidate('/api/innovation-projects'); const r = await this.request('/api/innovation-projects', { method: 'POST', body: d }); return r?.data || r } // C1 FIX
+      async updateInnovationProject(id, d) { this.invalidate('/api/innovation-projects'); const r = await this.request(`/api/innovation-projects/${id}`, { method: 'PUT', body: d }); return r?.data || r } // C1 FIX
       async deleteInnovationProject(id) { this.invalidate('/api/innovation-projects'); return this.request(`/api/innovation-projects/${id}`, { method: 'DELETE' }) }
 
       async getResearchDashboard() {
@@ -855,7 +955,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ============ 4.5 ENHANCED RESEARCH PROFILE ============
       
-      async getStaffResearchProfile(staffId) {
+      async getOpsMetrics(date = null) {
+        const p = date ? `?date=${date}` : ''
+        return this.request(`/api/ops-metrics${p}`)
+      }
+      async postOpsMetrics(metrics) {
+        this.invalidate('/api/ops-metrics')
+        return this.request('/api/ops-metrics', { method: 'POST', body: metrics })
+      }
+      async deleteOpsMetric(id) {
+        this.invalidate('/api/ops-metrics')
+        return this.request(`/api/ops-metrics/${id}`, { method: 'DELETE' })
+      }
+
+    async getStaffResearchProfile(staffId) {
         try {
           const [performance, allTrials, allProjects, researchLines, rotations] = await Promise.all([
             this.getResearchLinesPerformance(), this.getAllClinicalTrials(),
@@ -973,6 +1086,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!s?.field) return arr
         return [...arr].sort((a, b) => {
           let va = a[s.field] ?? '', vb = b[s.field] ?? ''
+          // Numeric comparison prevents "9" > "10" string-sort bugs
+          if (typeof va === 'number' && typeof vb === 'number') {
+            return s.dir === 'asc' ? va - vb : vb - va
+          }
           if (typeof va === 'string' && /\d{4}-\d{2}-\d{2}/.test(va)) {
             va = Utils.normalizeDate(va); vb = Utils.normalizeDate(vb)
           }
@@ -985,9 +1102,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function makeValidation(forms) {
       const fieldErrors = reactive(Object.fromEntries(forms.map(f => [f, {}])))
-      const setErr = (form, field, msg) => { if (fieldErrors[form]) fieldErrors[form][field] = msg }
-      const clearErr = (form, field) => { if (fieldErrors[form]?.[field]) delete fieldErrors[form][field] }
-      const clearAll = (form) => { if (fieldErrors[form]) Object.keys(fieldErrors[form]).forEach(k => delete fieldErrors[form][k]) }
+      const setErr = (form, field, msg) => { if (fieldErrors[form] !== undefined) fieldErrors[form][field] = msg }
+      // V2 FIX: Vue 3 reactive objects don't trigger on individual key deletion.
+      // Replace the whole sub-object to ensure the DOM always reflects cleared state.
+      const clearErr = (form, field) => {
+        if (fieldErrors[form]?.[field] !== undefined) {
+          const copy = { ...fieldErrors[form] }
+          delete copy[field]
+          fieldErrors[form] = copy
+        }
+      }
+      const clearAll = (form) => {
+        if (fieldErrors[form] !== undefined) fieldErrors[form] = {}
+      }
       return { fieldErrors, setErr, clearErr, clearAll }
     }
 
@@ -1000,7 +1127,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const loginLoading = ref(false)
 
       const hasPermission = (module, action = 'read') => {
-        const role = currentUser.value?.user_role
+        // B13 FIX: Backend DB returns 'user_role'; JWT payload uses 'role'.
+        // After auth/me merge both should be present, but defensively check both
+        // so a race condition or unexpected response shape never silently breaks permissions.
+        const role = currentUser.value?.user_role || currentUser.value?.role
         if (!role) return false
         if (role === ROLES.ADMIN) return true
         return PERMISSION_MATRIX[role]?.[module]?.includes(action) ?? false
@@ -1030,9 +1160,10 @@ document.addEventListener('DOMContentLoaded', () => {
         show: false, form: { full_name: '', email: '', department_id: '' }
       })
 
+      let _toastSeq = 0
       const showToast = (title, message, type = 'info', duration = 5000) => {
         const icons = { info: 'fas fa-info-circle', success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle' }
-        const toast = { id: Date.now(), title, message, type, icon: icons[type], duration }
+        const toast = { id: ++_toastSeq, title, message, type, icon: icons[type] || icons.info, duration }
         toasts.value.push(toast)
         if (duration > 0) setTimeout(() => removeToast(toast.id), duration)
       }
@@ -1051,7 +1182,10 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmationModal.show = false
       }
 
-      const cancelConfirmation = () => { confirmationModal.show = false }
+      const cancelConfirmation = () => {
+        if (confirmationModal.onCancel) confirmationModal.onCancel()
+        confirmationModal.show = false
+      }
 
       const dismissAlert = (id) => {
         const i = systemAlerts.value.findIndex(a => a.id === id)
@@ -1060,17 +1194,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const activeAlertsCount = computed(() => systemAlerts.value.filter(a => !a.status || a.status === 'active').length)
 
+      // ── ⌘K Command Palette (open/close only — logic in main setup) ──
+      const cmdPaletteOpen = ref(false)
+      const isOffline = ref(!navigator.onLine)
+      const isMaintenanceMode = ref(false)
+      window.addEventListener('online',  () => { isOffline.value = false })
+      window.addEventListener('offline', () => { isOffline.value = true  })
+
+      // keyboard toggle
+      if (typeof window !== 'undefined') {
+        window.addEventListener('keydown', (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault()
+            cmdPaletteOpen.value = !cmdPaletteOpen.value
+          }
+          if (e.key === 'Escape' && cmdPaletteOpen.value) {
+            cmdPaletteOpen.value = false
+          }
+        })
+      }
+
+      const sidebarLiveStatus = computed(() => {
+        try {
+          const absentNow  = absences.value
+            .map(a => ({...a, ...deriveAbsenceStatus(a)}))
+            .filter(a => a.current_status === 'currently_absent').length
+          const activeRots = rotations.value.filter(r => r.rotation_status === 'active').length
+          const parts = []
+          if (activeRots > 0) parts.push(`${activeRots} resident${activeRots!==1?'s':''} on rotation`)
+          if (absentNow  > 0) parts.push(`${absentNow} absent`)
+          return parts.length ? parts.join(' · ') : 'System operational'
+        } catch { return 'System operational' }
+      })
+
       return {
         toasts, removeToast, showToast,
         confirmationModal, showConfirmation, confirmAction, cancelConfirmation,
         userProfileModal, systemAlerts, activeAlertsCount, dismissAlert,
         sidebarCollapsed, mobileMenuOpen, userMenuOpen, statsSidebarOpen, searchResultsOpen,
-        globalSearchQuery, currentView
+        globalSearchQuery, currentView, sidebarLiveStatus,
+        cmdPaletteOpen,
+        isOffline,
+        isMaintenanceMode
       }
     }
 
     // ============ 6.3 useStaff ============
-    function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser }) {
+    function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser, researchLines, loadResearchLines }) {
       const medicalStaff    = ref([])
       const allStaffLookup  = ref([])   // ALL staff including inactive, for name resolution
       const staffView = ref('table') // 'table' | 'compact'
@@ -1105,6 +1275,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
+      // V3 FIX: Map each field to its tab so we can auto-switch when a hidden field fails
+      const STAFF_FIELD_TAB = {
+        full_name: 'basic', staff_type: 'basic', professional_email: 'basic',
+        department_id: 'basic', employment_status: 'basic',
+        resident_category: 'basic', home_department_id: 'basic',
+        external_institution: 'basic', external_contact_name: 'basic', external_contact_email: 'basic',
+        specialization: 'professional', training_year: 'professional',
+        medical_license: 'professional', mobile_phone: 'professional',
+        can_supervise_residents: 'roles', can_be_pi: 'roles', can_be_coi: 'roles',
+        is_research_coordinator: 'roles'
+      }
+      const jumpToFirstStaffError = () => {
+        const errors = fieldErrors['staff'] || {}
+        for (const field of Object.keys(errors)) {
+          const tab = STAFF_FIELD_TAB[field]
+          if (tab) { medicalStaffModal.activeTab = tab; break }
+        }
+      }
+
       const validateStaff = (form) => {
         clearAll('staff'); let ok = true
         if (!form.full_name?.trim()) { setErr('staff', 'full_name', 'Full name is required'); ok = false }
@@ -1121,6 +1310,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Rotating resident: needs origin department
         if (form.resident_category === 'rotating_other_dept') {
           if (!form.home_department_id) { setErr('staff', 'home_department_id', 'Origin department required'); ok = false }
+        }
+        if (!ok) jumpToFirstStaffError()
+        
+        // Duplicate email check
+        if (ok && form.professional_email?.trim()) {
+          const editId = form.id
+          const dup = medicalStaff.value.find(s =>
+            s.id !== editId &&
+            s.professional_email?.toLowerCase() === form.professional_email.toLowerCase()
+          )
+          if (dup) {
+            setErr('staff', 'professional_email', `Email already used by ${dup.full_name}`)
+            ok = false
+          }
         }
         return ok
       }
@@ -1168,7 +1371,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadMedicalStaff = async () => {
         try {
           const [raw, hospitals, units] = await Promise.all([
-            API.getList('/api/medical-staff'),
+            API.getList('/api/medical-staff?limit=500&employment_status=all'),
             API.getHospitals(),
             API.getClinicalUnits()
           ])
@@ -1305,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         medicalStaffModal.form = {
           ...staff,
           full_name: staff.full_name || '',
-          professional_email: staff.professional_email || '',
+          professional_email: staff.professional_email || '', // empty string for the input field — null from DB becomes ''
           mobile_phone: staff.mobile_phone || '',
           department_id: staff.department_id || '',
           academic_degree: staff.academic_degree || '',
@@ -1353,7 +1556,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = {
             full_name: f.full_name.trim(), staff_type: f.staff_type || 'medical_resident',
             staff_id: f.staff_id || Utils.generateId('MD'), employment_status: f.employment_status || 'active',
-            professional_email: f.professional_email || '', department_id: f.department_id || currentUser?.value?.department_id || null,
+            professional_email: f.professional_email?.trim() || null, // send null not '' — Joi now accepts null
+            department_id: f.department_id || currentUser?.value?.department_id || null,
             academic_degree: clean(f.academic_degree), academic_degree_id: f.academic_degree_id || null,
             specialization: clean(f.specialization),
             training_year: clean(f.training_year),
@@ -1373,6 +1577,8 @@ document.addEventListener('DOMContentLoaded', () => {
             external_contact_email: f.external_contact_email || null,
             external_contact_phone: f.external_contact_phone || null,
             is_research_coordinator: f.is_research_coordinator || false,
+            is_resident_manager: f.is_resident_manager || false,
+            is_oncall_manager:   f.is_oncall_manager   || false,
             can_be_pi: f.can_be_pi || false,
             can_be_coi: f.can_be_coi || false,
             has_phd: f.has_phd || false,
@@ -1391,6 +1597,25 @@ document.addEventListener('DOMContentLoaded', () => {
             savedStaff = await API.updateMedicalStaff(f.id, data)
             const idx = medicalStaff.value.findIndex(s => s.id === savedStaff.id)
             if (idx !== -1) medicalStaff.value[idx] = savedStaff
+            // FIX: also patch allStaffLookup so rotations, on-call, absences
+            // all see the updated name immediately without a full page reload
+            const lookupIdx = allStaffLookup.value.findIndex(s => s.id === savedStaff.id)
+            if (lookupIdx !== -1) {
+              allStaffLookup.value[lookupIdx] = {
+                ...allStaffLookup.value[lookupIdx],
+                full_name:         savedStaff.full_name,
+                staff_type:        savedStaff.staff_type,
+                employment_status: savedStaff.employment_status
+              }
+            } else {
+              // New staff not yet in lookup — add them
+              allStaffLookup.value.push({
+                id: savedStaff.id,
+                full_name: savedStaff.full_name,
+                staff_type: savedStaff.staff_type,
+                employment_status: savedStaff.employment_status
+              })
+            }
             showToast('Success', 'Medical staff updated', 'success')
           }
           // If marked as research coordinator with a specific line, update that line's coordinator_id
@@ -1401,10 +1626,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { console.warn('Could not update research line coordinator:', e) }
           } else if (!f.is_research_coordinator && savedStaff?.id) {
             // If coordinator toggled OFF, clear coordinator_id from any line that had this person
-            const coordinated = [] // cross-composable update handled by research composable
+            const coordinated = researchLines.value.filter(l => l.coordinator_id === savedStaff.id)
             for (const line of coordinated) {
               try { await API.assignCoordinator(line.id, null) } catch {}
             }
+            if (coordinated.length) await loadResearchLines()
           }
           medicalStaffModal.show = false; clearAll('staff')
         } catch (e) { showToast('Error', e.message || 'Failed to save', 'error') }
@@ -1497,7 +1723,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
       const onCallModal = reactive({
         show: false, mode: 'add',
-        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '' }
+        // M6 FIX: removed coverage_area (not a real DB column — DB has coverage_notes)
+        form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_notes: '' }
       })
 
       const getPhysicianName = (id) => {
@@ -1549,10 +1776,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (onCallFilters.date) f = f.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
         if (onCallFilters.shiftType) f = f.filter(s => s.shift_type === onCallFilters.shiftType)
         if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
-        if (onCallFilters.coverageArea) f = f.filter(s => s.coverage_area === onCallFilters.coverageArea)
+        // M6 FIX: coverage_area is not a real DB column — filter on coverage_notes instead
+        if (onCallFilters.coverageArea) f = f.filter(s => (s.coverage_notes || '').toLowerCase().includes(onCallFilters.coverageArea.toLowerCase()))
         if (onCallFilters.search) {
           const q = onCallFilters.search.toLowerCase()
-          f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_area || '').toLowerCase().includes(q))
+          f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_notes || '').toLowerCase().includes(q))
         }
         return applySort(f, 'oncall')
       })
@@ -1574,7 +1802,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!id) return
           const staff = allStaffLookup?.value?.find(s => s.id === id) || medicalStaff.value.find(s => s.id === id)
           if (!staff) return
-          if (!map[id]) map[id] = { id, name: staff.full_name, staffType: staff.staff_type, shifts: [] }
+          if (!map[id]) map[id] = { id, name: staff.full_name, staffType: staff.staff_type,
+            // V1 FIX: viewStaffDetails/editMedicalStaff expect full_name and staff_type
+            // without these, editing from the on-call compact view fails silent validation
+            full_name: staff.full_name, staff_type: staff.staff_type,
+            professional_email: staff.professional_email || '',
+            department_id: staff.department_id || null,
+            employment_status: staff.employment_status,
+            shifts: [] }
           map[id].shifts.push({
             ...shift, dutyDate,
             isToday: dutyDate === today,
@@ -1619,7 +1854,7 @@ document.addEventListener('DOMContentLoaded', () => {
               shiftTypeClass: isPrimary ? 'badge-primary' : 'badge-secondary',
               shiftType: isPrimary ? 'Primary' : 'Backup',
               staffType: matchingStaff ? formatStaffType(matchingStaff.staff_type) : 'Physician',
-              coverageArea: item.coverage_area || 'General Coverage',
+              coverageArea: item.coverage_notes || 'General Coverage',
               backupPhysician: item.backup_physician?.full_name || null,
               contactInfo: item.primary_physician?.professional_email || 'No contact info', raw: item
             }
@@ -1634,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', () => {
           duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
           start_time: '15:00', end_time: '08:00',
           primary_physician_id: physician?.id || '',
-          backup_physician_id: '', coverage_area: 'emergency', coverage_notes: '',
+          backup_physician_id: '', coverage_notes: '',
           schedule_id: `SCH-${Date.now().toString().slice(-6)}`
         })
         onCallModal.show = true
@@ -1647,7 +1882,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onCallModal.form = {
           ...schedule, duty_date: Utils.normalizeDate(schedule.duty_date),
           shift_type: ['primary', 'primary_call'].includes(raw) ? 'primary_call' : 'backup_call',
-          coverage_area: schedule.coverage_area || 'emergency', coverage_notes: schedule.coverage_notes || ''
+          coverage_notes: schedule.coverage_notes || ''
         }
         onCallModal.show = true
       }
@@ -1664,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (a.staff_member_id !== f0.primary_physician_id) return false
             const s = Utils.normalizeDate(a.start_date)
             const e = Utils.normalizeDate(a.end_date)
-            return dutyDate >= s && dutyDate <= e && !['cancelled','resolved'].includes(a.current_status)
+            return dutyDate >= s && dutyDate <= e && !['cancelled','returned_to_duty'].includes(a.current_status)
           })
           if (onAbsence.length > 0) {
             const abs     = onAbsence[0]
@@ -1707,12 +1942,12 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           if (onCallModal.mode === 'add') {
             const result = await API.createOnCall(data);
-            onCallSchedule.value.unshift({ ...result, duty_date: Utils.normalizeDate(result.duty_date), coverage_area: f.coverage_area });
+            onCallSchedule.value.unshift({ ...result, duty_date: Utils.normalizeDate(result.duty_date) });
             showToast('Success', 'On-call scheduled', 'success');
           } else {
             const result = await API.updateOnCall(f.id, data);
             const idx = onCallSchedule.value.findIndex(s => s.id === result.id);
-            if (idx !== -1) onCallSchedule.value[idx] = { ...result, duty_date: Utils.normalizeDate(result.duty_date), coverage_area: f.coverage_area };
+            if (idx !== -1) onCallSchedule.value[idx] = { ...result, duty_date: Utils.normalizeDate(result.duty_date) };
             showToast('Success', 'On-call updated', 'success');
           }
           onCallModal.show = false; clearAll('oncall'); await loadTodaysOnCall();
@@ -1751,6 +1986,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         onCallSchedule.value.forEach(shift => {
           const date = Utils.normalizeDate(shift.duty_date)
+
+          // Apply filters BEFORE creating the bucket — prevents empty date headers
+          if (onCallFilters.date && date !== onCallFilters.date) return
+          if (onCallFilters.shiftType && shift.shift_type !== onCallFilters.shiftType) return
+          if (onCallFilters.physician && shift.primary_physician_id !== onCallFilters.physician &&
+              shift.backup_physician_id !== onCallFilters.physician) return
+          if (onCallFilters.search) {
+            const physicianName = getPhysicianName(shift.primary_physician_id).toLowerCase()
+            if (!physicianName.includes(onCallFilters.search.toLowerCase())) return
+          }
+
           if (!groups[date]) {
             groups[date] = {
               date,
@@ -1758,17 +2004,7 @@ document.addEventListener('DOMContentLoaded', () => {
               shifts: []
             }
           }
-          
-          // Apply filters
-          if (onCallFilters.date && date !== onCallFilters.date) return
-          if (onCallFilters.shiftType && shift.shift_type !== onCallFilters.shiftType) return
-          if (onCallFilters.physician && shift.primary_physician_id !== onCallFilters.physician && 
-              shift.backup_physician_id !== onCallFilters.physician) return
-          if (onCallFilters.search) {
-            const physicianName = getPhysicianName(shift.primary_physician_id).toLowerCase()
-            if (!physicianName.includes(onCallFilters.search.toLowerCase())) return
-          }
-          
+
           groups[date].shifts.push(shift)
         })
         
@@ -1782,7 +2018,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (shiftDate !== today) return false
         const now = new Date()
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-        return currentTime >= shift.start_time && currentTime <= shift.end_time
+        const s = shift.start_time, e = shift.end_time
+        const overnight = s > e  // e.g. "15:00" > "08:00" means it crosses midnight
+        return overnight
+          ? (currentTime >= s || currentTime <= e)
+          : (currentTime >= s && currentTime <= e)
       }
 
       // ── Upcoming on-call: next 14 days grouped by date (for dashboard) ──
@@ -1963,18 +2203,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const postponeAllActivations = () => {
         activationModal.show = false; showToast('Reminder Set', 'Will check again in 4 hours.', 'info')
-        localStorage.setItem('last_rotation_check', new Date().toISOString())
+        // M5 FIX: store as UTC timestamp number to avoid timezone/clock parsing issues
+        localStorage.setItem('last_rotation_check', Date.now().toString())
       }
 
       const initAutoCheck = () => {
         // Silent: scheduled→active and active→completed are date facts, not decisions
         setTimeout(() => checkAndUpdateRotations(false), 2000)
         const interval = setInterval(() => {
+          // M5 FIX: compare numeric timestamps — avoids timezone/clock parsing issues
           const lastCheck = localStorage.getItem('last_rotation_check')
-          const now = new Date()
-          if (!lastCheck || (now - new Date(lastCheck)) > 4 * 60 * 60 * 1000) {
+          const now = Date.now()
+          const lastCheckMs = lastCheck ? parseInt(lastCheck, 10) : 0
+          if (!lastCheck || isNaN(lastCheckMs) || (now - lastCheckMs) > 4 * 60 * 60 * 1000) {
             checkAndUpdateRotations(false)
-            localStorage.setItem('last_rotation_check', now.toISOString())
+            localStorage.setItem('last_rotation_check', now.toString())
           }
         }, 60 * 60 * 1000)
         return interval
@@ -1991,6 +2234,44 @@ document.addEventListener('DOMContentLoaded', () => {
           const s = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
           const e = new Date(Utils.normalizeDate(form.end_date) + 'T00:00:00')
           if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e <= s) { setErr('rotation', 'end_date', 'End date must be after start date'); ok = false }
+        }
+        
+        // Overlap check — resident can't have two rotations overlapping
+        if (ok && form.resident_id && form.start_date && form.end_date) {
+          const newStart = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
+          const newEnd   = new Date(Utils.normalizeDate(form.end_date)   + 'T23:59:59')
+          const editId   = form.id || form.rotation_id
+          const overlap  = rotations.value.find(r =>
+            r.resident_id === form.resident_id &&
+            r.id !== editId &&
+            ['active','scheduled'].includes(r.rotation_status) &&
+            new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00') <= newEnd &&
+            new Date(Utils.normalizeDate(r.end_date)   + 'T23:59:59') >= newStart
+          )
+          if (overlap) {
+            setErr('rotation', 'start_date', `Overlaps with existing rotation at ${getTrainingUnitName(overlap.training_unit_id) || 'another unit'}`)
+            ok = false
+          }
+        }
+        // Capacity check — unit has a max_residents limit
+        if (ok && form.training_unit_id && form.start_date && form.end_date) {
+          const unit = trainingUnits.value.find(u => u.id === form.training_unit_id)
+          if (unit?.maximum_residents) {
+            const newStart = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
+            const newEnd   = new Date(Utils.normalizeDate(form.end_date)   + 'T23:59:59')
+            const editId   = form.id || form.rotation_id
+            const concurrent = rotations.value.filter(r =>
+              r.training_unit_id === form.training_unit_id &&
+              r.id !== editId &&
+              ['active','scheduled'].includes(r.rotation_status) &&
+              new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00') <= newEnd &&
+              new Date(Utils.normalizeDate(r.end_date)   + 'T23:59:59') >= newStart
+            ).length
+            if (concurrent >= unit.maximum_residents) {
+              setErr('rotation', 'training_unit_id', `${unit.unit_name} is at full capacity (${unit.maximum_residents} residents)`)
+              ok = false
+            }
+          }
         }
         return ok
       }
@@ -2162,28 +2443,37 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { saving.value = false }
       }
 
-      const deleteRotation = (rotation) => showConfirmation({
-        title: 'Terminate Rotation', message: 'This will mark the rotation as terminated early. The record is kept for audit and reporting purposes.',
-        icon: 'fa-stop-circle', confirmButtonText: 'Terminate', confirmButtonClass: 'btn-danger',
-        details: `Resident: ${getResidentName(rotation.resident_id)}`,
-        onConfirm: async () => {
-          try {
-            await API.deleteRotation(rotation.id)
-            // Update local state immediately — backend sets rotation_status to 'terminated_early'
-            const idx = rotations.value.findIndex(r => r.id === rotation.id)
-            if (idx !== -1) rotations.value[idx] = { ...rotations.value[idx], rotation_status: 'terminated_early' }
-            showToast('Success', 'Rotation terminated', 'success')
-            await loadRotations()
-          } catch (e) {
-            showToast('Error', e?.message || 'Failed to terminate rotation', 'error')
-            await loadRotations()
+      const deleteRotation = (rotation) => {
+        const isActive = ['active', 'scheduled'].includes(rotation.rotation_status)
+        showConfirmation({
+          title: isActive ? 'Terminate Rotation' : 'Remove Rotation Record',
+          message: isActive
+            ? 'This will terminate the rotation early and mark it as ended. The record is kept for audit purposes.'
+            : `This rotation is already ${rotation.rotation_status}. Permanently remove it from the list?`,
+          icon: isActive ? 'fa-stop-circle' : 'fa-trash',
+          confirmButtonText: isActive ? 'Terminate' : 'Remove',
+          confirmButtonClass: 'btn-danger',
+          details: `${formatDrName(getResidentName(rotation.resident_id))} · ${getTrainingUnitName(rotation.training_unit_id)}`,
+          onConfirm: async () => {
+            try {
+              await API.deleteRotation(rotation.id)
+              const idx = rotations.value.findIndex(r => r.id === rotation.id)
+              if (idx !== -1) rotations.value[idx] = { ...rotations.value[idx], rotation_status: 'terminated_early' }
+              showToast('Success', isActive ? 'Rotation terminated' : 'Rotation removed', 'success')
+              await loadRotations()
+            } catch (e) {
+              showToast('Error', e?.message || 'Failed to terminate rotation', 'error')
+              await loadRotations()
+            }
           }
-        }
-      })
+        })
+      }
 
       // ============ [NEW] Compact view computed properties for Rotations ============
       const residentsWithRotations = computed(() => {
-        const residents = medicalStaff.value.filter(s => s.staff_type === 'medical_resident' && s.employment_status === 'active')
+        // C2 FIX: was hardcoded to staff_type === 'medical_resident' — use isResidentType()
+        // so custom resident types (e.g. 'mir', 'resident_externo') are included
+        const residents = medicalStaff.value.filter(s => isResidentType(s.staff_type) && s.employment_status === 'active')
         
         return residents.map(resident => {
           const allResidentRotations = rotations.value.filter(r => r.resident_id === resident.id)
@@ -2257,6 +2547,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }) || []
       }
 
+
+      // ============ [NEW] Rotation detail sheet modal ============
+      const rotationViewModal = reactive({ show: false, rotation: null })
+
       const viewRotationDetails = (rotation) => {
         if (!rotation) return
         // Enrich rotation with display-friendly fields expected by the detail sheet
@@ -2279,8 +2573,6 @@ document.addEventListener('DOMContentLoaded', () => {
         rotationViewModal.show = true
       }
 
-      // ============ [NEW] Rotation detail sheet modal ============
-      const rotationViewModal = reactive({ show: false, rotation: null })
 
       // ============ Month Horizon view ============
       const monthHorizon = ref(6)
@@ -2371,7 +2663,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const warnings = []
         // All active residents
         const residents = medicalStaff.value.filter(s =>
-          isResidentType(s.staff_type) && s.employment_status === 'active'
+          isResidentType(s.staff_type) && s.employment_status === 'active' &&
+          s.resident_category !== 'external_resident' &&
+          s.resident_category !== 'rotating_other_dept'
         )
         for (const resident of residents) {
           const gaps = []
@@ -2486,6 +2780,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
+      // M4 FIX: moved deriveAbsenceStatus before filteredAbsencesAll which uses it
+      const deriveAbsenceStatus = (a) => {
+        if (a.current_status === 'cancelled')       return 'cancelled'
+        if (a.current_status === 'returned_to_duty') return 'returned_to_duty'
+        const today = Utils.normalizeDate(new Date())
+        const start = Utils.normalizeDate(a.start_date)
+        const end   = Utils.normalizeDate(a.end_date)
+        // Use DB-aligned values for all statuses so in-memory filter and
+        // any future server-side filtering stay consistent with the DB CHECK constraint
+        if (end < today)    return 'returned_to_duty'
+        if (start <= today) return 'currently_absent'
+        return 'planned_leave'
+      }
+
       const filteredAbsencesAll = computed(() => {
         const today = Utils.normalizeDate(new Date())
         let f = absences.value.map(a => {
@@ -2506,7 +2814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         // Hide past/resolved records by default — toggle via "Show Past" filter
         if (!absenceFilters.status && absenceFilters.hideReturned) {
-          f = f.filter(a => a.current_status !== 'returned_to_duty' && a.current_status !== 'cancelled')
+          f = f.filter(a => !['returned_to_duty', 'cancelled'].includes(a.current_status))
         }
         if (absenceFilters.staff) f = f.filter(a => a.staff_member_id === absenceFilters.staff)
         if (absenceFilters.status) f = f.filter(a => a.current_status === absenceFilters.status)
@@ -2523,16 +2831,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
       watch(absenceFilters, () => resetPage('absences'), { deep: true })
 
-      const deriveAbsenceStatus = (a) => {
-        if (a.current_status === 'cancelled')       return 'cancelled'
-        if (a.current_status === 'returned_to_duty') return 'returned_to_duty'
+      const absenceKPIs = computed(() => {
         const today = Utils.normalizeDate(new Date())
-        const start = Utils.normalizeDate(a.start_date)
-        const end   = Utils.normalizeDate(a.end_date)
-        if (end < today)    return 'completed'
-        if (start <= today) return 'currently_absent'
-        return 'upcoming'
-      }
+        const all   = absences.value.map(a => ({ ...a, current_status: deriveAbsenceStatus(a) }))
+        const absentNow  = all.filter(a => a.current_status === 'currently_absent')
+        const upcoming   = all.filter(a => a.current_status === 'planned_leave')
+        const now        = new Date()
+        const thisMonth  = all.filter(a => {
+          const s = new Date(a.start_date)
+          return s.getMonth() === now.getMonth() && s.getFullYear() === now.getFullYear()
+        })
+        const noCoverage = [...absentNow, ...upcoming].filter(a => !a.coverage_arranged)
+        const nextAbs    = upcoming.sort((a,b) => new Date(a.start_date)-new Date(b.start_date))[0]
+        return {
+          absentNow:    absentNow.length,
+          absentName:   absentNow[0] ? (allStaffLookup.value.find(s => s.id === absentNow[0].staff_member_id)?.full_name || '') : '',
+          absentDay:    absentNow[0] ? (()=>{
+            try {
+              const s = new Date(absentNow[0].start_date + 'T00:00:00')
+              const t = new Date(); t.setHours(0,0,0,0)
+              const d = Math.floor((t - s)/(864e5)) + 1
+              return isNaN(d) || d < 1 ? 1 : d
+            } catch { return 1 }
+          })() : 0,
+          upcoming:     upcoming.length,
+          nextDate:     nextAbs ? Utils.formatDate(nextAbs.start_date) : '',
+          nextName:     nextAbs ? (allStaffLookup.value.find(s => s.id === nextAbs.staff_member_id)?.full_name||'') : '',
+          thisMonth:    thisMonth.length,
+          coveredCount: thisMonth.filter(a=>a.coverage_arranged).length,
+          noCoverage:   noCoverage.length,
+        }
+      })
+
 
       const loadAbsences = async () => {
         try {
@@ -2599,6 +2929,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveAbsence = async (saving) => {
         if (!validateAbsence(absenceModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
+        if (saving?.value) return
+        if (saving) saving.value = true
 
         // ── On-call conflict check ──────────────────────────────────────────
         const f = absenceModal.form
@@ -2761,7 +3093,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return {
         absences, absenceFilters, absenceModal, absenceOverlapWarning,
-        filteredAbsences, filteredAbsencesAll, absenceTotalPages,
+        filteredAbsences, filteredAbsencesAll, absenceTotalPages, absenceKPIs,
         loadAbsences, showAddAbsenceModal, editAbsence, saveAbsence, deleteAbsence, purgeAbsence,
         absenceResolutionModal, openResolutionModal, resolveAbsence,
         getStaffName
@@ -2829,6 +3161,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const editDepartment = (d) => { departmentModal.mode = 'edit'; Object.assign(departmentModal.form, { ...d }); departmentModal.show = true }
 
       const saveDepartment = async (saving) => {
+        const f = departmentModal?.form || {}
+        if (!f.name?.trim()) { showToast('Validation Error', 'Department name is required', 'error'); return }
         saving.value = true
         try {
           if (departmentModal.mode === 'add') {
@@ -2976,15 +3310,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.8 useTrainingUnits ============
-    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup }) {
+    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup, allDepartmentsLookup }) {
       // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
-      const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', unit_type: 'training_unit', unit_description: '', specialty: '', supervising_attending_id: '' } })
+      const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 2, unit_status: 'active', unit_type: 'clinical_unit', supervising_attending_id: '', unit_description: '', specialty: '', location_building: '', location_floor: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
       const unitCliniciansModal = reactive({ show: false, unit: null, clinicians: [], supervisorId: '', allStaff: [] })
 
       const filteredTrainingUnits = computed(() => {
-        let f = trainingUnits.value
+        // Only show units linked to Neumología/Pulmonology — filter out rotation destinations
+        // A unit belongs to Neumología if: specialty=Pulmonology/Surgery/Critical Care etc (our units)
+        // OR department_name contains Neumología/Pulmonology
+        // Exclude units from external services (Cardiología, Medicina Interna etc that are rotation DESTINATIONS)
+        // We identify ours by dept_name matching the home department name pattern
+        let f = trainingUnits.value.filter(u => {
+          const deptName = (u.department?.name || u.department_name || '').toLowerCase()
+          // Primary check: unit's department_id is in our known departments list.
+          // This covers all newly created units without needing hardcoded names.
+          if (u.department_id && allDepartmentsLookup.value.some(d => d.id === u.department_id)) return true
+          // Fallback: legacy units without a department_id — keep old name matching
+          return deptName.includes('neumolog') || deptName.includes('pulmonolog') ||
+                 deptName.includes('cirugía torácica') ||
+                 u.unit_code === 'UCRI' || u.unit_code === 'PFR' || u.unit_code === 'UTB' ||
+                 u.unit_code === 'SUEÑO' || u.unit_code === 'TRANSP'
+        })
         if (trainingUnitFilters.search) { const q = trainingUnitFilters.search.toLowerCase(); f = f.filter(u => u.unit_name?.toLowerCase().includes(q)) }
         if (trainingUnitFilters.department) f = f.filter(u => u.department_id === trainingUnitFilters.department)
         if (trainingUnitFilters.status) f = f.filter(u => u.unit_status === trainingUnitFilters.status)
@@ -3002,13 +3351,36 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       })
 
+      // Groups filteredTrainingUnits by department for section-header card layout
+      const DEPT_NAME_MAP = {
+        'Department of Pulmonology': 'Neumología',
+        'Cirugía Torácica y Trasplante Pulmonar': 'Cirugía Torácica y Trasplante',
+        'General Medicine': 'Medicina General',
+        'INT. MEDICINE': 'Medicina Interna'
+      }
+      const unitsByDepartment = computed(() => {
+        const depts = {}
+        filteredTrainingUnits.value.forEach(u => {
+          const key = u.department_id || '__none__'
+          const rawName = u.department?.name || u.department_name || 'Sin departamento'
+          const displayName = DEPT_NAME_MAP[rawName] || rawName
+          if (!depts[key]) depts[key] = { deptId: key, deptName: displayName, units: [] }
+          depts[key].units.push(u)
+        })
+        return Object.values(depts).sort((a, b) => {
+          if (a.deptName === 'Neumología') return -1
+          if (b.deptName === 'Neumología') return 1
+          return a.deptName.localeCompare(b.deptName, 'es')
+        })
+      })
+
       const getUnitActiveRotationCount = (id) => {
         const today = new Date(); today.setHours(0,0,0,0)
         return rotations.value.filter(r =>
           r.training_unit_id === id &&
           r.rotation_status === 'active' &&
-          new Date(r.start_date) <= today &&
-          new Date(r.end_date)   >= today
+          new Date(r.start_date + 'T00:00:00') <= today &&
+          new Date(r.end_date   + 'T00:00:00') >= today
         ).length
       }
 
@@ -3017,7 +3389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return rotations.value.filter(r =>
           r.training_unit_id === id &&
           r.rotation_status === 'scheduled' &&
-          new Date(r.start_date) > today
+          new Date(r.start_date + 'T00:00:00') > today
         ).length
       }
 
@@ -3032,9 +3404,9 @@ document.addEventListener('DOMContentLoaded', () => {
         )
         // Check each rotation's start date — how many others overlap at that moment?
         for (const rot of upcoming) {
-          const checkDate = new Date(rot.start_date)
+          const checkDate = new Date(rot.start_date + 'T00:00:00')
           const concurrent = upcoming.filter(r =>
-            new Date(r.start_date) <= checkDate && new Date(r.end_date) >= checkDate
+            new Date(r.start_date + 'T00:00:00') <= checkDate && new Date(r.end_date + 'T00:00:00') >= checkDate
           ).length
           if (concurrent > maxSlots) {
             return { date: rot.start_date, concurrent, max: maxSlots }
@@ -3049,7 +3421,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const getResidentShortName = (id) => {
         const s = allStaffLookup.value.find(x => x.id === id)
-        if (!s) return '—'
+               || medicalStaff.value.find(x => x.id === id)
+        if (!s) {
+          // Last resort: use the joined resident object already on the rotation record
+          const rot = rotations.value.find(r => r.resident_id === id)
+          if (rot?.resident?.full_name) {
+            const parts = rot.resident.full_name.trim().split(' ')
+            return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : rot.resident.full_name
+          }
+          return '—'
+        }
         const parts = (s.full_name || '').trim().split(' ')
         return parts.length > 1 ? `${parts[0]} ${parts[parts.length-1][0]}.` : s.full_name
       }
@@ -3161,7 +3542,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Days until a rotation ends (for "Free in Xd" chip)
       const getDaysUntilFree = (endDate) => {
         const today = new Date(); today.setHours(0,0,0,0)
-        const end   = new Date(endDate)
+        const end   = new Date(Utils.normalizeDate(endDate) + 'T00:00:00')
         return Math.ceil((end - today) / (1000 * 60 * 60 * 24))
       }
 
@@ -3241,19 +3622,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const touching = rotations.value.filter(r =>
           r.training_unit_id === unitId &&
           ['active','scheduled'].includes(r.rotation_status) &&
-          new Date(r.start_date) <= mEnd && new Date(r.end_date) >= mStart
+          new Date(r.start_date + 'T00:00:00') <= mEnd && new Date(r.end_date + 'T00:00:00') >= mStart
         )
         // Separate truly active (date range covers any day in month) from scheduled future
         const today = new Date(); today.setHours(0,0,0,0)
         const isCurrentMonth = mStart <= today && mEnd >= today
         const active    = isCurrentMonth
-          ? touching.filter(r => r.rotation_status === 'active' && new Date(r.start_date) <= today && new Date(r.end_date) >= today).length
+          ? touching.filter(r => r.rotation_status === 'active' && new Date(r.start_date + 'T00:00:00') <= today && new Date(r.end_date + 'T00:00:00') >= today).length
           : touching.filter(r => ['active','scheduled'].includes(r.rotation_status)).length
         const scheduled = touching.filter(r => r.rotation_status === 'scheduled').length
         const occupied  = isCurrentMonth ? active : touching.length
         if (occupied === 0) return { status: 'free', occupied: 0, total: maxSlots }
         const isClosing = touching.some(r => {
-          const e = new Date(r.end_date)
+          const e = new Date(r.end_date + 'T00:00:00')
           return e.getFullYear() === year && e.getMonth() === month && e < mEnd
         })
         if (occupied >= maxSlots) return { status: isClosing ? 'closing' : 'occupied', occupied, total: maxSlots }
@@ -3333,7 +3714,17 @@ document.addEventListener('DOMContentLoaded', () => {
         catch { showToast('Error', 'Failed to load training units', 'error') }
       }
 
-      const showAddTrainingUnitModal = () => { trainingUnitModal.mode = 'add'; Object.assign(trainingUnitModal.form, { unit_name: '', unit_code: '', department_id: '', maximum_residents: 10, unit_status: 'active', unit_type: 'training_unit', unit_description: '', specialty: '', supervising_attending_id: '' }); trainingUnitModal.show = true }
+      const showAddTrainingUnitModal = (opts = {}) => {
+        trainingUnitModal.mode = 'add'
+        Object.assign(trainingUnitModal.form, {
+          unit_name: '', unit_code: '',
+          department_id: opts.department_id || '',
+          maximum_residents: 2, unit_status: 'active',
+          unit_type: 'clinical_unit', supervising_attending_id: '',
+          unit_description: '', specialty: '', location_building: '', location_floor: ''
+        })
+        trainingUnitModal.show = true
+      }
       const editTrainingUnit = (u) => { trainingUnitModal.mode = 'edit'; trainingUnitModal.form = { ...u }; trainingUnitModal.show = true }
 
       const deleteTrainingUnit = (unit) => {
@@ -3420,6 +3811,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveUnitClinicians = async () => {
         const u = unitCliniciansModal.unit
+        if (!u?.id) { showToast('Error', 'No unit selected', 'error'); return }
+        try {
         // Backend Joi schema: unit_name, unit_code, department_id (req), supervising_attending_id (opt uuid),
         // maximum_residents, unit_status, specialty/location_building/location_floor (opt — no empty strings).
         // stripUnknown:true drops anything else silently.
@@ -3443,6 +3836,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         unitCliniciansModal.show = false
         showToast('Saved', 'Supervisor assignment updated', 'success')
+        } catch(e) { showToast('Error', e.message || 'Failed to save unit staff', 'error') }
       }
 
       const viewUnitResidents = (unit, allRotations) => {
@@ -3455,6 +3849,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const f = trainingUnitModal.form
         if (!f.unit_name?.trim()) { showToast('Validation Error', 'Unit name is required', 'error'); return }
         if (!f.unit_code?.trim()) { showToast('Validation Error', 'Unit code is required', 'error'); return }
+        if (!f.department_id) { showToast('Validation Error', 'Please select a department / service', 'error'); return }
         if (!f.maximum_residents || f.maximum_residents < 1) { showToast('Validation Error', 'Maximum residents must be at least 1', 'error'); return }
         saving.value = true
         try {
@@ -3471,6 +3866,8 @@ document.addEventListener('DOMContentLoaded', () => {
             unit_type: f.unit_type || 'training_unit',
             unit_description: f.unit_description || '',
             specialty: f.specialty || '',
+            location_building: f.location_building || '',
+            location_floor: f.location_floor || '',
             supervisor_id: f.supervising_attending_id || null,
             supervising_attending_id: f.supervising_attending_id || null,
           }
@@ -3481,14 +3878,168 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
         occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
     }
 
     // ============ 6.9 useComms ============
     function useComms({ showToast, showConfirmation }) {
-      const announcements = ref([])
-      const communicationsFilters = reactive({ search: '', priority: '', audience: '' })
+      const announcements  = ref([])
+      const opsMetrics     = Vue.ref([])
+      const opsLoading     = Vue.ref(false)
+      const briefingForm   = Vue.reactive({
+        show: false,
+        fields: {
+          interconsultas_total:         { label: 'Interconsultas',      sub_label: 'urgentes', value: '', sub: '' },
+          er_patients_waiting:          { label: 'ER — Neumología',     sub_label: 'espera media (min)', value: '', sub: '' },
+          beds_free_total:              { label: 'Camas libres',        sub_label: 'de las cuales UCI', value: '', sub: '' },
+          discharges_pending_total:     { label: 'Altas pendientes',    sub_label: 'esperando informe', value: '', sub: '' },
+          bronchoscopies_urgent:        { label: 'Broncoscopias urg.',  sub_label: 'suite libre desde (hora)', value: '', sub: '' },
+        }
+      })
+
+      const loadOpsMetrics = async () => {
+        opsLoading.value = true
+        try {
+          const res = await API.getOpsMetrics()
+          opsMetrics.value = res?.data || []
+        } catch(e) { opsMetrics.value = [] }
+        finally { opsLoading.value = false }
+      }
+
+      const getMetric = (key) => opsMetrics.value.find(m => m.metric_key === key)
+      const metricVal = (key) => getMetric(key)?.metric_value ?? null
+      const metricSub = (key) => getMetric(key)?.metric_sub ?? null
+      const metricVal2 = (key) => getMetric(key)?.metric_value2 ?? null
+
+      const saveDailyBriefing = async (saving) => {
+        if (saving?.value) return
+        if (saving) saving.value = true
+        try {
+          const rows = []
+          for (const [key, field] of Object.entries(briefingForm.fields)) {
+            if (field.value !== '' && field.value !== null) {
+              rows.push({
+                metric_key:   key,
+                metric_value: parseInt(field.value) || 0,
+                metric_sub:   field.sub || null,
+                metric_value2: null,
+              })
+            }
+          }
+          if (!rows.length) { showToast('Validation', 'Enter at least one number', 'warning'); return }
+          await API.postOpsMetrics(rows)
+          briefingForm.show = false
+          showToast('Briefing posted', 'Pulse tiles updated for the team', 'success')
+          await loadOpsMetrics()
+        } catch(e) { showToast('Error', e.message || 'Failed to post briefing', 'error') }
+        finally { if (saving) saving.value = false }
+      }
+
+      const updateMetricInline = async (key, value, sub = null) => {
+        try {
+          await API.postOpsMetrics([{ metric_key: key, metric_value: parseInt(value)||0, metric_sub: sub }])
+          await loadOpsMetrics()
+        } catch(e) { showToast('Error', 'Failed to update', 'error') }
+      }
+
+      const communicationsFilters = reactive({ search: '', priority: '', audience: '', type: '' })
+
+      // ── Ops Room state ──────────────────────────────────────────
+      const broadcastForm  = Vue.reactive({ show: false, type: 'broadcast', text: '', expiryHours: 4 })
+      const feedFilter     = Vue.ref('all')   // all | broadcast | protocol | announcement | kudos
+
+      // Live broadcast = announcements with priority 'urgent' that haven't expired
+      const livebroadcasts = Vue.computed(() =>
+        (announcements.value || []).filter(a => {
+          if (a.priority_level !== 'urgent') return false
+          if (!a.publish_end_date) return true
+          return new Date(a.publish_end_date) > new Date()
+        }).slice(0, 3)
+      )
+
+      // Feed = all non-expired announcements ordered by created_at desc
+      const feedItems = Vue.computed(() => {
+        let items = (announcements.value || []).slice()
+        if (feedFilter.value !== 'all') {
+          items = items.filter(a => (a.type || 'announcement') === feedFilter.value)
+        }
+        return items.slice(0, 30)
+      })
+
+      // Pulse stats derived from existing data
+      const commsPulse = Vue.computed(() => {
+        const today = new Date()
+        const todayStr = today.toISOString().slice(0, 10)
+        const onDuty = (medicalStaff?.value || []).filter(s => s.employment_status === 'active').length
+        const onCall = (onCallSchedule?.value || []).filter(s => {
+          const d = s.duty_date ? Utils.normalizeDate(s.duty_date) : ''
+          return d === todayStr
+        }).length
+        const absent = (absences?.value || []).filter(a => {
+          const s = Utils.normalizeDate(a.start_date)
+          const e = Utils.normalizeDate(a.end_date)
+          return todayStr >= s && todayStr <= e && a.current_status === 'currently_absent'
+        }).length
+        const activeBroadcasts = livebroadcasts.value.length
+        return { onDuty, onCall, absent, activeBroadcasts }
+      })
+
+      const broadcastTypeConfig = {
+        broadcast:    { label: 'Broadcast', color: '#ef4444', bg: 'rgba(239,68,68,.08)',   barColor: '#ef4444' },
+        protocol:     { label: 'Protocol',  color: '#10b981', bg: 'rgba(16,185,129,.08)', barColor: '#10b981' },
+        announcement: { label: 'Announcement', color: '#94a3b8', bg: 'rgba(148,163,184,.08)', barColor: '#94a3b8' },
+        kudos:        { label: 'Recognition', color: '#0ea5e9', bg: 'rgba(14,165,233,.08)', barColor: '#0ea5e9' },
+      }
+
+      const getAnnouncementType = (a) => {
+        if (a.priority_level === 'urgent') return 'broadcast'
+        if (a.type) return a.type
+        if (a.priority_level === 'high') return 'protocol'
+        return 'announcement'
+      }
+
+      const openBroadcastForm = (type = 'broadcast') => {
+        broadcastForm.show   = true
+        broadcastForm.type   = type
+        broadcastForm.text   = ''
+        broadcastForm.expiryHours = type === 'broadcast' ? 4 : type === 'kudos' ? 168 : 72
+      }
+
+      const submitBroadcast = async (saving) => {
+        if (!broadcastForm.text.trim()) { showToast('Validation', 'Message is required', 'warning'); return }
+        if (saving?.value) return
+        if (saving) saving.value = true
+        try {
+          const typeMap = {
+            broadcast:    { priority_level: 'urgent',  type: 'broadcast'    },
+            protocol:     { priority_level: 'high',    type: 'protocol'     },
+            announcement: { priority_level: 'normal',  type: 'announcement' },
+            kudos:        { priority_level: 'low',     type: 'kudos'        },
+          }
+          const cfg = typeMap[broadcastForm.type] || typeMap.announcement
+          const endDate = new Date(Date.now() + broadcastForm.expiryHours * 3600000)
+          await API.createAnnouncement({
+            title:            broadcastForm.text.slice(0, 100),
+            content:          broadcastForm.text,
+            priority_level:   cfg.priority_level,
+            type:             cfg.type,
+            target_audience:  'all_staff',
+            publish_start_date: new Date().toISOString().slice(0,10),
+            publish_end_date:   endDate.toISOString().slice(0,10),
+          })
+          broadcastForm.show = false
+          showToast('Posted', `${broadcastTypeConfig[broadcastForm.type]?.label || 'Message'} sent to department`, 'success')
+          await loadAnnouncements()
+        } catch(e) { showToast('Error', e.message || 'Failed to post', 'error') }
+        finally { if (saving) saving.value = false }
+      }
+
+      const dismissBroadcast = async (announcement) => {
+        // Mark as read locally; optionally call API to record seen
+        const idx = announcements.value.findIndex(a => a.id === announcement.id)
+        if (idx !== -1) announcements.value[idx] = { ...announcements.value[idx], _dismissed: true }
+      }
       const communicationsModal = reactive({
         show: false, activeTab: 'announcement', mode: 'add',
         form: { id: null, title: '', content: '', priority: 'normal', target_audience: 'all_staff', target_department_id: '', updateType: 'daily', dailySummary: '', highlight1: '', highlight2: '', alerts: { erBusy: false, icuFull: false, wardFull: false, staffShortage: false }, metricName: '', metricValue: '', metricTrend: 'stable', metricChange: '', metricNote: '', alertLevel: 'low', alertMessage: '', affectedAreas: { er: false, icu: false, ward: false, surgery: false } }
@@ -3527,6 +4078,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const viewAnnouncement = (a) => { announcementReadModal.announcement = a; announcementReadModal.show = true }
 
       const saveCommunication = async (saving, saveClinicalStatus) => {
+        // Validate before setting loading — better UX
+        if (communicationsModal.activeTab === 'announcement') {
+          const f = communicationsModal.form
+          if (!f.title?.trim()) { showToast('Validation Error', 'Title is required', 'error'); return }
+          if (!f.content?.trim()) { showToast('Validation Error', 'Content is required', 'error'); return }
+        }
         saving.value = true
         try {
           if (communicationsModal.activeTab === 'announcement') {
@@ -3561,7 +4118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
-      return { announcements, communicationsFilters, communicationsModal, announcementReadModal, filteredAnnouncements, recentAnnouncements, unreadAnnouncements, loadAnnouncements, showCommunicationsModal, editAnnouncement, viewAnnouncement, saveCommunication, deleteAnnouncement }
+      return { announcements, communicationsFilters, communicationsModal, announcementReadModal, filteredAnnouncements, recentAnnouncements, unreadAnnouncements, loadAnnouncements, loadOpsMetrics, opsMetrics, opsLoading, briefingForm, getMetric, metricVal, metricSub, metricVal2, saveDailyBriefing, updateMetricInline, broadcastForm, feedFilter, livebroadcasts, feedItems, commsPulse, broadcastTypeConfig, getAnnouncementType, openBroadcastForm, submitBroadcast, dismissBroadcast, showCommunicationsModal, editAnnouncement, viewAnnouncement, saveCommunication, deleteAnnouncement }
     }
 
     // ============ 6.10 useLiveStatus ============
@@ -3674,7 +4231,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const researchLineModal = reactive({ show: false, mode: 'add', form: { line_number: null, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: 0, active: true } })
       const clinicalTrialModal = reactive({ show: false, mode: 'add', form: { protocol_id: '', title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: 0, start_date: '', end_date: '' } })
-      const trialDetailModal = reactive({ show: false, trial: null })
+      const trialDetailModal = reactive({ show: false, trial: null, study: null })
       const innovationProjectModal = reactive({ show: false, mode: 'add', form: { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, display_order: 0 } })
       const assignCoordinatorModal = reactive({ show: false, lineId: null, lineName: '', selectedCoordinatorId: '' })
 
@@ -3733,9 +4290,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      const researchLoading = ref(false)
+
       const loadResearchLines = async () => { try { researchLines.value = await API.getResearchLines() } catch { } }
       const loadClinicalTrials = async () => { try { clinicalTrials.value = await API.getAllClinicalTrials() } catch { } }
       const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch { } }
+
+      // Load all three research datasets together — used by on-demand navigation
+      const loadAllResearch = async () => {
+        if (researchLoading.value) return  // already in flight
+        researchLoading.value = true
+        try {
+          await Promise.all([
+            loadResearchLines(),
+            loadClinicalTrials(),
+            loadInnovationProjects()
+          ])
+        } finally {
+          researchLoading.value = false
+        }
+      }
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: '', sort_order: researchLines.value.length + 1, active: true, keywords: [], keywordsInput: '' }); researchLineModal.show = true }
       const showAddTrialModal = (line = null) => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1, start_date: '', end_date: '' }); clinicalTrialModal.show = true }
@@ -3743,9 +4317,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, research_line_name: l.research_line_name || l.name || '', keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
-      const editTrial = (t) => { clinicalTrialModal.mode = 'edit'; clinicalTrialModal.form = { ...t, end_date: t.end_date || t.estimated_end_date || '', co_investigators: Array.isArray(t.co_investigators) ? [...t.co_investigators] : (t.co_investigator_id ? [t.co_investigator_id] : []), sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : []) }; clinicalTrialModal.show = true }
+      const editTrial = (t) => {
+        clinicalTrialModal.mode = 'edit'
+        // C3 FIX: preserve display_order from the stored record, not reset to list length
+        clinicalTrialModal.form = {
+          ...t,
+          end_date:          t.end_date || t.estimated_end_date || '',
+          start_date:        t.start_date || '',
+          co_investigators:  Array.isArray(t.co_investigators)  ? [...t.co_investigators]  : (t.co_investigator_id  ? [t.co_investigator_id]  : []),
+          sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : [])
+        }
+        clinicalTrialModal.show = true
+      }
       const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '' }; innovationProjectModal.show = true }
-      const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.show = true }
+      const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.study = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
         // Normalise: HTML form uses research_line_name, JS defaults use name — backend DB stores 'name'
@@ -3776,6 +4361,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveClinicalTrial = async (saving) => {
         const f = clinicalTrialModal.form
+        if (!f.title?.trim()) { showToast('Validation Error', 'Trial title is required', 'error'); return }
+        if (!f.principal_investigator_id) { showToast('Validation Error', 'Principal investigator is required', 'error'); return }
         // FIX 8: date relationship validation
         if (f.start_date && f.end_date && f.end_date < f.start_date) { showToast('Validation Error', 'End date cannot be before start date', 'error'); return }
         saving.value = true
@@ -3801,9 +4388,9 @@ document.addEventListener('DOMContentLoaded', () => {
           // Parse keywords from comma-separated string into array
           payload.keywords = f.keywordsInput ? f.keywordsInput.split(',').map(k => k.trim()).filter(Boolean) : (Array.isArray(f.keywords) ? f.keywords : [])
           delete payload.keywordsInput
-          // Mirror to legacy DB column aliases
-          payload.co_leads = payload.co_investigators
-          payload.tags = payload.keywords
+          // m3 FIX: removed legacy co_leads/tags mirroring — backend B6 whitelist
+          // no longer passes these through to Supabase, so mirroring was silently dropped anyway.
+          // co_investigators and keywords are sent directly under their correct column names.
           // Stage normalisation
           if (!payload.current_stage && payload.development_stage) payload.current_stage = payload.development_stage
           delete payload.development_stage
@@ -3907,7 +4494,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick }
+      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick }
     }
 
     // ============ 6.12 useAnalytics ============
@@ -3946,7 +4533,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const activeTrials  = (clinicalTrials.value || []).filter(t => ['Activo','Reclutando'].includes(t.status)).length
           const recruitingTrials = (clinicalTrials.value || []).filter(t => t.status === 'Reclutando').length
           const totalProjects = (innovationProjects.value || []).length
-          const lateStageProjects = (innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalado','Mercado'].includes(p.current_stage)).length
+          const lateStageProjects = (innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalamiento','Comercialización'].includes(p.current_stage)).length
           const totalEnrolled = (clinicalTrials.value || []).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
           const totalTarget   = (clinicalTrials.value || []).reduce((s, t) => s + (t.enrollment_target || 0), 0)
           return { totalLines, activeLines, totalTrials, activeTrials, recruitingTrials, totalProjects, lateStageProjects, totalEnrolled, totalTarget }
@@ -4047,6 +4634,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function useNews({ showToast, showConfirmation, medicalStaff, researchLines }) {
       const newsPosts      = ref([])
       const newsLoading    = ref(false)
+      const activeNewsMenu = ref(null)
+      const newsLoaded     = ref(false) // FIX Bug4: tracks whether fetch has been attempted, not just if results exist
       const newsModal      = reactive({
         show: false, mode: 'add', _tab: 'meta',
         form: {
@@ -4115,10 +4704,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadNews = async () => {
         newsLoading.value = true
         try {
-          const data = await API.getList('/api/news')
-          newsPosts.value = data || []
+          // CRITICAL FIX: GET /api/news returns { data: [...] } not a raw array.
+          // Must unwrap .data — if we use getList/ensureArray the Object.values()
+          // fallback would flatten the nested author/research_line join objects.
+          const res = await API.request('/api/news')
+          newsPosts.value = res?.data || Utils.ensureArray(res) || []
         } catch { newsPosts.value = [] }
-        finally { newsLoading.value = false }
+        finally { newsLoading.value = false; newsLoaded.value = true }
       }
 
       const showAddNewsModal = () => {
@@ -4134,6 +4726,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const editNews = (post) => {
         newsModal.mode = 'edit'
+        newsModal._tab = 'content'  // open on content tab when editing
         const _s = (v) => v == null ? '' : String(v)
         Object.assign(newsModal.form, {
           ...post,
@@ -4151,15 +4744,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const saveNews = async () => {
         const _t = (v) => (v == null ? '' : String(v)).trim()
-        if (!_t(newsModal.form.title)) { showToast('Validation', 'Title is required', 'warn'); return }
+        if (!_t(newsModal.form.title)) { showToast('Validation', 'Title is required', 'warning'); return }
         if (newsModal.form.post_type === 'photo_story' && !_t(newsModal.form.featured_image_url)) {
-          showToast('Validation', 'Photo Story requires an image URL', 'warn'); return
+          showToast('Validation', 'Photo Story requires an image URL', 'warning'); return
         }
         if (newsModal.form.post_type !== 'publication' && !newsModal.form.author_id) {
-          showToast('Validation', 'Author is required', 'warn'); return
+          showToast('Validation', 'Author is required', 'warning'); return
         }
         if (newsModal.form.post_type !== 'publication' && newsWordCount.value > newsWordLimit.value) {
-          showToast('Validation', `Exceeds ${newsWordLimit.value} word limit`, 'warn'); return
+          showToast('Validation', `Exceeds ${newsWordLimit.value} word limit`, 'warning'); return
         }
         const payload = {
           post_type:          newsModal.form.post_type,
@@ -4248,8 +4841,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       return {
-        newsPosts, newsLoading, newsModal, newsFilters, filteredNews,
-        newsWordCount, newsWordLimit,
+        newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
+        newsWordCount, newsWordLimit, activeNewsMenu,
         loadNews, showAddNewsModal, editNews, saveNews,
         publishNews, archiveNews, deleteNews, togglePublic,
         formatAuthorName, getLineName, autoExpiry
@@ -4283,7 +4876,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const updateDashboardStats = () => {
         const ns = medicalStaff.value.length
         const na = medicalStaff.value.filter(s => s.staff_type === 'attending_physician' && s.employment_status === 'active').length
-        const nr = medicalStaff.value.filter(s => s.staff_type === 'medical_resident' && s.employment_status === 'active').length
+        // M1 FIX: was hardcoded to 'medical_resident' — use isResidentType() for dynamic types
+        const nr = medicalStaff.value.filter(s => isResidentType(s.staff_type) && s.employment_status === 'active').length
 
         if (systemStats.value.totalStaff === 0 && ns > 0) {
           const tr = { value: 0 }, ar = { value: 0 }, rr = { value: 0 }
@@ -4344,7 +4938,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (endingThisWeek.length > 0) {
           const names = endingThisWeek.slice(0,2).map(r => {
             const s = medicalStaff.value.find(x => x.id === r.resident_id)
-            return s ? s.full_name : 'Unknown'
+            return s ? Utils.formatDrName(s.full_name) : 'Unknown'
           }).join(', ')
           const more = endingThisWeek.length > 2 ? ` +${endingThisWeek.length-2}` : ''
           items.push({ icon: 'fa-clock', type: 'warn', text: `${endingThisWeek.length} rotation${endingThisWeek.length>1?'s':''} ending this week — ${names}${more}`, action: 'resident_rotations', actionFilter: { rotationStatus: 'active' } })
@@ -4389,7 +4983,7 @@ document.addEventListener('DOMContentLoaded', () => {
           )
         })
         if (unassigned.length > 0) {
-          const names = unassigned.slice(0,2).map(s => s.full_name || '').join(', ')
+          const names = unassigned.slice(0,2).map(s => Utils.formatDrName(s.full_name) || '').join(', ')
           const more  = unassigned.length > 2 ? ` +${unassigned.length - 2}` : ''
           items.push({ icon: 'fa-user-clock', type: 'warn', text: `${unassigned.length} resident${unassigned.length>1?'s':''} unassigned next month — ${names}${more}`, action: 'resident_rotations', urgent: unassigned.length > 2 })
         }
@@ -4399,7 +4993,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 7; i++) {
           const d = new Date(todayDate.getTime() + i * 86400000)
           const ds = Utils.normalizeDate(d)
-          const hasPrimary = onCallSchedule.value.some(s => Utils.normalizeDate(s.duty_date) === ds && ['primary_call','primary'].includes(s.shift_type))
+          const hasPrimary = onCallSchedule.value.some(s => Utils.normalizeDate(s.duty_date) === ds && ['primary_call','primary','weekend_coverage'].includes(s.shift_type))
           if (!hasPrimary) ocGaps.push(d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }))
         }
         if (ocGaps.length > 0) {
@@ -4436,12 +5030,31 @@ document.addEventListener('DOMContentLoaded', () => {
           const m = gapSlotMatches[0]
           items.push({
             icon: 'fa-link', type: 'info',
-            text: `${m.residentName} finishing rotation — ${m.unitName} has a free slot`,
+            text: `${Utils.formatDrName(m.residentName)} finishing rotation — ${m.unitName} has a free slot`,
             action: 'resident_rotations',
             actionFilter: { resident: m.residentId }
           })
         }
 
+        // Add "all covered" positive if nothing is wrong but we have data
+        if (items.length === 0 && medicalStaff.value.length > 0) {
+          const todayStr = Utils.normalizeDate(new Date())
+          const hasCoverage = onCallSchedule.value.some(s =>
+            Utils.normalizeDate(s.duty_date) === todayStr &&
+            ['primary_call','primary','weekend_coverage'].includes(s.shift_type)
+          )
+          const hasActiveRotations = rotations.value.some(r => r.rotation_status === 'active')
+          items.push({
+            icon: 'fa-check-circle',
+            type: 'ok',
+            text: [
+              hasCoverage ? 'On-call covered' : null,
+              hasActiveRotations ? `${rotations.value.filter(r=>r.rotation_status==='active').length} rotations active` : null,
+              `${medicalStaff.value.filter(s=>s.employment_status==='active').length} staff available`,
+            ].filter(Boolean).join(' · '),
+            action: null
+          })
+        }
         return items.sort((a,b) => {
           const p = { danger: 0, warn: 1, info: 2, ok: 3 }
           return (p[a.type] ?? 4) - (p[b.type] ?? 4)
@@ -4449,10 +5062,40 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       // Top 3 priority items for the dashboard briefing card
-      const dailyBriefing = computed(() => situationItems.value.slice(0, 3))
+      const dailyBriefing = computed(() => {
+        const dataReady = medicalStaff.value.length > 0 || rotations.value.length > 0 || onCallSchedule.value.length > 0
+        if (!dataReady) return []
+        return situationItems.value.slice(0, 4)
+      })
+
+      // systemSummary — department health overview for dashboard
+      const systemSummary = computed(() => {
+        const today = Utils.normalizeDate(new Date())
+        const activeStaff     = medicalStaff.value.filter(s => s.employment_status === 'active').length
+        const onLeave         = medicalStaff.value.filter(s => s.employment_status === 'on_leave').length
+        const activeRotations = rotations.value.filter(r => r.rotation_status === 'active').length
+        const scheduledRots   = rotations.value.filter(r => r.rotation_status === 'scheduled').length
+        const todayHasCoverage= onCallSchedule.value.some(s =>
+          Utils.normalizeDate(s.duty_date) === today &&
+          ['primary_call','primary','weekend_coverage'].includes(s.shift_type)
+        )
+        const dangerAlerts = situationItems.value.filter(i => i.type === 'danger').length
+        const warnAlerts   = situationItems.value.filter(i => i.type === 'warn').length
+        const healthScore  = Math.max(0, 100
+          - (dangerAlerts * 25)
+          - (warnAlerts   * 10)
+          - (onLeave > 0 && !todayHasCoverage ? 15 : 0)
+        )
+        return {
+          activeStaff, onLeave, activeRotations, scheduledRots, todayHasCoverage,
+          dangerAlerts, warnAlerts, healthScore,
+          healthLabel: healthScore >= 80 ? 'Optimal' : healthScore >= 60 ? 'Good' : healthScore >= 40 ? 'Attention' : 'Action required',
+          healthColor: healthScore >= 80 ? 'var(--nm-teal,#00b3b3)' : healthScore >= 60 ? '#3b82f6' : healthScore >= 40 ? '#f59e0b' : '#ef4444',
+        }
+      })
 
       const currentTimeFormatted = computed(() => Utils.formatTime(currentTime.value))
-      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems, dailyBriefing }
+      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems, dailyBriefing, systemSummary }
     }
 
     // ============ 7. ROOT APP ============
@@ -4482,7 +5125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         const { pagination, resetPage, paginate, totalPages, goToPage } = makePagination([
-          ['medical_staff', 15], ['rotations', 15], ['oncall', 15], ['absences', 15], ['trials', 15]
+          ['medical_staff', 15], ['rotations', 15], ['oncall', 15], ['absences', 15], ['trials', 15], ['projects', 15], ['research_lines', 20]
         ])
 
         const { fieldErrors, setErr, clearErr: clearFieldError, clearAll } = makeValidation(['rotation', 'staff', 'absence', 'oncall', 'research'])
@@ -4494,11 +5137,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // so when either load function fills it all consumers see it immediately.
         const trainingUnits = ref([])
         const rotations     = ref([])
+        // researchLines hoisted so useStaff can clear coordinator assignments on role revoke
+        const researchLinesShared = ref([])
+        // allDepartmentsLookup hoisted so useTrainingUnits can filter units by department
+        // without requiring useDepartments to be initialised first
+        const allDepartmentsLookupShared = ref([])
 
-        const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser })
+        const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser, researchLines: researchLinesShared, loadResearchLines: async () => { try { researchLinesShared.value = await API.getResearchLines() } catch {} } })
         const { medicalStaff, allStaffLookup, hospitalsList } = staffOps
 
-        const { trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal,
+        const { trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal,
           filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName,
           loadTrainingUnits, showAddTrainingUnitModal,
           editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
@@ -4508,9 +5156,12 @@ document.addEventListener('DOMContentLoaded', () => {
           tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
-        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup })
+        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
+
+        // Destructure getHorizonMonths so absence timeline functions can use it without qualification
+        const { getHorizonMonths } = rotationOps
 
         const { departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
@@ -4529,12 +5180,12 @@ document.addEventListener('DOMContentLoaded', () => {
           return rotations.value.filter(r =>
             unitIds.has(r.training_unit_id) &&
             ['active','scheduled'].includes(r.rotation_status)
-          ).sort((a,b) => new Date(a.end_date) - new Date(b.end_date))
+          ).sort((a,b) => new Date(a.end_date + 'T00:00:00') - new Date(b.end_date + 'T00:00:00'))
         })
 
         const rotDaysLeft = (r) => {
           if (!r) return 0
-          const diff = Math.ceil((new Date(r.end_date) - new Date()) / 86400000)
+          const diff = Math.ceil((new Date(Utils.normalizeDate(r.end_date) + 'T00:00:00') - new Date()) / 86400000)
           return diff > 0 ? diff : 0
         }
 
@@ -4617,7 +5268,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 backup_physician_id:  shift.role === 'backup'  ? newId : existing.backup_physician_id,
                 duty_date: existing.duty_date, shift_type: existing.shift_type,
                 start_time: existing.start_time, end_time: existing.end_time,
-                coverage_area: existing.coverage_area, coverage_notes: existing.coverage_notes || ''
+                coverage_notes: existing.coverage_notes || ''
               }
               await API.updateOnCall(shift.id, payload)
               const idx = onCallSchedule.value.findIndex(s => s.id === shift.id)
@@ -4659,9 +5310,163 @@ document.addEventListener('DOMContentLoaded', () => {
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
 
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
+        // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
+        watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
+        // Keep hoisted dept lookup in sync so useTrainingUnits filteredTrainingUnits always has fresh data
+        watch(allDepartmentsLookup, (v) => { allDepartmentsLookupShared.value = v }, { immediate: true })
+        // Wrap loadResearchDashboard so it always receives the live research data refs —
+        // the raw function takes parameters; calling it bare from the template passes nothing.
+        const loadResearchDashboard = () => analyticsOps.loadResearchDashboard(
+          researchOps.researchLines,
+          researchOps.clinicalTrials,
+          researchOps.innovationProjects
+        )
         const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits })
 
         const newsOps = useNews({ showToast, showConfirmation, medicalStaff, researchLines: researchOps.researchLines })
+
+        // ── EMERGENCY CALLOUTS (DUTY LOG) ─────────────────────────────
+        const callouts        = ref([])
+        const calloutsLoading = ref(false)
+        const calloutSummary  = ref([])
+        const calloutPeriod   = reactive({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 })
+        const calloutModal    = reactive({
+          show: false, mode: 'add',
+          form: { id: null, staff_id: '', called_at: '', end_time: '', reason_category: 'respiratory_emergency', time_type: 'night', notes: '' }
+        })
+        const calloutReasonLabels = {
+          respiratory_emergency: 'Respiratory emergency',
+          bronchospasm:          'Bronchospasm',
+          haemoptysis:           'Haemoptysis',
+          post_procedure:        'Post-procedure complication',
+          icu_transfer:          'ICU transfer support',
+          patient_deterioration: 'Patient deterioration',
+          other:                 'Other'
+        }
+        const calloutTimeTypes = { night:'Night', weekend:'Weekend', daytime:'Daytime', holiday:'Holiday' }
+
+        let _calloutsLoadedKey = ''
+        const loadCallouts = async (force = false) => {
+          const key = `${calloutPeriod.year}-${calloutPeriod.month}`
+          if (!force && _calloutsLoadedKey === key && callouts.value.length > 0) return
+          calloutsLoading.value = true
+          try {
+            const p = new URLSearchParams({ year: calloutPeriod.year, month: calloutPeriod.month, limit: 200 })
+            const res = await API.request(`/api/emergency-callouts?${p}`)
+            callouts.value = res.data || []
+            if (res._tableNotFound) {
+              showToast('Setup needed', 'Run the emergency_callouts SQL migration in Supabase. See System Guide.', 'warning')
+            }
+            _calloutsLoadedKey = key
+          } catch(e) { showToast('Error', 'Failed to load duty log', 'error') }
+          finally { calloutsLoading.value = false }
+        }
+
+        const loadCalloutSummary = async () => {
+          try {
+            const p = new URLSearchParams({ year: calloutPeriod.year, month: calloutPeriod.month })
+            calloutSummary.value = await API.request(`/api/emergency-callouts/summary?${p}`) || []
+          } catch(e) { /* silently ignore */ }
+        }
+
+        const openLogCalloutModal = () => {
+          const now = new Date()
+          const pad = n => String(n).padStart(2,'0')
+          Object.assign(calloutModal.form, { id:null, staff_id:'', called_at:`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`, end_time:'', reason_category:'respiratory_emergency', time_type: now.getHours() >= 22 || now.getHours() < 7 ? 'night' : now.getDay() === 0 || now.getDay() === 6 ? 'weekend' : 'daytime', notes:'' })
+          calloutModal.mode = 'add'; calloutModal.show = true
+        }
+
+        const editCallout = (c) => {
+          Object.assign(calloutModal.form, { id:c.id, staff_id:c.staff_id, called_at:c.called_at?.slice(0,16)||'', end_time:c.end_time?.slice(0,16)||'', reason_category:c.reason_category||'other', time_type:c.time_type||'night', notes:c.notes||'' })
+          calloutModal.mode = 'edit'; calloutModal.show = true
+        }
+
+        const saveCallout = async () => {
+          const f = calloutModal.form
+          if (!f.staff_id || !f.called_at) { showToast('Validation', 'Physician and call time are required', 'warning'); return }
+          try {
+            const payload = { staff_id:f.staff_id, called_at:f.called_at, end_time:f.end_time||null, reason_category:f.reason_category, time_type:f.time_type, notes:f.notes }
+            if (calloutModal.mode === 'add') {
+              await API.request('/api/emergency-callouts', { method:'POST', body: payload })
+              showToast('Logged', 'Emergency call-out recorded', 'success')
+            } else {
+              await API.request(`/api/emergency-callouts/${f.id}`, { method:'PUT', body: payload })
+              showToast('Updated', 'Call-out record updated', 'success')
+            }
+            calloutModal.show = false
+            await loadCallouts(); await loadCalloutSummary()
+          } catch(e) { showToast('Error', e.message || 'Failed to save', 'error') }
+        }
+
+        const deleteCallout = async (c) => {
+          showConfirmation({ title:'Delete call-out record', message:`Remove this call-out entry for ${c.staff?.full_name || 'this physician'}?`, confirmButtonText:'Delete', confirmButtonClass:'btn-danger',
+            onConfirm: async () => {
+              try {
+                await API.request(`/api/emergency-callouts/${c.id}`, { method:'DELETE' })
+                showToast('Deleted', 'Call-out record removed', 'success')
+                await loadCallouts(); await loadCalloutSummary()
+              } catch(e) { showToast('Error', e.message || 'Failed to delete', 'error') }
+            }
+          })
+        }
+
+        const calloutKPIs = computed(() => {
+          const c = callouts.value
+          const now = new Date()
+          const thisMonth = c.filter(x => { const d = new Date(x.called_at); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() })
+          const ytd = c.filter(x => new Date(x.called_at).getFullYear() === now.getFullYear())
+          return {
+            thisMonth: thisMonth.length,
+            night:     thisMonth.filter(x => x.time_type === 'night').length,
+            weekend:   thisMonth.filter(x => x.time_type === 'weekend').length,
+            holiday:   thisMonth.filter(x => x.time_type === 'holiday').length,
+            ytd:       ytd.length,
+          }
+        })
+
+        const availablePhysicians = computed(() => medicalStaff.value.filter(s =>
+          s.employment_status === 'active' && s.staff_type &&
+          (staffTypeMap.value[s.staff_type] != null
+            ? true  // any active known type is eligible for scheduling
+            : ['attending_physician','fellow','nurse_practitioner','medical_resident'].includes(s.staff_type))
+        ))
+
+        const calloutFairnessAlert = computed(() => {
+          if (!availablePhysicians?.value?.length) return false
+          const totals = availablePhysicians.value.map(p =>
+            (onCallOps.filteredOnCallSchedules.value || []).filter(s => s.primary_physician_id === p.id || s.backup_physician_id === p.id).length +
+            (calloutSummary.value.find(s => s.staff_id === p.id)?.total || 0)
+          )
+          const avg = totals.reduce((a,b) => a+b, 0) / Math.max(1, totals.length)
+          return avg > 0 && totals.some(t => t > avg * 1.5)
+        })
+
+        // calloutDistribution — per-physician duty load with deviation from avg
+        const calloutDistribution = computed(() => {
+          if (!availablePhysicians?.value?.length) return []
+          const physicians = availablePhysicians.value
+          const items = physicians.map(p => {
+            const scheduled = (onCallOps.filteredOnCallSchedules.value || []).filter(
+              s => s.primary_physician_id === p.id || s.backup_physician_id === p.id
+            ).length
+            const summary = calloutSummary.value.find(s => s.staff_id === p.id) || {}
+            const callouts = summary.total || 0
+            const night    = summary.night || 0
+            const weekend  = summary.weekend || 0
+            const total    = scheduled + callouts
+            return { id: p.id, name: p.full_name, staffType: p.staff_type, scheduled, callouts, night, weekend, total }
+          })
+          const avg = items.reduce((s,i) => s + i.total, 0) / Math.max(1, items.length)
+          return items
+            .map(i => ({ ...i, avg, deviation: avg > 0 ? Math.round((i.total / avg - 1) * 100) : 0 }))
+            .sort((a,b) => b.total - a.total)
+        })
+
+        // auto-load when on-call view is active
+        watch(() => currentView.value, v => {
+          if (v === 'oncall_schedule')  { loadCallouts(); loadCalloutSummary() }
+          if (v === 'communications')   { commsOps.loadAnnouncements(); commsOps.loadOpsMetrics() }
+        }, { immediate: false })
 
         // ── NEWS READER DRAWER ────────────────────────────────────────
         const newsDrawer = reactive({ show: false, post: null })
@@ -4692,17 +5497,18 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return chunks
         })
-        const newsDrawerInitials = computed(() => {
-          const name = newsDrawerAuthorFull.value || ''
-          const parts = name.trim().split(/\s+/).filter(w => w.replace('.','').length > 1)
-          if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
-          return name[0]?.toUpperCase() || '?'
-        })
+        // FIX: newsDrawerAuthorFull must be declared BEFORE newsDrawerInitials uses it
         const newsDrawerAuthorFull = computed(() => {
           const id = newsDrawer.post?.author_id
           if (!id) return ''
           const s = (medicalStaff.value || []).find(m => m.id === id)
           return s?.full_name || ''
+        })
+        const newsDrawerInitials = computed(() => {
+          const name = newsDrawerAuthorFull.value || ''
+          const parts = name.trim().split(/\s+/).filter(w => w.replace('.','').length > 1)
+          if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+          return name[0]?.toUpperCase() || '?'
         })
         const newsDrawerReadMins = computed(() => {
           const wc = newsDrawer.post?.word_count
@@ -4715,7 +5521,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         // ── END NEWS READER DRAWER ────────────────────────────────────
 
-        const { newsPosts, newsLoading, newsModal, newsFilters, filteredNews,
+        const { newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
                 newsWordCount, newsWordLimit,
                 loadNews, showAddNewsModal, editNews, saveNews,
                 publishNews, archiveNews, deleteNews, togglePublic: toggleNewsPublic,
@@ -4727,11 +5533,12 @@ document.addEventListener('DOMContentLoaded', () => {
           rotationOps.showAddRotationModal(null, unit)
           if (startDate) rotationOps.rotationModal.form.start_date = startDate
         }
-        const { systemStats, updateDashboardStats, loadSystemStats, situationItems, dailyBriefing } = dashOps
+        const { systemStats, updateDashboardStats, loadSystemStats, situationItems, dailyBriefing, systemSummary } = dashOps
 
         // ============ NEW COMPACT VIEW STATE ============
         const rotationView = ref('detailed') // 'compact', 'detailed', 'month'
         const onCallView = ref('detailed')
+        const oncallTab  = ref('schedule')
 
         // ============ EXISTING COMPUTED PROPERTIES ============
         // Name lookups — canonical versions live in their composables and are
@@ -4806,6 +5613,18 @@ document.addEventListener('DOMContentLoaded', () => {
           staffOps.staffProfileModal.collapsed[key] = !staffOps.staffProfileModal.collapsed[key]
         }
 
+        // Load certificates into profile modal on demand
+        const loadStaffCertificates = async (staffId) => {
+          if (!staffId) return
+          staffOps.staffProfileModal.loadingCerts = true
+          staffOps.staffProfileModal.certificates = []
+          try {
+            const data = await API.request(`/api/medical-staff/${staffId}/certificates`)
+            staffOps.staffProfileModal.certificates = Array.isArray(data) ? data : []
+          } catch { staffOps.staffProfileModal.certificates = [] }
+          finally { staffOps.staffProfileModal.loadingCerts = false }
+        }
+
         const viewStaffDetails = async (staff) => {
           // Guard: staff might be undefined if medicalStaff.find() returned nothing
           if (!staff || !staff.id) { console.warn('viewStaffDetails: staff object is undefined or missing id'); return; }
@@ -4844,7 +5663,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return a || '—'
         }
-        const formatStudyStatus = (s) => ({ 'Reclutando': 'Recruiting', 'Activo': 'Active', 'Completado': 'Completed', 'Suspendido': 'Suspended', 'Pendiente': 'Pending', 'Cerrado': 'Closed' }[s] || s)
+        // Only the 4 values the DB CHECK constraint allows:
+        const formatStudyStatus = (s) => ({
+          'Reclutando': 'Recruiting', 'Activo': 'Active',
+          'Completado': 'Completed', 'En preparación': 'In preparation'
+        }[s] || s)
         const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'NeumoCare Dashboard'
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
         const getSearchPlaceholder = () => 'Search...'
@@ -4863,18 +5686,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // All clinical staff eligible for on-call (attendings, fellows, NPs, and residents)
         // Dynamic: uses staffTypeMap flags instead of hardcoded type key lists
         // Falls back to legacy keys so nothing breaks if staffTypeMap isn't loaded yet
-        const availablePhysicians = computed(() => medicalStaff.value.filter(s =>
-          s.employment_status === 'active' && s.staff_type &&
-          (staffTypeMap.value[s.staff_type] != null
-            ? true  // any active known type is eligible for scheduling
-            : ['attending_physician','fellow','nurse_practitioner','medical_resident'].includes(s.staff_type))
-        ))
+
         const availableResidents = computed(() => {
+          // Use isResidentType() which handles both staffTypeMap lookup AND fallback
           const residents = medicalStaff.value.filter(s =>
-            s.employment_status === 'active' && s.staff_type &&
-            (staffTypeMap.value[s.staff_type] != null
-              ? staffTypeMap.value[s.staff_type].is_resident_type
-              : s.staff_type === 'medical_resident')
+            s.employment_status === 'active' && isResidentType(s.staff_type)
           )
           // Sort: free residents first, currently rotating last
           const activeRotatingIds = new Set(
@@ -4917,8 +5733,10 @@ document.addEventListener('DOMContentLoaded', () => {
           saving.value = true
           try {
             // Update display name in app_users
-            currentUser.value.full_name = userProfileModal.form.full_name
-            currentUser.value.department_id = userProfileModal.form.department_id
+            if (currentUser.value) {
+              currentUser.value.full_name = userProfileModal.form.full_name
+              currentUser.value.department_id = userProfileModal.form.department_id
+            }
             localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value))
             // If this user has a linked staff record, open it for full profile editing
             if (userProfileModal.form.linked_staff_id) {
@@ -4968,6 +5786,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (trainingUnitFilters && trainingUnitFilters.department !== undefined) trainingUnitFilters.department = filters.department
           }
           if (filters.residentCategory && staffFilters) { staffFilters.staffType = 'medical_resident'; staffFilters.residentCategory = filters.residentCategory }
+          if (filters.status && staffFilters) staffFilters.status = filters.status
+          if (filters.staffType && staffFilters) staffFilters.staffType = filters.staffType
           if (filters.rotationStatus && rotationFilters) rotationFilters.status = filters.rotationStatus
           if (filters.trainingUnit && rotationFilters) rotationFilters.trainingUnit = filters.trainingUnit
           ui.searchResultsOpen.value = false
@@ -4975,24 +5795,55 @@ document.addEventListener('DOMContentLoaded', () => {
           // Trigger entrance animation on content area
           const ca = document.querySelector('.content-area')
           if (ca) { ca.classList.remove('content-view-enter'); void ca.offsetWidth; ca.classList.add('content-view-enter') }
+          if (view === 'news') {
+            currentView.value = 'news'
+            // FIX Bug4: use newsLoaded flag, not length — empty result shouldn't trigger refetch
+            if (!newsLoaded.value && !newsLoading.value) loadNews()
+            return
+          }
+          if (view === 'communications') {
+            currentView.value = 'communications'
+            commsOps.loadAnnouncements()
+            commsOps.loadOpsMetrics()
+            return
+          }
+          if (view === 'system_settings') {
+            currentView.value = 'system_settings'
+            if (!staffTypesList.value.length) loadStaffTypes(true)
+            if (!rotationServices.value.length) loadRotationServices()
+            return
+          }
           if (view === 'research_hub') {
             // Direct navigation — default to lines tab
             if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
+            // Load on-demand if background batch hasn't completed yet
+            if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) {
+              researchOps.loadAllResearch()
+            }
             return
           } else if (view === 'research_lines') {
             analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
             if (filters.line) researchOps.trialFilters.line = filters.line
+            if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) {
+              researchOps.loadAllResearch()
+            }
             return
           } else if (view === 'clinical_trials') {
             analyticsOps.researchHubTab.value = 'trials'
             currentView.value = 'research_hub'
             if (filters.line) researchOps.trialFilters.line = filters.line
+            if (!researchOps.clinicalTrials.value.length && !researchOps.researchLoading.value) {
+              researchOps.loadAllResearch()
+            }
             return
           } else if (view === 'innovation_projects') {
             analyticsOps.researchHubTab.value = 'projects'
             currentView.value = 'research_hub'
+            if (!researchOps.innovationProjects.value.length && !researchOps.researchLoading.value) {
+              researchOps.loadAllResearch()
+            }
             return
           }
         }
@@ -5013,12 +5864,12 @@ document.addEventListener('DOMContentLoaded', () => {
           currentView.value = 'research_hub'
         }
         const handleGlobalSearch = () => {
-          if (!globalSearchQuery.value.trim()) { ui.searchResultsOpen.value = false; return }
+          if (!ui.globalSearchQuery.value.trim()) { ui.searchResultsOpen.value = false; return }
           ui.searchResultsOpen.value = true
         }
 
         const globalSearchResults = Vue.computed(() => {
-          const q = (globalSearchQuery.value || '').toLowerCase().trim()
+          const q = (ui.globalSearchQuery.value || '').toLowerCase().trim()
           if (!q || q.length < 2) return {}
           const results = {}
           // Staff
@@ -5027,7 +5878,7 @@ document.addEventListener('DOMContentLoaded', () => {
             (s.professional_email || '').toLowerCase().includes(q) ||
             (s.staff_id || '').toLowerCase().includes(q)
           ).slice(0, 4)
-          if (staff.length) results.staff = staff.map(s => ({ id: s.id, name: s.full_name, meta: rotationOps.formatStaffType ? rotationOps.formatStaffType(s.staff_type) : s.staff_type, icon: 'fa-user-md', action: () => { staffOps.viewStaffDetails(s); ui.searchResultsOpen.value = false; globalSearchQuery.value = '' } }))
+          if (staff.length) results.staff = staff.map(s => ({ id: s.id, name: s.full_name, meta: rotationOps.formatStaffType ? rotationOps.formatStaffType(s.staff_type) : s.staff_type, icon: 'fa-user-md', action: () => { staffOps.viewStaffDetails(s); ui.searchResultsOpen.value = false; ui.globalSearchQuery.value = '' } }))
           // Rotations
           const rots = (rotationOps.rotations.value || []).filter(r => {
             const rn = (staffOps.medicalStaff.value || []).find(s => s.id === r.resident_id)
@@ -5035,22 +5886,129 @@ document.addEventListener('DOMContentLoaded', () => {
           }).slice(0, 3)
           if (rots.length) results.rotations = rots.map(r => {
             const rn = (staffOps.medicalStaff.value || []).find(s => s.id === r.resident_id)
-            return { id: r.id, name: rn ? rn.full_name : 'Resident', meta: `Rotation · ${r.rotation_status}`, icon: 'fa-calendar-check', action: () => { switchView('resident_rotations'); ui.searchResultsOpen.value = false; globalSearchQuery.value = '' } }
+            return { id: r.id, name: rn ? rn.full_name : 'Resident', meta: `Rotation · ${r.rotation_status}`, icon: 'fa-calendar-check', action: () => { switchView('resident_rotations'); ui.searchResultsOpen.value = false; ui.globalSearchQuery.value = '' } }
           })
           // Research lines
           const lines = (researchOps.researchLines.value || []).filter(l =>
-            (l.name || '').toLowerCase().includes(q) ||
+            (l.research_line_name || l.name || '').toLowerCase().includes(q) ||
             (l.description || '').toLowerCase().includes(q)
           ).slice(0, 3)
-          if (lines.length) results.research = lines.map(l => ({ id: l.id, name: l.name, meta: `Research Line`, icon: 'fa-flask', action: () => { switchView('research_lines'); ui.searchResultsOpen.value = false; globalSearchQuery.value = '' } }))
+          if (lines.length) results.research = lines.map(l => ({ id: l.id, name: l.research_line_name || l.name, meta: `Research Line`, icon: 'fa-flask', action: () => { switchView('research_lines'); ui.searchResultsOpen.value = false; ui.globalSearchQuery.value = '' } }))
           return results
         })
 
-        const clearSearch = () => { globalSearchQuery.value = ''; ui.searchResultsOpen.value = false }
+        const clearSearch = () => { ui.globalSearchQuery.value = ''; ui.searchResultsOpen.value = false }
+
+        // ── Academic Degrees Management ────────────────────────────────────────
+        const academicDegreeModal = reactive({
+          show: false, mode: 'add',
+          form: { id: null, name: '', abbreviation: '', display_order: 0, is_active: true }
+        })
+        const openAddAcademicDegree = () => {
+          Object.assign(academicDegreeModal.form, { id: null, name: '', abbreviation: '', display_order: (academicDegrees.value.length + 1) * 10, is_active: true })
+          academicDegreeModal.mode = 'add'
+          academicDegreeModal.show = true
+        }
+        const openEditAcademicDegree = (deg) => {
+          Object.assign(academicDegreeModal.form, { id: deg.id, name: deg.name, abbreviation: deg.abbreviation || '', display_order: deg.display_order || 0, is_active: deg.is_active !== false })
+          academicDegreeModal.mode = 'edit'
+          academicDegreeModal.show = true
+        }
+        const saveAcademicDegree = async () => {
+          const f = academicDegreeModal.form
+          if (!f.name?.trim()) { showToast('Validation', 'Degree name is required', 'warn'); return }
+          try {
+            if (academicDegreeModal.mode === 'add') {
+              const created = await API.createAcademicDegree({ name: f.name.trim(), abbreviation: f.abbreviation?.trim() || null, display_order: f.display_order, is_active: f.is_active })
+              academicDegrees.value.push(created)
+              showToast('Success', 'Academic degree added', 'success')
+            } else {
+              const updated = await API.updateAcademicDegree(f.id, { name: f.name.trim(), abbreviation: f.abbreviation?.trim() || null, display_order: f.display_order, is_active: f.is_active })
+              const idx = academicDegrees.value.findIndex(d => d.id === f.id)
+              if (idx !== -1) academicDegrees.value[idx] = updated
+              showToast('Success', 'Academic degree updated', 'success')
+            }
+            academicDegreeModal.show = false
+            await loadAcademicDegrees()
+          } catch (e) { showToast('Error', e?.message || 'Failed to save degree', 'error') }
+        }
+        const deleteAcademicDegree = (deg) => {
+          showConfirmation({
+            title: 'Delete Degree', message: `Delete "${deg.name}"? This cannot be undone.`,
+            confirmText: 'Delete', confirmButtonClass: 'btn-danger',
+            onConfirm: async () => {
+              try {
+                await API.deleteAcademicDegree(deg.id)
+                academicDegrees.value = academicDegrees.value.filter(d => d.id !== deg.id)
+                showToast('Success', 'Degree deleted', 'success')
+              } catch (e) { showToast('Error', e?.message || 'Failed to delete', 'error') }
+            }
+          })
+        }
 
         // ── Staff Types Management ─────────────────────────────────────────────
         // Loads dynamic staff types from DB and builds the reactive lookup map
+        // ── Rotation Services ────────────────────────────────────────────
+        const rotationServicesLoading = ref(false)
+        const rotationServiceModal = reactive({
+          show: false, mode: 'add',
+          form: { name: '', service_type: 'rotation_service', contact_name: '', contact_email: '', contact_phone: '' }
+        })
+
+        const loadRotationServices = async () => {
+          rotationServicesLoading.value = true
+          try { rotationServices.value = await API.getRotationServices() }
+          catch { console.error('Failed to load rotation services') }
+          finally { rotationServicesLoading.value = false }
+        }
+
+        const openAddRotationService = () => {
+          rotationServiceModal.mode = 'add'
+          Object.assign(rotationServiceModal.form, { name: '', service_type: 'rotation_service', contact_name: '', contact_email: '', contact_phone: '' })
+          rotationServiceModal.show = true
+        }
+
+        const openEditRotationService = (svc) => {
+          rotationServiceModal.mode = 'edit'
+          Object.assign(rotationServiceModal.form, { id: svc.id, name: svc.name, service_type: svc.service_type, contact_name: svc.contact_name || '', contact_email: svc.contact_email || '', contact_phone: svc.contact_phone || '' })
+          rotationServiceModal.show = true
+        }
+
+        const saveRotationService = async () => {
+          const f = rotationServiceModal.form
+          if (!f.name?.trim()) { showToast('Validation', 'Service name is required', 'warn'); return }
+          try {
+            if (rotationServiceModal.mode === 'add') {
+              await API.createRotationService(f)
+              showToast('Success', 'Rotation service added', 'success')
+            } else {
+              await API.updateRotationService(f.id, f)
+              showToast('Success', 'Rotation service updated', 'success')
+            }
+            rotationServiceModal.show = false
+            await loadRotationServices()
+          } catch (e) { showToast('Error', e?.message || 'Failed to save', 'error') }
+        }
+
+        const deleteRotationService = async (svc) => {
+          showConfirmation({
+            title: 'Remove Rotation Service',
+            message: `Remove "${svc.name}" from the rotation services list?`,
+            icon: 'fa-trash', confirmButtonText: 'Remove', confirmButtonClass: 'btn-danger',
+            details: 'If residents are linked to this service, it will be deactivated instead of deleted.',
+            onConfirm: async () => {
+              try {
+                await API.deleteRotationService(svc.id)
+                await loadRotationServices()
+                showToast('Done', 'Rotation service removed', 'success')
+              } catch (e) { showToast('Error', e?.message || 'Failed to remove', 'error') }
+            }
+          })
+        }
+
+        const staffTypesLoading = ref(false) // FIX Bug6: dedicated loading flag for Settings skeleton
         const loadStaffTypes = async (includeInactive = false) => {
+          staffTypesLoading.value = true
           try {
             const raw = await API.getStaffTypes(includeInactive)
             staffTypesList.value = raw
@@ -5059,6 +6017,7 @@ document.addEventListener('DOMContentLoaded', () => {
             raw.forEach(t => { map[t.type_key] = t })
             staffTypeMap.value = map
           } catch { console.error('Failed to load staff types') }
+          finally { staffTypesLoading.value = false }
         }
 
         // ── Academic Degrees ────────────────────────────────────────────────
@@ -5076,9 +6035,12 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
 
         const loadAcademicDegrees = async () => {
-          // Skip network call — /api/academic-degrees not yet on production backend
-          // Will be re-enabled once backend v5.3 is deployed
-          academicDegrees.value = ACADEMIC_DEGREES_FALLBACK
+          try {
+            const data = await API.getAcademicDegrees()
+            academicDegrees.value = data.length ? data : ACADEMIC_DEGREES_FALLBACK
+          } catch {
+            academicDegrees.value = ACADEMIC_DEGREES_FALLBACK
+          }
         }
 
         // Staff Types manager modal (lives in System Settings)
@@ -5144,7 +6106,38 @@ document.addEventListener('DOMContentLoaded', () => {
           try { fetch(`${CONFIG.API_BASE_URL}/health`).catch(() => {}) } catch {}
         }
 
-        const loadAllData = async () => {
+        // ── Core system settings ────────────────────────────────────────────
+        const activeSvcId = ref(null)
+        const systemSettings = reactive({
+          hospital_name: 'NeumoCare Hospital',
+          max_residents_per_unit: 10,
+          default_rotation_duration: 12,
+          enable_audit_logging: true,
+          notifications_enabled: true,
+          absence_notifications: true,
+          maintenance_mode: false
+        })
+        const loadSystemSettings = async () => {
+          try {
+            const data = await API.request('/api/settings')
+            if (data && typeof data === 'object') Object.assign(systemSettings, data)
+          } catch { /* silently use defaults */ }
+        }
+        const saveSystemSettings = async () => {
+          try {
+            await API.request('/api/settings', { method: 'PUT', body: { ...systemSettings } })
+            showToast('Saved', 'System settings updated', 'success')
+          } catch (e) { showToast('Error', e?.message || 'Failed to save settings', 'error') }
+        }
+
+        const getUnitFillColor = (unit, rotations) => {
+        const cur = (rotations?.value || rotations || []).filter(r => r.training_unit_id === unit.id && r.rotation_status === 'active').length
+        const max = unit.maximum_residents || 1
+        const pct = cur / max
+        return pct >= 1 ? '#e24b4a' : pct >= 0.75 ? '#ef9f27' : cur === 0 ? 'var(--nm-surface3)' : '#10b981'
+      }
+
+      const loadAllData = async () => {
           loading.value = true
           try {
             // Wake Railway immediately — runs in background while we set up
@@ -5157,6 +6150,8 @@ document.addEventListener('DOMContentLoaded', () => {
             await Promise.all([
               loadStaffTypes(),
               loadAcademicDegrees(),
+              loadRotationServices(),
+              loadSystemSettings(),
               staffOps.loadMedicalStaff(),
               loadDepartments(),
               loadTrainingUnits()
@@ -5179,7 +6174,7 @@ document.addEventListener('DOMContentLoaded', () => {
               liveOps.loadActiveMedicalStaff(),
               researchOps.loadResearchLines(),
               loadSystemStats(),
-              loadNews()
+              loadNews() // FIX Bug7: kept here but newsLoaded flag prevents duplicate call if user already navigated to news
             ]).then(() => updateDashboardStats())
 
             // Low priority — research analytics
@@ -5194,6 +6189,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         watch([medicalStaff, rotations, trainingUnits, absences], () => updateDashboardStats(), { deep: true })
+
+        // ── isOnline — declared at root scope so template can access it ──
+        const isOnline = ref(navigator.onLine)
+        // Update when API layer fires events
+        window.addEventListener('neumax:online',  () => { isOnline.value = true  })
+        window.addEventListener('neumax:offline', () => { isOnline.value = false })
 
         onMounted(() => {
           const token = localStorage.getItem(CONFIG.TOKEN_KEY)
@@ -5221,6 +6222,29 @@ document.addEventListener('DOMContentLoaded', () => {
           } else { currentView.value = 'login' }
 
           // Session expiry — redirect to login cleanly from anywhere in the app
+          // ── Online / offline / maintenance ──
+          window.addEventListener('neumax:online', () => {
+            isOnline.value = true
+            showToast('Connection restored', 'Back online — syncing…', 'success', 3000)
+            if (currentUser.value) {
+              try { staffOps.loadMedicalStaff(true); rotationOps.loadRotations(true) } catch {}
+            }
+          })
+          window.addEventListener('neumax:offline', () => {
+            isOnline.value = false
+            showToast('No connection', 'You are offline. Changes cannot be saved until you reconnect.', 'warning', 0)
+          })
+          window.addEventListener('neumax:maintenance', () => {
+            showToast('System Maintenance', 'The system is temporarily offline for maintenance.', 'warning', 0)
+          })
+
+          // ── Dashboard auto-refresh every 5 min ──
+          const dashRefreshInterval = setInterval(() => {
+            if (currentUser.value && currentView.value === 'dashboard') {
+              try { dashOps.loadSystemStats() } catch {}
+            }
+          }, 300000)
+
           window.addEventListener('neumax:session-expired', () => {
             currentUser.value = null
             currentView.value = 'login'
@@ -5238,6 +6262,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Session Expired', 'Your session has expired. Please log in again.', 'warning', 6000)
           })
 
+          window.addEventListener('neumax:maintenance', () => { ui.isMaintenanceMode.value = true })
+
           const statusInterval = setInterval(() => { if (currentUser.value && !liveOps.isLoadingStatus.value) liveOps.loadClinicalStatus() }, 60000)
           const timeInterval = setInterval(() => { dashOps.currentTime.value = new Date() }, 60000)
 
@@ -5250,8 +6276,563 @@ document.addEventListener('DOMContentLoaded', () => {
             modals.forEach(m => { if (m.show) m.show = false })
           })
 
-          onUnmounted(() => { clearInterval(statusInterval); clearInterval(timeInterval); if (rotationCheckInterval) clearInterval(rotationCheckInterval) })
+          onUnmounted(() => { clearInterval(statusInterval); clearInterval(timeInterval); clearInterval(dashRefreshInterval); if (rotationCheckInterval) clearInterval(rotationCheckInterval) })
         })
+
+        // ── ⌘K Command Palette (defined here — full access to all refs) ──
+        const cmdQuery       = ref('')
+        const cmdSelectedIdx = ref(0)
+        watch(cmdQuery, () => { cmdSelectedIdx.value = 0 })
+
+        // ── GLOBAL PHYSICIAN POPOVER ──────────────────────────────────────────
+        const popover = Vue.reactive({ staff: null, visible: false })
+        let _popoverTimer = null
+
+        const showPopover = (staffObj, event) => {
+          if (!staffObj) return
+          clearTimeout(_popoverTimer)
+          _popoverTimer = setTimeout(() => {
+            popover.staff = staffObj
+            const el = document.getElementById('staffPopover')
+            if (!el) return
+            const rect = event.currentTarget?.getBoundingClientRect?.() || event.target?.getBoundingClientRect?.() || { top: event.clientY, left: event.clientX, width: 0, height: 0 }
+            const vpW = window.innerWidth, vpH = window.innerHeight
+            const pw = 300, ph = 360  // approx popover size
+            let left = rect.left + rect.width / 2 - pw / 2
+            let top  = rect.bottom + 8
+            if (left + pw > vpW - 12) left = vpW - pw - 12
+            if (left < 12) left = 12
+            if (top + ph > vpH - 12) top = rect.top - ph - 8
+            el.style.left = left + 'px'
+            el.style.top  = top  + 'px'
+            el.classList.add('visible')
+            popover.visible = true
+          }, 220)
+        }
+
+        const hidePopover = () => {
+          clearTimeout(_popoverTimer)
+          const el = document.getElementById('staffPopover')
+          if (el) el.classList.remove('visible')
+          setTimeout(() => { popover.staff = null; popover.visible = false }, 200)
+        }
+
+        // Keep popover open when hovering over it
+        if (typeof document !== 'undefined') {
+          document.addEventListener('mouseover', (e) => {
+            const pop = document.getElementById('staffPopover')
+            if (pop && pop.contains(e.target)) return  // inside popover = stay
+            if (!e.target.closest('[data-popover-staff]')) hidePopover()
+          }, { passive: true })
+        }
+
+        // ── ABSENCE COVERAGE CALENDAR ─────────────────────────────────────────
+        const absenceCalendarOffset = Vue.ref(0) // months from now
+
+        const absenceMoveMonth = (delta) => { absenceCalendarOffset.value += delta }
+
+        const absenceCalendarTitle = Vue.computed(() => {
+          const d = new Date()
+          d.setMonth(d.getMonth() + absenceCalendarOffset.value)
+          return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+        })
+
+        const absenceCalendarCells = Vue.computed(() => {
+          const d = new Date()
+          d.setMonth(d.getMonth() + absenceCalendarOffset.value)
+          const year = d.getFullYear(), month = d.getMonth()
+          const firstDay = new Date(year, month, 1).getDay()  // 0=Sun
+          const startOffset = (firstDay === 0) ? 6 : firstDay - 1  // Mon-first
+          const daysInMonth  = new Date(year, month+1, 0).getDate()
+          const daysInPrev   = new Date(year, month, 0).getDate()
+          const cells = []
+          const today = new Date(); today.setHours(0,0,0,0)
+
+          // Fill prev month overflow
+          for (let i = startOffset; i > 0; i--) {
+            cells.push({ date: null, day: daysInPrev - i + 1, otherMonth: true, absences: [] })
+          }
+          // Fill current month
+          for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+            const cellDate = new Date(year, month, day)
+            const dayAbsences = (absences?.value || []).filter(a => {
+              if (!a.start_date || !a.end_date) return false
+              const s = new Date(a.start_date + 'T00:00:00')
+              const e = new Date(a.end_date + 'T23:59:59')
+              return cellDate >= s && cellDate <= e
+            })
+            const isToday = cellDate.getTime() === today.getTime()
+            // Coverage risk: multiple senior staff absent = risk
+            const seniorAbsent = dayAbsences.filter(a => {
+              const staff = medicalStaff.value.find(s => s.id === a.staff_member_id)
+              return staff && !isResidentType(staff.staff_type)
+            }).length
+            cells.push({
+              date: dateStr, day, otherMonth: false, isToday,
+              absences: dayAbsences,
+              riskLevel: seniorAbsent >= 2 ? 'gap' : seniorAbsent === 1 ? 'risk' : dayAbsences.length > 0 ? 'covered' : 'clear'
+            })
+          }
+          // Fill to complete grid (multiple of 7)
+          let next = 1
+          while (cells.length % 7 !== 0) {
+            cells.push({ date: null, day: next++, otherMonth: true, absences: [] })
+          }
+          return cells
+        })
+
+
+
+        const cmdItems = computed(() => {
+          const q = cmdQuery.value.toLowerCase().trim()
+          const views = [
+            { type:'view', id:'dashboard',         label:'Overview',       sub:'Dashboard'       },
+            { type:'view', id:'medical_staff',      label:'Medical Staff',  sub:'Clinical'        },
+            { type:'view', id:'oncall_schedule',    label:'On-call',        sub:'Clinical · live' },
+            { type:'view', id:'training_units',     label:'Clinical Units', sub:'Structure'       },
+            { type:'view', id:'resident_rotations', label:'Rotations',      sub:'Structure'       },
+            { type:'view', id:'staff_absence',      label:'Absence',        sub:'Administration'  },
+            { type:'view', id:'system_settings',    label:'Settings',       sub:'Administration'  },
+            { type:'view', id:'research_hub',       label:'Research Hub',   sub:'Research'        },
+            { type:'view', id:'news',               label:'News & Posts',   sub:'Research'        },
+          ]
+          const staffItems = !q ? [] : medicalStaff.value
+            .filter(s => s.full_name?.toLowerCase().includes(q))
+            .slice(0,5)
+            .map(s => ({ type:'staff', id:s.id, label:s.full_name, sub:formatStaffType(s.staff_type) || 'Staff member' }))
+          const unitItems = !q ? [] : trainingUnits.value
+            .filter(u => u.unit_name?.toLowerCase().includes(q))
+            .slice(0,3)
+            .map(u => ({ type:'unit', id:u.id, label:u.unit_name, sub:'Clinical unit' }))
+          // Action items — shown when query matches action keywords or staff name with action verb
+          const actionItems = []
+          const actionKeywords = ['add','new','log','create','assign','absence','rotation','callout','call-out','duty','guardia','aviso']
+          const hasActionWord = actionKeywords.some(k => q.includes(k))
+          if (q.includes('rotation') || q.includes('assign') || (hasActionWord && q.includes('rotat'))) {
+            actionItems.push({ type:'action', id:'add_rotation', label:'Add rotation', sub:'Assign a resident to a unit', icon:'fa-calendar-plus', fn: () => rotationOps.showAddRotationModal() })
+          }
+          if (q.includes('absence') || q.includes('ausencia') || (hasActionWord && q.includes('abs'))) {
+            actionItems.push({ type:'action', id:'add_absence', label:'Log absence', sub:'Record a new absence', icon:'fa-user-minus', fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.()) } })
+          }
+          if (q.includes('callout') || q.includes('call-out') || q.includes('aviso') || q.includes('guardia') || (hasActionWord && q.includes('call'))) {
+            actionItems.push({ type:'action', id:'log_callout', label:'Log call-out', sub:'Record an emergency duty call', icon:'fa-phone', fn: () => { switchView('oncall_schedule'); Vue.nextTick(() => { if (typeof openLogCalloutModal === 'function') openLogCalloutModal() }) } })
+          }
+          if (!q || q.includes('staff') || q.includes('medico') || q.includes('doctor') || (hasActionWord && (q.includes('new') || q.includes('add')))) {
+            if (q && hasActionWord) actionItems.push({ type:'action', id:'add_staff', label:'Add staff member', sub:'Register a new physician or resident', icon:'fa-user-plus', fn: () => { switchView('medical_staff'); Vue.nextTick(() => staffOps?.showAddMedicalStaffModal?.()) } })
+          }
+          // Staff action items — when query contains a staff name + action word
+          const staffActionItems = !q ? [] : medicalStaff.value
+            .filter(s => s.full_name?.toLowerCase().includes(q) && hasActionWord)
+            .slice(0,3)
+            .flatMap(s => [
+              { type:'action', id:'rot_'+s.id, label:'Assign rotation — ' + (s.full_name.split(' ').slice(-1)[0]), sub:'Open rotation modal pre-filled', fn: () => rotationOps.showAddRotationModal(s) },
+              { type:'action', id:'abs_'+s.id, label:'Log absence — ' + (s.full_name.split(' ').slice(-1)[0]),    sub:'Open absence modal pre-filled',  fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.(s)) } },
+            ])
+          const viewItems = views.filter(v => !q || v.label.toLowerCase().includes(q) || v.sub.toLowerCase().includes(q))
+          return [...actionItems, ...staffActionItems, ...staffItems, ...unitItems, ...viewItems].slice(0, 12)
+        })
+
+        const executeCmdItem = (item) => {
+          if (!item) return
+          ui.cmdPaletteOpen.value = false
+          cmdQuery.value = ''
+          if (item.type === 'action' && item.fn) { item.fn(); return }
+          if (item.type === 'view')  switchView(item.id)
+          else if (item.type === 'unit')  switchView('training_units')
+          else if (item.type === 'staff') switchView('medical_staff')
+        }
+
+        // Focus cmd input whenever palette opens
+        watch(() => ui.cmdPaletteOpen.value, (open) => {
+          if (open) {
+            Vue.nextTick(() => {
+              const inp = document.querySelector('.cmd-input-row input')
+              if (inp) inp.focus()
+            })
+          }
+        })
+
+        // Arrow key navigation for palette (needs cmdItems in scope)
+        window.addEventListener('keydown', (e) => {
+          if (!ui.cmdPaletteOpen.value) return
+          if (e.key === 'ArrowDown') { e.preventDefault(); cmdSelectedIdx.value = Math.min(cmdSelectedIdx.value + 1, Math.max(cmdItems.value.length - 1, 0)) }
+          if (e.key === 'ArrowUp')   { e.preventDefault(); cmdSelectedIdx.value = Math.max(cmdSelectedIdx.value - 1, 0) }
+          if (e.key === 'Enter') { e.preventDefault(); executeCmdItem(cmdItems.value[cmdSelectedIdx.value]) }
+        })
+
+
+
+      // ═══════════════════════════════════════════════════════════════
+      //  CLINICAL INTELLIGENCE LAYER — hover popovers + availability
+      // ═══════════════════════════════════════════════════════════════
+
+      // ── Hover popover system ──
+      const hoverPopover = Vue.reactive({
+        show: false, x: 0, y: 0,
+        staffId: null, data: null, entering: false,
+        _timer: null, _hideTimer: null
+      })
+
+      const getStaffPulseState = (staffId) => {
+        if (!staffId) return 'inactive'
+        const staff = medicalStaff.value.find(s => s.id === staffId)
+        if (!staff) return 'inactive'
+        if (staff.employment_status === 'on_leave') return 'leave'
+        const today = Utils.normalizeDate(new Date())
+        const onCallToday = onCallSchedule.value.some(s =>
+          Utils.normalizeDate(s.duty_date) === today && s.primary_physician_id === staffId
+        )
+        if (onCallToday) return 'oncall'
+        const rot = rotations.value.find(r => r.resident_id === staffId && r.rotation_status === 'active')
+        if (rot) {
+          const daysLeft = Math.ceil((new Date(rot.end_date) - new Date()) / 86400000)
+          if (daysLeft <= 7) return 'ending'
+        }
+        if (staff.employment_status === 'inactive') return 'inactive'
+        return 'available'
+      }
+
+      const getStaffNextEvent = (staffId) => {
+        if (!staffId) return null
+        const today = new Date(); today.setHours(0,0,0,0)
+        // Check current rotation ending soon
+        const rot = rotations.value.find(r =>
+          r.resident_id === staffId && r.rotation_status === 'active'
+        )
+        if (rot) {
+          const end = new Date(rot.end_date + 'T00:00:00')
+          const daysLeft = Math.ceil((end - today) / 86400000)
+          if (daysLeft <= 14) return { type: 'ending', label: `Rotation ends in ${daysLeft}d`, color: 'ending' }
+        }
+        // Check next on-call
+        const nextOC = onCallSchedule.value
+          .filter(s => s.primary_physician_id === staffId)
+          .filter(s => new Date(s.duty_date + 'T00:00:00') >= today)
+          .sort((a,b) => a.duty_date.localeCompare(b.duty_date))[0]
+        if (nextOC) {
+          const d = new Date(nextOC.duty_date + 'T00:00:00')
+          const diff = Math.ceil((d - today) / 86400000)
+          const label = diff === 0 ? 'On call today' : diff === 1 ? 'On call tomorrow' : `On call ${d.toLocaleDateString('en-GB', {weekday:'short',day:'numeric',month:'short'})}`
+          return { type: 'oncall', label, color: 'oncall' }
+        }
+        // Check upcoming leave
+        const nextLeave = absences.value
+          .filter(a => a.staff_member_id === staffId)
+          .filter(a => new Date(a.end_date + 'T00:00:00') >= today && a.current_status !== 'returned_to_duty')
+          .sort((a,b) => a.start_date.localeCompare(b.start_date))[0]
+        if (nextLeave) {
+          const start = new Date(nextLeave.start_date + 'T00:00:00')
+          const diff = Math.ceil((start - today) / 86400000)
+          const label = diff <= 0 ? 'On leave now' : `Leave in ${diff}d`
+          return { type: 'leave', label, color: 'leave' }
+        }
+        // Check scheduled rotation
+        const nextRot = rotations.value.find(r =>
+          r.resident_id === staffId && r.rotation_status === 'scheduled'
+        )
+        if (nextRot) {
+          const start = new Date(nextRot.start_date + 'T00:00:00')
+          const diff = Math.ceil((start - today) / 86400000)
+          if (diff <= 30) return { type: 'rotation', label: `Rotation starts in ${diff}d`, color: 'rotation' }
+        }
+        return null
+      }
+
+      const buildStaffPopoverData = (staffId) => {
+        const staff = medicalStaff.value.find(s => s.id === staffId)
+        if (!staff) return null
+        const pulse = getStaffPulseState(staffId)
+        const nextEvent = getStaffNextEvent(staffId)
+        const currentRot = rotations.value.find(r => r.resident_id === staffId && r.rotation_status === 'active')
+        const upcomingOC = onCallSchedule.value
+          .filter(s => s.primary_physician_id === staffId)
+          .filter(s => new Date(s.duty_date + 'T00:00:00') >= new Date())
+          .sort((a,b) => a.duty_date.localeCompare(b.duty_date))
+          .slice(0, 3)
+        const currentLeave = absences.value.find(a => {
+          const today = Utils.normalizeDate(new Date())
+          return a.staff_member_id === staffId &&
+            Utils.normalizeDate(a.start_date) <= today &&
+            Utils.normalizeDate(a.end_date) >= today
+        })
+        const certCount = 0 // loaded separately on drawer open
+        return { staff, pulse, nextEvent, currentRot, upcomingOC, currentLeave }
+      }
+
+      const showIntelPopover = (staffIdOrObj, event) => {
+        // Accept both a UUID string and a full staff object
+        const staffId = (typeof staffIdOrObj === 'object' && staffIdOrObj !== null)
+          ? (staffIdOrObj.id || staffIdOrObj)
+          : staffIdOrObj
+        if (hoverPopover._timer) clearTimeout(hoverPopover._timer)
+        if (hoverPopover._hideTimer) clearTimeout(hoverPopover._hideTimer)
+        hoverPopover._timer = setTimeout(() => {
+          const data = buildStaffPopoverData(staffId)
+          if (!data) return
+          const rect = event.currentTarget?.getBoundingClientRect?.() || { right: event.clientX, top: event.clientY, bottom: event.clientY }
+          hoverPopover.x = Math.min(rect.right + 10, window.innerWidth - 300)
+          hoverPopover.y = Math.min(rect.top - 10, window.innerHeight - 280)
+          hoverPopover.staffId = staffId
+          hoverPopover.data = data
+          hoverPopover.show = true
+          hoverPopover.entering = true
+          setTimeout(() => { hoverPopover.entering = false }, 200)
+        }, 280)
+      }
+
+      const hideIntelPopover = () => {
+        if (hoverPopover._timer) { clearTimeout(hoverPopover._timer); hoverPopover._timer = null }
+        hoverPopover._hideTimer = setTimeout(() => { hoverPopover.show = false }, 150)
+      }
+
+      // ── Absence calendar computed ──
+      const absCalendarMonth = Vue.ref(new Date().getMonth())
+      const absCalendarYear  = Vue.ref(new Date().getFullYear())
+
+      const absCalendarDays = Vue.computed(() => {
+        const year = absCalendarYear.value
+        const month = absCalendarMonth.value
+        const firstDay = new Date(year, month, 1)
+        const lastDay  = new Date(year, month + 1, 0)
+        const startDow = (firstDay.getDay() + 6) % 7 // Mon=0
+        const days = []
+        // Pad with previous month days
+        for (let i = startDow - 1; i >= 0; i--) {
+          const d = new Date(year, month, -i)
+          days.push({ date: Utils.normalizeDate(d), day: d.getDate(), otherMonth: true, absences: [], risk: 'low' })
+        }
+        // Current month days
+        for (let d = 1; d <= lastDay.getDate(); d++) {
+          const date = new Date(year, month, d)
+          const dateStr = Utils.normalizeDate(date)
+          const dayAbsences = absences.value.filter(a => {
+            const s = Utils.normalizeDate(a.start_date)
+            const e = Utils.normalizeDate(a.end_date)
+            return s <= dateStr && e >= dateStr &&
+              a.current_status !== 'returned_to_duty' && a.current_status !== 'cancelled'
+          })
+          // Risk: high if senior staff absent, medium if any
+          const seniorAbsent = dayAbsences.filter(a => {
+            const staff = medicalStaff.value.find(s => s.id === a.staff_member_id)
+            return staff && !isResidentType(staff.staff_type)
+          }).length
+          const risk = seniorAbsent >= 2 ? 'high' : seniorAbsent === 1 ? 'medium' : dayAbsences.length > 0 ? 'low' : 'none'
+          const isToday = dateStr === Utils.normalizeDate(new Date())
+          days.push({ date: dateStr, day: d, otherMonth: false, absences: dayAbsences, risk, isToday })
+        }
+        // Pad to complete grid (multiples of 7)
+        const remaining = (7 - (days.length % 7)) % 7
+        for (let d = 1; d <= remaining; d++) {
+          const date = new Date(year, month + 1, d)
+          days.push({ date: Utils.normalizeDate(date), day: d, otherMonth: true, absences: [], risk: 'low' })
+        }
+        return days
+      })
+
+      const absCalendarTitle = Vue.computed(() => {
+        return new Date(absCalendarYear.value, absCalendarMonth.value, 1)
+          .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      })
+
+      const absCalPrevMonth = () => {
+        if (absCalendarMonth.value === 0) { absCalendarMonth.value = 11; absCalendarYear.value-- }
+        else absCalendarMonth.value--
+      }
+      const absCalNextMonth = () => {
+        if (absCalendarMonth.value === 11) { absCalendarMonth.value = 0; absCalendarYear.value++ }
+        else absCalendarMonth.value++
+      }
+
+      // Absence view mode
+      const absenceViewMode = Vue.ref('table') // 'table' | 'calendar' | 'timeline'
+      const absTimelineHorizon  = Vue.ref(3)   // 1 | 3 | 6 months
+      const absTimelineOffset   = Vue.ref(0)   // months from today
+      const absTimelinePlanning = Vue.ref(false) // false=review, true=planning
+
+      // ── Absence colour map ───────────────────────────────────────────
+      const ABS_COLOURS = {
+        vacation:   { bg: '#0ea5e9', label: 'Vacation'   },
+        sick_leave: { bg: '#ef4444', label: 'Sick leave' },
+        conference: { bg: '#10b981', label: 'Conference' },
+        training:   { bg: '#8b5cf6', label: 'Training'   },
+        personal:   { bg: '#64748b', label: 'Personal'   },
+        other:      { bg: '#94a3b8', label: 'Other'      },
+      }
+
+      // ── Staff rows for timeline ──────────────────────────────────────
+      // Review: only staff with absences in horizon
+      // Planning: all active staff
+      const absTimelineStaff = Vue.computed(() => {
+        const months   = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        if (!months.length) return { attendings: [], residents: [] }
+        const hStart   = new Date(months[0].year, months[0].month, 1)
+        const hEnd     = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
+        const allStaff = (medicalStaff?.value || []).filter(s => s.employment_status !== 'inactive')
+
+        const hasAbsInHorizon = (staffId) =>
+          (absences?.value || []).some(a => {
+            const s = new Date(a.start_date + 'T00:00:00')
+            const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
+            return a.staff_member_id === staffId && s <= hEnd && e >= hStart
+          })
+
+        const eligible = absTimelinePlanning.value
+          ? allStaff
+          : allStaff.filter(s => hasAbsInHorizon(s.id))
+
+        const attendings = eligible.filter(s => !isResidentType(s.staff_type))
+        const residents  = eligible.filter(s =>  isResidentType(s.staff_type))
+        return { attendings, residents }
+      })
+
+      // ── Get absence bars for one staff member in the horizon ─────────
+      const getStaffAbsencesInHorizon = (staffId) => {
+        const months = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        if (!months.length) return []
+        const hStart = new Date(months[0].year, months[0].month, 1)
+        const hEnd   = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
+        return (absences?.value || []).filter(a => {
+          if (a.staff_member_id !== staffId) return false
+          const s = new Date(a.start_date + 'T00:00:00')
+          const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
+          return s <= hEnd && e >= hStart
+        })
+      }
+
+      // ── Bar style (reuses rotation logic exactly) ────────────────────
+      const getAbsenceBarStyle = (absence) => {
+        const months    = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        const n         = months.length
+        if (!n) return { display: 'none' }
+        const hStart    = new Date(months[0].year, months[0].month, 1)
+        const hEnd      = new Date(months[n-1].year, months[n-1].month + 1, 0)
+        const absStart  = new Date(absence.start_date + 'T00:00:00')
+        const absEnd    = new Date((absence.end_date || absence.start_date) + 'T00:00:00')
+        const cs        = absStart < hStart ? hStart : absStart
+        const ce        = absEnd   > hEnd   ? hEnd   : absEnd
+        if (cs > ce) return { display: 'none' }
+        const totalDays = months.reduce((s, m) => s + m.daysInMonth, 0)
+        const daysToStart = Math.round((cs - hStart) / 86400000)
+        const daysToEnd   = Math.round((ce - hStart) / 86400000) + 1
+        const leftPct   = (daysToStart / totalDays) * 100
+        const widthPct  = ((daysToEnd - daysToStart) / totalDays) * 100
+        const clippedL  = absStart < hStart
+        const clippedR  = absEnd   > hEnd
+        return {
+          left:         `calc(${leftPct.toFixed(2)}% + ${clippedL ? '0' : '3'}px)`,
+          width:        `calc(${widthPct.toFixed(2)}% - ${clippedL || clippedR ? '3' : '6'}px)`,
+          background:   ABS_COLOURS[absence.absence_reason]?.bg || '#94a3b8',
+          borderRadius: clippedL && clippedR ? '0' : clippedL ? '0 4px 4px 0' : clippedR ? '4px 0 0 4px' : '4px',
+        }
+      }
+
+      // ── Coverage lane: attendings NOT absent per month ───────────────
+      const absTimelineCoverage = Vue.computed(() => {
+        const months     = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        const totalAtt   = (medicalStaff?.value || []).filter(s =>
+          !isResidentType(s.staff_type) && s.employment_status === 'active').length
+        return months.map(m => {
+          const mStart = new Date(m.year, m.month, 1)
+          const mEnd   = new Date(m.year, m.month + 1, 0)
+          const mid    = new Date(m.year, m.month, 15)
+          const absentAtt = (absences?.value || []).filter(a => {
+            if (isResidentType((medicalStaff?.value || []).find(s => s.id === a.staff_member_id)?.staff_type)) return false
+            const s = new Date(a.start_date + 'T00:00:00')
+            const e = new Date((a.end_date || a.start_date) + 'T00:00:00')
+            return s <= mEnd && e >= mStart
+          }).length
+          const available = Math.max(0, totalAtt - absentAtt)
+          const pct       = totalAtt > 0 ? available / totalAtt : 1
+          const state     = pct >= 0.7 ? 'ok' : pct >= 0.4 ? 'warn' : 'critical'
+          return { ...m, available, total: totalAtt, pct, state }
+        })
+      })
+
+      // ── Today position as % across the horizon ───────────────────────
+      const absTimelineTodayPct = Vue.computed(() => {
+        const months = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        if (!months.length) return -1
+        const hStart     = new Date(months[0].year, months[0].month, 1)
+        const hEnd       = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
+        const today      = new Date()
+        if (today < hStart || today > hEnd) return -1
+        const totalDays  = months.reduce((s, m) => s + m.daysInMonth, 0)
+        const daysToday  = Math.round((today - hStart) / 86400000)
+        return (daysToday / totalDays) * 100
+      })
+
+      // ── Horizon label (reuse rotation logic) ────────────────────────
+      const getAbsHorizonLabel = () => {
+        const months = getHorizonMonths(absTimelineHorizon.value, absTimelineOffset.value)
+        if (!months.length) return ''
+        if (months.length === 1) return `${months[0].label} ${months[0].year}`
+        const first = months[0]; const last = months[months.length-1]
+        if (first.year === last.year)
+          return `${first.label} – ${last.label} ${last.year}`
+        return `${first.label} ${first.year} – ${last.label} ${last.year}`
+      }
+
+      // ── 30-day coverage strip for absence ──
+      const absCoverage30 = Vue.computed(() => {
+        const days = []
+        const total = medicalStaff.value.filter(s => s.employment_status === 'active').length
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(); d.setDate(d.getDate() + i); d.setHours(0,0,0,0)
+          const dateStr = Utils.normalizeDate(d)
+          const absent = absences.value.filter(a => {
+            const s = Utils.normalizeDate(a.start_date)
+            const e = Utils.normalizeDate(a.end_date)
+            return s <= dateStr && e >= dateStr &&
+              a.current_status !== 'returned_to_duty' && a.current_status !== 'cancelled'
+          }).length
+          const available = Math.max(0, total - absent)
+          const pct = total > 0 ? (available / total) : 1
+          const label = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })
+          days.push({ date: dateStr, absent, available, pct, label, isToday: i === 0 })
+        }
+        return days
+      })
+
+      // ── Unit 30-day timeline ──
+      const getUnit30DayTimeline = (unitId) => {
+        const unit = trainingUnits.value.find(u => u.id === unitId)
+        if (!unit) return []
+        const days = []
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(); d.setDate(d.getDate() + i)
+          const dateStr = Utils.normalizeDate(d)
+          const active = rotations.value.filter(r =>
+            r.training_unit_id === unitId &&
+            ['active','scheduled'].includes(r.rotation_status) &&
+            Utils.normalizeDate(r.start_date) <= dateStr &&
+            Utils.normalizeDate(r.end_date) >= dateStr
+          ).length
+          const full = active >= (unit.maximum_residents || 1)
+          const isToday = i === 0
+          days.push({ active, full, isToday })
+        }
+        return days
+      }
+
+      // ── Dept pulse bar stats ──
+      const deptPulseStats = Vue.computed(() => {
+        const today = Utils.normalizeDate(new Date())
+        const active = medicalStaff.value.filter(s => s.employment_status === 'active').length
+        const onLeave = absences.value.filter(a => {
+          const s = Utils.normalizeDate(a.start_date)
+          const e = Utils.normalizeDate(a.end_date)
+          return s <= today && e >= today && a.current_status !== 'returned_to_duty'
+        }).length
+        const onCallToday = [...new Set(
+          onCallSchedule.value
+            .filter(s => Utils.normalizeDate(s.duty_date) === today)
+            .map(s => s.primary_physician_id)
+        )].length
+        const rotationCount = rotations.value.filter(r => r.rotation_status === 'active').length
+        return { active, onLeave, onCallToday, rotationCount }
+      })
+
 
         return {
           // Existing returns
@@ -5270,6 +6851,7 @@ document.addEventListener('DOMContentLoaded', () => {
           formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed, getResidentCategoryIcon: Utils.getResidentCategoryIcon,
           getResidentCategoryTooltip: Utils.getResidentCategoryTooltip, getRoleInfo: Utils.getRoleInfo, getStaffRoles: Utils.getStaffRoles,
           getDaysRemainingColor: Utils.getDaysRemainingColor, isToday,
+          normalizeDate: Utils.normalizeDate, formatDateShort: Utils.formatDateShort,
           departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
           filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
@@ -5277,7 +6859,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deptPanel, openDeptPanel, closeDeptPanel,
           deptPanelAttending, deptPanelResidents, deptPanelUnits, deptPanelRotations,
           getUnitSupervisorName, rotDaysLeft,
-          trainingUnits, trainingUnitFilters, trainingUnitModal, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
+          trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
           getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
         trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
@@ -5292,14 +6874,25 @@ document.addEventListener('DOMContentLoaded', () => {
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
           ...liveOps,
           ...researchOps,
+          researchLoading: researchOps.researchLoading,
           saveResearchLine: () => researchOps.saveResearchLine(saving),
           saveClinicalTrial: () => researchOps.saveClinicalTrial(saving),
           saveInnovationProject: () => researchOps.saveInnovationProject(saving),
           ...analyticsOps,
+          loadResearchDashboard, // override with wired wrapper that passes research data refs
           ...dashOps,
           handleLogin, handleLogout,
-          switchView, situationItems, dailyBriefing, toggleStatsSidebar, handleGlobalSearch, globalSearchResults, clearSearch,
-          newsPosts, newsLoading, newsModal, newsFilters, filteredNews,
+          switchView, situationItems, dailyBriefing, systemSummary, toggleStatsSidebar,
+          popover, showPopover, hidePopover,
+          absenceCalendarOffset, absenceCalendarCells, absenceCalendarTitle, absenceMoveMonth,
+          hoverPopover, showIntelPopover, hideIntelPopover,
+          getStaffPulseState, getStaffNextEvent,
+          absCalendarDays, absCalendarTitle, absCalendarMonth, absCalendarYear,
+          absCalPrevMonth, absCalNextMonth, absenceViewMode, absTimelineHorizon, absTimelineOffset, absTimelinePlanning, absTimelineStaff, getStaffAbsencesInHorizon, getAbsenceBarStyle, absTimelineCoverage, absTimelineTodayPct, getAbsHorizonLabel, ABS_COLOURS,
+          absCoverage30, getUnit30DayTimeline, deptPulseStats, handleGlobalSearch, globalSearchResults, clearSearch, isOnline,
+          getPhaseColor: (p) => Utils.getPhaseColor(p),
+          getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates,
+          newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
           newsWordCount, newsWordLimit,
           loadNews, showAddNewsModal, editNews, saveNews,
           publishNews, archiveNews, deleteNews, toggleNewsPublic,
@@ -5311,8 +6904,12 @@ document.addEventListener('DOMContentLoaded', () => {
           portfolioKPIs:     researchOps.portfolioKPIs,
           getLineAccent:     getLineAccentGlobal,
 
+          systemSettings, saveSystemSettings, loadSystemSettings, activeSvcId,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
-          staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
+          staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
+          rotationServices, rotationServicesLoading, rotationServiceModal,
+          loadRotationServices, openAddRotationService, openEditRotationService, saveRotationService, deleteRotationService,
+          academicDegreeModal, openAddAcademicDegree, openEditAcademicDegree, saveAcademicDegree, deleteAcademicDegree,
           searchResultsOpen: ui.searchResultsOpen,
           sortState, sortBy, sortIcon, pagination,
           goToPage: (view, page) => {
@@ -5343,12 +6940,71 @@ document.addEventListener('DOMContentLoaded', () => {
           getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
           getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
           getCurrentRotationSupervisor, hasProfessionalCredentials,
+          getRotationServiceName,
+
+          // ── Inline handler methods (extracted from templates — Vue doesn't allow const/if inline) ──
+          // ── view resident from rotation row (lines 1928, 6365) ──
+          openResidentProfile: (residentId) => {
+            const s = medicalStaff.value.find(x => x.id === residentId)
+            if (s) staffOps.viewStaffDetails(s)
+          },
+          // ── toggle PI/CoI investigator role on staff form (line 4913) ──
+          toggleInvestigadorRole: () => {
+            const f = staffOps.medicalStaffModal.form
+            const isOn = f.can_be_pi || f.can_be_coi
+            f.can_be_pi = !isOn
+            f.can_be_coi = !isOn
+            if (isOn) {
+              f._investigadorLines = []
+              f.is_research_coordinator = false
+              f._coordLineId = null
+            }
+          },
+          // ── toggle a research line on the investigador list (line 4942) ──
+          toggleInvestigadorLine: (lineId) => {
+            const f = staffOps.medicalStaffModal.form
+            const lines = f._investigadorLines || []
+            const idx = lines.indexOf(lineId)
+            if (idx > -1) lines.splice(idx, 1)
+            else lines.push(lineId)
+            f._investigadorLines = [...lines]
+          },
+
+          onAddHospitalInline: async () => {
+            const h = await staffOps.addHospitalInline(
+              staffOps.medicalStaffModal._newHospitalName,
+              staffOps.medicalStaffModal._newHospitalNetwork
+            )
+            if (h) {
+              staffOps.medicalStaffModal.form.hospital_id = h.id
+              staffOps.medicalStaffModal.form._networkHint = h.parent_complex
+              staffOps.medicalStaffModal._addingHospital = false
+              staffOps.medicalStaffModal._newHospitalName = ''
+            }
+          },
+          onRotationServiceChange: () => {
+            const id = staffOps.medicalStaffModal.form.home_department_id
+            const svc = rotationServices.value.find(s => s.id === id)
+            if (!svc) return
+            const f = staffOps.medicalStaffModal.form
+            if (!f.external_contact_name  && svc.contact_name)  f.external_contact_name  = svc.contact_name
+            if (!f.external_contact_email && svc.contact_email) f.external_contact_email = svc.contact_email
+            if (!f.external_contact_phone && svc.contact_phone) f.external_contact_phone = svc.contact_phone
+          },
+          onUnitNameInput: () => {
+            if (trainingUnitModal.mode === 'add') {
+              trainingUnitModal.form.unit_code = trainingUnitModal.form.unit_name
+                .split(/\s+/).map(w => w[0] || '').join('').toUpperCase().slice(0, 6)
+            }
+          },
+
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
           formatRotationStatus, getUserRoleDisplay, formatAudience, formatStudyStatus,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
           showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword,
           normalizeDate: (d) => Utils.normalizeDate(d),
           formatDate: (d) => Utils.formatDate(d),
+          formatDrName: (n) => Utils.formatDrName(n),
           formatNewsDate: (d) => Utils.formatNewsDate(d),
           formatDateShort: (d) => Utils.formatDateShort(d),
           formatDatePlusDays: (d, n) => Utils.formatDatePlusDays(d, n),
@@ -5359,7 +7015,7 @@ document.addEventListener('DOMContentLoaded', () => {
           formatTimeAgo: (d) => Utils.formatRelativeTime(d),
           getInitials: (n) => Utils.getInitials(n),
           getTomorrow: () => Utils.getTomorrow(),
-          getStaffTypeIcon, getAbsenceReasonIcon, calculateCapacityPercent,
+          getStaffTypeIcon, getAbsenceReasonIcon, calculateCapacityPercent, getUnitFillColor,
           getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
           getPreviewStatusClass, getPreviewStatusText, updatePreview, requestFullDossier,
           getPhaseColor: Utils.getPhaseColor, getPartnerTypeColor: Utils.getPartnerTypeColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatPercentage: Utils.formatPercentage,
@@ -5399,7 +7055,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // NEW: Compact view properties - now coming from composables
           rotationView,
-          onCallView,
+          onCallView, oncallTab,
           residentsWithRotations: rotationOps.residentsWithRotations,
           groupedOnCallSchedules: onCallOps.groupedOnCallSchedules,
           staffWithOnCallOrbs: onCallOps.staffWithOnCallOrbs,
@@ -5418,7 +7074,14 @@ document.addEventListener('DOMContentLoaded', () => {
           isShiftActive: onCallOps.isShiftActive,
           viewRotationDetails: rotationOps.viewRotationDetails,
           residentGapWarnings: rotationOps.residentGapWarnings,
-        }
+          cmdQuery, cmdSelectedIdx, cmdItems, executeCmdItem,
+          isOffline: ui.isOffline, isMaintenanceMode: ui.isMaintenanceMode,
+          callouts, calloutsLoading, calloutSummary, calloutPeriod, calloutModal,
+          calloutFairnessAlert,
+          calloutKPIs, calloutDistribution, calloutFairnessAlert, calloutReasonLabels, calloutTimeTypes,
+          openLogCalloutModal, editCallout, saveCallout, deleteCallout,
+          loadCallouts, loadCalloutSummary,
+        }    
       }
     })
 
@@ -5434,6 +7097,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;
+    throw error;    
   }
 });
