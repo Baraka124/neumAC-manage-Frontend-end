@@ -4210,6 +4210,20 @@
 
 /* Rotation service cards — fully redesigned, see inline styles above */
 
+/* ── Settings view — consistent card spacing and section rhythm ── */
+#app .settings-section-divider {
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .12em; color: var(--nm-text3);
+  padding: 20px 2px 8px; display: flex; align-items: center; gap: 10px;
+}
+#app .settings-section-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--nm-border);
+}
+/* Card headers in settings — consistent icon size */
+#app .card-header .card-title svg { width: 14px !important; height: 14px !important; }
+
+
+
 /* ── ACADEMIC DEGREE CARDS ── */
 #app .nm-deg-card {
   display: flex; align-items: center; gap: 10px;
@@ -6195,9 +6209,15 @@ tr.staff-table-row .tbl-btn {
   border-radius: 9px;
   background: var(--nm-surface2);
   border: 1px solid var(--nm-border);
-  transition: border-color .12s;
+  transition: border-color .12s, box-shadow .12s;
+  cursor: pointer;
+  position: relative;
 }
-.nm-cov-chip:hover { border-color: rgba(0,179,179,.3); }
+.nm-cov-chip:hover {
+  border-color: rgba(0,179,179,.35);
+  box-shadow: 0 0 0 3px rgba(0,179,179,.06);
+}
+.nm-cov-chip:hover .stype-chip-actions { opacity: 1; }
 .nm-cov-dot {
   width: 10px; height: 10px;
   border-radius: 50%;
@@ -10241,15 +10261,23 @@ tr.staff-table-row .tbl-btn {
                 </div>            
 
                 <!-- ============ SYSTEM SETTINGS VIEW ============ -->
-                <!-- FIX Bug1: moved inside content-area; Bug3: permission key fixed; Bug6: uses staffTypesLoading -->
                 <div v-if="currentView === 'system_settings'">
+
+                    <!-- Page header -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 18px">
+                        <div>
+                            <div style="font-size:18px;font-weight:700;color:var(--nm-text1);line-height:1.2">Settings</div>
+                            <div style="font-size:12px;color:var(--nm-text3);margin-top:3px">Staff types, degrees, services, coverage areas &amp; system configuration</div>
+                        </div>
+                    </div>
+
+                    <!-- STAFF TYPES ══════════════════════════════════════════ -->
                     <div class="card mb-6">
                         <div class="card-header">
                             <div class="card-title">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/></svg>
-                                System Settings
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                Staff Types
                             </div>
-                            <!-- FIX Bug3: was 'staff_types' (undefined in PERMISSION_MATRIX) → now 'system_settings' -->
                             <button class="btn btn-primary btn-sm" @click="openAddStaffType" v-if="hasPermission('system_settings','create')">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add Staff Type
                             </button>
