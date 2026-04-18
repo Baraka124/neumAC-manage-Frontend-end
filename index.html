@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="style.css?v=7">
 
     <style id="neumac-layout">
-      /* ── Monthly rotation view ── */  
+      /* ── Monthly rotation view ── */
       .mv-view { display:flex; flex-direction:column; gap:0; width:100%; }
       .mv-nav  { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid #e3dfd6; background:#f5f4f0; flex-shrink:0; flex-wrap:wrap; }
       .mv-grid { display:grid; border-left:1px solid #e3dfd6; overflow-x:auto; width:100%; }
@@ -1019,7 +1019,28 @@
       #app .sm-label .hint { font-size:11px !important; color:var(--nm-text3) !important; }
       #app .sm-label .req  { color:var(--nm-teal) !important; }
 
-      /* ── Modal left panel (dark navy preview) — readable sizes ── */
+      /* ── Backup progressive disclosure ── */
+      #app .sm-add-backup-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-size: 12px; font-weight: 500; color: var(--nm-teal);
+        background: rgba(0,179,179,.07); border: 1px dashed rgba(0,179,179,.3);
+        border-radius: 7px; padding: 6px 12px; cursor: pointer;
+        transition: background .12s, border-color .12s;
+      }
+      #app .sm-add-backup-btn:hover { background: rgba(0,179,179,.12); border-color: rgba(0,179,179,.5); }
+      #app .sm-add-backup-hint {
+        font-size: 10px; color: var(--nm-text3); margin-left: 8px; font-style: italic;
+        vertical-align: middle;
+      }
+      #app .sm-backup-remove {
+        display: inline-flex; align-items: center; gap: 3px;
+        font-size: 10px; color: var(--nm-text3); background: transparent;
+        border: none; cursor: pointer; padding: 0; font-weight: 500;
+        transition: color .12s;
+      }
+      #app .sm-backup-remove:hover { color: #b91c1c; }
+
+
       /* These are the sm-left preview panels that show live data while you type */
       #app .sm-left { font-size:13px; }
       /* Section sub-headers in left panel */
@@ -6212,6 +6233,76 @@ tr.staff-table-row .tbl-btn {
 .rot-orb--float:hover {
   background: rgba(139,92,246,.25);
 }
+
+/* ── Orb tooltip — shows on hover ───────────────────────── */
+#app .rot-compact .rot-orb {
+  position: relative;
+  cursor: pointer;
+}
+#app .rot-orb-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 180px;
+  max-width: 240px;
+  background: #0f172a;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+}
+/* Arrow */
+#app .rot-orb-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #0f172a;
+}
+/* Flip upward if near bottom of track */
+#app .rot-orb:hover .rot-orb-tooltip {
+  display: block;
+}
+#app .rot-tt-unit {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,.9);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 6px;
+}
+#app .rot-tt-dates {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255,255,255,.65);
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#app .rot-tt-dates svg { flex-shrink: 0; opacity: .7; }
+#app .rot-tt-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid;
+  margin-top: 6px;
+}
+#app .rot-tt-tag--active    { background: rgba(16,185,129,.15); color: #34d399; border-color: rgba(16,185,129,.25); }
+#app .rot-tt-tag--scheduled { background: rgba(59,130,246,.15); color: #60a5fa; border-color: rgba(59,130,246,.25); }
+#app .rot-tt-tag--done      { background: rgba(255,255,255,.06); color: rgba(255,255,255,.4); border-color: rgba(255,255,255,.1); }
 
 /* ── Coverage area modal ─────────────────────────────────── */
 .nm-modal {
@@ -13241,16 +13332,21 @@ tr.staff-table-row .tbl-btn {
                         <!-- Coverage area field -->
                         <div class="sm-divider">Coverage</div>
                         <div class="sm-field">
-                            <div class="sm-label">Area</div>
-                            <select class="sm-select" v-model="onCallModal.form.coverage_area_id">
-                                <option value="">No specific area</option>
+                            <div class="sm-label">Area <span class="req" title="Recommended — helps enforce one primary per area per day">·</span></div>
+                            <select class="sm-select" v-model="onCallModal.form.coverage_area_id"
+                                    :class="{ 'is-invalid': !onCallModal.form.coverage_area_id && onCallModal.form.shift_type === 'primary_call' && onCallModal._areaWarned }">
+                                <option value="">— No specific area —</option>
                                 <option v-for="area in coverageAreas" :key="area.id" :value="area.id">
                                     {{ area.name }}
                                 </option>
                             </select>
-                            <small style="font-size:10px;color:var(--nm-text3);margin-top:3px;display:block"
-                                   v-if="coverageAreas.length === 0">
+                            <small v-if="coverageAreas.length === 0"
+                                   style="font-size:10px;color:var(--nm-text3);margin-top:3px;display:block">
                                 Add coverage areas in Settings → Coverage Areas
+                            </small>
+                            <small v-else-if="!onCallModal.form.coverage_area_id && onCallModal.form.shift_type === 'primary_call'"
+                                   style="font-size:10px;color:#d97706;margin-top:3px;display:block">
+                                ⚠ Without an area, only one primary call is allowed per day globally
                             </small>
                         </div>
 
@@ -13273,12 +13369,32 @@ tr.staff-table-row .tbl-btn {
                             </select>
                             <small v-if="fieldErrors.oncall?.primary_physician_id" class="error-text">{{ fieldErrors.oncall.primary_physician_id }}</small>
                         </div>
-                        <div class="sm-field">
-                            <div class="sm-label">Backup Physician</div>
+                        <!-- Backup: progressive disclosure — collapsed by default, expands on click -->
+                        <div class="sm-field" v-if="!onCallModal.showBackup">
+                            <button type="button" class="sm-add-backup-btn"
+                                    @click="onCallModal.showBackup = true">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                Assign backup
+                            </button>
+                            <span class="sm-add-backup-hint">Optional — in case of changes or emergencies</span>
+                        </div>
+                        <div class="sm-field" v-else>
+                            <div class="sm-label" style="display:flex;align-items:center;justify-content:space-between">
+                                <span>Backup Physician</span>
+                                <button type="button" class="sm-backup-remove"
+                                        @click="onCallModal.form.backup_physician_id = ''; onCallModal.showBackup = false"
+                                        title="Remove backup">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                                    Remove
+                                </button>
+                            </div>
                             <select class="sm-select" v-model="onCallModal.form.backup_physician_id">
-                                <option value="">None</option>
+                                <option value="">Select backup…</option>
                                 <option v-for="s in medicalStaff.filter(s=>s.employment_status==='active' && s.id!==onCallModal.form.primary_physician_id)" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                             </select>
+                            <small style="font-size:10px;color:var(--nm-text3);margin-top:3px;display:block">
+                                Available if primary is unreachable — can be updated any time
+                            </small>
                         </div>
                         <div class="sm-field">
                             <div class="sm-label">Shift Notes <span class="hint">— optional</span></div>
