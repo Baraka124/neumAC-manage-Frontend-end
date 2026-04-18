@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue   
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
 
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
@@ -2049,8 +2049,8 @@ document.addEventListener('DOMContentLoaded', () => {
           coverage_area_id: '',
           start_time: '15:00', end_time: '08:00',
           primary_physician_id: physician?.id || '',
-          backup_physician_id: '', coverage_notes: '',
-          schedule_id: `SCH-${Date.now().toString().slice(-6)}`
+          backup_physician_id: '', coverage_notes: ''
+          // schedule_id is generated server-side — do not set here
         })
         onCallModal.show = true
       }
@@ -2111,8 +2111,9 @@ document.addEventListener('DOMContentLoaded', () => {
             duty_date: Utils.normalizeDate(f.duty_date), shift_type: f.shift_type || 'primary_call',
             start_time: f.start_time || '15:00', end_time: f.end_time || '08:00',
             primary_physician_id: f.primary_physician_id, backup_physician_id: f.backup_physician_id || null,
-            coverage_notes: f.coverage_notes || '', schedule_id: f.schedule_id || Utils.generateId('SCH'),
+            coverage_notes: f.coverage_notes || '',
             coverage_area_id: f.coverage_area_id || null
+            // schedule_id omitted — backend always generates a collision-safe ID
           }
           if (onCallModal.mode === 'add') {
             const exists = await checkExistingSchedule(data.duty_date, data.shift_type, null, data.coverage_area_id);
