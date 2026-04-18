@@ -2344,11 +2344,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         })
 
-        // ── Inject gap rows for active areas with no coverage ─────────────
-        const activeAreas = (coverageAreas?.value || []).filter(a => a.is_active)
+        // ── Inject gap rows — only for areas marked as requiring daily coverage ──
+        const requiredAreas = (coverageAreas?.value || []).filter(a => a.is_active && a.requires_coverage)
         Object.keys(map).forEach(dateStr => {
           const day = map[dateStr]
-          activeAreas.forEach(area => {
+          requiredAreas.forEach(area => {
             const covered = day.areas.some(a => a.id === area.id)
             if (!covered) {
               day.areas.push({
@@ -2357,7 +2357,7 @@ document.addEventListener('DOMContentLoaded', () => {
               })
             }
           })
-          // Sort: covered areas first, gaps last
+          // Sort: covered areas first, gaps last; within each group alphabetical
           day.areas.sort((a, b) => {
             if (a._gap && !b._gap) return 1
             if (!a._gap && b._gap) return -1
@@ -2372,7 +2372,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const coverageAreas = ref([])
       const coverageAreaModal = reactive({
         show: false, mode: 'add',
-        form: { id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, display_order: 0 }
+        form: { id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, requires_coverage: false, display_order: 0 }
       })
 
       const loadCoverageAreas = async () => {
@@ -2393,7 +2393,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const showAddCoverageAreaModal = () => {
         coverageAreaModal.mode = 'add'
         Object.assign(coverageAreaModal.form, {
-          id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, display_order: 0
+          id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, requires_coverage: false, display_order: 0
         })
         coverageAreaModal.show = true
       }
@@ -2414,6 +2414,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const payload = {
             name: f.name.trim(), code: f.code.trim().toUpperCase(),
             color: f.color || '#00b3b3', applies_weekends: f.applies_weekends !== false,
+            requires_coverage: f.requires_coverage === true,
             display_order: parseInt(f.display_order) || 0
           }
           if (coverageAreaModal.mode === 'add') {
