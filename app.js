@@ -6138,7 +6138,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'Reclutando': 'Recruiting', 'Activo': 'Active',
           'Completado': 'Completed', 'En preparación': 'In preparation'
         }[s] || s)
-        const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'NeumoCare Dashboard'
+        const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'neumDesk Dashboard'
         const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
         const getSearchPlaceholder = () => 'Search...'
 
@@ -6582,7 +6582,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // ── Core system settings ────────────────────────────────────────────
         const activeSvcId = ref(null)
         const systemSettings = reactive({
-          hospital_name: 'NeumoCare Hospital',
+          hospital_name: 'neumDesk Hospital',
           max_residents_per_unit: 10,
           default_rotation_duration: 12,
           enable_audit_logging: true,
