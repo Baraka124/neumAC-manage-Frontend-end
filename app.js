@@ -7548,6 +7548,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
           // Existing returns
           loading, saving, currentUser, loginForm, loginLoading, hasPermission,
+          splashVisible, dbDrawer, openDbDrawer, closeDbDrawer,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
           ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
@@ -7809,6 +7810,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;    
+    throw error;      
   }
 });
