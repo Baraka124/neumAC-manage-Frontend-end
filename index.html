@@ -9317,7 +9317,7 @@ tr.staff-table-row .tbl-btn {
                                     <div style="font-size:11px;color:var(--nm-text3);font-style:italic">No area data recorded</div>
                                 </template>
                                 <template v-else>
-                                    <div v-for="area in Object.entries(callouts.filter(c=>c.coverage_area_id).reduce((acc,c)=>{ const name=coverageAreas.find(a=>a.id===c.coverage_area_id)?.name||c.coverage_area_id; acc[name]=(acc[name]||0)+1; return acc },{})).sort((a,b)=>b[1]-a[1]).slice(0,6)"
+                                    <div v-for="area in calloutsByArea"
                                          :key="area[0]" class="co-bar-row">
                                         <div class="co-bar-label" :title="area[0]">{{ area[0] }}</div>
                                         <div class="co-bar-track">
@@ -9331,7 +9331,7 @@ tr.staff-table-row .tbl-btn {
                             <!-- By reason -->
                             <div class="co-analytics-card">
                                 <div class="co-analytics-title">Calls by reason</div>
-                                <div v-for="reason in Object.entries(callouts.reduce((acc,c)=>{ acc[c.reason_category]=(acc[c.reason_category]||0)+1; return acc },{})).sort((a,b)=>b[1]-a[1]).slice(0,6)"
+                                <div v-for="reason in calloutsByReason"
                                      :key="reason[0]" class="co-bar-row">
                                     <div class="co-bar-label" :title="calloutReasonLabels[reason[0]]||reason[0]">{{ (calloutReasonLabels[reason[0]]||reason[0]).slice(0,20) }}</div>
                                     <div class="co-bar-track">
@@ -10562,12 +10562,7 @@ tr.staff-table-row .tbl-btn {
                                 </div>
                             </div>
                             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;" v-if="absCalendarDays.filter(d=>!d.otherMonth).length > 0">
-                                <div v-for="(stat, i) in [
-                                    { label: 'Total absences',   val: absCalendarDays.filter(d=>!d.otherMonth).reduce((s,d)=>s+d.absences.length,0), color: 'var(--nm-teal)',  icon: '📅' },
-                                    { label: 'High-risk days',   val: absCalendarDays.filter(d=>!d.otherMonth && d.risk==='high').length,            color: '#dc2626',         icon: '🔴' },
-                                    { label: 'Medium-risk days', val: absCalendarDays.filter(d=>!d.otherMonth && d.risk==='medium').length,          color: '#d97706',         icon: '🟡' },
-                                    { label: 'Clear days',       val: absCalendarDays.filter(d=>!d.otherMonth && d.risk==='none').length,            color: 'var(--nm-teal)',  icon: '✅' },
-                                ]" :key="i"
+                                <div v-for="(stat, i) in [ { label: 'Total absences',   val: absCalendarDays.filter(d=>!d.otherMonth).reduce((s,d)=>s+d.absences.length,0), color: 'var(--nm-teal)',  icon: '📅' }, { label: 'High-risk days',   val: absCalendarDays.filter(d=>!d.otherMonth && d.risk==='high').length,            color: '#dc2626',         icon: '🔴' }, { label: 'Medium-risk days', val: absCalendarDays.filter(d=>!d.otherMonth && d.risk==='medium').length,          color: '#d97706',         icon: '🟡' }, { label: 'Clear days',       val: absCalendarDays.filter(d=>!d.otherMonth && d.risk==='none').length,            color: 'var(--nm-teal)',  icon: '✅' }, ]" :key="i"
                                      style="background:var(--nm-surface);border:1px solid var(--nm-border);border-radius:12px;padding:14px 16px;text-align:center;transition:box-shadow .15s;cursor:default;"
                                      @mouseenter="$event.currentTarget.style.boxShadow='0 4px 16px rgba(0,0,0,.08)'"
                                      @mouseleave="$event.currentTarget.style.boxShadow=''">
@@ -10838,11 +10833,7 @@ tr.staff-table-row .tbl-btn {
 
                             <!-- Absences for this day -->
                             <div class="cov-absence-col">
-                                <template v-for="abs in absences.filter(a => {
-                                    if (['cancelled','returned_to_duty'].includes(a.current_status)) return false
-                                    const s = a.start_date; const e = a.end_date || a.start_date
-                                    return day.date >= s && day.date <= e
-                                })" :key="abs.id">
+                                <template v-for="abs in absences.filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && day.date >= a.start_date && day.date <= (a.end_date || a.start_date))" :key="abs.id">
                                     <div class="cov-abs-chip" :class="abs.coverage_arranged ? 'cov-abs-chip--covered' : 'cov-abs-chip--uncovered'">
                                         <span class="cov-abs-name">{{ formatDrName(allStaffLookup.find(s=>s.id===abs.staff_member_id)?.full_name || '—') }}</span>
                                         <span class="cov-abs-reason">{{ (abs.absence_reason||'').replace(/_/g,' ') }}</span>
@@ -10851,10 +10842,7 @@ tr.staff-table-row .tbl-btn {
                                         </span>
                                     </div>
                                 </template>
-                                <div v-if="!absences.filter(a => {
-                                    if (['cancelled','returned_to_duty'].includes(a.current_status)) return false
-                                    return day.date >= (a.start_date) && day.date <= (a.end_date || a.start_date)
-                                }).length" style="font-size:11px;color:var(--nm-text3)">—</div>
+                                <div v-if="!absences.filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && day.date >= a.start_date && day.date <= (a.end_date || a.start_date)).length" style="font-size:11px;color:var(--nm-text3)">—</div>
                             </div>
 
                         </div>
