@@ -1,9 +1,9 @@
-<!DOCTYPE html>         
+<!DOCTYPE html>       
 <html lang="en"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>neuMAC | Pulmonology Management System</title>
+    <title>neumDesk — by neuMAC</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
@@ -6321,7 +6321,121 @@ tr.staff-table-row .tbl-btn {
   border: 1px solid rgba(239,68,68,.18);
 }
 
-/* ── Rotation availability panel ────────────────────────── */
+/* ══ neumDesk splash screen ══════════════════════════════════ */
+.nd-splash {
+  position: fixed; inset: 0; z-index: 99999;
+  background: #07111f;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: all;
+}
+.nd-splash-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.nd-splash-mark {
+  width: 72px; height: 72px;
+  background: rgba(0,179,179,.1);
+  border: 1.5px solid rgba(0,179,179,.2);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  animation: nd-pulse 2s ease-in-out infinite;
+}
+@keyframes nd-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,179,179,.15); }
+  50%      { box-shadow: 0 0 0 12px rgba(0,179,179,.0); }
+}
+.nd-splash-n { width: 48px; height: 48px; }
+.nd-splash-wordmark {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 28px; font-weight: 700;
+  letter-spacing: -.5px;
+  background: linear-gradient(90deg, #48cae4, #00b3b3, #4d9aff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+.nd-splash-byline {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 500;
+  color: rgba(255,255,255,.3);
+  letter-spacing: .08em; text-transform: uppercase;
+  margin-bottom: 32px;
+}
+.nd-splash-bar {
+  width: 120px; height: 2px;
+  background: rgba(255,255,255,.08);
+  border-radius: 1px; overflow: hidden;
+}
+.nd-splash-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #48cae4, #00b3b3);
+  border-radius: 1px;
+  animation: nd-bar 1.6s ease-in-out forwards;
+}
+@keyframes nd-bar {
+  0%   { width: 0%; }
+  60%  { width: 80%; }
+  100% { width: 100%; }
+}
+.splash-fade-leave-active { transition: opacity .4s ease, transform .4s ease; }
+.splash-fade-leave-to     { opacity: 0; transform: scale(1.04); }
+
+/* ══ Dashboard expand button ═════════════════════════════════ */
+.db-panel-expand {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 500; color: var(--nm-text3);
+  background: transparent; border: none; cursor: pointer;
+  padding: 3px 6px; border-radius: 5px;
+  transition: color .12s, background .12s;
+}
+.db-panel-expand:hover { color: var(--nm-teal); background: rgba(0,179,179,.06); }
+
+/* ══ Dashboard expand drawer ═════════════════════════════════ */
+.db-drawer-backdrop {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(2px);
+}
+.db-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: min(480px, 95vw);
+  background: var(--nm-surface);
+  border-left: 1px solid var(--nm-border);
+  box-shadow: -8px 0 40px rgba(0,0,0,.18);
+  display: flex; flex-direction: column;
+  z-index: 2001;
+  overflow: hidden;
+}
+.db-drawer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--nm-border);
+  background: var(--nm-surface2);
+  flex-shrink: 0;
+}
+.db-drawer-title {
+  font-size: 14px; font-weight: 700; color: var(--nm-text1);
+  display: flex; align-items: center; gap: 8px;
+}
+.db-drawer-close {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: transparent; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--nm-text3); transition: background .12s, color .12s;
+}
+.db-drawer-close:hover { background: var(--nm-border); color: var(--nm-text1); }
+.db-drawer-body { flex: 1; overflow-y: auto; padding: 0; }
+.db-drawer-section {
+  padding: 10px 20px 4px;
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--nm-text3);
+  border-bottom: 1px solid var(--nm-border);
+}
+.db-drawer-enter-active { transition: transform .25s cubic-bezier(.2,.8,.3,1); }
+.db-drawer-leave-active { transition: transform .2s ease-in; }
+.db-drawer-enter-from, .db-drawer-leave-to { transform: translateX(100%); }
+
+
 .rot-avail-panel {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 9px 13px; border-radius: 8px; margin-bottom: 12px;
@@ -7034,6 +7148,28 @@ tr.staff-table-row .tbl-btn {
 </head>
 <body>
 <div id="app" v-cloak>
+
+    <!-- neumDesk splash screen — shows on first load, fades out after 1.8s -->
+    <transition name="splash-fade">
+        <div v-if="splashVisible" class="nd-splash">
+            <div class="nd-splash-inner">
+                <div class="nd-splash-mark">
+                    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" class="nd-splash-n">
+                        <defs>
+                            <linearGradient id="splashGrad" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#48cae4"/>
+                                <stop offset="100%" stop-color="#00b3b3"/>
+                            </linearGradient>
+                        </defs>
+                        <text x="4" y="36" font-family="'DM Sans', sans-serif" font-weight="800" font-size="40" fill="url(#splashGrad)">n</text>
+                    </svg>
+                </div>
+                <div class="nd-splash-wordmark">neumDesk</div>
+                <div class="nd-splash-byline">by neuMAC</div>
+                <div class="nd-splash-bar"><div class="nd-splash-bar-fill"></div></div>
+            </div>
+        </div>
+    </transition>
     <!-- Offline banner -->
     <div v-if="!isOnline" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#07111f;color:#fde68a;font-size:13px;font-weight:500;padding:8px 20px;display:flex;align-items:center;justify-content:center;gap:10px;border-bottom:1px solid rgba(253,230,138,.2);">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
@@ -7258,14 +7394,14 @@ tr.staff-table-row .tbl-btn {
             <!-- ── Header ── -->
             <div class="nmsb-head">
                 <div class="nmsb-logo">
-                    <svg v-if="!sidebarCollapsed" viewBox="0 0 108 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="neumAC" style="height:22px;width:auto">
-                        <defs><linearGradient id="sbng2" x1="0" y1="0" x2="108" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="45%" stop-color="#4d9aff"/><stop offset="100%" stop-color="#a5b4fc"/></linearGradient></defs>
+                    <svg v-if="!sidebarCollapsed" viewBox="0 0 148 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="neumDesk" style="height:22px;width:auto">
+                        <defs><linearGradient id="sbng2" x1="0" y1="0" x2="148" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="45%" stop-color="#00b3b3"/><stop offset="100%" stop-color="#4d9aff"/></linearGradient></defs>
                         <text x="1" y="23" font-family="'DM Sans', sans-serif" font-weight="600" font-size="24" fill="url(#sbng2)" letter-spacing="-0.5">neum</text>
-                        <text x="62" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#sbng2)" letter-spacing="-1">AC</text>
+                        <text x="62" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#sbng2)" letter-spacing="-1">Desk</text>
                     </svg>
-                    <svg v-if="sidebarCollapsed" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="n" style="height:22px;width:22px">
-                        <defs><linearGradient id="sbmono2" x1="0" y1="0" x2="30" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="100%" stop-color="#4d9aff"/></linearGradient></defs>
-                        <text x="3" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#sbmono2)">n</text>
+                    <svg v-if="sidebarCollapsed" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="nD" style="height:22px;width:22px">
+                        <defs><linearGradient id="sbmono2" x1="0" y1="0" x2="30" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="100%" stop-color="#00b3b3"/></linearGradient></defs>
+                        <text x="2" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#sbmono2)">n</text>
                     </svg>
                 </div>
                 <button class="nmsb-collapse" @click="sidebarCollapsed = !sidebarCollapsed"
@@ -7882,7 +8018,13 @@ tr.staff-table-row .tbl-btn {
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                                     On-call · Next 3 Days
                                 </span>
-                                <button class="db-panel-link" @click="switchView('oncall_schedule')">Full schedule <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                                <div style="display:flex;align-items:center;gap:6px">
+                                    <button class="db-panel-expand" @click="openDbDrawer('oncall')" title="Expand panel">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                                        Expand
+                                    </button>
+                                    <button class="db-panel-link" @click="switchView('oncall_schedule')">Full schedule <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                                </div>
                             </div>
                             <div v-if="loadingSchedule" class="db-panel-loading">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
@@ -7989,7 +8131,13 @@ tr.staff-table-row .tbl-btn {
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
                                         Rotations · This Week
                                     </span>
-                                    <button class="db-panel-link" @click="switchView('resident_rotations')">All rotations <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                                    <div style="display:flex;align-items:center;gap:6px">
+                                        <button class="db-panel-expand" @click="openDbDrawer('rotations')" title="Expand panel">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                                            Expand
+                                        </button>
+                                        <button class="db-panel-link" @click="switchView('resident_rotations')">All rotations <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                                    </div>
                                 </div>
                                 <template v-if="rotations.filter(r => (r.rotation_status==='active'||r.rotation_status==='scheduled') && getDaysRemaining(r.end_date||r.start_date) >= 0 && getDaysRemaining(r.end_date||r.start_date) <= 7).length > 0">
                                     <div v-for="rot in rotations.filter(r => r.rotation_status==='active' && getDaysRemaining(r.end_date) >= 0 && getDaysRemaining(r.end_date) <= 7).slice(0,2)" :key="'end-'+rot.id" class="db-rot-row">
@@ -16692,6 +16840,130 @@ tr.staff-table-row .tbl-btn {
           </div>
       </div>
 
+
+      <!-- ═══ DASHBOARD EXPAND DRAWER ══════════════════════════════════════════ -->
+      <transition name="db-drawer">
+          <div v-if="dbDrawer.show" class="db-drawer" @keydown.esc="closeDbDrawer">
+
+              <!-- On-call drawer -->
+              <template v-if="dbDrawer.panel === 'oncall'">
+                  <div class="db-drawer-head">
+                      <div class="db-drawer-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
+                          On-call Schedule
+                      </div>
+                      <button class="db-drawer-close" @click="closeDbDrawer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7l-10 10"/></svg>
+                      </button>
+                  </div>
+                  <div class="db-drawer-body">
+                      <div v-for="day in upcomingOnCallDays" :key="day.date">
+                          <div class="db-drawer-section">
+                              <span :style="day.isToday ? 'color:var(--nm-teal)' : ''">
+                                  {{ day.isToday ? 'Today' : new Date(day.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}) }}
+                              </span>
+                          </div>
+                          <div v-for="area in day.areas" :key="area.id" style="padding:10px 20px 6px">
+                              <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px"
+                                   :style="{ color: area.color }">
+                                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle" :style="{ background: area.color }"></span>
+                                  {{ area.name }}
+                              </div>
+                              <div v-if="area.primary" class="db-oc-slot-row db-oc-slot-row--ok" style="margin-bottom:4px">
+                                  <div class="db-oc-av db-oc-av--primary" :class="{ 'db-oc-av--absence': area.primary._onAbsence }">
+                                      {{ (getPhysicianName(area.primary.primary_physician_id)||'??').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() }}
+                                  </div>
+                                  <div class="db-oc-slot-info">
+                                      <span class="db-oc-name">{{ formatDrName(getPhysicianName(area.primary.primary_physician_id)) }}</span>
+                                      <span class="db-oc-time">{{ (area.primary.start_time||'').slice(0,5) }} → {{ (area.primary.end_time||'').slice(0,5) }}</span>
+                                  </div>
+                                  <div class="db-oc-flags">
+                                      <span v-if="area.primary._onAbsence" class="db-oc-flag db-oc-flag--absence">⚠ On leave</span>
+                                      <span v-else-if="area.primary._consecutive >= 2" class="db-oc-flag db-oc-flag--fatigue">{{ area.primary._consecutive + 1 }} nights</span>
+                                      <span v-if="!area.backup" class="db-oc-flag db-oc-flag--nobackup">No backup</span>
+                                  </div>
+                              </div>
+                              <div v-else class="db-oc-slot-row db-oc-slot-row--gap"
+                                   @click="hasPermission('oncall_schedule','create') && (closeDbDrawer(), showAddOnCallModal())"
+                                   style="margin-bottom:4px">
+                                  <div class="db-oc-av db-oc-av--empty"></div>
+                                  <span class="db-oc-gap-label">Unassigned</span>
+                                  <span v-if="hasPermission('oncall_schedule','create')" class="db-oc-assign-btn">＋ Assign</span>
+                              </div>
+                              <div v-if="area.backup" class="db-oc-slot-row db-oc-slot-row--backup" style="margin-bottom:4px">
+                                  <div class="db-oc-av db-oc-av--backup">{{ (getPhysicianName(area.backup.primary_physician_id)||'??').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() }}</div>
+                                  <span class="db-oc-name" style="font-size:11px;color:var(--nm-text2)">{{ formatDrName(getPhysicianName(area.backup.primary_physician_id)) }}</span>
+                                  <span class="db-oc-flag db-oc-flag--backup">Backup</span>
+                              </div>
+                          </div>
+                      </div>
+                      <div v-if="upcomingOnCallDays.length === 0" style="padding:40px 20px;text-align:center;color:var(--nm-text3);font-size:13px">
+                          No shifts scheduled in the next 14 days
+                      </div>
+                  </div>
+                  <div style="padding:12px 20px;border-top:1px solid var(--nm-border);display:flex;justify-content:flex-end">
+                      <button class="btn btn-primary btn-sm" @click="closeDbDrawer(); switchView('oncall_schedule')">
+                          Open full schedule <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-left:4px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      </button>
+                  </div>
+              </template>
+
+              <!-- Rotations drawer -->
+              <template v-if="dbDrawer.panel === 'rotations'">
+                  <div class="db-drawer-head">
+                      <div class="db-drawer-title">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
+                          Active &amp; Upcoming Rotations
+                      </div>
+                      <button class="db-drawer-close" @click="closeDbDrawer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7l-10 10"/></svg>
+                      </button>
+                  </div>
+                  <div class="db-drawer-body">
+                      <div v-if="rotations.filter(r=>r.rotation_status==='active'&&getDaysRemaining(r.end_date)>=0&&getDaysRemaining(r.end_date)<=7).length">
+                          <div class="db-drawer-section" style="color:#ea580c">Ending this week</div>
+                          <div v-for="rot in rotations.filter(r=>r.rotation_status==='active'&&getDaysRemaining(r.end_date)>=0&&getDaysRemaining(r.end_date)<=7)" :key="'de-'+rot.id" class="db-rot-row">
+                              <div class="db-rot-av db-rot-av--end">{{ (getResidentName(rot.resident_id)||'?').replace(/^(Dr\.?|Dra\.?)\s*/i,'').trim()[0]?.toUpperCase()||'?' }}</div>
+                              <div class="db-rot-info">
+                                  <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
+                                  <span class="db-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
+                              </div>
+                              <span class="db-rot-chip db-rot-chip--ending">ends {{ formatDateShort(rot.end_date) }}</span>
+                          </div>
+                      </div>
+                      <div v-if="rotations.filter(r=>r.rotation_status==='scheduled'&&getDaysUntilStart(r.start_date)>=0&&getDaysUntilStart(r.start_date)<=7).length">
+                          <div class="db-drawer-section" style="color:#059669">Starting this week</div>
+                          <div v-for="rot in rotations.filter(r=>r.rotation_status==='scheduled'&&getDaysUntilStart(r.start_date)>=0&&getDaysUntilStart(r.start_date)<=7)" :key="'ds-'+rot.id" class="db-rot-row">
+                              <div class="db-rot-av db-rot-av--start">{{ (getResidentName(rot.resident_id)||'?').replace(/^(Dr\.?|Dra\.?)\s*/i,'').trim()[0]?.toUpperCase()||'?' }}</div>
+                              <div class="db-rot-info">
+                                  <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
+                                  <span class="db-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
+                              </div>
+                              <span class="db-rot-chip db-rot-chip--starting">starts {{ formatDateShort(rot.start_date) }}</span>
+                          </div>
+                      </div>
+                      <div v-if="rotations.filter(r=>r.rotation_status==='active').length">
+                          <div class="db-drawer-section">All active rotations</div>
+                          <div v-for="rot in rotations.filter(r=>r.rotation_status==='active').slice(0,20)" :key="'da-'+rot.id" class="db-rot-row">
+                              <div class="db-rot-av" style="background:rgba(99,102,241,.12);color:#818cf8">{{ (getResidentName(rot.resident_id)||'?').replace(/^(Dr\.?|Dra\.?)\s*/i,'').trim()[0]?.toUpperCase()||'?' }}</div>
+                              <div class="db-rot-info">
+                                  <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
+                                  <span class="db-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
+                              </div>
+                              <span style="font-size:11px;color:var(--nm-text3);white-space:nowrap;flex-shrink:0">{{ formatDateShort(rot.end_date) }}</span>
+                          </div>
+                      </div>
+                  </div>
+                  <div style="padding:12px 20px;border-top:1px solid var(--nm-border);display:flex;justify-content:flex-end">
+                      <button class="btn btn-primary btn-sm" @click="closeDbDrawer(); switchView('resident_rotations')">
+                          All rotations <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-left:4px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      </button>
+                  </div>
+              </template>
+
+          </div>
+      </transition>
+      <div v-if="dbDrawer.show" class="db-drawer-backdrop" @click="closeDbDrawer"></div>
 
       <!-- ═══ BULK ON-CALL SCHEDULER ══════════════════════════════════════════ -->
       <div v-if="bulkOncall.show" class="modal-overlay" @click.self="bulkOncall.show = false">
