@@ -5527,7 +5527,7 @@
 /* ── Main grid — 2 columns: name | months-area ── */
 #app .abs-tl-grid {
   display: grid;
-  grid-template-columns: 168px 1fr;
+  grid-template-columns: 148px 1fr;
   min-width: 480px;
 }
 
@@ -6332,12 +6332,12 @@ tr.staff-table-row .tbl-btn {
   display: flex; flex-direction: column; align-items: center; gap: 0;
 }
 .nd-splash-mark {
-  width: 72px; height: 72px;
-  background: rgba(0,179,179,.1);
-  border: 1.5px solid rgba(0,179,179,.2);
-  border-radius: 20px;
+  width: 76px; height: 76px;
+  background: rgba(0,179,179,.08);
+  border: 1.5px solid rgba(0,179,179,.18);
+  border-radius: 22px;
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   animation: nd-pulse 2s ease-in-out infinite;
 }
 @keyframes nd-pulse {
@@ -6347,19 +6347,26 @@ tr.staff-table-row .tbl-btn {
 .nd-splash-n { width: 48px; height: 48px; }
 .nd-splash-wordmark {
   font-family: 'DM Sans', sans-serif;
-  font-size: 28px; font-weight: 700;
+  font-size: 26px; font-weight: 700;
   letter-spacing: -.5px;
   background: linear-gradient(90deg, #48cae4, #00b3b3, #4d9aff);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
+  margin-bottom: 3px;
+}
+.nd-splash-tagline {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 400;
+  color: rgba(255,255,255,.35);
+  letter-spacing: .01em;
   margin-bottom: 4px;
 }
 .nd-splash-byline {
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px; font-weight: 500;
-  color: rgba(255,255,255,.3);
-  letter-spacing: .08em; text-transform: uppercase;
-  margin-bottom: 32px;
+  font-size: 10px; font-weight: 500;
+  color: rgba(255,255,255,.2);
+  letter-spacing: .12em; text-transform: uppercase;
+  margin-bottom: 28px;
 }
 .nd-splash-bar {
   width: 120px; height: 2px;
@@ -6379,6 +6386,21 @@ tr.staff-table-row .tbl-btn {
 }
 .splash-fade-leave-active { transition: opacity .4s ease, transform .4s ease; }
 .splash-fade-leave-to     { opacity: 0; transform: scale(1.04); }
+
+/* ══ Data loading splash overrides (als-*) ══════════════════ */
+#app .als-mark {
+  width: 44px; height: 44px;
+  background: rgba(0,179,179,.08);
+  border: 1.5px solid rgba(0,179,179,.15);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+#app .als-tagline {
+  font-size: 11px; color: rgba(255,255,255,.28);
+  letter-spacing: .01em; margin-bottom: 16px;
+  font-family: 'DM Sans', sans-serif;
+}
 
 /* ══ Dashboard expand button ═════════════════════════════════ */
 .db-panel-expand {
@@ -7154,17 +7176,21 @@ tr.staff-table-row .tbl-btn {
         <div v-if="splashVisible" class="nd-splash">
             <div class="nd-splash-inner">
                 <div class="nd-splash-mark">
-                    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" class="nd-splash-n">
+                    <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" class="nd-splash-n">
                         <defs>
-                            <linearGradient id="splashGrad" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+                            <linearGradient id="splashGrad" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
                                 <stop offset="0%" stop-color="#48cae4"/>
                                 <stop offset="100%" stop-color="#00b3b3"/>
                             </linearGradient>
                         </defs>
-                        <text x="4" y="36" font-family="'DM Sans', sans-serif" font-weight="800" font-size="40" fill="url(#splashGrad)">n</text>
+                        <!-- breath arc above the n — lung expiration curve -->
+                        <path d="M14 20 Q28 8 42 20" stroke="url(#splashGrad)" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".7"/>
+                        <!-- the n mark -->
+                        <text x="8" y="46" font-family="'DM Sans', sans-serif" font-weight="800" font-size="38" fill="url(#splashGrad)">n</text>
                     </svg>
                 </div>
                 <div class="nd-splash-wordmark">neumDesk</div>
+                <div class="nd-splash-tagline">Clinical operations, unified</div>
                 <div class="nd-splash-byline">by neuMAC</div>
                 <div class="nd-splash-bar"><div class="nd-splash-bar-fill"></div></div>
             </div>
@@ -7245,10 +7271,10 @@ tr.staff-table-row .tbl-btn {
                 </div>
             </div>
 
-            <!-- Middle: NeuomoCare product identity -->
+            <!-- Middle: neumDesk platform identity -->
             <div class="lc-product">
-                <div class="lc-product-name">Neumo<span>Care</span></div>
-                <div class="lc-product-sub">Pulmonology Management System</div>
+                <div class="lc-product-name">neum<span>Desk</span></div>
+                <div class="lc-product-sub">Clinical Operations Platform</div>
             </div>
 
             <!-- Divider -->
@@ -7317,21 +7343,21 @@ tr.staff-table-row .tbl-btn {
     <transition name="splash-fade">
     <div v-if="loading" class="app-loading-splash">
         <div class="als-inner">
-            <svg viewBox="0 0 108 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="als-logo">
-                <defs>
-                    <linearGradient id="alsg" x1="0" y1="0" x2="108" y2="0" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stop-color="#48cae4"/>
-                        <stop offset="45%" stop-color="#4d9aff"/>
-                        <stop offset="100%" stop-color="#a5b4fc"/>
-                    </linearGradient>
-                </defs>
-                <text x="1" y="23" font-family="'DM Sans', sans-serif" font-weight="600" font-size="24" fill="url(#alsg)" letter-spacing="-0.5">neum</text>
-                <text x="62" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#alsg)" letter-spacing="-1">AC</text>
+            <div class="als-mark">
+                <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px">
+                    <defs><linearGradient id="alsg" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="100%" stop-color="#00b3b3"/></linearGradient></defs>
+                    <text x="3" y="28" font-family="'DM Sans', sans-serif" font-weight="800" font-size="30" fill="url(#alsg)">n</text>
+                </svg>
+            </div>
+            <svg viewBox="0 0 148 28" fill="none" xmlns="http://www.w3.org/2000/svg" class="als-logo">
+                <defs><linearGradient id="alsg2" x1="0" y1="0" x2="148" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="45%" stop-color="#00b3b3"/><stop offset="100%" stop-color="#4d9aff"/></linearGradient></defs>
+                <text x="1" y="22" font-family="'DM Sans', sans-serif" font-weight="600" font-size="22" fill="url(#alsg2)" letter-spacing="-0.5">neum</text>
+                <text x="58" y="22" font-family="'DM Sans', sans-serif" font-weight="800" font-size="22" fill="url(#alsg2)" letter-spacing="-1">Desk</text>
             </svg>
+            <div class="als-tagline">Clinical operations, unified</div>
             <div class="als-bar-wrap">
                 <div class="als-bar"></div>
             </div>
-            <div class="als-label">Loading clinical data…</div>
         </div>
     </div>
     </transition>
@@ -7400,8 +7426,9 @@ tr.staff-table-row .tbl-btn {
                         <text x="62" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#sbng2)" letter-spacing="-1">Desk</text>
                     </svg>
                     <svg v-if="sidebarCollapsed" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="nD" style="height:22px;width:22px">
-                        <defs><linearGradient id="sbmono2" x1="0" y1="0" x2="30" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="100%" stop-color="#00b3b3"/></linearGradient></defs>
-                        <text x="2" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#sbmono2)">n</text>
+                        <defs><linearGradient id="sbmono2" x1="0" y1="0" x2="30" y2="30" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="100%" stop-color="#00b3b3"/></linearGradient></defs>
+                        <path d="M6 10 Q15 3 24 10" stroke="url(#sbmono2)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".65"/>
+                        <text x="3" y="26" font-family="'DM Sans', sans-serif" font-weight="800" font-size="22" fill="url(#sbmono2)">n</text>
                     </svg>
                 </div>
                 <button class="nmsb-collapse" @click="sidebarCollapsed = !sidebarCollapsed"
@@ -17328,7 +17355,7 @@ tr.staff-table-row .tbl-btn {
 
             ctx.globalAlpha = 1;
         }
-
+  
         function animate(){
             frame++;
             var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;
