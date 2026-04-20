@@ -2188,6 +2188,23 @@
       .pd-cert-name { font-size:13px; font-weight:500; color:var(--nm-text1); line-height:1.3; }
       .pd-cert-meta { font-size:12px; color:var(--nm-text3); margin-top:3px; }
       .pd-cert-expired-label { color:#e24b4a; font-weight:500; }
+
+      /* Certificate expiry alert banner — top of profile modal content */
+      .pd-cert-alert {
+        display: flex; align-items: center; gap: 8px;
+        margin: 0 0 12px;
+        padding: 9px 13px;
+        border-radius: 8px;
+        background: rgba(245,158,11,.08);
+        border: 1px solid rgba(245,158,11,.22);
+        color: #b45309;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background .12s;
+      }
+      .pd-cert-alert:hover { background: rgba(245,158,11,.13); }
+      .pd-cert-alert svg { flex-shrink:0; color:#d97706; }
+      .pd-cert-alert strong { font-weight:700; color:#92400e; }
       .pd-cert-status { flex-shrink:0; }
 
       /* ── PROFILE DRAWER — Academic degree pills ── */
@@ -6257,7 +6274,74 @@ tr.staff-table-row .tbl-btn {
   border: 1px solid rgba(239,68,68,.18);
 }
 
-/* ── Coverage area badge in schedule table ───────────────── */
+/* ── Rotation availability panel ────────────────────────── */
+.rot-avail-panel {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 13px; border-radius: 8px; margin-bottom: 12px;
+  font-size: 11px; line-height: 1.5;
+  background: var(--nm-surface2);
+  border: 1px solid var(--nm-border);
+  color: var(--nm-text2);
+  transition: background .15s, border-color .15s;
+}
+.rot-avail-panel--ok {
+  background: rgba(16,185,129,.06);
+  border-color: rgba(16,185,129,.2);
+  color: #065f46;
+}
+.rot-avail-panel--ok svg { color: #10b981; }
+.rot-avail-panel--full {
+  background: rgba(239,68,68,.06);
+  border-color: rgba(239,68,68,.2);
+  color: #991b1b;
+}
+.rot-avail-panel--full svg { color: #dc2626; }
+.rot-avail-panel--checking { opacity: .7; }
+.rot-avail-panel strong { font-weight: 700; }
+@keyframes rot-avail-spin { to { transform: rotate(360deg); } }
+.rot-avail-spin { animation: rot-avail-spin .8s linear infinite; flex-shrink: 0; }
+
+/* ── Callout analytics ──────────────────────────────────── */
+.co-analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.co-analytics-card {
+  background: var(--nm-surface);
+  border: 1px solid var(--nm-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.co-analytics-title {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--nm-text3); margin-bottom: 10px;
+}
+.co-bar-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; font-size: 11px;
+}
+.co-bar-label { width: 120px; flex-shrink: 0; color: var(--nm-text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.co-bar-track { flex: 1; height: 6px; background: var(--nm-border); border-radius: 3px; overflow: hidden; }
+.co-bar-fill  { height: 100%; border-radius: 3px; transition: width .3s; }
+.co-bar-count { width: 24px; text-align: right; color: var(--nm-text3); font-variant-numeric: tabular-nums; }
+.co-dist-row  {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-bottom: 1px solid var(--nm-border);
+  font-size: 11px;
+}
+.co-dist-row:last-child { border-bottom: none; }
+.co-dist-name { flex: 1; font-weight: 500; color: var(--nm-text1); }
+.co-dist-nums { display: flex; gap: 12px; }
+.co-dist-num  { text-align: right; font-variant-numeric: tabular-nums; color: var(--nm-text2); }
+.co-dist-badge {
+  font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+}
+.co-dist-badge--high { background: rgba(239,68,68,.1); color: #dc2626; }
+.co-dist-badge--low  { background: rgba(16,185,129,.1); color: #059669; }
+
+
 .oc-area-badge {
   display: inline-flex;
   align-items: center;
@@ -8624,6 +8708,60 @@ tr.staff-table-row .tbl-btn {
                                 <div class="absence-kpi-num">{{ calloutKPIs.ytd }}</div>
                                 <div class="absence-kpi-label">Year to date</div>
                                 <div class="absence-kpi-sub">All call-outs</div>
+                            </div>
+                        </div>
+
+                        <!-- Analytics panels — by area, by reason, physician load -->
+                        <div v-if="callouts.length > 0" class="co-analytics-grid">
+
+                            <!-- By area -->
+                            <div class="co-analytics-card">
+                                <div class="co-analytics-title">Calls by coverage area</div>
+                                <template v-if="callouts.filter(c=>c.coverage_area_id).length === 0">
+                                    <div style="font-size:11px;color:var(--nm-text3);font-style:italic">No area data recorded</div>
+                                </template>
+                                <template v-else>
+                                    <div v-for="area in Object.entries(callouts.filter(c=>c.coverage_area_id).reduce((acc,c)=>{ const name=coverageAreas.find(a=>a.id===c.coverage_area_id)?.name||c.coverage_area_id; acc[name]=(acc[name]||0)+1; return acc },{})).sort((a,b)=>b[1]-a[1]).slice(0,6)"
+                                         :key="area[0]" class="co-bar-row">
+                                        <div class="co-bar-label" :title="area[0]">{{ area[0] }}</div>
+                                        <div class="co-bar-track">
+                                            <div class="co-bar-fill" :style="{ width: (area[1]/callouts.length*100)+'%', background: coverageAreas.find(a=>a.name===area[0])?.color||'var(--nm-teal)' }"></div>
+                                        </div>
+                                        <div class="co-bar-count">{{ area[1] }}</div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- By reason -->
+                            <div class="co-analytics-card">
+                                <div class="co-analytics-title">Calls by reason</div>
+                                <div v-for="reason in Object.entries(callouts.reduce((acc,c)=>{ acc[c.reason_category]=(acc[c.reason_category]||0)+1; return acc },{})).sort((a,b)=>b[1]-a[1]).slice(0,6)"
+                                     :key="reason[0]" class="co-bar-row">
+                                    <div class="co-bar-label" :title="calloutReasonLabels[reason[0]]||reason[0]">{{ (calloutReasonLabels[reason[0]]||reason[0]).slice(0,20) }}</div>
+                                    <div class="co-bar-track">
+                                        <div class="co-bar-fill" :style="{ width: (reason[1]/callouts.length*100)+'%', background:'#6366f1' }"></div>
+                                    </div>
+                                    <div class="co-bar-count">{{ reason[1] }}</div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Physician load distribution -->
+                        <div v-if="callouts.length > 0 && calloutDistribution.filter(d=>d.callouts>0).length > 0" class="co-analytics-card" style="margin-bottom:20px">
+                            <div class="co-analytics-title">Physician duty load this period</div>
+                            <div v-if="calloutFairnessAlert" style="font-size:11px;color:#d97706;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                Uneven duty distribution detected — some physicians are carrying significantly more load
+                            </div>
+                            <div v-for="p in calloutDistribution.filter(d=>d.callouts>0).slice(0,8)" :key="p.id" class="co-dist-row">
+                                <div class="co-dist-name">{{ p.name }}</div>
+                                <div class="co-dist-nums">
+                                    <div class="co-dist-num" style="width:60px">{{ p.callouts }} call-out{{ p.callouts!==1?'s':'' }}</div>
+                                    <div class="co-dist-num" style="width:50px;color:var(--nm-text3)">{{ p.night }}N · {{ p.weekend }}W</div>
+                                </div>
+                                <span v-if="p.deviation >= 50" class="co-dist-badge co-dist-badge--high">+{{ p.deviation }}%</span>
+                                <span v-else-if="p.deviation <= -30" class="co-dist-badge co-dist-badge--low">{{ p.deviation }}%</span>
                             </div>
                         </div>
 
@@ -12098,6 +12236,22 @@ tr.staff-table-row .tbl-btn {
                 <!-- ── Content Panel (right column) ── -->
                 <div class="pd-content" v-if="staffProfileModal.staff">
 
+                    <!-- Certificate expiry warning — visible on any tab -->
+                    <div v-if="(staffProfileModal.certificates||[]).some(c => c.renewal_date && (new Date(c.renewal_date) - new Date()) < 60*86400000)"
+                         class="pd-cert-alert"
+                         @click="staffProfileModal.activeTab = 'certs'; loadStaffCertificates(staffProfileModal.staff.id)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <span>
+                            <strong>
+                                {{ (staffProfileModal.certificates||[]).filter(c => c.renewal_date && new Date(c.renewal_date) < new Date()).length > 0
+                                    ? (staffProfileModal.certificates||[]).filter(c => c.renewal_date && new Date(c.renewal_date) < new Date()).length + ' certificate' + ((staffProfileModal.certificates||[]).filter(c => c.renewal_date && new Date(c.renewal_date) < new Date()).length > 1 ? 's' : '') + ' expired'
+                                    : (staffProfileModal.certificates||[]).filter(c => c.renewal_date && (new Date(c.renewal_date) - new Date()) < 60*86400000).length + ' certificate' + ((staffProfileModal.certificates||[]).filter(c => c.renewal_date && (new Date(c.renewal_date) - new Date()) < 60*86400000).length > 1 ? 's' : '') + ' expiring soon'
+                                }}
+                            </strong>
+                            — click to review
+                        </span>
+                    </div>
+
                     <!-- Tab bar -->
                     <div class="pd-tabs">
                         <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'activity' }" @click="staffProfileModal.activeTab = 'activity'">
@@ -13463,13 +13617,17 @@ tr.staff-table-row .tbl-btn {
                             <select class="sm-select" v-model="onCallModal.form.coverage_area_id"
                                     :class="{ 'is-invalid': !onCallModal.form.coverage_area_id && onCallModal.form.shift_type === 'primary_call' && onCallModal._areaWarned }">
                                 <option value="">— No specific area —</option>
-                                <option v-for="area in coverageAreas" :key="area.id" :value="area.id">
+                                <option v-for="area in filteredCoverageAreas" :key="area.id" :value="area.id">
                                     {{ area.name }}
                                 </option>
                             </select>
                             <small v-if="coverageAreas.length === 0"
                                    style="font-size:10px;color:var(--nm-text3);margin-top:3px;display:block">
                                 Add coverage areas in Settings → Coverage Areas
+                            </small>
+                            <small v-else-if="filteredCoverageAreas.length < coverageAreas.filter(a=>a.is_active!==false).length"
+                                   style="font-size:10px;color:var(--nm-text3);margin-top:3px;display:block">
+                                ℹ Some areas hidden — not active on weekends
                             </small>
                             <small v-else-if="!onCallModal.form.coverage_area_id && onCallModal.form.shift_type === 'primary_call'"
                                    style="font-size:10px;color:#d97706;margin-top:3px;display:block">
@@ -13788,6 +13946,43 @@ tr.staff-table-row .tbl-btn {
                                 <small v-if="fieldErrors.rotation?.end_date" class="error-text">{{ fieldErrors.rotation.end_date }}</small>
                             </div>
                         </div>
+
+                        <!-- Availability panel — fires when unit + dates are set -->
+                        <div v-if="rotationModal.form.training_unit_id && rotationModal.form.start_date && rotationModal.form.end_date"
+                             class="rot-avail-panel"
+                             :class="{
+                               'rot-avail-panel--checking': rotationModal.checkingAvailability,
+                               'rot-avail-panel--full':     !rotationModal.checkingAvailability && rotationModal.availability?.is_full,
+                               'rot-avail-panel--ok':       !rotationModal.checkingAvailability && rotationModal.availability && !rotationModal.availability.is_full,
+                             }">
+                            <template v-if="rotationModal.checkingAvailability">
+                                <svg class="rot-avail-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                                <span style="font-size:11px;color:var(--nm-text3)">Checking unit capacity…</span>
+                            </template>
+                            <template v-else-if="!rotationModal.availability">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                                <span style="font-size:11px;color:var(--nm-text3)">Select a unit and dates to check capacity</span>
+                            </template>
+                            <template v-else-if="rotationModal.availability.is_full">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                <div>
+                                    <strong>{{ rotationModal.availability.unit_name }} is at capacity</strong>
+                                    — {{ rotationModal.availability.occupied }}/{{ rotationModal.availability.capacity }} slots filled during this period
+                                    <div v-if="rotationModal.availability.overlapping?.length" style="margin-top:4px;font-size:10px;opacity:.8">
+                                        <span v-for="(r,i) in rotationModal.availability.overlapping.slice(0,3)" :key="r.id">{{ r.resident_name }}{{ i < Math.min(rotationModal.availability.overlapping.length,3)-1 ? ', ' : '' }}</span>
+                                        <span v-if="rotationModal.availability.overlapping.length > 3"> +{{ rotationModal.availability.overlapping.length - 3 }} more</span>
+                                    </div>
+                                </div>
+                            </template>
+                            <template v-else>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17L4 12"/></svg>
+                                <span>
+                                    <strong>{{ rotationModal.availability.available }} slot{{ rotationModal.availability.available !== 1 ? 's' : '' }} available</strong>
+                                    — {{ rotationModal.availability.occupied }}/{{ rotationModal.availability.capacity }} filled during this period
+                                </span>
+                            </template>
+                        </div>
+
                         <div class="sm-row">
                             <div class="sm-field">
                                 <div class="sm-label">Category</div>
