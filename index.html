@@ -963,11 +963,49 @@
       #app .db-oc-name { font-size:13px !important; font-weight:500 !important; }
       #app .db-oc-time { font-size:12px !important; }
       #app .db-oc-badge { font-size:11px !important; }
-      #app .db-rot-name { font-size:13px !important; font-weight:500 !important; }
-      #app .db-rot-unit { font-size:12px !important; }
-      #app .db-rot-chip { font-size:11px !important; }
 
-      /* Coverage gap = red alert strip */
+      /* Rotation panel rows — flex layout */
+      #app .db-rot-row {
+        display: flex !important; align-items: center !important;
+        gap: 10px !important; padding: 9px 16px !important;
+        border-bottom: 1px solid var(--nm-border) !important;
+      }
+      #app .db-rot-row:last-child { border-bottom: none !important; }
+      #app .db-rot-av {
+        width: 36px !important; height: 36px !important;
+        border-radius: 10px !important; flex-shrink: 0 !important;
+        display: flex !important; align-items: center !important;
+        justify-content: center !important;
+        font-size: 15px !important; font-weight: 700 !important;
+        position: relative !important;
+      }
+      /* Role dot on avatar */
+      #app .db-rot-av::after {
+        content: '' !important;
+        position: absolute !important; bottom: -2px !important; right: -2px !important;
+        width: 9px !important; height: 9px !important;
+        border-radius: 50% !important;
+        border: 2px solid var(--nm-surface) !important;
+      }
+      #app .db-rot-av--end  { background: rgba(99,102,241,.15) !important; color: #818cf8 !important; }
+      #app .db-rot-av--end::after  { background: #f97316 !important; }
+      #app .db-rot-av--start { background: rgba(16,185,129,.12) !important; color: #34d399 !important; }
+      #app .db-rot-av--start::after { background: #10b981 !important; }
+      #app .db-rot-info {
+        flex: 1 !important; min-width: 0 !important;
+        display: flex !important; flex-direction: column !important; gap: 1px !important;
+      }
+      #app .db-rot-name { font-size: 13px !important; font-weight: 600 !important; color: var(--nm-text1) !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+      #app .db-rot-unit { font-size: 11px !important; color: var(--nm-text3) !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+      #app .db-rot-chip {
+        font-size: 11px !important; font-weight: 600 !important;
+        padding: 3px 9px !important; border-radius: 20px !important;
+        white-space: nowrap !important; flex-shrink: 0 !important;
+      }
+      #app .db-rot-chip--ending  { background: rgba(249,115,22,.1) !important; color: #ea580c !important; border: 1px solid rgba(249,115,22,.2) !important; }
+      #app .db-rot-chip--starting { background: rgba(16,185,129,.1) !important; color: #059669 !important; border: 1px solid rgba(16,185,129,.2) !important; }
+
+
       #app .db-oc-slot-row--gap {
         background:rgba(226,75,74,.06) !important;
         border:1px dashed rgba(226,75,74,.3) !important;
@@ -6240,6 +6278,10 @@ tr.staff-table-row .tbl-btn {
   box-shadow: 0 0 0 3px rgba(0,179,179,.06);
 }
 .nm-cov-chip:hover .stype-chip-actions { opacity: 1; }
+.nm-cov-chip--inactive {
+  opacity: .5;
+  filter: grayscale(.6);
+}
 .nm-cov-dot {
   width: 10px; height: 10px;
   border-radius: 50%;
@@ -7951,7 +7993,7 @@ tr.staff-table-row .tbl-btn {
                                 </div>
                                 <template v-if="rotations.filter(r => (r.rotation_status==='active'||r.rotation_status==='scheduled') && getDaysRemaining(r.end_date||r.start_date) >= 0 && getDaysRemaining(r.end_date||r.start_date) <= 7).length > 0">
                                     <div v-for="rot in rotations.filter(r => r.rotation_status==='active' && getDaysRemaining(r.end_date) >= 0 && getDaysRemaining(r.end_date) <= 7).slice(0,2)" :key="'end-'+rot.id" class="db-rot-row">
-                                        <div class="db-rot-av db-rot-av--end">{{ (getResidentName(rot.resident_id)||'??').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() }}</div>
+                                        <div class="db-rot-av db-rot-av--end">{{ (getResidentName(rot.resident_id)||'?').replace(/^(Dr\.?|Dra\.?)\s*/i,'').trim()[0]?.toUpperCase() || '?' }}</div>
                                         <div class="db-rot-info">
                                             <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
                                             <span class="db-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
@@ -7959,7 +8001,7 @@ tr.staff-table-row .tbl-btn {
                                         <span class="db-rot-chip db-rot-chip--ending">ends {{ formatDateShort(rot.end_date) }}</span>
                                     </div>
                                     <div v-for="rot in rotations.filter(r => r.rotation_status==='scheduled' && getDaysUntilStart(r.start_date) >= 0 && getDaysUntilStart(r.start_date) <= 7).slice(0,2)" :key="'start-'+rot.id" class="db-rot-row">
-                                        <div class="db-rot-av db-rot-av--start">{{ (getResidentName(rot.resident_id)||'??').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() }}</div>
+                                        <div class="db-rot-av db-rot-av--start">{{ (getResidentName(rot.resident_id)||'?').replace(/^(Dr\.?|Dra\.?)\s*/i,'').trim()[0]?.toUpperCase() || '?' }}</div>
                                         <div class="db-rot-info">
                                             <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
                                             <span class="db-rot-unit">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
@@ -10679,6 +10721,7 @@ tr.staff-table-row .tbl-btn {
                             <div class="stype-grid" v-if="coverageAreas.length > 0">
                                 <div v-for="area in coverageAreas" :key="area.id"
                                      class="nm-cov-chip"
+                                     :class="{ 'nm-cov-chip--inactive': area.is_active === false }"
                                      @click="hasPermission('system_settings','update') && editCoverageArea(area)">
                                     <div class="nm-cov-dot" :style="{ background: area.color || '#00b3b3' }"></div>
                                     <div class="nm-cov-body">
@@ -16607,6 +16650,30 @@ tr.staff-table-row .tbl-btn {
                           <div>
                               <div style="font-size:13px;font-weight:500;color:var(--nm-text1)">Requires daily coverage</div>
                               <div style="font-size:11px;color:var(--nm-text3)">Dashboard flags this area as a gap when no primary is assigned</div>
+                          </div>
+                      </label>
+                  </div>
+                  <!-- Active/Inactive toggle — edit mode only -->
+                  <div class="sm-field" v-if="coverageAreaModal.mode === 'edit'"
+                       style="padding:10px 12px;border-radius:8px;border:1px solid;transition:border-color .15s,background .15s"
+                       :style="coverageAreaModal.form.is_active
+                         ? 'border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.04)'
+                         : 'border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.04)'">
+                      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                          <label class="nm-toggle">
+                              <input type="checkbox" v-model="coverageAreaModal.form.is_active">
+                              <span class="nm-toggle-track"></span>
+                          </label>
+                          <div>
+                              <div style="font-size:13px;font-weight:500"
+                                   :style="coverageAreaModal.form.is_active ? 'color:#059669' : 'color:#dc2626'">
+                                  {{ coverageAreaModal.form.is_active ? 'Area is active' : 'Area is inactive' }}
+                              </div>
+                              <div style="font-size:11px;color:var(--nm-text3)">
+                                  {{ coverageAreaModal.form.is_active
+                                    ? 'Visible in on-call scheduling and coverage area selectors'
+                                    : 'Hidden from scheduling — existing shifts are preserved' }}
+                              </div>
                           </div>
                       </label>
                   </div>
