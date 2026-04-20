@@ -6078,6 +6078,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallTab  = ref('schedule')
         const oncallMonthOffset = ref(0)  // 0 = current month, -1 = prev, +1 = next
 
+        // ── Monthly view computed helpers ─────────────────────────────────
+        const _ocmDate = Vue.computed(() =>
+          new Date(new Date().getFullYear(), new Date().getMonth() + oncallMonthOffset.value, 1)
+        )
+        const oncallMonthEmptyCells = Vue.computed(() => {
+          const dow = _ocmDate.value.getDay()
+          const blanks = dow === 0 ? 6 : dow - 1
+          return Array.from({ length: blanks }, (_, i) => i)
+        })
+        const oncallMonthDays = Vue.computed(() => {
+          const d = _ocmDate.value
+          const n = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+          return Array.from({ length: n }, (_, i) => i + 1)
+        })
+        const getOncallShiftsForDay = (day) => {
+          const d = _ocmDate.value
+          const iso = new Date(d.getFullYear(), d.getMonth(), day).toISOString().slice(0, 10)
+          return (onCallOps.onCallSchedule?.value || []).filter(s => (s.duty_date || '').slice(0, 10) === iso)
+        }
+        const isOncallCellToday = (day) => {
+          const d = _ocmDate.value
+          const t = new Date()
+          return d.getFullYear() === t.getFullYear() &&
+                 d.getMonth() === t.getMonth() &&
+                 day === t.getDate()
+        }
+        const oncallMonthSummary = Vue.computed(() => {
+          const d = _ocmDate.value
+          const yr = d.getFullYear()
+          const mo = String(d.getMonth() + 1).padStart(2, '0')
+          const covered = [...new Set(
+            (onCallOps.onCallSchedule?.value || [])
+              .filter(s => (s.duty_date || '').startsWith(`${yr}-${mo}`))
+              .map(s => s.duty_date)
+          )]
+          const daysInMonth = new Date(yr, d.getMonth() + 1, 0).getDate()
+          return `${covered.length}/${daysInMonth} days scheduled`
+        })
+
         // ============ EXISTING COMPUTED PROPERTIES ============
         // Name lookups — canonical versions live in their composables and are
         // exposed via ...staffOps / ...rotationOps spreads in the return below.
@@ -7768,6 +7807,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // NEW: Compact view properties - now coming from composables
           rotationView,
           onCallView, oncallTab, oncallMonthOffset,
+          oncallMonthEmptyCells, oncallMonthDays, getOncallShiftsForDay, isOncallCellToday, oncallMonthSummary,
           residentsWithRotations: rotationOps.residentsWithRotations,
           groupedOnCallSchedules: onCallOps.groupedOnCallSchedules,
           staffWithOnCallOrbs: onCallOps.staffWithOnCallOrbs,
@@ -7810,6 +7850,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;      
+    throw error;    
   }
 });
