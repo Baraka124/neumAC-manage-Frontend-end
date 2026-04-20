@@ -2400,7 +2400,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const coverageAreaModal = reactive({
         show: false, mode: 'add',
-        form: { id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, requires_coverage: false, display_order: 0 }
+        form: { id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, requires_coverage: false, is_active: true, display_order: 0 }
       })
 
       const loadCoverageAreas = async () => {
@@ -2421,14 +2421,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const showAddCoverageAreaModal = () => {
         coverageAreaModal.mode = 'add'
         Object.assign(coverageAreaModal.form, {
-          id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, requires_coverage: false, display_order: 0
+          id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, requires_coverage: false, is_active: true, display_order: 0
         })
         coverageAreaModal.show = true
       }
 
       const editCoverageArea = (area) => {
         coverageAreaModal.mode = 'edit'
-        Object.assign(coverageAreaModal.form, { ...area })
+        Object.assign(coverageAreaModal.form, {
+          ...area,
+          is_active: area.is_active !== false  // default true if undefined
+        })
         coverageAreaModal.show = true
       }
 
@@ -2443,6 +2446,7 @@ document.addEventListener('DOMContentLoaded', () => {
             name: f.name.trim(), code: f.code.trim().toUpperCase(),
             color: f.color || '#00b3b3', applies_weekends: f.applies_weekends !== false,
             requires_coverage: f.requires_coverage === true,
+            is_active: f.is_active !== false,
             display_order: parseInt(f.display_order) || 0
           }
           if (coverageAreaModal.mode === 'add') {
