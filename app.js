@@ -1212,13 +1212,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // keyboard toggle
       if (typeof window !== 'undefined') {
+        // Global keyboard shortcuts
+        let _gKeyPending = false, _gKeyTimer = null
         window.addEventListener('keydown', (e) => {
+          // ⌘K / Ctrl+K — command palette
           if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
             e.preventDefault()
             cmdPaletteOpen.value = !cmdPaletteOpen.value
+            return
           }
           if (e.key === 'Escape' && cmdPaletteOpen.value) {
             cmdPaletteOpen.value = false
+            return
+          }
+          // Skip if typing in an input, textarea, or select
+          const tag = e.target?.tagName?.toLowerCase()
+          if (['input', 'textarea', 'select'].includes(tag) || e.target?.isContentEditable) return
+          if (e.metaKey || e.ctrlKey || e.altKey) return
+
+          // G + key navigation (like Gmail)
+          if (_gKeyPending) {
+            clearTimeout(_gKeyTimer)
+            _gKeyPending = false
+            const navMap = {
+              'd': 'dashboard',
+              's': 'medical_staff',
+              'o': 'oncall_schedule',
+              'r': 'resident_rotations',
+              'u': 'training_units',
+              'a': 'staff_absence',
+              'h': 'research_hub',
+              'n': 'news',
+              ',': 'system_settings',
+            }
+            if (navMap[e.key]) {
+              e.preventDefault()
+              switchView(navMap[e.key])
+            }
+            return
+          }
+          // G = start of G+key combo
+          if (e.key === 'g' || e.key === 'G') {
+            _gKeyPending = true
+            _gKeyTimer = setTimeout(() => { _gKeyPending = false }, 1000)
+          }
+          // ? — show keyboard shortcut help (quick toast)
+          if (e.key === '?') {
+            showToast('Keyboard shortcuts',
+              'G+D Dashboard · G+S Staff · G+O On-call · G+R Rotations · G+U Units · G+A Absence · G+H Research · G+N News · ⌘K Search',
+              'info', 8000)
           }
         })
       }
@@ -2860,13 +2902,25 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           const normalize = r => ({ ...r, start_date: Utils.normalizeDate(r.start_date), end_date: Utils.normalizeDate(r.end_date) })
           if (rotationModal.mode === 'add') {
+            const rName = (medicalStaff.value || []).find(s => s.id === data.resident_id)?.full_name || 'Resident'
+            const uName = (trainingUnits.value || []).find(u => u.id === data.training_unit_id)?.unit_name || 'unit'
             rotations.value.unshift(normalize(await API.createRotation(data)))
-            showToast('Success', 'Rotation scheduled', 'success')
+            showToast('Rotation scheduled', `${rName.split(' ')[0]} → ${uName} · ${data.start_date} – ${data.end_date}`, 'success')
           } else {
+            const prev = rotations.value.find(r => r.id === f.id)
             const result = normalize(await API.updateRotation(f.id, data))
             const idx = rotations.value.findIndex(r => r.id === result.id)
             if (idx !== -1) rotations.value[idx] = result
-            showToast('Success', 'Rotation updated', 'success')
+            // Build diff summary
+            const changes = []
+            if (prev && prev.start_date !== data.start_date) changes.push(`Start ${prev.start_date} → ${data.start_date}`)
+            if (prev && prev.end_date !== data.end_date) changes.push(`End ${prev.end_date} → ${data.end_date}`)
+            if (prev && prev.training_unit_id !== data.training_unit_id) {
+              const uName = (trainingUnits.value || []).find(u => u.id === data.training_unit_id)?.unit_name || 'new unit'
+              changes.push(`Unit → ${uName}`)
+            }
+            if (prev && prev.supervising_attending_id !== data.supervising_attending_id) changes.push('Supervisor changed')
+            showToast('Rotation updated', changes.length ? changes.join(' · ') : 'No changes detected', 'success')
           }
           rotationModal.show = false; clearAll('rotation')
         } catch (e) {
@@ -3420,13 +3474,21 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           const normalize = a => ({ ...(a?.data || a), start_date: Utils.normalizeDate((a?.data || a).start_date), end_date: Utils.normalizeDate((a?.data || a).end_date) })
           if (absenceModal.mode === 'add') {
+            const sName = (medicalStaff.value || []).find(s => s.id === f.staff_member_id)?.full_name?.split(' ')[0] || 'Staff'
+            const reason = (f.absence_reason || '').replace(/_/g, ' ')
             absences.value.unshift(normalize(await API.createAbsence(data)))
-            showToast('Success', 'Absence recorded', 'success')
+            showToast('Absence recorded', `${sName} · ${reason} · ${f.start_date} – ${f.end_date}`, 'success')
           } else {
+            const prevAbs = absences.value.find(a => a.id === f.id)
             const record = normalize(await API.updateAbsence(f.id, data))
             const idx = absences.value.findIndex(a => a.id === (record.id || f.id))
             if (idx !== -1) absences.value[idx] = record
-            showToast('Success', 'Absence updated', 'success')
+            const absChanges = []
+            if (prevAbs && prevAbs.start_date !== f.start_date) absChanges.push(`Start → ${f.start_date}`)
+            if (prevAbs && prevAbs.end_date !== f.end_date) absChanges.push(`End → ${f.end_date}`)
+            if (prevAbs && prevAbs.absence_reason !== f.absence_reason) absChanges.push(`Reason → ${(f.absence_reason||'').replace(/_/g,' ')}`)
+            if (prevAbs && prevAbs.coverage_arranged !== f.coverage_arranged) absChanges.push(f.coverage_arranged ? 'Coverage arranged ✓' : 'Coverage removed')
+            showToast('Absence updated', absChanges.length ? absChanges.join(' · ') : 'Saved', 'success')
           }
           absenceModal.show = false; clearAll('absence'); await loadAbsences()
         } catch (e) { showToast('Error', e.message || 'Failed to save absence', 'error') }
@@ -6077,24 +6139,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const viewStaffDetails = async (staff) => {
-          // Guard: staff might be undefined if medicalStaff.find() returned nothing
           if (!staff || !staff.id) { console.warn('viewStaffDetails: staff object is undefined or missing id'); return; }
           staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'activity'; staffOps.staffProfileModal.show = true
           // Instant local profile from refs — shown immediately with no loading state
           const quickProfile = researchOps.getStaffResearchQuick(staff.id)
           if (quickProfile) staffOps.staffProfileModal.researchProfile = quickProfile
-          // Then enrich with full API data asynchronously
-          if (hasPermission('analytics', 'read')) await analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id)
+          // Prefetch ALL tab data in parallel — no waiting for tab clicks
+          const prefetchAll = [
+            // Certificates — previously only loaded on tab click
+            loadStaffCertificates(staff.id),
+            // Research profile
+            hasPermission('analytics', 'read') ? analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id) : Promise.resolve(),
+            // Leave balance
+            API.getLeaveBalance(staff.id).then(b => { staffOps.staffProfileModal.leaveBalance = b }).catch(() => { staffOps.staffProfileModal.leaveBalance = null }),
+          ]
+          // Supervision (attending/supervisors only)
           if (staff.staff_type === 'attending_physician' || staffTypeMap.value[staff.staff_type]?.can_supervise) {
             staffOps.staffProfileModal.loadingSupervision = true
-            try { staffOps.staffProfileModal.supervisionData = await API.getSupervisedResidents(staff.id) }
-            catch { staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, totalDaysSupervised: 0 } }
-            finally { staffOps.staffProfileModal.loadingSupervision = false }
+            prefetchAll.push(
+              API.getSupervisedResidents(staff.id)
+                .then(d => { staffOps.staffProfileModal.supervisionData = d })
+                .catch(() => { staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, totalDaysSupervised: 0 } })
+                .finally(() => { staffOps.staffProfileModal.loadingSupervision = false })
+            )
           }
-          staffOps.staffProfileModal.loadingLeave = true
-          try { staffOps.staffProfileModal.leaveBalance = await API.getLeaveBalance(staff.id) }
-          catch { staffOps.staffProfileModal.leaveBalance = null }
-          finally { staffOps.staffProfileModal.loadingLeave = false }
+          // Fire all in parallel — no sequential waiting
+          await Promise.allSettled(prefetchAll)
         }
 
         const formatStaffType = (t) => formatStaffTypeGlobal(t)  // single definition — composable copies removed
@@ -6406,28 +6476,98 @@ document.addEventListener('DOMContentLoaded', () => {
           const q = (ui.globalSearchQuery.value || '').toLowerCase().trim()
           if (!q || q.length < 2) return {}
           const results = {}
-          // Staff
+          const close = () => { ui.searchResultsOpen.value = false; ui.globalSearchQuery.value = '' }
+
+          // ── Staff ──────────────────────────────────────────────────────
           const staff = (staffOps.medicalStaff.value || []).filter(s =>
             (s.full_name || '').toLowerCase().includes(q) ||
             (s.professional_email || '').toLowerCase().includes(q) ||
             (s.staff_id || '').toLowerCase().includes(q)
           ).slice(0, 4)
-          if (staff.length) results.staff = staff.map(s => ({ id: s.id, name: s.full_name, meta: rotationOps.formatStaffType ? rotationOps.formatStaffType(s.staff_type) : s.staff_type, icon: 'fa-user-md', action: () => { staffOps.viewStaffDetails(s); ui.searchResultsOpen.value = false; ui.globalSearchQuery.value = '' } }))
-          // Rotations
+          if (staff.length) results.staff = staff.map(s => ({
+            id: s.id, name: s.full_name,
+            meta: rotationOps.formatStaffType ? rotationOps.formatStaffType(s.staff_type) : s.staff_type,
+            icon: 'fa-user-md', action: () => { staffOps.viewStaffDetails(s); close() }
+          }))
+
+          // ── Rotations ──────────────────────────────────────────────────
           const rots = (rotationOps.rotations.value || []).filter(r => {
             const rn = (staffOps.medicalStaff.value || []).find(s => s.id === r.resident_id)
-            return rn && (rn.full_name || '').toLowerCase().includes(q)
+            const un = (trainingUnits.value || []).find(u => u.id === r.training_unit_id)
+            return (rn && (rn.full_name || '').toLowerCase().includes(q)) ||
+                   (un && (un.unit_name || '').toLowerCase().includes(q))
           }).slice(0, 3)
           if (rots.length) results.rotations = rots.map(r => {
             const rn = (staffOps.medicalStaff.value || []).find(s => s.id === r.resident_id)
-            return { id: r.id, name: rn ? rn.full_name : 'Resident', meta: `Rotation · ${r.rotation_status}`, icon: 'fa-calendar-check', action: () => { switchView('resident_rotations'); ui.searchResultsOpen.value = false; ui.globalSearchQuery.value = '' } }
+            const un = (trainingUnits.value || []).find(u => u.id === r.training_unit_id)
+            return { id: r.id, name: rn ? rn.full_name : 'Resident',
+              meta: `${un?.unit_name || 'Rotation'} · ${r.rotation_status}`,
+              icon: 'fa-calendar-check', action: () => { switchView('resident_rotations'); close() } }
           })
-          // Research lines
+
+          // ── On-call shifts ─────────────────────────────────────────────
+          const today = Utils.normalizeDate(new Date())
+          const oncall = (onCallOps.onCallSchedule?.value || []).filter(s => {
+            const d = Utils.normalizeDate(s.duty_date)
+            if (d < today) return false
+            const pName = (staffOps.medicalStaff.value || []).find(x => x.id === s.primary_physician_id)?.full_name || ''
+            const aName = s.coverage_area?.name || (onCallOps.coverageAreas?.value || []).find(a => a.id === s.coverage_area_id)?.name || ''
+            return pName.toLowerCase().includes(q) || aName.toLowerCase().includes(q)
+          }).slice(0, 3)
+          if (oncall.length) results.oncall = oncall.map(s => {
+            const pName = (staffOps.medicalStaff.value || []).find(x => x.id === s.primary_physician_id)?.full_name || '—'
+            const aName = s.coverage_area?.name || (onCallOps.coverageAreas?.value || []).find(a => a.id === s.coverage_area_id)?.name || ''
+            return { id: s.id, name: pName,
+              meta: `On-call · ${aName || 'No area'} · ${Utils.normalizeDate(s.duty_date)}`,
+              icon: 'fa-phone', action: () => { switchView('oncall_schedule'); close() } }
+          })
+
+          // ── Absences ───────────────────────────────────────────────────
+          const abs = (absenceOps.absences?.value || []).filter(a => {
+            if (['cancelled','returned_to_duty'].includes(a.current_status)) return false
+            const sName = (staffOps.medicalStaff.value || []).find(x => x.id === a.staff_member_id)?.full_name || ''
+            return sName.toLowerCase().includes(q)
+          }).slice(0, 3)
+          if (abs.length) results.absences = abs.map(a => {
+            const sName = (staffOps.medicalStaff.value || []).find(x => x.id === a.staff_member_id)?.full_name || '—'
+            const reason = a.absence_reason?.replace(/_/g, ' ') || 'Absence'
+            return { id: a.id, name: sName,
+              meta: `${reason} · ${Utils.normalizeDate(a.start_date)} → ${Utils.normalizeDate(a.end_date || a.start_date)}`,
+              icon: 'fa-user-clock', action: () => { switchView('staff_absence'); close() } }
+          })
+
+          // ── Coverage areas ─────────────────────────────────────────────
+          const areas = (onCallOps.coverageAreas?.value || []).filter(a =>
+            (a.name || '').toLowerCase().includes(q) || (a.code || '').toLowerCase().includes(q)
+          ).slice(0, 2)
+          if (areas.length) results.areas = areas.map(a => ({
+            id: a.id, name: a.name,
+            meta: `Coverage area · ${a.code}${a.requires_coverage ? ' · Required' : ''}`,
+            icon: 'fa-map-marker-alt', action: () => { switchView('oncall_schedule'); close() }
+          }))
+
+          // ── Training units ─────────────────────────────────────────────
+          const units = (trainingUnits.value || []).filter(u =>
+            (u.unit_name || '').toLowerCase().includes(q) ||
+            (u.unit_code || '').toLowerCase().includes(q)
+          ).slice(0, 2)
+          if (units.length) results.units = units.map(u => ({
+            id: u.id, name: u.unit_name,
+            meta: `Training unit · ${u.unit_status}`,
+            icon: 'fa-hospital', action: () => { switchView('training_units'); close() }
+          }))
+
+          // ── Research ───────────────────────────────────────────────────
           const lines = (researchOps.researchLines.value || []).filter(l =>
             (l.research_line_name || l.name || '').toLowerCase().includes(q) ||
             (l.description || '').toLowerCase().includes(q)
-          ).slice(0, 3)
-          if (lines.length) results.research = lines.map(l => ({ id: l.id, name: l.research_line_name || l.name, meta: `Research Line`, icon: 'fa-flask', action: () => { switchView('research_lines'); ui.searchResultsOpen.value = false; ui.globalSearchQuery.value = '' } }))
+          ).slice(0, 2)
+          if (lines.length) results.research = lines.map(l => ({
+            id: l.id, name: l.research_line_name || l.name,
+            meta: 'Research line', icon: 'fa-flask',
+            action: () => { switchView('research_lines'); close() }
+          }))
+
           return results
         })
 
@@ -7629,7 +7769,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
 
-    app.mount('#app')
+    app.mount('#app')   
 
   } catch (error) {
     document.body.innerHTML = `
