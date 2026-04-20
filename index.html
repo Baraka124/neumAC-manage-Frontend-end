@@ -1954,10 +1954,11 @@
         #app .top-navbar .dbh-actions { gap:6px !important; }
 
         /* ── Dashboard hero ── */
-        #app .dbh-frame { padding:16px 16px 12px !important; }
-        #app .dbh-top { flex-direction:column !important; align-items:flex-start !important; gap:12px !important; }
-        #app .dbh-greeting { font-size:20px !important; }
+        #app .dbh-frame { padding:10px 14px 0 !important; }
+        #app .dbh-top { flex-direction:column !important; align-items:flex-start !important; gap:8px !important; padding-bottom:8px !important; }
+        #app .dbh-date { font-size:18px !important; }
         #app .dbh-actions { flex-wrap:wrap !important; gap:6px !important; }
+        #app .dbh-alerts--grid { grid-template-columns: 1fr !important; }
         #app .dbsr { grid-template-columns: repeat(4,1fr) !important; border-bottom:1px solid var(--nm-border); }
         #app .dbsr-stat { padding:12px 14px 10px !important; }
         #app .dbsr-num  { font-size:26px !important; }
@@ -2066,7 +2067,7 @@
 
       /* ─────────────── SMALL PHONE (≤ 480px) ─────────────── */
       @media (max-width: 480px) {
-        #app .dbh-greeting { font-size:18px !important; }
+        #app .dbh-date { font-size:16px !important; } #app .dbh-context { display:none !important; }
         #app .dbh-actions .dbh-btn span { display:none !important; }
         #app .dbsr { grid-template-columns:repeat(2,1fr) !important; }
         #app .dbsr-num { font-size:22px !important; }
@@ -2722,11 +2723,25 @@
         grid-template-columns: repeat(4, 1fr) !important;
       }
       /* ── Dashboard: compact hero to keep stats above fold on laptops ── */
-      #app .dbh-frame { padding: 14px 20px 10px !important; }
-      #app .dbh-greeting { font-size: 24px !important; }
-      #app .dbh-alerts { margin-top: 10px !important; }
-      #app .dbsr-stat { padding: 14px 16px 12px !important; }
-      #app .dbsr-num { font-size: 32px !important; line-height: 1 !important; }
+      /* ── Hero: single compact strip ── */
+      #app .dbh-frame { padding: 10px 20px 0 !important; }
+      #app .dbh-top { flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 0 !important; padding-bottom: 10px !important; }
+      #app .dbh-date-block { display: flex; flex-direction: column; gap: 1px; }
+      #app .dbh-dayname { font-size: 10px !important; font-weight: 600 !important; letter-spacing: .1em !important; text-transform: uppercase !important; color: rgba(255,255,255,.4) !important; }
+      #app .dbh-date { font-size: 22px !important; font-weight: 500 !important; color: #fff !important; letter-spacing: -.3px !important; line-height: 1.1 !important; font-family: 'DM Sans', sans-serif !important; font-style: normal !important; }
+      #app .dbh-context { font-size: 11px !important; color: rgba(255,255,255,.35) !important; margin-top: 2px; }
+      /* Remove greeting since date is the identity now */
+      #app .dbh-greeting { display: none !important; }
+      /* Alert strip: 2×2 grid */
+      #app .dbh-alerts--grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 0 !important; border-top: 1px solid rgba(255,255,255,.06) !important; margin-top: 0 !important; }
+      #app .dbh-alerts--grid .dbh-alert { border-radius: 0 !important; border-left: none !important; border-right: none !important; border-bottom: none !important; border-top: none !important; border-right: 1px solid rgba(255,255,255,.06) !important; padding: 7px 14px !important; font-size: 12px !important; }
+      #app .dbh-alerts--grid .dbh-alert:nth-child(2n) { border-right: none !important; }
+      #app .dbh-alerts--grid .dbh-alert-text { font-size: 11px !important; }
+      /* Stat rail: comfortable on large monitors */
+      #app .dbsr-stat { padding: 16px 20px 14px !important; }
+      #app .dbsr-num { font-size: 36px !important; line-height: 1 !important; font-weight: 400 !important; }
+      #app .dbsr-num--teal { color: var(--nm-teal) !important; }
+      #app .dbsr-pill--teal { background: rgba(0,179,179,.1) !important; color: var(--nm-teal) !important; }
 
       #app .db-main-grid {
         display:grid !important;
@@ -2761,10 +2776,23 @@
       /* ── WIDESCREEN — 1440px+ (large hospital monitor / dual-screen) ── */
       @media (min-width: 1440px) {
         #app .dbsr { grid-template-columns: repeat(4, 1fr) !important; }
-        #app .db-main-grid { grid-template-columns: 1fr 1fr 1fr !important; gap:24px !important; }
+        #app .db-main-grid { grid-template-columns: 55fr 45fr !important; gap:24px !important; }
         #app .sidebar { width: clamp(240px, 13vw, 280px) !important; }
         #app .rha-kpi-strip { grid-template-columns: repeat(4, 1fr) !important; }
         #app .rha-charts-row { grid-template-columns: repeat(3, 1fr) !important; }
+        /* Large monitors: date can be bigger */
+        #app .dbh-date { font-size: 26px !important; }
+        #app .dbsr-num { font-size: 40px !important; }
+        #app .dbsr-stat { padding: 18px 22px 16px !important; }
+      }
+
+            @media (min-width: 1920px) {
+        #app .dbh-date { font-size: 28px !important; }
+        #app .dbh-dayname { font-size: 11px !important; }
+        #app .dbsr-num { font-size: 44px !important; }
+        #app .dbsr-lbl { font-size: 13px !important; }
+        #app .dbsr-stat { padding: 20px 24px 18px !important; }
+        #app .db-main-grid { gap: 28px !important; }
       }
 
       /* ── 1024px — small laptop / 13" clinical tablet landscape ── */
@@ -8048,12 +8076,11 @@ tr.staff-table-row .tbl-btn {
                     <!-- 1. HERO FRAME -->
                     <div class="dbh-frame">
                         <div class="dbh-top">
-                            <div>
-                                <div class="dbh-date">{{ new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}</div>
-                                <div class="dbh-greeting">
-                                    {{ new Date().getHours() < 12 ? 'Good morning,' : new Date().getHours() < 19 ? 'Good afternoon,' : 'Good evening,' }}
-                                    <em class="dbh-name">{{ currentUser && currentUser.full_name ? formatDrName(currentUser.full_name) : 'Doctor' }}</em>
-                                </div>
+                            <!-- Date block: replaces greeting — hospital monitors don't need "Good afternoon" -->
+                            <div class="dbh-date-block">
+                                <div class="dbh-dayname">{{ new Date().toLocaleDateString('en-GB', { weekday: 'long' }) }}</div>
+                                <div class="dbh-date">{{ new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) }}</div>
+                                <div class="dbh-context">Week {{ Math.ceil((new Date() - new Date(new Date().getFullYear(),0,1)) / 604800000) }} · Q{{ Math.ceil((new Date().getMonth()+1)/3) }} · {{ (() => { const ends = rotations.filter(r=>r.rotation_status==='active').map(r=>r.end_date).sort().slice(-1)[0]; if(!ends) return 'No active block'; const d=Math.round((new Date(ends+'T00:00:00')-new Date())/86400000); return d>0?'Rotation block ends '+d+'d':'Block ends today'; })() }}</div>
                             </div>
                             <div class="dbh-actions">
                                 <!-- Department health score pill -->
@@ -8086,15 +8113,15 @@ tr.staff-table-row .tbl-btn {
                                 </button>
                             </div>
                         </div>
-                        <!-- Alert rail -->
-                        <div class="dbh-alerts">
+                        <!-- Alert rail — 2×2 grid for compact display -->
+                        <div class="dbh-alerts dbh-alerts--grid">
                             <template v-if="dailyBriefing.length > 0">
                                 <div v-for="item in dailyBriefing.slice(0,4)" :key="item.text"
                                      class="dbh-alert" :class="'dbh-alert--' + item.type"
                                      @click="switchView(item.action, item.actionFilter || {})">
                                     <span class="dbh-alert-dot"></span>
                                     <span class="dbh-alert-text" v-html="item.text"></span>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:.4;margin-left:auto"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                                 </div>
                             </template>
                             <template v-else>
@@ -8133,16 +8160,16 @@ tr.staff-table-row .tbl-btn {
                             <div class="dbsr-accent dbsr-accent--navy"></div>
                         </div>
                         <div class="dbsr-stat" @click="switchView('oncall_schedule')">
-                            <div class="dbsr-num">{{ todaysOnCallCount || 0 }}</div>
+                            <div class="dbsr-num dbsr-num--teal">{{ todaysOnCallCount || 0 }}</div>
                             <div class="dbsr-lbl">On-call Today</div>
                             <div class="dbsr-pills" v-if="todaysOnCall.length > 0">
-                                <span class="dbsr-pill dbsr-pill--ok">{{ formatDrName(todaysOnCall[0].physicianName) }}</span>
+                                <span class="dbsr-pill dbsr-pill--teal">{{ formatDrName(todaysOnCall[0].physicianName) }}</span>
                                 <span class="dbsr-pill dbsr-pill--muted">{{ todaysOnCall[0].startTime }}–{{ todaysOnCall[0].endTime }}</span>
                             </div>
                             <div class="dbsr-pills" v-else>
                                 <span class="dbsr-pill dbsr-pill--danger">No coverage today</span>
                             </div>
-                            <div class="dbsr-accent dbsr-accent--amber"></div>
+                            <div class="dbsr-accent dbsr-accent--teal"></div>
                         </div>
                         <div class="dbsr-stat" @click="switchView('research_hub')">
                             <div class="dbsr-num">{{ analyticsSummary?.researchLines || researchLines.length || 0 }}</div>
