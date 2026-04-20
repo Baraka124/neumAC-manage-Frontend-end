@@ -165,44 +165,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const VIEW_TITLES = {
-      dashboard: 'Dashboard Overview', 
-      medical_staff: 'Medical Staff Management',
-      oncall_schedule: 'On-call Schedule', 
-      resident_rotations: 'Resident Rotations',
-      training_units: 'Clinical Units', 
-      staff_absence: 'Staff Absence Management',
-      department_management: 'Department Management',
-      research_hub: 'Research Hub',
-      research_lines: 'Research Hub', 
-      clinical_trials: 'Research Hub',
-      innovation_projects: 'Research Hub', 
-      analytics_dashboard: 'Research Hub',
-      analytics_performance: 'Research Hub', 
-      analytics_partners: 'Research Hub',
-      // FIX Bug5: missing view titles for news and system_settings
-      news: 'News & Posts',
-      system_settings: 'System Settings'
+      dashboard:             'Dashboard',
+      medical_staff:         'Medical Staff',
+      oncall_schedule:       'On-call',
+      resident_rotations:    'Rotations',
+      training_units:        'Training Units',
+      staff_absence:         'Staff Absence',
+      department_management: 'Departments',
+      research_hub:          'Research',
+      research_lines:        'Research',
+      clinical_trials:       'Research',
+      innovation_projects:   'Research',
+      analytics_dashboard:   'Research',
+      analytics_performance: 'Research',
+      analytics_partners:    'Research',
+      news:                  'News & Posts',
+      system_settings:       'Settings'
     }
     
-    const VIEW_SUBTITLES = {
-      dashboard: 'Real-time department overview and analytics',
-      medical_staff: 'Manage physicians, residents, and clinical staff',
-      oncall_schedule: 'View and manage on-call physician schedules',
-      resident_rotations: 'Track and manage resident training rotations',
-      training_units: 'Clinical units and resident assignments',
-      staff_absence: 'Track staff absences and coverage assignments',
-      department_management: 'Organizational structure and clinical units',
-      research_hub: 'Research lines, studies, projects and analytics',
-      research_lines: 'Research lines, studies, projects and analytics',
-      clinical_trials: 'Research lines, studies, projects and analytics',
-      innovation_projects: 'Research lines, studies, projects and analytics',
-      analytics_dashboard: 'Research lines, studies, projects and analytics',
-      analytics_performance: 'Research lines, studies, projects and analytics',
-      analytics_partners: 'Research lines, studies, projects and analytics',
-      // FIX Bug5: missing subtitles for news and system_settings
-      news: 'Departmental news, announcements and publications',
-      system_settings: 'Configure staff types and system-wide settings'
-    }
 
     // ============ 3. ENHANCED UTILS CLASS ============
     const PROJECT_STAGES_DATA = [
@@ -3112,6 +3092,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Resident gap warnings ─────────────────────────────────────────────
       // Residents who have no rotation scheduled for any of the next 3 months
+      const rgwCollapsed = ref(false)
       const residentGapWarnings = computed(() => {
         const today    = new Date(); today.setHours(0,0,0,0)
         const warnings = []
@@ -3173,7 +3154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         getRotationBarStyle,
         rotationStartsInHorizon,
         rotationEndsInHorizon,
-        residentGapWarnings,
+        residentGapWarnings, rgwCollapsed,
         getResidentName,
         getTrainingUnitName
       }
@@ -6139,7 +6120,89 @@ document.addEventListener('DOMContentLoaded', () => {
           'Completado': 'Completed', 'En preparación': 'In preparation'
         }[s] || s)
         const getCurrentViewTitle = () => VIEW_TITLES[currentView.value] || 'neumDesk'
-        const getCurrentViewSubtitle = () => VIEW_SUBTITLES[currentView.value] || 'Hospital Management System'
+        const getCurrentViewSubtitle = () => {
+          const v = currentView.value
+          try {
+            // ── Medical Staff ──────────────────────────────────────────────
+            if (v === 'medical_staff') {
+              const staff = medicalStaff.value || []
+              const active = staff.filter(s => s.employment_status === 'active').length
+              const residents = staff.filter(s => s.employment_status === 'active' && isResidentType(s.staff_type)).length
+              const attendings = active - residents
+              if (!active) return 'No active staff'
+              return `${attendings} attending${attendings !== 1 ? 's' : ''} · ${residents} resident${residents !== 1 ? 's' : ''}`
+            }
+            // ── On-call ────────────────────────────────────────────────────
+            if (v === 'oncall_schedule') {
+              const today = Utils.normalizeDate(new Date())
+              const todayShifts = (onCallOps.onCallSchedule?.value || []).filter(s =>
+                Utils.normalizeDate(s.duty_date) === today
+              )
+              if (!todayShifts.length) return 'No shifts scheduled today'
+              const areas = [...new Set(todayShifts.map(s =>
+                s.coverage_area?.name || (onCallOps.coverageAreas?.value || []).find(a => a.id === s.coverage_area_id)?.name
+              ).filter(Boolean))]
+              return areas.length
+                ? `Tonight: ${areas.slice(0,3).join(', ')}${areas.length > 3 ? ` +${areas.length - 3}` : ''}`
+                : `${todayShifts.length} shift${todayShifts.length !== 1 ? 's' : ''} scheduled today`
+            }
+            // ── Rotations ──────────────────────────────────────────────────
+            if (v === 'resident_rotations') {
+              const rots = rotations.value || []
+              const active = rots.filter(r => r.rotation_status === 'active').length
+              const endingSoon = rots.filter(r => r.rotation_status === 'active' && getDaysRemaining(r.end_date) >= 0 && getDaysRemaining(r.end_date) <= 7).length
+              if (!active) return 'No active rotations'
+              const end = endingSoon ? ` · ${endingSoon} ending this week` : ''
+              return `${active} active${end}`
+            }
+            // ── Training Units ─────────────────────────────────────────────
+            if (v === 'training_units') {
+              const units = trainingUnits.value || []
+              const active = units.filter(u => u.unit_status === 'active').length
+              const withSlots = units.filter(u => {
+                const cur = (rotations.value || []).filter(r => r.training_unit_id === u.id && r.rotation_status === 'active').length
+                return u.unit_status === 'active' && cur < (u.maximum_residents || 999)
+              }).length
+              if (!active) return 'No active units'
+              return `${active} unit${active !== 1 ? 's' : ''} · ${withSlots} with open slot${withSlots !== 1 ? 's' : ''}`
+            }
+            // ── Staff Absence ──────────────────────────────────────────────
+            if (v === 'staff_absence') {
+              const kpis = absenceOps.absenceKPIs?.value
+              if (!kpis) return 'Loading…'
+              if (kpis.absentNow === 0 && kpis.upcoming === 0) return 'All staff present · No planned leave'
+              const parts = []
+              if (kpis.absentNow > 0) parts.push(`${kpis.absentNow} absent today`)
+              if (kpis.noCoverage > 0) parts.push(`${kpis.noCoverage} need cover`)
+              else if (kpis.upcoming > 0) parts.push(`${kpis.upcoming} planned`)
+              return parts.join(' · ')
+            }
+            // ── Research ──────────────────────────────────────────────────
+            if (['research_hub','research_lines','clinical_trials','innovation_projects','analytics_dashboard','analytics_performance','analytics_partners'].includes(v)) {
+              const lines = researchOps.researchLines?.value?.length || 0
+              const trials = researchOps.clinicalTrials?.value?.filter(t => t.study_status === 'Reclutando' || t.study_status === 'Activo').length || 0
+              const projects = researchOps.innovationProjects?.value?.length || 0
+              if (!lines && !trials) return 'No research data loaded yet'
+              return `${lines} line${lines !== 1 ? 's' : ''} · ${trials} active stud${trials !== 1 ? 'ies' : 'y'} · ${projects} project${projects !== 1 ? 's' : ''}`
+            }
+            // ── News ──────────────────────────────────────────────────────
+            if (v === 'news') {
+              const posts = newsOps.newsPosts?.value || []
+              const published = posts.filter(p => p.status === 'published').length
+              const drafts = posts.filter(p => p.status === 'draft').length
+              if (!posts.length) return 'No posts yet'
+              return `${published} published${drafts ? ` · ${drafts} draft${drafts !== 1 ? 's' : ''}` : ''}`
+            }
+            // ── Dashboard ─────────────────────────────────────────────────
+            if (v === 'dashboard') {
+              const hour = new Date().getHours()
+              const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+              const name = currentUser.value?.full_name?.split(' ')[0] || ''
+              return name ? `${greeting}, ${name}` : greeting
+            }
+          } catch { /* fallback below */ }
+          return ''
+        }
         const getSearchPlaceholder = () => 'Search...'
 
         const getStaffTypeIcon = (t) => ({ attending_physician: 'fa-user-md', medical_resident: 'fa-user-graduate', fellow: 'fa-user-tie', nurse_practitioner: 'fa-user-nurse' }[t] || 'fa-user')
@@ -7554,6 +7617,7 @@ document.addEventListener('DOMContentLoaded', () => {
           isShiftActive: onCallOps.isShiftActive,
           viewRotationDetails: rotationOps.viewRotationDetails,
           residentGapWarnings: rotationOps.residentGapWarnings,
+          rgwCollapsed: rotationOps.rgwCollapsed,
           cmdQuery, cmdSelectedIdx, cmdItems, executeCmdItem,
           isOffline: ui.isOffline, isMaintenanceMode: ui.isMaintenanceMode,
           callouts, calloutsLoading, calloutSummary, calloutPeriod, calloutModal,
