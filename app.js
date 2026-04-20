@@ -2370,6 +2370,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Coverage Areas ──────────────────────────────────────────────────
       const coverageAreas = ref([])
+
+      // Filtered by applies_weekends when scheduling on a weekend date
+      const filteredCoverageAreas = computed(() => {
+        const date = onCallModal.form.duty_date
+        if (!date) return coverageAreas.value.filter(a => a.is_active !== false)
+        const dow = new Date(date + 'T12:00:00').getDay() // 0=Sun, 6=Sat
+        const isWeekend = dow === 0 || dow === 6
+        return coverageAreas.value.filter(a => {
+          if (a.is_active === false) return false
+          if (isWeekend && a.applies_weekends === false) return false
+          return true
+        })
+      })
+
       const coverageAreaModal = reactive({
         show: false, mode: 'add',
         form: { id: null, name: '', code: '', color: '#00b3b3', applies_weekends: true, requires_coverage: false, display_order: 0 }
@@ -2457,7 +2471,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
         filteredOnCallSchedules, filteredOnCallAll, oncallTotalPages, todaysOnCallCount,
-        loadOnCallSchedule, loadCoverageAreas, coverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal,
+        loadOnCallSchedule, loadCoverageAreas, coverageAreas, filteredCoverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal,
         editOnCallSchedule, saveOnCallSchedule, bulkOncall, bulkCalDays, bulkToggleDate, bulkAddToQueue, bulkClone, bulkTotalShifts, bulkTotalConflicts, bulkSave, openBulkOncall, deleteOnCallSchedule, contactPhysician,
         onCallAbsenceConflict, absenceOnCallConflict,
         // NEW compact view properties
@@ -2713,6 +2727,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (startStr > todayStr)       rotationModal.form.rotation_status = 'scheduled'
         else if (endStr < todayStr)    rotationModal.form.rotation_status = 'completed'
         else                           rotationModal.form.rotation_status = 'active'
+        // Trigger availability check when dates change
+        checkRotationAvailability()
       })
 
       // Auto-fill supervisor when unit is selected — reads supervisor_id from the unit
@@ -2725,6 +2741,8 @@ document.addEventListener('DOMContentLoaded', () => {
             rotationModal.form.supervising_attending_id = unit.supervisor_id || unit.default_supervisor_id
           }
         }
+        // Trigger availability check when unit changes
+        checkRotationAvailability()
       })
 
       const loadRotations = async () => {
@@ -6462,7 +6480,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadAcademicDegrees = async () => {
           try {
             const data = await API.getAcademicDegrees()
-            academicDegrees.value = data.length ? data : ACADEMIC_DEGREES_FALLBACK
+            const sorted = (data.length ? data : ACADEMIC_DEGREES_FALLBACK)
+              .slice().sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+            academicDegrees.value = sorted
           } catch {
             academicDegrees.value = ACADEMIC_DEGREES_FALLBACK
           }
