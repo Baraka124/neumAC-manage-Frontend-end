@@ -3836,6 +3836,51 @@ document.addEventListener('DOMContentLoaded', () => {
     function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup, allDepartmentsLookup }) {
       // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
+      
+      // ── Unit staff (attendings who work in each unit) ─────────────────────
+      const unitStaffCache  = ref({})   // { [unitId]: [{ id, role, staff: {...} }] }
+      const unitStaffLoading = ref({})  // { [unitId]: true/false }
+
+      const loadUnitStaff = async (unitId) => {
+        if (unitStaffLoading.value[unitId]) return
+        unitStaffLoading.value[unitId] = true
+        try {
+          const res = await API.request(`/api/training-units/${unitId}/staff`)
+          unitStaffCache.value = { ...unitStaffCache.value, [unitId]: res?.data || [] }
+        } catch { unitStaffCache.value[unitId] = [] }
+        finally { unitStaffLoading.value[unitId] = false }
+      }
+
+      const getUnitAttendingCount = (unitId) => (unitStaffCache.value[unitId] || []).length
+
+
+      const addStaffToUnit = async (unitId, staffId, role = 'primary') => {
+        try {
+          const res = await API.request(`/api/training-units/${unitId}/staff`, {
+            method: 'POST', body: JSON.stringify({ staff_id: staffId, role })
+          })
+          const updated = [...(unitStaffCache.value[unitId] || []), res.data]
+          unitStaffCache.value = { ...unitStaffCache.value, [unitId]: updated }
+          showToast('Clinician assigned', `Added to unit team`, 'success')
+          return res.data
+        } catch (e) {
+          showToast('Error', e?.message || 'Failed to assign', 'error')
+          throw e
+        }
+      }
+
+      const removeStaffFromUnit = async (unitId, staffId) => {
+        try {
+          await API.request(`/api/training-units/${unitId}/staff/${staffId}`, { method: 'DELETE' })
+          unitStaffCache.value = {
+            ...unitStaffCache.value,
+            [unitId]: (unitStaffCache.value[unitId] || []).filter(m => m.staff?.id !== staffId)
+          }
+          showToast('Removed', 'Clinician removed from unit team', 'info')
+        } catch (e) {
+          showToast('Error', e?.message || 'Failed to remove', 'error')
+        }
+      }
       const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 2, unit_status: 'active', unit_type: 'clinical_unit', supervising_attending_id: '', unit_description: '', specialty: '', location_building: '', location_floor: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
       const unitCliniciansModal = reactive({ show: false, unit: null, clinicians: [], supervisorId: '', allStaff: [] })
@@ -3859,7 +3904,15 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         if (trainingUnitFilters.search) { const q = trainingUnitFilters.search.toLowerCase(); f = f.filter(u => u.unit_name?.toLowerCase().includes(q)) }
         if (trainingUnitFilters.department) f = f.filter(u => u.department_id === trainingUnitFilters.department)
-        if (trainingUnitFilters.status) f = f.filter(u => u.unit_status === trainingUnitFilters.status)
+        if (trainingUnitFilters.status) {
+          if (trainingUnitFilters.status === 'available') {
+            f = f.filter(u => getUnitActiveRotationCount(u.id) < u.maximum_residents)
+          } else if (trainingUnitFilters.status === 'full') {
+            f = f.filter(u => getUnitActiveRotationCount(u.id) >= u.maximum_residents)
+          } else {
+            f = f.filter(u => u.unit_status === trainingUnitFilters.status)
+          }
+        }
         // Sort by urgency: overlap > full > partial > available
         return [...f].sort((a, b) => {
           const score = (u) => {
@@ -4233,7 +4286,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const loadTrainingUnits = async () => {
-        try { trainingUnits.value = await API.getTrainingUnits() }
+        try {
+          trainingUnits.value = await API.getTrainingUnits()
+          // Pre-load attending staff for all active units (non-blocking, fills unitStaffCache)
+          trainingUnits.value
+            .filter(u => u.unit_status !== 'inactive')
+            .forEach(u => loadUnitStaff(u.id))
+        }
         catch { showToast('Error', 'Failed to load training units', 'error') }
       }
 
@@ -4287,7 +4346,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const openUnitClinicians = (unit, allStaff) => {
         unitCliniciansModal.unit = unit
-        unitCliniciansModal.clinicians = (unit.clinician_ids || []).slice()
+        // Pre-populate from unitStaffCache (the new source of truth)
+        const cachedStaff = unitStaffCache.value[unit.id] || []
+        unitCliniciansModal.clinicians = cachedStaff.map(m => m.staff?.id).filter(Boolean)
         unitCliniciansModal.supervisorId = unit.supervisor_id || unit.supervising_attending_id || ''
         // Filter to same-department attendings/fellows only
         // If unit has a department_id, only show staff from that department
@@ -4318,7 +4379,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetUnit = currentUnit || deptUnits[0]
         // Pre-select this attending
         unitCliniciansModal.unit = targetUnit
-        unitCliniciansModal.clinicians = (targetUnit.clinician_ids || []).slice()
+        unitCliniciansModal.clinicians = (unitStaffCache.value[targetUnit.id] || []).map(m => m.staff?.id).filter(Boolean)
         unitCliniciansModal.supervisorId = staff.id  // pre-select this attending
         const deptFilter = targetUnit.department_id
           ? s => s.department_id === targetUnit.department_id
@@ -4336,30 +4397,52 @@ document.addEventListener('DOMContentLoaded', () => {
         const u = unitCliniciansModal.unit
         if (!u?.id) { showToast('Error', 'No unit selected', 'error'); return }
         try {
-        // Backend Joi schema: unit_name, unit_code, department_id (req), supervising_attending_id (opt uuid),
-        // maximum_residents, unit_status, specialty/location_building/location_floor (opt — no empty strings).
-        // stripUnknown:true drops anything else silently.
-        const payload = {
-          unit_name: u.unit_name, unit_code: u.unit_code, department_id: u.department_id,
-          maximum_residents: u.maximum_residents || 5, unit_status: u.unit_status || 'active',
-        }
-        if (unitCliniciansModal.supervisorId) payload.supervising_attending_id = unitCliniciansModal.supervisorId
-        if (u.specialty)         payload.specialty         = u.specialty
-        if (u.location_building) payload.location_building = u.location_building
-        if (u.location_floor)    payload.location_floor    = u.location_floor
-
-        await API.updateTrainingUnit(u.id, payload)
-        const idx = trainingUnits.value.findIndex(x => x.id === u.id)
-        if (idx !== -1) {
-          trainingUnits.value[idx] = {
-            ...trainingUnits.value[idx],
-            supervising_attending_id: unitCliniciansModal.supervisorId || null,
-            supervisor_id: unitCliniciansModal.supervisorId || null,
+          // 1. Update the unit's designated supervisor (backward compat field)
+          const payload = {
+            unit_name: u.unit_name, unit_code: u.unit_code, department_id: u.department_id,
+            maximum_residents: u.maximum_residents || 5, unit_status: u.unit_status || 'active',
           }
-        }
-        unitCliniciansModal.show = false
-        showToast('Saved', 'Supervisor assignment updated', 'success')
-        } catch(e) { showToast('Error', e.message || 'Failed to save unit staff', 'error') }
+          if (unitCliniciansModal.supervisorId) payload.supervising_attending_id = unitCliniciansModal.supervisorId
+          if (u.specialty)         payload.specialty         = u.specialty
+          if (u.location_building) payload.location_building = u.location_building
+          if (u.location_floor)    payload.location_floor    = u.location_floor
+          await API.updateTrainingUnit(u.id, payload)
+
+          // 2. Sync clinical team to unit_staff table
+          const selectedIds  = unitCliniciansModal.clinicians || []
+          const currentStaff = unitStaffCache.value[u.id] || []
+          const currentIds   = currentStaff.map(m => m.staff?.id).filter(Boolean)
+
+          // Add newly selected clinicians
+          const toAdd = selectedIds.filter(id => !currentIds.includes(id))
+          await Promise.all(toAdd.map(staffId =>
+            API.request(`/api/training-units/${u.id}/staff`, {
+              method: 'POST',
+              body: JSON.stringify({ staff_id: staffId, role: staffId === unitCliniciansModal.supervisorId ? 'primary' : 'secondary' })
+            }).catch(() => null)  // ignore 409 duplicates
+          ))
+
+          // Remove deselected clinicians
+          const toRemove = currentIds.filter(id => !selectedIds.includes(id))
+          await Promise.all(toRemove.map(staffId =>
+            API.request(`/api/training-units/${u.id}/staff/${staffId}`, { method: 'DELETE' }).catch(() => null)
+          ))
+
+          // Refresh cache for this unit
+          await loadUnitStaff(u.id)
+
+          // Update local trainingUnits record
+          const idx = trainingUnits.value.findIndex(x => x.id === u.id)
+          if (idx !== -1) {
+            trainingUnits.value[idx] = {
+              ...trainingUnits.value[idx],
+              supervising_attending_id: unitCliniciansModal.supervisorId || null,
+              supervisor_id: unitCliniciansModal.supervisorId || null,
+            }
+          }
+          unitCliniciansModal.show = false
+          showToast('Saved', `Clinical team updated · ${selectedIds.length} clinician${selectedIds.length !== 1 ? 's' : ''}`, 'success')
+        } catch(e) { showToast('Error', e?.message || 'Failed to save unit staff', 'error') }
       }
 
       const viewUnitResidents = (unit, allRotations) => {
@@ -4401,7 +4484,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover, unitStaffCache, loadUnitStaff, getUnitAttendingCount, addStaffToUnit, removeStaffFromUnit,
         occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
     }
 
@@ -5714,6 +5797,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule: ref([]) })
         const { absences } = absenceOps
+
+        // ── Unit staff absence impact (needs absences in scope) ──────────────
+        const getUnitAbsentAttendingCount = (unitId) => {
+          const staff = unitStaffCache.value[unitId] || []
+          const today = new Date().toISOString().slice(0, 10)
+          return staff.filter(a => {
+            if (!a.staff?.id) return false
+            return absences.value.some(ab =>
+              ab.staff_member_id === a.staff.id &&
+              !['cancelled','returned_to_duty'].includes(ab.current_status) &&
+              ab.start_date <= today && ab.end_date >= today
+            )
+          }).length
+        }
+        const getUnitPresentAttendingCount = (unitId) =>
+          (unitStaffCache.value[unitId] || []).length - getUnitAbsentAttendingCount(unitId)
+        const isUnitUnderstaffed = (unitId) => {
+          const total = (unitStaffCache.value[unitId] || []).length
+          if (total === 0) return false
+          const absent = getUnitAbsentAttendingCount(unitId)
+          return absent > 0 && (absent / total) >= 0.5
+        }
+        const isStaffAbsentToday = (staffId) => {
+          const today = new Date().toISOString().slice(0, 10)
+          return absences.value.some(ab =>
+            ab.staff_member_id === staffId &&
+            !['cancelled','returned_to_duty'].includes(ab.current_status) &&
+            ab.start_date <= today && ab.end_date >= today
+          )
+        }
+
+        const getAbsenceUnitImpact = (staffId) => {
+          return Object.entries(unitStaffCache.value)
+            .filter(([, members]) => members.some(m => m.staff?.id === staffId))
+            .map(([unitId]) => {
+              const unit = trainingUnits.value.find(u => u.id === unitId)
+              const total = (unitStaffCache.value[unitId] || []).length
+              const absent = getUnitAbsentAttendingCount(unitId)
+              return { unitId, unitName: unit?.unit_name || 'Unit', total, absent,
+                       remaining: total - absent - 1 }
+            })
+            .filter(u => u.total > 0)
+        }
+
         const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences })
         const { onCallSchedule } = onCallOps
 
@@ -7787,7 +7914,7 @@ document.addEventListener('DOMContentLoaded', () => {
           formatTimeAgo: (d) => Utils.formatRelativeTime(d),
           getInitials: (n) => Utils.getInitials(n),
           getTomorrow: () => Utils.getTomorrow(),
-          getStaffTypeIcon, getAbsenceReasonIcon, nmAv, nmAvI, calculateCapacityPercent, getUnitFillColor,
+          getStaffTypeIcon, getAbsenceReasonIcon, nmAv, nmAvI, getAbsenceUnitImpact, getUnitAbsentAttendingCount, getUnitPresentAttendingCount, isUnitUnderstaffed, isStaffAbsentToday, calculateCapacityPercent, getUnitFillColor,
           getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
           getPreviewStatusClass, getPreviewStatusText, updatePreview, requestFullDossier,
           getPhaseColor: Utils.getPhaseColor, getPartnerTypeColor: Utils.getPartnerTypeColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatPercentage: Utils.formatPercentage,
