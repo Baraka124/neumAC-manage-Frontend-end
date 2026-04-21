@@ -291,7 +291,7 @@
       .tuc-cap-badge--full .tuc-cap-badge-num { color:#e24b4a; }
 
       /* Slim capacity track */
-      .tuc-cap-track { height:3px; background:#edebe5; margin:0 14px 0; border-radius:2px; overflow:hidden; }
+      .tuc-cap-track { height:3px; background:var(--nm-surface3,#edebe5); margin:0 14px 0; border-radius:2px; overflow:hidden; }
       .tuc-cap-track-fill { height:100%; border-radius:2px; transition:width .3s; }
 
       /* Open slot row */
@@ -303,7 +303,7 @@
 
       /* 30-day sparkline — taller, more readable */
       .tuc-30d-strip { display:flex; gap:1px; padding:8px 14px 10px; align-items:flex-end; height:30px; background:var(--nm-surface2,#f5f4f0); border-top:1px solid var(--nm-border,#e3dfd6); }
-      .tuc-30d-bar { flex:1; border-radius:1px; min-height:3px; background:#e3dfd6; transition:background .1s; }
+      .tuc-30d-bar { flex:1; border-radius:1px; min-height:3px; background:var(--nm-border,#e3dfd6); transition:background .1s; }
       .tuc-30d-bar--partial { background:#10b981; min-height:10px; }
       .tuc-30d-bar--full { background:#e24b4a; min-height:16px; }
       .tuc-30d-bar--today { outline:1.5px solid #00b3b3; outline-offset:1px; }
@@ -318,7 +318,7 @@
       /* ── Unit staff (clinical team) on unit cards ──────────────────── */
       .tuc-attending-team { padding:8px 14px 6px; border-bottom:1px solid var(--nm-border,#e3dfd6); }
       .tuc-team-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-      .tuc-team-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--nm-text3,#909399); }
+      .tuc-team-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--nm-text3,#909399); }
       .tuc-team-count { font-size:10px; color:var(--nm-text3,#909399); font-family:monospace; }
       .tuc-team-count--warn { color:#ef9f27 !important; font-weight:600; }
       .tuc-team-row { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
@@ -329,17 +329,17 @@
       .tuc-team-empty:hover { color:var(--nm-teal,#00b3b3); }
 
       /* Understaffed banner */
-      .tuc-understaffed-banner { display:flex; align-items:center; gap:6px; padding:5px 14px; font-size:10.5px; font-weight:600; color:#854f0b; background:#fef3c7; border-bottom:1px solid #fcd34d; }
+      .tuc-understaffed-banner { display:flex; align-items:center; gap:6px; padding:5px 14px; font-size:10.5px; font-weight:600; color:#854f0b; background:#faeeda; border-top:1px solid #f6c05c; border-bottom:1px solid #f6c05c; }
 
       /* Absence modal — unit impact */
       .abs-unit-impact { margin:0 0 12px; border:1px solid var(--nm-border,#e3dfd6); border-radius:8px; overflow:hidden; }
-      .abs-unit-impact-hdr { display:flex; align-items:center; gap:5px; padding:7px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--nm-text3,#909399); background:var(--nm-surface2,#f5f4f0); border-bottom:1px solid var(--nm-border,#e3dfd6); }
+      .abs-unit-impact-hdr { display:flex; align-items:center; gap:5px; padding:6px 12px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--nm-text3,#909399); background:var(--nm-surface2,#f5f4f0); border-bottom:1px solid var(--nm-border,#e3dfd6); }
       .abs-unit-impact-row { display:flex; align-items:center; justify-content:space-between; padding:6px 12px; border-bottom:.5px solid var(--nm-border,#e3dfd6); }
       .abs-unit-impact-row:last-child { border-bottom:none; }
+      .abs-unit-impact-badge { font-size:11px; font-family:monospace; color:var(--nm-text3,#909399); }
+      .abs-unit-impact-name { font-size:12px; color:var(--nm-text1,#07111f); }
       .abs-unit-impact-row--warn .abs-unit-impact-badge { color:#ef9f27; font-weight:600; }
       .abs-unit-impact-row--critical .abs-unit-impact-badge { color:#e24b4a; font-weight:600; }
-      .abs-unit-impact-name { font-size:12px; color:var(--nm-text1,#07111f); }
-      .abs-unit-impact-badge { font-size:11px; font-family:monospace; color:var(--nm-text3,#909399); }
 
       /* ── Rotation rows compact ── */
       .rot-row{padding:8px 18px;min-height:44px;}
@@ -10331,7 +10331,7 @@ tr.staff-table-row .tbl-btn {
                                             <div class="tuc-team-row">
                                                 <template v-for="member in unitStaffCache[unit.id]" :key="member.id">
                                                     <div class="tuc-team-av-wrap">
-                                                        <div :class="[nmAv(member.staff.full_name, member.staff.staff_type, 'xs'), getUnitAbsentAttendingCount(unit.id) > 0 && absences.filter(a => a.staff_member_id === member.staff.id && !['cancelled','returned_to_duty'].includes(a.current_status) && a.start_date <= new Date().toISOString().slice(0,10) && a.end_date >= new Date().toISOString().slice(0,10)).length > 0 ? 'nm-av--absent' : '']"
+                                                        <div :class="[nmAv(member.staff.full_name, member.staff.staff_type, 'xs'), isStaffAbsentToday(member.staff.id) ? 'nm-av--absent' : '']"
                                                              :title="member.staff.full_name + (member.role === 'secondary' ? ' (secondary)' : '')">
                                                             {{ nmAvI(member.staff.full_name) }}
                                                         </div>
@@ -10339,13 +10339,13 @@ tr.staff-table-row .tbl-btn {
                                                 </template>
                                                 <button v-if="hasPermission('training_units','update')"
                                                         class="tuc-team-add"
-                                                        @click.stop="openUnitClinicians(unit)"
+                                                        @click.stop="openUnitClinicians(unit, medicalStaff)"
                                                         title="Manage clinical team">+</button>
                                             </div>
                                         </div>
                                         <div v-else-if="hasPermission('training_units','update')"
                                              class="tuc-team-empty"
-                                             @click.stop="openUnitClinicians(unit)">
+                                             @click.stop="openUnitClinicians(unit, medicalStaff)">
                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                                             Assign clinical team
                                         </div>
