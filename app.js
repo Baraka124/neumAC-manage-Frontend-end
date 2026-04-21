@@ -4352,15 +4352,18 @@ document.addEventListener('DOMContentLoaded', () => {
         unitCliniciansModal.supervisorId = unit.supervisor_id || unit.supervising_attending_id || ''
         // Filter to same-department attendings/fellows only
         // If unit has a department_id, only show staff from that department
-        const deptFilter = unit.department_id
-          ? s => s.department_id === unit.department_id
-          : () => true
-        unitCliniciansModal.allStaff = allStaff.filter(s =>
-          (staffTypeMap.value[s.staff_type]?.can_supervise ||
-           ['attending_physician','fellow'].includes(s.staff_type)) &&
-          s.employment_status === 'active' &&
-          deptFilter(s)
-        )
+        // Show ALL active attending/fellow staff — not filtered by department
+        // because staff.department_id is often null or mismatched.
+        // Sort: same-department first, then others.
+        const isSameDept = s => unit.department_id && s.department_id === unit.department_id
+        const isAttending = s =>
+          staffTypeMap.value[s.staff_type]?.can_supervise ||
+          ['attending_physician','fellow'].includes(s.staff_type)
+        const eligible = allStaff.filter(s => isAttending(s) && s.employment_status === 'active')
+        unitCliniciansModal.allStaff = [
+          ...eligible.filter(s => isSameDept(s)),
+          ...eligible.filter(s => !isSameDept(s))
+        ]
         unitCliniciansModal.show = true
       }
 
