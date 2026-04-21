@@ -353,6 +353,7 @@
       .ucm-sup-btn:hover { background:rgba(0,179,179,.08); color:var(--nm-teal,#00b3b3); }
       .ucm-sup-btn--active { color:#f59e0b; }
       .ucm-sup-btn--active:hover { color:#f59e0b; background:rgba(245,158,11,.08); }
+      .ucm-divider { padding:5px 20px 3px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--nm-text3,#909399); background:var(--nm-surface2,#f5f4f0); border-top:1px solid var(--nm-border,#e3dfd6); border-bottom:1px solid var(--nm-border,#e3dfd6); }
       .ucm-summary { padding:8px 20px; font-size:11px; color:var(--nm-text3,#909399); background:var(--nm-surface2,#f5f4f0); border-top:1px solid var(--nm-border,#e3dfd6); }
 
       /* ── Rotation rows compact ── */
@@ -15986,7 +15987,12 @@ tr.staff-table-row .tbl-btn {
                     </p>
                     <!-- Staff list — checkboxes with optional supervisor radio -->
                     <div class="ucm-list">
-                        <label v-for="s in unitCliniciansModal.allStaff" :key="s.id" class="ucm-row2"
+                        <!-- Same-dept staff — natural picks -->
+                        <template v-for="(s, idx) in unitCliniciansModal.allStaff" :key="s.id">
+                            <!-- Divider between same-dept and other-dept -->
+                            <div v-if="idx > 0 && unitCliniciansModal.allStaff[idx-1].department_id === unitCliniciansModal.unit?.department_id && s.department_id !== unitCliniciansModal.unit?.department_id"
+                                 class="ucm-divider">Other departments</div>
+                        <label class="ucm-row2"
                                :class="{ 'ucm-row2--selected': unitCliniciansModal.clinicians.includes(s.id) }">
                             <!-- Checkbox: in team or not -->
                             <input type="checkbox" class="ucm-check2"
@@ -16008,6 +16014,7 @@ tr.staff-table-row .tbl-btn {
                                 <svg width="13" height="13" viewBox="0 0 24 24" :fill="unitCliniciansModal.supervisorId === s.id ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                             </button>
                         </label>
+                        </template>
                         <div v-if="!unitCliniciansModal.allStaff?.length" class="empty-state" style="padding:32px 20px">
                             <div class="empty-state-title">No attending physicians found in this department</div>
                         </div>
@@ -18036,7 +18043,7 @@ tr.staff-table-row .tbl-btn {
             ctx.bezierCurveTo(cxL-106*S,228*S,cxL-76*S,232*S,cxL-46*S,230*S);
             ctx.bezierCurveTo(cxL-28*S,228*S,cxL-18*S,218*S,cxL-16*S,204*S);
             ctx.bezierCurveTo(cxL-14*S,192*S,cxL-22*S,174*S,cxL-24*S,162*S);
-            ctx.bezierCurveTo(cxL-26*S,150*S,cxL-20*S,134*S,cxL-16*S,14*S);
+            ctx.bezierCurveTo(cxL-26*S,150*S,cxL-20*S,134*S,cxL-16*S,14*S);    
             ctx.stroke();
 
             ctx.globalAlpha = 1;
