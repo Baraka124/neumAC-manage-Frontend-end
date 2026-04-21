@@ -1777,7 +1777,7 @@ document.addEventListener('DOMContentLoaded', () => {
         staffFilters, staffProfileModal, medicalStaffModal,
         filteredMedicalStaff, filteredMedicalStaffAll, staffTotalPages,
         loadMedicalStaff, loadHospitals, addHospitalInline,
-        loadStaffCertificates, loadStaffUnits, saveCertificate, deleteCertificate,
+        loadStaffCertificates, saveCertificate, deleteCertificate,
         showAddMedicalStaffModal, editMedicalStaff, saveMedicalStaff, deactivateStaffMember,
         formatTrainingYear: Utils.formatTrainingYear, formatSpecialization: Utils.formatSpecialization, effectiveResidentYear: Utils.effectiveResidentYear,
         formatPhone: Utils.formatPhone, formatLicense: Utils.formatLicense,
