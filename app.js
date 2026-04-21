@@ -5761,7 +5761,8 @@ document.addEventListener('DOMContentLoaded', () => {
           trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
           tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
-          getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail
+          getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail,
+          unitStaffCache, loadUnitStaff, getUnitAttendingCount, addStaffToUnit, removeStaffFromUnit
         } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
@@ -7760,6 +7761,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getUnitSupervisorName, rotDaysLeft,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
           getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
+          unitStaffCache, loadUnitStaff, getUnitAttendingCount, addStaffToUnit, removeStaffFromUnit,
         trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
