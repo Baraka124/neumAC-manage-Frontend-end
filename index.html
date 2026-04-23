@@ -1,12 +1,12 @@
 <!DOCTYPE html>       
-<html lang="en">   
+<html lang="en"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>neumDesk — by neumAC</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Epilogue:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Epilogue:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <link rel="stylesheet" href="style.css?v=7">
 
@@ -662,9 +662,60 @@
       /* ── ROOT HEIGHT CHAIN ── */
       #app .app-layout { display:flex !important; height:100vh !important; max-height:100vh !important; overflow:hidden !important; }
 
-      /* ── SIDEBAR — legacy rules neutralised; new design in NMSB block below ── */
-      #app .sidebar { overflow:visible !important; }
+      /* ── SIDEBAR ── */
+      #app .sidebar { position:relative !important; width:clamp(220px,16vw,240px) !important; background:var(--nm-navy) !important; display:flex !important; flex-direction:column !important; height:100vh !important; flex-shrink:0 !important; overflow:hidden !important; border-right:1px solid rgba(255,255,255,.06) !important; transition:width .2s !important; }
+      #app .sidebar.sidebar-collapsed { width:56px !important; }
       #app .main-content { margin-left:0 !important; }
+      #app .sidebar .sidebar-header { padding:14px 14px 12px !important; border-bottom:1px solid rgba(255,255,255,.06) !important; flex-shrink:0 !important; }
+      #app .sidebar .sidebar-logo { display:flex; align-items:center; gap:10px; }
+      #app .sidebar .sidebar-toggle { margin-left:auto; width:24px; height:24px; background:rgba(255,255,255,.06) !important; border:none !important; border-radius:6px !important; color:rgba(255,255,255,.35) !important; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+      #app .sb-live-status { margin:8px 10px; padding:7px 10px; background:rgba(0,179,179,.07); border:1px solid rgba(0,179,179,.14); border-radius:8px; display:flex; align-items:center; gap:8px; cursor:pointer; flex-shrink:0; }
+      #app .sidebar.sidebar-collapsed .sb-live-status { margin:8px 12px; padding:8px; justify-content:center; }
+      #app .sb-status-dot { width:8px; height:8px; border-radius:50%; background:#10b981; flex-shrink:0; }
+      #app .sb-status-ring { width:14px; height:14px; border-radius:50%; border:1.5px solid rgba(16,185,129,.3); position:absolute; animation:nm-pulse 2s infinite; pointer-events:none; }
+      @keyframes nm-pulse { 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:0;transform:scale(1.5)} }
+      #app .sb-status-wrap { position:relative; display:flex; align-items:center; justify-content:center; width:14px; height:14px; flex-shrink:0; }
+      #app .sb-status-txt { flex:1; min-width:0; }
+      #app .sb-status-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.4); }
+      #app .sb-status-val   { font-size:12px; color:var(--nm-teal); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      #app .sidebar.sidebar-collapsed .sb-status-txt, #app .sidebar.sidebar-collapsed .sb-status-ring { display:none; }
+      #app .sidebar .sidebar-nav { flex:1 !important; overflow-y:auto !important; overflow-x:hidden !important; padding:4px 0 !important; scrollbar-width:none !important; }
+      #app .sidebar .sidebar-nav::-webkit-scrollbar { display:none; }
+      #app .sidebar .sidebar-section { margin-bottom:2px; }
+      #app .sidebar .sidebar-section-title { display:flex !important; align-items:center; gap:8px; padding:10px 16px 4px !important; font-size:9px !important; color:transparent !important; }
+      #app .sidebar .sidebar-section-title::before { content:attr(data-num); font-size:10px; font-weight:700; color:rgba(255,255,255,.18); font-family:monospace; letter-spacing:.1em; min-width:16px; }
+      #app .sidebar .sidebar-section-title::after  { content:''; flex:1; height:1px; background:rgba(255,255,255,.06); }
+      #app .sidebar .sidebar-menu { list-style:none; padding:0 !important; margin:0 !important; }
+      #app .sidebar .sidebar-menu-item { margin:1px 6px !important; }
+      #app .sidebar .sidebar-menu-link { display:flex !important; align-items:center !important; gap:0 !important; padding:0 !important; border-radius:8px !important; text-decoration:none !important; position:relative !important; transition:background .12s !important; min-height:38px !important; }
+      #app .sidebar .sidebar-menu-link:hover { background:rgba(255,255,255,.05) !important; }
+      #app .sidebar .sidebar-menu-link.active { background:rgba(0,179,179,.12) !important; }
+      #app .sidebar .sidebar-menu-link.active::before { content:''; position:absolute; left:0; top:7px; bottom:7px; width:2.5px; background:var(--nm-teal); border-radius:0 2px 2px 0; }
+      #app .sidebar .sidebar-menu-link svg:first-child { width:38px; height:38px; padding:12px; flex-shrink:0; opacity:.38 !important; }
+      #app .sidebar .sidebar-menu-link.active svg:first-child { opacity:1 !important; }
+      #app .sidebar .sidebar-menu-link:hover  svg:first-child { opacity:.65 !important; }
+      #app .sidebar .sidebar-menu-link span { flex:1; font-size:13px !important; color:rgba(255,255,255,.55) !important; letter-spacing:-.01em !important; font-weight:400 !important; }
+      #app .sidebar .sidebar-menu-link.active span { color:rgba(255,255,255,.92) !important; font-weight:500 !important; }
+      #app .sidebar .sidebar-menu-link:hover  span { color:rgba(255,255,255,.72) !important; }
+      #app .sb-nav-sub { font-size:11px !important; color:rgba(255,255,255,.22) !important; display:block; margin-top:1px; font-weight:400 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
+      #app .sidebar.sidebar-collapsed .sb-nav-sub, #app .sidebar.sidebar-collapsed .sidebar-menu-link span.has-sub { display:none !important; }
+      #app .sidebar .sidebar-menu-link.active .sb-nav-sub { color:rgba(0,179,179,.6) !important; }
+      #app .sb-badge { flex-shrink:0; margin-right:8px; padding:2px 6px; border-radius:5px; font-size:11px; font-weight:600; }
+      #app .sb-badge--alert { background:rgba(226,75,74,.2); color:#f09595; }
+      #app .sb-badge--count { background:rgba(255,255,255,.08); color:rgba(255,255,255,.4); }
+      #app .sb-badge--live  { background:rgba(0,179,179,.2); color:#7eeaea; }
+      #app .sidebar .sidebar-dept-ctx { display:none !important; }
+      #app .sidebar .sidebar-footer { border-top:1px solid rgba(255,255,255,.06) !important; padding:10px !important; flex-shrink:0 !important; }
+      #app .sb-search { display:flex; align-items:center; gap:8px; height:30px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:7px; padding:0 10px; cursor:pointer; margin-bottom:6px; transition:background .12s; }
+      #app .sb-search:hover { background:rgba(255,255,255,.1); }
+      #app .sb-search span { font-size:13px; color:rgba(255,255,255,.25); flex:1; }
+      #app .sb-search kbd  { font-size:11px; color:rgba(255,255,255,.18); font-family:monospace; background:rgba(255,255,255,.06); padding:2px 5px; border-radius:3px; }
+      #app .sidebar.sidebar-collapsed .sb-search { display:none; }
+      #app .sidebar .sidebar-user { display:flex !important; align-items:center !important; gap:10px !important; padding:7px 6px !important; border-radius:8px !important; cursor:pointer; background:transparent !important; border:none !important; }
+      #app .sidebar .sidebar-user:hover { background:rgba(255,255,255,.05) !important; }
+      #app .sidebar .sidebar-user-avatar { width:32px !important; height:32px !important; border-radius:50% !important; background:#1e3a6e !important; border:1.5px solid rgba(0,179,179,.3) !important; font-size:12px !important; color:#7eeaea !important; flex-shrink:0 !important; display:flex !important; align-items:center !important; justify-content:center !important; }
+      #app .sidebar .user-name { font-size:13px !important; font-weight:500 !important; color:rgba(255,255,255,.8) !important; }
+      #app .sidebar .user-role { font-size:11px !important; text-transform:uppercase !important; letter-spacing:.07em !important; color:rgba(255,255,255,.25) !important; }
 
       /* ── MAIN CONTENT ── */
       #app .main-content { display:flex !important; flex-direction:column !important; flex:1 !important; min-width:0 !important; height:100vh !important; overflow:hidden !important; }
@@ -2015,6 +2066,7 @@
 
       /* ─────────────── TABLET (≤ 1024px) ─────────────── */
       @media (max-width: 1024px) {
+        #app .sidebar { width:clamp(56px,14vw,220px) !important; }
         #app .sidebar .sidebar-menu-link span { font-size:12px !important; }
         #app .dbsr { grid-template-columns: repeat(4,1fr) !important; border-bottom:1px solid var(--nm-border); }
         #app .absence-kpi-strip { grid-template-columns: repeat(2,1fr) !important; }
@@ -2025,8 +2077,25 @@
       /* ─────────────── MOBILE (≤ 768px) ─────────────── */
       @media (max-width: 768px) {
 
-        /* ── Layout: sidebar becomes a drawer (handled by NMSB block) ── */
+        /* ── Layout: sidebar becomes a drawer ── */
         #app .app-layout { position:relative; overflow:hidden; }
+        #app .sidebar {
+          position:fixed !important;
+          left:0 !important; top:0 !important; bottom:0 !important;
+          width:280px !important;
+          z-index:300 !important;
+          transform:translateX(-100%) !important;
+          transition:transform .25s cubic-bezier(.22,.61,.36,1) !important;
+          box-shadow:none !important;
+        }
+        #app .sidebar.mobile-open {
+          transform:translateX(0) !important;
+          box-shadow:4px 0 32px rgba(0,0,0,.25) !important;
+        }
+        #app .sidebar.sidebar-collapsed {
+          width:280px !important;
+          transform:translateX(-100%) !important;
+        }
         #app .main-content {
           width:100vw !important;
           margin-left:0 !important;
@@ -2844,8 +2913,14 @@
       #app .db-right-col { display:flex; flex-direction:column; gap:20px; }
       #app .db-right-col > .db-panel { flex:1; }
 
-      /* Sidebar: width controlled by NMSB --nd-W / --nd-C vars */
-      #app .sidebar { flex-shrink: 0 !important; }
+      /* Sidebar: clamp keeps it proportional on 1920px monitors */
+      #app .sidebar {
+        width: clamp(220px, 14vw, 260px) !important;
+        flex-shrink: 0 !important;
+      }
+      #app .sidebar.sidebar-collapsed {
+        width: 56px !important;
+      }
 
       /* Content area — never wider than a readable line length on ultra-wide */
       #app .content-area {
@@ -2861,7 +2936,7 @@
       @media (min-width: 1440px) {
         #app .dbsr { grid-template-columns: repeat(4, 1fr) !important; }
         #app .db-main-grid { grid-template-columns: 55fr 45fr !important; gap:24px !important; }
-        /* sidebar width controlled by NMSB vars */
+        #app .sidebar { width: clamp(240px, 13vw, 280px) !important; }
         #app .rha-kpi-strip { grid-template-columns: repeat(4, 1fr) !important; }
         #app .rha-charts-row { grid-template-columns: repeat(3, 1fr) !important; }
         /* Large monitors: date can be bigger */
@@ -2956,7 +3031,7 @@
       @media (max-width: 1024px) {
         /* dbsr mobile: handled by cross-platform system */
         #app .db-main-grid { grid-template-columns: 1fr !important; }
-        /* sidebar width controlled by NMSB vars */
+        #app .sidebar { width: clamp(200px, 18vw, 220px) !important; }
         #app .rha-charts-row { grid-template-columns: 1fr !important; }
         #app .profile-drawer {
           width: min(520px, 96vw) !important;
@@ -2965,7 +3040,21 @@
 
       /* ── 768px — tablet portrait / large phone landscape ── */
       @media (max-width: 768px) {
-        /* Sidebar mobile handled by NMSB block */
+        /* Sidebar goes off-canvas */
+        #app .sidebar {
+          position: fixed !important;
+          left: -280px !important;
+          top: 0 !important;
+          height: 100vh !important;
+          width: 260px !important;
+          z-index: 1000 !important;
+          transition: left .22s ease !important;
+          box-shadow: none !important;
+        }
+        #app .sidebar.mobile-open {
+          left: 0 !important;
+          box-shadow: 4px 0 24px rgba(0,0,0,.35) !important;
+        }
         #app .content-area {
           width: 100vw !important;
           overflow-x: hidden !important;
@@ -5890,558 +5979,211 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   NMSB — neumDesk Sidebar v2  (neumdesk-sidebar design)
-   Uses class .nmsb to win specificity over style.css .sidebar rules
-   ═══════════════════════════════════════════════════════════════ */
+   ND — neumDesk sidebar v4
+   Prefixed nd- throughout to avoid conflicts
+═══════════════════════════════════════════════════════════════ */
 
-/* ── Design tokens ─────────────────────────────────────────────── */
-#app aside.nmsb {
-  --nd-bg:     #06080e;
-  --nd-bg-ft:  #080b14;
-  --nd-t1:     #dde4f0;
-  --nd-t2:     #4e5e7a;
-  --nd-t3:     #252f42;
-  --nd-teal:   #00d4aa;
-  --nd-amber:  #e8962a;
-  --nd-red:    #f04060;
-  --nd-blue:   #3d96f5;
-  --nd-violet: #9d7ef7;
-  --nd-W:      262px;
-  --nd-C:      58px;
+/* ── Wrapper & nav shell ── */
+#app .nd-sw { position:relative; width:272px; height:100vh; flex-shrink:0; transition:width .5s cubic-bezier(.16,1,.3,1); }
+#app .nd-sw.nd-col { width:54px; }
+#app .nd-nav {
+  width:272px; height:100vh; display:flex; flex-direction:column;
+  position:relative; overflow:hidden;
+  transition:width .5s cubic-bezier(.16,1,.3,1);
+  background:
+    radial-gradient(ellipse 60% 40% at 0% 0%, rgba(15,30,60,.95) 0%, transparent 65%),
+    radial-gradient(ellipse 80% 60% at 100% 100%, rgba(8,15,35,.9) 0%, transparent 70%),
+    linear-gradient(175deg, #0c1428 0%, #080d1c 40%, #060912 100%);
 }
-
-/* ── Shell ─────────────────────────────────────────────────────── */
-#app aside.nmsb {
-  width: var(--nd-W);
-  background: var(--nd-bg);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  position: relative;
-  flex-shrink: 0;
-  overflow: visible; /* allow toggle button to hang on seam */
-  border-right: 1px solid rgba(255,255,255,.05);
-  transition: width .44s cubic-bezier(.16,1,.3,1);
-  will-change: width;
-}
-#app aside.nmsb.nmsb--collapsed {
-  width: var(--nd-C) !important;
-}
-/* clip nav content but let toggle overflow */
-#app aside.nmsb > *:not(.nmsb-tog-wrap) { overflow: hidden; }
-
-/* Grain overlay */
-#app aside.nmsb::before {
+#app .nd-nav.nd-col { width:54px; }
+/* blueprint grid */
+#app .nd-nav::before {
   content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity:.018; border-radius: inherit;
+  background-image:
+    linear-gradient(rgba(79,163,245,.013) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79,163,245,.013) 1px, transparent 1px);
+  background-size:32px 32px;
+  mask-image:linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
 }
-/* Ambient teal glow */
-#app aside.nmsb::after {
-  content:''; position:absolute; z-index:0; pointer-events:none;
-  top:-70px; left:-90px; width:280px; height:280px;
-  background:radial-gradient(ellipse, rgba(0,212,170,.052) 0%, transparent 65%);
-}
-#app aside.nmsb > * { position:relative; z-index:1; }
+#app .nd-nav > * { position:relative; z-index:1; }
 
-/* ── Toggle button — seam-mounted ──────────────────────────────── */
-#app .nmsb-tog-wrap {
-  position: absolute;
-  right: -15px;
-  top: 24px;
-  z-index: 200;
-  width: 30px; height: 30px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+/* lit edge seam */
+#app .nd-edge {
+  position:absolute; top:0; right:0; width:1px; height:100%; z-index:20; pointer-events:none;
+  background:linear-gradient(to bottom, transparent 0%, rgba(79,163,245,.45) 8%, rgba(180,210,255,.12) 28%, rgba(180,210,255,.04) 60%, transparent 100%);
 }
-#app .nmsb-tog-ring {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: var(--nd-bg);
-  border: 1px solid rgba(255,255,255,.09);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 16px rgba(0,0,0,.75);
-  transition: border-color .22s, box-shadow .24s, background .22s;
-  position: relative; overflow: hidden;
+#app .nd-edge::before {
+  content:''; position:absolute; top:0; left:0; width:1px; height:22%;
+  background:linear-gradient(to bottom, rgba(34,201,160,.5), transparent);
 }
-/* ripple */
-#app .nmsb-tog-ring::after {
-  content:''; position:absolute; inset:0; border-radius:50%;
-  background:radial-gradient(circle, rgba(0,212,170,.24) 0%, transparent 72%);
-  opacity:0; transform:scale(.3);
-  transition:opacity .5s ease, transform .5s ease;
-  pointer-events:none;
+/* alert hairline */
+#app .nd-hair {
+  position:absolute; top:0; left:0; right:0; height:2px; z-index:30; pointer-events:none;
+  background:linear-gradient(90deg, transparent 5%, rgba(240,72,104,.7) 40%, rgba(240,72,104,.9) 55%, rgba(240,72,104,.7) 70%, transparent 95%);
+  animation:nd-hair 3s ease-in-out infinite;
 }
-#app .nmsb-tog-wrap.nmsb-tog--fire .nmsb-tog-ring::after { opacity:1; transform:scale(1.1); }
-#app .nmsb-tog-wrap:hover .nmsb-tog-ring {
-  background: #0b1520;
-  border-color: rgba(0,212,170,.40);
-  box-shadow: 0 2px 22px rgba(0,212,170,.14), 0 0 0 4px rgba(0,212,170,.06);
-}
-/* chevron bars */
-#app .nmsb-tog-ico {
-  width:12px; height:12px; position:relative;
-  transition: transform .44s cubic-bezier(.16,1,.3,1);
-  flex-shrink: 0;
-}
-#app .nmsb-tog-ico.nmsb-tog--open { transform: rotate(180deg); }
-#app .nmsb-tog-ico::before,
-#app .nmsb-tog-ico::after {
-  content:''; position:absolute; right:2px;
-  width:7px; height:1.5px;
-  background: var(--nd-t2);
-  border-radius:2px;
-  transition: background .2s, transform .4s cubic-bezier(.16,1,.3,1);
-}
-#app .nmsb-tog-ico::before { top:2.5px;    transform:rotate(-40deg); transform-origin:right center; }
-#app .nmsb-tog-ico::after  { bottom:2.5px; transform:rotate( 40deg); transform-origin:right center; }
-#app .nmsb-tog-wrap:hover .nmsb-tog-ico::before,
-#app .nmsb-tog-wrap:hover .nmsb-tog-ico::after { background: var(--nd-teal); }
-/* alert pip */
-#app .nmsb-tog-pip {
-  position:absolute; top:0; right:-1px;
-  width:7px; height:7px; border-radius:50%;
-  background: var(--nd-red);
-  border:1.5px solid var(--nd-bg);
-  animation: nd-pipblink 1.5s ease-in-out infinite;
-  box-shadow:0 0 6px var(--nd-red);
-}
-@keyframes nd-pipblink {
-  0%,100%{box-shadow:0 0 5px var(--nd-red)} 50%{box-shadow:0 0 14px var(--nd-red);opacity:.5}
-}
-/* keyboard hint */
-#app .nmsb-tog-kbd {
-  position:absolute; left:38px; top:50%; transform:translateY(-50%);
-  font-family:'DM Mono',monospace; font-size:9px;
-  color: var(--nd-t3); letter-spacing:.3px;
-  white-space:nowrap; opacity:0; pointer-events:none;
-  transition:opacity .18s .5s ease;
-}
-#app .nmsb-tog-wrap:hover .nmsb-tog-kbd { opacity:1; }
+@keyframes nd-hair { 0%,100%{opacity:.4} 50%{opacity:1} }
 
-/* ── Logo / head ───────────────────────────────────────────────── */
-#app .nmsb-head {
-  padding: 22px 14px 10px;
-  display: flex; align-items: center;
-  flex-shrink: 0; min-width: 0; gap: 0;
-  border-bottom: none;
-}
-#app .nmsb--collapsed .nmsb-head {
-  justify-content: center;
-  padding: 22px 0 10px;
-}
-#app .nmsb-logo-sym {
-  width:28px; height:20px; flex-shrink:0; margin-right:10px;
-}
-#app .nmsb--collapsed .nmsb-logo-sym { margin-right:0; }
-#app .nmsb-logo-sym svg { width:28px; height:20px; overflow:visible; }
-/* ECG draw-in + pulse */
-#app .nmsb-ecg {
-  stroke-dasharray:130; stroke-dashoffset:130;
-  animation:
-    nd-draw  1.5s cubic-bezier(.4,0,.2,1) .2s forwards,
-    nd-pulse 3.8s 1.7s ease-in-out infinite;
-}
-@keyframes nd-draw  { to{ stroke-dashoffset:0; } }
-@keyframes nd-pulse {
-  0%,100%{ opacity:1;  filter:drop-shadow(0 0 3px rgba(0,212,170,.65)); }
-  50%    { opacity:.55; filter:drop-shadow(0 0 1px rgba(0,212,170,.2));  }
-}
-#app .nmsb-logo-name {
-  font-family:'Syne',sans-serif;
-  font-size:17px; font-weight:800; letter-spacing:-.6px;
-  color: var(--nd-t1); line-height:1;
-  white-space: nowrap; overflow: hidden;
-  transition: opacity .16s ease;
-}
-#app .nmsb--collapsed .nmsb-logo-name { opacity:0; pointer-events:none; width:0; }
-#app .nmsb-logo-name em { color: var(--nd-teal); font-style:normal; }
-#app .nmsb-logo-end {
-  margin-left:auto; display:flex; align-items:center; gap:5px; flex-shrink:0;
-  transition: opacity .16s ease;
-}
-#app .nmsb--collapsed .nmsb-logo-end { opacity:0; pointer-events:none; width:0; overflow:hidden; }
-#app .nmsb-live-dot {
-  width:6px; height:6px; border-radius:50%;
-  background: var(--nd-teal); box-shadow:0 0 7px var(--nd-teal);
-  animation: nd-liveblink 2.4s ease-in-out infinite;
-}
-@keyframes nd-liveblink {
-  0%,100%{opacity:1;box-shadow:0 0 7px var(--nd-teal)} 50%{opacity:.28;box-shadow:none}
-}
-#app .nmsb-live-lbl {
-  font-family:'DM Mono',monospace; font-size:9px;
-  letter-spacing:.8px; color: var(--nd-teal); opacity:.6;
-}
-#app .nmsb-logo-rule {
-  height:1px; flex-shrink:0; margin: 0 0 0 0;
-  background:linear-gradient(90deg, rgba(0,212,170,.22) 0%, rgba(255,255,255,.04) 55%, transparent 100%);
-  transition: opacity .16s;
-}
-#app .nmsb--collapsed .nmsb-logo-rule { opacity:0; }
+/* collapse utility */
+#app .nd-hc { opacity:1; overflow:hidden; white-space:nowrap; transition:opacity .12s ease; }
+#app .nd-nav.nd-col .nd-hc { opacity:0; pointer-events:none; }
 
-/* ── User strip ────────────────────────────────────────────────── */
-#app .nmsb-user {
-  padding:12px 14px 10px;
-  display:flex; align-items:center; gap:10px;
-  cursor:pointer; flex-shrink:0; position:relative;
-  transition:background .18s; min-width:0;
-  border-radius: 0;
-}
-#app .nmsb-user:hover { background:rgba(255,255,255,.022); }
-#app .nmsb-user::before {
-  content:''; position:absolute;
-  left:0; top:20%; height:60%; width:2px;
-  background:linear-gradient(to bottom, transparent, var(--nd-teal), transparent);
-  border-radius:0 2px 2px 0;
-}
-#app .nmsb--collapsed .nmsb-user { justify-content:center; padding:12px 0 10px; }
-#app .nmsb--collapsed .nmsb-user::before { display: none; }
-#app .nmsb-user-av {
-  width:30px; height:30px; border-radius:8px;
-  background:#0c1e1e; border:1px solid rgba(0,212,170,.22);
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Syne',sans-serif; font-size:10px; font-weight:700;
-  color: var(--nd-teal); flex-shrink:0; letter-spacing:.5px;
-  position: relative;
-}
-#app .nmsb-user-dot {
-  position:absolute; bottom:-2px; right:-2px;
-  width:8px; height:8px; border-radius:50%;
-  background:#10b981; border:1.5px solid var(--nd-bg);
-}
-#app .nmsb-user-body {
-  flex:1; min-width:0;
-  transition: opacity .16s;
-}
-#app .nmsb--collapsed .nmsb-user-body { opacity:0; pointer-events:none; width:0; overflow:hidden; }
-#app .nmsb-user-name {
-  font-size:12px; font-weight:500; color: var(--nd-t1);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3;
-}
-#app .nmsb-user-role {
-  font-family:'DM Mono',monospace; font-size:8.5px;
-  color: var(--nd-t2); margin-top:2px; letter-spacing:.2px;
-}
-#app .nmsb-user-date {
-  flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:1px;
-  transition: opacity .16s;
-}
-#app .nmsb--collapsed .nmsb-user-date { opacity:0; pointer-events:none; width:0; overflow:hidden; }
-#app .nmsb-user-date-d {
-  font-family:'Syne',sans-serif; font-size:11px; font-weight:700;
-  color: var(--nd-t1); line-height:1;
-}
-#app .nmsb-user-date-m {
-  font-family:'DM Mono',monospace; font-size:8px;
-  color: var(--nd-t3); letter-spacing:.3px;
-}
+/* ── Wordmark ── */
+#app .nd-top-area { padding:28px 20px 20px; flex-shrink:0; min-width:0; position:relative; }
+#app .nd-nav.nd-col .nd-top-area { display:none; }
+#app .nd-wm { display:flex; align-items:flex-end; gap:0; line-height:1; margin-bottom:6px; }
+#app .nd-wm-n { font-family:'Syne',sans-serif; font-size:14px; font-weight:400; letter-spacing:4px; text-transform:uppercase; color:rgba(79,163,245,.28); align-self:center; padding-bottom:2px; }
+#app .nd-wm-d { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; letter-spacing:-1px; color:#4fa3f5; position:relative; line-height:1; }
+#app .nd-wm-d::before { content:'Desk'; position:absolute; inset:0; color:#4fa3f5; filter:blur(10px); opacity:.3; pointer-events:none; }
+#app .nd-wm-d::after { content:''; position:absolute; bottom:-3px; left:0; width:100%; height:1px; background:linear-gradient(90deg, #4fa3f5, transparent); opacity:.5; }
+#app .nd-wm-tick { position:absolute; bottom:14px; left:20px; display:flex; gap:0; pointer-events:none; }
+#app .nd-wm-tick::before { content:''; display:block; width:6px; height:1px; background:rgba(79,163,245,.2); }
+#app .nd-wm-tick::after { content:''; display:block; width:1px; height:6px; background:rgba(79,163,245,.2); transform:translateY(-5px); }
+#app .nd-top-rule { height:1px; margin:0 20px; background:linear-gradient(90deg, rgba(34,201,160,.3) 0%, rgba(79,163,245,.08) 40%, transparent 100%); flex-shrink:0; }
+#app .nd-logo-col { display:none; padding:24px 0 16px; justify-content:center; flex-shrink:0; }
+#app .nd-nav.nd-col .nd-logo-col { display:flex; }
+#app .nd-col-mark { font-family:'Syne',sans-serif; font-size:13px; font-weight:800; letter-spacing:1.5px; background:linear-gradient(135deg, #22c9a0, #4fa3f5); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 
-/* ── Search ────────────────────────────────────────────────────── */
-#app .nmsb-search-wrap {
-  padding:0 10px 10px; flex-shrink:0;
-  transition: opacity .16s;
-}
-#app .nmsb--collapsed .nmsb-search-wrap { opacity:0; pointer-events:none; height:0; padding:0; overflow:hidden; }
-#app .nmsb-search-inner { position:relative; }
-#app .nmsb-search {
-  width:100%; background:rgba(255,255,255,.028);
-  border:none; border-bottom:1px solid rgba(255,255,255,.055); border-radius:0;
-  padding:7px 42px 7px 27px;
-  font-family:'Epilogue',sans-serif; font-size:11.5px;
-  color: var(--nd-t1); outline:none;
-  transition:border-color .2s, background .2s;
-  cursor: pointer; text-align: left;
-  display: flex; align-items: center; gap: 8px;
-}
-#app .nmsb-search:hover,
-#app .nmsb-search:focus {
-  border-bottom-color:rgba(0,212,170,.28);
-  background:rgba(0,212,170,.016);
-  color: var(--nd-t1);
-  border-color: transparent;
-  border-bottom-color:rgba(0,212,170,.28);
-}
-#app .nmsb-search-ico { position:absolute; left:7px; top:50%; transform:translateY(-50%); color: var(--nd-t3); }
-#app .nmsb-search-cmd {
-  position:absolute; right:5px; top:50%; transform:translateY(-50%);
-  font-family:'DM Mono',monospace; font-size:8.5px; color: var(--nd-t3);
-  border:1px solid rgba(37,47,66,.8); padding:1.5px 5px; border-radius:3px; opacity:.5;
-}
-/* collapsed: icon-only search */
-#app .nmsb-search--icon {
-  display: none;
-}
-#app .nmsb--collapsed .nmsb-search--icon {
-  display: flex;
-  width: 36px; height: 36px;
-  border-radius: 8px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.07);
-  margin: 0 auto 8px;
-  align-items: center; justify-content: center;
-  cursor: pointer; color: var(--nd-t2);
-  transition: background .12s; padding: 0;
-  font-size: 0;
-}
-#app .nmsb--collapsed .nmsb-search--icon:hover { background: rgba(255,255,255,.09); color: var(--nd-teal); }
+/* ── User card ── */
+#app .nd-user-card { margin:0 12px 0; padding:10px 12px; display:flex; align-items:center; gap:11px; cursor:pointer; flex-shrink:0; position:relative; border-radius:10px; border:1px solid transparent; transition:background .16s, border-color .16s; }
+#app .nd-user-card:hover { background:rgba(79,163,245,.05); border-color:rgba(79,163,245,.10); }
+#app .nd-user-card::before { content:''; position:absolute; left:-12px; top:18%; height:64%; width:1.5px; background:linear-gradient(to bottom, transparent, #4fa3f5 40%, #9870f0 60%, transparent); border-radius:0 1.5px 1.5px 0; opacity:0; transition:opacity .2s; }
+#app .nd-user-card:hover::before { opacity:1; }
+#app .nd-uav { width:32px; height:32px; flex-shrink:0; border-radius:9px; background:linear-gradient(135deg,#0e2030,#0c1840); border:1px solid rgba(79,163,245,.22); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-size:10.5px; font-weight:700; color:#4fa3f5; letter-spacing:.5px; box-shadow:0 0 0 3px rgba(79,163,245,.05); }
+#app .nd-uinfo { flex:1; min-width:0; }
+#app .nd-uname { font-size:12.5px; font-weight:500; color:#cdd8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; }
+#app .nd-urole { font-family:'DM Mono',monospace; font-size:8px; letter-spacing:.8px; color:#1e2a40; margin-top:2px; text-transform:uppercase; }
+#app .nd-ustatus { width:6px; height:6px; border-radius:50%; background:#22c9a0; flex-shrink:0; box-shadow:0 0 7px #22c9a0; animation:nd-sdot 2.8s ease-in-out infinite; }
+@keyframes nd-sdot { 0%,100%{opacity:1;box-shadow:0 0 6px #22c9a0} 50%{opacity:.25;box-shadow:none} }
+#app .nd-nav.nd-col .nd-user-card { margin:4px 0; padding:8px 0; border-radius:0; border-color:transparent; background:transparent; justify-content:center; }
+#app .nd-nav.nd-col .nd-user-card::before { display:none; }
 
-/* ── Nav scroll ────────────────────────────────────────────────── */
-#app .nmsb-nav {
-  flex:1; overflow-y:auto; overflow-x:hidden;
-  scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.04) transparent;
-  padding-bottom:6px;
-}
-#app .nmsb-nav::-webkit-scrollbar { width:2px; }
-#app .nmsb-nav::-webkit-scrollbar-thumb { background:rgba(255,255,255,.05); }
+/* ── Search ── */
+#app .nd-srch { padding:4px 12px 8px; flex-shrink:0; }
+#app .nd-srch-box { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.025); border:1px solid rgba(180,210,255,.06); border-radius:8px; padding:7px 10px; transition:border-color .18s, background .18s, box-shadow .18s; }
+#app .nd-srch-box:focus-within { border-color:rgba(79,163,245,.35); background:rgba(79,163,245,.04); box-shadow:0 0 0 3px rgba(79,163,245,.06); }
+#app .nd-srch-box svg { flex-shrink:0; opacity:.18; color:#48597a; transition:opacity .18s; }
+#app .nd-srch-box:focus-within svg { opacity:.5; }
+#app .nd-srch-box input { flex:1; background:none; border:none; outline:none; font-family:'Epilogue',sans-serif; font-size:12px; color:#cdd8f0; }
+#app .nd-srch-box input::placeholder { color:#1e2a40; }
+#app .nd-skbd { font-family:'DM Mono',monospace; font-size:8px; color:#1e2a40; border:1px solid rgba(180,210,255,.07); padding:1.5px 6px; border-radius:3px; opacity:.38; flex-shrink:0; }
 
-/* Section label */
-#app .nmsb-section { margin-bottom: 0; }
-#app .nmsb-section-lbl {
-  padding:14px 14px 4px;
-  display:flex; align-items:baseline; gap:7px; min-width:0;
-  transition: opacity .16s;
-}
-#app .nmsb--collapsed .nmsb-section-lbl { opacity:0; height:0; padding:0; overflow:hidden; pointer-events:none; }
-#app .nmsb-section-num {
-  font-family:'DM Mono',monospace; font-size:8.5px; color: var(--nd-t3); letter-spacing:.5px; flex-shrink:0;
-}
-#app .nmsb-section-name {
-  font-family:'Syne',sans-serif; font-size:9.5px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; color: var(--nd-t3);
-}
+/* ── Alert card ── */
+#app .nd-alert { margin:2px 12px 8px; padding:10px 12px; background:linear-gradient(135deg,rgba(240,72,104,.10) 0%,rgba(240,72,104,.04) 100%); border:1px solid rgba(240,72,104,.22); border-radius:10px; display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; min-width:0; transition:background .16s, border-color .16s, box-shadow .16s; position:relative; overflow:hidden; }
+#app .nd-alert:hover { background:linear-gradient(135deg,rgba(240,72,104,.16),rgba(240,72,104,.07)); border-color:rgba(240,72,104,.35); box-shadow:0 0 0 3px rgba(240,72,104,.06); }
+#app .nd-alert::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(240,72,104,.06),transparent); transform:translateX(-100%); animation:nd-ashim 5s ease-in-out infinite; }
+@keyframes nd-ashim { 0%{transform:translateX(-100%)} 50%,100%{transform:translateX(110%)} }
+#app .nd-apip { width:7px; height:7px; border-radius:50%; background:#f04868; flex-shrink:0; box-shadow:0 0 8px #f04868; animation:nd-rpip 1.4s ease-in-out infinite; }
+@keyframes nd-rpip { 0%,100%{box-shadow:0 0 5px #f04868} 50%{box-shadow:0 0 16px #f04868;opacity:.4} }
+#app .nd-abody { flex:1; min-width:0; }
+#app .nd-ahead { font-size:11.5px; font-weight:500; color:#f04868; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#app .nd-asub { font-family:'DM Mono',monospace; font-size:9px; color:rgba(240,72,104,.45); margin-top:2px; letter-spacing:.2px; }
+#app .nd-anum { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:#f04868; line-height:1; flex-shrink:0; }
+#app .nd-nav.nd-col .nd-alert { margin:2px 0 6px; border-radius:0; border:none; background:transparent; justify-content:center; padding:8px 0; }
 
-/* Nav item */
-#app .nmsb-item {
-  padding:7px 12px 7px 11px;
-  display:flex; align-items:center; gap:10px;
-  cursor:pointer; position:relative;
-  transition:background .13s;
-  border-left:2px solid transparent;
-  min-width:0; text-decoration: none;
-  color: var(--nd-t2);
-  min-height: 0;
-  margin: 0;
-  border-radius: 0;
-}
-#app .nmsb-item:hover {
-  background:rgba(255,255,255,.024);
-  border-left-color:rgba(255,255,255,.05);
-  color: var(--nd-t1);
-}
-#app .nmsb-item.active {
-  background:rgba(0,212,170,.055);
-  border-left-color: var(--nd-teal);
-  color: var(--nd-t1);
-}
-/* collapsed: center icon + glow halo on active */
-#app .nmsb--collapsed .nmsb-item {
-  padding:9px 0;
-  justify-content:center;
-  border-left-width:2px;
-  margin: 0; width: auto; height: auto; border-radius: 0;
-}
-#app .nmsb--collapsed .nmsb-item.active {
-  background:rgba(0,212,170,.07);
-  border-left-color: var(--nd-teal);
-}
-#app .nmsb--collapsed .nmsb-item.active .nmsb-icon {
-  filter:drop-shadow(0 0 7px rgba(0,212,170,.6)); opacity:1;
-}
-/* tooltip in collapsed mode */
-#app .nmsb--collapsed .nmsb-item:hover::before {
-  content:'';
-  position:absolute;
-  left:calc(var(--nd-C) + 1px); top:50%; transform:translateY(-50%);
-  border:5px solid transparent; border-right-color:#10182a;
-  pointer-events:none; z-index:300;
-}
-#app .nmsb--collapsed .nmsb-item:hover::after {
-  content:attr(data-label) "\A" attr(data-sub);
-  position:absolute;
-  left:calc(var(--nd-C) + 11px); top:50%; transform:translateY(-50%);
-  background:#10182a;
-  border:1px solid rgba(255,255,255,.09);
-  color: var(--nd-t1);
-  font-family:'Epilogue',sans-serif; font-size:11.5px;
-  white-space:pre; line-height:1.65;
-  padding:7px 12px; border-radius:7px;
-  box-shadow:0 8px 32px rgba(0,0,0,.65), 0 0 0 1px rgba(0,212,170,.05);
-  pointer-events:none; z-index:300;
-  animation: nd-ttin .15s ease both;
-}
-@keyframes nd-ttin {
-  from{opacity:0;transform:translateY(-50%) translateX(-5px)}
-  to  {opacity:1;transform:translateY(-50%) translateX(0)}
-}
+/* ── Scroll area ── */
+#app .nd-scroll-wrap { flex:1; position:relative; min-height:0; overflow:hidden; }
+#app .nd-scroll-wrap::before { content:''; position:absolute; top:0; left:0; right:0; height:16px; background:linear-gradient(to bottom,#080d1c,transparent); z-index:5; pointer-events:none; }
+#app .nd-scroll-wrap::after { content:''; position:absolute; bottom:0; left:0; right:0; height:20px; background:linear-gradient(to top,#060912,transparent); z-index:5; pointer-events:none; }
+#app .nd-scroll { height:100%; overflow-y:auto; overflow-x:hidden; padding:4px 0 12px; scrollbar-width:thin; scrollbar-color:rgba(79,163,245,.38) rgba(79,163,245,.05); }
+#app .nd-scroll::-webkit-scrollbar { width:3px; }
+#app .nd-scroll::-webkit-scrollbar-thumb { background:rgba(79,163,245,.38); border-radius:3px; }
 
-/* Icon */
-#app .nmsb-icon {
-  width:16px; height:16px; flex-shrink:0;
-  display:flex; align-items:center; justify-content:center;
-  opacity:.4; transition:opacity .13s, filter .2s;
-}
-#app .nmsb--collapsed .nmsb-icon { width:18px; height:18px; }
-#app .nmsb-icon svg { width:15px; height:15px; }
-#app .nmsb--collapsed .nmsb-icon svg { width:16px; height:16px; }
-#app .nmsb-item:hover .nmsb-icon { opacity:.65; }
-#app .nmsb-item.active .nmsb-icon { opacity:1; }
+/* ── Group labels ── */
+#app .nd-grp { padding:16px 20px 5px; display:flex; align-items:center; gap:8px; min-width:0; }
+#app .nd-nav.nd-col .nd-grp, #app .nd-hdiv { /* shown */ }
+#app .nd-nav.nd-col .nd-grp { display:none; }
+#app .nd-grp-num { font-family:'DM Mono',monospace; font-size:8px; font-weight:500; color:rgba(79,163,245,.25); letter-spacing:.5px; flex-shrink:0; }
+#app .nd-grp-txt { font-family:'Syne',sans-serif; font-size:9px; font-weight:700; letter-spacing:2.2px; text-transform:uppercase; color:#1e2a40; }
+#app .nd-grp-line { flex:1; height:1px; background:linear-gradient(90deg,rgba(180,210,255,.05) 0%,transparent 100%); }
+#app .nd-hdiv { height:1px; margin:3px 0; background:linear-gradient(90deg, transparent 12px, rgba(180,210,255,.035) 12px, rgba(180,210,255,.035) 84%, transparent 100%); }
+#app .nd-nav.nd-col .nd-hdiv { display:none; }
 
-/* Icon colour variants */
-#app .nmsb-item .nmsb-icon--teal   svg { color: var(--nd-teal)   !important; }
-#app .nmsb-item .nmsb-icon--blue   svg { color: var(--nd-blue)   !important; }
-#app .nmsb-item .nmsb-icon--amber  svg { color: var(--nd-amber)  !important; }
-#app .nmsb-item .nmsb-icon--red    svg { color: var(--nd-red)    !important; }
-#app .nmsb-item .nmsb-icon--violet svg { color: var(--nd-violet) !important; }
-#app .nmsb-item .nmsb-icon--grey   svg { color: var(--nd-t2)     !important; }
-/* keep legacy colour classes working */
-#app .nmsb-item .nmsb-icon--slate   svg { color: rgba(148,163,184,.9) !important; }
-#app .nmsb-item .nmsb-icon--green   svg { color: #34d399 !important; }
-#app .nmsb-item .nmsb-icon--cyan    svg { color: #22d3ee !important; }
+/* ── Nav rows ── */
+#app .nd-row { padding:7px 14px 7px 0; display:flex; align-items:center; gap:10px; cursor:pointer; position:relative; min-width:0; transition:background .11s; margin:0 4px; border-radius:9px; }
+#app .nd-row::before { content:''; position:absolute; left:-4px; top:15%; height:70%; width:2px; background:linear-gradient(to bottom, transparent 0%, #4fa3f5 25%, #4fa3f5 75%, transparent 100%); border-radius:2px; opacity:0; transition:opacity .18s; }
+#app .nd-row:hover { background:rgba(79,163,245,.045); }
+#app .nd-row:hover::before { opacity:.4; }
+#app .nd-row.nd-on { background:rgba(79,163,245,.10); }
+#app .nd-row.nd-on::before { opacity:1; box-shadow:1px 0 8px rgba(79,163,245,.5); }
+#app .nd-row.nd-on::after { content:''; position:absolute; top:0; left:12%; right:12%; height:1px; background:linear-gradient(90deg,transparent,rgba(79,163,245,.3),transparent); border-radius:1px; }
+#app .nd-nav.nd-col .nd-row { padding:9px 0; justify-content:center; border-radius:0; margin:0; }
+#app .nd-nav.nd-col .nd-row::after { display:none; }
+#app .nd-nav.nd-col .nd-row::before { display:none; }
+#app .nd-nav.nd-col .nd-row.nd-on { background:rgba(79,163,245,.12); border-left:2px solid #4fa3f5; }
+#app .nd-nav.nd-col .nd-row.nd-on .nd-ico { filter:drop-shadow(0 0 7px rgba(79,163,245,.65)); opacity:1 !important; }
+/* collapsed tooltip */
+#app .nd-nav.nd-col .nd-row:hover::before { content:''; display:block; position:absolute; left:55px; top:50%; transform:translateY(-50%); border:5px solid transparent; border-right-color:#101e35; background:none; border-radius:0; opacity:1; width:auto; height:auto; z-index:301; pointer-events:none; }
+#app .nd-nav.nd-col .nd-row:hover::after { content:attr(data-label) "\A" attr(data-sub); position:absolute; left:65px; top:50%; transform:translateY(-50%); background:#101e35; border:1px solid rgba(180,210,255,.12); box-shadow:0 -1px 0 rgba(255,255,255,.07), 0 12px 40px rgba(0,0,0,.8); color:#cdd8f0; font-family:'Epilogue',sans-serif; font-size:12px; white-space:pre; line-height:1.75; padding:9px 14px; border-radius:9px; pointer-events:none; z-index:300; animation:nd-ttin .13s ease both; }
+@keyframes nd-ttin { from{opacity:0;transform:translateY(-50%) translateX(-5px)} to{opacity:1;transform:translateY(-50%) translateX(0)} }
 
-/* Label + sub */
-#app .nmsb-label {
-  flex:1; display:flex; flex-direction:column; min-width:0;
-  font-size:12px; font-weight:400; color: var(--nd-t2);
-  transition:color .13s; white-space:nowrap; letter-spacing:-.1px;
-  padding-right: 0;
-  overflow: hidden;
-}
-#app .nmsb-item:hover .nmsb-label { color: var(--nd-t1); }
-#app .nmsb-item.active .nmsb-label { color: var(--nd-t1); font-weight:500; }
-#app .nmsb--collapsed .nmsb-label { opacity:0; width:0; overflow:hidden; pointer-events:none; }
-#app .nmsb-sub {
-  font-family:'DM Mono',monospace; font-size:9px;
-  color: var(--nd-t3); white-space:nowrap;
-  font-style: normal; margin-top:0;
-}
-#app .nmsb-item.active .nmsb-sub { color:rgba(0,212,170,.35); }
+/* icons */
+#app .nd-ico { width:15px; height:15px; flex-shrink:0; display:flex; align-items:center; justify-content:center; opacity:.25; transition:opacity .11s, filter .18s; margin-left:12px; }
+#app .nd-nav.nd-col .nd-ico { width:18px; height:18px; margin:0; }
+#app .nd-ico svg { width:14px; height:14px; }
+#app .nd-nav.nd-col .nd-ico svg { width:16px; height:16px; }
+#app .nd-row:hover .nd-ico { opacity:.65; }
+#app .nd-row.nd-on .nd-ico { opacity:1; }
+#app .nd-row.nd-pri .nd-ico { opacity:.32; }
+#app .nd-row.nd-pri:hover .nd-ico { opacity:.75; }
+#app .nd-c-sky svg  { color:#4fa3f5 !important; }
+#app .nd-c-gold svg { color:#f0b940 !important; }
+#app .nd-c-rose svg { color:#f04868 !important; }
+#app .nd-c-mint svg { color:#34cc88 !important; }
+#app .nd-c-vio svg  { color:#9870f0 !important; }
+#app .nd-c-mute svg { color:#48597a !important; }
+#app .nd-c-teal svg { color:#22c9a0 !important; }
 
-/* Tags / badges */
-#app .nmsb-badge {
-  font-family:'DM Mono',monospace; font-size:8.5px;
-  padding:1.5px 5px; border-radius:3px;
-  font-weight:500; flex-shrink:0; letter-spacing:.2px;
-  margin-right: 0; line-height: normal;
-}
-#app .nmsb-badge--alert { background:rgba(240,64,96,.09);  color: var(--nd-red);   }
-#app .nmsb-badge--live  { background:rgba(0,212,170,.09);  color: var(--nd-teal);  }
-#app .nmsb-badge--count { background:rgba(232,150,42,.10); color: var(--nd-amber); }
-#app .nmsb--collapsed .nmsb-badge { display: none; }
+/* labels */
+#app .nd-lbl { font-family:'Epilogue',sans-serif; font-size:12.5px; font-weight:400; color:#48597a; white-space:nowrap; letter-spacing:-.1px; transition:color .11s; flex:1; }
+#app .nd-row:hover .nd-lbl, #app .nd-row.nd-on .nd-lbl { color:#cdd8f0; }
+#app .nd-row.nd-on .nd-lbl { font-weight:500; }
+#app .nd-sub { font-family:'DM Mono',monospace; font-size:8.5px; color:#1e2a40; white-space:nowrap; flex-shrink:0; margin-right:2px; }
+#app .nd-row.nd-on .nd-sub { color:rgba(79,163,245,.3); }
 
-/* Live dot on item */
-#app .nmsb-live-dot-item {
-  width:6px; height:6px; border-radius:50%;
-  background: var(--nd-teal); box-shadow:0 0 7px var(--nd-teal);
-  animation: nd-liveblink 2.4s ease-in-out infinite;
-  flex-shrink: 0;
-}
-#app .nmsb--collapsed .nmsb-live-dot-item { display: none; }
+/* tags */
+#app .nd-tag { font-family:'DM Mono',monospace; font-size:9px; font-weight:500; flex-shrink:0; letter-spacing:.4px; margin-right:12px; white-space:nowrap; }
+#app .nd-tag::before { opacity:.35; margin-right:1px; }
+#app .nd-tag::after  { opacity:.35; margin-left:1px; }
+#app .nd-tr { color:#f04868; } #app .nd-tr::before{content:'['} #app .nd-tr::after{content:']'}
+#app .nd-ts { color:#22c9a0; } #app .nd-ts::before{content:'['} #app .nd-ts::after{content:']'}
+#app .nd-tt { color:#34cc88; } #app .nd-tt::before{content:'['} #app .nd-tt::after{content:']'}
+#app .nd-tb { color:#4fa3f5; } #app .nd-tb::before{content:'['} #app .nd-tb::after{content:']'}
+#app .nd-ta { color:#f0b940; } #app .nd-ta::before{content:'['} #app .nd-ta::after{content:']'}
 
-/* Divider */
-#app .nmsb-hdiv {
-  height:1px; margin:4px 0;
-  background:linear-gradient(90deg, transparent 11px, rgba(255,255,255,.037) 11px, rgba(255,255,255,.037) 85%, transparent);
-}
-#app .nmsb--collapsed .nmsb-hdiv { display:none; }
+/* urgent dot */
+#app .nd-adot { width:5px; height:5px; border-radius:50%; background:#f04868; flex-shrink:0; margin-right:3px; box-shadow:0 0 6px #f04868; animation:nd-adot 2.4s ease-in-out infinite; }
+@keyframes nd-adot { 0%,100%{opacity:1} 50%{opacity:.18} }
+#app .nd-arr { color:#1e2a40; flex-shrink:0; opacity:.22; transition:transform .12s, opacity .11s; margin-right:12px; }
+#app .nd-row:hover .nd-arr { transform:translateX(2.5px); opacity:.5; }
 
-/* Arrow */
-#app .nmsb-arr {
-  color: var(--nd-t3); flex-shrink:0; opacity:.38;
-  transition:transform .15s, opacity .13s;
-}
-#app .nmsb-item:hover .nmsb-arr { transform:translateX(2px); opacity:.65; }
-#app .nmsb--collapsed .nmsb-arr { display: none; }
+/* settings kbd hint */
+#app .nd-fkbd { margin-left:auto; margin-right:12px; display:flex; align-items:center; gap:3px; font-family:'DM Mono',monospace; font-size:8px; color:#1e2a40; opacity:.45; }
+#app .nd-nav.nd-col .nd-fkbd { display:none; }
+#app .nd-fkbd kbd { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); padding:1px 4px; border-radius:3px; font-size:8px; color:rgba(255,255,255,.14); }
 
-/* ── Footer ────────────────────────────────────────────────────── */
-#app .nmsb-footer {
-  flex-shrink:0;
-  background:linear-gradient(to bottom, var(--nd-bg) 0%, var(--nd-bg-ft) 100%);
-  border-top:1px solid rgba(255,255,255,.05);
-  padding:8px 0 10px;
-  position:relative; gap: 0;
-}
-#app .nmsb-footer::before {
-  content:''; position:absolute; top:-14px; left:0; right:0; height:14px;
-  background:linear-gradient(to top, rgba(8,11,20,.55), transparent);
-  pointer-events:none;
-}
+/* ── Footer ── */
+#app .nd-foot { flex-shrink:0; position:relative; background:linear-gradient(to bottom,#060810,#050710); box-shadow:0 -1px 0 0 rgba(255,255,255,.06), inset 0 1px 0 0 rgba(255,255,255,.024); padding:8px 0 12px; }
+#app .nd-frow { padding:7px 14px 7px 0; display:flex; align-items:center; gap:10px; cursor:pointer; position:relative; min-width:0; transition:background .11s; margin:0 4px; border-radius:8px; }
+#app .nd-frow:hover { background:rgba(79,163,245,.04); }
+#app .nd-frow .nd-ico { margin-left:12px; }
+#app .nd-frow .nd-lbl { font-size:12px; color:#1e2a40; }
+#app .nd-frow:hover .nd-lbl { color:#48597a; }
+#app .nd-nav.nd-col .nd-frow { padding:9px 0; justify-content:center; border-radius:0; margin:0; }
+#app .nd-nav.nd-col .nd-frow .nd-ico { margin:0; }
 
-/* version + kbd row */
-#app .nmsb-fctx {
-  padding:0 14px 8px;
-  display:flex; justify-content:space-between; align-items:center;
-  transition: opacity .16s;
-}
-#app .nmsb--collapsed .nmsb-fctx { opacity:0; height:0; padding:0; overflow:hidden; pointer-events:none; }
-#app .nmsb-fver {
-  font-family:'DM Mono',monospace; font-size:8.5px;
-  color: var(--nd-t3); letter-spacing:.4px;
-}
-#app .nmsb-fver b { color:rgba(255,255,255,.14); font-weight:400; }
-#app .nmsb-fkbd {
-  display:flex; align-items:center; gap:3px;
-  font-family:'DM Mono',monospace; font-size:8px;
-  color: var(--nd-t3); opacity:.7;
-}
-#app .nmsb-fkbd kbd {
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.08);
-  padding:1px 4px; border-radius:3px;
-  font-family:'DM Mono',monospace; font-size:8px;
-  color:rgba(255,255,255,.2);
-}
-
-/* Footer rows */
-#app .nmsb-frow {
-  padding:7px 12px 7px 11px;
-  display:flex; align-items:center; gap:10px;
-  cursor:pointer; border-left:2px solid transparent;
-  transition:background .13s; min-width:0;
-  position: relative;
-}
-#app .nmsb-frow:hover { background:rgba(255,255,255,.02); border-left-color:rgba(255,255,255,.04); }
-#app .nmsb--collapsed .nmsb-frow { padding:9px 0; justify-content:center; }
-#app .nmsb--collapsed .nmsb-frow:hover::after {
-  content:attr(data-label);
-  position:absolute;
-  left:calc(var(--nd-C) + 11px); top:50%; transform:translateY(-50%);
-  background:#10182a; border:1px solid rgba(255,255,255,.09);
-  color: var(--nd-t1); font-family:'Epilogue',sans-serif; font-size:11.5px;
-  padding:6px 11px; border-radius:7px; white-space:nowrap;
-  box-shadow:0 6px 24px rgba(0,0,0,.6); pointer-events:none; z-index:300;
-  animation: nd-ttin .15s ease both;
-}
-#app .nmsb-frow .nmsb-icon { opacity: .4; }
-#app .nmsb-frow:hover .nmsb-icon { opacity: .65; }
-#app .nmsb-frow-lbl {
-  font-size:11.5px; color: var(--nd-t2); flex:1;
-  transition: opacity .16s;
-}
-#app .nmsb-frow:hover .nmsb-frow-lbl { color: var(--nd-t1); }
-#app .nmsb--collapsed .nmsb-frow-lbl { opacity:0; width:0; overflow:hidden; pointer-events:none; }
-
-/* logout special */
-#app .nmsb-logout-row:hover { background:rgba(240,64,96,.06); }
-#app .nmsb-logout-row:hover .nmsb-icon svg { color: var(--nd-red) !important; }
-#app .nmsb-logout-row:hover .nmsb-frow-lbl { color: var(--nd-red); }
-
-/* ── Mobile open state ─────────────────────────────────────────── */
-@media (max-width: 768px) {
-  #app aside.nmsb {
-    position: fixed;
-    left: 0; top: 0; bottom: 0;
-    z-index: 300;
-    transform: translateX(-100%);
-    transition: transform .25s cubic-bezier(.4,0,.2,1);
-    width: var(--nd-W);
-    overflow: hidden;
-  }
-  #app aside.nmsb.mobile-open {
-    transform: translateX(0);
-    box-shadow: 4px 0 32px rgba(0,0,0,.4);
-  }
-  #app .nmsb-tog-wrap { display: none; }
-}
+/* ── Bracket toggle ── */
+#app .nd-tog { position:fixed; left:259px; top:32px; z-index:400; cursor:pointer; transition:left .5s cubic-bezier(.16,1,.3,1); }
+#app .nd-tog.nd-col { left:41px; }
+#app .nd-tog-body { width:26px; height:46px; background:linear-gradient(175deg,#0e2038,#09121e); border:1px solid rgba(180,210,255,.12); border-radius:6px; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 -1px 0 0 rgba(255,255,255,.11), 0 1px 0 0 rgba(0,0,0,.55), 0 6px 20px rgba(0,0,0,.75); transition:border-color .18s, box-shadow .22s, background .18s; position:relative; overflow:hidden; }
+#app .nd-tog:hover .nd-tog-body { border-color:rgba(79,163,245,.5); background:linear-gradient(175deg,#142540,#0d1a2c); box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 -1px 0 0 rgba(79,163,245,.28), 0 1px 0 0 rgba(0,0,0,.6), 0 0 0 4px rgba(79,163,245,.08), 0 6px 22px rgba(0,0,0,.75), 0 0 22px rgba(79,163,245,.12); }
+#app .nd-tog-body::after { content:''; position:absolute; inset:0; border-radius:6px; background:radial-gradient(circle at 50% 50%,rgba(79,163,245,.25) 0%,transparent 70%); opacity:0; transform:scale(.2); transition:opacity .45s, transform .45s; }
+#app .nd-tog-body.nd-fire::after { opacity:1; transform:scale(1.5); }
+#app .nd-tog-b { font-family:'DM Mono',monospace; font-size:18px; font-weight:400; color:#48597a; line-height:1; transition:color .16s; user-select:none; position:relative; z-index:1; display:block; }
+#app .nd-tog:hover .nd-tog-b { color:#4fa3f5; }
+#app .nd-tog-pip { position:absolute; top:-2px; right:-2px; width:8px; height:8px; border-radius:50%; background:#f04868; border:2px solid #07090f; box-shadow:0 0 8px #f04868; animation:nd-rpip 1.5s ease-in-out infinite; }
+#app .nd-tog-hint { position:absolute; left:34px; top:50%; transform:translateY(-50%); font-family:'DM Mono',monospace; font-size:9px; color:#1e2a40; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .14s .3s; }
+#app .nd-tog:hover .nd-tog-hint { opacity:1; }
 
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -8028,239 +7770,186 @@ tr.staff-table-row .tbl-btn {
         <div class="mobile-backdrop" :class="{ visible: mobileMenuOpen }" @click="mobileMenuOpen = false"></div>
 
         <!-- Sidebar -->
-        <aside class="sidebar nmsb" :class="{ 'nmsb--collapsed': sidebarCollapsed, 'sidebar-collapsed': sidebarCollapsed, 'mobile-open': mobileMenuOpen }"
-               aria-label="Main navigation">
+        <aside class="nd-sw" :class="{ 'nd-col': sidebarCollapsed, 'mobile-open': mobileMenuOpen }" id="nd-nav-wrap">
+          <nav class="nd-nav" id="nd-nav" :class="{ 'nd-col': sidebarCollapsed }">
+            <div class="nd-hair"></div>
+            <div class="nd-edge"></div>
 
-            <!-- ① Toggle button — seam-mounted, fully undoable -->
-            <div class="nmsb-tog-wrap" :class="{ 'nmsb-tog--fire': togFire }"
-                 @click="sidebarCollapsed = !sidebarCollapsed; triggerTogFire()"
-                 :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-                 role="button" tabindex="0"
-                 @keydown.enter.space.prevent="sidebarCollapsed = !sidebarCollapsed; triggerTogFire()">
-                <div class="nmsb-tog-ring">
-                    <div class="nmsb-tog-ico" :class="{ 'nmsb-tog--open': !sidebarCollapsed }"></div>
-                </div>
-                <div class="nmsb-tog-pip" v-if="absenceKPIs && absenceKPIs.absentNow > 0"></div>
-                <span class="nmsb-tog-kbd">⌘\</span>
+            <!-- WORDMARK -->
+            <div class="nd-top-area">
+              <div class="nd-wm">
+                <span class="nd-wm-n">neum</span><span class="nd-wm-d">Desk</span>
+              </div>
+              <div class="nd-wm-tick"></div>
+            </div>
+            <div class="nd-top-rule nd-hc"></div>
+
+            <!-- Collapsed monogram -->
+            <div class="nd-logo-col">
+              <span class="nd-col-mark">ND</span>
             </div>
 
-            <!-- ② Logo / head -->
-            <div class="nmsb-head">
-                <div class="nmsb-logo-sym">
-                    <svg viewBox="0 0 30 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <polyline class="nmsb-ecg"
-                          points="0,10 4,10 7,3 10,17 14,5 17,14 20,10 30,10"
-                          stroke="#00d4aa" stroke-width="1.8"
-                          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                    </svg>
-                </div>
-                <div class="nmsb-logo-name">neum<em>Desk</em></div>
-                <div class="nmsb-logo-end">
-                    <div class="nmsb-live-dot"></div>
-                    <span class="nmsb-live-lbl">LIVE</span>
-                </div>
-            </div>
-            <div class="nmsb-logo-rule"></div>
-
-            <!-- ③ User + date -->
-            <div class="nmsb-user">
-                <div class="nmsb-user-av">
-                    {{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() : '?' }}
-                    <span class="nmsb-user-dot"></span>
-                </div>
-                <div class="nmsb-user-body">
-                    <div class="nmsb-user-name">{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ').slice(0,2).join(' ') : '—' }}</div>
-                    <div class="nmsb-user-role">{{ currentUser && currentUser.user_role ? getUserRoleDisplay(currentUser.user_role) : '' }}</div>
-                </div>
-                <div class="nmsb-user-date">
-                    <div class="nmsb-user-date-d">{{ new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit'}).toUpperCase() }}</div>
-                    <div class="nmsb-user-date-m">{{ new Date().toLocaleDateString('en-GB',{month:'short'}).toUpperCase() }} · W{{ Math.ceil((new Date() - new Date(new Date().getFullYear(),0,1)) / 604800000) }}</div>
-                </div>
+            <!-- USER IDENTITY CARD -->
+            <div class="nd-user-card" @click="switchView('dashboard')" title="Dashboard">
+              <div class="nd-uav nd-hc">{{ currentUser?.full_name?.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase() || 'BA' }}</div>
+              <div class="nd-uinfo nd-hc">
+                <div class="nd-uname">{{ currentUser?.full_name || 'neumDesk' }}</div>
+                <div class="nd-urole">{{ currentUser?.user_role?.replace(/_/g,' ').toUpperCase() || 'SYSTEM ADMIN' }}</div>
+              </div>
+              <div class="nd-ustatus nd-hc"></div>
             </div>
 
-            <!-- Search -->
-            <div class="nmsb-search-wrap">
-                <div class="nmsb-search-inner">
-                    <svg class="nmsb-search-ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <button class="nmsb-search" @click="cmdPaletteOpen = true; cmdQuery = ''">
-                        <span style="flex:1;text-align:left;font-size:11.5px;color:var(--nd-t3)">Search or jump to…</span>
-                        <span class="nmsb-search-cmd">⌘K</span>
-                    </button>
-                </div>
-            </div>
-            <!-- collapsed search icon -->
-            <button class="nmsb-search nmsb-search--icon" @click="cmdPaletteOpen = true; cmdQuery = ''" title="Search (⌘K)">
+            <!-- SEARCH -->
+            <div class="nd-srch nd-hc">
+              <div class="nd-srch-box">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            </button>
+                <input type="text" v-model="globalSearch" @input="handleGlobalSearch" :placeholder="getSearchPlaceholder()" @keydown.escape="clearSearch" @focus="showSearchResults = true">
+                <span class="nd-skbd">⌘K</span>
+              </div>
+            </div>
 
-            <!-- ── Nav ── -->
-            <nav class="nmsb-nav" aria-label="Primary navigation">
+            <!-- ALERT — on-call gap or understaffed units -->
+            <div class="nd-alert nd-hc"
+                 v-if="systemAlerts.length > 0 || (understaffedUnitAlerts && understaffedUnitAlerts.length > 0)"
+                 @click="systemAlerts.length > 0 ? switchView('oncall_schedule') : switchView('training_units')">
+              <div class="nd-apip"></div>
+              <div class="nd-abody">
+                <div class="nd-ahead">{{ systemAlerts[0]?.message || (understaffedUnitAlerts[0]?.unitName + ' understaffed') }}</div>
+                <div class="nd-asub">{{ systemAlerts.length + (understaffedUnitAlerts?.length||0) }} alert{{ (systemAlerts.length + (understaffedUnitAlerts?.length||0)) !== 1 ? 's' : '' }} require attention</div>
+              </div>
+              <div class="nd-anum">{{ systemAlerts.length + (understaffedUnitAlerts?.length||0) }}</div>
+            </div>
+
+            <!-- NAV SCROLL -->
+            <div class="nd-scroll-wrap">
+              <div class="nd-scroll">
 
                 <!-- 01 Overview -->
-                <div class="nmsb-section">
-                    <div class="nmsb-section-lbl">
-                        <span class="nmsb-section-num">01</span><span class="nmsb-section-name">Overview</span>
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'dashboard' }"
-                       @click.prevent="switchView('dashboard'); mobileMenuOpen = false"
-                       data-label="Dashboard" :data-sub="'Today · ' + (systemStats.totalStaff || 0) + ' staff'">
-                        <span class="nmsb-icon nmsb-icon--teal">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-                        </span>
-                        <div class="nmsb-label">Dashboard<em class="nmsb-sub">{{ systemStats.totalStaff || 0 }} staff</em></div>
-                        <span class="nmsb-badge nmsb-badge--live">TODAY</span>
-                    </a>
+                <div class="nd-grp"><span class="nd-grp-num">01</span><span class="nd-grp-txt">Overview</span><div class="nd-grp-line"></div></div>
+                <div class="nd-row nd-pri" :class="{ 'nd-on': currentView === 'dashboard' }"
+                     data-label="Dashboard" :data-sub="'Today · ' + (systemStats.totalStaff || 0) + ' staff'"
+                     @click="switchView('dashboard'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+                  <span class="nd-lbl nd-hc">Dashboard</span>
+                  <span class="nd-sub nd-hc">{{ systemStats.totalStaff || 0 }} staff</span>
+                  <span class="nd-tag nd-ts nd-hc">today</span>
                 </div>
-                <div class="nmsb-hdiv"></div>
+                <div class="nd-hdiv"></div>
 
                 <!-- 02 Clinical -->
-                <div class="nmsb-section">
-                    <div class="nmsb-section-lbl">
-                        <span class="nmsb-section-num">02</span><span class="nmsb-section-name">Clinical</span>
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'medical_staff' }"
-                       @click.prevent="switchView('medical_staff'); mobileMenuOpen = false"
-                       v-if="hasPermission('medical_staff', 'read')"
-                       data-label="Medical Staff" :data-sub="medicalStaff.length + ' members'">
-                        <span class="nmsb-icon nmsb-icon--blue">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        </span>
-                        <div class="nmsb-label">Medical Staff<em class="nmsb-sub">{{ medicalStaff.length }} members</em></div>
-                        <svg class="nmsb-arr" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 18 6-6-6-6"/></svg>
-                    </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'oncall_schedule' }"
-                       @click.prevent="switchView('oncall_schedule'); mobileMenuOpen = false"
-                       v-if="hasPermission('oncall_schedule', 'read')"
-                       data-label="On-call" data-sub="Schedule · this week">
-                        <span class="nmsb-icon nmsb-icon--amber">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                        </span>
-                        <div class="nmsb-label">On-call<em class="nmsb-sub">this week</em></div>
-                        <span class="nmsb-live-dot-item" title="Live"></span>
-                    </a>
+                <div class="nd-grp"><span class="nd-grp-num">02</span><span class="nd-grp-txt">Clinical</span><div class="nd-grp-line"></div></div>
+                <div class="nd-row nd-pri" :class="{ 'nd-on': currentView === 'medical_staff' }"
+                     data-label="Medical Staff" :data-sub="medicalStaff.length + ' members'"
+                     v-if="hasPermission('medical_staff','read')"
+                     @click="switchView('medical_staff'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                  <span class="nd-lbl nd-hc">Medical Staff</span>
+                  <span class="nd-sub nd-hc">{{ medicalStaff.length }} members</span>
+                  <svg class="nd-arr nd-hc" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 18 6-6-6-6"/></svg>
                 </div>
-                <div class="nmsb-hdiv"></div>
+                <div class="nd-row nd-pri" :class="{ 'nd-on': currentView === 'oncall_schedule' }"
+                     data-label="On-call" data-sub="Schedule · this week"
+                     v-if="hasPermission('oncall_schedule','read')"
+                     @click="switchView('oncall_schedule'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+                  <span class="nd-lbl nd-hc">On-call</span>
+                  <span class="nd-sub nd-hc">this week</span>
+                  <div class="nd-adot nd-hc" v-if="systemAlerts.length > 0"></div>
+                </div>
+                <div class="nd-hdiv"></div>
 
                 <!-- 03 Structure -->
-                <div class="nmsb-section">
-                    <div class="nmsb-section-lbl">
-                        <span class="nmsb-section-num">03</span><span class="nmsb-section-name">Structure</span>
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'training_units' }"
-                       @click.prevent="switchView('training_units'); mobileMenuOpen = false"
-                       v-if="hasPermission('training_units', 'read')"
-                       data-label="Clinical Units" :data-sub="trainingUnits.length + ' units'">
-                        <span class="nmsb-icon nmsb-icon--violet">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                        </span>
-                        <div class="nmsb-label">Clinical Units<em class="nmsb-sub">{{ trainingUnits.length }} units</em></div>
-                        <svg class="nmsb-arr" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 18 6-6-6-6"/></svg>
-                    </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'resident_rotations' }"
-                       @click.prevent="switchView('resident_rotations'); mobileMenuOpen = false"
-                       v-if="hasPermission('resident_rotations', 'read')"
-                       data-label="Rotations" data-sub="Active rotations">
-                        <span class="nmsb-icon nmsb-icon--teal">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                        </span>
-                        <div class="nmsb-label">Rotations<em class="nmsb-sub">{{ rotations.filter(r=>r.rotation_status==='active').length }} active</em></div>
-                        <span class="nmsb-badge nmsb-badge--count" v-if="rotations.filter(r=>r.rotation_status==='active').length > 0">{{ rotations.filter(r=>r.rotation_status==='active').length }}</span>
-                    </a>
+                <div class="nd-grp"><span class="nd-grp-num">03</span><span class="nd-grp-txt">Structure</span><div class="nd-grp-line"></div></div>
+                <div class="nd-row" :class="{ 'nd-on': currentView === 'training_units' }"
+                     data-label="Clinical Units" :data-sub="trainingUnits.length + ' units'"
+                     v-if="hasPermission('training_units','read')"
+                     @click="switchView('training_units'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-vio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+                  <span class="nd-lbl nd-hc">Clinical Units</span>
+                  <span class="nd-sub nd-hc">{{ trainingUnits.length }} units</span>
+                  <div class="nd-adot nd-hc" v-if="understaffedUnitAlerts && understaffedUnitAlerts.length > 0"></div>
                 </div>
-                <div class="nmsb-hdiv"></div>
+                <div class="nd-row" :class="{ 'nd-on': currentView === 'resident_rotations' }"
+                     data-label="Rotations" :data-sub="rotations.filter(r=>r.rotation_status==='active').length + ' active'"
+                     v-if="hasPermission('resident_rotations','read')"
+                     @click="switchView('resident_rotations'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
+                  <span class="nd-lbl nd-hc">Rotations</span>
+                  <span class="nd-sub nd-hc">{{ rotations.filter(r=>r.rotation_status==='active').length }} active</span>
+                </div>
+                <div class="nd-hdiv"></div>
 
                 <!-- 04 Operations -->
-                <div class="nmsb-section">
-                    <div class="nmsb-section-lbl">
-                        <span class="nmsb-section-num">04</span><span class="nmsb-section-name">Operations</span>
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'staff_absence' }"
-                       @click.prevent="switchView('staff_absence'); mobileMenuOpen = false"
-                       v-if="hasPermission('staff_absence', 'read')"
-                       data-label="Absence" :data-sub="absenceKPIs.absentNow > 0 ? absenceKPIs.absentNow + ' absent now' : 'Schedule · absence'">
-                        <span class="nmsb-icon nmsb-icon--red">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        </span>
-                        <div class="nmsb-label">Absence<em class="nmsb-sub">{{ absenceKPIs.absentNow > 0 ? absenceKPIs.absentNow + ' absent now' : absenceKPIs.upcoming + ' upcoming' }}</em></div>
-                        <span v-if="absenceKPIs.absentNow > 0" class="nmsb-badge nmsb-badge--alert">{{ absenceKPIs.absentNow }}</span>
-                    </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'communications' }"
-                       @click.prevent="switchView('communications'); mobileMenuOpen = false"
-                       v-if="hasPermission('communications', 'read')"
-                       data-label="Ops Room" data-sub="Briefings · comms">
-                        <span class="nmsb-icon nmsb-icon--grey">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-                        </span>
-                        <div class="nmsb-label">Ops Room
-                            <em class="nmsb-sub" v-if="livebroadcasts && livebroadcasts.filter(b=>!b._dismissed).length > 0">{{ livebroadcasts.filter(b=>!b._dismissed).length }} broadcast{{ livebroadcasts.filter(b=>!b._dismissed).length > 1 ? 's' : '' }} live</em>
-                            <em class="nmsb-sub" v-else>Briefings · comms</em>
-                        </div>
-                        <span v-if="livebroadcasts && livebroadcasts.filter(b=>!b._dismissed).length > 0" class="nmsb-badge nmsb-badge--live">{{ livebroadcasts.filter(b=>!b._dismissed).length }}</span>
-                    </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'system_settings' }"
-                       @click.prevent="switchView('system_settings'); mobileMenuOpen = false"
-                       v-if="currentUser && ['system_admin','department_head'].includes(currentUser.user_role)"
-                       data-label="Settings" data-sub="Staff types · services">
-                        <span class="nmsb-icon nmsb-icon--grey">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-                        </span>
-                        <div class="nmsb-label">Settings<em class="nmsb-sub">Staff types · services</em></div>
-                    </a>
+                <div class="nd-grp"><span class="nd-grp-num">04</span><span class="nd-grp-txt">Operations</span><div class="nd-grp-line"></div></div>
+                <div class="nd-row nd-pri" :class="{ 'nd-on': currentView === 'staff_absence' }"
+                     data-label="Absence" :data-sub="absenceKPIs.absentNow + ' absent now'"
+                     v-if="hasPermission('staff_absence','read')"
+                     @click="switchView('staff_absence'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                  <span class="nd-lbl nd-hc">Absence</span>
+                  <span class="nd-sub nd-hc">{{ absenceKPIs.absentNow }} absent</span>
+                  <div class="nd-adot nd-hc" v-if="absenceKPIs.absentNow > 0"></div>
+                  <span class="nd-tag nd-tr nd-hc" v-if="absenceKPIs.absentNow > 0">{{ absenceKPIs.absentNow }}</span>
                 </div>
-                <div class="nmsb-hdiv"></div>
+                <div class="nd-row" :class="{ 'nd-on': currentView === 'communications' }"
+                     data-label="Ops Room" data-sub="Live operations"
+                     @click="switchView('communications'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+                  <span class="nd-lbl nd-hc">Ops Room</span>
+                  <span class="nd-sub nd-hc">live ops</span>
+                </div>
+                <div class="nd-hdiv"></div>
 
                 <!-- 05 Research -->
-                <div class="nmsb-section" v-if="hasPermission('research_lines', 'read')">
-                    <div class="nmsb-section-lbl">
-                        <span class="nmsb-section-num">05</span><span class="nmsb-section-name">Research</span>
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'research_hub' }"
-                       @click.prevent="switchView('research_hub'); mobileMenuOpen = false"
-                       data-label="Research Hub" :data-sub="researchLines.length + ' lines · ' + clinicalTrials.length + ' studies'">
-                        <span class="nmsb-icon nmsb-icon--blue">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 19.48A1 1 0 0 0 5.6 21h12.8a1 1 0 0 0 .88-1.52l-5.068-9.057A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
-                        </span>
-                        <div class="nmsb-label">Research Hub<em class="nmsb-sub">{{ researchLines.length }} lines · {{ clinicalTrials.length }} studies</em></div>
-                        <svg class="nmsb-arr" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 18 6-6-6-6"/></svg>
-                    </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'news' }"
-                       @click.prevent="switchView('news'); mobileMenuOpen = false"
-                       data-label="News &amp; Posts" :data-sub="newsPosts.filter(p=>p.status==='draft').length + ' drafts'">
-                        <span class="nmsb-icon nmsb-icon--violet">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                        </span>
-                        <div class="nmsb-label">News &amp; Posts<em class="nmsb-sub">{{ newsPosts.filter(p=>p.status==='draft').length }} drafts</em></div>
-                        <span v-if="newsPosts.filter(p=>p.status==='draft').length > 0" class="nmsb-badge nmsb-badge--count">{{ newsPosts.filter(p=>p.status==='draft').length }}</span>
-                    </a>
+                <div class="nd-grp"><span class="nd-grp-num">05</span><span class="nd-grp-txt">Research</span><div class="nd-grp-line"></div></div>
+                <div class="nd-row" :class="{ 'nd-on': currentView === 'research_hub' }"
+                     data-label="Research Hub" data-sub="Lines · Studies · Projects"
+                     v-if="hasPermission('analytics','read')"
+                     @click="switchView('research_hub'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-sky"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 19.48A1 1 0 0 0 5.6 21h12.8a1 1 0 0 0 .88-1.52l-5.068-9.057A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></div>
+                  <span class="nd-lbl nd-hc">Research Hub</span>
+                  <span class="nd-sub nd-hc">{{ researchLines?.length || 0 }} lines</span>
+                </div>
+                <div class="nd-row" :class="{ 'nd-on': currentView === 'news' }"
+                     data-label="News & Posts" :data-sub="newsPosts.filter(p=>p.status==='draft').length + ' drafts'"
+                     @click="switchView('news'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-vio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+                  <span class="nd-lbl nd-hc">News & Posts</span>
+                  <span class="nd-sub nd-hc">{{ newsPosts.filter(p=>p.status==='draft').length }} drafts</span>
+                </div>
+                <div class="nd-hdiv"></div>
+
+                <!-- 06 Admin -->
+                <div class="nd-grp" v-if="hasPermission('system_settings','read')"><span class="nd-grp-num">06</span><span class="nd-grp-txt">Admin</span><div class="nd-grp-line"></div></div>
+                <div class="nd-row" :class="{ 'nd-on': currentView === 'system_settings' }"
+                     data-label="Settings" data-sub="Staff types · services"
+                     v-if="hasPermission('system_settings','read')"
+                     @click="switchView('system_settings'); mobileMenuOpen = false">
+                  <div class="nd-ico nd-c-mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                  <span class="nd-lbl nd-hc">Settings</span>
+                  <span class="nd-sub nd-hc">types · services</span>
+                  <div class="nd-fkbd nd-hc"><kbd>⌘</kbd><kbd>,</kbd></div>
                 </div>
 
-            </nav>
+              </div>
+            </div><!-- /scroll-wrap -->
 
-            <!-- ── Footer ── -->
-            <div class="nmsb-footer">
-                <!-- version + kbd hint -->
-                <div class="nmsb-fctx">
-                    <span class="nmsb-fver">v<b>2.4.1</b> · Q2 <b>2026</b></span>
-                    <div class="nmsb-fkbd"><kbd>⌘</kbd><kbd>\</kbd><span style="margin-left:3px">sidebar</span></div>
-                </div>
-                <!-- Settings -->
-                <div class="nmsb-frow" data-label="Settings"
-                     @click="switchView('system_settings'); mobileMenuOpen = false"
-                     v-if="currentUser && ['system_admin','department_head'].includes(currentUser.user_role)">
-                    <span class="nmsb-icon nmsb-icon--grey">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-                    </span>
-                    <span class="nmsb-frow-lbl">Settings</span>
-                </div>
-                <!-- Sign out -->
-                <div class="nmsb-frow nmsb-logout-row" data-label="Sign out" @click="logout">
-                    <span class="nmsb-icon nmsb-icon--grey">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="15" height="15"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    </span>
-                    <span class="nmsb-frow-lbl">Sign out</span>
-                </div>
+            <!-- FOOTER -->
+            <div class="nd-foot">
+              <div class="nd-frow" @click="logout" title="Sign out">
+                <div class="nd-ico nd-c-mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+                <span class="nd-lbl nd-hc">Sign out</span>
+              </div>
             </div>
 
+          </nav>
+
+          <!-- BRACKET TOGGLE -->
+          <div class="nd-tog" :class="{ 'nd-col': sidebarCollapsed }" @click="sidebarCollapsed = !sidebarCollapsed" title="Toggle sidebar (⌘\)">
+            <div class="nd-tog-body"><span class="nd-tog-b">{{ sidebarCollapsed ? ']' : '[' }}</span></div>
+            <div class="nd-tog-pip" v-if="systemAlerts.length > 0 || (understaffedUnitAlerts && understaffedUnitAlerts.length > 0)"></div>
+            <span class="nd-tog-hint">⌘\</span>
+          </div>
         </aside>
 
         <!-- Live Statistics Sidebar Toggle -->
@@ -18391,47 +18080,6 @@ tr.staff-table-row .tbl-btn {
         resize();
         window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });
         if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
-    })();
-    </script>
-
-    <!-- neumDesk sidebar v2 — toggle fire + ⌘\ keyboard shortcut patch -->
-    <script>
-    (function() {
-      // Wait for Vue app to mount
-      function patchSidebar() {
-        var app = window.__nmApp || (document.querySelector('#app')?.__vue_app__);
-        if (!app) { setTimeout(patchSidebar, 200); return; }
-
-        // Expose togFire on the root component instance
-        var root = app.config?.globalProperties || app._context?.app?.config?.globalProperties;
-        var inst = app._instance || document.querySelector('#app').__vue_app__._instance;
-        if (!inst || !inst.proxy) { setTimeout(patchSidebar, 200); return; }
-
-        var proxy = inst.proxy;
-
-        // Add togFire if not present
-        if (proxy.togFire === undefined) {
-          proxy.togFire = false;
-        }
-
-        // Add triggerTogFire if not present
-        if (!proxy.triggerTogFire) {
-          proxy.triggerTogFire = function() {
-            proxy.togFire = true;
-            setTimeout(function() { proxy.togFire = false; }, 520);
-          };
-        }
-
-        // ⌘\ / Ctrl+\ — toggle sidebar (undoable: toggles back each press)
-        document.addEventListener('keydown', function(e) {
-          if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
-            e.preventDefault();
-            proxy.sidebarCollapsed = !proxy.sidebarCollapsed;
-            proxy.triggerTogFire();
-          }
-        });
-      }
-      patchSidebar();
     })();
     </script>
 </body>
