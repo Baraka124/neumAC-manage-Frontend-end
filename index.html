@@ -445,16 +445,17 @@
       .rh-kpi-search { flex:1; display:flex; align-items:center; gap:8px; padding:0 16px; min-width:180px; }
 
       /* Main body */
-      .rh-body { flex:1; display:flex; overflow:hidden; }
+      .rh-body { flex:1; display:grid; grid-template-columns:1fr 0px; overflow:hidden; transition:grid-template-columns .25s cubic-bezier(.16,1,.3,1); }
+      .rh-body--drawer { grid-template-columns:1fr 300px; }
       .rh-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--nm-surface2,#f5f4f0); }
 
       /* Grid */
       .rh-grid { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:20px; overflow-y:auto; align-content:start; transition:all .25s; }
-      .rh-grid--narrow { grid-template-columns:1fr; }
+      .rh-grid--narrow { grid-template-columns:1fr 1fr; }
       .rh-loading, .rh-empty { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; gap:8px; color:var(--nm-text3); font-size:13px; }
 
       /* Line card */
-      .rh-lcard { background:#fff; border:1px solid var(--nm-border,#e3dfd6); border-radius:12px; cursor:pointer; transition:border-color .15s, box-shadow .15s; overflow:hidden; }
+      .rh-lcard { background:#fff; border:1px solid var(--nm-border,#e3dfd6); border-radius:12px; cursor:pointer; transition:border-color .15s, box-shadow .15s; overflow:hidden; align-self:start; }
       .rh-lcard:hover { border-color:#85B7EB; box-shadow:0 2px 12px rgba(55,138,221,.08); }
       .rh-lcard--on { border-color:#4fa3f5; border-width:1.5px; }
       .rh-lcard-bar { height:3px; background:var(--nm-border,#e3dfd6); transition:background .15s; }
@@ -476,9 +477,9 @@
       .rh-lcard-tag { font-size:10px; padding:2px 7px; border-radius:4px; background:var(--nm-surface2,#f2f0eb); color:var(--nm-text2,#5f5e5a); border:1px solid var(--nm-border,#e3dfd6); }
 
       /* Drawer */
-      .rh-drawer { width:0; overflow:hidden; border-left:1px solid var(--nm-border,#e3dfd6); background:#fff; transition:width .25s cubic-bezier(.16,1,.3,1); flex-shrink:0; display:flex; flex-direction:column; }
-      .rh-drawer--open { width:300px; }
-      .rh-drawer-inner { width:300px; display:flex; flex-direction:column; height:100%; }
+      .rh-drawer { overflow:hidden; border-left:1px solid var(--nm-border,#e3dfd6); background:#fff; display:flex; flex-direction:column; min-width:0; }
+      .rh-drawer--open { min-width:0; }
+      .rh-drawer-inner { width:100%; display:flex; flex-direction:column; height:100%; }
       .rh-drawer-hdr { padding:16px; border-bottom:1px solid var(--nm-border,#e3dfd6); display:flex; align-items:flex-start; gap:10px; flex-shrink:0; background:var(--nm-surface2,#f8f7f4); }
       .rh-drawer-num { font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:30px; font-weight:300; color:#4fa3f5; line-height:1; flex-shrink:0; }
       .rh-drawer-info { flex:1; min-width:0; }
@@ -11790,7 +11791,7 @@ tr.staff-table-row .tbl-btn {
                     </div>
 
                     <!-- ── LINES TAB ── -->
-                    <div v-if="researchHubTab === 'lines'" class="rh-body">
+                    <div v-if="researchHubTab === 'lines'" class="rh-body" :class="{ 'rh-body--drawer': selectedResearchLine }">
                         <!-- Card grid -->
                         <div class="rh-grid" :class="{ 'rh-grid--narrow': selectedResearchLine }">
                             <div v-if="researchLoading && researchLines.length === 0" class="rh-loading">
