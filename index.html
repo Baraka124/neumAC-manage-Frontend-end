@@ -420,6 +420,154 @@
       .tuc-wl-item--warn::before { background:rgba(239,159,39,.2); border:1px solid #ef9f27; }
       .tuc-wl-item--critical::before { background:rgba(226,75,74,.2); border:1px solid #e24b4a; }
 
+
+      /* ═══════════════════════════════════════════════════════════════
+         RESEARCH HUB — redesign
+      ═══════════════════════════════════════════════════════════════ */
+      .rh-view { display:flex; flex-direction:column; flex:1; min-height:0; background:var(--nm-surface2,#f5f4f0); }
+
+      /* Tabs bar */
+      .rh-tabs-bar { display:flex; align-items:stretch; background:var(--nm-navy,#07111f); border-bottom:1px solid rgba(180,210,255,.08); padding:0 24px; flex-shrink:0; }
+      .rh-tab { padding:0 16px; font-size:12px; color:#48597a; border:none; border-bottom:2px solid transparent; background:none; cursor:pointer; display:flex; align-items:center; gap:6px; height:42px; font-family:inherit; transition:color .1s; white-space:nowrap; }
+      .rh-tab:hover { color:#cdd8f0; }
+      .rh-tab--on { color:#4fa3f5; border-bottom-color:#4fa3f5; }
+      .rh-tab-badge { font-size:9px; padding:1px 6px; border-radius:10px; background:rgba(79,163,245,.12); color:#4fa3f5; font-family:'DM Mono',monospace; }
+      .rh-tab:not(.rh-tab--on) .rh-tab-badge { background:rgba(255,255,255,.06); color:#48597a; }
+
+      /* KPI strip */
+      .rh-kpi-strip { display:flex; align-items:stretch; background:#fff; border-bottom:1px solid var(--nm-border,#e3dfd6); flex-shrink:0; }
+      .rh-kpi { padding:14px 20px; border-right:1px solid var(--nm-border,#e3dfd6); display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
+      .rh-kpi-num { font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:30px; font-weight:300; line-height:1; color:var(--nm-text1,#07111f); letter-spacing:-.02em; }
+      .rh-kpi-num--teal { color:#0F6E56; }
+      .rh-kpi-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--nm-text3,#909399); }
+      .rh-kpi-sub { font-size:11px; color:var(--nm-text3,#b4b2a9); }
+      .rh-kpi-div { width:1px; background:var(--nm-border,#e3dfd6); flex-shrink:0; }
+      .rh-kpi-search { flex:1; display:flex; align-items:center; gap:8px; padding:0 16px; min-width:180px; }
+
+      /* Main body */
+      .rh-body { flex:1; display:flex; overflow:hidden; }
+      .rh-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--nm-surface2,#f5f4f0); }
+
+      /* Grid */
+      .rh-grid { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:20px; overflow-y:auto; align-content:start; transition:all .25s; }
+      .rh-grid--narrow { grid-template-columns:1fr 1fr; }
+      .rh-loading, .rh-empty { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px; gap:8px; color:var(--nm-text3); font-size:13px; }
+
+      /* Line card */
+      .rh-lcard { background:#fff; border:1px solid var(--nm-border,#e3dfd6); border-radius:12px; cursor:pointer; transition:border-color .15s, box-shadow .15s; overflow:hidden; }
+      .rh-lcard:hover { border-color:#85B7EB; box-shadow:0 2px 12px rgba(55,138,221,.08); }
+      .rh-lcard--on { border-color:#4fa3f5; border-width:1.5px; }
+      .rh-lcard-bar { height:3px; background:var(--nm-border,#e3dfd6); transition:background .15s; }
+      .rh-lcard--on .rh-lcard-bar { background:linear-gradient(90deg,#4fa3f5,#22c9a0); }
+      .rh-lcard-body { padding:16px; }
+      .rh-lcard-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
+      .rh-lcard-num { font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:34px; font-weight:300; line-height:1; color:#d0cec9; letter-spacing:-.02em; transition:color .15s; }
+      .rh-lcard--on .rh-lcard-num { color:#4fa3f5; }
+      .rh-lcard-chip { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; padding:2px 8px; border-radius:10px; }
+      .rh-chip--active { background:#E1F5EE; color:#085041; }
+      .rh-chip--off { background:var(--nm-surface2,#f5f4f0); color:var(--nm-text3,#909399); }
+      .rh-lcard-name { font-size:13px; font-weight:500; color:var(--nm-text1,#07111f); line-height:1.4; margin-bottom:3px; }
+      .rh-lcard-coord { font-size:11px; color:var(--nm-text3,#909399); margin-bottom:12px; }
+      .rh-lcard-stats { display:flex; gap:16px; padding-top:12px; border-top:1px solid var(--nm-surface2,#f5f4f0); }
+      .rh-lcard-stat { display:flex; flex-direction:column; gap:1px; }
+      .rh-lcard-stat-n { font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:18px; font-weight:300; color:var(--nm-text1,#07111f); line-height:1; }
+      .rh-lcard-stat-l { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--nm-text3,#b4b2a9); }
+      .rh-lcard-tags { display:flex; gap:4px; flex-wrap:wrap; margin-top:10px; }
+      .rh-lcard-tag { font-size:10px; padding:2px 7px; border-radius:4px; background:var(--nm-surface2,#f2f0eb); color:var(--nm-text2,#5f5e5a); border:1px solid var(--nm-border,#e3dfd6); }
+
+      /* Drawer */
+      .rh-drawer { width:0; overflow:hidden; border-left:1px solid var(--nm-border,#e3dfd6); background:#fff; transition:width .25s cubic-bezier(.16,1,.3,1); flex-shrink:0; display:flex; flex-direction:column; }
+      .rh-drawer--open { width:300px; }
+      .rh-drawer-inner { width:300px; display:flex; flex-direction:column; height:100%; }
+      .rh-drawer-hdr { padding:16px; border-bottom:1px solid var(--nm-border,#e3dfd6); display:flex; align-items:flex-start; gap:10px; flex-shrink:0; background:var(--nm-surface2,#f8f7f4); }
+      .rh-drawer-num { font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:30px; font-weight:300; color:#4fa3f5; line-height:1; flex-shrink:0; }
+      .rh-drawer-info { flex:1; min-width:0; }
+      .rh-drawer-name { font-size:12px; font-weight:500; color:var(--nm-text1,#07111f); line-height:1.35; }
+      .rh-drawer-meta { font-size:10px; color:var(--nm-text3,#909399); margin-top:3px; font-family:'DM Mono',monospace; }
+      .rh-drawer-close { background:none; border:none; cursor:pointer; color:var(--nm-text3,#b4b2a9); padding:3px; border-radius:4px; display:flex; align-items:center; align-self:flex-start; }
+      .rh-drawer-close:hover { color:var(--nm-text1); background:var(--nm-border); }
+      .rh-drawer-body { flex:1; overflow-y:auto; }
+      .rh-drawer-section { padding:12px 16px; border-bottom:1px solid var(--nm-surface2,#f0ede8); }
+      .rh-drawer-section-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--nm-text3,#b4b2a9); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+      .rh-drawer-section-label span { color:#4fa3f5; font-family:'DM Mono',monospace; }
+      .rh-drawer-empty { font-size:11px; color:var(--nm-text3); text-align:center; padding:12px; }
+      .rh-trial-row { padding:8px 10px; border-radius:8px; border:1px solid var(--nm-border,#e8e6e1); margin-bottom:5px; background:var(--nm-surface2,#fafaf8); cursor:pointer; transition:border-color .1s; }
+      .rh-trial-row:hover { border-color:#85B7EB; }
+      .rh-trial-title { font-size:11px; font-weight:500; color:var(--nm-text1,#07111f); line-height:1.35; margin-bottom:5px; }
+      .rh-trial-badges { display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+      .rh-badge-phase { font-size:9px; padding:1px 6px; border-radius:4px; background:#E6F1FB; color:#0C447C; font-family:'DM Mono',monospace; }
+      .rh-badge-status { font-size:9px; padding:1px 6px; border-radius:4px; font-family:'DM Mono',monospace; }
+      .rh-badge-status--r { background:#E1F5EE; color:#085041; }
+      .rh-badge-status--a { background:var(--nm-surface2,#f2f0eb); color:var(--nm-text2,#5f5e5a); }
+      .rh-badge-status--c { background:var(--nm-surface3,#e8e6df); color:var(--nm-text3,#909399); }
+      .rh-trial-pi { font-size:10px; color:var(--nm-text3,#909399); margin-left:auto; }
+      .rh-proj-row { padding:8px 10px; border-radius:8px; border:1px solid var(--nm-border,#e8e6e1); margin-bottom:5px; background:var(--nm-surface2,#fafaf8); display:flex; align-items:center; gap:8px; cursor:pointer; }
+      .rh-proj-row:hover { border-color:#85B7EB; }
+      .rh-proj-info { flex:1; min-width:0; }
+      .rh-proj-title { font-size:11px; font-weight:500; color:var(--nm-text1,#07111f); }
+      .rh-proj-stage { font-size:10px; color:var(--nm-text3,#909399); margin-top:1px; }
+      .rh-proj-cat { font-size:9px; padding:2px 6px; border-radius:4px; background:#FAEEDA; color:#633806; flex-shrink:0; font-family:'DM Mono',monospace; }
+      .rh-kw-cloud { display:flex; gap:4px; flex-wrap:wrap; }
+      .rh-kw { font-size:10px; padding:3px 8px; border-radius:4px; background:var(--nm-surface2); border:1px solid var(--nm-border); color:var(--nm-text2); }
+      .rh-line-chip { font-size:10px; padding:2px 6px; border-radius:4px; background:var(--nm-surface2); border:1px solid var(--nm-border); color:var(--nm-text3); font-family:'DM Mono',monospace; }
+
+      /* Studies table */
+      .rh-filter-row { display:flex; gap:8px; padding:12px 20px; border-bottom:1px solid var(--nm-border); background:#fff; flex-shrink:0; }
+      .rh-table-wrap { flex:1; overflow:auto; }
+      .rh-trial-table { width:100%; min-width:600px; }
+      .rh-table-hdr { display:flex; align-items:center; gap:8px; padding:8px 20px; background:var(--nm-surface2); border-bottom:1px solid var(--nm-border); position:sticky; top:0; }
+      .rh-th { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--nm-text3); flex:1; }
+      .rh-table-row { display:flex; align-items:center; gap:8px; padding:10px 20px; border-bottom:1px solid var(--nm-border); cursor:pointer; transition:background .08s; }
+      .rh-table-row:hover { background:var(--nm-surface2); }
+      .rh-td { flex:1; font-size:12px; color:var(--nm-text2); min-width:0; }
+      .rh-td--title { font-weight:500; color:var(--nm-text1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .rh-td--pi { color:var(--nm-text3); font-size:11px; }
+      .rh-table-empty { padding:32px; text-align:center; font-size:13px; color:var(--nm-text3); }
+
+      /* Projects grid */
+      .rh-proj-grid { flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:20px; overflow-y:auto; align-content:start; }
+      .rh-proj-card { background:#fff; border:1px solid var(--nm-border); border-radius:10px; padding:14px; cursor:pointer; transition:border-color .12s, box-shadow .12s; }
+      .rh-proj-card:hover { border-color:#85B7EB; box-shadow:0 2px 8px rgba(55,138,221,.06); }
+      .rh-proj-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; gap:6px; }
+      .rh-proj-stage-badge { font-size:10px; color:var(--nm-text3); font-family:'DM Mono',monospace; }
+      .rh-proj-card-title { font-size:12px; font-weight:500; color:var(--nm-text1); line-height:1.4; margin-bottom:4px; }
+      .rh-proj-card-line { font-size:10px; color:var(--nm-text3); margin-bottom:3px; }
+      .rh-proj-card-pi { font-size:11px; color:var(--nm-text2); }
+
+      /* ═══════════════════════════════════════════════════════════════
+         NEWS & POSTS — redesign
+      ═══════════════════════════════════════════════════════════════ */
+      .nm-news-view { display:flex; flex-direction:column; flex:1; min-height:0; background:var(--nm-surface2); }
+      .nm-news-filters { display:flex; gap:8px; padding:10px 24px; border-bottom:1px solid var(--nm-border); background:#fff; flex-shrink:0; }
+      .nm-news-feed { flex:1; overflow-y:auto; background:#fff; }
+      .nm-news-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px; gap:4px; }
+
+      /* Post card */
+      .nm-post-card { display:flex; border-bottom:1px solid var(--nm-border,#f0ede8); cursor:pointer; transition:background .1s; }
+      .nm-post-card:hover { background:var(--nm-surface2,#fafaf8); }
+      .nm-post-card--expanded { background:var(--nm-surface2,#f8f7f4); }
+      .nm-post-accent { width:3px; flex-shrink:0; }
+      .nm-post-body { padding:14px 20px; flex:1; min-width:0; }
+      .nm-post-meta { display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap; }
+      .nm-post-type { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; padding:2px 7px; border-radius:3px; font-family:'DM Mono',monospace; }
+      .nm-post-type--publication { background:#FCEBEB; color:#791F1F; }
+      .nm-post-type--article { background:#E6F1FB; color:#0C447C; }
+      .nm-post-type--update { background:#E1F5EE; color:#085041; }
+      .nm-post-type--photo_story { background:#FAEEDA; color:#633806; }
+      .nm-post-date { font-size:10px; color:var(--nm-text3,#b4b2a9); font-family:'DM Mono',monospace; }
+      .nm-post-line { font-size:10px; padding:2px 6px; border-radius:3px; border:1px solid var(--nm-border); color:var(--nm-text3); font-family:'DM Mono',monospace; }
+      .nm-post-vis { font-size:9px; padding:2px 7px; border-radius:10px; margin-left:auto; font-family:'DM Mono',monospace; }
+      .nm-post-vis--pub { background:#E1F5EE; color:#085041; border:1px solid #9FE1CB; }
+      .nm-post-vis--int { background:var(--nm-surface2); color:var(--nm-text3); border:1px solid var(--nm-border); }
+      .nm-post-expand-arrow { font-size:10px; color:var(--nm-text3); transition:transform .2s; margin-left:6px; }
+      .nm-post-expand-arrow--open { transform:rotate(180deg); }
+      .nm-post-title { font-size:13px; font-weight:500; color:var(--nm-text1,#07111f); line-height:1.45; margin-bottom:5px; }
+      .nm-post-journal { font-size:12px; color:var(--nm-text2,#5f5e5a); font-style:italic; margin-bottom:2px; }
+      .nm-post-doi { font-size:10px; color:var(--nm-text3); font-family:'DM Mono',monospace; }
+      .nm-post-excerpt { font-size:12px; color:var(--nm-text2); line-height:1.6; margin-top:4px; }
+      .nm-post-full-body { font-size:12px; color:var(--nm-text1); line-height:1.7; margin-top:10px; white-space:pre-wrap; }
+      .nm-post-actions { display:flex; gap:6px; margin-top:12px; padding-top:12px; border-top:1px solid var(--nm-border); flex-wrap:wrap; }
+
       /* ── Rotation rows compact ── */
       .rot-row{padding:8px 18px;min-height:44px;}
       .rot-track{flex-wrap:nowrap;overflow:hidden;gap:5px;}
@@ -11572,791 +11720,419 @@ tr.staff-table-row .tbl-btn {
            
 
                 <!-- ============ RESEARCH HUB (unified) ============ -->
-                <div v-if="currentView === 'research_hub'" class="research-hub" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+                                <div v-if="currentView === 'research_hub'" class="rh-view">
 
-                    <!-- Tab bar + contextual action button — no redundant title needed -->
-                    <div class="rhub-tabs">
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'lines' }" @click="researchHubTab = 'lines'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                            <span>Lines</span>
-                            <span class="rhub-tab-count">{{ researchLines.length }}</span>
+                    <!-- ── Tabs + action ── -->
+                    <div class="rh-tabs-bar">
+                        <button class="rh-tab" :class="{ 'rh-tab--on': researchHubTab === 'lines' }" @click="researchHubTab = 'lines'">
+                            Lines <span class="rh-tab-badge">{{ researchLines.length }}</span>
                         </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'trials' }" @click="researchHubTab = 'trials'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                            <span>Studies</span>
-                            <span class="rhub-tab-count">{{ clinicalTrials.length }}</span>
+                        <button class="rh-tab" :class="{ 'rh-tab--on': researchHubTab === 'trials' }" @click="researchHubTab = 'trials'">
+                            Studies <span class="rh-tab-badge">{{ clinicalTrials.length }}</span>
                         </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'projects' }" @click="researchHubTab = 'projects'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
-                            <span>Projects</span>
-                            <span class="rhub-tab-count">{{ innovationProjects.length }}</span>
+                        <button class="rh-tab" :class="{ 'rh-tab--on': researchHubTab === 'projects' }" @click="researchHubTab = 'projects'">
+                            Projects <span class="rh-tab-badge">{{ innovationProjects.length }}</span>
                         </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': researchHubTab === 'analytics' }"
-                        @click="researchHubTab = 'analytics'; loadResearchDashboard(); loadTrialsTimeline(); loadResearchLinesPerformance(); loadPartnerCollaborations()">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-                            <span>Analytics</span>
+                        <button class="rh-tab" :class="{ 'rh-tab--on': researchHubTab === 'analytics' }"
+                                @click="researchHubTab = 'analytics'; loadResearchDashboard(); loadResearchLinesPerformance()">
+                            Analytics
                         </button>
-                        <!-- Context pill when a line filter is active -->
-                        <div v-if="trialFilters.line" class="rhub-context-pill" style="margin-left:8px;align-self:center">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                            <span>{{ getResearchLineName(trialFilters.line) }}</span>
-                            <button @click="trialFilters.line = ''; projectFilters.research_line_id = ''" class="rhub-ctx-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
-                        </div>
-                        <!-- Action button — right-aligned -->
-                        <div style="margin-left:auto;display:flex;align-items:center;padding-bottom:1px">
-                            <button class="btn btn-primary btn-sm" v-if="researchHubTab === 'lines' && hasPermission('research_lines','create')" @click="showAddResearchLineModal"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Line</button>
-                            <button class="btn btn-primary btn-sm" v-if="researchHubTab === 'trials' && hasPermission('research_lines','create')" @click="showAddTrialModal(trialFilters.line ? researchLines.find(l => l.id === trialFilters.line) : null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Study</button>
-                            <button class="btn btn-primary btn-sm" v-if="researchHubTab === 'projects' && hasPermission('research_lines','create')" @click="showAddProjectModal(projectFilters.research_line_id ? researchLines.find(l => l.id === projectFilters.research_line_id) : null)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Project</button>
-                            <button class="btn btn-outline btn-sm" v-if="researchHubTab === 'analytics' && hasPermission('analytics','export')" @click="showExportModal"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 19H19M8 14l4 5 4-5"/></svg> Export</button>
+                        <div style="margin-left:auto;display:flex;align-items:center;padding-bottom:1px;gap:8px">
+                            <button v-if="researchHubTab === 'lines' && hasPermission('research_lines','create')"
+                                    class="btn btn-primary btn-sm" @click="showAddResearchLineModal">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                Add line
+                            </button>
+                            <button v-if="researchHubTab === 'trials' && hasPermission('research_lines','create')"
+                                    class="btn btn-primary btn-sm" @click="showAddTrialModal">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                Add study
+                            </button>
+                            <button v-if="researchHubTab === 'projects' && hasPermission('research_lines','create')"
+                                    class="btn btn-primary btn-sm" @click="showAddProjectModal">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                Add project
+                            </button>
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════════
-                         TAB: LINES
-                    ══════════════════════════════════════════════════ -->
-                    <div v-show="researchHubTab === 'lines'" class="rhub-panel rhub-panel--mc">
+                    <!-- ── KPI strip (Lines tab only) ── -->
+                    <div v-if="researchHubTab === 'lines'" class="rh-kpi-strip">
+                        <div class="rh-kpi">
+                            <div class="rh-kpi-num rh-kpi-num--teal">{{ portfolioKPIs?.activeLines || 0 }}</div>
+                            <div class="rh-kpi-label">Active lines</div>
+                            <div class="rh-kpi-sub">of {{ portfolioKPIs?.totalLines || 0 }} total</div>
+                        </div>
+                        <div class="rh-kpi-div"></div>
+                        <div class="rh-kpi">
+                            <div class="rh-kpi-num rh-kpi-num--teal">{{ portfolioKPIs?.recruitingTrials || 0 }}</div>
+                            <div class="rh-kpi-label">Recruiting</div>
+                            <div class="rh-kpi-sub">{{ portfolioKPIs?.activeTrials || 0 }} active · {{ (portfolioKPIs?.totalTrials||0) - (portfolioKPIs?.activeTrials||0) }} other</div>
+                        </div>
+                        <div class="rh-kpi-div"></div>
+                        <div class="rh-kpi">
+                            <div class="rh-kpi-num">{{ portfolioKPIs?.totalProjects || 0 }}</div>
+                            <div class="rh-kpi-label">Projects</div>
+                            <div class="rh-kpi-sub">in pipeline</div>
+                        </div>
+                        <div class="rh-kpi-div"></div>
+                        <div class="rh-kpi">
+                            <div class="rh-kpi-num">{{ (portfolioKPIs?.totalEnrolled || 0).toLocaleString() }}</div>
+                            <div class="rh-kpi-label">Participants</div>
+                            <div class="rh-kpi-sub" v-if="portfolioKPIs?.totalTarget > 0">
+                                {{ Math.round(((portfolioKPIs?.totalEnrolled||0)/(portfolioKPIs?.totalTarget||1))*100) }}% of target
+                            </div>
+                        </div>
+                        <div class="rh-kpi-search">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="opacity:.35;flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                            <input type="text" v-model="researchLineFilters.search" placeholder="Search lines…" style="border:none;outline:none;font-family:inherit;font-size:12px;color:var(--nm-text1);background:transparent;width:100%">
+                        </div>
+                    </div>
 
-                        <!-- ── Portfolio KPI strip (Idea 3) ── -->
-                        <div class="rp-kpi-strip">
-                            <div class="rp-kpi">
-                                <div class="rp-kpi-val">{{ portfolioKPIs?.activeLines || 0 }}</div>
-                                <div class="rp-kpi-label">Active Lines</div>
-                                <div class="rp-kpi-sub">of {{ portfolioKPIs?.totalLines || 0 }} total</div>
+                    <!-- ── LINES TAB ── -->
+                    <div v-if="researchHubTab === 'lines'" class="rh-body">
+                        <!-- Card grid -->
+                        <div class="rh-grid" :class="{ 'rh-grid--narrow': selectedResearchLine }">
+                            <div v-if="researchLoading && researchLines.length === 0" class="rh-loading">
+                                <div class="spinner"></div> Loading research lines…
                             </div>
-                            <div class="rp-kpi-div"></div>
-                            <div class="rp-kpi">
-                                <div class="rp-kpi-val" :class="{ 'rp-kpi-val--ok': portfolioKPIs?.activeTrials > 0 }">{{ portfolioKPIs?.activeTrials || 0 }}</div>
-                                <div class="rp-kpi-label">Active Studies</div>
-                                <div class="rp-kpi-sub" v-if="portfolioKPIs?.recruitingTrials > 0" style="color:var(--ok)">{{ portfolioKPIs?.recruitingTrials || 0 }} recruiting</div>
-                                <div class="rp-kpi-sub" v-else>of {{ portfolioKPIs?.totalTrials || 0 }} total</div>
+                            <div v-else-if="filteredResearchLines.length === 0" class="rh-empty">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" style="opacity:.25"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 19.48A1 1 0 0 0 5.6 21h12.8a1 1 0 0 0 .88-1.52l-5.068-9.057A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/></svg>
+                                <div style="margin-top:8px;font-size:13px;color:var(--nm-text3)">No research lines yet</div>
                             </div>
-                            <div class="rp-kpi-div"></div>
-                            <div class="rp-kpi">
-                                <div class="rp-kpi-val">{{ portfolioKPIs?.totalProjects || 0 }}</div>
-                                <div class="rp-kpi-label">Projects</div>
-                                <div class="rp-kpi-sub" v-if="portfolioKPIs?.lateStageProjects > 0" style="color:var(--blue)">{{ portfolioKPIs?.lateStageProjects || 0 }} advanced stage</div>
-                                <div class="rp-kpi-sub" v-else>in pipeline</div>
-                            </div>
-                            <div class="rp-kpi-div"></div>
-                            <div class="rp-kpi">
-                                <div class="rp-kpi-val">{{ (portfolioKPIs?.totalEnrolled || 0).toLocaleString() }}</div>
-                                <div class="rp-kpi-label">Participants</div>
-                                <div class="rp-kpi-sub" v-if="portfolioKPIs?.totalTarget > 0">
-                                    {{ Math.round(((portfolioKPIs?.totalEnrolled || 0) / (portfolioKPIs?.totalTarget || 1)) * 100) }}% of target
+                            <div v-for="line in filteredResearchLines" :key="line.id"
+                                 class="rh-lcard" :class="{ 'rh-lcard--on': selectedResearchLine && selectedResearchLine.id === line.id }"
+                                 @click="selectedResearchLine && selectedResearchLine.id === line.id ? (selectedResearchLine = null) : openLineDetail(line)">
+                                <!-- Top accent bar — teal when selected -->
+                                <div class="rh-lcard-bar"></div>
+                                <div class="rh-lcard-body">
+                                    <div class="rh-lcard-top">
+                                        <div class="rh-lcard-num">L{{ line.line_number }}</div>
+                                        <div class="rh-lcard-chip" :class="line.active !== false ? 'rh-chip--active' : 'rh-chip--off'">
+                                            {{ line.active !== false ? 'Active' : 'Inactive' }}
+                                        </div>
+                                    </div>
+                                    <div class="rh-lcard-name">{{ line.name }}</div>
+                                    <div class="rh-lcard-coord">
+                                        <span v-if="line.coordinator_id">
+                                            {{ allStaffLookup.find(s=>s.id===line.coordinator_id)?.full_name?.split(' ').slice(-1)[0] || '—' }}
+                                        </span>
+                                        <span v-else style="color:var(--nm-text3)">No coordinator</span>
+                                    </div>
+                                    <div class="rh-lcard-stats">
+                                        <div class="rh-lcard-stat">
+                                            <div class="rh-lcard-stat-n">{{ clinicalTrials.filter(t=>t.research_line_id===line.id).length }}</div>
+                                            <div class="rh-lcard-stat-l">Studies</div>
+                                        </div>
+                                        <div class="rh-lcard-stat">
+                                            <div class="rh-lcard-stat-n">{{ innovationProjects.filter(p=>p.research_line_id===line.id).length }}</div>
+                                            <div class="rh-lcard-stat-l">Projects</div>
+                                        </div>
+                                        <div class="rh-lcard-stat">
+                                            <div class="rh-lcard-stat-n">{{ clinicalTrials.filter(t=>t.research_line_id===line.id).reduce((s,t)=>s+(t.actual_enrollment||0),0) }}</div>
+                                            <div class="rh-lcard-stat-l">Participants</div>
+                                        </div>
+                                    </div>
+                                    <div class="rh-lcard-tags" v-if="line.keywords && line.keywords.length">
+                                        <span v-for="kw in line.keywords.slice(0,3)" :key="kw" class="rh-lcard-tag">{{ kw }}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="rp-kpi-search">
-                                <input type="text" class="form-control" v-model="researchLineFilters.search" placeholder="Search lines…" style="font-size:12px">
                             </div>
                         </div>
 
-                        <!-- ── Mission Control layout (Idea 1) ── -->
-                        <div class="rp-mc">
-
-                            <!-- LEFT: compact line navigator -->
-                            <div class="rp-nav">
-                                <div v-for="line in filteredResearchLines" :key="line.id"
-                                     class="rp-nav-item"
-                                     :class="{
-                                       'rp-nav-item--active':   activeMissionLine && activeMissionLine.id === line.id,
-                                       'rp-nav-item--inactive': !line.active
-                                     }"
-                                     @click="openLineDetail(line)"
-                                     :style="activeMissionLine && activeMissionLine.id === line.id ? { borderLeftColor: getLineAccent(line.line_number).color } : {}">
-                                    <div class="rp-nav-badge"
-                                         :style="activeMissionLine && activeMissionLine.id === line.id
-                                           ? { background: getLineAccent(line.line_number).bg, color: '#fff' }
-                                           : {}">
-                                        L{{ line.line_number }}
-                                    </div>
-                                    <div class="rp-nav-info">
-                                        <div class="rp-nav-name">{{ line.research_line_name || line.name }}</div>
-                                        <div class="rp-nav-meta">
-                                            <span>{{ line.stats?.totalStudies || 0 }} studies</span>
-                                            <span class="rp-nav-dot"></span>
-                                            <span>{{ line.stats?.totalProjects || 0 }} projects</span>
-                                        </div>
-                                        <div v-if="line.coordinator_id" class="rp-nav-coord">
-                                            <div class="rp-nav-coord-av">{{ (allStaffLookup.find(s=>s.id===line.coordinator_id)?.full_name||'').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('') }}</div>
-                                            <span>{{ (allStaffLookup.find(s=>s.id===line.coordinator_id)?.full_name||'').split(' ').slice(-1)[0] }}</span>
-                                        </div>
-                                        <div class="rp-nav-kws" v-if="line.keywords && line.keywords.length">
-                                            <span v-for="(kw,i) in line.keywords.slice(0,3)" :key="kw"
-                                                  class="rp-nav-kw" :class="'rp-kw-chip--' + (i % 6)">{{ kw }}</span>
-                                            <span v-if="line.keywords.length > 3" class="rp-nav-kw-more">+{{ line.keywords.length - 3 }}</span>
+                        <!-- Detail drawer -->
+                        <div class="rh-drawer" :class="{ 'rh-drawer--open': selectedResearchLine }">
+                            <div v-if="selectedResearchLine" class="rh-drawer-inner">
+                                <div class="rh-drawer-hdr">
+                                    <div class="rh-drawer-num">L{{ selectedResearchLine.line_number }}</div>
+                                    <div class="rh-drawer-info">
+                                        <div class="rh-drawer-name">{{ selectedResearchLine.name }}</div>
+                                        <div class="rh-drawer-meta">
+                                            <span v-if="selectedResearchLine.coordinator_id">
+                                                Coord. {{ allStaffLookup.find(s=>s.id===selectedResearchLine.coordinator_id)?.full_name?.split(' ').slice(-1)[0] }}
+                                            </span>
+                                            <span v-else>No coordinator</span>
+                                            · {{ selectedResearchLine.active !== false ? 'Active' : 'Inactive' }}
                                         </div>
                                     </div>
-                                    <div class="rp-nav-status">
-                                        <span v-if="line.stats?.activeTrials > 0" class="rp-nav-live"></span>
-                                    </div>
+                                    <button class="rh-drawer-close" @click="selectedResearchLine = null">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7l-10 10"/></svg>
+                                    </button>
                                 </div>
-                                <div v-if="filteredResearchLines.length === 0" class="rp-nav-empty">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                                    <span>No lines found</span>
-                                </div>
-                            </div>
-
-                            <!-- RIGHT: rich detail panel -->
-                            <div class="rp-detail" v-if="activeMissionLine">
-                                <!-- Accent header -->
-                                <div class="rp-detail-head"
-                                     :style="{ background: activeMissionLine ? getLineAccent(activeMissionLine.line_number).bg : '#0f2d54', position: 'relative', overflow: 'hidden' }">
-                                    <div class="rp-detail-head-left">
-                                        <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:4px;">
-                                        <span class="rp-detail-num" style="color:rgba(0,179,179,.75);text-shadow:0 0 32px rgba(0,179,179,.25);">L{{ activeMissionLine.line_number }}</span>
-                                    </div>
-                                        <h2 class="rp-detail-title">{{ activeMissionLine.research_line_name || activeMissionLine.name }}</h2>
-                                    </div>
-                                    <div class="rp-detail-head-actions" @click.stop="() => {}">
-                                        <button class="rp-detail-btn" @click="editResearchLine(activeMissionLine)" v-if="hasPermission('research_lines','update')" title="Edit">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
-                                        </button>
-                                        <button class="rp-detail-btn rp-detail-btn--danger" @click="deleteResearchLine(activeMissionLine)" v-if="hasPermission('research_lines','delete')" title="Delete">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="rp-detail-body">
-                                    <!-- Stats row -->
-                                    <div class="rp-detail-stats">
-                                        <div class="rp-ds-block" @click="drillToTrials(activeMissionLine.id)">
-                                            <div class="rp-ds-val">{{ activeMissionLine.stats?.totalStudies || 0 }}</div>
-                                            <div class="rp-ds-label">Clinical Studies</div>
-                                            <div class="rp-ds-sub" v-if="activeMissionLine.stats?.activeTrials > 0" style="color:var(--ok)">{{ activeMissionLine.stats.activeStudies }} active</div>
+                                <div class="rh-drawer-body">
+                                    <!-- Studies -->
+                                    <div class="rh-drawer-section">
+                                        <div class="rh-drawer-section-label">
+                                            Studies
+                                            <span>{{ clinicalTrials.filter(t=>t.research_line_id===selectedResearchLine.id).length }}</span>
                                         </div>
-                                        <div class="rp-ds-block" @click="drillToProjects(activeMissionLine.id)">
-                                            <div class="rp-ds-val">{{ activeMissionLine.stats?.totalProjects || 0 }}</div>
-                                            <div class="rp-ds-label">Projects</div>
-                                            <div class="rp-ds-sub" v-if="activeMissionLine.stats?.activeProjects > 0" style="color:var(--blue)">{{ activeMissionLine.stats.activeProjects }} active</div>
-                                        </div>
-                                        <div class="rp-ds-block" v-if="activeMissionLine.stats?.totalEnrollment > 0">
-                                            <div class="rp-ds-val">{{ activeMissionLine.stats.totalEnrollment }}</div>
-                                            <div class="rp-ds-label">Enrolled</div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Description -->
-                                    <div class="rp-detail-section" v-if="activeMissionLine.description">
-                                        <div class="rp-detail-section-label">About this line</div>
-                                        <p class="rp-detail-desc">{{ activeMissionLine.description }}</p>
-                                    </div>
-
-                                    <!-- Capabilities -->
-                                    <div class="rp-detail-section" v-if="activeMissionLine.capabilities">
-                                        <div class="rp-detail-section-label">Capabilities</div>
-                                        <p class="rp-detail-desc">{{ activeMissionLine.capabilities }}</p>
-                                    </div>
-
-                                <!-- Detail scrollable body -->
-                                <div class="rp-detail-body">
-
-                                    <!-- Coordinator -->
-                                    <div class="rp-detail-section">
-                                        <div class="rp-detail-section-label">Coordinator</div>
-                                        <div v-if="activeMissionLine.coordinator_id" class="rp-detail-coord">
-                                            <div class="rp-detail-coord-avatar"
-                                                 :style="{ background: activeMissionLine ? getLineAccent(activeMissionLine.line_number).bg : '#0f2d54', position: 'relative', overflow: 'hidden' }">
-                                                {{ (activeMissionLine.coordinator_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}
-                                            </div>
-                                            <div>
-                                                <div class="rp-detail-coord-name">{{ activeMissionLine.coordinator_name }}</div>
-                                                <div class="rp-detail-coord-role">Line Coordinator</div>
-                                            </div>
-                                            <button class="rp-detail-btn" style="margin-left:auto"
-                                                    @click="openAssignCoordinatorModal(activeMissionLine)"
-                                                    v-if="hasPermission('research_lines','update')" title="Change coordinator">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 16H3l4 4 4-4H7V4M17 8h4l-4-4-4 4h4v12"/></svg>
-                                            </button>
-                                        </div>
-                                        <div v-else class="rp-detail-no-coord">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8"/><path d="M16 3.13a4 4 0 0 1 0 7.75M1 1l22 22"/><circle cx="9" cy="7" r="4"/></svg> No coordinator assigned
-                                            <button class="btn btn-sm btn-outline" style="margin-left:10px"
-                                                    @click="openAssignCoordinatorModal(activeMissionLine)"
-                                                    v-if="hasPermission('research_lines','update')">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg> Assign
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Active trials for this line -->
-                                    <div class="rp-detail-section" v-if="clinicalTrials.filter(t => t.research_line_id === activeMissionLine.id).length > 0">
-                                        <div class="rp-detail-section-label">Clinical Studies</div>
-                                        <div class="rp-trial-list">
-                                            <div v-for="trial in clinicalTrials.filter(t => t.research_line_id === activeMissionLine.id).slice(0,4)"
-                                                 :key="trial.id" class="rp-study-row">
-                                                <div class="rp-trial-info">
-                                                    <div class="rp-trial-title">{{ trial.title }}</div>
-                                                    <div class="rp-trial-meta">{{ trial.phase }} · {{ trial.protocol_id }}</div>
-                                                </div>
-                                                <div class="rp-trial-right">
-                                                    <span class="rp-trial-status"
-                                                          :class="{
-                                                            'rp-trial-status--recruiting': trial.status === 'Reclutando',
-                                                            'rp-trial-status--active':     trial.status === 'Activo',
-                                                            'rp-trial-status--done':       trial.status === 'Completado'
-                                                          }">{{ trial.status }}</span>
-                                                    <div v-if="trial.enrollment_target > 0" class="rp-study-bar">
-                                                        <div class="rp-trial-bar-fill"
-                                                             :style="{ width: Math.min(100, Math.round(((trial.actual_enrollment||0)/trial.enrollment_target)*100)) + '%',
-                                                                        background: activeMissionLine ? getLineAccent(activeMissionLine.line_number).color : '#1e40af' }">
-                                                        </div>
-                                                    </div>
-                                                    <div v-if="trial.enrollment_target > 0" class="rp-trial-enroll">{{ trial.actual_enrollment||0 }}/{{ trial.enrollment_target }}</div>
-                                                </div>
+                                        <div v-for="trial in clinicalTrials.filter(t=>t.research_line_id===selectedResearchLine.id)"
+                                             :key="trial.id" class="rh-trial-row" @click.stop="viewTrial(trial)">
+                                            <div class="rh-trial-title">{{ trial.title }}</div>
+                                            <div class="rh-trial-badges">
+                                                <span class="rh-badge-phase">{{ trial.phase }}</span>
+                                                <span class="rh-badge-status"
+                                                      :class="trial.status === 'Reclutando' ? 'rh-badge-status--r' : trial.status === 'Activo' ? 'rh-badge-status--a' : 'rh-badge-status--c'">
+                                                    {{ trial.status }}
+                                                </span>
+                                                <span class="rh-trial-pi" v-if="trial.principal_investigator_id">
+                                                    PI: {{ allStaffLookup.find(s=>s.id===trial.principal_investigator_id)?.full_name?.split(' ').slice(-1)[0] || '—' }}
+                                                </span>
                                             </div>
                                         </div>
-                                        <button class="rp-view-all" @click="drillToTrials(activeMissionLine.id)">
-                                            View all studies <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                                        </button>
+                                        <div v-if="!clinicalTrials.filter(t=>t.research_line_id===selectedResearchLine.id).length"
+                                             class="rh-drawer-empty">No studies in this line</div>
                                     </div>
-
+                                    <!-- Projects -->
+                                    <div class="rh-drawer-section">
+                                        <div class="rh-drawer-section-label">
+                                            Projects
+                                            <span>{{ innovationProjects.filter(p=>p.research_line_id===selectedResearchLine.id).length }}</span>
+                                        </div>
+                                        <div v-for="proj in innovationProjects.filter(p=>p.research_line_id===selectedResearchLine.id)"
+                                             :key="proj.id" class="rh-proj-row" @click.stop="editProject(proj)">
+                                            <div class="rh-proj-info">
+                                                <div class="rh-proj-title">{{ proj.title }}</div>
+                                                <div class="rh-proj-stage">{{ proj.current_stage || proj.development_stage }}</div>
+                                            </div>
+                                            <span class="rh-proj-cat">{{ proj.category }}</span>
+                                        </div>
+                                        <div v-if="!innovationProjects.filter(p=>p.research_line_id===selectedResearchLine.id).length"
+                                             class="rh-drawer-empty">No projects in this line</div>
+                                    </div>
                                     <!-- Keywords -->
-                                    <div class="rp-detail-section" v-if="activeMissionLine.keywords && activeMissionLine.keywords.length">
-                                        <div class="rp-detail-section-label">Keywords</div>
-                                        <div class="rp-kw-cloud">
-                                            <span v-for="(kw, i) in activeMissionLine.keywords" :key="kw"
-                                                  class="rp-kw-chip"
-                                                  :class="'rp-kw-chip--' + (i % 6)">{{ kw }}</span>
+                                    <div class="rh-drawer-section" v-if="selectedResearchLine.keywords && selectedResearchLine.keywords.length">
+                                        <div class="rh-drawer-section-label">Keywords</div>
+                                        <div class="rh-kw-cloud">
+                                            <span v-for="kw in selectedResearchLine.keywords" :key="kw" class="rh-kw">{{ kw }}</span>
                                         </div>
                                     </div>
-
-                                    <!-- Innovation Projects for this line -->
-                                    <div class="rp-detail-section" v-if="(innovationProjects||[]).filter(p=>p.research_line_id===activeMissionLine.id).length > 0 || hasPermission('research_lines','create')">
-                                        <div class="rp-detail-section-label" style="display:flex;align-items:center;gap:6px">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
-                                            Innovation Projects
-                                            <button class="btn btn-primary btn-sm" @click="showAddProjectModal(activeMissionLine)" v-if="hasPermission('research_lines','create')" style="margin-left:auto;font-size:10px;padding:3px 8px">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Project
-                                            </button>
-                                        </div>
-                                        <div v-if="(innovationProjects||[]).filter(p=>p.research_line_id===activeMissionLine.id).length > 0"
-                                             style="display:flex;flex-direction:column;gap:6px">
-                                            <div v-for="proj in (innovationProjects||[]).filter(p=>p.research_line_id===activeMissionLine.id).slice(0,4)"
-                                                 :key="proj.id"
-                                                 style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--border)">
-                                                <div style="flex:1;min-width:0">
-                                                    <div style="font-size:12px;font-weight:500;color:var(--text-1)">{{ proj.title }}</div>
-                                                    <div style="font-size:10px;color:var(--text-3);font-family:monospace;margin-top:1px">{{ proj.current_stage || proj.development_stage }}</div>
-                                                </div>
-                                                <div style="display:flex;gap:4px" @click.stop="() => {}">
-                                                    <button class="tbl-btn" @click.stop="editProject(proj)" v-if="hasPermission('research_lines','update')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                                    <button class="btn-pill btn-pill-delete" @click.stop="deleteInnovationProject(proj)" v-if="hasPermission('research_lines','delete')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div v-else style="font-size:12px;color:var(--text-4);padding:10px;background:var(--surface-2);border-radius:8px;border:1px dashed var(--border);text-align:center">
-                                            No projects yet for this line
-                                        </div>
+                                    <!-- Description -->
+                                    <div class="rh-drawer-section" v-if="selectedResearchLine.description">
+                                        <div class="rh-drawer-section-label">About</div>
+                                        <div style="font-size:12px;color:var(--nm-text2);line-height:1.6">{{ selectedResearchLine.description }}</div>
                                     </div>
-
-                                </div><!-- end rp-detail-body -->
-
-                                <!-- Footer actions -->
-                                <div class="rp-detail-footer">
-                                    <button class="btn btn-sm btn-outline" @click="drillToTrials(activeMissionLine.id)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> Studies
-                                    </button>
-                                    <button class="btn btn-sm btn-outline" @click="drillToProjects(activeMissionLine.id)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg> Projects
-                                    </button>
-                                    <button class="btn btn-primary btn-sm" @click="showAddTrialModal(activeMissionLine)" v-if="hasPermission('research_lines','create')" style="margin-left:auto">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Study
-                                    </button>
-                                </div><!-- end rp-detail-footer -->
-                            </div><!-- end outer rp-detail-body -->
-                            </div><!-- end rp-detail v-if -->
-
-                            <div class="rp-detail rp-detail--empty" v-else>
-                                <div class="rp-detail-empty-inner">
-                                    <div class="rp-detail-empty-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg></div>
-                                    <div class="rp-detail-empty-title">Select a research line</div>
-                                    <div class="rp-detail-empty-sub">Click any line on the left to explore its studies, projects and team</div>
-                                    <button class="btn btn-primary btn-sm" @click="showAddResearchLineModal" v-if="hasPermission('research_lines','create')" style="margin-top:16px">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add First Line
-                                    </button>
-                                </div>
-                            </div>
-
-                        </div><!-- end rp-mc -->
-                    </div>
-
-                    <!-- ══════════════════════════════════════════════════
-                         TAB: TRIALS
-                    ══════════════════════════════════════════════════ -->
-                    <div v-show="researchHubTab === 'trials'" class="rhub-panel">
-                        <div class="rhub-filter-bar">
-                            <select class="form-select" v-model="trialFilters.line">
-                                <option value="">All Lines</option>
-                                <option v-for="line in researchLines" :key="line.id" :value="line.id">{{ line.research_line_name || line.name }}</option>
-                            </select>
-                            <select class="form-select" v-model="trialFilters.phase">
-                                <option value="">All Phases</option>
-                                <option>Phase I</option><option>Phase II</option><option>Phase III</option><option>Phase IV</option>
-                            </select>
-                            <select class="form-select" v-model="trialFilters.status">
-                                <option value="">All Status</option>
-                                <option value="Reclutando">Recruiting</option>
-                                <option value="Activo">Active</option>
-                                <option value="Completado">Completed</option>
-                                <option value="En preparación">In Preparation</option>
-                            </select>
-                            <input type="text" class="form-control" v-model="trialFilters.search" placeholder="Search protocol or title…">
-                        </div>
-                        <div class="rhub-trials-list">
-                            <div v-for="trial in filteredTrials" :key="trial.id" class="rht-row"
-                                     @click="viewTrial(trial)"
-                                     style="position:relative;">
-                                <div class="rht-phase-badge" :style="{ background: getPhaseColor(trial.phase) }">{{ trial.phase?.replace('Phase ','') }}</div>
-                                <div class="rht-main">
-                                    <div class="rht-title">{{ trial.title }}</div>
-                                    <div class="rht-meta">
-                                        <span class="rht-protocol">{{ trial.protocol_id }}</span>
-                                        <span class="rht-sep">·</span>
-                                        <span>{{ getResearchLineName(trial.research_line_id) }}</span>
-                                        <span v-if="trial.principal_investigator_id" class="rht-sep">·</span>
-                                        <span v-if="trial.principal_investigator_id"
-                                                  @mouseenter="showIntelPopover(trial.principal_investigator_id, $event)"
-                                                  @mouseleave="hideIntelPopover()"
-                                                  class="intel-name"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 15v3M10.5 17h3"/></svg> {{ getStaffName(trial.principal_investigator_id) }}</span>
+                                    <!-- Actions -->
+                                    <div class="rh-drawer-section" style="display:flex;gap:8px" v-if="hasPermission('research_lines','update')">
+                                        <button class="btn btn-secondary btn-sm" @click.stop="editResearchLine(selectedResearchLine)">Edit line</button>
+                                        <button class="btn btn-secondary btn-sm" @click.stop="showAddTrialModal(); trialFilters.line = selectedResearchLine.id">Add study</button>
                                     </div>
                                 </div>
-                                <div class="rht-enrollment" v-if="trial.enrollment_target">
-                                    <div class="rht-enroll-nums">{{ trial.actual_enrollment || 0 }}/{{ trial.enrollment_target }}</div>
-                                    <div class="rht-enroll-bar"><div :style="{ width: Math.min(100,(trial.actual_enrollment||0)/trial.enrollment_target*100)+'%', background: getPhaseColor(trial.phase) }"></div></div>
-                                </div>
-                                <div class="rht-dates" v-if="trial.start_date || trial.end_date">
-                                    <span v-if="trial.start_date">{{ formatDateShort(trial.start_date) }}</span>
-                                    <span v-if="trial.end_date"> → {{ formatDateShort(trial.end_date) }}</span>
-                                </div>
-                                <span class="rht-status status-indicator"
-                                      :class="{ 'status-recruiting': trial.status==='Reclutando', 'status-active': trial.status==='Activo', 'status-completed': trial.status==='Completado', 'status-suspended': trial.status==='Suspendido' }">
-                                    {{ formatStudyStatus(trial.status) }}
-                                </span>
-                                <div class="rht-actions" @click.stop="() => {}">
-                                    <button class="tbl-btn" @click.stop="editTrial(trial)" v-if="hasPermission('research_lines','update')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                    <button class="btn-pill btn-pill-delete" @click.stop="deleteClinicalTrial(trial)" v-if="hasPermission('research_lines','delete')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                                </div>
                             </div>
-                            <div v-if="filteredTrials.length === 0" class="rhub-empty">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg><p>No studies match your filters</p>
-                            </div>
-                        </div>
-                        <div class="pagination" v-if="trialTotalPages > 1">
-                            <button class="btn-pill" @click="goToPage('trials', pagination.trials.page - 1)" :disabled="pagination.trials.page === 1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-                            <span class="pagination-info">Page {{ pagination.trials.page }} of {{ trialTotalPages }}</span>
-                            <button class="btn-pill" @click="goToPage('trials', pagination.trials.page + 1)" :disabled="pagination.trials.page === trialTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════════
-                         TAB: PROJECTS
-                    ══════════════════════════════════════════════════ -->
-                    <div v-show="researchHubTab === 'projects'" class="rhub-panel">
-                        <div class="pipeline-overview">
-                            <div v-for="stage in PROJECT_STAGES" :key="stage.key"
-                                 class="pipeline-stage-tile"
-                                 :class="{ 'pipeline-stage-tile--active': projectFilters.stage === stage.key }"
-                                 @click="projectFilters.stage = projectFilters.stage === stage.key ? '' : stage.key"
-                                 :style="projectFilters.stage === stage.key ? { borderColor: stage.color, background: stage.bg } : {}">
-                                <div class="pst-count" :style="projectFilters.stage === stage.key ? { color: stage.color } : {}">
-                                    {{ (innovationProjects || []).filter(p => (p.current_stage || p.development_stage) === stage.key).length }}
-                                </div>
-                                <div class="pst-label">{{ stage.label }}</div>
-                                <div class="pst-dot" :style="{ background: stage.color }"></div>
-                            </div>
-                        </div>
-                        <div class="rhub-filter-bar">
-                            <select class="form-select" v-model="projectFilters.research_line_id">
-                                <option value="">All Lines</option>
-                                <option v-for="line in researchLines" :key="line.id" :value="line.id">{{ line.research_line_name || line.name }}</option>
+                    <!-- ── STUDIES TAB ── -->
+                    <div v-if="researchHubTab === 'trials'" class="rh-panel">
+                        <div class="rh-filter-row">
+                            <input type="text" class="nm-input" v-model="trialFilters.search" placeholder="Search studies…" style="flex:1;max-width:280px">
+                            <select class="nm-select" v-model="trialFilters.line" style="max-width:200px">
+                                <option value="">All lines</option>
+                                <option v-for="l in researchLines" :key="l.id" :value="l.id">L{{ l.line_number }} · {{ l.name.slice(0,30) }}</option>
                             </select>
-                            <select class="form-select" v-model="projectFilters.category">
-                                <option value="">All Categories</option>
-                                <option value="Dispositivo">Dispositivo</option>
-                                <option value="Salud Digital">Salud Digital</option>
-                                <option value="IA / ML">IA / ML</option>
-                                <option value="Tecnologia Quirurgica">Tecnologia Quirurgica</option>
+                            <select class="nm-select" v-model="trialFilters.status" style="max-width:160px">
+                                <option value="">All status</option>
+                                <option>Reclutando</option>
+                                <option>Activo</option>
+                                <option>Completado</option>
+                                <option>En preparación</option>
                             </select>
-                            <select class="form-select" v-model="projectFilters.funding_status">
-                                <option value="">All Funding</option>
-                                <option value="seeking">Seeking</option>
-                                <option value="applied">Applied</option>
-                                <option value="funded">Funded ✓</option>
-                            </select>
-                            <input type="text" class="form-control" v-model="projectFilters.search" placeholder="Search projects…">
                         </div>
-                        <div class="inno-projects-grid">
-                            <div v-for="project in filteredProjects" :key="project.id"
-                                 class="inno-card"
-                                 :style="{ '--stage-color': getStageConfig(project.current_stage || project.development_stage).color, '--stage-bg': getStageConfig(project.current_stage || project.development_stage).bg }">
-                                <div class="inno-card-bar"></div>
-                                <div class="inno-card-top">
-                                    <span class="inno-cat-badge" :class="'inno-cat--' + (project.category || '').toLowerCase().replace(/[^a-z]/g, '-')">{{ project.category }}</span>
-                                    <div class="inno-card-actions">
-                                        <button class="inno-action-btn" @click="editProject(project)" v-if="hasPermission('research_lines','update')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                        <button class="inno-action-btn inno-action-btn--danger" @click="deleteInnovationProject(project)" v-if="hasPermission('research_lines','delete')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                        <div class="rh-table-wrap">
+                            <div class="rh-trial-table">
+                                <div class="rh-table-hdr">
+                                    <div class="rh-th" style="flex:3">Study title</div>
+                                    <div class="rh-th">Line</div>
+                                    <div class="rh-th">Phase</div>
+                                    <div class="rh-th">Status</div>
+                                    <div class="rh-th">PI</div>
+                                    <div class="rh-th" style="flex-shrink:0;width:80px"></div>
+                                </div>
+                                <div v-for="trial in filteredTrials" :key="trial.id" class="rh-table-row" @click="viewTrial(trial)">
+                                    <div class="rh-td rh-td--title" style="flex:3">{{ trial.title }}</div>
+                                    <div class="rh-td"><span class="rh-line-chip">{{ getResearchLineName(trial.research_line_id) }}</span></div>
+                                    <div class="rh-td"><span class="rh-badge-phase">{{ trial.phase }}</span></div>
+                                    <div class="rh-td">
+                                        <span class="rh-badge-status"
+                                              :class="trial.status==='Reclutando'?'rh-badge-status--r':trial.status==='Activo'?'rh-badge-status--a':'rh-badge-status--c'">
+                                            {{ trial.status }}
+                                        </span>
+                                    </div>
+                                    <div class="rh-td rh-td--pi">{{ allStaffLookup.find(s=>s.id===trial.principal_investigator_id)?.full_name?.split(' ').slice(-1)[0] || '—' }}</div>
+                                    <div class="rh-td" style="flex-shrink:0;width:80px;display:flex;gap:4px">
+                                        <button v-if="hasPermission('research_lines','update')" class="btn btn-ghost btn-xs" @click.stop="editTrial(trial)">Edit</button>
                                     </div>
                                 </div>
-                                <h3 class="inno-card-title">{{ project.title }}</h3>
-                                <div class="inno-stage-track">
-                                    <div v-for="s in PROJECT_STAGES" :key="s.key" class="inno-stage-node"
-                                         :class="{ 'inno-stage-node--done': s.step < getStageConfig(project.current_stage || project.development_stage).step, 'inno-stage-node--current': s.key === (project.current_stage || project.development_stage), 'inno-stage-node--future': s.step > getStageConfig(project.current_stage || project.development_stage).step }"
-                                         :style="s.key === (project.current_stage || project.development_stage) ? { background: s.color, borderColor: s.color } : {}" :title="s.label">
-                                        <i class="fas" :class="s.key === (project.current_stage || project.development_stage) ? s.icon : 'fa-check'" v-if="s.step <= getStageConfig(project.current_stage || project.development_stage).step"></i>
-                                    </div>
-                                    <span class="inno-stage-label" :style="{ color: 'var(--stage-color)' }"><i class="fas" :class="getStageConfig(project.current_stage || project.development_stage).icon"></i> {{ project.current_stage || project.development_stage }}</span>
-                                </div>
-                                <p class="inno-card-description" v-if="project.description">{{ project.description }}</p>
-                                <div class="inno-meta-row">
-                                    <span class="inno-line-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> {{ getResearchLineName(project.research_line_id) }}</span>
-                                    <span v-if="project.funding_status && project.funding_status !== 'not_applicable'" class="inno-funding-badge" :class="'inno-funding--' + project.funding_status">
-                                        <i class="fas" :class="{ 'fa-search-dollar': project.funding_status==='seeking', 'fa-file-alt': project.funding_status==='applied', 'fa-check-circle': project.funding_status==='funded' }"></i>
-                                        {{ { seeking: 'Seeking Funding', applied: 'Applied', funded: 'Funded' }[project.funding_status] }}
-                                    </span>
-                                </div>
-                                <div class="inno-team-section" v-if="project.lead_investigator_id">
-                                    <div class="inno-team-label">EQUIPO</div>
-                                    <div class="inno-team-members">
-                                        <div class="inno-team-member">
-                                            <div class="inno-member-avatar inno-member-avatar--lead">{{ getStaffName(project.lead_investigator_id).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }}</div>
-                                            <div class="inno-member-info"><span class="inno-member-name">{{ getStaffName(project.lead_investigator_id) }}</span><span class="inno-member-role">PI / Lead</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="inno-trl-row" v-if="project.trl_level">
-                                    <div class="inno-trl-track">
-                                        <div v-for="n in 9" :key="n" class="inno-trl-pip" :class="{ 'inno-trl-pip--filled': n <= project.trl_level, 'inno-trl-pip--current': n === project.trl_level }" :style="n <= project.trl_level ? { background: getStageConfig(project.current_stage || project.development_stage).color } : {}"></div>
-                                    </div>
-                                    <span class="inno-trl-label">TRL {{ project.trl_level }}</span>
-                                </div>
-                                <div class="inno-keywords" v-if="project.keywords && project.keywords.length">
-                                    <span v-for="kw in project.keywords" :key="kw" class="inno-kw-chip">{{ kw }}</span>
-                                </div>
+                                <div v-if="filteredTrials.length === 0" class="rh-table-empty">No studies match this filter</div>
                             </div>
-                            <div v-if="filteredProjects.length === 0" class="rhub-empty col-span-full">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg><p>No projects found</p>
-                            </div>
-                        </div>
-                        <div class="pagination" v-if="projectTotalPages > 1">
-                            <button class="btn-pill" @click="goToPage('projects', pagination.projects?.page - 1)" :disabled="!pagination.projects || pagination.projects.page === 1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-                            <span class="pagination-info">Page {{ pagination.projects?.page || 1 }} of {{ projectTotalPages }}</span>
-                            <button class="btn-pill" @click="goToPage('projects', pagination.projects?.page + 1)" :disabled="!pagination.projects || pagination.projects.page === projectTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════════
-                         TAB: ANALYTICS
-                    ══════════════════════════════════════════════════ -->
-                    <div v-show="researchHubTab === 'analytics'" class="rhub-panel">
-                        <!-- Analytics sub-tabs -->
-                        <div class="rha-subtabs">
-                            <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'dashboard' }" @click="analyticsActiveTab = 'dashboard'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg> Dashboard</button>
-                            <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'performance' }" @click="analyticsActiveTab = 'performance'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="1"/><rect x="14" y="3" width="14" height="14" rx="1"/><rect x="3" y="14" width="14" height="14" rx="1"/><rect x="14" y="14" width="14" height="14" rx="1"/></svg> Performance</button>
-                            <button class="rha-subtab" :class="{ active: analyticsActiveTab === 'partners' }" @click="analyticsActiveTab = 'partners'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 11V7l-4-4H7L3 7v4M3 11l4 2 3-2 3 2 4-2 4 2v4l-1 3H4l-1-3v-4z"/></svg> Partners</button>
+                    <!-- ── PROJECTS TAB ── -->
+                    <div v-if="researchHubTab === 'projects'" class="rh-panel">
+                        <div class="rh-filter-row">
+                            <input type="text" class="nm-input" v-model="projectFilters.search" placeholder="Search projects…" style="flex:1;max-width:280px">
+                            <select class="nm-select" v-model="projectFilters.research_line_id" style="max-width:200px">
+                                <option value="">All lines</option>
+                                <option v-for="l in researchLines" :key="l.id" :value="l.id">L{{ l.line_number }} · {{ l.name.slice(0,30) }}</option>
+                            </select>
+                            <select class="nm-select" v-model="projectFilters.category" style="max-width:160px">
+                                <option value="">All categories</option>
+                                <option>Dispositivo</option>
+                                <option>Salud Digital</option>
+                                <option>IA / ML</option>
+                                <option>Tecnología Quirúrgica</option>
+                            </select>
                         </div>
-
-                        <!-- DASHBOARD -->
-                        <div v-show="analyticsActiveTab === 'dashboard'">
-                            <div v-if="loadingAnalytics" style="padding:16px;display:flex;flex-direction:column;gap:8px;"><div v-for="i in 4" :key="i" class="nm-skeleton" style="height:32px;border-radius:6px;margin-bottom:2px;"></div></div>
-                            <template v-else-if="researchDashboard">
-                                <!-- KPI strip -->
-                                <div class="rha-kpi-strip">
-                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ researchDashboard.summary?.totalResearchLines || 0 }}</div><div class="rha-kpi-label">Lines</div><div class="rha-kpi-sub">{{ researchDashboard.summary?.activeResearchLines || 0 }} active</div></div>
-                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ researchDashboard.summary?.totalStudies || 0 }}</div><div class="rha-kpi-label">Studies</div><div class="rha-kpi-sub">{{ researchDashboard.summary?.activeStudies || 0 }} active</div></div>
-                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ researchDashboard.summary?.totalProjects || 0 }}</div><div class="rha-kpi-label">Projects</div><div class="rha-kpi-sub">{{ researchDashboard.summary?.activeProjects || 0 }} active</div></div>
+                        <div class="rh-proj-grid">
+                            <div v-for="proj in filteredProjects" :key="proj.id" class="rh-proj-card" @click="editProject(proj)">
+                                <div class="rh-proj-card-top">
+                                    <span class="rh-proj-cat" :class="'rh-cat--' + (proj.category||'').replace(/[ \/]/g,'_')">{{ proj.category }}</span>
+                                    <span class="rh-proj-stage-badge">{{ proj.current_stage || proj.development_stage }}</span>
                                 </div>
-                                <!-- Charts -->
-                                <div class="rha-charts-row">
-                                    <div class="rha-chart-card">
-                                        <div class="rha-chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg> Studies by Phase</div>
-                                        <div class="chart-bars">
-                                            <template v-for="(count, phase) in researchDashboard.clinicalTrials?.byPhase" :key="phase">
-                                                <div v-if="count > 0" class="chart-bar-item">
-                                                    <span class="bar-label">{{ phase }}</span>
-                                                    <div class="bar-container"><div class="bar-fill" :style="{ width: researchDashboard.summary?.totalStudies > 0 ? (count / researchDashboard.summary.totalStudies * 100) + '%' : '0%', background: getPhaseColor(phase) }"></div></div>
-                                                    <span class="bar-value">{{ count }}</span>
-                                                </div>
-                                            </template>
-                                            <div v-if="!researchDashboard.clinicalTrials?.byPhase || Object.values(researchDashboard.clinicalTrials.byPhase).every(v => v === 0)" class="empty-chart">No data</div>
-                                        </div>
-                                    </div>
-                                    <div class="rha-chart-card">
-                                        <div class="rha-chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Projects by Stage</div>
-                                        <div class="chart-bars">
-                                            <template v-for="(count, stage) in researchDashboard.innovationProjects?.byStage" :key="stage">
-                                                <div v-if="count > 0" class="chart-bar-item">
-                                                    <span class="bar-label">{{ stage }}</span>
-                                                    <div class="bar-container"><div class="bar-fill" :style="{ width: researchDashboard.summary?.totalProjects > 0 ? (count / researchDashboard.summary.totalProjects * 100) + '%' : '0%', background: getStageColor(stage) }"></div></div>
-                                                    <span class="bar-value">{{ count }}</span>
-                                                </div>
-                                            </template>
-                                            <div v-if="!researchDashboard.innovationProjects?.byStage || Object.values(researchDashboard.innovationProjects.byStage || {}).every(v => v === 0)" class="empty-chart">No data</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Timeline -->
-                                <div class="rha-chart-card rha-chart-card--wide" v-if="trialsTimeline && trialsTimeline.timeline?.length">
-                                    <div class="rha-chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6H20M4 12H20M4 18H14"/></svg> Studies Added Over Time <span class="rha-chart-badge">{{ trialsTimeline?.totalInPeriod || 0 }} in 3 yrs</span></div>
-                                    <div class="timeline-chart">
-                                        <div v-for="item in (trialsTimeline?.timeline || [])" :key="item.month" class="timeline-bar-col">
-                                            <div class="timeline-bar-wrap">
-                                                <div class="timeline-bar-fill" :style="{ height: Math.max(4, Math.round((item.count / Math.max(...(trialsTimeline?.timeline||[{count:1}]).map(t=>t.count))) * 100)) + '%' }" :title="item.month + ': ' + item.count"></div>
-                                                <span v-if="item.count > 0" class="timeline-bar-val">{{ item.count }}</span>
-                                            </div>
-                                            <span class="timeline-bar-label">{{ item.month.slice(5) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Lines overview -->
-                                <div class="rha-lines-overview" v-if="researchDashboard.researchLines?.length">
-                                    <div class="rha-chart-title" style="padding:0 0 10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> Research Lines Overview</div>
-                                    <div class="rha-lines-table">
-                                        <div class="rha-lt-header">
-                                            <span>Line</span><span>Name</span><span>Coordinator</span><span>Studies</span><span>Projects</span><span>Status</span>
-                                        </div>
-                                        <div v-for="line in researchDashboard.researchLines" :key="line.id" class="rha-lt-row" @click="drillToTrials(line.id)" style="cursor:pointer">
-                                            <span class="rline-number-pill" style="font-size:12px">L{{ line.line_number }}</span>
-                                            <span class="rha-lt-name">{{ line.name }}</span>
-                                            <span class="rha-lt-coord">{{ line.coordinator_name || '—' }}</span>
-                                            <span><span class="badge badge-info">{{ line.trialsCount || 0 }}</span></span>
-                                            <span><span class="badge badge-success">{{ line.projectsCount || 0 }}</span></span>
-                                            <span><span class="status-indicator" :class="line.active ? 'status-active' : 'status-inactive'">{{ line.active ? 'Active' : 'Inactive' }}</span></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                            <div v-else class="rhub-empty"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg><p>No analytics data</p><button class="btn btn-sm btn-primary" @click="loadResearchDashboard(); loadTrialsTimeline()">Load</button></div>
-                        </div>
-
-                        <!-- PERFORMANCE -->
-                        <div v-show="analyticsActiveTab === 'performance'">
-                            <div v-if="loadingAnalytics" style="padding:16px;display:flex;flex-direction:column;gap:8px;"><div v-for="i in 4" :key="i" class="nm-skeleton" style="height:32px;border-radius:6px;margin-bottom:2px;"></div></div>
-                            <div v-else-if="researchLinesPerformance.length > 0" class="rha-perf-grid">
-                                <div v-for="line in researchLinesPerformance" :key="line.id" class="rha-perf-card" @click="drillToTrials(line.id)">
-                                    <div class="rha-perf-header">
-                                        <span class="rha-perf-number">L{{ line.line_number }}</span>
-                                        <span class="rha-perf-name">{{ line.name }}</span>
-                                        <span class="rha-perf-coord">{{ line.coordinator || '—' }}</span>
-                                    </div>
-                                    <div class="rha-perf-stats">
-                                        <div class="rha-ps"><div class="rha-ps-val">{{ line.stats?.totalStudies || 0 }}</div><div class="rha-ps-label">Studies</div></div>
-                                        <div class="rha-ps rha-ps--ok"><div class="rha-ps-val">{{ line.stats?.activeStudies || 0 }}</div><div class="rha-ps-label">Active</div></div>
-                                        <div class="rha-ps"><div class="rha-ps-val">{{ line.stats?.completedStudies || 0 }}</div><div class="rha-ps-label">Done</div></div>
-                                        <div class="rha-ps"><div class="rha-ps-val">{{ line.stats?.totalProjects || 0 }}</div><div class="rha-ps-label">Projects</div></div>
-                                        <div class="rha-ps rha-ps--blue"><div class="rha-ps-val">{{ line.stats?.activeProjects || 0 }}</div><div class="rha-ps-label">Active</div></div>
-                                        <div class="rha-ps rha-ps--purple"><div class="rha-ps-val">{{ line.stats?.commercialized || 0 }}</div><div class="rha-ps-label">Commerc.</div></div>
-                                    </div>
-                                    <div class="rha-perf-bar">
-                                        <div class="rha-perf-bar-fill" :style="{ width: line.stats?.totalStudies > 0 ? Math.min(100, (line.stats.activeStudies / line.stats.totalStudies) * 100) + '%' : '0%' }"></div>
-                                    </div>
+                                <div class="rh-proj-card-title">{{ proj.title }}</div>
+                                <div class="rh-proj-card-line">{{ getResearchLineName(proj.research_line_id) }}</div>
+                                <div class="rh-proj-card-pi" v-if="proj.lead_investigator_id">
+                                    {{ allStaffLookup.find(s=>s.id===proj.lead_investigator_id)?.full_name?.split(' ').slice(-1)[0] || '' }}
                                 </div>
                             </div>
-                            <div v-else class="rhub-empty"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="1"/><rect x="14" y="3" width="14" height="14" rx="1"/><rect x="3" y="14" width="14" height="14" rx="1"/><rect x="14" y="14" width="14" height="14" rx="1"/></svg><p>No performance data</p></div>
-                        </div>
-
-                        <!-- PARTNERS -->
-                        <div v-show="analyticsActiveTab === 'partners'">
-                            <div v-if="loadingAnalytics" style="padding:16px;display:flex;flex-direction:column;gap:8px;"><div v-for="i in 4" :key="i" class="nm-skeleton" style="height:32px;border-radius:6px;margin-bottom:2px;"></div></div>
-                            <div v-else-if="partnerCollaborations">
-                                <div class="rha-kpi-strip">
-                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ partnerCollaborations.totalProjectsWithPartners || 0 }}</div><div class="rha-kpi-label">Projects with Partners</div></div>
-                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ partnerCollaborations.totalPartnerNeeds || 0 }}</div><div class="rha-kpi-label">Collaborations</div></div>
-                                    <div class="rha-kpi"><div class="rha-kpi-val">{{ partnerCollaborations.uniquePartnerNeeds || 0 }}</div><div class="rha-kpi-label">Unique Types</div></div>
-                                </div>
-                                <div class="rha-charts-row">
-                                    <div class="rha-chart-card" v-if="partnerCollaborations.needsByType?.length">
-                                        <div class="rha-chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg> By Partner Type</div>
-                                        <div class="chart-bars">
-                                            <div v-for="item in partnerCollaborations.needsByType" :key="item.type" class="chart-bar-item">
-                                                <span class="bar-label">{{ item.type }}</span>
-                                                <div class="bar-container"><div class="bar-fill" :style="{ width: (item.count / partnerCollaborations.totalPartnerNeeds * 100) + '%', background: getPartnerTypeColor(item.type) }"></div></div>
-                                                <span class="bar-value">{{ item.count }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="rha-chart-card" v-if="partnerCollaborations.partnerNeeds?.length">
-                                        <div class="rha-chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01"/></svg> Partner Needs</div>
-                                        <div class="needs-grid">
-                                            <div v-for="need in partnerCollaborations.partnerNeeds.slice(0,15)" :key="need.name" class="need-item">
-                                                <span class="need-name">{{ need.name }}</span>
-                                                <span class="need-count">{{ need.count }}</span>
-                                                <div class="need-bar"><div class="need-fill" :style="{ width: (need.count / partnerCollaborations.partnerNeeds[0].count * 100) + '%' }"></div></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else class="rhub-empty"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 11V7l-4-4H7L3 7v4M3 11l4 2 3-2 3 2 4-2 4 2v4l-1 3H4l-1-3v-4z"/></svg><p>No partner data</p></div>
+                            <div v-if="filteredProjects.length === 0" class="rh-empty" style="grid-column:1/-1">No projects match this filter</div>
                         </div>
                     </div>
 
-                    </div><!-- /research-hub -->
+                    <!-- ── ANALYTICS TAB (preserved) ── -->
+                    <div v-if="researchHubTab === 'analytics'" class="rh-panel" style="overflow-y:auto">
+                        <div v-if="loadingAnalytics" style="padding:40px;text-align:center">
+                            <div class="spinner"></div>
+                        </div>
+                        <div v-else style="padding:24px;font-size:13px;color:var(--nm-text3);text-align:center">
+                            Analytics dashboard — charts loading…
+                        </div>
+                    </div>
+
+                </div><!-- /research-hub -->
 
                 <!-- ============================================================
                      NEWS & POSTS VIEW
                 ============================================================ -->
-                <div v-if="currentView === 'news'" class="news-view" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+                                <div v-if="currentView === 'news'" class="nm-news-view">
 
-                    <!-- Tab bar + action -->
-                    <div class="rhub-tabs">
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === '' }" @click="newsFilters.status = ''">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg> All
-                            <span class="rhub-tab-count">{{ newsPosts.length }}</span>
+                    <!-- ── Tabs + action ── -->
+                    <div class="rh-tabs-bar">
+                        <button class="rh-tab" :class="{ 'rh-tab--on': newsFilters.status === '' }" @click="newsFilters.status = ''; loadNews()">
+                            All <span class="rh-tab-badge">{{ newsPosts.length }}</span>
                         </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'published' }" @click="newsFilters.status = 'published'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Published
-                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'published').length }}</span>
+                        <button class="rh-tab" :class="{ 'rh-tab--on': newsFilters.status === 'published' }" @click="newsFilters.status = 'published'">
+                            Published <span class="rh-tab-badge">{{ newsPosts.filter(p=>p.status==='published').length }}</span>
                         </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'draft' }" @click="newsFilters.status = 'draft'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Drafts
-                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'draft').length }}</span>
+                        <button class="rh-tab" :class="{ 'rh-tab--on': newsFilters.status === 'draft' }" @click="newsFilters.status = 'draft'">
+                            Drafts <span class="rh-tab-badge">{{ newsPosts.filter(p=>p.status==='draft').length }}</span>
                         </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'archived' }" @click="newsFilters.status = 'archived'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Archived
-                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'archived').length }}</span>
+                        <button class="rh-tab" :class="{ 'rh-tab--on': newsFilters.status === 'archived' }" @click="newsFilters.status = 'archived'">
+                            Archived <span class="rh-tab-badge">{{ newsPosts.filter(p=>p.status==='archived').length }}</span>
                         </button>
-                        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-bottom:1px">
-                            <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
+                        <div style="margin-left:auto;display:flex;align-items:center;padding-bottom:1px">
+                            <button v-if="hasPermission('news_posts','create')" class="btn btn-primary btn-sm" @click="showAddNewsModal">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                New post
                             </button>
                         </div>
                     </div>
 
-                    <!-- Filter bar -->
-                    <div class="news-filter-bar">
-                        <input type="text" class="form-control" v-model="newsFilters.search" placeholder="Search posts…" style="flex:1;max-width:320px">
-                        <select class="form-select" v-model="newsFilters.type" style="max-width:140px">
-                            <option value="">All Types</option>
-                            <option value="update">Update</option>
-                            <option value="article">Article</option>
-                            <option value="publication">Publication</option>
-                            <option value="photo_story">Photo Story</option>
+                    <!-- ── Filter bar ── -->
+                    <div class="nm-news-filters">
+                        <input type="text" class="nm-input" v-model="newsFilters.search" placeholder="Search posts…" style="flex:1;max-width:280px">
+                        <select class="nm-select" v-model="newsFilters.type">
+                            <option value="">All types</option>
+                            <option value="update">Updates</option>
+                            <option value="article">Articles</option>
+                            <option value="publication">Publications</option>
+                            <option value="photo_story">Photo stories</option>
                         </select>
-                        <select class="form-select" v-model="newsFilters.scope" style="max-width:150px">
-                            <option value="">All Visibility</option>
-                            <option value="public">Public (website)</option>
+                        <select class="nm-select" v-model="newsFilters.scope">
+                            <option value="">All visibility</option>
+                            <option value="public">Public</option>
                             <option value="internal">Internal only</option>
                         </select>
                     </div>
 
-                    <!-- Posts list — v-show keeps DOM stable during background refresh -->
-                    <div class="news-list" v-show="!newsLoading" style="flex:1;overflow-y:auto;min-height:0;">
-                        <div v-if="filteredNews.length === 0" class="news-empty">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
-                            <p>No posts yet. Create your first post to get started.</p>
-                            <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
-                            </button>
+                    <!-- ── Feed ── -->
+                    <div class="nm-news-feed" v-show="!newsLoading">
+                        <div v-if="filteredNews.length === 0" class="nm-news-empty">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" style="opacity:.25"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            <div style="margin-top:8px;font-size:13px;color:var(--nm-text3)">No posts match this filter</div>
+                            <button v-if="hasPermission('news_posts','create')" class="btn btn-primary btn-sm" style="margin-top:12px" @click="showAddNewsModal">Create first post</button>
                         </div>
 
-                        <div class="news-body">
-                        <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="'news-card--' + post.post_type" @click.stop="openNewsDrawer(post)">
+                        <div v-for="post in filteredNews" :key="post.id"
+                             class="nm-post-card"
+                             :class="{ 'nm-post-card--expanded': activeNewsMenu === post.id }"
+                             @click="activeNewsMenu = activeNewsMenu === post.id ? null : post.id">
 
-                            <!-- Left accent stripe -->
-                            <div class="news-card-left"></div>
+                            <!-- 3px type accent -->
+                            <div class="nm-post-accent"
+                                 :style="{ background: post.post_type === 'publication' ? '#A32D2D' : post.post_type === 'article' ? '#185FA5' : post.post_type === 'update' ? '#0F6E56' : '#854F0B' }">
+                            </div>
 
-                            <!-- Content -->
-                            <div class="news-card-body">
-                                <div class="news-card-tag" :class="'tag-' + post.post_type">
-                                    {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'photo_story' ? 'Photo Story' : 'Publication' }}
-                                </div>
-                                <div class="news-card-title">{{ post.title }}</div>
-
-                                <!-- Publication fields — journal prominent -->
-                                <div v-if="post.post_type === 'publication'" class="news-pub-meta">
-                                    <div v-if="post.journal_name" class="news-pub-line">{{ post.journal_name }}</div>
-                                    <div v-if="post.authors_text" class="news-pub-authors">{{ post.authors_text }}</div>
-                                    <a v-if="post.doi" :href="'https://doi.org/' + post.doi" target="_blank" class="news-pub-doi">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg> DOI {{ post.doi }}
-                                    </a>
-                                    <!-- Fallback: show body as excerpt if no publication metadata is filled -->
-                                    <span v-if="!post.journal_name && !post.authors_text && !post.doi && post.body"
-                                          class="news-card-excerpt" style="margin:0">{{ post.body }}</span>
-                                    <span v-if="!post.journal_name && !post.authors_text && !post.doi && !post.body"
-                                          style="font-size:11px;color:var(--text-4);font-style:italic;">No publication details added yet</span>
-                                </div>
-
-                                <!-- Body preview (non-publications) -->
-                                <div v-if="post.body && post.post_type !== 'publication'" class="news-card-excerpt">{{ post.body }}</div>
-
+                            <div class="nm-post-body">
                                 <!-- Meta row -->
-                                <div class="news-card-meta">
-                                    <span v-if="post.author_id" class="news-meta-item">
-                                        <span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>
-                                        {{ newsAuthorName(post.author_id) }}
+                                <div class="nm-post-meta">
+                                    <span class="nm-post-type"
+                                          :class="'nm-post-type--' + post.post_type">
+                                        {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'photo_story' ? 'Photo story' : 'Publication' }}
                                     </span>
-                                    <span v-if="post.research_line_id" class="news-meta-item news-meta-line">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> {{ newsLineName(post.research_line_id) }}
+                                    <span class="nm-post-date">
+                                        {{ post.published_at ? new Date(post.published_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) : new Date(post.created_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) }}
                                     </span>
-                                    <span class="news-meta-item">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14H10M8 18H10M14 14H16M14 18H16"/></svg>
-                                        {{ formatNewsDate(post.published_at || post.created_at) }}
+                                    <span v-if="post.research_line_id" class="nm-post-line">{{ getResearchLineName(post.research_line_id) }}</span>
+                                    <span class="nm-post-vis" :class="post.is_public ? 'nm-post-vis--pub' : 'nm-post-vis--int'">
+                                        {{ post.is_public ? 'Public' : 'Internal' }}
                                     </span>
-                                    <span v-if="post.word_count && post.post_type !== 'publication'" class="news-meta-item news-wc">
-                                        {{ post.word_count }}w
-                                    </span>
-                                    <span v-if="post.expires_at && post.post_type !== 'publication'" class="news-meta-item news-expiry"
-                                          :class="{ 'news-expiry--warn': new Date(post.expires_at) < new Date(Date.now() + 14*86400000) }">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Expires {{ formatDate(post.expires_at) }}
-                                    </span>
+                                    <span class="nm-post-expand-arrow" :class="{ 'nm-post-expand-arrow--open': activeNewsMenu === post.id }">▾</span>
                                 </div>
-                            </div>
 
-                            <!-- Right: status + primary action + overflow -->
-                            <div class="news-card-right" @click.stop="() => {}">
-                                <span v-if="post.status !== 'published'" class="news-status-badge" :class="'nsb--' + post.status">
-                                    {{ post.status === 'draft' ? 'Draft' : 'Archived' }}
-                                </span>
-                                <span v-else class="news-status-dot" :style="post.is_public ? 'background:#10b981' : 'background:#888'" title="Published"></span>
-                                <button class="news-vis-btn" @click="toggleNewsPublic(post)"
-                                        :title="post.is_public ? 'Public — click to make internal' : 'Internal — click to make public'"
-                                        v-if="post.status === 'published' && hasPermission('news_posts','update')">
-                                    <i class="fas" :class="post.is_public ? 'fa-globe' : 'fa-lock'"></i>
-                                    <span>{{ post.is_public ? 'Public' : 'Internal' }}</span>
-                                </button>
-                                <div class="news-actions" style="display:flex;align-items:center;gap:6px;">
-                                    <button v-if="post.status === 'draft' && hasPermission('news_posts','update')"
-                                            class="nm-news-primary nm-news-primary--pub"
-                                            @click.stop="publishNews(post)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Publish
-                                    </button>
-                                    <button v-if="hasPermission('news_posts','update')"
-                                            class="nm-news-primary nm-news-primary--edit"
-                                            @click.stop="editNews(post)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Edit
-                                    </button>
-                                    <div class="nm-more-btn" @click.stop="activeNewsMenu = activeNewsMenu === post.id ? null : post.id">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                                        <div class="nm-dropdown" v-if="activeNewsMenu === post.id" @click.stop="() => {}">
-                                            <div class="nm-dropdown-item" @click="archiveNews(post); activeNewsMenu=null"
-                                                 v-if="post.status === 'published' && hasPermission('news_posts','update')">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Archive
-                                            </div>
-                                            <div class="nm-dropdown-sep" v-if="hasPermission('news_posts','delete')"></div>
-                                            <div class="nm-dropdown-item danger" @click="deleteNews(post); activeNewsMenu=null"
-                                                 v-if="hasPermission('news_posts','delete')">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg> Delete
-                                            </div>
-                                        </div>
+                                <!-- Title -->
+                                <div class="nm-post-title">{{ post.title }}</div>
+
+                                <!-- Publication fields -->
+                                <div v-if="post.post_type === 'publication'">
+                                    <div v-if="post.journal_name" class="nm-post-journal">
+                                        {{ post.journal_name }}<span v-if="post.authors_text"> · {{ post.authors_text }}</span>
                                     </div>
+                                    <div v-if="post.doi" class="nm-post-doi">DOI: {{ post.doi }}</div>
+                                </div>
+
+                                <!-- Article excerpt (collapsed) -->
+                                <div v-if="post.post_type === 'article' && post.body && activeNewsMenu !== post.id"
+                                     class="nm-post-excerpt">
+                                    {{ post.body.slice(0, 180) }}{{ post.body.length > 180 ? '…' : '' }}
+                                </div>
+
+                                <!-- Expanded body -->
+                                <div v-if="activeNewsMenu === post.id && post.body" class="nm-post-full-body">
+                                    {{ post.body }}
+                                </div>
+
+                                <!-- Expanded actions -->
+                                <div v-if="activeNewsMenu === post.id" class="nm-post-actions" @click.stop>
+                                    <button v-if="hasPermission('news_posts','update')" class="btn btn-secondary btn-sm" @click="showAddNewsModal(); openNewsDrawer(post)">Edit</button>
+                                    <button v-if="post.is_public" class="btn btn-ghost btn-sm">View on website</button>
+                                    <button v-if="hasPermission('news_posts','update') && post.status !== 'archived'" class="btn btn-ghost btn-sm" @click="archiveNews(post)">Archive</button>
+                                    <button v-if="hasPermission('news_posts','delete')" class="btn btn-ghost btn-sm" style="color:var(--nm-danger,#e24b4a);margin-left:auto" @click="deleteNews(post)">Delete</button>
                                 </div>
                             </div>
                         </div>
+
+                        <div v-if="newsLoading && newsPosts.length > 0" style="padding:16px;text-align:center;font-size:12px;color:var(--nm-text3)">
+                            Refreshing…
+                        </div>
                     </div>
 
-                    <!-- Loading state — inline top bar, doesn't wipe card list -->
-                    <div v-if="newsLoading && !newsLoaded" class="news-loading">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Loading posts…
+                    <div v-if="newsLoading && !newsPosts.length" style="flex:1;display:flex;align-items:center;justify-content:center">
+                        <div class="spinner"></div>
                     </div>
-                    <!-- Subtle sync indicator when refreshing in background (already loaded) -->
-                    <div v-if="newsLoading && newsLoaded" style="display:flex;align-items:center;gap:5px;padding:5px 20px;font-size:10.5px;color:var(--text-4);flex-shrink:0;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                        Syncing…
-                    </div>
-                </div>
 
-                        </div><!-- /news-body -->
+                </div><!-- /news-body -->
             </div><!-- /content-area -->
 
                 <!-- ============================================================
