@@ -6695,13 +6695,12 @@ document.addEventListener('DOMContentLoaded', () => {
             currentView.value = 'research_hub'
             if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) {
               researchOps.loadAllResearch().then(() => {
-                // Auto-select first line if none selected
-                if (!selectedResearchLine.value && researchOps.researchLines.value.length) {
-                  researchOps.openLineDetail(researchOps.researchLines.value[0])
+                if (!analyticsOps.selectedResearchLine.value && researchOps.researchLines.value.length) {
+                  analyticsOps.openLineDetail(researchOps.researchLines.value[0])
                 }
               })
-            } else if (!selectedResearchLine.value && researchOps.researchLines.value.length) {
-              researchOps.openLineDetail(researchOps.researchLines.value[0])
+            } else if (!analyticsOps.selectedResearchLine.value && researchOps.researchLines.value.length) {
+              analyticsOps.openLineDetail(researchOps.researchLines.value[0])
             }
             return
           }
