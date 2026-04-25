@@ -3191,6 +3191,41 @@ document.addEventListener('DOMContentLoaded', () => {
         return warnings.sort((a,b) => b.gapCount - a.gapCount)
       })
 
+      // ── New pill helpers — defined before return ──────────────
+        const getMvRotCat = (rot) => {
+          const name = (getTrainingUnitName(rot.training_unit_id) || '').toLowerCase()
+          if (name.includes('uci') || name.includes('críticos') || name.includes('criticos')) return 'mv-rot-bar--icu'
+          if (name.includes('neumol') || name.includes('hosp') || name.includes('respirator')) return 'mv-rot-bar--pulmo'
+          if (name.includes('cardiol')) return 'mv-rot-bar--cardio'
+          if (name.includes('proc') || name.includes('bronco') || name.includes('técn') || name.includes('tecn')) return 'mv-rot-bar--proc'
+          if (name.includes('trasplante') || name.includes('transplant')) return 'mv-rot-bar--trans'
+          if (name.includes('sueño') || name.includes('sueno') || name.includes('sleep')) return 'mv-rot-bar--sleep'
+          if (name.includes('intern') || name.includes('medi')) return 'mv-rot-bar--int'
+          if (name.includes('extern') || name.includes('rotación ext')) return 'mv-rot-bar--ext'
+          if (rot.rotation_status === 'scheduled') return 'mv-rot-bar--scheduled'
+          if (rot.rotation_status === 'completed') return 'mv-rot-bar--completed'
+          return 'mv-rot-bar--active'
+        }
+        const getMvRotProgress = (rot) => {
+          if (rot.rotation_status !== 'active') return 0
+          const now = new Date()
+          const start = new Date(rot.start_date + 'T00:00:00')
+          const end   = new Date(rot.end_date   + 'T00:00:00')
+          const total = end - start
+          if (total <= 0) return 0
+          return Math.min(100, Math.max(0, Math.round(((now - start) / total) * 100)))
+        }
+        const getMvTodayPct = () => {
+          const months = getHorizonMonths(monthHorizon.value, monthOffset.value)
+          if (!months.length) return -1
+          const now = new Date()
+          const horizonStart = new Date(months[0].year, months[0].month, 1)
+          const horizonEnd   = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
+          const totalDays = Math.round((horizonEnd - horizonStart) / 86400000) + 1
+          const daysIn    = Math.round((now - horizonStart) / 86400000)
+          return Math.round((daysIn / totalDays) * 1000) / 10
+        }
+
       return {
         rotations, rotationFilters, rotationModal,
         filteredRotations, filteredRotationsAll, rotationTotalPages,
@@ -3599,46 +3634,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { m.saving = false }
       }
 
-
-        // ── Category CSS class mapping for new pill design ──────────────
-        const getMvRotCat = (rot) => {
-          const name = (getTrainingUnitName(rot.training_unit_id) || '').toLowerCase()
-          if (name.includes('uci') || name.includes('críticos') || name.includes('criticos')) return 'mv-rot-bar--icu'
-          if (name.includes('neumol') || name.includes('hosp') || name.includes('respirator')) return 'mv-rot-bar--pulmo'
-          if (name.includes('cardiol')) return 'mv-rot-bar--cardio'
-          if (name.includes('proc') || name.includes('bronco') || name.includes('técn') || name.includes('tecn')) return 'mv-rot-bar--proc'
-          if (name.includes('trasplante') || name.includes('transplant')) return 'mv-rot-bar--trans'
-          if (name.includes('sueño') || name.includes('sueno') || name.includes('sleep')) return 'mv-rot-bar--sleep'
-          if (name.includes('intern') || name.includes('medi')) return 'mv-rot-bar--int'
-          if (name.includes('extern') || name.includes('rotación ext')) return 'mv-rot-bar--ext'
-          // fallback to status
-          if (rot.rotation_status === 'scheduled') return 'mv-rot-bar--scheduled'
-          if (rot.rotation_status === 'completed') return 'mv-rot-bar--completed'
-          return 'mv-rot-bar--active'
-        }
-
-        const getMvRotProgress = (rot) => {
-          if (rot.rotation_status !== 'active') return 0
-          const now = new Date()
-          const start = new Date(rot.start_date + 'T00:00:00')
-          const end   = new Date(rot.end_date   + 'T00:00:00')
-          const total = end - start
-          if (total <= 0) return 0
-          const elapsed = now - start
-          return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)))
-        }
-
-        const getMvTodayPct = () => {
-          const months = getHorizonMonths(monthHorizon.value, monthOffset.value)
-          if (!months.length) return -1
-          const now = new Date()
-          const horizonStart = new Date(months[0].year, months[0].month, 1)
-          const horizonEnd   = new Date(months[months.length-1].year, months[months.length-1].month + 1, 0)
-          const totalDays = Math.round((horizonEnd - horizonStart) / 86400000) + 1
-          const daysIn    = Math.round((now - horizonStart) / 86400000)
-          const pct = (daysIn / totalDays) * 100
-          return Math.round(pct * 10) / 10
-        }
 
       return {
         absences, absenceFilters, absenceModal, absenceOverlapWarning,
