@@ -7830,6 +7830,14 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
 
+
+        const getShiftChipStyle = (coverageAreaId) => {
+          const c = (coverageAreas?.value || []).find(a => a.id === coverageAreaId)?.color || '#00b3b3'
+          const r = parseInt(c.slice(1,3) || '00', 16)
+          const g = parseInt(c.slice(3,5) || 'b3', 16)
+          const b = parseInt(c.slice(5,7) || 'b3', 16)
+          return { color: c, background: `rgba(${r},${g},${b},.1)`, borderLeft: `2px solid ${c}` }
+        }
         return {
           // Existing returns
           loading, saving, currentUser, loginForm, loginLoading, hasPermission,
