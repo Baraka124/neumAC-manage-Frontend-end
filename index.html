@@ -16,8 +16,7 @@
       .mv-nav  { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid #e3dfd6; background:#f5f4f0; flex-shrink:0; flex-wrap:wrap; }
       .mv-grid { display:grid; border-left:1px solid #e3dfd6; overflow-x:auto; width:100%; }
       .mv-name-header { grid-column:1; padding:8px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; background:#07111f; color:rgba(255,255,255,.75); border-right:1px solid rgba(255,255,255,.1); border-bottom:1px solid #e3dfd6; display:flex; align-items:center; }
-      .mv-month-header { padding:8px 0; text-align:center; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; background:#f5f4f0; border-right:1px solid #e3dfd6; border-bottom:1px solid #e3dfd6; }
-      .mv-month-header--current { background:rgba(0,153,153,.06); color:#00b3b3; }
+      /* mv-month-header overridden below by new pill CSS block */
       .mv-name-cell { grid-column:1; display:flex; align-items:center; gap:9px; padding:9px 12px; border-right:1px solid #e3dfd6; border-bottom:1px solid #e3dfd6; background:#fff; min-width:180px; }
       .mv-months-area { grid-column:2 / -1; position:relative; display:grid; border-bottom:1px solid #e3dfd6; min-height:48px; }
       .mv-month-bg { border-right:1px solid #e3dfd6; background:#fff; height:100%; }
@@ -25,13 +24,109 @@
       .mv-name-spacer { grid-column:1; height:20px; border-right:1px solid #e3dfd6; border-bottom:1px solid #e3dfd6; background:#f5f4f0; }
       .mv-year-cell { height:20px; border-right:1px solid transparent; border-bottom:1px solid #e3dfd6; background:#f5f4f0; display:flex; align-items:center; padding:0 6px; }
       .mv-year-label { font-family:monospace; font-size:9px; font-weight:800; color:#378add; text-transform:uppercase; letter-spacing:.1em; }
-      .mv-rot-bar { position:absolute; top:7px; height:26px; border-radius:5px; display:flex; align-items:center; padding:0 7px; gap:4px; cursor:pointer; overflow:hidden; z-index:1; min-width:4px; }
-      .mv-rot-bar--active { background:#00b3b3; color:#fff; }
-      .mv-rot-bar--scheduled { background:#534ab7; color:#fff; }
-      .mv-rot-bar--completed { background:#909399; color:#fff; opacity:.6; }
-      .mv-rot-label { font-size:10px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .mv-rot-cap--start { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.5); flex-shrink:0; }
-      .mv-rot-cap--end { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.5); flex-shrink:0; }
+      /* ── Rotation pill — V3 style: 4px left bar + light bg + progress ── */
+      .mv-rot-bar {
+        position:absolute; top:9px; height:32px;
+        display:flex; align-items:center;
+        border-radius:6px; overflow:hidden;
+        cursor:pointer; z-index:1; min-width:6px;
+        box-shadow:0 1px 3px rgba(0,0,0,.06);
+        transition:filter .12s, transform .1s;
+      }
+      .mv-rot-bar:hover { filter:brightness(.96); transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.1); }
+
+      /* 4px left bar — the category colour signal */
+      .mv-rot-bar-accent { width:4px; height:100%; flex-shrink:0; }
+      .mv-rot-bar-inner  { display:flex; align-items:center; padding:0 8px 0 6px; height:100%; flex:1; min-width:0; }
+      .mv-rot-label { font-size:10px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+      /* Progress fill at the bottom (active rotations only) */
+      .mv-rot-prog { position:absolute; bottom:0; left:4px; height:2px; border-radius:0 0 6px 0; opacity:.4; }
+
+      /* Category colours — light bg + dark bar, matching rotation-merged.html */
+      .mv-rot-bar--icu      { background:#E1F5EE; } .mv-rot-bar--icu      .mv-rot-bar-accent { background:#0F6E56; } .mv-rot-bar--icu      .mv-rot-label { color:#085041; } .mv-rot-bar--icu      .mv-rot-prog { background:#0F6E56; }
+      .mv-rot-bar--pulmo    { background:#E6F1FB; } .mv-rot-bar--pulmo    .mv-rot-bar-accent { background:#185FA5; } .mv-rot-bar--pulmo    .mv-rot-label { color:#0C447C; } .mv-rot-bar--pulmo    .mv-rot-prog { background:#185FA5; }
+      .mv-rot-bar--cardio   { background:#EEEDFE; } .mv-rot-bar--cardio   .mv-rot-bar-accent { background:#534AB7; } .mv-rot-bar--cardio   .mv-rot-label { color:#3C3489; } .mv-rot-bar--cardio   .mv-rot-prog { background:#534AB7; }
+      .mv-rot-bar--proc     { background:#FBEAF0; } .mv-rot-bar--proc     .mv-rot-bar-accent { background:#993556; } .mv-rot-bar--proc     .mv-rot-label { color:#72243E; } .mv-rot-bar--proc     .mv-rot-prog { background:#993556; }
+      .mv-rot-bar--trans    { background:#FAEEDA; } .mv-rot-bar--trans    .mv-rot-bar-accent { background:#854F0B; } .mv-rot-bar--trans    .mv-rot-label { color:#633806; } .mv-rot-bar--trans    .mv-rot-prog { background:#854F0B; }
+      .mv-rot-bar--sleep    { background:#FAECE7; } .mv-rot-bar--sleep    .mv-rot-bar-accent { background:#993C1D; } .mv-rot-bar--sleep    .mv-rot-label { color:#712B13; } .mv-rot-bar--sleep    .mv-rot-prog { background:#993C1D; }
+      .mv-rot-bar--int      { background:#EAF3DE; } .mv-rot-bar--int      .mv-rot-bar-accent { background:#3B6D11; } .mv-rot-bar--int      .mv-rot-label { color:#27500A; } .mv-rot-bar--int      .mv-rot-prog { background:#3B6D11; }
+      .mv-rot-bar--ext      { background:#F1EFE8; } .mv-rot-bar--ext      .mv-rot-bar-accent { background:#888780; } .mv-rot-bar--ext      .mv-rot-label { color:#5F5E5A; }
+      /* fallback: active=teal, scheduled=purple, completed=grey */
+      .mv-rot-bar--active   { background:rgba(0,179,179,.10); } .mv-rot-bar--active   .mv-rot-bar-accent { background:#00b3b3; } .mv-rot-bar--active   .mv-rot-label { color:#007a7a; } .mv-rot-bar--active   .mv-rot-prog { background:#00b3b3; }
+      .mv-rot-bar--scheduled{ background:rgba(83,74,183,.10);  } .mv-rot-bar--scheduled .mv-rot-bar-accent { background:#534AB7; } .mv-rot-bar--scheduled .mv-rot-label { color:#3C3489; }
+      .mv-rot-bar--completed{ background:#F1EFE8; opacity:.7;   } .mv-rot-bar--completed .mv-rot-bar-accent { background:#888780; } .mv-rot-bar--completed .mv-rot-label { color:#5F5E5A; }
+
+      /* Today line — teal vertical stroke through each timeline row */
+      .mv-today-line {
+        position:absolute; top:0; bottom:0; width:1.5px;
+        background:#00b3b3; opacity:.5;
+        pointer-events:none; z-index:10;
+      }
+      .mv-today-line::before {
+        content:''; position:absolute;
+        top:-1px; left:50%; transform:translateX(-50%);
+        width:5px; height:5px; border-radius:50%;
+        background:#00b3b3;
+      }
+
+      /* Month header — Instrument Serif italic (neumDesk editorial style) */
+      .mv-month-header {
+        padding:8px 0; text-align:center;
+        font-family:'Instrument Serif', Georgia, serif;
+        font-style:italic;
+        font-size:13px; font-weight:400;
+        letter-spacing:.01em;
+        background:#f5f4f0;
+        border-right:1px solid #e3dfd6;
+        border-bottom:1px solid #e3dfd6;
+        color:#909399;
+      }
+      .mv-month-header--current {
+        color:#07111f;
+        background:rgba(0,179,179,.05);
+      }
+      .mv-month-header--current::after {
+        content:''; display:block;
+        width:24px; height:2px;
+        background:#00b3b3;
+        border-radius:2px 2px 0 0;
+        margin:4px auto 0;
+      }
+
+      /* Resident status dot */
+      .mv-res-status-dot {
+        position:absolute; bottom:-1px; right:-1px;
+        width:8px; height:8px; border-radius:50%;
+        border:2px solid #fff;
+      }
+
+      /* Gap pill */
+      .mv-gap-pill {
+        position:absolute; top:9px; height:32px;
+        display:flex; align-items:center; justify-content:center;
+        gap:5px; border-radius:6px;
+        border:1.5px dashed #C8C3BB;
+        background:transparent; pointer-events:all; cursor:default;
+      }
+      .mv-gap-text { font-size:10px; color:#909399; }
+      .mv-gap-badge {
+        font-size:9px; padding:2px 5px; border-radius:4px;
+        background:#FAEEDA; color:#854F0B; font-weight:500;
+      }
+
+      /* Legend */
+      .mv-legend {
+        display:flex; flex-wrap:wrap; align-items:center;
+        gap:10px; padding:8px 16px;
+        border-top:1px solid #e3dfd6;
+        background:#f5f4f0;
+      }
+      .mv-legend-item { display:flex; align-items:center; gap:4px; font-size:11px; color:#909399; }
+      .mv-legend-swatch { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+      .mv-rot-cap--start { display:none; }
+      .mv-rot-cap--end { display:none; }
       .mv-resident-name { font-size:12.5px; font-weight:500; color:#07111f; white-space:normal; word-break:break-word; }
       .mv-resident-year { font-size:10px; color:#909399; font-family:monospace; }
       .mv-resident-icon { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#1e40af,#0e7490); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -9778,7 +9873,7 @@ tr.staff-table-row .tbl-btn {
                                 <!-- Shifts for this day -->
                                 <template v-for="shift in getOncallShiftsForDay(day)" :key="shift.id">
                                     <div class="ocm-shift-chip"
-                                         :style="(() => { const c = coverageAreas.find(a=>a.id===shift.coverage_area_id)?.color || '#00b3b3'; const r = parseInt(c.slice(1,3)||'00',16); const g = parseInt(c.slice(3,5)||'b3',16); const b2 = parseInt(c.slice(5,7)||'b3',16); return { color: c, background: 'rgba('+r+','+g+','+b2+',.1)', borderLeft: '2px solid '+c }; })()"
+                                         :style="getShiftChipStyle(shift.coverage_area_id)"
                                          @click.stop="editOnCallSchedule(shift)" style="cursor:pointer">
                                         <div class="ocm-shift-av"
                                              :class="nmAv(getPhysicianName(shift.primary_physician_id), (medicalStaff||[]).find ? (medicalStaff.find(s=>s.id===shift.primary_physician_id)||{}).staff_type : 'attending_physician', 'xs')"
@@ -10073,21 +10168,23 @@ tr.staff-table-row .tbl-btn {
                                              class="mv-month-bg"
                                              :class="{ 'mv-month-bg--current': m.isCurrent }">
                                         </div>
+                                         <!-- Today vertical line — teal stroke anchoring now -->
+                                        <div v-if="getMvTodayPct() >= 0 && getMvTodayPct() <= 100"
+                                             class="mv-today-line"
+                                             :style="{ left: getMvTodayPct() + '%' }"></div>
                                         <div v-for="rot in getResidentRotationsInHorizon(resident)" :key="rot.id"
                                              class="mv-rot-bar"
-                                             :class="{
-                                               'mv-rot-bar--active':    rot.rotation_status === 'active',
-                                               'mv-rot-bar--scheduled': rot.rotation_status === 'scheduled',
-                                               'mv-rot-bar--completed': rot.rotation_status === 'completed',
-                                               'mv-rot-bar--clipped-left':  !rotationStartsInHorizon(rot),
-                                               'mv-rot-bar--clipped-right': !rotationEndsInHorizon(rot)
-                                             }"
+                                             :class="getMvRotCat(rot)"
                                              :style="getRotationBarStyle(rot)"
                                              @click="viewRotationDetails(rot)"
                                              :title="getTrainingUnitName(rot.training_unit_id) + ' · ' + formatDate(rot.start_date) + ' → ' + formatDate(rot.end_date)">
-                                            <span v-if="rotationStartsInHorizon(rot)" class="mv-rot-cap mv-rot-cap--start"></span>
-                                            <span class="mv-rot-label">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
-                                            <span v-if="rotationEndsInHorizon(rot)" class="mv-rot-cap mv-rot-cap--end"></span>
+                                            <div class="mv-rot-bar-accent"></div>
+                                            <div class="mv-rot-bar-inner">
+                                              <span class="mv-rot-label">{{ getTrainingUnitName(rot.training_unit_id) }}</span>
+                                            </div>
+                                            <div v-if="rot.rotation_status === 'active' && getMvRotProgress(rot) > 0"
+                                                 class="mv-rot-prog"
+                                                 :style="{ width: getMvRotProgress(rot) + '%', left: '4px' }"></div>
                                         </div>
                                     </div>
                                 </template>
