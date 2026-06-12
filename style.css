@@ -639,14 +639,27 @@
   --font-mono:    var(--font-data);
 
   /* ── Type scale v12 — min 12px for ALL information-bearing text */
-  --t-10: 13px;   /* table headers, badges, nav section labels     */
-  --t-11: 14px;   /* meta text, form hints, timestamps             */
-  --t-12: 15px;   /* buttons, nav links, filter controls           */
-  --t-13: 16px;   /* table body, card content, body copy           */
-  --t-15: 17px;   /* modal titles, card titles                     */
-  --t-18: 20px;   /* navbar title, section headers                 */
-  --t-24: 28px;   /* dashboard stat values                         */
-  --t-hero: clamp(28px, 3vw, 42px); /* display headings           */
+  /* ── Font sizes — renamed to reflect actual pixel values ────────
+     Old names (--t-10 etc) were misleading: --t-10 was 13px, not 10px.
+     Aliases kept for backward compatibility with existing usage.
+  ─────────────────────────────────────────────────────────────── */
+  --fs-xs:   13px;   /* was --t-10 — table headers, badges, nav labels  */
+  --fs-sm:   14px;   /* was --t-11 — meta text, form hints, timestamps  */
+  --fs-md:   15px;   /* was --t-12 — buttons, nav links, filter controls */
+  --fs-base: 16px;   /* was --t-13 — table body, card content, body copy */
+  --fs-lg:   17px;   /* was --t-15 — modal titles, card titles           */
+  --fs-xl:   20px;   /* was --t-18 — navbar title, section headers       */
+  --fs-2xl:  28px;   /* was --t-24 — dashboard stat values               */
+  --fs-hero: clamp(28px, 3vw, 42px); /* display headings                */
+  /* Backward-compatible aliases — existing code keeps working */
+  --t-10: var(--fs-xs);
+  --t-11: var(--fs-sm);
+  --t-12: var(--fs-md);
+  --t-13: var(--fs-base);
+  --t-15: var(--fs-lg);
+  --t-18: var(--fs-xl);
+  --t-24: var(--fs-2xl);
+  --t-hero: var(--fs-hero);
 
   /* ── Layout ─────────────────────────────────────────────────── */
   --sidebar-w:  clamp(220px, 16vw, 248px);
@@ -684,6 +697,39 @@
   /* ── Spacing ────────────────────────────────────────────────── */
   --content-pad-x: clamp(24px, 3vw, 52px);
   --content-pad-y: clamp(22px, 2.2vw, 36px);
+
+  /* ── Bridge: --nm-* aliases → existing variables ─────────────
+     index.html inline styles use --nm-* names; style.css uses
+     the canonical names above. These aliases unify both systems
+     so either naming convention resolves correctly.
+  ─────────────────────────────────────────────────────────────── */
+  --nm-text1:   var(--text-1);
+  --nm-text2:   var(--text-2);
+  --nm-text3:   var(--text-3);
+  --nm-text4:   var(--text-4);
+  --nm-surface:  var(--surface);
+  --nm-surface2: var(--surface-2);
+  --nm-surface3: var(--surface-3);
+  --nm-border:   var(--border);
+  --nm-border2:  var(--border-2);
+  --nm-teal:     #00b3b3;
+  --nm-blue:     var(--blue);
+  --nm-ok:       var(--ok);
+  --nm-warn:     var(--warn);
+  --nm-danger:   var(--danger);
+  --nm-canvas:   var(--canvas);
+  /* Spacing bridge */
+  --s8:  8px;  --s12: 12px; --s16: 16px;
+  --s20: 20px; --s24: 24px; --s32: 32px;
+  /* Radius bridge */
+  --r12: 12px;
+  /* Shadow bridge */
+  --shadow-card: var(--shadow-sm);
+  --shadow-1:    var(--shadow-sm);
+  --shadow-2:    var(--shadow);
+  /* Transition bridge */
+  --transition-fast: var(--t);
+  --transition-med:  var(--t-md);
 }
 
 /* ----------------------------------------------------------------
@@ -8031,61 +8077,8 @@ tr:not(:hover) .btn-pill-purge {
   font-size: 12px; color: var(--text-3); padding: 12px 0;
 }
 
-/* On-call rows */
-.db-oc-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 0; border-bottom: 1px solid var(--border);
-}
-.db-oc-row:last-child { border-bottom: none; padding-bottom: 0; }
-.db-oc-date {
-  font-size: 10px; font-weight: 700; color: var(--text-3);
-  width: 70px; flex-shrink: 0; text-transform: capitalize;
-}
-.db-oc-date--today { color: var(--blue); }
-.db-oc-slot {
-  flex: 1; display: flex; align-items: center; gap: 6px;
-  padding: 4px 8px; border-radius: 7px; border: 1px solid transparent; min-width: 0;
-}
-.db-oc-slot--ok      { background: rgba(5,150,105,.06); border-color: var(--ok-mid); }
-.db-oc-slot--gap     { background: var(--danger-lt); border-color: var(--danger-mid); cursor: pointer; }
-.db-oc-slot--soft    { background: var(--blue-lt); border-color: var(--blue-mid); }
-.db-oc-slot--backup  { flex: 0.8; }
-.db-oc-avatar {
-  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--blue), #6366f1);
-  color: #fff; font-size: 8px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-}
-.db-oc-avatar--backup { background: linear-gradient(135deg, var(--ok), #059669); }
-.db-oc-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.db-oc-name { font-size: 11px; font-weight: 500; color: var(--text-1); white-space: normal; word-break: break-word; }
-.db-oc-time { font-family: var(--font-data); font-size: 9px; color: var(--text-3); }
-.db-oc-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 10px; flex-shrink: 0; }
-.db-oc-badge--primary { background: var(--blue-lt); color: var(--blue); }
-.db-oc-badge--backup  { background: var(--ok-lt);   color: var(--ok); }
-.db-oc-gap  { font-size: 10px; font-weight: 600; color: var(--danger); flex: 1; }
-.db-oc-gap--soft { color: var(--text-4); font-weight: 400; font-style: italic; }
-.db-oc-assign { font-size: 10px; font-weight: 700; color: var(--blue); cursor: pointer; white-space: nowrap; }
-
-/* Rotation rows */
-.db-rot-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 0; border-bottom: 1px solid var(--border);
-}
-.db-rot-row:last-child { border-bottom: none; padding-bottom: 0; }
-.db-rot-avatar {
-  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--warn), #d97706);
-  color: #fff; font-size: 9px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-}
-.db-rot-avatar--start { background: linear-gradient(135deg, var(--ok), #059669); }
-.db-rot-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.db-rot-name { font-size: 12px; font-weight: 600; color: var(--text-1); }
-.db-rot-unit { font-size: 10px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.db-rot-chip { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
-.db-rot-chip--ending  { background: var(--warn-lt);   color: var(--warn); }
-.db-rot-chip--starting{ background: var(--ok-lt);     color: var(--ok); }
+/* NOTE: db-oc-*, db-rot-*, db-gap-* base styles are now defined inline in index.html
+   using --nm-* variables. The old versions below were removed to prevent conflicts. */
 
 /* Gap grid */
 .db-gap-grid { display: flex; flex-wrap: wrap; gap: 6px; }
