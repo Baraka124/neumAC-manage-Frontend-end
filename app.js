@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
  
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
-      API_BASE_URL: window.location.hostname.includes('localhost')   
+      API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000' 
         : 'https://neumac-manage-back-end-production.up.railway.app',      
       TOKEN_KEY: 'neumocare_token',
@@ -4485,8 +4485,36 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
+      // ── Weekly Staffing Grid ─────────────────────────────────────────
+      // Used in the Training Units weekly view tab
+      const weeklyStaffingGrid = computed(() => {
+        const today = new Date(); today.setHours(0,0,0,0)
+        // Find Monday of current week
+        const monday = new Date(today)
+        monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+        const days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(monday); d.setDate(monday.getDate() + i)
+          const iso = d.toISOString().split('T')[0]
+          return { iso, date: d, isToday: iso === today.toISOString().split('T')[0], isWeekend: d.getDay() === 0 || d.getDay() === 6, label: d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }) }
+        })
+        const activeUnits = trainingUnits.value.filter(u => u.unit_status === 'active')
+        const rows = activeUnits.map(unit => {
+          const cells = days.map(day => {
+            const activeRots = (rotations.value || []).filter(r =>
+              r.training_unit_id === unit.id &&
+              ['active','scheduled'].includes(r.rotation_status) &&
+              r.start_date <= day.iso && r.end_date >= day.iso
+            )
+            return { rots: activeRots, count: activeRots.length, full: activeRots.length >= unit.maximum_residents }
+          })
+          return { unitId: unit.id, unitName: unit.unit_name, maxResidents: unit.maximum_residents, cells }
+        })
+        return { monday, days, rows }
+      })
+
       return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover, unitStaffCache, loadUnitStaff, getUnitAttendingCount, addStaffToUnit, removeStaffFromUnit,
-        occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
+        occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail,
+        weeklyStaffingGrid }
     }
 
     // ============ 6.9 useComms ============
@@ -5763,7 +5791,8 @@ document.addEventListener('DOMContentLoaded', () => {
           tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail,
-          unitStaffCache
+          unitStaffCache,
+          weeklyStaffingGrid
         } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
@@ -5829,6 +5858,18 @@ document.addEventListener('DOMContentLoaded', () => {
             ab.start_date <= today && ab.end_date >= today
           )
         }
+
+        // ── Dashboard alert: units that are understaffed today ───────────────
+        const understaffedUnitAlerts = computed(() => {
+          return trainingUnits.value
+            .filter(u => u.unit_status === 'active' && isUnitUnderstaffed(u.id))
+            .map(u => ({
+              id: u.id,
+              unitName: u.unit_name,
+              present: getUnitPresentAttendingCount(u.id),
+              total: (unitStaffCache.value[u.id] || []).length
+            }))
+        })
 
         const getAbsenceUnitImpact = (staffId) => {
           return Object.entries(unitStaffCache.value)
@@ -7764,6 +7805,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
         trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
           unitStaffCache,
+          weeklyStaffingGrid,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
           editTrainingUnit, deleteTrainingUnit, saveTrainingUnit, assignAttendingToUnit,
@@ -7918,6 +7960,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getInitials: (n) => Utils.getInitials(n),
           getTomorrow: () => Utils.getTomorrow(),
           getStaffTypeIcon, getAbsenceReasonIcon, nmAv, nmAvI, getAbsenceUnitImpact, getUnitAbsentAttendingCount, getUnitPresentAttendingCount, isUnitUnderstaffed, isStaffAbsentToday, calculateCapacityPercent, getUnitFillColor,
+          understaffedUnitAlerts,
           getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
           getPreviewStatusClass, getPreviewStatusText, updatePreview, requestFullDossier,
           getPhaseColor: Utils.getPhaseColor, getPartnerTypeColor: Utils.getPartnerTypeColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatPercentage: Utils.formatPercentage,
