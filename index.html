@@ -5017,6 +5017,49 @@
 #app .rht-status--prep       { background: rgba(245,158,11,.1); color: #b45309; }
 #app .rht-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .12s; justify-content: flex-end; }
 #app .rht-row:hover .rht-actions { opacity: 1; }
+/* Always-visible variant for touch devices */
+#app .rht-actions--always { opacity: 1 !important; }
+#app .inno-card-actions--always { opacity: 1 !important; }
+
+/* Phase badge — distinct color per phase for immediate visual scanning */
+#app .rht-phase-badge { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; color: #fff; letter-spacing: .02em; }
+#app .rht-phase--pI    { background: #4d9aff; }
+#app .rht-phase--pII   { background: #00e5a0; color: #07111f; }
+#app .rht-phase--pIII  { background: #ffbe3d; color: #07111f; }
+#app .rht-phase--pIV   { background: #ff5566; }
+
+/* Status summary strip above studies list */
+#app .rhub-status-strip {
+  display: flex; align-items: center; gap: 6px; padding: 10px 20px 0; flex-wrap: wrap;
+  border-bottom: 1px solid var(--nm-border); background: var(--nm-surface); flex-shrink: 0;
+}
+#app .rss-pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px;
+  border-radius: 20px; border: 1px solid var(--nm-border); background: var(--nm-surface2);
+  font-size: 12px; font-weight: 500; color: var(--nm-text3); cursor: pointer;
+  transition: all .12s; white-space: nowrap; margin-bottom: 8px;
+}
+#app .rss-pill:hover { border-color: var(--nm-teal); color: var(--nm-teal); }
+#app .rss-pill--active, #app .rss-pill--active-sel {
+  background: var(--nm-teal); border-color: var(--nm-teal); color: #fff !important;
+}
+#app .rss-count { font-weight: 700; font-size: 11px; }
+#app .rss-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+#app .rss-dot--recruiting { background: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,.25); }
+#app .rss-dot--active     { background: #00b3b3; }
+#app .rss-dot--prep       { background: #f59e0b; }
+#app .rss-dot--done       { background: #909399; }
+#app .rss-result-count {
+  margin-left: auto; font-size: 11px; color: var(--nm-text3); font-weight: 500;
+  padding: 4px 10px; background: var(--nm-surface3); border-radius: 10px; margin-bottom: 8px;
+}
+/* Shared result count badge for all filter bars */
+#app .filter-result-count {
+  display: inline-flex; align-items: center; padding: 3px 10px;
+  background: var(--nm-surface3); border-radius: 10px;
+  font-size: 11px; font-weight: 600; color: var(--nm-text3);
+  white-space: nowrap; flex-shrink: 0;
+}
 #app .rht-filter-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--nm-border); flex-shrink: 0; flex-wrap: wrap; }
 
 /* Analytics tab */
@@ -9101,6 +9144,7 @@ tr.staff-table-row .tbl-btn {
                             <button v-if="hasActiveStaffFilters" class="btn-pill btn-pill--clear" @click="clearStaffFilters" title="Clear all filters">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg> Clear
                             </button>
+                            <span v-if="hasActiveStaffFilters" class="filter-result-count">{{ filteredMedicalStaff.length }} of {{ medicalStaff.length }}</span>
                         </div>
 
                         <!-- ══════════════════════════════════════════════
@@ -9382,7 +9426,7 @@ tr.staff-table-row .tbl-btn {
                             </table>
                             <div class="pagination" v-if="staffTotalPages > 1">
                                 <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page - 1)" :disabled="pagination.medical_staff.page === 1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-                                <span class="pagination-info">Page {{ pagination.medical_staff.page }} of {{ staffTotalPages }}</span>
+                                <span class="pagination-info">Page {{ pagination.medical_staff.page }} of {{ staffTotalPages }} · {{ filteredMedicalStaffAll.length }} results</span>
                                 <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page + 1)" :disabled="pagination.medical_staff.page === staffTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                             </div>
                         </div>
@@ -10115,9 +10159,8 @@ tr.staff-table-row .tbl-btn {
                                 <option v-for="u in trainingUnits" :key="u.id" :value="u.id">{{ u.unit_name }}</option>
                             </select>
                             <input type="text" class="form-control" v-model="rotationFilters.search" placeholder="Search...">
+                            <span v-if="rotationFilters.resident || rotationFilters.status || rotationFilters.trainingUnit || rotationFilters.search" class="filter-result-count">{{ filteredRotations.length }} of {{ rotations.length }}</span>
                         </div>
-
-                        <!-- COMPACT VIEW — Orb Timeline -->
                         <div v-if="rotationView === 'compact'" class="rot-compact">
 
                             <!-- Legend -->
@@ -10452,7 +10495,7 @@ tr.staff-table-row .tbl-btn {
                             </table>
                             <div class="pagination" v-if="rotationTotalPages > 1">
                                 <button class="btn-pill" @click="goToPage('rotations', pagination.rotations.page - 1)" :disabled="pagination.rotations.page === 1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-                                <span class="pagination-info">Page {{ pagination.rotations.page }} of {{ rotationTotalPages }}</span>
+                                <span class="pagination-info">Page {{ pagination.rotations.page }} of {{ rotationTotalPages }} · {{ filteredRotationsAll.length }} results</span>
                                 <button class="btn-pill" @click="goToPage('rotations', pagination.rotations.page + 1)" :disabled="pagination.rotations.page === rotationTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                             </div>
                         </div>
@@ -12365,6 +12408,27 @@ tr.staff-table-row .tbl-btn {
                          TAB: TRIALS
                     ══════════════════════════════════════════════════ -->
                     <div v-show="researchHubTab === 'trials'" class="rhub-panel">
+                        <!-- Status summary strip — quick filter by status -->
+                        <div class="rhub-status-strip">
+                            <button class="rss-pill" :class="{ 'rss-pill--active': trialFilters.status === '' }" @click="trialFilters.status = ''">
+                                All <span class="rss-count">{{ clinicalTrials.length }}</span>
+                            </button>
+                            <button class="rss-pill rss-pill--recruiting" :class="{ 'rss-pill--active': trialFilters.status === 'Reclutando' }" @click="trialFilters.status = trialFilters.status === 'Reclutando' ? '' : 'Reclutando'">
+                                <span class="rss-dot rss-dot--recruiting"></span> Recruiting <span class="rss-count">{{ clinicalTrials.filter(t => t.status === 'Reclutando').length }}</span>
+                            </button>
+                            <button class="rss-pill rss-pill--active" :class="{ 'rss-pill--active-sel': trialFilters.status === 'Activo' }" @click="trialFilters.status = trialFilters.status === 'Activo' ? '' : 'Activo'">
+                                <span class="rss-dot rss-dot--active"></span> Active <span class="rss-count">{{ clinicalTrials.filter(t => t.status === 'Activo').length }}</span>
+                            </button>
+                            <button class="rss-pill" :class="{ 'rss-pill--active': trialFilters.status === 'En preparación' }" @click="trialFilters.status = trialFilters.status === 'En preparación' ? '' : 'En preparación'">
+                                <span class="rss-dot rss-dot--prep"></span> In Preparation <span class="rss-count">{{ clinicalTrials.filter(t => t.status === 'En preparación').length }}</span>
+                            </button>
+                            <button class="rss-pill" :class="{ 'rss-pill--active': trialFilters.status === 'Completado' }" @click="trialFilters.status = trialFilters.status === 'Completado' ? '' : 'Completado'">
+                                <span class="rss-dot rss-dot--done"></span> Completed <span class="rss-count">{{ clinicalTrials.filter(t => t.status === 'Completado').length }}</span>
+                            </button>
+                            <span class="rss-result-count" v-if="trialFilters.status || trialFilters.line || trialFilters.phase || trialFilters.search">
+                                Showing {{ filteredTrialsAll.length }} of {{ clinicalTrials.length }}
+                            </span>
+                        </div>
                         <div class="rhub-filter-bar">
                             <select class="form-select" v-model="trialFilters.line">
                                 <option value="">All Lines</option>
@@ -12387,7 +12451,7 @@ tr.staff-table-row .tbl-btn {
                             <div v-for="trial in filteredTrials" :key="trial.id" class="rht-row"
                                      @click="viewTrial(trial)"
                                      style="position:relative;">
-                                <div class="rht-phase-badge" :style="{ background: getPhaseColor(trial.phase) }">{{ trial.phase?.replace('Phase ','') }}</div>
+                                <div class="rht-phase-badge" :class="'rht-phase--' + (trial.phase || '').replace('Phase ','p')">{{ trial.phase?.replace('Phase ','') }}</div>
                                 <div class="rht-main">
                                     <div class="rht-title">{{ trial.title }}</div>
                                     <div class="rht-meta">
@@ -12413,7 +12477,7 @@ tr.staff-table-row .tbl-btn {
                                       :class="{ 'status-recruiting': trial.status==='Reclutando', 'status-active': trial.status==='Activo', 'status-completed': trial.status==='Completado', 'status-suspended': trial.status==='Suspendido' }">
                                     {{ formatStudyStatus(trial.status) }}
                                 </span>
-                                <div class="rht-actions" @click.stop="() => {}">
+                                <div class="rht-actions rht-actions--always" @click.stop="() => {}">
                                     <button class="tbl-btn" @click.stop="editTrial(trial)" v-if="hasPermission('research_lines','update')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
                                     <button class="btn-pill btn-pill-delete" @click.stop="deleteClinicalTrial(trial)" v-if="hasPermission('research_lines','delete')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                 </div>
@@ -12424,7 +12488,7 @@ tr.staff-table-row .tbl-btn {
                         </div>
                         <div class="pagination" v-if="trialTotalPages > 1">
                             <button class="btn-pill" @click="goToPage('trials', pagination.trials.page - 1)" :disabled="pagination.trials.page === 1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-                            <span class="pagination-info">Page {{ pagination.trials.page }} of {{ trialTotalPages }}</span>
+                            <span class="pagination-info">Page {{ pagination.trials.page }} of {{ trialTotalPages }} · {{ filteredTrialsAll.length }} results</span>
                             <button class="btn-pill" @click="goToPage('trials', pagination.trials.page + 1)" :disabled="pagination.trials.page === trialTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                         </div>
                     </div>
@@ -12440,7 +12504,10 @@ tr.staff-table-row .tbl-btn {
                                  @click="projectFilters.stage = projectFilters.stage === stage.key ? '' : stage.key"
                                  :style="projectFilters.stage === stage.key ? { borderColor: stage.color, background: stage.bg } : {}">
                                 <div class="pst-count" :style="projectFilters.stage === stage.key ? { color: stage.color } : {}">
-                                    {{ (innovationProjects || []).filter(p => (p.current_stage || p.development_stage) === stage.key).length }}
+                                    {{ (innovationProjects || []).filter(p => {
+                                        const s = p.current_stage || ({ 'En Desarrollo': 'Prototipo', 'Fase Piloto': 'Piloto', 'Validación Clínica': 'Validación' })[p.development_stage];
+                                        return s === stage.key;
+                                    }).length }}
                                 </div>
                                 <div class="pst-label">{{ stage.label }}</div>
                                 <div class="pst-dot" :style="{ background: stage.color }"></div>
@@ -12473,7 +12540,7 @@ tr.staff-table-row .tbl-btn {
                                 <div class="inno-card-bar"></div>
                                 <div class="inno-card-top">
                                     <span class="inno-cat-badge" :class="'inno-cat--' + (project.category || '').toLowerCase().replace(/[^a-z]/g, '-')">{{ project.category }}</span>
-                                    <div class="inno-card-actions">
+                                    <div class="inno-card-actions inno-card-actions--always">
                                         <button class="inno-action-btn" @click="editProject(project)" v-if="hasPermission('research_lines','update')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
                                         <button class="inno-action-btn inno-action-btn--danger" @click="deleteInnovationProject(project)" v-if="hasPermission('research_lines','delete')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                     </div>
@@ -12520,7 +12587,7 @@ tr.staff-table-row .tbl-btn {
                         </div>
                         <div class="pagination" v-if="projectTotalPages > 1">
                             <button class="btn-pill" @click="goToPage('projects', pagination.projects?.page - 1)" :disabled="!pagination.projects || pagination.projects.page === 1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-                            <span class="pagination-info">Page {{ pagination.projects?.page || 1 }} of {{ projectTotalPages }}</span>
+                            <span class="pagination-info">Page {{ pagination.projects?.page || 1 }} of {{ projectTotalPages }} · {{ filteredProjectsAll.length }} results</span>
                             <button class="btn-pill" @click="goToPage('projects', pagination.projects?.page + 1)" :disabled="!pagination.projects || pagination.projects.page === projectTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                         </div>
                     </div>
