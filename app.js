@@ -4195,7 +4195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const unit   = trainingUnits.value.find(u => u.id === unitId)
         if (!unit) return { status: 'free', occupied: 0, scheduled: 0, total: 0 }
         const maxSlots = unit.maximum_residents
-        const touching = rotations.value.filter(r =>
+        const touching = (rotations.value || []).filter(r =>
           r.training_unit_id === unitId &&
           ['active','scheduled'].includes(r.rotation_status) &&
           new Date(r.start_date + 'T00:00:00') <= mEnd && new Date(r.end_date + 'T00:00:00') >= mStart
@@ -4262,6 +4262,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const occupancyPanelUnits = computed(() => {
         const today = new Date()
+        if (!rotations.value) return []
         return trainingUnits.value
           .filter(u => u.unit_status === 'active')
           .map(u => {
