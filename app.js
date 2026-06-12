@@ -6023,6 +6023,22 @@ document.addEventListener('DOMContentLoaded', () => {
           }))
         })
 
+        // Root-level filteredResearchLines using enriched data so nav shows real stats
+        const filteredResearchLines = computed(() => {
+          let f = enrichedResearchLines.value
+          const filters = researchOps.researchLineFilters
+          if (filters.search) {
+            const q = filters.search.toLowerCase()
+            f = f.filter(l =>
+              (l.research_line_name || l.name)?.toLowerCase().includes(q) ||
+              l.description?.toLowerCase().includes(q) ||
+              (Array.isArray(l.keywords) && l.keywords.some(k => k.toLowerCase().includes(q)))
+            )
+          }
+          if (filters.active !== '') { const active = filters.active === 'true'; f = f.filter(l => l.active === active) }
+          return f
+        })
+
         // Auto-select the first research line when lines load so the right panel isn't empty
         watch(enrichedResearchLines, (lines) => {
           if (lines && lines.length > 0 && !analyticsOps.activeMissionLine.value) {
@@ -7251,6 +7267,22 @@ document.addEventListener('DOMContentLoaded', () => {
             modals.forEach(m => { if (m.show) m.show = false })
           })
 
+          // Warn before leaving with an open modal that has unsaved data
+          window.addEventListener('beforeunload', (e) => {
+            const openModals = [
+              staffOps.medicalStaffModal, rotationOps.rotationModal,
+              onCallOps.onCallModal, absenceOps.absenceModal,
+              researchOps.researchLineModal, researchOps.clinicalTrialModal,
+              researchOps.innovationProjectModal
+            ]
+            const hasOpenModal = openModals.some(m => m.show)
+            if (hasOpenModal) {
+              e.preventDefault()
+              e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+              return e.returnValue
+            }
+          })
+
           onUnmounted(() => { clearInterval(statusInterval); clearInterval(timeInterval); clearInterval(dashRefreshInterval); if (rotationCheckInterval) clearInterval(rotationCheckInterval) })
         })
 
@@ -7858,6 +7890,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ...liveOps,
           ...researchOps,
           researchLines: enrichedResearchLines, // override raw ref with stats-enriched computed
+          filteredResearchLines,                // override with root version using enriched data
           researchLoading: researchOps.researchLoading,
           saveResearchLine: () => researchOps.saveResearchLine(saving),
           saveClinicalTrial: () => researchOps.saveClinicalTrial(saving),
