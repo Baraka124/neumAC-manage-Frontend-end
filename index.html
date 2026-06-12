@@ -53,9 +53,9 @@
       .rp-kpi-sub { font-size:10px; color:#909399; margin-top:1px; }
       .rp-kpi-val--ok { color:#00b3b3; }
       .rp-kpi-search { margin-left:auto; flex:0 0 240px; }
-      .rp-mc { display:grid !important; grid-template-columns:260px 1fr !important; flex:1; min-height:480px; border-top:none; height:100%; }
+      .rp-mc { display:grid !important; grid-template-columns:320px 1fr !important; flex:1; min-height:480px; border-top:none; height:100%; }
       .rp-nav { border-right:.5px solid rgba(255,255,255,.08); overflow-y:auto; background:#0f2d54; display:flex; flex-direction:column; padding:10px 8px; gap:2px; min-height:0; }
-      .rp-nav-item { display:flex; align-items:flex-start; gap:10px; padding:10px; border-radius:6px; cursor:pointer; transition:all .12s; border-left:3px solid transparent; background:transparent; }
+      .rp-nav-item { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:6px; cursor:pointer; transition:all .12s; border-left:3px solid transparent; background:transparent; }
       .rp-nav-item:hover { background:rgba(255,255,255,.06); }
       .rp-nav-item--active { background:rgba(0,179,179,.12) !important; border-left-color:#00B3B3 !important; }
       .rp-nav-badge { font-family:'Fraunces',Georgia,serif; font-size:18px; font-weight:400; font-style:italic; color:#00B3B3; flex-shrink:0; width:36px; text-align:left; line-height:1; padding-top:2px; letter-spacing:-.03em; }
@@ -434,7 +434,7 @@
       /* ── content-area: full-height for hub/news views ── */
       /* ── research-hub: full height, columns visible ── */
       .rhub-panel--mc { padding:0 !important; display:flex !important; flex-direction:column !important; gap:0 !important; flex:1 !important; min-height:0 !important; overflow:hidden !important; }
-      .rp-mc { display:grid !important; grid-template-columns:260px 1fr !important; flex:1 !important; min-height:0 !important; height:100% !important; border-top:none !important; overflow:hidden !important; }
+      .rp-mc { display:grid !important; grid-template-columns:320px 1fr !important; flex:1 !important; min-height:0 !important; height:100% !important; border-top:none !important; overflow:hidden !important; }
       .rp-nav { border-right:.5px solid rgba(255,255,255,.08); overflow-y:auto !important; background:#0f2d54; display:flex !important; flex-direction:column !important; padding:10px 8px; gap:2px; min-height:0 !important; }
       .rp-detail { display:flex !important; flex-direction:column !important; overflow:hidden !important; background:#fdfcfb; min-height:0 !important; }
       .rp-detail-body { flex:1 !important; overflow-y:auto !important; padding:0 !important; min-height:0; }
@@ -5789,8 +5789,8 @@
 
 /* ── Research line navigation active state polish ── */
 #app .rp-nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 11px 16px; cursor: pointer;
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; cursor: pointer;
   border-bottom: 1px solid rgba(255,255,255,.05);
   transition: background .1s;
   border-left: 3px solid transparent;
@@ -5806,7 +5806,7 @@
 }
 #app .rp-nav-name {
   font-size: 12px; font-weight: 500; color: rgba(255,255,255,.75);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  white-space: normal; word-break: break-word; line-height: 1.4;
 }
 #app .rp-nav-counts {
   margin-left: auto; display: flex; gap: 4px; flex-shrink: 0;
