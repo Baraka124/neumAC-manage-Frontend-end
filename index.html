@@ -17356,17 +17356,17 @@ tr.staff-table-row .tbl-btn {
                         <div class="uop-header-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg></div>
                         <div>
                             <div class="uop-title">Units Occupancy</div>
-                            <div class="uop-subtitle">{{ (occupancyPanelUnits || []).filter(u => u.occ.status === 'free').length }} available now · {{ (occupancyPanelUnits || []).filter(u => u.occ.status === 'closing').length }} closing soon</div>
+                            <div class="uop-subtitle">{{ (occupancyPanelUnits || []).filter(u => u?.occ?.status === 'free').length }} available now · {{ (occupancyPanelUnits || []).filter(u => u?.occ?.status === 'closing').length }} closing soon</div>
                         </div>
                     </div>
                     <button class="uop-close" @click="occupancyPanel.show = false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="uop-body">
                     <!-- Available -->
-                    <div class="uop-swimlane" v-if="(occupancyPanelUnits||[]).some(u => ['free','closing','partial'].includes(u.occ.status))">
+                    <div class="uop-swimlane" v-if="(occupancyPanelUnits||[]).some(u => ['free','closing','partial'].includes(u?.occ?.status))">
                         <div class="uop-swimlane-title"><span class="uop-swimlane-dot uop-swimlane-dot--free"></span>Available Now &amp; Soon</div>
                         <div class="uop-unit-list">
-                            <div v-for="unit in (occupancyPanelUnits||[]).filter(u => ['free','closing','partial'].includes(u.occ.status))"
+                            <div v-for="unit in (occupancyPanelUnits||[]).filter(u => ['free','closing','partial'].includes(u?.occ?.status))"
                                  :key="unit.id" class="uop-unit-row" :class="'uop-unit-row--' + unit.occ.status"
                                  @click="openUnitDetail(unit); occupancyPanel.show = false">
                                 <div class="uop-unit-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg></div>
@@ -17391,10 +17391,10 @@ tr.staff-table-row .tbl-btn {
                         </div>
                     </div>
                     <!-- Occupied -->
-                    <div class="uop-swimlane" v-if="(occupancyPanelUnits||[]).some(u => u.occ.status === 'occupied')">
+                    <div class="uop-swimlane" v-if="(occupancyPanelUnits||[]).some(u => u?.occ?.status === 'occupied')">
                         <div class="uop-swimlane-title uop-swimlane-title--muted"><span class="uop-swimlane-dot uop-swimlane-dot--occupied"></span>Fully Occupied</div>
                         <div class="uop-unit-list">
-                            <div v-for="unit in (occupancyPanelUnits||[]).filter(u => u.occ.status === 'occupied')"
+                            <div v-for="unit in (occupancyPanelUnits||[]).filter(u => u?.occ?.status === 'occupied')"
                                  :key="unit.id" class="uop-unit-row uop-unit-row--occupied"
                                  @click="openUnitDetail(unit); occupancyPanel.show = false">
                                 <div class="uop-unit-icon uop-unit-icon--dim"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg></div>
