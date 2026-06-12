@@ -6005,12 +6005,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
-        // Auto-select the first research line when lines load so the right panel isn't empty
-        watch(enrichedResearchLines, (lines) => {
-          if (lines && lines.length > 0 && !analyticsOps.activeMissionLine.value) {
-            analyticsOps.activeMissionLine.value = lines[0]
-          }
-        }, { immediate: true })
 
         // Enrich researchLines with stats — computed so it never mutates its own dependency
         const enrichedResearchLines = computed(() => {
@@ -6028,6 +6022,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }))
         })
+
+        // Auto-select the first research line when lines load so the right panel isn't empty
+        watch(enrichedResearchLines, (lines) => {
+          if (lines && lines.length > 0 && !analyticsOps.activeMissionLine.value) {
+            analyticsOps.activeMissionLine.value = lines[0]
+          }
+        }, { immediate: true })
         // Rewire analyticsOps.portfolioKPIs to use the real research data refs from researchOps
         const portfolioKPIs = computed(() => {
           try {
