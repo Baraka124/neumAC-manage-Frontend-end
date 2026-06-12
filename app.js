@@ -6006,30 +6006,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
         // Auto-select the first research line when lines load so the right panel isn't empty
-        watch(researchOps.researchLines, (lines) => {
+        watch(enrichedResearchLines, (lines) => {
           if (lines && lines.length > 0 && !analyticsOps.activeMissionLine.value) {
             analyticsOps.activeMissionLine.value = lines[0]
           }
         }, { immediate: true })
 
-        // Enrich researchLines with stats (study/project counts, enrollment) computed from
-        // clinicalTrials and innovationProjects — runs whenever any of the three change
-        watch(
-          [researchOps.researchLines, researchOps.clinicalTrials, researchOps.innovationProjects],
-          ([lines, trials, projects]) => {
-            if (!lines || !lines.length) return
-            researchOps.researchLines.value = lines.map(line => ({
-              ...line,
-              stats: {
-                totalStudies:    (trials  || []).filter(t => t.research_line_id === line.id).length,
-                activeTrials:    (trials  || []).filter(t => t.research_line_id === line.id && ['Activo','Reclutando'].includes(t.status)).length,
-                totalProjects:   (projects|| []).filter(p => p.research_line_id === line.id).length,
-                totalEnrollment: (trials  || []).filter(t => t.research_line_id === line.id).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
-              }
-            }))
-          },
-          { deep: false }
-        )
+        // Enrich researchLines with stats — computed so it never mutates its own dependency
+        const enrichedResearchLines = computed(() => {
+          const lines    = researchOps.researchLines.value || []
+          const trials   = researchOps.clinicalTrials.value || []
+          const projects = researchOps.innovationProjects.value || []
+          if (!lines.length) return lines
+          return lines.map(line => ({
+            ...line,
+            stats: {
+              totalStudies:    trials.filter(t => t.research_line_id === line.id).length,
+              activeTrials:    trials.filter(t => t.research_line_id === line.id && ['Activo','Reclutando'].includes(t.status)).length,
+              totalProjects:   projects.filter(p => p.research_line_id === line.id).length,
+              totalEnrollment: trials.filter(t => t.research_line_id === line.id).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
+            }
+          }))
+        })
         // Rewire analyticsOps.portfolioKPIs to use the real research data refs from researchOps
         const portfolioKPIs = computed(() => {
           try {
@@ -7858,6 +7856,7 @@ document.addEventListener('DOMContentLoaded', () => {
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
           ...liveOps,
           ...researchOps,
+          researchLines: enrichedResearchLines, // override raw ref with stats-enriched computed
           researchLoading: researchOps.researchLoading,
           saveResearchLine: () => researchOps.saveResearchLine(saving),
           saveClinicalTrial: () => researchOps.saveClinicalTrial(saving),
