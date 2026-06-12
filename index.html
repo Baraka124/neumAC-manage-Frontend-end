@@ -14,10 +14,10 @@
       .mv-view { display:flex; flex-direction:column; gap:0; width:100%; }
       .mv-nav  { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid #e3dfd6; background:#f5f4f0; flex-shrink:0; flex-wrap:wrap; }
       .mv-grid { display:grid; border-left:1px solid #e3dfd6; overflow-x:auto; width:100%; }
-      .mv-name-header { grid-column:1; padding:8px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; background:#07111f; color:rgba(255,255,255,.75); border-right:1px solid rgba(255,255,255,.1); border-bottom:1px solid #e3dfd6; display:flex; align-items:center; }
+      .mv-name-header { grid-column:1; padding:8px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; background:#07111f; color:rgba(255,255,255,.75); border-right:1px solid rgba(255,255,255,.1); border-bottom:1px solid #e3dfd6; display:flex; align-items:center; position:sticky; left:0; z-index:4; }
       .mv-month-header { padding:8px 0; text-align:center; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; background:#f5f4f0; border-right:1px solid #e3dfd6; border-bottom:1px solid #e3dfd6; }
       .mv-month-header--current { background:rgba(0,153,153,.06); color:#00b3b3; }
-      .mv-name-cell { grid-column:1; display:flex; align-items:center; gap:9px; padding:9px 12px; border-right:1px solid #e3dfd6; border-bottom:1px solid #e3dfd6; background:#fff; min-width:180px; }
+      .mv-name-cell { grid-column:1; display:flex; align-items:center; gap:9px; padding:9px 12px; border-right:1px solid #e3dfd6; border-bottom:1px solid #e3dfd6; background:#fff; min-width:180px; position:sticky; left:0; z-index:3; }
       .mv-months-area { grid-column:2 / -1; position:relative; display:grid; border-bottom:1px solid #e3dfd6; min-height:48px; }
       .mv-month-bg { border-right:1px solid #e3dfd6; background:#fff; height:100%; }
       .mv-month-bg--current { background:rgba(37,99,235,.025); }
@@ -1078,6 +1078,59 @@
       #app .nm-empty-title { font-size:15px; font-weight:500; color:var(--nm-text1); }
       #app .nm-empty-sub   { font-size:13px; color:var(--nm-text3); max-width:300px; line-height:1.6; }
 
+      /* ── Unified empty state — all variants normalised ── */
+      #app .empty-state,
+      #app .nm-empty,
+      #app .db-panel-empty,
+      #app .rp-nav-empty,
+      #app .rp-detail--empty,
+      #app .news-empty,
+      #app .mv-empty-state {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 40px 24px !important;
+        gap: 10px !important;
+      }
+      #app .empty-state-title,
+      #app .nm-empty-title {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: var(--nm-text1) !important;
+        margin: 0 !important;
+      }
+      #app .empty-state-description,
+      #app .nm-empty-sub {
+        font-size: 12px !important;
+        color: var(--nm-text3) !important;
+        line-height: 1.6 !important;
+        max-width: 280px !important;
+        margin: 0 !important;
+      }
+      /* Empty state action button */
+      #app .nm-empty-action {
+        margin-top: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 16px;
+        border-radius: 8px;
+        background: var(--nm-teal);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: opacity .15s;
+      }
+      #app .nm-empty-action:hover { opacity: .85; }
+      /* Empty state inside table cells — compact */
+      #app .table .empty-state { padding: 28px 20px !important; }
+      #app .table .empty-state-title { font-size: 13px !important; }
+      #app .table .empty-state-description { font-size: 11px !important; }
+
       /* ── ⌘K COMMAND PALETTE ── */
       #app .cmd-backdrop { position:fixed; inset:0; background:rgba(7,17,31,.45); z-index:400; display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; }
       #app .cmd-panel { width:min(580px,90vw); background:var(--nm-surface); border-radius:14px; border:1px solid rgba(0,0,0,.12); overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,.2); }
@@ -1478,6 +1531,23 @@
         border-bottom:1px solid var(--nm-border) !important;
         border-top:1px solid var(--nm-border) !important;
         white-space:nowrap !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 2 !important;
+      }
+
+      /* Sticky filter bars — stay visible while scrolling table content */
+      #app .content-area .card-header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background: var(--nm-surface) !important;
+      }
+      #app .content-area .filter-bar {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 9 !important;
+        background: var(--nm-surface) !important;
       }
 
       /* Table rows */
@@ -7218,6 +7288,9 @@ tr.staff-table-row .tbl-btn {
   border: 1px solid var(--nm-border);
   overflow: hidden;
   box-shadow: 0 8px 40px rgba(0,0,0,.14);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
 }
 .nm-modal-head {
   display: flex;
@@ -7226,6 +7299,7 @@ tr.staff-table-row .tbl-btn {
   padding: 14px 18px;
   border-bottom: 1px solid var(--nm-border);
   background: var(--nm-surface2);
+  flex-shrink: 0;
 }
 .nm-modal-title {
   display: flex;
@@ -7240,6 +7314,10 @@ tr.staff-table-row .tbl-btn {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  overflow-y: auto;
+  flex: 1 1 0;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 .nm-modal-foot {
   display: flex;
@@ -7248,6 +7326,7 @@ tr.staff-table-row .tbl-btn {
   padding: 12px 18px 16px;
   border-top: 1px solid var(--nm-border);
   background: var(--nm-surface2);
+  flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -9488,7 +9567,24 @@ tr.staff-table-row .tbl-btn {
                         </div>
                         <!-- DETAILED VIEW (EXISTING TABLE) -->
                         <div v-else class="table-responsive">
-                            <table class="table table-striped table-oncall">
+                            <div v-if="loading" style="padding:8px 0;">
+                                <table class="table table-striped table-oncall"><thead><tr>
+                                    <th style="width:20%">Shift Period</th><th style="width:25%">Physician</th>
+                                    <th style="width:11%">Type</th><th style="width:11%">Status</th>
+                                    <th style="width:20%">Backup</th><th>Actions</th>
+                                </tr></thead></table>
+                                <div style="display:flex;flex-direction:column;gap:0;">
+                                    <div v-for="i in 8" :key="i" style="display:grid;grid-template-columns:20% 25% 11% 11% 20% auto;gap:0;padding:10px 20px;border-bottom:0.5px solid var(--nm-border);align-items:center;">
+                                        <div class="nm-skeleton" style="height:14px;width:85%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:14px;width:75%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:20px;width:70%;border-radius:10px;"></div>
+                                        <div class="nm-skeleton" style="height:20px;width:80%;border-radius:10px;"></div>
+                                        <div class="nm-skeleton" style="height:14px;width:65%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:14px;width:40%;border-radius:4px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <table v-else class="table table-striped table-oncall">
                                 <thead>
                                     <tr>
                                         <th style="width:20%">Shift Period</th>
@@ -10134,8 +10230,11 @@ tr.staff-table-row .tbl-btn {
 
                             <div v-if="residentsWithRotations.length === 0" class="empty-state">
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                                <div class="empty-state-title">No residents found</div>
-                                <div class="empty-state-description">No residents match your current filters</div>
+                                <div class="empty-state-title">No rotations found</div>
+                                <div class="empty-state-description">No residents match your current filters, or no rotations have been assigned yet</div>
+                                <button v-if="hasPermission('resident_rotations','create')" class="nm-empty-action" @click="showAddRotationModal">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Assign Rotation
+                                </button>
                             </div>
                         </div>
 
@@ -10231,7 +10330,24 @@ tr.staff-table-row .tbl-btn {
 
                         <!-- DETAILED VIEW (EXISTING TABLE) -->
                         <div v-else class="table-responsive">
-                            <table class="table table-striped table-rotation">
+                            <div v-if="loading" style="padding:8px 0;">
+                                <table class="table table-striped table-rotation"><thead><tr>
+                                    <th style="width:22%">Resident</th><th style="width:22%">Unit</th>
+                                    <th style="width:18%">Period</th><th style="width:10%">Days Left</th>
+                                    <th style="width:14%">Status</th><th style="width:14%">Actions</th>
+                                </tr></thead></table>
+                                <div style="display:flex;flex-direction:column;gap:0;">
+                                    <div v-for="i in 8" :key="i" style="display:grid;grid-template-columns:22% 22% 18% 10% 14% 14%;gap:0;padding:10px 20px;border-bottom:0.5px solid var(--nm-border);align-items:center;">
+                                        <div class="nm-skeleton" style="height:14px;width:80%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:14px;width:70%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:14px;width:85%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:14px;width:50%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:20px;width:60%;border-radius:10px;"></div>
+                                        <div class="nm-skeleton" style="height:14px;width:40%;border-radius:4px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <table v-else class="table table-striped table-rotation">
                                 <thead>
                                     <tr>
                                         <th @click="sortBy('rotations', 'resident_id')" style="width:22%">Resident</th>
@@ -10844,7 +10960,28 @@ tr.staff-table-row .tbl-btn {
                             <input type="text" class="form-control" v-model="absenceFilters.search" placeholder="Search..." style="flex:1;max-width:220px;min-width:120px">
                         </div>
                         <div v-show="absenceViewMode === 'table'" class="table-responsive">
-                            <table class="table table-striped table-absence">
+                            <div v-if="loading" style="padding:8px 0;">
+                                <table class="table table-striped table-absence"><thead><tr>
+                                    <th style="width:24%">Staff member</th><th style="width:12%">Reason</th>
+                                    <th style="width:10%">Status</th><th style="width:12%">From</th>
+                                    <th style="width:12%">Until</th><th style="width:14%">Duration</th><th>Actions</th>
+                                </tr></thead></table>
+                                <div style="display:flex;flex-direction:column;gap:0;">
+                                    <div v-for="i in 8" :key="i" style="display:grid;grid-template-columns:24% 12% 10% 12% 12% 14% auto;gap:0;padding:10px 20px;border-bottom:0.5px solid var(--nm-border);align-items:center;">
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <div class="nm-skeleton" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;"></div>
+                                            <div class="nm-skeleton" style="height:13px;width:75%;border-radius:4px;"></div>
+                                        </div>
+                                        <div class="nm-skeleton" style="height:20px;width:80%;border-radius:10px;"></div>
+                                        <div class="nm-skeleton" style="height:20px;width:85%;border-radius:10px;"></div>
+                                        <div class="nm-skeleton" style="height:13px;width:80%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:13px;width:80%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:13px;width:60%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:13px;width:40%;border-radius:4px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <table v-else class="table table-striped table-absence">
                                 <thead>
                                     <tr>
                                         <th @click="sortBy('absences', 'staff_member_id')" style="width:24%">Staff member</th>
@@ -12586,10 +12723,13 @@ tr.staff-table-row .tbl-btn {
                     <!-- Posts list — v-show keeps DOM stable during background refresh -->
                     <div class="news-list" v-show="!newsLoading" style="flex:1;overflow-y:auto;min-height:0;">
                         <div v-if="filteredNews.length === 0" class="news-empty">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
-                            <p>No posts yet. Create your first post to get started.</p>
-                            <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
+                            <div class="nm-empty-icon">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
+                            </div>
+                            <div class="nm-empty-title">No posts found</div>
+                            <div class="nm-empty-sub">{{ newsFilters.search || newsFilters.type || newsFilters.visibility ? 'Try clearing your filters' : 'Create your first post to share updates with the team' }}</div>
+                            <button v-if="hasPermission('news_posts','create') && !newsFilters.search && !newsFilters.type" class="nm-empty-action" @click="showAddNewsModal">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
                             </button>
                         </div>
 
