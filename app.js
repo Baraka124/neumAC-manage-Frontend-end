@@ -6005,6 +6005,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
+        // Auto-select the first research line when lines load so the right panel isn't empty
+        watch(researchOps.researchLines, (lines) => {
+          if (lines && lines.length > 0 && !analyticsOps.activeMissionLine.value) {
+            analyticsOps.activeMissionLine.value = lines[0]
+          }
+        }, { immediate: true })
+
+        // Enrich researchLines with stats (study/project counts, enrollment) computed from
+        // clinicalTrials and innovationProjects — runs whenever any of the three change
+        watch(
+          [researchOps.researchLines, researchOps.clinicalTrials, researchOps.innovationProjects],
+          ([lines, trials, projects]) => {
+            if (!lines || !lines.length) return
+            researchOps.researchLines.value = lines.map(line => ({
+              ...line,
+              stats: {
+                totalStudies:    (trials  || []).filter(t => t.research_line_id === line.id).length,
+                activeTrials:    (trials  || []).filter(t => t.research_line_id === line.id && ['Activo','Reclutando'].includes(t.status)).length,
+                totalProjects:   (projects|| []).filter(p => p.research_line_id === line.id).length,
+                totalEnrollment: (trials  || []).filter(t => t.research_line_id === line.id).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
+              }
+            }))
+          },
+          { deep: false }
+        )
+        // Rewire analyticsOps.portfolioKPIs to use the real research data refs from researchOps
+        const portfolioKPIs = computed(() => {
+          try {
+            const totalLines       = (researchOps.researchLines.value || []).length
+            const activeLines      = (researchOps.researchLines.value || []).filter(l => l.active !== false).length
+            const totalTrials      = (researchOps.clinicalTrials.value || []).length
+            const activeTrials     = (researchOps.clinicalTrials.value || []).filter(t => ['Activo','Reclutando'].includes(t.status)).length
+            const recruitingTrials = (researchOps.clinicalTrials.value || []).filter(t => t.status === 'Reclutando').length
+            const totalProjects    = (researchOps.innovationProjects.value || []).length
+            const lateStageProjects = (researchOps.innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalamiento','Comercialización'].includes(p.current_stage)).length
+            const totalEnrolled    = (researchOps.clinicalTrials.value || []).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
+            const totalTarget      = (researchOps.clinicalTrials.value || []).reduce((s, t) => s + (t.enrollment_target || 0), 0)
+            return { totalLines, activeLines, totalTrials, activeTrials, recruitingTrials, totalProjects, lateStageProjects, totalEnrolled, totalTarget }
+          } catch { return { totalLines: 0, activeLines: 0, totalTrials: 0, activeTrials: 0, recruitingTrials: 0, totalProjects: 0, lateStageProjects: 0, totalEnrolled: 0, totalTarget: 0 } }
+        })
         // Keep hoisted dept lookup in sync so useTrainingUnits filteredTrainingUnits always has fresh data
         watch(allDepartmentsLookup, (v) => { allDepartmentsLookupShared.value = v }, { immediate: true })
         // Wrap loadResearchDashboard so it always receives the live research data refs —
@@ -7845,7 +7885,7 @@ document.addEventListener('DOMContentLoaded', () => {
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
           newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName,
           drillToTrials, drillToProjects,
-          portfolioKPIs:     researchOps.portfolioKPIs,
+          portfolioKPIs,
           getLineAccent:     getLineAccentGlobal,
 
           systemSettings, saveSystemSettings, loadSystemSettings, activeSvcId,
