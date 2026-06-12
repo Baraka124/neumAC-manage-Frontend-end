@@ -1,12 +1,12 @@
 /*- ═══════════════════════════════════════════════════════════════
    RESIDENCY YEAR — auto/override display
 ═══════════════════════════════════════════════════════════════ */
-.form-hint { font-size: 10.5px; color: var(--text-3); font-weight: 400; margin-left: 4px; }      
+.form-hint { font-size: 10.5px; color: var(--text-3); font-weight: 400; margin-left: 4px; }
 .form-hint--auto     { color: var(--ok); }
 .form-hint--override { color: var(--warn); }
- 
+
 .ryear-auto-row {
-  display: flex; align-items: center; gap: 8px;   
+  display: flex; align-items: center; gap: 8px;
 }
 .ryear-chip {
   display: inline-flex; align-items: center; justify-content: center; 
@@ -209,7 +209,7 @@
 }
 .btn-icon-sm:hover { background:var(--blue-lt);color:var(--blue);border-color:var(--blue-mid); }
 .btn-icon-sm--danger:hover { background:var(--danger-lt);color:var(--danger);border-color:var(--danger-mid); }
-.row-actions { display:flex;gap:2px;justify-content:flex-end;align-items:center; }
+.row-actions { display:flex;gap:2px;justify-content:flex-end; }
 .dept-institution-badge {
   display:inline-flex;align-items:center;gap:4px;
   margin-top:3px;
@@ -773,7 +773,6 @@ a { color: var(--blue); text-decoration: none; }
 }
 
 .sidebar-collapsed { width: var(--sidebar-sm); }
-/* sidebar-collapsed handled by .main-content-expanded */
 
 /* ── Header ─────────────────────────────────────────────────── */
 .sidebar-header {
@@ -1076,14 +1075,10 @@ a { color: var(--blue); text-decoration: none; }
 ---------------------------------------------------------------- */
 .content-area {
   flex: 1;
-  padding: var(--content-pad-y) var(--content-pad-x);
+  padding: var(--content-pad-y) var(--content-pad-x); /* was flat 18px 20px */
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  box-sizing: border-box;
-  /* .main-content already handles margin-left and height — 
-     content-area just needs flex:1 + overflow-y:auto to scroll */
-  box-sizing: border-box;
 }
 
 .content-area > * {
@@ -1188,7 +1183,7 @@ a { color: var(--blue); text-decoration: none; }
   gap: 2px; padding-top: 2px;
 }
 .oncall-tl-from {
-  font-family: var(--font-data); font-size: 15px; font-weight: 700;
+  font-family: var(--font-data); font-size: 14px; font-weight: 700;
   color: var(--text-1); line-height: 1;
 }
 .oncall-tl-to {
@@ -1396,7 +1391,7 @@ a { color: var(--blue); text-decoration: none; }
 .btn-success  { background: var(--ok); color: #fff; }
 .btn-success:hover { background: #047857; transform: translateY(-1px); }
 
-.btn-icon { width: 26px; height: 26px; padding: 0; border-radius: 5px; border: 1px solid var(--border-2,#ccc); background: var(--surface); color: var(--text-2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; transition: all .15s; flex-shrink: 0; }
+.btn-icon { width: 28px; height: 28px; padding: 0; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; transition: all .15s; flex-shrink: 0; }
 .btn-icon:hover { background: var(--blue-lt); color: var(--blue); border-color: var(--blue-mid); }
 .btn-icon--ok:hover { background: rgba(13,158,110,.1); color: #0d9e6e; border-color: rgba(13,158,110,.3); }
 .btn-icon--danger:hover { background: rgba(239,68,68,.1); color: #ef4444; border-color: rgba(239,68,68,.3); }
@@ -1405,12 +1400,12 @@ a { color: var(--blue); text-decoration: none; }
 .w-100    { width: 100%; }
 
 .btn-pill {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 10px; border-radius: 20px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 13px; border-radius: 20px;
   font-size: var(--t-11); font-weight: 600; letter-spacing: .01em;
   cursor: pointer; transition: var(--t); white-space: nowrap;
   border: 1px solid transparent; font-family: var(--font-ui);
-  min-height: 26px;
+  min-height: 32px;
 }
 .btn-pill-edit    { background: var(--surface-2); border-color: var(--border); color: var(--text-2); }
 .btn-pill-edit:hover { background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue); transform: translateY(-1px); }
@@ -1769,11 +1764,16 @@ a { color: var(--blue); text-decoration: none; }
 .scc-actions {
   display: flex; flex-direction: column; gap: 3px;
   align-self: center; flex-shrink: 0;
+  opacity: 0;
+  transform: translateX(4px);
+  transition: opacity var(--t), transform var(--t);
+  pointer-events: none;
+}
+.scc:hover .scc-actions {
   opacity: 1;
-  transition: opacity var(--t);
+  transform: translateX(0);
   pointer-events: auto;
 }
-.scc:hover .scc-actions { opacity: 1; }
 
 /* Make the action buttons smaller and more subtle in this context */
 .scc-actions .rot-action-btn {
@@ -2626,7 +2626,7 @@ a { color: var(--blue); text-decoration: none; }
 .unit-residents-table tbody tr { border-bottom: 1px solid var(--border); transition: background var(--t); cursor: pointer; }
 .unit-residents-table tbody tr:last-child { border-bottom: none; }
 .unit-residents-table tbody tr:hover { background: var(--blue-lt); }
-.unit-residents-table tbody td { padding: 10px 14px; font-size: var(--t-12); vertical-align: middle; }
+.unit-residents-table tbody td { padding: 9px 14px; font-size: var(--t-11); vertical-align: middle; }
 .rotation-dates-cell { font-family: var(--font-data); font-size: var(--t-11); white-space: nowrap; }
 .rd-start { color: var(--text-1); font-weight: 600; }
 .rd-sep   { color: var(--text-3); margin: 0 4px; }
@@ -4301,9 +4301,9 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   font-size: 13px; min-width: 560px;
 }
 .table thead th {
-  background: #1e3a5f; padding: 10px 16px;
-  font-family: var(--font-data); font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .10em; color: rgba(255,255,255,0.90);
+  background: var(--ink); padding: 10px 16px;
+  font-family: var(--font-data); font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,0.85);
   border-bottom: none; white-space: nowrap;
   position: sticky; top: 0; z-index: 2; cursor: pointer; user-select: none;
 }
@@ -7994,9 +7994,9 @@ tr:not(:hover) .btn-pill-purge {
 .db-kpi--amber::before { background: #ef9f27; }
 .db-kpi--indigo::before{ background: #534ab7; }
 .db-kpi-body { flex: 1; min-width: 0; }
-.db-kpi-val   { font-family: var(--font-data); font-size: 32px; font-weight: 800; color: var(--text-1); line-height: 1; margin-bottom: 4px; }
-.db-kpi-label { font-size: 14px; font-weight: 600; color: var(--text-2); margin-top: 0; letter-spacing: -.01em; }
-.db-kpi-sub   { font-size: 13px; color: var(--text-3); margin-top: 5px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.db-kpi-val   { font-family: var(--font-data); font-size: 28px; font-weight: 800; color: var(--text-1); line-height: 1; margin-bottom: 3px; }
+.db-kpi-label { font-size: 13px; font-weight: 600; color: var(--text-2); margin-top: 0; letter-spacing: -.01em; }
+.db-kpi-sub   { font-size: 12px; color: var(--text-3); margin-top: 5px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
 .db-kpi-dot   { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .db-kpi-dot--ok     { background: var(--ok); }
 .db-kpi-dot--warn   { background: var(--warn); }
@@ -8058,9 +8058,9 @@ tr:not(:hover) .btn-pill-purge {
 }
 .db-oc-avatar--backup { background: linear-gradient(135deg, var(--ok), #059669); }
 .db-oc-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.db-oc-name { font-size: 13px; font-weight: 600; color: var(--text-1); white-space: normal; word-break: break-word; }
-.db-oc-time { font-family: var(--font-data); font-size: 11px; color: var(--text-3); }
-.db-oc-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
+.db-oc-name { font-size: 11px; font-weight: 500; color: var(--text-1); white-space: normal; word-break: break-word; }
+.db-oc-time { font-family: var(--font-data); font-size: 9px; color: var(--text-3); }
+.db-oc-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 10px; flex-shrink: 0; }
 .db-oc-badge--primary { background: var(--blue-lt); color: var(--blue); }
 .db-oc-badge--backup  { background: var(--ok-lt);   color: var(--ok); }
 .db-oc-gap  { font-size: 10px; font-weight: 600; color: var(--danger); flex: 1; }
@@ -8081,8 +8081,8 @@ tr:not(:hover) .btn-pill-purge {
 }
 .db-rot-avatar--start { background: linear-gradient(135deg, var(--ok), #059669); }
 .db-rot-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.db-rot-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
-.db-rot-unit { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-rot-name { font-size: 12px; font-weight: 600; color: var(--text-1); }
+.db-rot-unit { font-size: 10px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-rot-chip { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
 .db-rot-chip--ending  { background: var(--warn-lt);   color: var(--warn); }
 .db-rot-chip--starting{ background: var(--ok-lt);     color: var(--ok); }
@@ -9677,7 +9677,6 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 /* Shell */
 .sm-modal {
   display: flex;
-  flex-direction: row;
   max-width: min(820px, calc(100vw - 32px));
   width: 100%;
   max-height: 90vh;
@@ -10355,11 +10354,10 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 }
 .db-qa-btn {
   display: flex; align-items: center; gap: 5px;
-  font-size: 13px; font-weight: 500; color: var(--text-2,#344154);
-  padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
-  background: var(--surface); cursor: pointer; white-space: nowrap;
-  transition: background .12s, border-color .12s;
-  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  font-size: 11.5px; font-weight: 500; color: var(--text-2,#344154);
+  padding: 5px 10px; border-radius: 6px; border: none;
+  background: none; cursor: pointer; white-space: nowrap;
+  transition: background .12s;
 }
 .db-qa-btn:hover { background: var(--surface-2,#f5f4f0); }
 .db-qa-btn--primary {
@@ -11551,774 +11549,3 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 }
 .tuc-cap-fill { height: 100%; border-radius: 3px; transition: width .3s; }
 .tuc:hover .tuc-name { color: #009999; }
-
-
-/* ════════════════════════════════════════════════════════════════
-   LAYOUT — Research Hub & News full-height panel views
-   content-area is flex:1 child of main-content (height:100vh)
-   For panel views: disable content-area's own padding/scroll so
-   the inner panel controls its own layout.
-   ════════════════════════════════════════════════════════════════ */
-.content-area--panel {
-  overflow: hidden !important;
-  padding: 0 !important;
-}
-.research-hub,
-.news-view {
-  /* flex:1 fills the content-area which fills main-content */
-  flex: 1 !important;
-  min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-}
-.news-list {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-
-/* ════════════════════════════════════════════════════════════════
-   TABLE ACTION BUTTONS — always visible, clear contrast
-   All table row actions use .btn-icon class.
-   No opacity fade on unhover — actions must always be accessible.
-   ════════════════════════════════════════════════════════════════ */
-
-/* Override: table actions always fully visible */
-.table .btn-icon,
-.staff-table-row .btn-icon,
-.row-actions .btn-icon {
-  opacity: 1 !important;
-}
-
-/* Actions column — never shrink, never overflow */
-.table td:last-child,
-.table th:last-child {
-  width: 90px;
-  min-width: 90px;
-  white-space: nowrap;
-}
-
-/* Prevent table horizontal scroll — use table-layout fixed on all main tables */
-.table {
-  table-layout: fixed;
-  min-width: 0;
-}
-/* But allow wider tables to scroll rather than break layout */
-.table-responsive {
-  overflow-x: auto;
-}
-
-/* Period column — always nowrap */
-.rotation-period {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-  font-size: 13px;
-}
-.rp-date { font-family: var(--font-data); font-size: 12px; color: var(--text-1); }
-.rp-arrow { color: var(--text-4); font-size: 11px; }
-
-/* ════════════════════════════════════════════════════════════════
-   DASHBOARD — increase all text to be readable
-   ════════════════════════════════════════════════════════════════ */
-.db-situation-row { font-size: 14px; }
-.db-gap-name { font-size: 13px; font-weight: 600; }
-.db-gap-year { font-size: 12px; }
-.db-gap-pill { font-size: 11px; }
-
-/* On-call widget in dashboard — bigger */
-.db-oc-slot { padding: 8px 10px; }
-.db-oc-date { font-size: 13px; font-weight: 600; }
-.db-oc-name { font-size: 14px !important; }
-.db-oc-time { font-size: 12px !important; }
-.db-oc-badge { font-size: 11px !important; }
-
-/* ════════════════════════════════════════════════════════════════
-   COMPACT VIEW ACTION BUTTONS — rot-action-btn
-   Make them always visible with good contrast
-   ════════════════════════════════════════════════════════════════ */
-.rot-action-btn {
-  opacity: 1 !important;
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-2) !important;
-}
-.rot-action-btn--danger {
-  color: var(--danger) !important;
-  border-color: rgba(220,53,69,.25) !important;
-}
-.rot-action-btn--danger:hover {
-  background: var(--danger-lt) !important;
-}
-
-/* ── Panel view layout (research_hub, news) ──────────────────── */
-/* These views are direct children of main-content, AFTER content-area */
-.main-content > .research-hub,
-.main-content > .news-view {
-  flex: 1 !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-
-/* ════════════════════════════════════════════════════════════════
-   neumAC ELITE REDESIGN — Appended CSS
-   Applied cleanly on top of uploaded baseline.
-   ════════════════════════════════════════════════════════════════ */
-
-/* ── Full-height panel views (research hub, news) ─────────────── */
-/* research-hub and news-view are siblings of content-area, not children */
-
-/* ── Tab bars: dark navy (research hub + news) ─────────────────── */
-.rhub-tabs {
-  background: #0f2d54 !important;
-  border-bottom: none !important;
-  padding: 0 16px !important;
-}
-.rhub-tab {
-  color: rgba(255,255,255,.45) !important;
-  padding: 11px 14px !important;
-  font-size: 12.5px !important;
-  border-bottom: 2px solid transparent !important;
-  margin-bottom: 0 !important;
-}
-.rhub-tab svg { opacity: .5; transition: opacity var(--t); }
-.rhub-tab:hover { color: rgba(255,255,255,.8) !important; }
-.rhub-tab:hover svg { opacity: .8; }
-.rhub-tab--active { color: #fff !important; border-bottom-color: #4db8b8 !important; }
-.rhub-tab--active svg { opacity: 1; }
-.rhub-tab-count {
-  background: rgba(255,255,255,.12) !important;
-  color: rgba(255,255,255,.6) !important;
-  border: none !important;
-}
-.rhub-context-pill { background: rgba(255,255,255,.08); border: 0.5px solid rgba(255,255,255,.15); color: rgba(255,255,255,.7); padding: 3px 8px; border-radius: 12px; }
-.rhub-ctx-clear { color: rgba(255,255,255,.5); }
-.rhub-tabs .btn-primary { background: rgba(0,153,153,.35) !important; border-color: rgba(0,179,179,.5) !important; color: #7eeaea !important; }
-.rhub-tabs .btn-primary:hover { background: rgba(0,153,153,.55) !important; }
-.rhub-tabs .btn-outline { border-color: rgba(255,255,255,.2) !important; color: rgba(255,255,255,.7) !important; background: rgba(255,255,255,.06) !important; }
-.rhub-tabs .btn { font-size: 11px; }
-
-/* ── Research Hub KPI strip → stat rail style ──────────────────── */
-.rp-kpi-strip {
-  display: grid !important;
-  grid-template-columns: repeat(4, 1fr) minmax(160px, auto) !important;
-  padding: 0 !important;
-  background: var(--surface) !important;
-  border-bottom: 1px solid var(--border) !important;
-}
-.rp-kpi {
-  padding: 13px 18px 11px !important;
-  border-right: 0.5px solid var(--border) !important;
-  min-width: 0 !important;
-  transition: background var(--t) !important;
-}
-.rp-kpi:first-child { padding-left: 20px !important; }
-.rp-kpi:hover { background: var(--surface-2) !important; }
-.rp-kpi-val {
-  font-family: var(--font-data) !important;
-  font-size: 28px !important; font-weight: 800 !important;
-  font-style: normal !important; letter-spacing: -.04em !important;
-  line-height: 1 !important; margin-bottom: 3px !important;
-}
-.rp-kpi-label { font-size: 12px !important; font-weight: 600 !important; color: var(--text-2) !important; margin-bottom: 4px !important; }
-.rp-kpi-sub { font-size: 11px !important; color: var(--text-3) !important; }
-.rp-kpi-div { display: none !important; }
-.rp-kpi-search { padding: 8px 14px !important; display: flex; align-items: center; }
-
-/* ── Dashboard — view wrapper (no extra padding) ───────────────── */
-/* view-dashboard: handled via content-area padding removal below */
-.content-area.view-dashboard-active {
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-/* ── Dashboard — Hero frame ────────────────────────────────────── */
-.dbh-frame { background: #0f2d54; flex-shrink: 0; }
-.dbh-top { display: flex; align-items: flex-end; justify-content: space-between; padding: 22px 28px 16px; gap: 20px; flex-wrap: wrap; }
-.dbh-date { font-size: 12px; color: rgba(255,255,255,.45); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 5px; }
-.dbh-greeting { font-size: clamp(20px, 2vw, 28px); font-weight: 300; color: rgba(255,255,255,.92); letter-spacing: -.02em; line-height: 1.2; }
-.dbh-name { font-style: normal; font-weight: 500; color: #4db8b8; }
-.dbh-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
-.dbh-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 500; padding: 7px 13px; border-radius: 7px; border: 0.5px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); cursor: pointer; white-space: nowrap; transition: background .15s, border-color .15s; font-family: var(--font-ui); }
-.dbh-btn:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.35); }
-.dbh-btn--teal { background: rgba(0,153,153,.35); border-color: rgba(0,179,179,.5); color: #7eeaea; }
-.dbh-btn--teal:hover { background: rgba(0,153,153,.55); }
-.dbh-alerts { display: flex; align-items: center; gap: 8px; padding: 0 28px 16px; flex-wrap: wrap; }
-.dbh-alert { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,.65); padding: 5px 10px; border-radius: 6px; background: rgba(255,255,255,.06); border: 0.5px solid rgba(255,255,255,.1); cursor: pointer; transition: background .15s; max-width: 360px; }
-.dbh-alert:hover { background: rgba(255,255,255,.12); color: rgba(255,255,255,.9); }
-.dbh-alert-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dbh-alert-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: rgba(255,255,255,.3); }
-.dbh-alert--warn .dbh-alert-dot    { background: #f59e0b; }
-.dbh-alert--danger .dbh-alert-dot  { background: #ef4444; }
-.dbh-alert--ok .dbh-alert-dot      { background: #10b981; }
-.dbh-alert--info .dbh-alert-dot    { background: #60a5fa; }
-.dbh-alert--rotation .dbh-alert-dot { background: #a78bfa; }
-.dbh-alert--absence .dbh-alert-dot  { background: #fb923c; }
-
-/* ── Dashboard — Stat rail ─────────────────────────────────────── */
-.dbsr { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.dbsr-stat { padding: 16px 20px 14px; border-right: 0.5px solid var(--border); cursor: pointer; transition: background var(--t); display: flex; flex-direction: column; position: relative; overflow: hidden; }
-.dbsr-stat:last-child { border-right: none; }
-.dbsr-stat:hover { background: var(--surface-2); }
-.dbsr-num { font-family: var(--font-data); font-size: 34px; font-weight: 800; color: var(--text-1); line-height: 1; letter-spacing: -.04em; margin-bottom: 4px; }
-.dbsr-lbl { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 8px; letter-spacing: -.01em; }
-.dbsr-pills { display: flex; gap: 5px; flex-wrap: wrap; }
-.dbsr-pill { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
-.dbsr-pill--ok     { background: rgba(13,158,110,.12); color: #0d9e6e; }
-.dbsr-pill--blue   { background: rgba(45,122,255,.12); color: #1e6fe6; }
-.dbsr-pill--warn   { background: rgba(239,159,39,.15); color: #b45309; }
-.dbsr-pill--danger { background: rgba(239,68,68,.12);  color: #dc2626; }
-.dbsr-pill--purple { background: rgba(139,92,246,.12); color: #7c3aed; }
-.dbsr-pill--muted  { background: var(--surface-2); color: var(--text-3); border: 0.5px solid var(--border); }
-.dbsr-accent { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; }
-.dbsr-accent--teal   { background: #009999; }
-.dbsr-accent--navy   { background: #1e3a5f; }
-.dbsr-accent--amber  { background: #f59e0b; }
-.dbsr-accent--indigo { background: #6366f1; }
-
-/* ── Dashboard — Main content grid ────────────────────────────── */
-.db-main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 18px 24px 0; }
-.db-right-col { display: flex; flex-direction: column; gap: 14px; }
-.db-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.db-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-bottom: 0.5px solid var(--border); }
-.db-panel-title { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .10em; color: var(--text-3); }
-.db-panel-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; transition: opacity .15s; }
-.db-panel-link:hover { opacity: .75; }
-.db-panel-loading { display: flex; align-items: center; gap: 8px; padding: 18px 16px; font-size: 12px; color: var(--text-4); }
-.db-panel-empty { display: flex; align-items: center; gap: 8px; padding: 20px 16px; font-size: 13px; color: var(--text-3); }
-/* On-call day rows */
-.db-oc-dayrow { display: grid; grid-template-columns: 52px 1fr; border-bottom: 0.5px solid var(--border); }
-.db-oc-dayrow:last-child { border-bottom: none; }
-.db-oc-datecol { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 8px; border-right: 0.5px solid var(--border); background: var(--surface-2); gap: 1px; }
-.db-oc-datecol--today { background: rgba(0,153,153,.06); }
-.db-oc-weekday { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-4); font-weight: 600; }
-.db-oc-daynum { font-size: 18px; font-weight: 700; color: var(--text-2); font-family: var(--font-data); line-height: 1; }
-.db-oc-datecol--today .db-oc-daynum { color: #009999; }
-.db-oc-datecol--today .db-oc-weekday { color: #009999; }
-.db-oc-slots { display: flex; flex-direction: column; }
-.db-oc-slot-row { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 0.5px solid var(--border); min-height: 36px; }
-.db-oc-slot-row:last-child { border-bottom: none; }
-.db-oc-slot-row--gap { cursor: pointer; }
-.db-oc-slot-row--gap:hover { background: rgba(45,122,255,.03); }
-.db-oc-slot-row--warn { background: rgba(239,159,39,.04); }
-.db-oc-slot-row--backup { background: var(--surface-2); }
-.db-oc-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
-.db-oc-av--primary { background: #1e3a5f; color: #fff; }
-.db-oc-av--backup  { background: #e0f2fe; color: #0369a1; }
-.db-oc-av--empty   { border: 1.5px dashed var(--border-2, #ccc); background: transparent; }
-.db-oc-slot-info { display: flex; align-items: baseline; gap: 8px; flex: 1; min-width: 0; }
-.db-oc-name { font-size: 13px; font-weight: 600; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.db-oc-time { font-family: var(--font-data); font-size: 11px; color: var(--text-3); white-space: nowrap; }
-.db-oc-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; letter-spacing: .02em; }
-.db-oc-badge--primary { background: rgba(30,58,95,.12); color: #1e3a5f; }
-.db-oc-badge--backup  { background: rgba(3,105,161,.10); color: #0369a1; }
-.db-oc-gap-label { font-size: 12px; color: var(--text-4); font-style: italic; flex: 1; }
-.db-oc-assign-btn { font-size: 11px; font-weight: 600; color: var(--blue); cursor: pointer; padding: 2px 7px; border-radius: 5px; border: 0.5px solid var(--blue-mid); background: var(--blue-lt); transition: all .12s; }
-.db-oc-assign-btn:hover { background: var(--blue); color: #fff; }
-/* Rotation rows */
-.db-rot-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 0.5px solid var(--border); }
-.db-rot-row:last-child { border-bottom: none; }
-.db-rot-av { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
-.db-rot-av--end   { background: #1e3a5f; }
-.db-rot-av--start { background: #009999; }
-.db-rot-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.db-rot-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
-.db-rot-unit { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.db-rot-chip { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
-.db-rot-chip--ending  { background: rgba(239,159,39,.12); color: #b45309; }
-.db-rot-chip--starting { background: rgba(13,158,110,.12); color: #0d9e6e; }
-/* Coverage bar */
-.db-cov-body { padding: 12px 16px 14px; }
-.db-cov-bar { display: flex; gap: 3px; margin-bottom: 8px; }
-.db-cov-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 5px; min-width: 0; }
-.db-cov-day--covered { background: rgba(0,153,153,.15); }
-.db-cov-day--gap     { background: rgba(239,159,39,.15); border: 1px solid rgba(239,159,39,.3); }
-.db-cov-day--weekend { background: var(--surface-2); }
-.db-cov-dayname { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.db-cov-day--covered .db-cov-dayname { color: #009999; }
-.db-cov-day--gap .db-cov-dayname     { color: #b45309; }
-.db-cov-day--weekend .db-cov-dayname { color: var(--text-4); }
-.db-cov-daynum { font-size: 11px; font-weight: 700; font-family: var(--font-data); line-height: 1; }
-.db-cov-day--covered .db-cov-daynum { color: #007a7a; }
-.db-cov-day--gap .db-cov-daynum     { color: #92400e; }
-.db-cov-day--weekend .db-cov-daynum { color: var(--text-4); }
-.db-cov-legend { display: flex; gap: 14px; }
-.db-cov-leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); }
-.db-cov-leg-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-.db-cov-leg-swatch--covered { background: rgba(0,153,153,.25); }
-.db-cov-leg-swatch--gap     { background: rgba(239,159,39,.25); border: 1px solid rgba(239,159,39,.4); }
-.db-cov-leg-swatch--weekend { background: var(--surface-2); border: 0.5px solid var(--border); }
-/* Resident gap panel */
-.db-gap-panel { margin: 14px 24px 20px; background: var(--surface); border: 1px solid rgba(239,159,39,.35); border-radius: 12px; overflow: hidden; }
-.db-gap-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: rgba(254,243,199,.5); border-bottom: 0.5px solid rgba(239,159,39,.3); }
-.db-gap-title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .10em; color: #92400e; }
-.db-gap-dot { width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
-.db-gap-grid { display: flex; gap: 10px; padding: 12px 16px; flex-wrap: wrap; }
-.db-gap-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 9px; border: 0.5px solid var(--border); background: var(--surface-2); cursor: pointer; transition: border-color .15s, background .15s; min-width: 180px; }
-.db-gap-item:hover { border-color: var(--blue-mid); background: var(--blue-lt); }
-.db-gap-av { width: 30px; height: 30px; border-radius: 50%; background: rgba(239,159,39,.2); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #92400e; flex-shrink: 0; }
-.db-gap-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.db-gap-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
-.db-gap-year { font-size: 11px; color: var(--text-3); }
-.db-gap-pills { display: flex; gap: 4px; }
-.db-gap-pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: rgba(239,159,39,.15); color: #92400e; }
-
-/* ── Dashboard KPI text sizes ───────────────────────────────────── */
-.db-kpi-val   { font-family: var(--font-data) !important; font-size: 32px !important; font-weight: 800 !important; }
-.db-kpi-label { font-size: 14px !important; font-weight: 600 !important; }
-.db-kpi-sub   { font-size: 13px !important; }
-.db-oc-name   { font-size: 14px !important; }
-.db-oc-time   { font-size: 12px !important; }
-.db-oc-badge  { font-size: 11px !important; }
-
-
-/* ── Dashboard: remove content-area padding (hero goes edge-to-edge) ── */
-/* duplicate removed */
-.view-dashboard {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-/* ── Research Hub + News: full height as main-content flex children ── */
-/* They are siblings of content-area, not children */
-/* Their inline styles handle flex:1 min-height:0 overflow:hidden */
-/* Just ensure they're consistent */
-.research-hub {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-.news-view {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-
-/* ════════════════════════════════════════════════════════════════
-   LAYOUT & UX FIXES — final pass
-   ════════════════════════════════════════════════════════════════ */
-
-/* ── Content area: flex:1 child, no explicit height ──────────── */
-/* main-content owns height:100vh. content-area just takes flex:1 */
-.content-area {
-  flex: 1 !important;
-  min-height: 0 !important;
-}
-/* Remove the height:100vh we accidentally added */
-/* (The !important on flex:1 + min-height:0 overrides it) */
-
-/* ── Research Hub and News: main-content flex siblings ────────── */
-/* Both are direct children of main-content, siblings of content-area */
-/* They take flex:1 and fill remaining space after top-navbar */
-.research-hub {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  /* No margin-left needed — they're inside main-content which has it */
-}
-.news-view {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ── Dashboard: content-area should have no padding ───────────── */
-/* Dashboard uses view-dashboard class on its inner div */
-/* Use the :has() selector (supported in all modern browsers) */
-.content-area:has(.view-dashboard) {
-  padding: 0;
-  overflow: hidden;
-}
-.view-dashboard {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-/* ── Settings: ensure all sections visible, proper spacing ────── */
-.content-area > div {
-  min-height: 0;
-}
-
-/* ── Absence / other views: breadcrumb doesn't shift content ──── */
-/* The breadcrumb + view header should be part of normal scroll */
-/* No position:sticky or fixed that would detach */
-
-/* ── Modals: ensure scrollability in all modal types ─────────── */
-/* Standard modal-container already has flex-direction:column ✓ */
-/* sm-modal uses flex-direction:row (left preview + right form side by side) */
-/* Ensure modal-body is scrollable in all cases */
-.modal-body {
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-}
-/* Profile drawer */
-.pd-body {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-/* Unit detail drawer */
-.udd-body {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-/* Research line detail */
-.rp-detail {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Top navbar: never moves, always flex-shrink:0 ───────────── */
-.top-navbar {
-  flex-shrink: 0 !important;
-  position: relative;
-  z-index: 100;
-}
-
-
-/* ════════════════════════════════════════════════════════════════
-   LAYOUT FINAL FIX — no :has() selector (unreliable for layout)
-   Uses Vue-bound class content-area--dash instead
-   ════════════════════════════════════════════════════════════════ */
-
-/* Dashboard: remove content-area padding — hero goes edge-to-edge */
-.content-area--dash {
-  padding: 0 !important;
-  overflow: visible !important;
-  /* Do NOT set overflow:hidden here — it clips view-dashboard's scrollbar */
-}
-/* view-dashboard IS the scroll container for dashboard */
-.content-area--dash .view-dashboard {
-  flex: 1 !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* ALL regular views inside content-area: normal block flow, no extra space */
-.content-area > div {
-  /* v-if hides these from DOM — when shown they take natural height */
-  width: 100%;
-}
-
-/* ── Research Hub + News: correct sizing as main-content children ── */
-/* These bypass content-area entirely — they are siblings of it */
-.research-hub,
-.news-view {
-  flex: 1 !important;
-  min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  /* They ARE inside main-content which has margin-left:sidebar-w */
-  /* So no extra offset needed */
-}
-
-/* ── Ensure top-navbar never moves ─────────────────────────────── */
-.main-content > .top-navbar {
-  flex-shrink: 0;
-  flex-grow: 0;
-}
-
-/* ── content-area scrolls normally for all non-dashboard views ─── */
-.content-area:not(.content-area--dash) {
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════
-   DASHBOARD SCROLL — final authoritative rule (overrides all above)
-   ═══════════════════════════════════════════════════════════════ */
-.view-dashboard {
-  flex: 1 !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* dbh-frame and dbsr are fixed headers — don't shrink */
-.view-dashboard .dbh-frame { flex-shrink: 0; }
-.view-dashboard .dbsr      { flex-shrink: 0; }
-
-/* db-main-grid and db-gap-panel contribute to scroll height naturally */
-.view-dashboard .db-main-grid { flex-shrink: 0; }
-.view-dashboard .db-gap-panel { flex-shrink: 0; }
-
-
-/* ════════════════════════════════════════════════════════════════
-   DASHBOARD — Unit Occupancy Grid (replaces 14-day coverage bar)
-   ════════════════════════════════════════════════════════════════ */
-
-.db-unit-panel { }
-
-.db-unit-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  padding: 12px 14px 10px;
-}
-
-/* ── Individual unit cell ─────────────────────────────────────── */
-.db-unit-cell {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: border-color .15s, transform .1s;
-  position: relative;
-  overflow: hidden;
-  min-width: 0;
-}
-.db-unit-cell:hover {
-  border-color: #009999;
-  transform: translateY(-1px);
-}
-.db-unit-cell:active { transform: translateY(0); }
-
-/* States */
-.db-unit-cell--ok    { background: rgba(13,158,110,.06); border-color: rgba(13,158,110,.2); }
-.db-unit-cell--warn  { background: rgba(239,159,39,.08); border-color: rgba(239,159,39,.3); }
-.db-unit-cell--full  { background: rgba(220,38,38,.06);  border-color: rgba(220,38,38,.25); }
-.db-unit-cell--empty {
-  background: var(--surface-2);
-  border-color: var(--border);
-  border-style: dashed;
-}
-
-.db-unit-cell--ok:hover    { border-color: #0d9e6e; }
-.db-unit-cell--warn:hover  { border-color: #d97706; }
-.db-unit-cell--full:hover  { border-color: #dc2626; }
-.db-unit-cell--empty:hover { border-color: #009999; border-style: solid; }
-
-/* ── Unit name ────────────────────────────────────────────────── */
-.db-unit-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 5px;
-  letter-spacing: -.01em;
-}
-.db-unit-cell--empty .db-unit-name { color: var(--text-3); }
-
-/* ── Fill bar ─────────────────────────────────────────────────── */
-.db-unit-bar-wrap {
-  height: 4px;
-  background: rgba(0,0,0,.07);
-  border-radius: 2px;
-  margin-bottom: 5px;
-  overflow: hidden;
-}
-.db-unit-bar {
-  height: 4px;
-  border-radius: 2px;
-  transition: width .4s ease;
-}
-.db-unit-cell--ok   .db-unit-bar { background: #0d9e6e; }
-.db-unit-cell--warn .db-unit-bar { background: #d97706; }
-.db-unit-cell--full .db-unit-bar { background: #dc2626; }
-.db-unit-cell--empty .db-unit-bar { background: var(--border); width: 0 !important; }
-
-/* ── Meta line ────────────────────────────────────────────────── */
-.db-unit-meta {
-  font-size: 10px;
-  color: var(--text-4);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.db-unit-cell--empty .db-unit-meta { color: var(--text-4); font-style: italic; }
-
-/* ── Legend ───────────────────────────────────────────────────── */
-.db-unit-legend {
-  display: flex;
-  gap: 12px;
-  padding: 0 14px 12px;
-  flex-wrap: wrap;
-}
-.db-unit-leg-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  color: var(--text-3);
-}
-.db-unit-leg-sw {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.db-unit-leg-sw--ok    { background: rgba(13,158,110,.25); border: 1px solid rgba(13,158,110,.4); }
-.db-unit-leg-sw--warn  { background: rgba(239,159,39,.25); border: 1px solid rgba(239,159,39,.4); }
-.db-unit-leg-sw--full  { background: rgba(220,38,38,.2);   border: 1px solid rgba(220,38,38,.35); }
-.db-unit-leg-sw--empty { background: var(--surface-2); border: 1px dashed var(--border-2, #ccc); }
-
-
-/* ════════════════════════════════════════════════════════════════
-   LAYOUT FINAL AUTHORITY — fixes all view rendering issues
-   Applied last so it overrides everything above
-   ════════════════════════════════════════════════════════════════ */
-
-/* ── 1. Research Hub: full-height flex child of main-content ──── */
-/* main-content is flex-column height:100vh                        */
-/* When active: header(60px) + research-hub(flex:1) = 100vh       */
-.main-content > .research-hub {
-  flex: 1 1 0% !important;
-  min-height: 0 !important;
-  max-height: calc(100vh - var(--topbar-h)) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  background: var(--surface, #fdfcfb) !important;
-}
-
-/* ── 2. News view: same as research hub ──────────────────────── */
-.main-content > .news-view {
-  flex: 1 1 0% !important;
-  min-height: 0 !important;
-  max-height: calc(100vh - var(--topbar-h)) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  background: var(--surface, #fdfcfb) !important;
-}
-
-/* ── 3. Research Hub tab bar — always dark navy ─────────────── */
-.research-hub > .rhub-tabs,
-.news-view > .rhub-tabs {
-  background: #0f2d54 !important;
-  border-bottom: none !important;
-  padding: 0 16px !important;
-  flex-shrink: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  min-height: 48px !important;
-}
-
-/* ── 4. Research Hub panel content fills remaining space ──────── */
-.research-hub > .rhub-panel,
-.research-hub [class*="rhub-panel"] {
-  flex: 1 !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-}
-
-/* ── 5. View wrapper divs inside content-area: no extra padding ── */
-/* content-area already has padding; individual view divs should   */
-/* not add their own top/bottom padding                            */
-.content-area > div {
-  min-height: 0;
-  width: 100%;
-}
-
-/* ── 6. System settings: explicit reset (inline style removed) ─── */
-
-/* ── 7. Content area: consistent layout for all regular views ─── */
-.content-area:not(.content-area--dash) {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  padding: var(--content-pad-y) var(--content-pad-x) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0 !important;
-}
-
-/* ── 8. News list fills the space below tab bar ─────────────── */
-.news-view .news-list {
-  flex: 1 !important;
-  overflow-y: auto !important;
-  min-height: 0 !important;
-}
-
-/* ── 9. System settings: make the outer wrapper scrollable ────── */
-/* content-area handles scrolling; system_settings div just flows */
-.content-area > div {
-  min-height: 0;
-  width: 100%;
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   FINAL LAYOUT OVERRIDES — research-hub, news-view, content-area
-   Appended last so they win all cascade conflicts.
-   ══════════════════════════════════════════════════════════════════ */
-
-/* 1. research-hub and news-view: fill exact space below navbar.
-      width:100% ensures they don't shrink when sidebar collapses.  */
-.main-content > .research-hub,
-.main-content > .news-view {
-  flex: 1 1 0% !important;
-  width: 100% !important;
-  min-height: 0 !important;
-  max-height: calc(100vh - var(--topbar-h, 60px)) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-  /* Undo any rogue margin or padding */
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* 2. Tab bar inside research-hub and news-view: always dark navy, never scrolls */
-.main-content > .research-hub > .rhub-tabs,
-.main-content > .news-view > .rhub-tabs {
-  flex-shrink: 0 !important;
-  width: 100% !important;
-  background: #0f2d54 !important;
-  border-bottom: none !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-}
-
-/* 3. Panel content inside research-hub: fills remaining height, scrolls internally */
-.main-content > .research-hub > [class*="rhub-panel"],
-.main-content > .research-hub > .rhub-panel {
-  flex: 1 1 0% !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-}
-
-/* 4. News list area: fills remaining height below tab bar */
-.main-content > .news-view > .news-filter-bar { flex-shrink: 0 !important; }
-.main-content > .news-view > .news-list      { flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; }
-
-/* 5. content-area: always scrollable for non-dashboard views */
-.content-area {
-  overflow-y: auto !important;
-}
