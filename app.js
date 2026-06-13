@@ -5489,7 +5489,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form: {
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
           author_id: '', research_line_id: '', is_public: false,
-          status: 'draft', expires_at: '',
+          status: 'draft', expires_at: '', published_at: '',
           journal_name: '', authors_text: '', doi: ''
         }
       })
@@ -5566,7 +5566,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.assign(newsModal.form, {
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
           author_id: '', research_line_id: '', is_public: false,
-          status: 'draft', expires_at: autoExpiry('article'),
+          status: 'draft', expires_at: autoExpiry('article'), published_at: '',
           journal_name: '', authors_text: '', doi: ''
         })
         newsModal.show = true
@@ -5574,7 +5574,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const editNews = (post) => {
         newsModal.mode = 'edit'
-        newsModal._tab = 'content'  // open on content tab when editing
+        newsModal._tab = post.post_type === 'publication' ? 'publish' : 'content'
         const _s = (v) => v == null ? '' : String(v)
         Object.assign(newsModal.form, {
           ...post,
@@ -5585,7 +5585,8 @@ document.addEventListener('DOMContentLoaded', () => {
           doi:                _s(post.doi),
           research_line_id:   post.research_line_id || '',
           author_id:          post.author_id || '',
-          expires_at:         post.expires_at ? post.expires_at.split('T')[0] : ''
+          expires_at:         post.expires_at   ? post.expires_at.split('T')[0]   : '',
+          published_at:       post.published_at ? post.published_at.split('T')[0] : ''
         })
         newsModal.show = true
       }
@@ -5595,6 +5596,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!_t(newsModal.form.title)) { showToast('Validation', 'Title is required', 'warning'); return }
         if (newsModal.form.post_type === 'photo_story' && !_t(newsModal.form.featured_image_url)) {
           showToast('Validation', 'Photo Story requires an image URL', 'warning'); return
+        }
+        // Publication validation — require journal name or DOI
+        if (newsModal.form.post_type === 'publication' && !_t(newsModal.form.journal_name) && !_t(newsModal.form.doi)) {
+          showToast('Validation', 'Publications require at least a journal name or DOI', 'warning'); return
         }
         if (newsModal.form.post_type !== 'publication' && !newsModal.form.author_id) {
           showToast('Validation', 'Author is required', 'warning'); return
@@ -6774,7 +6779,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // ── Research ──────────────────────────────────────────────────
             if (['research_hub','research_lines','clinical_trials','innovation_projects','analytics_dashboard','analytics_performance','analytics_partners'].includes(v)) {
               const lines = researchOps.researchLines?.value?.length || 0
-              const trials = researchOps.clinicalTrials?.value?.filter(t => t.study_status === 'Reclutando' || t.study_status === 'Activo').length || 0
+              const trials = researchOps.clinicalTrials?.value?.filter(t => ['Reclutando','Activo'].includes(t.status)).length || 0
               const projects = researchOps.innovationProjects?.value?.length || 0
               if (!lines && !trials) return 'No research data loaded yet'
               return `${lines} line${lines !== 1 ? 's' : ''} · ${trials} active stud${trials !== 1 ? 'ies' : 'y'} · ${projects} project${projects !== 1 ? 's' : ''}`
