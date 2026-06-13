@@ -954,9 +954,8 @@
       /* ── RESEARCH/NEWS LAYOUT ── */
       #app .main-content > .research-hub { display:flex !important; flex-direction:column !important; flex:1 1 0% !important; min-height:0 !important; width:100% !important; max-height:calc(100vh - var(--topbar-h,60px)) !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
       #app .main-content > .news-view    { display:flex !important; flex-direction:column !important; flex:1 1 0% !important; min-height:0 !important; width:100% !important; max-height:calc(100vh - var(--topbar-h,60px)) !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
-      #app .main-content > .research-hub > .rhub-tabs, #app .main-content > .news-view > .rhub-tabs { flex-shrink:0 !important; width:100% !important; background:var(--nm-navy2) !important; border-bottom:none !important; overflow-x:auto !important; overflow-y:hidden !important; }
-      #app .main-content > .research-hub > [class*="rhub-panel"] { flex:1 1 0% !important; min-height:0 !important; overflow-y:auto !important; }
-      #app .main-content > .research-hub > .rhub-panel--mc { overflow:hidden !important; display:flex !important; flex-direction:column !important; }
+      /* .rhub-tabs no longer used — new structure uses .rhub-topbar instead */
+      #app .main-content > .research-hub > .rhub-page { flex:1 1 0% !important; min-height:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; }
       #app .main-content > .news-view > .news-filter-bar { flex-shrink:0 !important; }
       #app .main-content > .news-view > .news-list { flex:1 1 0% !important; min-height:0 !important; overflow-y:auto !important; }
 
@@ -4577,6 +4576,10 @@
       }
 
       /* Research hub: fill height and enable inner scroll */
+      /* ── Research hub — new three-level page navigation ───────
+         These rules replace the old rhub-panel/rhub-tabs system.
+         The new structure uses .rhub-page inside .research-hub.
+      ─────────────────────────────────────────────────────────── */
       #app .research-hub {
         display: flex !important;
         flex-direction: column !important;
@@ -4585,41 +4588,39 @@
         overflow: hidden !important;
         height: 100% !important;
       }
-      #app .rhub-body {
-        flex: 1 !important;
-        min-height: 0 !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-      }
-      #app .rhub-panel {
-        height: 100% !important;
-        overflow-y: auto !important;
-        min-height: 0 !important;
-        padding-bottom: 40px !important;
-      }
-      /* Research panel split view: nav + content both scroll independently */
-      #app .rp-body {
+      /* New page containers fill the hub */
+      #app .rhub-page {
+        display: flex !important;
+        flex-direction: column !important;
         flex: 1 !important;
         min-height: 0 !important;
         overflow: hidden !important;
-        display: flex !important;
       }
-      #app .rp-nav {
-        overflow-y: auto !important;
-        flex-shrink: 0 !important;
-      }
-      #app .rp-detail {
+      /* Grid scrolls, topbar and kpi strip stay fixed */
+      #app .rhub-grid {
         flex: 1 !important;
         overflow-y: auto !important;
-        min-width: 0 !important;
-      }
-      /* Trials and projects list: scroll */
-      #app .rhub-trials-list,
-      #app .rhub-projects-list {
-        overflow-y: auto !important;
-        flex: 1 !important;
         min-height: 0 !important;
       }
+      /* Line body scrolls */
+      #app .rhub-line-body {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        min-height: 0 !important;
+      }
+      /* Study/project detail body scrolls */
+      #app .rhub-study-body {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        min-height: 0 !important;
+      }
+      /* OLD panel classes — kept for backward compat but neutralised */
+      #app .rhub-body { flex:1 !important; min-height:0 !important; overflow-y:auto !important; }
+      #app .rhub-panel { flex:1 !important; min-height:0 !important; overflow-y:auto !important; padding-bottom:40px !important; }
+      #app .rp-body { flex:1 !important; min-height:0 !important; overflow:hidden !important; display:flex !important; }
+      #app .rp-nav  { overflow-y:auto !important; flex-shrink:0 !important; }
+      #app .rp-detail { flex:1 !important; overflow-y:auto !important; min-width:0 !important; }
+      #app .rhub-trials-list, #app .rhub-projects-list { overflow-y:auto !important; flex:1 !important; min-height:0 !important; }
 
       /* News view: fill height and scroll */
       #app .news-view {
@@ -19094,4 +19095,4 @@ tr.staff-table-row .tbl-btn {
     })();
     </script>
 </body>
-</html>
+</html>  
