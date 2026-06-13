@@ -667,6 +667,7 @@
       #app .main-content { margin-left:0 !important; }
       #app .sidebar .sidebar-header { padding:14px 14px 12px !important; border-bottom:1px solid rgba(255,255,255,.06) !important; flex-shrink:0 !important; }
       #app .sidebar .sidebar-logo { display:flex; align-items:center; gap:10px; }
+      #app .nmsb-logo-full { display:flex; align-items:center; gap:8px; }
       #app .sidebar .sidebar-toggle { margin-left:auto; width:24px; height:24px; background:rgba(255,255,255,.06) !important; border:none !important; border-radius:6px !important; color:rgba(255,255,255,.35) !important; cursor:pointer; display:flex; align-items:center; justify-content:center; }
       #app .sb-live-status { margin:8px 10px; padding:7px 10px; background:rgba(0,179,179,.07); border:1px solid rgba(0,179,179,.14); border-radius:8px; display:flex; align-items:center; gap:8px; cursor:pointer; flex-shrink:0; }
       #app .sidebar.sidebar-collapsed .sb-live-status { margin:8px 12px; padding:8px; justify-content:center; }
@@ -727,11 +728,11 @@
 
       /* ── CARDS ── */
       #app .content-area .card { background:var(--nm-surface) !important; border:1px solid var(--nm-border) !important; border-radius:var(--r12) !important; box-shadow:none !important; }
-      #app .content-area .card-header { padding:var(--s20) var(--s24) !important; border-bottom:1px solid var(--nm-border) !important; background:var(--nm-surface) !important; position:sticky !important; top:0 !important; z-index:10 !important; }
+      #app .content-area .card-header { padding:var(--s20) var(--s24) !important; border-bottom:1px solid var(--nm-border) !important; background:var(--nm-surface) !important; position:sticky !important; top:0 !important; z-index:var(--z-sticky) !important; }
       #app .content-area .card-title { font-size:14px !important; font-weight:500 !important; font-style:italic !important; color:var(--nm-text1) !important; display:flex !important; align-items:center !important; gap:8px !important; }
 
       /* ── FILTER BAR ── */
-      #app .content-area .filter-bar { display:flex !important; flex-wrap:wrap !important; align-items:center !important; gap:8px !important; padding:0 var(--s24) var(--s16) !important; background:var(--nm-surface2) !important; position:sticky !important; top:0 !important; z-index:9 !important; }
+      #app .content-area .filter-bar { display:flex !important; flex-wrap:wrap !important; align-items:center !important; gap:8px !important; padding:0 var(--s24) var(--s16) !important; background:var(--nm-surface2) !important; position:sticky !important; top:57px !important; z-index:calc(var(--z-sticky) - 1) !important; }
       #app .content-area .filter-bar .form-select, #app .content-area .filter-bar .form-control { min-width:0 !important; flex-shrink:1 !important; }
       #app .content-area .filter-bar select { max-width:180px; }
 
@@ -789,7 +790,7 @@
       #app .content-area table thead tr { border-top:1px solid var(--nm-border) !important; }
       #app .content-area .table-actions { opacity:1 !important; }
       
-      #app .main-content > .content-area .table-responsive { overflow-x:auto !important; overflow-y:auto !important; max-height:calc(100vh - 240px); }
+      #app .main-content > .content-area .table-responsive { overflow-x:auto !important; overflow-y:auto !important; max-height:calc(100vh - 200px); }
 
       /* ── ABSENCE KPI ── */
       #app .absence-kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s12); padding:var(--s24) var(--s24) 0; margin-bottom:var(--s24); }
@@ -1045,9 +1046,7 @@
       #app .staff-rotation-chip { background:#dcfce7 !important; border-color:#86efac !important; color:#14532d !important; }
       #app .src-dot { background:#10b981 !important; box-shadow:0 0 5px rgba(16,185,129,.6) !important; }
       #app .src-dur { color:#14532d !important; }
-      #app .row-active    > td:first-child { border-left:3px solid #10b981 !important; }
-      #app .row-scheduled > td:first-child { border-left:3px solid #3b82f6 !important; }
-      #app .row-completed > td:first-child { border-left:3px solid var(--nm-text3) !important; }
+      /* Row accent borders — now defined below near table CSS */
       #app .rot-row:hover { background:rgba(16,185,129,.025) !important; }
 
       /* ── DASHBOARD ── */
@@ -1561,36 +1560,42 @@
       #app .content-area .table tbody tr:hover,
       #app .table tbody tr:hover { background:rgba(0,0,0,.018) !important; }
 
-      /* Table cells */
+      /* Table cells — base styles only, no overflow truncation here */
       #app .content-area .table tbody td,
       #app .table tbody td {
-        font-size:13px !important;
-        color:var(--nm-text1) !important;
-        padding:10px 20px !important;
-        vertical-align:middle !important;
-        overflow:hidden !important;
-        text-overflow:ellipsis !important;
-        white-space:nowrap !important;
+        font-size: 13px !important;
+        color: var(--nm-text1) !important;
+        padding: 11px 20px !important;
+        vertical-align: middle !important;
+        line-height: 1.4 !important;
       }
 
-      /* Cells that SHOULD wrap */
-      #app .table td.wrap,
-      #app .table td .staff-name-primary { white-space:normal !important; }
+      /* Cells that need truncation — applied specifically per column in table-* rules */
+      #app .table td.truncate {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        max-width: 0 !important; /* forces ellipsis in table context */
+      }
 
-      /* Striped variant — subtle */
+      /* Actions cell — never truncate */
+      #app .table td:last-child { overflow: visible !important; white-space: nowrap !important; }
+      
+
+      /* Row status left border — 3px color accent on first cell */
+      #app .table tr.row-active    > td:first-child { border-left:3px solid #10b981 !important; padding-left:17px !important; }
+      #app .table tr.row-scheduled > td:first-child { border-left:3px solid #3b82f6 !important; padding-left:17px !important; }
+      #app .table tr.row-completed > td:first-child { border-left:3px solid var(--nm-text3) !important; padding-left:17px !important; }
+      #app .table tr.row-terminated_early > td:first-child { border-left:3px solid #ef4444 !important; padding-left:17px !important; }
+      #app .table tr.row-currently_absent > td:first-child { border-left:3px solid #f59e0b !important; padding-left:17px !important; }
+      #app .table tr.row-planned_leave    > td:first-child { border-left:3px solid #3b82f6 !important; padding-left:17px !important; }
+
+      /* Striped rows */
       #app .table-striped tbody tr:nth-child(even) { background:rgba(0,0,0,.012) !important; }
       #app .table-striped tbody tr:nth-child(even):hover { background:rgba(0,0,0,.025) !important; }
 
-      /* Actions column — always right-aligned, no overflow */
-      #app .table td:last-child { overflow:visible !important; }
-      #app .table .table-actions { opacity:1 !important; display:flex !important; gap:4px !important; align-items:center !important; }
-      
-
-      /* Row highlight variants */
-      #app .table tr.row-active   > td { border-left:0 !important; }
-      #app .table tr.row-active   > td:first-child { border-left:3px solid #10b981 !important; }
-      #app .table tr.row-scheduled > td:first-child { border-left:3px solid #3b82f6 !important; }
-      #app .table tr.row-completed > td:first-child { border-left:3px solid var(--nm-text3) !important; }
+      /* Action buttons in table cells */
+      #app .table .table-actions { opacity:1 !important; display:flex !important; gap:4px !important; align-items:center !important; flex-wrap:nowrap !important; }
 
       /* On-call table specific — time cells */
       #app .table .oc-time-cell  { font-family:monospace !important; font-size:12px !important; }
@@ -1690,65 +1695,93 @@
 
       /* ── ABSENCE TABLE ─── Name(30) Reason(11) Status(11) From(9) Until(9) Dur(7) Coverage(13) Actions(10) */
       /* ── Absence table: semantic column widths ──────────────── */
-      #app .table-absence { min-width: 860px !important; table-layout: auto !important; }
+      /* Columns: 1=Staff  2=Reason  3=Status  4=From  5=Until  6=Duration  7=Coverage  8=Actions */
+      #app .table-absence { min-width: 960px !important; table-layout: auto !important; }
       #app .table-absence th:nth-child(1),
-      #app .table-absence td:nth-child(1) { min-width:200px; width:auto; }   /* Staff name */
+      #app .table-absence td:nth-child(1) { min-width:200px; width:auto;  }  /* Staff name */
       #app .table-absence th:nth-child(2),
-      #app .table-absence td:nth-child(2) { min-width:110px; width:110px; }  /* Absence type */
+      #app .table-absence td:nth-child(2) { min-width:120px; width:120px; }  /* Reason */
       #app .table-absence th:nth-child(3),
-      #app .table-absence td:nth-child(3) { min-width:120px; width:120px; }  /* Reason */
+      #app .table-absence td:nth-child(3) { min-width:110px; width:110px; }  /* Status */
       #app .table-absence th:nth-child(4),
-      #app .table-absence td:nth-child(4) { min-width:100px; width:100px; }  /* Start date */
+      #app .table-absence td:nth-child(4) { min-width:100px; width:100px; white-space:nowrap; }  /* From */
       #app .table-absence th:nth-child(5),
-      #app .table-absence td:nth-child(5) { min-width:100px; width:100px; }  /* End date */
+      #app .table-absence td:nth-child(5) { min-width:100px; width:100px; white-space:nowrap; }  /* Until */
       #app .table-absence th:nth-child(6),
-      #app .table-absence td:nth-child(6) { min-width:60px;  width:60px;  }  /* Days */
+      #app .table-absence td:nth-child(6) { min-width:80px;  width:80px;  }  /* Duration */
       #app .table-absence th:nth-child(7),
-      #app .table-absence td:nth-child(7) { min-width:110px; width:110px; }  /* Status */
+      #app .table-absence td:nth-child(7) { min-width:160px; width:160px; }  /* Coverage */
       #app .table-absence th:nth-child(8),
-      #app .table-absence td:nth-child(8) { min-width:80px;  width:80px;  }  /* Actions */
+      #app .table-absence td:nth-child(8) { min-width:120px; width:120px; white-space:nowrap; }  /* Actions */
 
       /* ── ROTATION TABLE ─── Resident(30) Unit(26) Period(18) Days(8) Status(10) Actions(8) */
-      #app .table-rotation { min-width:640px !important; }
-      #app .table-rotation th:nth-child(1),
-      #app .table-rotation td:nth-child(1) { width:30%; }
-      #app .table-rotation th:nth-child(2),
-      #app .table-rotation td:nth-child(2) { width:26%; }
-      #app .table-rotation th:nth-child(3),
-      #app .table-rotation td:nth-child(3) { width:18%; }
-      #app .table-rotation th:nth-child(4),
-      #app .table-rotation td:nth-child(4) { width:8%; text-align:center; }
       /* ── Rotation table: semantic column widths ─────────────── */
-      #app .table-rotation { min-width: 800px !important; table-layout: auto !important; }
+      /* Columns: 1=Resident  2=Unit  3=Period  4=Days Left  5=Status  6=Supervisor  7=Actions */
+      #app .table-rotation { min-width: 920px !important; table-layout: auto !important; }
       #app .table-rotation th:nth-child(1),
-      #app .table-rotation td:nth-child(1) { min-width:200px; width:auto;  }  /* Resident name */
+      #app .table-rotation td:nth-child(1) { min-width:190px; width:auto;  }
       #app .table-rotation th:nth-child(2),
-      #app .table-rotation td:nth-child(2) { min-width:180px; width:180px; }  /* Unit */
+      #app .table-rotation td:nth-child(2) { min-width:170px; width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:170px; }
       #app .table-rotation th:nth-child(3),
-      #app .table-rotation td:nth-child(3) { min-width:150px; width:150px; }  /* Supervisor */
+      #app .table-rotation td:nth-child(3) { min-width:190px; width:190px; white-space:nowrap; }
       #app .table-rotation th:nth-child(4),
-      #app .table-rotation td:nth-child(4) { min-width:100px; width:100px; }  /* Start date */
+      #app .table-rotation td:nth-child(4) { min-width:150px; width:150px; }
       #app .table-rotation th:nth-child(5),
-      #app .table-rotation td:nth-child(5) { min-width:100px; width:100px; }  /* End date */
+      #app .table-rotation td:nth-child(5) { min-width:110px; width:110px; }
       #app .table-rotation th:nth-child(6),
-      #app .table-rotation td:nth-child(6) { min-width:110px; width:110px; }  /* Status */
+      #app .table-rotation td:nth-child(6) { min-width:120px; width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px; }
       #app .table-rotation th:nth-child(7),
-      #app .table-rotation td:nth-child(7) { min-width:80px;  width:80px;  white-space:nowrap; }  /* Actions */
+      #app .table-rotation td:nth-child(7) { min-width:72px;  width:72px;  white-space:nowrap; }
 
       /* ── On-call table: semantic column widths ───────────────── */
-      #app .table-oncall { min-width: 760px !important; table-layout: auto !important; }
+      /* Columns: 1=Shift Period  2=Physician  3=Type  4=Status  5=Backup  6=Actions */
+      #app .table-oncall { min-width: 860px !important; table-layout: auto !important; }
       #app .table-oncall th:nth-child(1),
-      #app .table-oncall td:nth-child(1) { min-width:110px; width:110px; }  /* Date */
+      #app .table-oncall td:nth-child(1) { min-width:160px; width:160px; }  /* Shift period + time */
       #app .table-oncall th:nth-child(2),
-      #app .table-oncall td:nth-child(2) { min-width:200px; width:auto;  }  /* Physician */
+      #app .table-oncall td:nth-child(2) { min-width:200px; width:auto;  }  /* Physician — fill space */
       #app .table-oncall th:nth-child(3),
-      #app .table-oncall td:nth-child(3) { min-width:140px; width:140px; }  /* Shift type */
+      #app .table-oncall td:nth-child(3) { min-width:120px; width:120px; }  /* Shift type */
       #app .table-oncall th:nth-child(4),
-      #app .table-oncall td:nth-child(4) { min-width:120px; width:120px; }  /* Time */
+      #app .table-oncall td:nth-child(4) { min-width:110px; width:110px; }  /* Status */
       #app .table-oncall th:nth-child(5),
-      #app .table-oncall td:nth-child(5) { min-width:80px;  width:80px;  white-space:nowrap; }  /* Actions */
+      #app .table-oncall td:nth-child(5) { min-width:160px; width:160px; }  /* Backup physician */
+      #app .table-oncall th:nth-child(6),
+      #app .table-oncall td:nth-child(6) { min-width:90px;  width:90px;  white-space:nowrap; }  /* Actions */
 
-      /* ── NAME CELL — avatar + text, no vertical names ── */
+      /* ── Call-outs table: semantic column widths ─────────────── */
+      /* Columns: 1=Physician  2=Called at  3=Type  4=Duration  5=Reason  6=Actions */
+      #app .table-callouts { min-width: 720px !important; table-layout: auto !important; }
+      #app .table-callouts th:nth-child(1),
+      #app .table-callouts td:nth-child(1) { min-width:180px; width:auto;  }  /* Physician */
+      #app .table-callouts th:nth-child(2),
+      #app .table-callouts td:nth-child(2) { min-width:120px; width:120px; white-space:nowrap; }  /* Called at */
+      #app .table-callouts th:nth-child(3),
+      #app .table-callouts td:nth-child(3) { min-width:100px; width:100px; }  /* Type */
+      #app .table-callouts th:nth-child(4),
+      #app .table-callouts td:nth-child(4) { min-width:100px; width:100px; }  /* Duration */
+      #app .table-callouts th:nth-child(5),
+      #app .table-callouts td:nth-child(5) { min-width:160px; width:160px; }  /* Reason */
+      #app .table-callouts th:nth-child(6),
+      #app .table-callouts td:nth-child(6) { min-width:60px;  width:60px;  white-space:nowrap; }  /* Actions */
+
+      /* ── On-call stats table: semantic column widths ─────────── */
+      /* Columns: 1=Physician  2=Scheduled  3=Callouts  4=Night  5=Weekend  6=Total  7=vs avg */
+      #app .table-oncall-stats { min-width: 700px !important; table-layout: auto !important; }
+      #app .table-oncall-stats th:nth-child(1),
+      #app .table-oncall-stats td:nth-child(1) { min-width:180px; width:auto;  }  /* Physician */
+      #app .table-oncall-stats th:nth-child(2),
+      #app .table-oncall-stats td:nth-child(2) { min-width:100px; width:100px; text-align:center; }  /* Scheduled */
+      #app .table-oncall-stats th:nth-child(3),
+      #app .table-oncall-stats td:nth-child(3) { min-width:80px;  width:80px;  text-align:center; }  /* Callouts */
+      #app .table-oncall-stats th:nth-child(4),
+      #app .table-oncall-stats td:nth-child(4) { min-width:70px;  width:70px;  text-align:center; }  /* Night */
+      #app .table-oncall-stats th:nth-child(5),
+      #app .table-oncall-stats td:nth-child(5) { min-width:80px;  width:80px;  text-align:center; }  /* Weekend */
+      #app .table-oncall-stats th:nth-child(6),
+      #app .table-oncall-stats td:nth-child(6) { min-width:70px;  width:70px;  text-align:center; }  /* Total */
+      #app .table-oncall-stats th:nth-child(7),
+      #app .table-oncall-stats td:nth-child(7) { min-width:120px; width:120px; }  /* vs avg bar */
       #app .staff-name-cell {
         display:flex !important; align-items:center !important;
         gap:10px !important; min-width:0 !important;
@@ -7040,7 +7073,7 @@ tr.staff-table-row .tbl-btn {
   margin-bottom: 14px;
 }
 /* nd-pulse removed — splash mark is static */
-.nd-splash-n { width: 52px; height: 52px; }
+.nd-splash-n { width: 72px; height: 72px; }
 .nd-splash-wordmark {
   font-family: 'DM Sans', sans-serif;
   font-size: 26px; font-weight: 700;
@@ -8120,17 +8153,18 @@ tr.staff-table-row .tbl-btn {
     <transition name="splash-fade">
         <div v-if="splashVisible" class="nd-splash">
             <div class="nd-splash-inner">
-                <!-- neumAC logomark — static, no animation -->
+                <!-- neumDesk logomark -->
                 <div class="nd-splash-mark">
-                    <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" class="nd-splash-n">
+                    <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" class="nd-splash-n" aria-label="neumDesk">
                         <defs>
-                            <linearGradient id="splashGrad" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-                                <stop offset="0%" stop-color="#48cae4"/>
-                                <stop offset="100%" stop-color="#00b3b3"/>
+                            <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#8BE9FF"/>
+                                <stop offset="100%" stop-color="#7FF5D7"/>
                             </linearGradient>
                         </defs>
-                        <path d="M14 20 Q28 8 42 20" stroke="url(#splashGrad)" stroke-width="2.5" stroke-linecap="round" fill="none" opacity=".65"/>
-                        <text x="8" y="46" font-family="'DM Sans', sans-serif" font-weight="800" font-size="38" fill="url(#splashGrad)">n</text>
+                        <rect x="96" y="96" width="320" height="320" rx="72" fill="rgba(255,255,255,0.08)"/>
+                        <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#splashGrad)" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
+                        <path d="M152 318 V228 H192 V252 C204 234 228 220 258 220 C300 220 322 244 322 284 V318 H282 V287 C282 262 268 248 248 248 C226 248 212 264 212 292 V318 Z" fill="url(#splashGrad)"/>
                     </svg>
                 </div>
                 <div class="nd-splash-wordmark">neumDesk</div>
@@ -8225,7 +8259,20 @@ tr.staff-table-row .tbl-btn {
 
             <!-- Middle: neumDesk platform identity -->
             <div class="lc-product">
-                <div class="lc-product-name">neum<span>Desk</span></div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;">
+                    <svg width="36" height="36" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="lc-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#8BE9FF"/>
+                                <stop offset="100%" stop-color="#7FF5D7"/>
+                            </linearGradient>
+                        </defs>
+                        <rect x="96" y="96" width="320" height="320" rx="72" fill="#041526"/>
+                        <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#lc-logo-grad)" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
+                        <path d="M152 318 V228 H192 V252 C204 234 228 220 258 220 C300 220 322 244 322 284 V318 H282 V287 C282 262 268 248 248 248 C226 248 212 264 212 292 V318 Z" fill="url(#lc-logo-grad)"/>
+                    </svg>
+                    <div class="lc-product-name">neum<span>Desk</span></div>
+                </div>
                 <div class="lc-product-sub">Clinical Operations Platform</div>
                 <div class="lc-product-attr">a neumAC platform</div>
             </div>
@@ -8370,15 +8417,44 @@ tr.staff-table-row .tbl-btn {
             <!-- ── Header ── -->
             <div class="nmsb-head">
                 <div class="nmsb-logo">
-                    <svg v-if="!sidebarCollapsed" viewBox="0 0 148 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="neumDesk" style="height:22px;width:auto">
-                        <defs><linearGradient id="sbng2" x1="0" y1="0" x2="148" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="45%" stop-color="#00b3b3"/><stop offset="100%" stop-color="#4d9aff"/></linearGradient></defs>
-                        <text x="1" y="23" font-family="'DM Sans', sans-serif" font-weight="600" font-size="24" fill="url(#sbng2)" letter-spacing="-0.5">neum</text>
-                        <text x="62" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#sbng2)" letter-spacing="-1">Desk</text>
-                    </svg>
-                    <svg v-if="sidebarCollapsed" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="nD" style="height:22px;width:22px">
-                        <defs><linearGradient id="sbmono2" x1="0" y1="0" x2="30" y2="30" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#48cae4"/><stop offset="100%" stop-color="#00b3b3"/></linearGradient></defs>
-                        <path d="M6 10 Q15 3 24 10" stroke="url(#sbmono2)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".65"/>
-                        <text x="3" y="26" font-family="'DM Sans', sans-serif" font-weight="800" font-size="22" fill="url(#sbmono2)">n</text>
+                    <!-- Expanded: icon + wordmark -->
+                    <div v-if="!sidebarCollapsed" class="nmsb-logo-full">
+                        <!-- Icon mark -->
+                        <svg width="28" height="28" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0">
+                            <defs>
+                                <linearGradient id="nm-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#8BE9FF"/>
+                                    <stop offset="100%" stop-color="#7FF5D7"/>
+                                </linearGradient>
+                            </defs>
+                            <rect x="96" y="96" width="320" height="320" rx="72" fill="rgba(255,255,255,0.07)"/>
+                            <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#nm-logo-grad)" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
+                            <path d="M152 318 V228 H192 V252 C204 234 228 220 258 220 C300 220 322 244 322 284 V318 H282 V287 C282 262 268 248 248 248 C226 248 212 264 212 292 V318 Z" fill="url(#nm-logo-grad)"/>
+                        </svg>
+                        <!-- Wordmark -->
+                        <svg viewBox="0 0 148 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="neumDesk" style="height:20px;width:auto">
+                            <defs>
+                                <linearGradient id="nm-word-grad" x1="0" y1="0" x2="148" y2="0" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#8BE9FF"/>
+                                    <stop offset="55%" stop-color="#7FF5D7"/>
+                                    <stop offset="100%" stop-color="#4dcfb0"/>
+                                </linearGradient>
+                            </defs>
+                            <text x="1" y="23" font-family="'DM Sans', sans-serif" font-weight="500" font-size="24" fill="url(#nm-word-grad)" letter-spacing="-0.5">neum</text>
+                            <text x="62" y="23" font-family="'DM Sans', sans-serif" font-weight="800" font-size="24" fill="url(#nm-word-grad)" letter-spacing="-1">Desk</text>
+                        </svg>
+                    </div>
+                    <!-- Collapsed: icon only -->
+                    <svg v-if="sidebarCollapsed" width="28" height="28" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="neumDesk" style="flex-shrink:0">
+                        <defs>
+                            <linearGradient id="nm-logo-grad-c" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#8BE9FF"/>
+                                <stop offset="100%" stop-color="#7FF5D7"/>
+                            </linearGradient>
+                        </defs>
+                        <rect x="96" y="96" width="320" height="320" rx="72" fill="rgba(255,255,255,0.07)"/>
+                        <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#nm-logo-grad-c)" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
+                        <path d="M152 318 V228 H192 V252 C204 234 228 220 258 220 C300 220 322 244 322 284 V318 H282 V287 C282 262 268 248 248 248 C226 248 212 264 212 292 V318 Z" fill="url(#nm-logo-grad-c)"/>
                     </svg>
                 </div>
                 <button class="nmsb-collapse" @click="sidebarCollapsed = !sidebarCollapsed"
@@ -9791,9 +9867,9 @@ tr.staff-table-row .tbl-btn {
                         <div v-else class="table-responsive">
                             <div v-if="loading" style="padding:8px 0;">
                                 <table class="table table-striped table-oncall"><thead><tr>
-                                    <th style="width:20%">Shift Period</th><th style="width:25%">Physician</th>
-                                    <th style="width:11%">Type</th><th style="width:11%">Status</th>
-                                    <th style="width:20%">Backup</th><th>Actions</th>
+                                    <th>Shift Period</th><th>Physician</th>
+                                    <th>Type</th><th>Status</th>
+                                    <th>Backup</th><th>Actions</th>
                                 </tr></thead></table>
                                 <div style="display:flex;flex-direction:column;gap:0;">
                                     <div v-for="i in 8" :key="i" style="display:grid;grid-template-columns:20% 25% 11% 11% 20% auto;gap:0;padding:10px 20px;border-bottom:0.5px solid var(--nm-border);align-items:center;">
@@ -9809,12 +9885,12 @@ tr.staff-table-row .tbl-btn {
                             <table v-else class="table table-striped table-oncall">
                                 <thead>
                                     <tr>
-                                        <th style="width:20%">Shift Period</th>
-                                        <th style="width:25%">Physician</th>
-                                        <th style="width:11%">Type</th>
-                                        <th style="width:11%">Status</th>
-                                        <th style="width:20%">Backup</th>
-                                        <th style="width:13%">Actions</th>
+                                        <th>Shift Period</th>
+                                        <th>Physician</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Backup</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -10015,15 +10091,14 @@ tr.staff-table-row .tbl-btn {
                             </div>
 
                             <div v-else class="table-responsive">
-                                <table class="table table-callouts">
-                                    <thead>
+                                <table class="table table-callouts">                                    <thead>
                                         <tr>
-                                            <th style="width:24%">Physician</th>
-                                            <th style="width:16%">Called at</th>
-                                            <th style="width:10%">Type</th>
-                                            <th style="width:16%">Duration</th>
-                                            <th style="width:22%">Reason</th>
-                                            <th style="width:12%"></th>
+                                            <th>Physician</th>
+                                            <th>Called at</th>
+                                            <th>Type</th>
+                                            <th>Duration</th>
+                                            <th>Reason</th>
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -10100,16 +10175,16 @@ tr.staff-table-row .tbl-btn {
                             </div>
 
                             <div v-else class="table-responsive">
-                                <table class="table">
+                                <table class="table table-oncall-stats">
                                     <thead>
                                         <tr>
-                                            <th style="width:26%">Physician</th>
-                                            <th style="width:13%;text-align:center">Scheduled on-call</th>
-                                            <th style="width:11%;text-align:center">Call-outs</th>
-                                            <th style="width:10%;text-align:center">Night</th>
-                                            <th style="width:10%;text-align:center">Weekend</th>
-                                            <th style="width:11%;text-align:center">Total</th>
-                                            <th style="width:19%">vs avg</th>
+                                            <th>Physician</th>
+                                            <th style="text-align:center">Scheduled on-call</th>
+                                            <th style="text-align:center">Call-outs</th>
+                                            <th style="text-align:center">Night</th>
+                                            <th style="text-align:center">Weekend</th>
+                                            <th style="text-align:center">Total</th>
+                                            <th>vs avg</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -10553,9 +10628,9 @@ tr.staff-table-row .tbl-btn {
                         <div v-else class="table-responsive">
                             <div v-if="loading" style="padding:8px 0;">
                                 <table class="table table-striped table-rotation"><thead><tr>
-                                    <th style="width:22%">Resident</th><th style="width:22%">Unit</th>
-                                    <th style="width:18%">Period</th><th style="width:10%">Days Left</th>
-                                    <th style="width:14%">Status</th><th style="width:14%">Actions</th>
+                                    <th>Resident</th><th>Unit</th>
+                                    <th>Period</th><th>Days Left</th>
+                                    <th>Status</th><th>Actions</th>
                                 </tr></thead></table>
                                 <div style="display:flex;flex-direction:column;gap:0;">
                                     <div v-for="i in 8" :key="i" style="display:grid;grid-template-columns:22% 22% 18% 10% 14% 14%;gap:0;padding:10px 20px;border-bottom:0.5px solid var(--nm-border);align-items:center;">
@@ -10571,13 +10646,13 @@ tr.staff-table-row .tbl-btn {
                             <table v-else class="table table-striped table-rotation">
                                 <thead>
                                     <tr>
-                                        <th @click="sortBy('rotations', 'resident_id')" style="width:22%">Resident</th>
-                                        <th @click="sortBy('rotations', 'training_unit_id')" style="width:22%">Unit</th>
-                                        <th @click="sortBy('rotations', 'start_date')" style="width:18%">Period</th>
-                                        <th style="width:10%">Days Left</th>
-                                        <th @click="sortBy('rotations', 'rotation_status')" style="width:12%">Status</th>
-                                        <th style="width:10%">Supervisor</th>
-                                        <th style="width:6%">Actions</th>
+                                        <th @click="sortBy('rotations', 'resident_id')">Resident</th>
+                                        <th @click="sortBy('rotations', 'training_unit_id')">Unit</th>
+                                        <th @click="sortBy('rotations', 'start_date')">Period</th>
+                                        <th>Days Left</th>
+                                        <th @click="sortBy('rotations', 'rotation_status')">Status</th>
+                                        <th>Supervisor</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -10614,9 +10689,9 @@ tr.staff-table-row .tbl-btn {
                                                 </div><!-- /staff-name-block -->
                                             </div><!-- /staff-name-cell -->
                                         </td>
-                                        <td>
-                                            <div class="font-medium">{{ getTrainingUnitName(rotation.training_unit_id) }}</div>
-                                            <div v-if="rotation.training_unit?.dept?.name" style="font-size:var(--t-11);color:var(--text-3)">
+                                        <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px;">
+                                            <div class="font-medium" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="getTrainingUnitName(rotation.training_unit_id)">{{ getTrainingUnitName(rotation.training_unit_id) }}</div>
+                                            <div v-if="rotation.training_unit?.dept?.name" style="font-size:var(--t-11);color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                                                 {{ rotation.training_unit.dept.name }}
                                             </div>
                                         </td>
@@ -10644,9 +10719,13 @@ tr.staff-table-row .tbl-btn {
                                             <span v-else class="na-value">—</span>
                                         </td>
                                         <td><span class="status-indicator" :class="'status-' + rotation.rotation_status">{{ formatRotationStatus(rotation.rotation_status) }}</span></td>
-                                        <td>
-                                            <span v-if="rotation.supervising_attending_id">{{ getSupervisorName(rotation.supervising_attending_id) }}</span>
-                                            <span v-else class="na-value">NA</span>
+                                        <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">
+                                            <span v-if="rotation.supervising_attending_id"
+                                                  :title="getSupervisorName(rotation.supervising_attending_id)"
+                                                  style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">
+                                                {{ getSupervisorName(rotation.supervising_attending_id) }}
+                                            </span>
+                                            <span v-else class="na-value">—</span>
                                         </td>
                                         <td>
                                             <div class="table-actions">
@@ -11183,9 +11262,9 @@ tr.staff-table-row .tbl-btn {
                         <div v-show="absenceViewMode === 'table'" class="table-responsive">
                             <div v-if="loading" style="padding:8px 0;">
                                 <table class="table table-striped table-absence"><thead><tr>
-                                    <th style="width:24%">Staff member</th><th style="width:12%">Reason</th>
-                                    <th style="width:10%">Status</th><th style="width:12%">From</th>
-                                    <th style="width:12%">Until</th><th style="width:14%">Duration</th><th>Actions</th>
+                                    <th>Staff member</th><th>Reason</th>
+                                    <th>Status</th><th>From</th>
+                                    <th>Until</th><th>Duration</th><th>Actions</th>
                                 </tr></thead></table>
                                 <div style="display:flex;flex-direction:column;gap:0;">
                                     <div v-for="i in 8" :key="i" style="display:grid;grid-template-columns:24% 12% 10% 12% 12% 14% auto;gap:0;padding:10px 20px;border-bottom:0.5px solid var(--nm-border);align-items:center;">
@@ -11205,14 +11284,14 @@ tr.staff-table-row .tbl-btn {
                             <table v-else class="table table-striped table-absence">
                                 <thead>
                                     <tr>
-                                        <th @click="sortBy('absences', 'staff_member_id')" style="width:24%">Staff member</th>
-                                        <th style="width:12%">Reason</th>
-                                        <th style="width:10%">Status</th>
-                                        <th @click="sortBy('absences', 'start_date')" style="width:12%">From</th>
-                                        <th @click="sortBy('absences', 'end_date')" style="width:12%">Until</th>
-                                        <th style="width:9%">Duration</th>
-                                        <th style="width:11%">Coverage</th>
-                                        <th style="width:10%"></th>
+                                        <th @click="sortBy('absences', 'staff_member_id')">Staff member</th>
+                                        <th>Reason</th>
+                                        <th>Status</th>
+                                        <th @click="sortBy('absences', 'start_date')">From</th>
+                                        <th @click="sortBy('absences', 'end_date')">Until</th>
+                                        <th>Duration</th>
+                                        <th>Coverage</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
