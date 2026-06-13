@@ -4359,7 +4359,14 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         trainingUnitModal.show = true
       }
-      const editTrainingUnit = (u) => { trainingUnitModal.mode = 'edit'; trainingUnitModal.form = { ...u }; trainingUnitModal.show = true }
+      const editTrainingUnit = (u) => {
+        trainingUnitModal.mode = 'edit'
+        trainingUnitModal.form = {
+          ...u,
+          supervising_attending_id: u.supervisor_id || u.supervising_attending_id || u.default_supervisor_id || ''
+        }
+        trainingUnitModal.show = true
+      }
 
       const deleteTrainingUnit = (unit) => {
         const activeRotations = rotations.value.filter(r =>
@@ -4507,6 +4514,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const f = trainingUnitModal.form
         if (!f.unit_name?.trim()) { showToast('Validation Error', 'Unit name is required', 'error'); return }
         if (!f.unit_code?.trim()) { showToast('Validation Error', 'Unit code is required', 'error'); return }
+        const codeConflict = trainingUnits.value.find(u =>
+          u.unit_code?.toUpperCase() === f.unit_code?.trim().toUpperCase() && u.id !== f.id
+        )
+        if (codeConflict) { showToast('Validation Error', `Unit code "${f.unit_code.trim().toUpperCase()}" is already used by "${codeConflict.unit_name}"`, 'error'); return }
         if (!f.department_id) { showToast('Validation Error', 'Please select a department / service', 'error'); return }
         if (!f.maximum_residents || f.maximum_residents < 1) { showToast('Validation Error', 'Maximum residents must be at least 1', 'error'); return }
         saving.value = true
@@ -4514,11 +4525,12 @@ document.addEventListener('DOMContentLoaded', () => {
           // Exact fields from backend Joi trainingUnit schema — nothing more, nothing less
           // department_name is NOT NULL in schema — derive from departments list
           const deptRecord = deptLookup?.value?.find(d => d.id === f.department_id) || null
+          if (!deptRecord && f.department_id) { showToast('Error', 'Selected department not found. Please try again.', 'error'); saving.value = false; return }
           const data = {
             unit_name: f.unit_name.trim(),
             unit_code: f.unit_code.trim().toUpperCase(),
             department_id: f.department_id || null,
-            department_name: deptRecord?.name || f.department_name || 'Pulmonology',
+            department_name: deptRecord?.name || 'Unknown Department',
             maximum_residents: parseInt(f.maximum_residents) || 5,
             unit_status: f.unit_status || 'active',
             unit_type: f.unit_type || 'training_unit',
@@ -8059,9 +8071,65 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
 
+
+        const getShiftChipStyle = (coverageAreaId) => {
+          const areas = onCallOps?.coverageAreas?.value || []
+          const c = areas.find(a => a.id === coverageAreaId)?.color || '#00b3b3'
+          const r = parseInt(c.slice(1,3) || '00', 16)
+          const g = parseInt(c.slice(3,5) || 'b3', 16)
+          const b = parseInt(c.slice(5,7) || 'b3', 16)
+          return { color: c, background: `rgba(${r},${g},${b},.1)`, borderLeft: `2px solid ${c}` }
+        }
+
+        const getMvRotCat = (rot) => {
+          const n = (rot.unitName || '').toLowerCase()
+          if (n.includes('uci') || n.includes('icu') || n.includes('criti')) return 'mv-cat-icu'
+          if (n.includes('cirug') || n.includes('surg') || n.includes('quirof')) return 'mv-cat-surg'
+          if (n.includes('urgenc') || n.includes('emerg')) return 'mv-cat-emerg'
+          if (n.includes('consult') || n.includes('ambulat') || n.includes('extern')) return 'mv-cat-out'
+          return 'mv-cat-ward'
+        }
+        const getMvRotProgress = (rot) => {
+          if (rot.rotation_status !== 'active') return 0
+          const s = new Date(rot.start_date + 'T00:00:00')
+          const e = new Date(rot.end_date + 'T00:00:00')
+          const now = new Date()
+          const total = e - s
+          if (total <= 0) return 0
+          return Math.min(100, Math.max(0, Math.round(((now - s) / total) * 100)))
+        }
+        const getMvTodayPct = () => {
+          const today = new Date()
+          const horizon = 90
+          const start = new Date(); start.setDate(start.getDate() - 30)
+          const total = horizon * 24 * 3600 * 1000
+          return Math.min(100, Math.max(0, Math.round(((today - start) / total) * 100)))
+        }
+
+        const getUnitCapacityProjection = (unitId, maxResidents) => {
+          const now = new Date()
+          const unitRots = rotations.value.filter(r =>
+            r.training_unit_id === unitId &&
+            ['active', 'scheduled'].includes(r.rotation_status)
+          )
+          return [0, 1, 2].map(monthOffset => {
+            const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1)
+            const y = d.getFullYear(), m = d.getMonth()
+            const monthStart = new Date(y, m, 1)
+            const monthEnd   = new Date(y, m + 1, 0)
+            const count = unitRots.filter(r => {
+              const s = new Date(r.start_date + 'T00:00:00')
+              const e = new Date(r.end_date   + 'T00:00:00')
+              return s <= monthEnd && e >= monthStart
+            }).length
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            return { label: monthOffset === 0 ? 'Now' : months[m], count, over: count > maxResidents, monthOffset }
+          })
+        }
+
         return {
           // Existing returns
-          loading, saving, currentUser, loginForm, loginLoading, hasPermission,
+          loading, saving, getUnitCapacityProjection, getMvRotCat, getMvRotProgress, getMvTodayPct, getShiftChipStyle, currentUser, loginForm, loginLoading, hasPermission,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
           ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
@@ -8361,4 +8429,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});  
+});
