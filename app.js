@@ -471,12 +471,17 @@ document.addEventListener('DOMContentLoaded', () => {
       static formatNewsDate(d) {
         if (!d) return ''
         try {
-          const diff = Math.floor((new Date() - new Date(d)) / 60000)
+          const date = new Date(d)
+          const diff = Math.floor((new Date() - date) / 60000)
           if (diff < 1)    return 'Just now'
           if (diff < 60)   return `${diff}m ago`
           if (diff < 1440) return `${Math.floor(diff / 60)}h ago`
           if (diff < 10080) return `${Math.floor(diff / 1440)}d ago`
-          return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+          // For publications entered with year only (stored as Jan 1st),
+          // show just the year to avoid misleading "1 Jan 2023"
+          const isJan1 = date.getUTCMonth() === 0 && date.getUTCDate() === 1
+          if (isJan1) return date.getUTCFullYear().toString()
+          return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
         } catch { return '' }
       }
 
@@ -1736,7 +1741,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 employment_status: savedStaff.employment_status
               }
             } else {
-              // New staff not yet in lookup — add them
               allStaffLookup.value.push({
                 id: savedStaff.id,
                 full_name: savedStaff.full_name,
@@ -1744,7 +1748,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 employment_status: savedStaff.employment_status
               })
             }
-            showToast('Success', 'Medical staff updated', 'success')
+            // Show warnings if staff was marked inactive or type changed with future records
+            if (savedStaff._warnings?.length) {
+              savedStaff._warnings.forEach(w => {
+                const isTermination = w.type === 'rotations_terminated'
+                showToast(
+                  isTermination ? '✓ Rotations updated' : '⚠ Action required',
+                  w.message,
+                  isTermination ? 'success' : 'warning'
+                )
+              })
+            } else {
+              showToast('Success', 'Medical staff updated', 'success')
+            }
           }
           // If marked as research coordinator with a specific line, update that line's coordinator_id
           if (f.is_research_coordinator && f._coordLineId && savedStaff?.id) {
@@ -6093,17 +6109,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }))
         })
 
-        const getAbsenceUnitImpact = (staffId) => {
-          return Object.entries(unitStaffCache.value)
-            .filter(([, members]) => members.some(m => m.staff?.id === staffId))
-            .map(([unitId]) => {
-              const unit = trainingUnits.value.find(u => u.id === unitId)
-              const total = (unitStaffCache.value[unitId] || []).length
-              const absent = getUnitAbsentAttendingCount(unitId)
-              return { unitId, unitName: unit?.unit_name || 'Unit', total, absent,
-                       remaining: total - absent - 1 }
-            })
-            .filter(u => u.total > 0)
+        const getAbsenceUnitImpact = (staffId, startDate, endDate) => {
+          if (!staffId || !unitStaffCache?.value) return []
+          try {
+            return Object.entries(unitStaffCache.value)
+              .filter(([, members]) => Array.isArray(members) && members.some(m => m.staff?.id === staffId))
+              .map(([unitId]) => {
+                const unit  = trainingUnits.value?.find(u => u.id === unitId)
+                const total = (unitStaffCache.value[unitId] || []).length
+                const absent = getUnitAbsentAttendingCount(unitId)
+                return { unitId, unitName: unit?.unit_name || 'Unit', total, absent,
+                         remaining: total - absent - 1 }
+              })
+              .filter(u => u.total > 0)
+          } catch { return [] }
         }
 
         const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences })
@@ -8381,4 +8400,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});
+});  
