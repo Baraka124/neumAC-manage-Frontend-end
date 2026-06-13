@@ -4921,7 +4921,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const selectedStudy     = ref(null)
       const selectedProject   = ref(null)
 
-      const openLine    = (line)    => { selectedLine.value = line;    selectedStudy.value = null; selectedProject.value = null; researchHubPage.value = 'line'    }      const openStudy   = (study)   => { selectedStudy.value = study;   researchHubPage.value = 'study'   }
+      const openLine    = (line)    => { selectedLine.value = line;    selectedStudy.value = null; selectedProject.value = null; researchHubPage.value = 'line'    }
+      const openStudy   = (study)   => { selectedStudy.value = study;   researchHubPage.value = 'study'   }
       const openProject = (project) => { selectedProject.value = project; researchHubPage.value = 'project' }
       const goToOverview= ()        => { researchHubPage.value = 'overview' }
       const goToLine    = ()        => { researchHubPage.value = 'line'; selectedStudy.value = null; selectedProject.value = null }
@@ -8344,9 +8345,9 @@ document.addEventListener('DOMContentLoaded', () => {
           loadCallouts, loadCalloutSummary,
         }    
       }
-    })    
-
-    app.mount('#app')
+    })
+ 
+    app.mount('#app')  
 
   } catch (error) {
     document.body.innerHTML = `
