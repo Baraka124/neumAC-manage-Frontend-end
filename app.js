@@ -1478,7 +1478,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Compact view: staff grouped by role with section dividers
       const compactStaffWithDividers = computed(() => {
-        const staff = filteredMedicalStaff.value
+        // Card view uses ALL filtered staff (not paginated) — cards handle density naturally
+        const staff = filteredMedicalStaffAll.value
         const attendings = staff.filter(s => !isResidentType(s.staff_type))
         const residents  = staff.filter(s =>  isResidentType(s.staff_type))
         const result = []
@@ -5972,7 +5973,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         const { pagination, resetPage, paginate, totalPages, goToPage } = makePagination([
-          ['medical_staff', 15], ['rotations', 15], ['oncall', 15], ['absences', 15], ['trials', 15], ['projects', 15], ['research_lines', 20]
+          ['medical_staff', 25], ['rotations', 25], ['oncall', 25], ['absences', 25], ['trials', 25], ['projects', 25], ['research_lines', 50]
         ])
 
         const { fieldErrors, setErr, clearErr: clearFieldError, clearAll } = makeValidation(['rotation', 'staff', 'absence', 'oncall', 'research'])
@@ -8346,8 +8347,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }    
       }
     })
- 
-    app.mount('#app')  
+
+    app.mount('#app')
 
   } catch (error) {
     document.body.innerHTML = `
