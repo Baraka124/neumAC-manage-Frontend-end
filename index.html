@@ -1479,96 +1479,18 @@
          Eliminates empty space, consistent sizing, clean scroll
          ══════════════════════════════════════════════════════════ */
 
-      /* Reset table-responsive — no double border, no shadow */
-      #app .table-responsive {
-        overflow-x:auto !important;
-        overflow-y:visible !important;
-        border-radius:0 !important;
-        border:none !important;
-        box-shadow:none !important;
-        -webkit-overflow-scrolling:touch !important;
-        width:100% !important;
-      }
+      /* ══════════════════════════════════════════════════════════
+         TABLE SYSTEM — column-specific rules only.
+         Base table styles are in the consolidated block below (~line 1660).
+         ══════════════════════════════════════════════════════════ */
 
-      /* All tables fill their container — no empty space */
-      #app .content-area table,
-      #app .modal-container table,
-      #app .sm-modal table {
-        width:100% !important;
-        min-width:0 !important;
-        table-layout:fixed !important;
-        border-collapse:collapse !important;
-        border-spacing:0 !important;
-      }
-
-      /* Tables that NEED a min-width for horizontal scroll — only these */
-      #app .table-responsive > table {
-        min-width:600px !important;
-        table-layout:auto !important;
-      }
-
-      /* Column proportions via CSS, not colgroup */
-      /* Staff table */
       /* ── Staff table: semantic column widths ────────────────── */
       #app .table-staff { min-width: 720px !important; table-layout: auto !important; }
-      #app .table-staff th:nth-child(1), #app .table-staff td:nth-child(1) { min-width:220px; width:auto; }   /* Name */
-      #app .table-staff th:nth-child(2), #app .table-staff td:nth-child(2) { min-width:130px; width:130px; }  /* Type */
-      #app .table-staff th:nth-child(3), #app .table-staff td:nth-child(3) { min-width:180px; width:180px; }  /* Rotation */
-      #app .table-staff th:nth-child(4), #app .table-staff td:nth-child(4) { min-width:110px; width:110px; }  /* Status */
-      #app .table-staff th:nth-child(5), #app .table-staff td:nth-child(5) { min-width:80px;  width:80px;  white-space:nowrap; }  /* Actions */
-
-      /* Table header — refined */
-      #app .content-area .table thead th,
-      #app .table thead th {
-        font-size:12px !important;
-        font-weight:500 !important;
-        color:var(--nm-text3) !important;
-        text-transform:none !important;
-        letter-spacing:.01em !important;
-        background:var(--nm-surface2) !important;
-        padding:9px 20px !important;
-        border-bottom:1px solid var(--nm-border) !important;
-        border-top:1px solid var(--nm-border) !important;
-        white-space:nowrap !important;
-        position: sticky !important;
-        top: 0 !important;
-        z-index: 2 !important;
-      }
-
-      /* Sticky filter bars — stay visible while scrolling table content */
-      #app .content-area .card-header {
-        position: sticky !important;
-        top: 0 !important;
-        z-index: 10 !important;
-        background: var(--nm-surface) !important;
-      }
-      #app .content-area .filter-bar {
-        position: sticky !important;
-        top: 0 !important;
-        z-index: 9 !important;
-        background: var(--nm-surface) !important;
-      }
-
-      /* Table rows */
-      #app .content-area .table tbody tr,
-      #app .table tbody tr {
-        border-bottom:0.5px solid rgba(0,0,0,.04) !important;
-        transition:background .08s !important;
-      }
-      #app .content-area .table tbody tr:last-child,
-      #app .table tbody tr:last-child { border-bottom:none !important; }
-      #app .content-area .table tbody tr:hover,
-      #app .table tbody tr:hover { background:rgba(0,0,0,.018) !important; }
-
-      /* Table cells — base styles only, no overflow truncation here */
-      #app .content-area .table tbody td,
-      #app .table tbody td {
-        font-size: 13px !important;
-        color: var(--nm-text1) !important;
-        padding: 11px 20px !important;
-        vertical-align: middle !important;
-        line-height: 1.4 !important;
-      }
+      #app .table-staff th:nth-child(1), #app .table-staff td:nth-child(1) { min-width:220px; width:auto; }
+      #app .table-staff th:nth-child(2), #app .table-staff td:nth-child(2) { min-width:130px; width:130px; }
+      #app .table-staff th:nth-child(3), #app .table-staff td:nth-child(3) { min-width:180px; width:180px; }
+      #app .table-staff th:nth-child(4), #app .table-staff td:nth-child(4) { min-width:110px; width:110px; }
+      #app .table-staff th:nth-child(5), #app .table-staff td:nth-child(5) { min-width:80px;  width:80px; white-space:nowrap; }
 
       /* Cells that need truncation — applied specifically per column in table-* rules */
       #app .table td.truncate {
@@ -1656,42 +1578,55 @@
          Action buttons always visible, professionally designed
          ══════════════════════════════════════════════════════════════ */
 
-      /* ── BASE TABLE RESET ── */
+      /* ── CONSOLIDATED TABLE FOUNDATION ─────────────────────────
+         Single source of truth for all table base styles.
+         Column-specific rules follow in table-* blocks below.
+      ─────────────────────────────────────────────────────────── */
       #app .table-responsive {
-        overflow-x:auto !important; overflow-y:visible !important;
-        border-radius:0 !important; border:none !important;
-        box-shadow:none !important; width:100% !important;
-        -webkit-overflow-scrolling:touch !important;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        -webkit-overflow-scrolling: touch !important;
       }
+      /* CRITICAL: auto layout — lets min-width column rules work correctly */
       #app .table-responsive > table {
-        width:100% !important; table-layout:fixed !important;
-        min-width:560px !important; border-collapse:collapse !important;
+        width: 100% !important;
+        table-layout: auto !important;
+        min-width: 560px !important;
+        border-collapse: collapse !important;
       }
+      /* Column headers — single definition */
       #app .table thead th {
-        font-size:11px !important; font-weight:600 !important;
-        text-transform:uppercase !important; letter-spacing:.06em !important;
-        color:var(--nm-text3) !important;
-        background:var(--nm-surface2) !important;
-        padding:8px 16px !important;
-        border-top:1px solid var(--nm-border) !important;
-        border-bottom:1px solid var(--nm-border) !important;
-        white-space:nowrap !important; overflow:hidden !important;
-        cursor:default !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: .06em !important;
+        color: var(--nm-text3) !important;
+        background: var(--nm-surface2) !important;
+        padding: 10px 20px !important;
+        border-top: 1px solid var(--nm-border) !important;
+        border-bottom: 1px solid var(--nm-border) !important;
+        white-space: nowrap !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 2 !important;
       }
-      #app .table thead th[class*="sortable"],
-      #app .table thead th[onclick],
-      #app .table thead th[@click] { cursor:pointer !important; }
-      #app .table thead th:hover { color:var(--nm-text2) !important; }
+      #app .table thead th:hover { color: var(--nm-text2) !important; }
+      /* Data cells — clean base, no forced truncation */
       #app .table tbody td {
-        font-size:13px !important; color:var(--nm-text1) !important;
-        padding:0 16px !important; height:52px !important;
-        vertical-align:middle !important;
-        border-bottom:0.5px solid rgba(0,0,0,.05) !important;
-        overflow:hidden !important;
+        font-size: 13px !important;
+        color: var(--nm-text1) !important;
+        padding: 12px 20px !important;
+        height: 52px !important;
+        vertical-align: middle !important;
+        border-bottom: 0.5px solid rgba(0,0,0,.05) !important;
       }
-      #app .table tbody tr:last-child td { border-bottom:none !important; }
-      #app .table tbody tr:hover { background:rgba(0,0,0,.018) !important; }
-      #app .table-striped tbody tr:nth-child(even) { background:rgba(0,0,0,.012) !important; }
+      #app .table tbody tr:last-child td { border-bottom: none !important; }
+      #app .table tbody tr:hover { background: rgba(0,0,0,.018) !important; }
+      #app .table-striped tbody tr:nth-child(even) { background: rgba(0,0,0,.012) !important; }
 
       /* ── ABSENCE TABLE ─── Name(30) Reason(11) Status(11) From(9) Until(9) Dur(7) Coverage(13) Actions(10) */
       /* ── Absence table: semantic column widths ──────────────── */
