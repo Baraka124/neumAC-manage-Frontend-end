@@ -7790,9 +7790,19 @@ document.addEventListener('DOMContentLoaded', () => {
         hoverPopover._timer = setTimeout(() => {
           const data = buildStaffPopoverData(staffId)
           if (!data) return
-          const rect = event.currentTarget?.getBoundingClientRect?.() || { right: event.clientX, top: event.clientY, bottom: event.clientY }
-          hoverPopover.x = Math.min(rect.right + 10, window.innerWidth - 300)
-          hoverPopover.y = Math.min(rect.top - 10, window.innerHeight - 280)
+          const rect = event.currentTarget?.getBoundingClientRect?.() || { right: event.clientX, top: event.clientY, bottom: event.clientY + 20, left: event.clientX }
+          const popW = 300, popH = 280
+          // Try right of element first, fall back to left if too close to edge
+          let x = rect.right + 12
+          if (x + popW > window.innerWidth - 8) x = rect.left - popW - 12
+          // Try below element top, but keep within viewport
+          let y = rect.top
+          if (y + popH > window.innerHeight - 8) y = window.innerHeight - popH - 8
+          // Never go off screen top/left
+          x = Math.max(8, x)
+          y = Math.max(8, y)
+          hoverPopover.x = x
+          hoverPopover.y = y
           hoverPopover.staffId = staffId
           hoverPopover.data = data
           hoverPopover.show = true
