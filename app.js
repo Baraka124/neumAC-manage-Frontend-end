@@ -193,6 +193,57 @@ document.addEventListener('DOMContentLoaded', () => {
       { key: 'Escalamiento',     label: 'Escalamiento',    icon: 'fa-chart-line',   color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
       { key: 'Comercialización', label: 'Comercialización',icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 6 }
     ]
+
+    // ── Pulmonology disease options ──────────────────────────────
+    const DISEASE_OPTIONS = [
+      'EPOC', 'Asma grave', 'Asma leve-moderada', 'Bronquiectasias',
+      'Fibrosis quística', 'Alpha-1 Antitripsina (AAT)', 'Hipertensión pulmonar',
+      'Fibrosis pulmonar idiopática (IPF)', 'EPID / ILD', 'Sarcoidosis',
+      'Trasplante pulmonar', 'Cáncer de pulmón no microcítico (CPNM)',
+      'Cáncer de pulmón microcítico', 'Mesotelioma', 'Insuficiencia respiratoria',
+      'Apnea obstructiva del sueño (AOS)', 'Ventilación mecánica / VMI',
+      'Ventilación no invasiva (VNI)', 'Neumotórax', 'Derrame pleural',
+      'Enfermedad pleural', 'General / Transversal'
+    ]
+
+    // ── Tag option maps ──────────────────────────────────────────
+    const ETHICS_STATUS_OPTS = [
+      { value: 'approved',     label: 'CEIm ✓ Aprobado',  color: '#065f46', bg: '#d1fae5' },
+      { value: 'pending',      label: 'CEIm Pendiente',    color: '#92400e', bg: '#fef3c7' },
+      { value: 'exempt',       label: 'Exento',            color: '#334155', bg: '#f1f5f9' },
+      { value: 'not_required', label: 'No requerido',      color: '#57534e', bg: '#f1f0ed' },
+    ]
+    const FUNDING_STATUS_OPTS = [
+      { value: 'funded',         label: 'Financiado',      color: '#065f46', bg: '#d1fae5' },
+      { value: 'seeking',        label: 'Buscando financ.',color: '#92400e', bg: '#fef3c7' },
+      { value: 'not_applicable', label: 'Sin financiación',color: '#57534e', bg: '#f1f0ed' },
+      { value: 'completed',      label: 'Financ. cerrada', color: '#334155', bg: '#f1f5f9' },
+    ]
+    const SPONSOR_TYPE_OPTS = ['Government','Academic','Pharma','Foundation','Private','Other']
+    const STUDY_TYPE_OPTS   = ['Observational','Interventional','Experimental','Registry','Expanded Access']
+    const POPULATION_OPTS   = [
+      { value: 'adult',          label: 'Adultos' },
+      { value: 'paediatric',     label: 'Pediátrico' },
+      { value: 'mixed',          label: 'Mixto' },
+      { value: 'not_applicable', label: 'No aplicable' },
+    ]
+    const REGULATORY_OPTS   = [
+      { value: 'none',    label: 'Ninguno' },
+      { value: 'ce_mdr',  label: 'CE MDR' },
+      { value: 'samd',    label: 'SaMD' },
+      { value: 'aemps',   label: 'AEMPS' },
+      { value: 'fda',     label: 'FDA' },
+      { value: 'other',   label: 'Otro' },
+    ]
+
+    // ── Team role options — shared for internal and external ─────
+    const TEAM_ROLE_OPTIONS = [
+      'Principal Investigator', 'Co-Principal Investigator', 'Co-investigator',
+      'Sub-investigator', 'Data Manager', 'Clinical Research Nurse',
+      'Research Coordinator', 'Statistician', 'Pharmacist',
+      'Monitor (CRO/Sponsor)', 'External Collaborator', 'Funding body',
+      'Scientific Advisor', 'Regulatory Advisor',
+    ]
     class Utils {
       // Date utilities
       static localDateStr(d) {
@@ -4860,14 +4911,71 @@ document.addEventListener('DOMContentLoaded', () => {
       const researchLines         = ref([])
       const clinicalTrials        = ref([])
       const innovationProjects    = ref([])
-                        const researchLineFilters = reactive({ search: '', active: '' })
+      const researchLineFilters = reactive({ search: '', active: '' })
       const trialFilters = reactive({ line: '', phase: '', status: '', search: '' })
       const projectFilters = reactive({ research_line_id: '', category: '', stage: '', funding_status: '', search: '' })
 
+      // ── Page navigation (overview → line → study/project) ─────
+      const researchHubPage   = ref('overview')  // 'overview' | 'line' | 'study' | 'project'
+      const selectedLine      = ref(null)
+      const selectedStudy     = ref(null)
+      const selectedProject   = ref(null)
+
+      const openLine    = (line)    => { selectedLine.value = line;    selectedStudy.value = null; selectedProject.value = null; researchHubPage.value = 'line'    }
+      const openStudy   = (study)   => { selectedStudy.value = study;   researchHubPage.value = 'study'   }
+      const openProject = (project) => { selectedProject.value = project; researchHubPage.value = 'project' }
+      const goToOverview= ()        => { researchHubPage.value = 'overview' }
+      const goToLine    = ()        => { researchHubPage.value = 'line'; selectedStudy.value = null; selectedProject.value = null }
+
       const researchLineModal = reactive({ show: false, mode: 'add', form: { line_number: null, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: 0, active: true } })
-      const clinicalTrialModal = reactive({ show: false, mode: 'add', form: { protocol_id: '', title: '', research_line_id: '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: 0, start_date: '', end_date: '' } })
+
+      const clinicalTrialModal = reactive({ show: false, mode: 'add', form: {
+        protocol_id: '', title: '', research_line_id: '',
+        phase: 'Phase III', status: 'Reclutando',
+        description: '', inclusion_criteria: '', exclusion_criteria: '',
+        principal_investigator_id: '', co_investigators: [], sub_investigators: [],
+        contact_email: '', featured_in_website: true, display_order: 0,
+        start_date: '', end_date: '', estimated_end_date: '', actual_end_date: '',
+        sponsor_name: '', sponsor_type: '', study_type: 'Observational',
+        enrollment_target: null, actual_enrollment: null, funding_amount: null,
+        tags: [], milestones: [],
+        // New schema fields
+        protocol_finalized: false, ethics_status: null,
+        funding_status: 'not_applicable', target_diseases: [],
+        scope_type: 'specific', scope_note: '',
+        is_multicentre: false, participating_centres: null,
+        population_type: 'adult',
+        // Team fields
+        data_manager_id: '',
+        team_roles: {},        // { staffId: 'Co-PI', staffId2: 'Research Nurse' }
+        external_team: [],     // [{ name, institution, role, email }]
+        _diseaseInput: '',
+        _extMemberDraft: { name: '', institution: '', role: '', email: '' },
+      }})
+
       const trialDetailModal = reactive({ show: false, trial: null, study: null })
-      const innovationProjectModal = reactive({ show: false, mode: 'add', form: { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, display_order: 0 } })
+
+      const innovationProjectModal = reactive({ show: false, mode: 'add', form: {
+        title: '', category: 'Dispositivo', current_stage: 'Idea',
+        description: '', clinical_rationale: '', research_line_id: '',
+        lead_investigator_id: '', co_investigators: [],
+        partner_needs: [], partner_found: false, partner_name: '',
+        funding_status: 'not_applicable', funding_source: '',
+        budget: null, trl_level: null, ip_status: '',
+        keywords: [], keywordsInput: '', tags: [], milestones: [],
+        featured_in_website: true, display_order: 0,
+        start_date: '', estimated_end_date: '',
+        // New schema fields
+        scope_finalized: false, target_diseases: [],
+        scope_type: 'specific', scope_note: '',
+        regulatory_pathway: 'none', population_type: 'adult',
+        // Team fields
+        team_roles: {},
+        external_team: [],
+        _diseaseInput: '',
+        _extMemberDraft: { name: '', institution: '', role: '', email: '' },
+      }})
+
       const assignCoordinatorModal = reactive({ show: false, lineId: null, lineName: '', selectedCoordinatorId: '' })
 
       const getResearchLineName = (id) => { if (!id) return 'Not assigned'; const l = researchLines.value.find(l => l.id === id); return l ? (l.research_line_name || l.name) : 'Unknown' }
@@ -4923,6 +5031,97 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
           e.preventDefault(); addKeyword(form)
         }
+      }
+
+      // ── Disease tag helpers ────────────────────────────────────
+      const addDisease = (form, disease) => {
+        if (!disease?.trim()) return
+        if (!Array.isArray(form.target_diseases)) form.target_diseases = []
+        if (!form.target_diseases.includes(disease.trim())) form.target_diseases.push(disease.trim())
+        form._diseaseInput = ''
+      }
+      const removeDisease = (form, idx) => { form.target_diseases.splice(idx, 1) }
+      const handleDiseaseKey = (e, form) => {
+        if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+          e.preventDefault(); addDisease(form, form._diseaseInput)
+        }
+      }
+
+      // ── External team helpers ──────────────────────────────────
+      const addExternalMember = (form) => {
+        const d = form._extMemberDraft
+        if (!d.name?.trim() && !d.institution?.trim()) return
+        if (!Array.isArray(form.external_team)) form.external_team = []
+        form.external_team.push({
+          name:        d.name?.trim()        || null,
+          institution: d.institution?.trim() || null,
+          role:        d.role?.trim()        || null,
+          email:       d.email?.trim()       || null,
+        })
+        form._extMemberDraft = { name: '', institution: '', role: '', email: '' }
+      }
+      const removeExternalMember = (form, idx) => { form.external_team.splice(idx, 1) }
+
+      // ── Internal team role helpers ─────────────────────────────
+      // team_roles: { staffId: 'Co-PI', staffId2: 'Research Nurse' }
+      const setTeamRole = (form, staffId, role) => {
+        if (!form.team_roles) form.team_roles = {}
+        if (role) form.team_roles[staffId] = role
+        else delete form.team_roles[staffId]
+      }
+      const getTeamRole = (form, staffId) => form.team_roles?.[staffId] || ''
+
+      // When an internal member is added to co_investigators, auto-assign default role
+      const addCoInvestigator = (form, staffId) => {
+        if (!staffId || form.co_investigators.includes(staffId)) return
+        form.co_investigators.push(staffId)
+        if (!form.team_roles[staffId]) form.team_roles[staffId] = 'Co-investigator'
+      }
+      const removeCoInvestigator = (form, staffId) => {
+        form.co_investigators = form.co_investigators.filter(id => id !== staffId)
+        delete form.team_roles[staffId]
+      }
+
+      // ── Milestone helpers ──────────────────────────────────────
+      const addMilestone = (form, label, date) => {
+        if (!label?.trim()) return
+        if (!Array.isArray(form.milestones)) form.milestones = []
+        form.milestones.push({ id: Date.now(), label: label.trim(), date: date || null, done: false })
+      }
+      const toggleMilestone = (form, idx) => {
+        if (form.milestones[idx]) form.milestones[idx].done = !form.milestones[idx].done
+      }
+      const removeMilestone = (form, idx) => { form.milestones.splice(idx, 1) }
+
+      // ── Study/Project completeness score ──────────────────────
+      const getStudyCompleteness = (s) => {
+        const checks = [
+          !!s.principal_investigator_id,
+          !!s.start_date,
+          !!(s.end_date || s.estimated_end_date),
+          !!(s.enrollment_target),
+          !!(s.sponsor_name || s.sponsor_type),
+          !!s.ethics_status,
+          !!s.study_type,
+          !!(s.target_diseases?.length),
+          !!s.protocol_finalized,
+        ]
+        return {
+          score: checks.filter(Boolean).length, total: checks.length,
+          missing: ['PI','Fecha inicio','Fecha fin','Enrolamiento objetivo','Sponsor','Aprobación ética','Tipo de estudio','Enfermedades diana','Protocolo finalizado'].filter((_, i) => !checks[i])
+        }
+      }
+      const getProjectCompleteness = (p) => {
+        const checks = [
+          !!p.lead_investigator_id,
+          !!p.start_date,
+          !!(p.budget || p.funding_source || p.funding_status !== 'not_applicable'),
+          !!(p.target_diseases?.length),
+          !!(p.trl_level),
+          !!(p.regulatory_pathway && p.regulatory_pathway !== 'none'),
+        ]
+        return { score: checks.filter(Boolean).length, total: checks.length,
+          missing: ['Investigador principal','Fecha inicio','Financiación','Enfermedades','Nivel TRL','Vía regulatoria'].filter((_, i) => !checks[i]) }
       }
 
       const researchLoading = ref(false)
@@ -5129,7 +5328,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick }
+      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+        // Page navigation
+        researchHubPage, selectedLine, selectedStudy, selectedProject,
+        openLine, openStudy, openProject, goToOverview, goToLine,
+        // Disease helpers
+        addDisease, removeDisease, handleDiseaseKey,
+        // External team helpers
+        addExternalMember, removeExternalMember,
+        setTeamRole, getTeamRole, addCoInvestigator, removeCoInvestigator,
+        // Milestone helpers
+        addMilestone, toggleMilestone, removeMilestone,
+        // Completeness
+        getStudyCompleteness, getProjectCompleteness,
+      }
     }
 
     // ============ 6.12 useAnalytics ============
@@ -7889,8 +8101,38 @@ document.addEventListener('DOMContentLoaded', () => {
           saveCommunication: (sv) => commsOps.saveCommunication(sv ?? saving, liveOps.saveClinicalStatus),
           ...liveOps,
           ...researchOps,
-          researchLines: enrichedResearchLines, // override raw ref with stats-enriched computed
-          filteredResearchLines,                // override with root version using enriched data
+          researchLines: enrichedResearchLines,
+          filteredResearchLines,
+          // Page navigation — expose at root level for template
+          researchHubPage:  researchOps.researchHubPage,
+          selectedLine:     researchOps.selectedLine,
+          selectedStudy:    researchOps.selectedStudy,
+          selectedProject:  researchOps.selectedProject,
+          openLine:         researchOps.openLine,
+          openStudy:        researchOps.openStudy,
+          openProject:      researchOps.openProject,
+          goToOverview:     researchOps.goToOverview,
+          goToLine:         researchOps.goToLine,
+          lineTab:          ref('studies'),
+          // Option constants for dropdowns
+          DISEASE_OPTIONS, ETHICS_STATUS_OPTS, FUNDING_STATUS_OPTS,
+          SPONSOR_TYPE_OPTS, STUDY_TYPE_OPTS, POPULATION_OPTS, REGULATORY_OPTS,
+          TEAM_ROLE_OPTIONS,
+          // Disease/milestone/completeness helpers
+          addDisease: researchOps.addDisease,
+          removeDisease: researchOps.removeDisease,
+          handleDiseaseKey: researchOps.handleDiseaseKey,
+          addExternalMember: researchOps.addExternalMember,
+          removeExternalMember: researchOps.removeExternalMember,
+          setTeamRole: researchOps.setTeamRole,
+          getTeamRole: researchOps.getTeamRole,
+          addCoInvestigator: researchOps.addCoInvestigator,
+          removeCoInvestigator: researchOps.removeCoInvestigator,
+          addMilestone: researchOps.addMilestone,
+          toggleMilestone: researchOps.toggleMilestone,
+          removeMilestone: researchOps.removeMilestone,
+          getStudyCompleteness: researchOps.getStudyCompleteness,
+          getProjectCompleteness: researchOps.getProjectCompleteness,
           researchLoading: researchOps.researchLoading,
           saveResearchLine: () => researchOps.saveResearchLine(saving),
           saveClinicalTrial: () => researchOps.saveClinicalTrial(saving),
@@ -8119,4 +8361,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});
+});  
