@@ -8109,107 +8109,7 @@ tr.staff-table-row .tbl-btn {
 .db-oc-slot-row--warn-absence {
   background: rgba(245,158,11,.04) !important;
 }
-
-      /* ── v-cloak: hide app until Vue mounts ── */
-      [v-cloak] { display: none !important; }
-
-      /* ── Login card two-column layout ── */
-      .login-container { display:flex !important; align-items:center !important; justify-content:center !important; min-height:100vh !important; padding:20px !important; box-sizing:border-box !important; }
-      .login-card { display:flex !important; width:min(780px,100%) !important; min-height:460px !important; border-radius:20px !important; overflow:hidden !important; background:#fff !important; box-shadow:0 24px 80px rgba(0,0,0,.18) !important; }
-      .lc-brand { flex:0 0 280px !important; display:flex !important; flex-direction:column !important; align-items:center !important; justify-content:center !important; padding:40px 32px !important; }
-      .lc-form { flex:1 !important; padding:40px !important; display:flex !important; flex-direction:column !important; justify-content:center !important; overflow-y:auto !important; }
-
-      /* ── content-area: non-fullheight views get padding and scroll ── */
-      #app .content-area:not(.content-area--fullheight) { overflow-y: auto !important; padding: 24px !important; }
-
-      /* ── MOD-HEADER: universal two-row module header ── */
-      .mod-header { background:#fff; border-bottom:1px solid #e0ddd8; display:flex; flex-direction:column; flex-shrink:0; }
-      .mod-header-top { display:flex; align-items:stretch; min-height:68px; border-bottom:1px solid #e8e6e1; }
-      .mod-title-cell { display:flex; align-items:center; gap:11px; padding:0 20px; border-right:1px solid #e8e6e1; min-width:200px; flex-shrink:0; }
-      .mod-title-icon { width:34px; height:34px; border-radius:8px; background:#07111f; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#4fa3f5; }
-      .mod-title-text { display:flex; flex-direction:column; gap:2px; }
-      .mod-title-name { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#07111f; letter-spacing:-.2px; }
-      .mod-title-sub { font-size:11px; color:#909399; }
-      .mod-kpis { display:flex; align-items:stretch; flex:1; }
-      .mod-kpi { display:flex; flex-direction:column; justify-content:center; padding:0 22px; border-right:1px solid #e8e6e1; cursor:pointer; transition:background .1s; min-width:90px; position:relative; }
-      .mod-kpi:hover { background:#f8f7f4; }
-      .mod-kpi--active { background:#f0f7ff; }
-      .mod-kpi--active::before { content:''; position:absolute; left:0; top:20%; bottom:20%; width:3px; background:#00b3b3; border-radius:0 2px 2px 0; }
-      .mod-kpi-num { font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:26px; font-weight:300; color:#07111f; line-height:1; }
-      .mod-kpi-label { font-family:'DM Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:#909399; margin-top:3px; }
-      .mod-action-cell { display:flex; align-items:center; gap:8px; padding:0 16px; flex-shrink:0; border-left:1px solid #e8e6e1; }
-      .mod-btn-primary { height:34px; padding:0 16px; background:#07111f; color:#fff; border:none; border-radius:7px; font-family:'DM Mono',monospace; font-size:12px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; transition:background .1s; }
-      .mod-btn-primary:hover { background:#162438; }
-      .mod-btn-ghost { height:34px; padding:0 14px; background:transparent; color:#909399; border:1px solid #e0ddd8; border-radius:7px; font-family:'DM Mono',monospace; font-size:12px; cursor:pointer; transition:all .1s; }
-      .mod-btn-ghost:hover { border-color:#5f5e5a; color:#07111f; }
-      .mod-header-bottom { display:flex; align-items:center; height:38px; padding:0 12px; gap:8px; background:#fafaf8; }
-      .mod-filter-group { display:flex; align-items:center; gap:6px; flex:1; min-width:0; }
-      .mod-search { display:flex; align-items:center; gap:7px; border:1px solid #e0ddd8; border-radius:6px; padding:0 10px; height:26px; background:#fff; min-width:180px; }
-      .mod-search input { border:none; outline:none; font-family:'Epilogue',sans-serif; font-size:12px; color:#07111f; background:transparent; width:100%; }
-      .mod-search input::placeholder { color:#c8c3bb; }
-      .mod-select { height:26px; border:1px solid #e0ddd8; border-radius:6px; padding:0 24px 0 8px; font-family:'Epilogue',sans-serif; font-size:12px; color:#07111f; background:#fff url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%23b4b2a9' stroke-width='1.2' fill='none'/%3E%3C/svg%3E") no-repeat right 7px center; appearance:none; outline:none; cursor:pointer; }
-      .mod-active-chip { display:flex; align-items:center; gap:5px; height:22px; padding:0 8px; background:#E6F4F4; border-radius:4px; font-family:'DM Mono',monospace; font-size:10px; color:#005f5f; }
-      .mod-view-toggle { display:flex; gap:2px; flex-shrink:0; }
-      .mod-view-btn { width:28px; height:26px; border-radius:5px; border:1px solid #e0ddd8; background:transparent; color:#909399; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .1s; }
-      .mod-view-btn:hover { border-color:#5f5e5a; color:#07111f; }
-      .mod-view-btn.active { background:#07111f; border-color:#07111f; color:#4fa3f5; }
-
-      /* ── TU-MODAL: Clinical Unit add/edit modal ── */
-      .tu-modal { background:#fff; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.18); width:min(640px,calc(100vw - 32px)); display:flex; flex-direction:column; max-height:90vh; overflow:hidden; font-family:'Epilogue',sans-serif; }
-      .tu-modal-hdr { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 16px; border-bottom:1px solid #e8e6e1; flex-shrink:0; }
-      .tu-modal-hdr-left { display:flex; align-items:center; gap:12px; }
-      .tu-modal-icon { width:36px; height:36px; border-radius:9px; background:#07111f; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-      .tu-modal-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:#07111f; }
-      .tu-modal-sub { font-size:12px; color:#909399; margin-top:2px; }
-      .tu-modal-close { width:30px; height:30px; border-radius:7px; border:1px solid #e0ddd8; background:transparent; color:#909399; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-      .tu-modal-close:hover { border-color:#07111f; color:#07111f; }
-      .tu-modal-preview { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 22px; background:#f8f7f4; border-bottom:1px solid #e8e6e1; flex-shrink:0; }
-      .tu-preview-name { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:#07111f; }
-      .tu-preview-type { font-family:'DM Mono',monospace; font-size:10px; padding:2px 8px; border-radius:4px; background:#e8e6e1; color:#5f5e5a; }
-      .tu-preview-cap { font-family:'DM Mono',monospace; font-size:10px; padding:2px 8px; border-radius:4px; background:#E1F5EE; color:#085041; }
-      .tu-preview-sep { color:#c8c3bb; font-size:11px; }
-      .tu-preview-proj { font-family:'DM Mono',monospace; font-size:10px; padding:2px 7px; border-radius:4px; background:#f2f0eb; color:#5f5e5a; }
-      .tu-preview-proj--full { background:#FEF3C7; color:#854F0B; }
-      .tu-preview-proj--over { background:#FCEBEB; color:#791F1F; font-weight:500; }
-      .tu-modal-body { padding:20px 22px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:4px; }
-      .tu-section-label { font-family:'DM Mono',monospace; font-size:9px; font-weight:500; text-transform:uppercase; letter-spacing:.1em; color:#b4b2a9; margin-top:14px; margin-bottom:8px; }
-      .tu-section-label:first-child { margin-top:0; }
-      .tu-optional { font-size:9px; color:#c8c3bb; text-transform:none; letter-spacing:0; font-weight:400; margin-left:4px; }
-      .tu-row { display:flex; gap:10px; align-items:flex-end; }
-      .tu-field { display:flex; flex-direction:column; gap:5px; }
-      .tu-field--grow { flex:1; min-width:0; }
-      .tu-field--xs { width:90px; flex-shrink:0; }
-      .tu-field--sm { width:160px; flex-shrink:0; }
-      .tu-field--md { width:200px; flex-shrink:0; }
-      .tu-field--error .tu-input, .tu-field--error .tu-select { border-color:#e24b4a !important; }
-      .tu-label { font-family:'DM Mono',monospace; font-size:10px; font-weight:500; color:#5f5e5a; }
-      .tu-req { color:#e24b4a; }
-      .tu-hint { color:#b4b2a9; font-weight:400; font-size:9px; }
-      .tu-field-err { font-size:10px; color:#e24b4a; }
-      .tu-input { height:36px; border:1px solid #e0ddd8; border-radius:7px; padding:0 11px; font-family:'Epilogue',sans-serif; font-size:13px; color:#07111f; background:#fafaf8; outline:none; width:100%; transition:border-color .1s; }
-      .tu-input:focus { border-color:#00b3b3; background:#fff; }
-      .tu-input::placeholder { color:#c8c3bb; }
-      .tu-input--num { text-align:center; font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:20px; font-weight:300; padding:0 8px; }
-      .tu-input--mono { font-family:'DM Mono',monospace; font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
-      .tu-select { height:36px; border:1px solid #e0ddd8; border-radius:7px; padding:0 28px 0 11px; font-family:'Epilogue',sans-serif; font-size:13px; color:#07111f; background:#fafaf8; outline:none; appearance:none; cursor:pointer; width:100%; }
-      .tu-select:focus { border-color:#00b3b3; }
-      .tu-textarea { border:1px solid #e0ddd8; border-radius:7px; padding:10px 11px; font-family:'Epilogue',sans-serif; font-size:13px; color:#07111f; background:#fafaf8; outline:none; width:100%; resize:vertical; line-height:1.5; }
-      .tu-textarea:focus { border-color:#00b3b3; background:#fff; }
-      .tu-modal-footer { display:flex; align-items:center; gap:8px; padding:14px 22px; border-top:1px solid #e8e6e1; flex-shrink:0; }
-      .tu-btn-primary { padding:8px 20px; background:#07111f; color:#fff; border:none; border-radius:7px; font-family:'DM Mono',monospace; font-size:12px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:7px; }
-      .tu-btn-primary:disabled { opacity:.5; cursor:not-allowed; }
-      .tu-btn-ghost { padding:7px 16px; background:transparent; color:#909399; border:1px solid #e0ddd8; border-radius:7px; font-family:'DM Mono',monospace; font-size:12px; cursor:pointer; }
-      .tu-btn-danger { padding:7px 14px; background:transparent; color:#e24b4a; border:1px solid rgba(226,75,74,.3); border-radius:7px; font-family:'DM Mono',monospace; font-size:12px; cursor:pointer; }
-      .tu-btn-danger:hover { background:#FCEBEB; border-color:#e24b4a; }
-
-      /* ── tuc2: Clinical Unit card redesign ── */
-      .tuc2-status-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px; font-family:'DM Mono',monospace; font-size:10px; font-weight:500; }
-      .tuc2-status-badge--open { background:#E1F5EE; color:#085041; }
-      .tuc2-status-badge--full { background:#FCEBEB; color:#791F1F; }
-      .tuc2-status-badge--warn { background:#FEF3C7; color:#854F0B; }
-      .tuc2-status-badge--empty { background:#f2f0eb; color:#5f5e5a; }
-
-      </style>
+</style>
 </head>
 <body>
 <div id="app" v-cloak>
@@ -8949,7 +8849,7 @@ tr.staff-table-row .tbl-btn {
             </header>
 
             <!-- Content Area -->
-            <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard', 'content-area--fullheight': ['research_hub','news','training_units'].includes(currentView)}">
+            <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard', 'content-area--fullheight': ['research_hub','news'].includes(currentView)}">
 
                 <!-- Unit staffing alerts -->
                 <div v-if="understaffedUnitAlerts && understaffedUnitAlerts.length > 0" style="margin-bottom:12px;">
@@ -8980,7 +8880,7 @@ tr.staff-table-row .tbl-btn {
 
                 <!-- Breadcrumb — hidden on dashboard and fullscreen modules -->
                 <nav class="breadcrumb" aria-label="Breadcrumb"
-                     v-if="!['dashboard','resident_rotations','research_hub','news','training_units'].includes(currentView)">
+                     v-if="!['dashboard','resident_rotations','research_hub','news'].includes(currentView)">
                     <button @click="switchView('dashboard')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg><span>Dashboard</span></button>
                     <span class="bc-sep">/</span>
                     <span class="bc-current">{{ getCurrentViewTitle() }}</span>
@@ -9345,86 +9245,93 @@ tr.staff-table-row .tbl-btn {
                             Clear filter ×
                         </button>
                     </nav>
-                    <div class="mod-header">
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4C7 4 5 4 5 7V13C5 17 9 19 12 19C15 19 19 17 19 13"/><circle cx="19" cy="11" r="2"/><path d="M5 9H9"/></svg> Medical Staff</div>
+                            <div class="header-actions" style="display:flex;gap:12px;align-items:center">
+                                <div class="view-toggle">
+                                    <button class="btn-pill" :class="{ active: staffView === 'table' }" @click="staffView = 'table'">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01"/></svg> Table
+                                    </button>
+                                    <button class="btn-pill" :class="{ active: staffView === 'people' }" @click="staffView = 'people'">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="8" height="8" rx="2"/><rect x="14" y="3" width="8" height="8" rx="2"/><rect x="2" y="13" width="8" height="8" rx="2"/><rect x="14" y="13" width="8" height="8" rx="2"/></svg> People
+                                    </button>
+                                    <button class="btn-pill" :class="{ active: staffView === 'compact' }" @click="staffView = 'compact'">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg> Compact
+                                    </button>
+                                </div>
+                                <button class="btn btn-primary" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Staff</button>
+                            </div>
+                        </div>
+                        <!-- ── Department Pulse Bar — live availability intelligence ── -->
+                        <div class="dept-pulse-bar" style="margin-bottom:16px;">
+                            <div class="dpb-item" @click="switchView('medical_staff', { status: 'active' })">
+                                <div class="dpb-num dpb-num--teal">{{ deptPulseStats.active }}</div>
+                                <div class="dpb-label">Available</div>
+                                <div class="dpb-sub">active staff</div>
+                            </div>
+                            <div class="dpb-item" @click="switchView('oncall_schedule')">
+                                <div class="dpb-num dpb-num--amber">{{ deptPulseStats.onCallToday }}</div>
+                                <div class="dpb-label">On call today</div>
+                                <div class="dpb-sub">{{ deptPulseStats.onCallToday === 0 ? '⚠ no coverage' : 'physicians' }}</div>
+                            </div>
+                            <div class="dpb-item" @click="switchView('staff_absence')">
+                                <div class="dpb-num" :class="deptPulseStats.onLeave > 2 ? 'dpb-num--red' : deptPulseStats.onLeave > 0 ? 'dpb-num--amber' : ''">{{ deptPulseStats.onLeave }}</div>
+                                <div class="dpb-label">On leave</div>
+                                <div class="dpb-sub">right now</div>
+                            </div>
+                            <div class="dpb-item" @click="switchView('resident_rotations', { rotationStatus: 'active' })">
+                                <div class="dpb-num">{{ deptPulseStats.rotationCount }}</div>
+                                <div class="dpb-label">Rotations</div>
+                                <div class="dpb-sub">active</div>
+                            </div>
+                        </div>
 
-                    <!-- ROW 1: Title | KPIs | Action -->
-                    <div class="mod-header-top">
-                        <div class="mod-title-cell">
-                            <div class="mod-title-icon">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            </div>
-                            <div class="mod-title-text">
-                                <div class="mod-title-name">Medical Staff</div>
-                            </div>
-                        </div>
-                        <div class="mod-kpis">
-                            <div class="mod-kpi" :class="{ 'mod-kpi--active': staffFilters.status === 'active' }" @click="staffFilters.status = staffFilters.status === 'active' ? '' : 'active'">
-                                <div class="mod-kpi-num" style="color:#0F6E56">{{ deptPulseStats.active }}</div>
-                                <div class="mod-kpi-label">Available</div>
-                            </div>
-                            <div class="mod-kpi" @click="switchView('oncall_schedule')">
-                                <div class="mod-kpi-num" :style="deptPulseStats.onCallToday === 0 ? 'color:#854F0B' : 'color:#07111f'">{{ deptPulseStats.onCallToday }}</div>
-                                <div class="mod-kpi-label">On call today</div>
-                            </div>
-                            <div class="mod-kpi" :class="{ 'mod-kpi--active': staffFilters.status === 'on_leave' }" @click="staffFilters.status = staffFilters.status === 'on_leave' ? '' : 'on_leave'">
-                                <div class="mod-kpi-num" :style="deptPulseStats.onLeave > 0 ? 'color:#e24b4a' : 'color:#b4b2a9'">{{ deptPulseStats.onLeave }}</div>
-                                <div class="mod-kpi-label">On leave</div>
-                            </div>
-                            <div class="mod-kpi" @click="switchView('resident_rotations')">
-                                <div class="mod-kpi-num">{{ deptPulseStats.rotationCount }}</div>
-                                <div class="mod-kpi-label">Active rotations</div>
-                            </div>
-                        </div>
-                        <div class="mod-action-cell">
-                            <button class="mod-btn-primary" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff','create')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                                Add staff
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- ROW 2: Search | Filters | View toggle -->
-                    <div class="mod-header-bottom">
-                        <div class="mod-filter-group">
-                            <div class="mod-search">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c8c3bb" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                <input type="text" v-model="staffFilters.search" placeholder="Search name…">
-                            </div>
-                            <select class="mod-select" v-model="staffFilters.staffType">
-                                <option value="">All types</option>
+                        <div class="filter-bar">
+                            <input type="text" class="form-control" v-model="staffFilters.search" placeholder="Search name…" aria-label="Search staff">
+                            <!-- Active category filter chip from dept cross-nav -->
+                            <span v-if="staffFilters.residentCategory" class="nav-context-chip"
+                                  @click="staffFilters.residentCategory = ''"
+                                  :style="{background: staffFilters.residentCategory === 'external_resident' ? 'var(--violet-lt)' : staffFilters.residentCategory === 'rotating_other_dept' ? 'var(--partial-lt)' : 'var(--ok-lt)', borderColor: 'transparent', color: staffFilters.residentCategory === 'external_resident' ? 'var(--cat-external)' : staffFilters.residentCategory === 'rotating_other_dept' ? 'var(--cat-rotating)' : 'var(--cat-internal)'}">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                {{ staffFilters.residentCategory === 'external_resident' ? 'External Residents' : staffFilters.residentCategory === 'rotating_other_dept' ? 'Rotating Residents' : 'Internal Residents' }}
+                                &nbsp;×
+                            </span>
+                            <select class="form-select" v-model="staffFilters.staffType">
+                                <option value="">All Types</option>
                                 <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
                             </select>
-                            <select class="mod-select" v-if="staffFilters.staffType === 'medical_resident'" v-model="staffFilters.residentCategory">
-                                <option value="">All residents</option>
+                            <select v-if="staffFilters.staffType === 'medical_resident'" class="form-select" v-model="staffFilters.residentCategory">
+                                <option value="">All Residents</option>
                                 <option value="department_internal">Internal</option>
                                 <option value="rotating_other_dept">Rotating</option>
                                 <option value="external_resident">External</option>
                             </select>
-                            <select class="mod-select" v-model="staffFilters.department">
-                                <option value="">All departments</option>
+                            <select class="form-select" v-model="staffFilters.department">
+                                <option value="">All Departments</option>
                                 <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
                             </select>
-                            <select class="mod-select" v-model="staffFilters.status">
-                                <option value="">All status</option>
+                            <select class="form-select" v-model="staffFilters.status">
+                                <option value="">All Status</option>
                                 <option value="active">Active</option>
                                 <option value="on_leave">On Leave</option>
                                 <option value="inactive">Inactive</option>
                             </select>
+                            <button v-if="hasActiveStaffFilters" class="btn-pill btn-pill--clear" @click="clearStaffFilters" title="Clear all filters">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg> Clear
+                            </button>
+                            <span v-if="hasActiveStaffFilters" class="filter-result-count">{{ filteredMedicalStaff.length }} of {{ medicalStaff.length }}</span>
                         </div>
-                        <div class="mod-view-toggle">
-                            <button class="mod-view-btn" :class="{ active: staffView === 'table' }" @click="staffView = 'table'" title="Table">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6H20M4 12H20M4 18H20"/></svg>
-                            </button>
-                            <button class="mod-view-btn" :class="{ active: staffView === 'people' }" @click="staffView = 'people'" title="People">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                            </button>
-                            <button class="mod-view-btn" :class="{ active: staffView === 'compact' }" @click="staffView = 'compact'" title="Compact">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6H20M4 10H20M4 14H20M4 18H20"/></svg>
-                            </button>
-                        </div>
-                    </div>
 
-                </div>
+                        <!-- ══════════════════════════════════════════════
+                             COMPACT VIEW — card grid, same language as on-call/rotations
+                             ══════════════════════════════════════════════ -->
+                        <!-- COMPACT VIEW — card grid, 2 columns, space-efficient -->
+                        <div v-if="staffView === 'compact'">
+                            <!-- Skeleton loading — shimmer cards -->
+                            <div v-if="loading" class="scc-grid" style="padding:16px 24px;pointer-events:none;">
+                                <div v-for="i in 8" :key="i" class="nm-skel-card nm-skeleton" style="height:120px;border-radius:10px;"></div>
+                            </div>
 
                             <!-- ── People Intelligence Grid (staffView === 'people') ── -->
                             <div v-if="staffView === 'people'">
@@ -9698,6 +9605,8 @@ tr.staff-table-row .tbl-btn {
                                 <span class="pagination-info">Page {{ pagination.medical_staff.page }} of {{ staffTotalPages }} · {{ filteredMedicalStaffAll.length }} results</span>
                                 <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page + 1)" :disabled="pagination.medical_staff.page === staffTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                             </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- ============ ON-CALL SCHEDULE VIEW (ENHANCED) ============ -->
@@ -10576,7 +10485,6 @@ tr.staff-table-row .tbl-btn {
 
                                 <!-- Year label row -->
                                 <div class="mv-name-spacer"></div>
-                                        <div v-if="getMvTodayPct() >= 0 && getMvTodayPct() <= 100" class="mv-today-line" :style="{ left: getMvTodayPct() + '%' }"></div>
                                 <div v-for="m in getHorizonMonths(monthHorizon, monthOffset)" :key="'yr-' + m.key"
                                      class="mv-year-cell">
                                     <span v-if="m.isYearStart" class="mv-year-label">{{ m.year }}</span>
@@ -10772,77 +10680,79 @@ tr.staff-table-row .tbl-btn {
                 <!-- ============ TRAINING UNITS VIEW ============ -->
                 <div v-if="currentView === 'training_units'">
 
-                    <div class="mod-header">
-
-                    <!-- ROW 1: Title | KPIs | Action -->
-                    <div class="mod-header-top">
-                        <div class="mod-title-cell">
-                            <div class="mod-title-icon">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg>
-                            </div>
-                            <div class="mod-title-text">
-                                <div class="mod-title-name">Clinical Units</div>
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg> Training Units</div>
+                            <div style="display:flex;gap:8px;align-items:center">
+                                <button class="btn btn-primary" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Unit</button>
                             </div>
                         </div>
-                        <div class="mod-kpis">
-                            <div class="mod-kpi" :class="{ 'mod-kpi--active': trainingUnitFilters.status === 'active' }" @click="trainingUnitFilters.status = trainingUnitFilters.status === 'active' ? '' : 'active'">
-                                <div class="mod-kpi-num" style="color:#0F6E56">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) < u.maximum_residents && u.unit_status === 'active').length }}</div>
-                                <div class="mod-kpi-label">Available</div>
+                        <!-- ── Always-visible KPI strip ── -->
+                        <div class="tu-kpi-strip">
+                            <div class="tu-kpi tu-kpi--ok tu-kpi--clickable" @click="trainingUnitFilters.status = trainingUnitFilters.status === 'available' ? '' : 'available'" :class="{ 'tu-kpi--active': trainingUnitFilters.status === 'available' }">
+                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) < u.maximum_residents).length }}</div>
+                                <div class="tu-kpi-label">Available</div>
+                                <div class="tu-kpi-sub">slots open now</div>
                             </div>
-                            <div class="mod-kpi" :class="{ 'mod-kpi--active': trainingUnitFilters.status === 'full' }" @click="trainingUnitFilters.status = trainingUnitFilters.status === 'full' ? '' : 'full'">
-                                <div class="mod-kpi-num" style="color:#e24b4a">{{ trainingUnits.filter(u => getUnitActiveRotationCount(u.id) >= u.maximum_residents).length }}</div>
-                                <div class="mod-kpi-label">Full</div>
+                            <div class="tu-kpi-div"></div>
+                            <div class="tu-kpi tu-kpi--warn">
+                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) > 0 && getUnitActiveRotationCount(u.id) < u.maximum_residents && getUnitActiveRotationCount(u.id) / u.maximum_residents > 0.5).length }}</div>
+                                <div class="tu-kpi-label">Filling up</div>
+                                <div class="tu-kpi-sub">&gt;50% occupied</div>
                             </div>
-                            <div class="mod-kpi">
-                                <div class="mod-kpi-num">{{ trainingUnits.filter(u => u.unit_status === 'active').length }}</div>
-                                <div class="mod-kpi-label">Active units</div>
+                            <div class="tu-kpi-div"></div>
+                            <div class="tu-kpi tu-kpi--full tu-kpi--clickable" @click="trainingUnitFilters.status = trainingUnitFilters.status === 'full' ? '' : 'full'" :class="{ 'tu-kpi--active': trainingUnitFilters.status === 'full' }">
+                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) >= u.maximum_residents).length }}</div>
+                                <div class="tu-kpi-label">Full</div>
+                                <div class="tu-kpi-sub">no slots now</div>
                             </div>
-                            <div class="mod-kpi">
-                                <div class="mod-kpi-num">{{ trainingUnits.filter(u => u.unit_status === 'under_renovation').length }}</div>
-                                <div class="mod-kpi-label">Renovation</div>
+                            <div class="tu-kpi-div"></div>
+                            <div class="tu-kpi tu-kpi--danger">
+                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => !!getUnitOverlapWarning(u.id)).length }}</div>
+                                <div class="tu-kpi-label">Overlap alert</div>
+                                <div class="tu-kpi-sub">scheduled conflict</div>
+                            </div>
+                            <div style="margin-left:auto;align-self:center">
+                                <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" @click="occupancyPanel.show = true">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg> Full overview
+                                </button>
                             </div>
                         </div>
-                        <div class="mod-action-cell">
-                            <button class="mod-btn-primary" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units','create')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                                Add unit
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- ROW 2: Search | Filters | View toggle -->
-                    <div class="mod-header-bottom">
-                        <div class="mod-filter-group">
-                            <div class="mod-search">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c8c3bb" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                <input type="text" v-model="trainingUnitFilters.search" placeholder="Search units…">
-                            </div>
-                            <select class="mod-select" v-model="trainingUnitFilters.department">
-                                <option value="">All departments</option>
+                        <div class="filter-bar">
+                            <input type="text" class="form-control" v-model="trainingUnitFilters.search" placeholder="Search units...">
+                            <!-- Clear dept filter chip if navigated from dept -->
+                            <span v-if="trainingUnitFilters.department" class="nav-context-chip"
+                                  @click="trainingUnitFilters.department = ''">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="2" y="14" width="8" height="4" rx="1"/><rect x="14" y="14" width="8" height="4" rx="1"/><path d="M12 6v4M6 14v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg>
+                                {{ departments.find(d => d.id === trainingUnitFilters.department)?.name || 'Department' }}
+                                <span style="margin-left:4px;opacity:.6">×</span>
+                            </span>
+                            <select class="form-select" v-model="trainingUnitFilters.department">
+                                <option value="">All Departments</option>
                                 <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
                             </select>
-                            <select class="mod-select" v-model="trainingUnitFilters.type">
-                                <option value="">All types</option>
-                                <option value="clinical_unit">Ward</option>
-                                <option value="icu">ICU / Critical</option>
-                                <option value="outpatient">Outpatient</option>
-                                <option value="surgical">Surgery</option>
+                            <select class="form-select" v-model="trainingUnitFilters.status">
+                                <option value="">All Status</option>
+                                <option value="available">Has open slots</option>
+                                <option value="full">Full</option>
+                                <option value="active">Active (unit)</option>
+                                <option value="inactive">Inactive</option>
                             </select>
-                        </div>
-                        <div class="mod-view-toggle">
-                            <button class="mod-view-btn" :class="{ active: trainingUnitView === 'cards' }" @click="trainingUnitView = 'cards'" title="Card view">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                            </button>
-                            <button class="mod-view-btn" :class="{ active: trainingUnitView === 'list' }" @click="trainingUnitView = 'list'" title="List view">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6H20M4 12H20M4 18H20"/></svg>
-                            </button>
-                            <button class="mod-view-btn" :class="{ active: trainingUnitView === 'weekly' }" @click="trainingUnitView = 'weekly'" title="Timeline view">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
+                            <!-- View mode toggle -->
+                            <div class="tuc-view-toggle">
+                                <button class="tuc-view-btn" :class="{ active: trainingUnitView === 'timeline' }"
+                                        @click="trainingUnitView = 'timeline'" title="Timeline view">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6H20M4 12H20M4 18H14"/></svg>
+                                </button>
+                                <button class="tuc-view-btn" :class="{ active: trainingUnitView === 'weekly' }"
+                                        @click="trainingUnitView = 'weekly'" title="Weekly staffing view">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                </button>
+                                <button class="tuc-view-btn" :class="{ active: trainingUnitView === 'detail' }"
+                                        @click="trainingUnitView = 'detail'" title="Detail view">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                                </button>
+                            </div>
                             <!-- Horizon selector for timeline view -->
                             <!-- ══ WEEKLY STAFFING GRID ══ -->
                             <div v-if="trainingUnitView === 'weekly'" class="tuc-weekly-view">
@@ -11169,6 +11079,8 @@ tr.staff-table-row .tbl-btn {
                                 </button>
                             </div>
                         </div><!-- end grouped view -->
+                    </div>
+                </div><!-- /training_units -->
                 <!-- ============ STAFF ABSENCE VIEW ============ -->
                 <div v-if="currentView === 'staff_absence'">
                     <!-- KPI strip -->
@@ -13041,6 +12953,132 @@ tr.staff-table-row .tbl-btn {
                         </div>
                     </div><!-- /allstudies -->
 
+                    <!-- ══ ALL PROJECTS VIEW ══════════════════════════════════ -->
+                    <div v-if="researchHubPage === 'allprojects'" class="rhub-page" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+                        <div class="rhub-topbar">
+                            <button class="rhub-back-btn" @click="researchHubPage = 'overview'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> All lines</button>
+                            <span style="font-size:14px;font-weight:500;color:var(--nm-text1);margin-left:8px">All Projects</span>
+                            <button v-if="hasPermission('research_lines','create')" class="rhub-add-btn" style="margin-left:auto" @click="showAddProjectModal(null)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add project</button>
+                        </div>
+                        <!-- Stage funnel -->
+                        <div style="display:grid;grid-template-columns:repeat(6,1fr);border-bottom:0.5px solid var(--nm-border);flex-shrink:0;">
+                            <div v-for="stage in PROJECT_STAGES" :key="stage.key"
+                                 style="padding:10px 14px;display:flex;flex-direction:column;gap:2px;border-right:0.5px solid var(--nm-border);cursor:pointer;"
+                                 :style="projectFilters.stage === stage.key ? { background: stage.bg } : {}"
+                                 @click="projectFilters.stage = projectFilters.stage === stage.key ? '' : stage.key">
+                                <div style="font-size:18px;font-weight:500;" :style="{ color: stage.color }">
+                                    {{ (innovationProjects||[]).filter(p => { const s = p.current_stage || ({'En Desarrollo':'Prototipo','Fase Piloto':'Piloto','Validación Clínica':'Validación'})[p.development_stage]; return s === stage.key; }).length }}
+                                </div>
+                                <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--nm-text3)">{{ stage.label }}</div>
+                            </div>
+                        </div>
+                        <div class="rhub-line-body" style="padding:16px">
+                            <div v-if="!filteredProjectsAll.length" class="nm-empty" style="padding:40px 0">
+                                <div class="nm-empty-title">No projects found</div>
+                            </div>
+                            <div class="rhub-project-list">
+                                <div v-for="proj in filteredProjectsAll" :key="proj.id" class="rhub-project-card"
+                                     @click="selectedLine = researchLines.find(l => l.id === proj.research_line_id); openProject(proj)">
+                                    <div class="rpc-body">
+                                        <div class="rpc-title">{{ proj.title }}</div>
+                                        <div class="rpc-meta">
+                                            <span class="rtag rtag--stage">{{ proj.current_stage || proj.development_stage }}</span>
+                                            <span class="rtag rtag--obs">{{ proj.category }}</span>
+                                            <span v-if="proj.funding_status === 'funded'" class="rtag rtag--ok">Funded</span>
+                                            <span v-if="proj.funding_status === 'seeking'" class="rtag rtag--warn">Seeking funding</span>
+                                            <span v-if="proj.partner_found" class="rtag rtag--partner">Partner ✓</span>
+                                            <span v-if="proj.trl_level" class="rtag rtag--obs">TRL {{ proj.trl_level }}</span>
+                                            <span v-if="proj.research_lines?.name" style="font-size:10px;color:var(--nm-text3)">L{{ proj.research_lines?.line_number }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="rhsc-arr"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- /allprojects -->
+
+                    <!-- ══ ANALYTICS VIEW ═════════════════════════════════════ -->
+                    <div v-if="researchHubPage === 'analytics'" class="rhub-page" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+                        <div class="rhub-topbar">
+                            <button class="rhub-back-btn" @click="researchHubPage = 'overview'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> All lines</button>
+                            <span style="font-size:14px;font-weight:500;color:var(--nm-text1);margin-left:8px">Analytics</span>
+                        </div>
+                        <div style="flex:1;overflow-y:auto;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-content:start;">
+                            <!-- Summary KPIs -->
+                            <div class="rhub-field-card" style="grid-column:1/-1">
+                                <div class="rfc-head">Portfolio overview</div>
+                                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
+                                    <div v-for="kpi in [
+                                        { label: 'Research lines', val: researchLines.length, sub: researchLines.filter(l=>l.active!==false).length + ' active' },
+                                        { label: 'Clinical studies', val: clinicalTrials.length, sub: clinicalTrials.filter(t=>['Activo','Reclutando'].includes(t.status)).length + ' active' },
+                                        { label: 'Innovation projects', val: innovationProjects.length, sub: innovationProjects.filter(p=>p.funding_status==='funded').length + ' funded' },
+                                        { label: 'Participants', val: clinicalTrials.reduce((s,t)=>s+(t.actual_enrollment||0),0), sub: clinicalTrials.filter(t=>t.status==='Reclutando').length + ' recruiting' },
+                                    ]" :key="kpi.label" style="padding:16px;border-right:0.5px solid var(--nm-border)">
+                                        <div style="font-size:28px;font-weight:500;color:var(--nm-text1)">{{ kpi.val }}</div>
+                                        <div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--nm-text3)">{{ kpi.label }}</div>
+                                        <div style="font-size:11px;color:var(--nm-text2);margin-top:2px">{{ kpi.sub }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Studies by status -->
+                            <div class="rhub-field-card">
+                                <div class="rfc-head">Studies by status</div>
+                                <div class="rfc-body" style="gap:8px">
+                                    <div v-for="s in [
+                                        { label:'Reclutando', color:'#10b981' },
+                                        { label:'Activo', color:'#00b3b3' },
+                                        { label:'En preparación', color:'#f59e0b' },
+                                        { label:'Completado', color:'#909399' },
+                                    ]" :key="s.label" style="display:flex;align-items:center;gap:10px">
+                                        <div style="width:10px;height:10px;border-radius:2px;flex-shrink:0;" :style="{ background: s.color }"></div>
+                                        <span style="flex:1;font-size:12px;color:var(--nm-text2)">{{ s.label }}</span>
+                                        <span style="font-size:14px;font-weight:500;color:var(--nm-text1)">{{ clinicalTrials.filter(t=>t.status===s.label).length }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Studies by phase -->
+                            <div class="rhub-field-card">
+                                <div class="rfc-head">Studies by phase</div>
+                                <div class="rfc-body" style="gap:8px">
+                                    <div v-for="p in ['Phase I','Phase II','Phase III','Phase IV']" :key="p" style="display:flex;align-items:center;gap:10px">
+                                        <div class="rht-phase-badge" :class="'rht-phase--p'+p.replace('Phase ','')" style="width:20px;height:20px;border-radius:4px;font-size:9px;flex-shrink:0">{{ p.replace('Phase ','') }}</div>
+                                        <span style="flex:1;font-size:12px;color:var(--nm-text2)">{{ p }}</span>
+                                        <span style="font-size:14px;font-weight:500;color:var(--nm-text1)">{{ clinicalTrials.filter(t=>t.phase===p).length }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Projects by stage -->
+                            <div class="rhub-field-card">
+                                <div class="rfc-head">Projects by stage</div>
+                                <div class="rfc-body" style="gap:8px">
+                                    <div v-for="stage in PROJECT_STAGES" :key="stage.key" style="display:flex;align-items:center;gap:10px">
+                                        <div style="width:10px;height:10px;border-radius:2px;flex-shrink:0;" :style="{ background: stage.color }"></div>
+                                        <span style="flex:1;font-size:12px;color:var(--nm-text2)">{{ stage.label }}</span>
+                                        <span style="font-size:14px;font-weight:500;color:var(--nm-text1)">
+                                            {{ (innovationProjects||[]).filter(p => { const s = p.current_stage || ({'En Desarrollo':'Prototipo','Fase Piloto':'Piloto','Validación Clínica':'Validación'})[p.development_stage]; return s === stage.key; }).length }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Data completeness -->
+                            <div class="rhub-field-card">
+                                <div class="rfc-head">Data completeness — studies</div>
+                                <div class="rfc-body" style="gap:8px">
+                                    <div v-for="check in [
+                                        { label: 'Have a PI assigned', count: clinicalTrials.filter(t=>t.principal_investigator_id).length },
+                                        { label: 'Have ethics status', count: clinicalTrials.filter(t=>t.ethics_status).length },
+                                        { label: 'Have target diseases', count: clinicalTrials.filter(t=>t.target_diseases?.length).length },
+                                        { label: 'Protocol finalized', count: clinicalTrials.filter(t=>t.protocol_finalized).length },
+                                        { label: 'Have enrollment data', count: clinicalTrials.filter(t=>t.enrollment_target).length },
+                                    ]" :key="check.label" style="display:flex;align-items:center;gap:10px">
+                                        <div style="flex:1;font-size:12px;color:var(--nm-text2)">{{ check.label }}</div>
+                                        <span style="font-size:13px;font-weight:500;" :style="{ color: check.count === clinicalTrials.length ? '#0f6e56' : check.count > 0 ? '#d97706' : '#ef4444' }">{{ check.count }}/{{ clinicalTrials.length }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- /analytics -->
+
                     </div><!-- /research-hub -->
 
                 <!-- ============================================================
@@ -13097,7 +13135,7 @@ tr.staff-table-row .tbl-btn {
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
                             </div>
                             <div class="nm-empty-title">No posts found</div>
-                            <div class="nm-empty-sub">{{ newsFilters.search || newsFilters.type || newsFilters.visibility ? 'Try clearing your filters' : 'Create your first post to share updates with the team' }}</div>
+                            <div class="nm-empty-sub">{{ newsFilters.search || newsFilters.type || newsFilters.scope ? 'Try clearing your filters' : 'Create your first post to share updates with the team' }}</div>
                             <button v-if="hasPermission('news_posts','create') && !newsFilters.search && !newsFilters.type" class="nm-empty-action" @click="showAddNewsModal">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
                             </button>
@@ -15779,106 +15817,199 @@ tr.staff-table-row .tbl-btn {
         </div>
 
         <!-- ============ ADD/EDIT TRAINING UNIT MODAL ============ -->
-        <div v-if="trainingUnitModal.show" class="modal-overlay" @click.self="trainingUnitModal.show=false">
-                <div class="tu-modal">
-                    <div class="tu-modal-hdr">
-                        <div class="tu-modal-hdr-left">
-                            <div class="tu-modal-icon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4fa3f5" stroke-width="1.8" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg>
-                            </div>
-                            <div>
-                                <div class="tu-modal-title">{{ trainingUnitModal.mode === 'edit' ? 'Edit unit' : 'New clinical unit' }}</div>
-                                <div class="tu-modal-sub" v-if="trainingUnitModal.mode === 'edit' && trainingUnitModal.form.unit_name">{{ trainingUnitModal.form.unit_name }}</div>
+        <div v-if="trainingUnitModal.show" class="modal-overlay">
+            <div class="sm-modal" style="max-width:min(760px,calc(100vw - 32px));">
+
+                <!-- LEFT: unit preview -->
+                <div class="sm-left">
+                    <div class="sm-preview">
+                        <!-- Unit type icon -->
+                        <div style="width:60px;height:60px;border-radius:14px;display:flex;align-items:center;justify-content:center;transition:all .3s;"
+                             :style="trainingUnitModal.form.unit_name ? 'background:linear-gradient(135deg,#00B3B3,#0e7490);box-shadow:0 0 0 2.5px rgba(0,179,179,.2),0 0 0 5px rgba(0,179,179,.06)' : 'background:rgba(255,255,255,.05);border:1.5px dashed rgba(255,255,255,.12)'">
+                            <svg v-if="trainingUnitModal.form.unit_type === 'research'" width="24" height="24" viewBox="0 0 24 24" fill="none" :stroke="trainingUnitModal.form.unit_name ? '#fff' : 'rgba(255,255,255,.2)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
+                            <svg v-else-if="trainingUnitModal.form.unit_type === 'icu'" width="24" height="24" viewBox="0 0 24 24" fill="none" :stroke="trainingUnitModal.form.unit_name ? '#fff' : 'rgba(255,255,255,.2)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12H7L9 6L13 18L15 12H21"/></svg>
+                            <svg v-else-if="trainingUnitModal.form.unit_type === 'outpatient'" width="24" height="24" viewBox="0 0 24 24" fill="none" :stroke="trainingUnitModal.form.unit_name ? '#fff' : 'rgba(255,255,255,.2)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" :stroke="trainingUnitModal.form.unit_name ? '#fff' : 'rgba(255,255,255,.2)'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg>
+                        </div>
+
+                        <div class="sm-preview-name" :class="{'sm-preview-name--empty': !trainingUnitModal.form.unit_name}">
+                            {{ trainingUnitModal.form.unit_name || 'Unit name…' }}
+                        </div>
+                        <div class="sm-preview-role" v-if="trainingUnitModal.form.unit_code">
+                            {{ trainingUnitModal.form.unit_code }}
+                        </div>
+                        <div class="sm-preview-chips">
+                            <span v-if="trainingUnitModal.form.unit_type" class="sm-preview-chip">
+                                {{ {'training_unit':'Unidad','clinical_unit':'Sala','icu':'UCI','outpatient':'Consultas','surgical':'Procedimientos','research':'Investigación'}[trainingUnitModal.form.unit_type] || trainingUnitModal.form.unit_type }}
+                            </span>
+                            <span v-if="trainingUnitModal.form.unit_status && trainingUnitModal.form.unit_status !== 'active'" class="sm-preview-chip" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2);color:#f59e0b;">
+                                {{ trainingUnitModal.form.unit_status === 'under_renovation' ? 'Renovation' : 'Inactive' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Unit details preview -->
+                    <div style="padding:12px 16px;flex:1;display:flex;flex-direction:column;gap:10px;">
+                        <div v-if="trainingUnitModal.form.maximum_residents">
+                            <div style="font-size:10px;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:5px;">Capacity</div>
+                            <div style="display:flex;align-items:baseline;gap:4px;">
+                                <span style="font-size:1.5rem;font-weight:700;color:#00B3B3;line-height:1;">{{ trainingUnitModal.form.maximum_residents }}</span>
+                                <span style="font-size:11px;font-family:monospace;color:rgba(255,255,255,.3);">max residents</span>
                             </div>
                         </div>
-                        <button class="tu-modal-close" @click="trainingUnitModal.show=false">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+
+                        <div v-if="trainingUnitModal.form.supervising_attending_id">
+                            <div style="font-size:10px;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:5px;">Supervisor</div>
+                            <div style="display:flex;align-items:center;gap:7px;">
+                                <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#00B3B3,#4A9EE8);display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:700;color:#fff;flex-shrink:0;">
+                                    {{ (availableAttendings.find(a=>a.id===trainingUnitModal.form.supervising_attending_id)?.full_name||'').split(' ').slice(0,2).map(n=>n[0]).join('') }}
+                                </div>
+                                <span style="font-size:12px;color:rgba(255,255,255,.83);font-weight:500;">
+                                    {{ availableAttendings.find(a=>a.id===trainingUnitModal.form.supervising_attending_id)?.full_name }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div v-if="trainingUnitModal.form.department_id">
+                            <div style="font-size:10px;font-family:monospace;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;">Departamento</div>
+                            <div style="font-size:12px;color:rgba(255,255,255,.73);">{{ departments.find(d=>d.id===trainingUnitModal.form.department_id)?.name || '—' }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Delete button in edit mode -->
+                    <div v-if="trainingUnitModal.mode==='edit'" style="padding:0 12px 8px;">
+                        <button class="btn btn-sm btn-secondary" style="width:100%;font-size:12px;justify-content:center;display:flex;align-items:center;gap:6px;"
+                                v-if="hasPermission('training_units','delete')"
+                                @click="deleteTrainingUnit(trainingUnitModal.form); trainingUnitModal.show=false">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                            Delete Unit
                         </button>
                     </div>
-                    <div class="tu-modal-preview" v-if="trainingUnitModal.form.unit_name || trainingUnitModal.form.unit_type">
-                        <span class="tu-preview-name">{{ trainingUnitModal.form.unit_name || 'Unit name…' }}</span>
-                        <span class="tu-preview-type" v-if="trainingUnitModal.form.unit_type">{{ {'clinical_unit':'Ward','icu':'UCI / Critical','outpatient':'Outpatient','surgical':'Surgery','research':'Research','training_unit':'External'}[trainingUnitModal.form.unit_type] || trainingUnitModal.form.unit_type }}</span>
-                        <span class="tu-preview-cap" v-if="trainingUnitModal.form.maximum_residents">{{ trainingUnitModal.form.maximum_residents }} max</span>
-                        <template v-if="trainingUnitModal.mode === 'edit' && trainingUnitModal.form.id">
-                            <span class="tu-preview-sep">·</span>
-                            <template v-for="proj in getUnitCapacityProjection(trainingUnitModal.form.id, trainingUnitModal.form.maximum_residents)" :key="proj.monthOffset">
-                                <span class="tu-preview-proj" :class="proj.over ? 'tu-preview-proj--over' : proj.count === trainingUnitModal.form.maximum_residents ? 'tu-preview-proj--full' : ''">{{ proj.label }}: {{ proj.count }}/{{ trainingUnitModal.form.maximum_residents }}<span v-if="proj.over"> ⚠</span></span>
-                            </template>
-                        </template>
+
+                    <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
+                </div>
+
+                <!-- RIGHT: form -->
+                <div class="sm-right">
+                    <div class="sm-form-header">
+                        <div class="sm-form-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg>
+                            {{ trainingUnitModal.mode === 'add' ? 'New Clinical Unit' : 'Edit Clinical Unit' }}
+                        </div>
+                        <button class="sm-form-close" @click="trainingUnitModal.show = false">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                        </button>
                     </div>
-                    <div class="tu-modal-body">
-                        <div class="tu-section-label">Identity</div>
-                        <div class="tu-row">
-                            <div class="tu-field tu-field--grow" :class="{'tu-field--error': fieldErrors.trainingUnit?.unit_name}">
-                                <label class="tu-label">Unit name <span class="tu-req">*</span></label>
-                                <input class="tu-input" type="text" v-model="trainingUnitModal.form.unit_name" @input="onUnitNameInput()" placeholder="e.g. UCI Respiratoria">
-                                <span class="tu-field-err" v-if="fieldErrors.trainingUnit?.unit_name">Required</span>
+                    <div class="sm-form-body">
+
+                        <!-- Unit Name + auto-generated Code -->
+                        <div class="sm-row">
+                            <div class="sm-field" :class="{'has-error': fieldErrors.trainingUnit?.unit_name}">
+                                <div class="sm-label">Unit Name <span class="req">·</span></div>
+                                <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.unit_name}"
+                                       v-model="trainingUnitModal.form.unit_name"
+                                       @input="onUnitNameInput()"
+                                       placeholder="e.g. UCI Respiratoria" required>
                             </div>
-                            <div class="tu-field tu-field--sm">
-                                <label class="tu-label">Type <span class="tu-req">*</span></label>
-                                <select class="tu-select" v-model="trainingUnitModal.form.unit_type">
-                                    <option value="clinical_unit">Ward</option>
-                                    <option value="icu">UCI / Critical</option>
-                                    <option value="outpatient">Outpatient</option>
-                                    <option value="surgical">Surgery</option>
-                                    <option value="research">Research</option>
-                                    <option value="training_unit">External rotation</option>
+                            <div class="sm-field">
+                                <div class="sm-label">Unit Code <span class="req">·</span> <span style="font-size:9.5px;color:var(--text-4);font-weight:400">auto-generated</span></div>
+                                <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.unit_code}"
+                                       v-model="trainingUnitModal.form.unit_code"
+                                       placeholder="UCIR" style="font-family:monospace;letter-spacing:.05em;text-transform:uppercase" required>
+                            </div>
+                        </div>
+
+                        <!-- Department (replaces Specialty) -->
+                        <div class="sm-field">
+                            <div class="sm-label">Department / Service <span class="req">·</span></div>
+                            <select class="sm-select" v-model="trainingUnitModal.form.department_id" required>
+                                <option value="">Select department…</option>
+                                <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                            </select>
+                        </div>
+
+                        <!-- Unit Type + Status -->
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Unit Type <span class="req">·</span></div>
+                                <select class="sm-select" v-model="trainingUnitModal.form.unit_type" required>
+                                    <option value="clinical_unit">Sala de Hospitalización</option>
+                                    <option value="icu">UCI / Críticos</option>
+                                    <option value="outpatient">Consultas Externas</option>
+                                    <option value="surgical">Procedimientos / Cirugía</option>
+                                    <option value="research">Bloque de Investigación</option>
+                                    <option value="training_unit">Rotación Externa</option>
+                                </select>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Status <span class="req">·</span></div>
+                                <select class="sm-select" v-model="trainingUnitModal.form.unit_status" required>
+                                    <option value="active">Active</option>
+                                    <option value="under_renovation">Under Renovation</option>
+                                    <option value="inactive">Inactive</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="tu-section-label">Organisation</div>
-                        <div class="tu-row">
-                            <div class="tu-field tu-field--grow" :class="{'tu-field--error': fieldErrors.trainingUnit?.department_id}">
-                                <label class="tu-label">Department <span class="tu-req">*</span></label>
-                                <select class="tu-select" v-model="trainingUnitModal.form.department_id">
-                                    <option value="">Select department…</option>
-                                    <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
-                                </select>
-                                <span class="tu-field-err" v-if="fieldErrors.trainingUnit?.department_id">Required</span>
+
+                        <!-- Max Residents + Supervising Attending -->
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Max Residents <span class="req">·</span></div>
+                                <input type="number" class="sm-input" :class="{filled: trainingUnitModal.form.maximum_residents}"
+                                       v-model="trainingUnitModal.form.maximum_residents" min="1" max="50" required>
                             </div>
-                            <div class="tu-field tu-field--md">
-                                <label class="tu-label">Supervisor</label>
-                                <select class="tu-select" v-model="trainingUnitModal.form.supervising_attending_id">
-                                    <option value="">No supervisor assigned</option>
+                            <div class="sm-field">
+                                <div class="sm-label">Supervising Attending</div>
+                                <select class="sm-select" v-model="trainingUnitModal.form.supervising_attending_id">
+                                    <option value="">None assigned</option>
                                     <option v-for="a in availableAttendings" :key="a.id" :value="a.id">{{ a.full_name }}</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="tu-section-label">Capacity</div>
-                        <div class="tu-row">
-                            <div class="tu-field tu-field--xs">
-                                <label class="tu-label">Max residents <span class="tu-req">*</span></label>
-                                <input class="tu-input tu-input--num" type="number" v-model.number="trainingUnitModal.form.maximum_residents" min="1" max="20">
+
+                        <!-- Specialty -->
+                        <div class="sm-field">
+                            <div class="sm-label">Specialty <span class="hint">— optional</span></div>
+                            <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.specialty}"
+                                   v-model="trainingUnitModal.form.specialty"
+                                   placeholder="e.g. Pulmonología, Críticos…">
+                        </div>
+
+                        <!-- Location -->
+                        <div class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Building <span class="hint">— optional</span></div>
+                                <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.location_building}"
+                                       v-model="trainingUnitModal.form.location_building"
+                                       placeholder="e.g. Bloque C">
                             </div>
-                            <div class="tu-field tu-field--sm">
-                                <label class="tu-label">Status</label>
-                                <select class="tu-select" v-model="trainingUnitModal.form.unit_status">
-                                    <option value="active">Active</option>
-                                    <option value="under_renovation">Under renovation</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                            <div class="tu-field tu-field--sm">
-                                <label class="tu-label">Unit code <span class="tu-hint">(auto)</span></label>
-                                <input class="tu-input tu-input--mono" type="text" v-model="trainingUnitModal.form.unit_code" placeholder="UCIR">
+                            <div class="sm-field">
+                                <div class="sm-label">Floor <span class="hint">— optional</span></div>
+                                <input type="text" class="sm-input" :class="{filled: trainingUnitModal.form.location_floor}"
+                                       v-model="trainingUnitModal.form.location_floor"
+                                       placeholder="e.g. Planta 3">
                             </div>
                         </div>
-                        <div class="tu-section-label">Description <span class="tu-optional">optional</span></div>
-                        <div class="tu-field">
-                            <textarea class="tu-textarea" v-model="trainingUnitModal.form.unit_description" placeholder="What will residents see and do in this unit? Any prerequisites or notes…" rows="3"></textarea>
+
+                        <!-- Description -->
+                        <div class="sm-field">
+                            <div class="sm-label">Description <span class="hint">— optional</span></div>
+                            <textarea class="sm-input" v-model="trainingUnitModal.form.unit_description"
+                                      rows="2" style="height:auto;resize:none;padding-top:8px;padding-bottom:8px;"
+                                      placeholder="Brief description of this unit's scope…"></textarea>
                         </div>
+
                     </div>
-                    <div class="tu-modal-footer">
-                        <button class="tu-btn-danger" v-if="trainingUnitModal.mode === 'edit' && hasPermission('training_units','delete')" @click="deleteTrainingUnit(trainingUnitModal.form.id)">Delete unit</button>
-                        <div style="flex:1"></div>
-                        <button class="tu-btn-ghost" @click="trainingUnitModal.show=false">Cancel</button>
-                        <button class="tu-btn-primary" @click="saveTrainingUnit(saving, departments)" :disabled="saving">
-                            <svg v-if="saving" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"/></svg>
-                            {{ trainingUnitModal.mode === 'edit' ? 'Save changes' : 'Create unit' }}
+                    <div class="sm-form-footer">
+                        <button class="sm-btn-back" @click="trainingUnitModal.show = false">Cancel</button>
+                        <button class="sm-btn-save" @click="saveTrainingUnit" :disabled="saving">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            {{ saving ? 'Saving…' : trainingUnitModal.mode === 'add' ? 'Add Unit' : 'Save Changes' }}
                         </button>
                     </div>
                 </div>
             </div>
+        </div>
 
 
         
@@ -17873,7 +18004,7 @@ tr.staff-table-row .tbl-btn {
                             </div>
                             <div v-if="deptPanelAttending.length === 0" class="dp-empty">No attending staff assigned to this department</div>
                             <div v-for="s in deptPanelAttending" :key="s.id" class="dp-staff-row">
-                                <div class="dp-staff-avatar">{{ s.full_name.split(' ').map(w=>w[0]).slice(0,2).join('') }}</div>
+                                <div class="dp-staff-avatar">{{ s.full_name ? s.full_name.split(' ').map(w=>w[0]).slice(0,2).join('') : '?' }}</div>
                                 <div class="dp-staff-info">
                                     <div class="dp-staff-name">{{ s.full_name }}</div>
                                     <div class="dp-staff-meta">
@@ -17911,7 +18042,7 @@ tr.staff-table-row .tbl-btn {
                             </div>
                             <div v-if="deptPanelResidents.length === 0" class="dp-empty">No residents assigned to this department</div>
                             <div v-for="s in deptPanelResidents" :key="s.id" class="dp-staff-row">
-                                <div class="dp-staff-avatar dp-staff-avatar--res">{{ s.full_name.split(' ').map(w=>w[0]).slice(0,2).join('') }}</div>
+                                <div class="dp-staff-avatar dp-staff-avatar--res">{{ s.full_name ? s.full_name.split(' ').map(w=>w[0]).slice(0,2).join('') : '?' }}</div>
                                 <div class="dp-staff-info">
                                     <div class="dp-staff-name">{{ s.full_name }}</div>
                                     <div class="dp-staff-meta">
@@ -18958,7 +19089,7 @@ tr.staff-table-row .tbl-btn {
         }
 
         resize();
-        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });  
+        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });
         if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
     })();
     </script>
