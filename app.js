@@ -5488,9 +5488,11 @@ document.addEventListener('DOMContentLoaded', () => {
         show: false, mode: 'add', _tab: 'meta',
         form: {
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
+          image_urls: [],  // up to 5, for articles and highlights
           author_id: '', research_line_id: '', is_public: false,
           status: 'draft', expires_at: '', published_at: '',
-          journal_name: '', authors_text: '', doi: ''
+          journal_name: '', authors_text: '', doi: '',
+          _imageInput: ''  // local draft input
         }
       })
       const newsFilters    = reactive({ type: '', status: '', search: '', scope: '' })
@@ -5498,7 +5500,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = newsModal.form.body || ''
         return t.trim() === '' ? 0 : t.trim().split(/\s+/).length
       })
-      const newsWordLimit  = computed(() => newsModal.form.post_type === 'update' ? 80 : newsModal.form.post_type === 'photo_story' ? 120 : 400)
+      const newsWordLimit  = computed(() => newsModal.form.post_type === 'update' ? 80 : newsModal.form.post_type === 'highlight' ? 120 : 400)
 
       // ── Helpers ─────────────────────────────────────────────
       const formatAuthorName = (staffId) => {
@@ -5514,9 +5516,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const autoExpiry = (type) => {
         const d = new Date()
-        if (type === 'update')  d.setDate(d.getDate() + 90)
-        if (type === 'article') d.setMonth(d.getMonth() + 18)
-    if (type === 'photo_story') d.setMonth(d.getMonth() + 12)
+        if (type === 'update')    d.setDate(d.getDate() + 90)
+        if (type === 'article')   d.setMonth(d.getMonth() + 18)
+        if (type === 'highlight') d.setMonth(d.getMonth() + 12)
         if (type === 'publication') return ''
         return d.toISOString().split('T')[0]
       }
@@ -5565,9 +5567,9 @@ document.addEventListener('DOMContentLoaded', () => {
         newsModal.mode = 'add'
         Object.assign(newsModal.form, {
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
-          author_id: '', research_line_id: '', is_public: false,
+          image_urls: [], author_id: '', research_line_id: '', is_public: false,
           status: 'draft', expires_at: autoExpiry('article'), published_at: '',
-          journal_name: '', authors_text: '', doi: ''
+          journal_name: '', authors_text: '', doi: '', _imageInput: ''
         })
         newsModal.show = true
       }
@@ -5586,7 +5588,9 @@ document.addEventListener('DOMContentLoaded', () => {
           research_line_id:   post.research_line_id || '',
           author_id:          post.author_id || '',
           expires_at:         post.expires_at   ? post.expires_at.split('T')[0]   : '',
-          published_at:       post.published_at ? post.published_at.split('T')[0] : ''
+          published_at:       post.published_at ? post.published_at.split('T')[0] : '',
+          image_urls:         Array.isArray(post.image_urls) ? [...post.image_urls] : (post.featured_image_url ? [post.featured_image_url] : []),
+          _imageInput: ''
         })
         newsModal.show = true
       }
@@ -5594,8 +5598,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const saveNews = async () => {
         const _t = (v) => (v == null ? '' : String(v)).trim()
         if (!_t(newsModal.form.title)) { showToast('Validation', 'Title is required', 'warning'); return }
-        if (newsModal.form.post_type === 'photo_story' && !_t(newsModal.form.featured_image_url)) {
-          showToast('Validation', 'Photo Story requires an image URL', 'warning'); return
+        if (newsModal.form.post_type === 'highlight' && !_t(newsModal.form.featured_image_url)) {
+          showToast('Validation', 'Highlight requires an image URL', 'warning'); return
         }
         // Publication validation — require journal name or DOI
         if (newsModal.form.post_type === 'publication' && !_t(newsModal.form.journal_name) && !_t(newsModal.form.doi)) {
