@@ -1510,12 +1510,13 @@
 
       /* Column proportions via CSS, not colgroup */
       /* Staff table */
-      #app .table-staff th:nth-child(1), #app .table-staff td:nth-child(1) { width:26%; }
-      #app .table-staff th:nth-child(2), #app .table-staff td:nth-child(2) { width:13%; }
-      #app .table-staff th:nth-child(3), #app .table-staff td:nth-child(3) { width:16%; }
-      #app .table-staff th:nth-child(4), #app .table-staff td:nth-child(4) { width:22%; }
-      #app .table-staff th:nth-child(5), #app .table-staff td:nth-child(5) { width:13%; }
-      #app .table-staff th:nth-child(6), #app .table-staff td:nth-child(6) { width:10%; }
+      /* ── Staff table: semantic column widths ────────────────── */
+      #app .table-staff { min-width: 720px !important; table-layout: auto !important; }
+      #app .table-staff th:nth-child(1), #app .table-staff td:nth-child(1) { min-width:220px; width:auto; }   /* Name */
+      #app .table-staff th:nth-child(2), #app .table-staff td:nth-child(2) { min-width:130px; width:130px; }  /* Type */
+      #app .table-staff th:nth-child(3), #app .table-staff td:nth-child(3) { min-width:180px; width:180px; }  /* Rotation */
+      #app .table-staff th:nth-child(4), #app .table-staff td:nth-child(4) { min-width:110px; width:110px; }  /* Status */
+      #app .table-staff th:nth-child(5), #app .table-staff td:nth-child(5) { min-width:80px;  width:80px;  white-space:nowrap; }  /* Actions */
 
       /* Table header — refined */
       #app .content-area .table thead th,
@@ -1687,37 +1688,25 @@
       #app .table tbody tr:hover { background:rgba(0,0,0,.018) !important; }
       #app .table-striped tbody tr:nth-child(even) { background:rgba(0,0,0,.012) !important; }
 
-      /* ── STAFF TABLE ─── Name(40) Type(12) Rotation(28) Status(10) Actions(10) */
-      #app .table-staff { min-width:680px !important; }
-      #app .table-staff th:nth-child(1),
-      #app .table-staff td:nth-child(1) { width:40%; }
-      #app .table-staff th:nth-child(2),
-      #app .table-staff td:nth-child(2) { width:12%; text-align:center; }
-      #app .table-staff th:nth-child(3),
-      #app .table-staff td:nth-child(3) { width:10%; text-align:center; }
-      #app .table-staff th:nth-child(4),
-      #app .table-staff td:nth-child(4) { width:28%; }
-      #app .table-staff th:nth-child(5),
-      #app .table-staff td:nth-child(5) { width:10%; text-align:center; }
-
       /* ── ABSENCE TABLE ─── Name(30) Reason(11) Status(11) From(9) Until(9) Dur(7) Coverage(13) Actions(10) */
-      #app .table-absence { min-width:720px !important; }
+      /* ── Absence table: semantic column widths ──────────────── */
+      #app .table-absence { min-width: 860px !important; table-layout: auto !important; }
       #app .table-absence th:nth-child(1),
-      #app .table-absence td:nth-child(1) { width:30%; }
+      #app .table-absence td:nth-child(1) { min-width:200px; width:auto; }   /* Staff name */
       #app .table-absence th:nth-child(2),
-      #app .table-absence td:nth-child(2) { width:11%; }
+      #app .table-absence td:nth-child(2) { min-width:110px; width:110px; }  /* Absence type */
       #app .table-absence th:nth-child(3),
-      #app .table-absence td:nth-child(3) { width:11%; }
+      #app .table-absence td:nth-child(3) { min-width:120px; width:120px; }  /* Reason */
       #app .table-absence th:nth-child(4),
-      #app .table-absence td:nth-child(4) { width:9%; }
+      #app .table-absence td:nth-child(4) { min-width:100px; width:100px; }  /* Start date */
       #app .table-absence th:nth-child(5),
-      #app .table-absence td:nth-child(5) { width:9%; }
+      #app .table-absence td:nth-child(5) { min-width:100px; width:100px; }  /* End date */
       #app .table-absence th:nth-child(6),
-      #app .table-absence td:nth-child(6) { width:7%; }
+      #app .table-absence td:nth-child(6) { min-width:60px;  width:60px;  }  /* Days */
       #app .table-absence th:nth-child(7),
-      #app .table-absence td:nth-child(7) { width:13%; }
+      #app .table-absence td:nth-child(7) { min-width:110px; width:110px; }  /* Status */
       #app .table-absence th:nth-child(8),
-      #app .table-absence td:nth-child(8) { width:10%; }
+      #app .table-absence td:nth-child(8) { min-width:80px;  width:80px;  }  /* Actions */
 
       /* ── ROTATION TABLE ─── Resident(30) Unit(26) Period(18) Days(8) Status(10) Actions(8) */
       #app .table-rotation { min-width:640px !important; }
@@ -1729,23 +1718,35 @@
       #app .table-rotation td:nth-child(3) { width:18%; }
       #app .table-rotation th:nth-child(4),
       #app .table-rotation td:nth-child(4) { width:8%; text-align:center; }
+      /* ── Rotation table: semantic column widths ─────────────── */
+      #app .table-rotation { min-width: 800px !important; table-layout: auto !important; }
+      #app .table-rotation th:nth-child(1),
+      #app .table-rotation td:nth-child(1) { min-width:200px; width:auto;  }  /* Resident name */
+      #app .table-rotation th:nth-child(2),
+      #app .table-rotation td:nth-child(2) { min-width:180px; width:180px; }  /* Unit */
+      #app .table-rotation th:nth-child(3),
+      #app .table-rotation td:nth-child(3) { min-width:150px; width:150px; }  /* Supervisor */
+      #app .table-rotation th:nth-child(4),
+      #app .table-rotation td:nth-child(4) { min-width:100px; width:100px; }  /* Start date */
       #app .table-rotation th:nth-child(5),
-      #app .table-rotation td:nth-child(5) { width:10%; text-align:center; }
+      #app .table-rotation td:nth-child(5) { min-width:100px; width:100px; }  /* End date */
       #app .table-rotation th:nth-child(6),
-      #app .table-rotation td:nth-child(6) { width:8%; }
+      #app .table-rotation td:nth-child(6) { min-width:110px; width:110px; }  /* Status */
+      #app .table-rotation th:nth-child(7),
+      #app .table-rotation td:nth-child(7) { min-width:80px;  width:80px;  white-space:nowrap; }  /* Actions */
 
-      /* ── ON-CALL TABLE ─── Period(28) Physician(34) Type(12) Backup(18) Actions(8) */
-      #app .table-oncall { min-width:580px !important; }
+      /* ── On-call table: semantic column widths ───────────────── */
+      #app .table-oncall { min-width: 760px !important; table-layout: auto !important; }
       #app .table-oncall th:nth-child(1),
-      #app .table-oncall td:nth-child(1) { width:28%; }
+      #app .table-oncall td:nth-child(1) { min-width:110px; width:110px; }  /* Date */
       #app .table-oncall th:nth-child(2),
-      #app .table-oncall td:nth-child(2) { width:34%; }
+      #app .table-oncall td:nth-child(2) { min-width:200px; width:auto;  }  /* Physician */
       #app .table-oncall th:nth-child(3),
-      #app .table-oncall td:nth-child(3) { width:12%; text-align:center; }
+      #app .table-oncall td:nth-child(3) { min-width:140px; width:140px; }  /* Shift type */
       #app .table-oncall th:nth-child(4),
-      #app .table-oncall td:nth-child(4) { width:18%; }
+      #app .table-oncall td:nth-child(4) { min-width:120px; width:120px; }  /* Time */
       #app .table-oncall th:nth-child(5),
-      #app .table-oncall td:nth-child(5) { width:8%; }
+      #app .table-oncall td:nth-child(5) { min-width:80px;  width:80px;  white-space:nowrap; }  /* Actions */
 
       /* ── NAME CELL — avatar + text, no vertical names ── */
       #app .staff-name-cell {
@@ -16462,7 +16463,7 @@ tr.staff-table-row .tbl-btn {
                     <!-- ── Footer — same buttons as enrollment ── -->
                     <div class="sm-form-footer">
                         <button class="sm-btn-back" @click="absenceModal.show = false">Cancel</button>
-                        <button class="sm-btn-save" @click="saveAbsence" :disabled="saving">
+                        <button class="sm-btn-save" @click="saveAbsence(saving)" :disabled="saving">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/>
                                 <polyline points="17 21 17 13 7 13 7 21"/>
