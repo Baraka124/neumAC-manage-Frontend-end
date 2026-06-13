@@ -480,7 +480,7 @@
       .news-card--publication { border-left:3px solid #6366f1; min-height:96px; }
       .news-card--publication .news-card-title { font-size:14px !important; font-weight:600 !important; }
       .news-card--update { min-height:72px; }
-      .news-card--photo_story { border-left:3px solid #f59e0b; }
+      .news-card--highlight { border-left:3px solid #f59e0b; }
       .news-card-left { display:flex; flex-direction:column; align-items:center; padding:14px 10px 14px 12px; flex-shrink:0; }
       .news-card-body { flex:1; min-width:0; padding:12px 12px 10px; }
       .news-card-right { display:flex; flex-direction:column; align-items:flex-end; gap:6px; padding:10px 12px 10px 8px; flex-shrink:0; min-width:120px; }
@@ -497,7 +497,7 @@
       .ntb--update { background:rgba(0,179,179,.1); color:#00b3b3; }
       .ntb--article { background:rgba(37,99,235,.1); color:#2563eb; }
       .ntb--publication { background:rgba(129,140,248,.12); color:#6366f1; }
-      .ntb--photo_story { background:rgba(245,158,11,.1); color:#f59e0b; }
+      .ntb--highlight { background:rgba(245,158,11,.1); color:#f59e0b; }
       .news-status-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; font-family:monospace; }
       .nsb--draft { background:rgba(245,158,11,.1); color:#f59e0b; border:.5px solid rgba(245,158,11,.25); }
       .nsb--archived { background:rgba(107,114,128,.1); color:#6b7280; border:.5px solid rgba(107,114,128,.2); }
@@ -4860,7 +4860,7 @@
 #app .news-card--update .news-card-left    { background: #00b3b3; }
 #app .news-card--article .news-card-left   { background: #2563eb; }
 #app .news-card--publication .news-card-left { background: #7c3aed; }
-#app .news-card--photo_story .news-card-left { background: #d97706; }
+#app .news-card--highlight .news-card-left { background: #d97706; }
 #app .news-card-body { padding: 12px 16px; min-width: 0; }
 #app .news-card-tag {
   display: inline-flex; align-items: center; gap: 4px;
@@ -4870,7 +4870,7 @@
 #app .tag-update      { background: rgba(0,179,179,.1); color: #007f7f; }
 #app .tag-article     { background: rgba(37,99,235,.1); color: #1d4ed8; }
 #app .tag-publication { background: rgba(124,58,237,.1); color: #6d28d9; }
-#app .tag-photo_story { background: rgba(217,119,6,.1); color: #b45309; }
+#app .tag-highlight { background: rgba(217,119,6,.1); color: #b45309; }
 #app .news-card-title {
   font-size: 14px; font-weight: 600; color: var(--nm-text1);
   line-height: 1.35; margin-bottom: 4px;
@@ -13120,7 +13120,7 @@ tr.staff-table-row .tbl-btn {
                             <option value="update">Update</option>
                             <option value="article">Article</option>
                             <option value="publication">Publication</option>
-                            <option value="photo_story">Photo Story</option>
+                            <option value="highlight">Highlight</option>
                         </select>
                         <select class="form-select" v-model="newsFilters.scope" style="max-width:150px">
                             <option value="">All Visibility</option>
@@ -13151,7 +13151,7 @@ tr.staff-table-row .tbl-btn {
                             <!-- Content -->
                             <div class="news-card-body">
                                 <div class="news-card-tag" :class="'tag-' + post.post_type">
-                                    {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'photo_story' ? 'Photo Story' : 'Publication' }}
+                                    {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'highlight' ? 'Highlight' : 'Publication' }}
                                 </div>
                                 <div class="news-card-title">{{ post.title }}</div>
 
@@ -13171,6 +13171,15 @@ tr.staff-table-row .tbl-btn {
 
                                 <!-- Body preview (non-publications) -->
                                 <div v-if="post.body && post.post_type !== 'publication'" class="news-card-excerpt">{{ post.body }}</div>
+
+                                <!-- Image strip — articles and highlights -->
+                                <div v-if="(post.image_urls?.length || post.featured_image_url) && (post.post_type === 'article' || post.post_type === 'highlight')"
+                                     style="display:flex;gap:5px;margin-top:8px;overflow:hidden;border-radius:6px;">
+                                    <img v-for="(url, idx) in (post.image_urls?.length ? post.image_urls : [post.featured_image_url]).slice(0,5)"
+                                         :key="idx" :src="url"
+                                         :style="{ flex: idx === 0 ? '2' : '1', height: '60px', objectFit: 'cover', borderRadius: '5px', minWidth: 0 }"
+                                         onerror="this.style.display='none'">
+                                </div>
 
                                 <!-- Meta row -->
                                 <div class="news-card-meta">
@@ -13264,15 +13273,15 @@ tr.staff-table-row .tbl-btn {
                                 <div class="nm-type-icon">
                                     <svg v-if="newsModal.form.post_type==='update'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/></svg>
                                     <svg v-else-if="newsModal.form.post_type==='publication'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                                    <svg v-else-if="newsModal.form.post_type==='photo_story'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    <svg v-else-if="newsModal.form.post_type==='highlight'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                                     <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00B3B3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
                                 </div>
                                 <div class="nm-header-meta">
                                     <div class="nm-header-title">{{ newsModal.form.title || (newsModal.mode === 'add' ? 'New Post…' : 'Edit Post') }}</div>
                                     <div class="nm-header-sub">
                                         <span class="nm-type-badge"
-                                              :style="newsModal.form.post_type==='publication' ? 'color:#818cf8;' : newsModal.form.post_type==='photo_story' ? 'color:#f59e0b;' : ''">
-                                            {{ {'update':'Update','article':'Article','publication':'Publication','photo_story':'Photo Story'}[newsModal.form.post_type] || 'Post' }}
+                                              :style="newsModal.form.post_type==='publication' ? 'color:#818cf8;' : newsModal.form.post_type==='highlight' ? 'color:#f59e0b;' : ''">
+                                            {{ {'update':'Update','article':'Article','publication':'Publication','highlight':'Highlight'}[newsModal.form.post_type] || 'Post' }}
                                         </span>
                                         <span v-if="newsModal.form.author_id" style="color:rgba(255,255,255,.3);">·</span>
                                         <span v-if="newsModal.form.author_id" style="font-size:11px;color:rgba(255,255,255,.45);">{{ allStaffLookup.find(s=>s.id===newsModal.form.author_id)?.full_name?.split(' ').slice(-1)[0] }}</span>
@@ -13305,8 +13314,8 @@ tr.staff-table-row .tbl-btn {
                             <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='publication'}" @click="newsModal.form.post_type='publication'; newsModal._tab='publish'">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg> Publication
                             </button>
-                            <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='photo_story'}" @click="newsModal.form.post_type='photo_story'">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Photo Story
+                            <button class="nm-type-opt" :class="{active: newsModal.form.post_type==='highlight'}" @click="newsModal.form.post_type='highlight'">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Highlight
                             </button>
                         </div>
 
@@ -13402,9 +13411,9 @@ tr.staff-table-row .tbl-btn {
                                         </div>
                                     </div>
                                     <textarea class="sm-input" v-model="newsModal.form.body"
-                                              :rows="newsModal.form.post_type==='update' ? 4 : newsModal.form.post_type==='photo_story' ? 5 : 10"
+                                              :rows="newsModal.form.post_type==='update' ? 4 : newsModal.form.post_type==='highlight' ? 5 : 10"
                                               style="height:auto;resize:vertical;padding-top:8px;padding-bottom:8px;min-height:120px;"
-                                              :placeholder="newsModal.form.post_type==='update' ? 'Short update — max 80 words…' : newsModal.form.post_type==='photo_story' ? 'Caption — what this photo tells us (max 120 words)…' : 'Article content — max 400 words…'">
+                                              :placeholder="newsModal.form.post_type==='update' ? 'Short update — max 80 words…' : newsModal.form.post_type==='highlight' ? 'Caption — what this photo tells us (max 120 words)…' : 'Article content — max 400 words…'">
                                     </textarea>
                                 </div>
                                 <div v-else class="sm-field">
@@ -13414,18 +13423,41 @@ tr.staff-table-row .tbl-btn {
                                               placeholder="Brief summary of the publication findings…"></textarea>
                                 </div>
 
-                                <!-- Image URL — articles + photo stories -->
-                                <div class="sm-field" v-if="newsModal.form.post_type==='article' || newsModal.form.post_type==='photo_story'">
-                                    <div class="sm-label">
-                                        Featured Image URL
-                                        <span v-if="newsModal.form.post_type==='photo_story'" class="req">·</span>
-                                        <span v-else class="hint">— optional</span>
+                                <!-- Images — articles and highlights, up to 5 -->
+                                <div class="sm-field" v-if="newsModal.form.post_type === 'article' || newsModal.form.post_type === 'highlight'">
+                                    <div class="sm-label" style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span>
+                                            Images
+                                            <span v-if="newsModal.form.post_type === 'highlight'" class="req">·</span>
+                                            <span v-else class="hint"> — optional, max 5</span>
+                                        </span>
+                                        <span style="font-size:11px;color:var(--nm-text3)">{{ newsModal.form.image_urls.length }}/5</span>
                                     </div>
-                                    <input type="url" class="sm-input" :class="{filled: newsModal.form.featured_image_url}"
-                                           v-model="newsModal.form.featured_image_url"
-                                           :placeholder="newsModal.form.post_type==='photo_story' ? 'https://… (required)' : 'https://…'">
-                                    <small v-if="newsModal.form.post_type==='photo_story'" class="sm-field-hint">
-                                        Enter the URL of the hero image for this story.
+                                    <!-- Existing images -->
+                                    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px">
+                                        <div v-for="(url, idx) in newsModal.form.image_urls" :key="idx"
+                                             style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--nm-surface2);border:0.5px solid var(--nm-border);border-radius:8px;">
+                                            <img :src="url" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;" onerror="this.style.display='none'">
+                                            <span style="flex:1;font-size:11px;color:var(--nm-text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ url }}</span>
+                                            <span v-if="idx === 0" style="font-size:9px;font-weight:600;color:var(--nm-teal);flex-shrink:0;">Lead</span>
+                                            <button style="border:none;background:none;color:var(--nm-text3);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;"
+                                                    @click.prevent="newsModal.form.image_urls.splice(idx, 1)">×</button>
+                                        </div>
+                                    </div>
+                                    <!-- Add image URL -->
+                                    <div v-if="newsModal.form.image_urls.length < 5" style="display:flex;gap:6px;">
+                                        <input type="url" class="sm-input" v-model="newsModal.form._imageInput"
+                                               placeholder="https://… paste image URL"
+                                               @keydown.enter.prevent="if(newsModal.form._imageInput.trim()){ newsModal.form.image_urls.push(newsModal.form._imageInput.trim()); newsModal.form._imageInput='' }"
+                                               style="flex:1"/>
+                                        <button class="btn btn-outline btn-sm" style="flex-shrink:0;white-space:nowrap"
+                                                @click.prevent="if(newsModal.form._imageInput.trim()){ newsModal.form.image_urls.push(newsModal.form._imageInput.trim()); newsModal.form._imageInput='' }">
+                                            + Add
+                                        </button>
+                                    </div>
+                                    <small class="sm-field-hint">
+                                        First image is the lead/featured image. Drag to reorder not yet supported — add in order.
+                                        <span v-if="newsModal.form.post_type === 'highlight'"> At least one image required for Highlights.</span>
                                     </small>
                                 </div>
                             </template>
@@ -13466,7 +13498,7 @@ tr.staff-table-row .tbl-btn {
                                     </div>
                                     <div class="sm-field" v-if="newsModal.form.post_type !== 'publication'">
                                         <div class="sm-label" style="display:flex;justify-content:space-between;align-items:center;">
-                                            <span>Expiry <span class="hint">— auto: {{ newsModal.form.post_type==='update' ? '90 days' : newsModal.form.post_type==='photo_story' ? '12 months' : '18 months' }}</span></span>
+                                            <span>Expiry <span class="hint">— auto: {{ newsModal.form.post_type==='update' ? '90 days' : newsModal.form.post_type==='highlight' ? '12 months' : '18 months' }}</span></span>
                                             <button type="button" style="font-size:11px;color:var(--nm-teal,#00b3b3);background:none;border:none;cursor:pointer;"
                                                     @click="newsModal.form.expires_at=autoExpiry(newsModal.form.post_type)">↺ reset</button>
                                         </div>
@@ -13485,7 +13517,7 @@ tr.staff-table-row .tbl-btn {
                                     <div v-else>
                                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
                                             <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:4px;background:rgba(0,179,179,.1);color:#00b3b3;">
-                                                {{ {update:'Update',article:'Article',publication:'Publication',photo_story:'Photo Story'}[newsModal.form.post_type] || 'Post' }}
+                                                {{ {update:'Update',article:'Article',publication:'Publication',highlight:'Highlight'}[newsModal.form.post_type] || 'Post' }}
                                             </span>
                                             <span v-if="newsModal.form.status" style="font-size:10px;color:#909399;">{{ newsModal.form.status }}</span>
                                         </div>
@@ -14527,8 +14559,8 @@ tr.staff-table-row .tbl-btn {
               <!-- Eyebrow -->
               <div class="nrd-eyebrow">
                 <span class="nrd-type-badge">
-                  <i class="fas" :class="{ 'fa-bolt': newsDrawer.post.post_type==='update', 'fa-file-alt': newsDrawer.post.post_type==='article', 'fa-book-open': newsDrawer.post.post_type==='publication', 'fa-camera': newsDrawer.post.post_type==='photo_story' }"></i>
-                  {{ newsDrawer.post.post_type === 'update' ? 'Update' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'photo_story' ? 'Photo Story' : 'Publication' }}
+                  <i class="fas" :class="{ 'fa-bolt': newsDrawer.post.post_type==='update', 'fa-file-alt': newsDrawer.post.post_type==='article', 'fa-book-open': newsDrawer.post.post_type==='publication', 'fa-camera': newsDrawer.post.post_type==='highlight' }"></i>
+                  {{ newsDrawer.post.post_type === 'update' ? 'Update' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Publication' }}
                 </span>
                 <span v-if="newsDrawerLineName" class="nrd-line-tag">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>{{ newsDrawerLineName }}
@@ -14579,7 +14611,7 @@ tr.staff-table-row .tbl-btn {
               </div>
 
               <!-- PHOTO STORY content — gallery + caption -->
-              <template v-else-if="newsDrawer.post.post_type === 'photo_story'">
+              <template v-else-if="newsDrawer.post.post_type === 'highlight'">
                 <div class="nrd-photo-gallery" v-if="newsDrawer.post.featured_image_url">
                   <div v-for="(url, i) in newsDrawer.post.featured_image_url.split(',').map(s => s.trim()).filter(Boolean)"
                        :key="i" class="nrd-photo-slide">
