@@ -3008,24 +3008,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const deleteRotation = (rotation) => {
         const isActive = ['active', 'scheduled'].includes(rotation.rotation_status)
+        const resident = Utils.formatDrName(getResidentName(rotation.resident_id))
+        const unit     = getTrainingUnitName(rotation.training_unit_id)
+
         showConfirmation({
-          title: isActive ? 'Terminate Rotation' : 'Remove Rotation Record',
+          title:   isActive ? 'Cancel Rotation' : 'Remove Rotation Record',
           message: isActive
-            ? 'This will terminate the rotation early and mark it as ended. The record is kept for audit purposes.'
-            : `This rotation is already ${rotation.rotation_status}. Permanently remove it from the list?`,
-          icon: isActive ? 'fa-stop-circle' : 'fa-trash',
-          confirmButtonText: isActive ? 'Terminate' : 'Remove',
+            ? 'This will cancel the rotation and mark it as ended early. The record is preserved for audit and training history purposes.'
+            : 'This rotation is already completed or cancelled. Remove it from the visible list?',
+          confirmButtonText:  isActive ? 'Cancel rotation' : 'Remove record',
           confirmButtonClass: 'btn-danger',
-          details: `${formatDrName(getResidentName(rotation.resident_id))} · ${getTrainingUnitName(rotation.training_unit_id)}`,
+          details: `${resident} · ${unit}`,
           onConfirm: async () => {
             try {
               await API.deleteRotation(rotation.id)
               const idx = rotations.value.findIndex(r => r.id === rotation.id)
               if (idx !== -1) rotations.value[idx] = { ...rotations.value[idx], rotation_status: 'terminated_early' }
-              showToast('Success', isActive ? 'Rotation terminated' : 'Rotation removed', 'success')
+              showToast('Success', isActive ? 'Rotation cancelled' : 'Record removed', 'success')
               await loadRotations()
             } catch (e) {
-              showToast('Error', e?.message || 'Failed to terminate rotation', 'error')
+              showToast('Error', e?.message || 'Failed to cancel rotation', 'error')
               await loadRotations()
             }
           }
@@ -3295,7 +3297,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', hideReturned: true })
       const absenceModal = reactive({
         show: false, mode: 'add',
-        form: { staff_member_id: '', absence_type: 'planned', absence_reason: 'vacation', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 7 * 86400000)), covering_staff_id: '', coverage_notes: '', coverage_arranged: false, hod_notes: '' }
+        form: {
+          staff_member_id: '', absence_type: 'planned', absence_reason: 'vacation',
+          start_date: Utils.normalizeDate(new Date()),
+          end_date: Utils.normalizeDate(new Date(Date.now() + 7 * 86400000)),
+          covering_staff_id: '', coverage_notes: '', coverage_arranged: false, hod_notes: '',
+          // Recurring absence fields
+          is_recurring: false,
+          recurrence_pattern: 'weekly',
+          recurrence_end_date: ''
+        }
       })
 
       const getStaffName = (id) => {
