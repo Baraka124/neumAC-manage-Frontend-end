@@ -1647,7 +1647,7 @@
       #app .table-absence th:nth-child(7),
       #app .table-absence td:nth-child(7) { min-width:180px; width:180px; }
       #app .table-absence th:nth-child(8),
-      #app .table-absence td:nth-child(8) { min-width:120px; width:120px; white-space:nowrap; }
+      #app .table-absence td:nth-child(8) { min-width:160px; width:160px; white-space:nowrap; }
 
       /* ── ROTATION TABLE ─── Resident(30) Unit(26) Period(18) Days(8) Status(10) Actions(8) */
       /* ── Rotation table: semantic column widths ─────────────── */
@@ -1771,18 +1771,24 @@
          Icons 13px, 28px hit area — present but not shouting.
          Color reveals only on hover/intent.
          ═══════════════════════════════════════════════════════ */
+      /* ══════════════════════════════════════════════════════════════
+         TABLE ACTION BUTTONS — complete overhaul
+         Design principle: visible at rest, semantic by color,
+         consistent 30px height, 6px gap, icon 14px.
+         Each action is identifiable without hovering.
+      ══════════════════════════════════════════════════════════════ */
       #app .tbl-btn {
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 4px !important;
-        height: 28px !important;
-        min-width: 28px !important;
-        padding: 0 8px !important;
-        border-radius: 6px !important;
-        border: 1px solid transparent !important;
-        background: transparent !important;
-        color: var(--nm-text3) !important;
+        gap: 5px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        padding: 0 10px !important;
+        border-radius: 7px !important;
+        border: 1px solid var(--nm-border) !important;
+        background: var(--nm-surface) !important;
+        color: var(--nm-text2) !important;
         font-size: 11px !important;
         font-weight: 500 !important;
         cursor: pointer !important;
@@ -1790,40 +1796,104 @@
         flex-shrink: 0 !important;
         opacity: 1 !important;
         visibility: visible !important;
-        transition: background .12s, border-color .12s, color .12s !important;
+        transition: background .1s, border-color .1s, color .1s, box-shadow .1s !important;
         letter-spacing: .01em !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,.04) !important;
       }
       #app .tbl-btn:hover {
         background: var(--nm-surface2) !important;
-        border-color: var(--nm-border) !important;
+        border-color: rgba(0,0,0,.18) !important;
         color: var(--nm-text1) !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08) !important;
       }
       #app .tbl-btn svg {
-        width: 13px !important; height: 13px !important;
-        flex-shrink: 0 !important; opacity: .7 !important;
-        transition: opacity .12s !important;
+        width: 14px !important;
+        height: 14px !important;
+        flex-shrink: 0 !important;
+        opacity: 1 !important;
+        transition: none !important;
       }
-      #app .tbl-btn:hover svg { opacity: 1 !important; }
-      /* Danger — reveals red only on hover */
-      #app .tbl-btn--danger { color:var(--nm-text3) !important; border-color:transparent !important; background:transparent !important; }
-      #app .tbl-btn--danger:hover { background:rgba(185,28,28,.06) !important; border-color:rgba(185,28,28,.18) !important; color:#b91c1c !important; }
-      #app .tbl-btn--danger:hover svg { color:#b91c1c !important; }
-      /* Success */
-      #app .tbl-btn--success { color:var(--nm-text3) !important; border-color:transparent !important; background:transparent !important; }
-      #app .tbl-btn--success:hover { background:rgba(5,150,105,.06) !important; border-color:rgba(5,150,105,.2) !important; color:#059669 !important; }
-      /* Primary */
-      #app .tbl-btn--primary { color:var(--nm-text3) !important; border-color:transparent !important; background:transparent !important; }
-      #app .tbl-btn--primary:hover { background:rgba(37,99,235,.06) !important; border-color:rgba(37,99,235,.18) !important; color:#1d4ed8 !important; }
-      /* Teal */
-      #app .tbl-btn--teal { color:var(--nm-text3) !important; border-color:transparent !important; background:transparent !important; }
-      #app .tbl-btn--teal:hover { background:rgba(0,179,179,.07) !important; border-color:rgba(0,179,179,.2) !important; color:var(--nm-teal) !important; }
-      /* Icon-only */
-      #app .tbl-btn--icon { padding:0 !important; width:28px !important; min-width:28px !important; }
+      /* Icon-only — square */
+      #app .tbl-btn--icon { padding: 0 !important; width: 30px !important; }
+
+      /* ── Semantic variants — visible resting state ── */
+
+      /* Edit — neutral with pencil affordance */
+      #app .tbl-btn:not([class*="--"]):hover {
+        background: rgba(37,99,235,.05) !important;
+        border-color: rgba(37,99,235,.2) !important;
+        color: #1d4ed8 !important;
+      }
+
+      /* Danger — delete/cancel — subtle red tint at rest */
+      #app .tbl-btn--danger {
+        color: #b91c1c !important;
+        border-color: rgba(185,28,28,.2) !important;
+        background: rgba(185,28,28,.04) !important;
+      }
+      #app .tbl-btn--danger:hover {
+        background: rgba(185,28,28,.1) !important;
+        border-color: rgba(185,28,28,.35) !important;
+        color: #991b1b !important;
+        box-shadow: 0 1px 3px rgba(185,28,28,.12) !important;
+      }
+
+      /* Success — resolve/approve — subtle green tint at rest */
+      #app .tbl-btn--success {
+        color: #059669 !important;
+        border-color: rgba(5,150,105,.25) !important;
+        background: rgba(5,150,105,.05) !important;
+      }
+      #app .tbl-btn--success:hover {
+        background: rgba(5,150,105,.12) !important;
+        border-color: rgba(5,150,105,.4) !important;
+        color: #047857 !important;
+        box-shadow: 0 1px 3px rgba(5,150,105,.12) !important;
+      }
+
+      /* Teal — return to duty / special action */
+      #app .tbl-btn--teal {
+        color: var(--nm-teal) !important;
+        border-color: rgba(0,179,179,.25) !important;
+        background: rgba(0,179,179,.05) !important;
+      }
+      #app .tbl-btn--teal:hover {
+        background: rgba(0,179,179,.12) !important;
+        border-color: rgba(0,179,179,.4) !important;
+        color: #008080 !important;
+        box-shadow: 0 1px 3px rgba(0,179,179,.12) !important;
+      }
+
+      /* Primary — blue */
+      #app .tbl-btn--primary {
+        color: #1d4ed8 !important;
+        border-color: rgba(37,99,235,.25) !important;
+        background: rgba(37,99,235,.05) !important;
+      }
+      #app .tbl-btn--primary:hover {
+        background: rgba(37,99,235,.1) !important;
+        border-color: rgba(37,99,235,.35) !important;
+        color: #1e3a8a !important;
+      }
+
       /* Actions container */
-      #app .table-actions, #app .scc-actions { opacity:1 !important; display:flex !important; gap:2px !important; align-items:center !important; flex-wrap:nowrap !important; }
-      #app .table td:last-child { white-space:nowrap !important; overflow:visible !important; min-width:80px !important; }
+      #app .table-actions,
+      #app .scc-actions {
+        display: flex !important;
+        gap: 5px !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        opacity: 1 !important;
+      }
+
+      #app .table td:last-child {
+        white-space: nowrap !important;
+        overflow: visible !important;
+        min-width: 100px !important;
+      }
+
       @media (hover:none) and (pointer:coarse) {
-        #app .tbl-btn { height:40px !important; min-width:40px !important; padding:0 !important; }
+        #app .tbl-btn { height: 40px !important; min-width: 40px !important; padding: 0 12px !important; font-size: 12px !important; }
       }
 
       /* Date cells — monospace, compact */
@@ -6893,21 +6963,13 @@
   flex-shrink:   0;
 }
 
-/* ── Table row: buttons visible but quiet; fully reveal on row hover */
-.staff-table-row .tbl-btn,
-.staff-table-row .btn-icon,
-tr.staff-table-row .tbl-btn {
-  color: rgba(0,0,0,.22);
-}
-.staff-table-row:hover .tbl-btn,
-.staff-table-row:hover .btn-icon {
-  color: var(--ab-color);
-}
+/* ── Table row: buttons now always visible via tbl-btn CSS above.
+   Row hover only changes the row background — buttons keep their semantic colors. */
 .staff-table-row:hover .tbl-btn:hover,
 .staff-table-row:hover .btn-icon:hover {
   background:   var(--ab-hover-bg);
   color:        var(--ab-hover-color);
-  border-color: rgba(0,0,0,.1);
+  border-color: rgba(0,0,0,.15);
 }
 
 /* ── Card context: same reveal pattern ───────────────────────────── */
@@ -11134,41 +11196,40 @@ tr.staff-table-row .tbl-btn {
                     </div>
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2v-2a4 4 0 0 1 4-4h3"/><circle cx="9" cy="7" r="4"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1 1"/></svg> Staff Absence</div>
-                            <div style="display:flex;gap:8px;align-items:center">
-                                <div class="view-toggle">
-                                    <button class="btn-pill" :class="{ active: absenceView === 'calendar' }" @click="absenceView = 'calendar'">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Calendar
+                            <div class="card-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2v-2a4 4 0 0 1 4-4h3"/><circle cx="9" cy="7" r="4"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1 1"/></svg>
+                                Staff Absence
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+                                <!-- Single unified view mode toggle -->
+                                <div class="view-mode-toggle">
+                                    <button class="vmt-btn" :class="{ active: absenceViewMode === 'table' }" @click="absenceViewMode = 'table'" title="Table view">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9H21M3 15H21M9 3V21"/></svg>
+                                        Table
                                     </button>
-                                    <button class="btn-pill" :class="{ active: absenceView === 'list' }" @click="absenceView = 'list'">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01"/></svg> List
+                                    <button class="vmt-btn" :class="{ active: absenceViewMode === 'calendar' }" @click="absenceViewMode = 'calendar'" title="Calendar view">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2V6M8 2V6M3 10H21"/></svg>
+                                        Calendar
+                                    </button>
+                                    <button class="vmt-btn" :class="{ active: absenceViewMode === 'timeline' }" @click="absenceViewMode = 'timeline'" title="Timeline view">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h12"/><path d="M18 15l3 3-3 3"/></svg>
+                                        Timeline
+                                    </button>
+                                    <button class="vmt-btn" :class="{ active: absenceViewMode === 'coverage' }" @click="absenceViewMode = 'coverage'; loadOnCallSchedule()" title="Coverage view">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        Coverage
                                     </button>
                                 </div>
-                            <button class="btn btn-primary" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Record Absence</button>
-                            <!-- View mode toggle -->
-                            <div class="view-mode-toggle">
-                                <button class="vmt-btn" :class="{ active: absenceViewMode === 'table' }" @click="absenceViewMode = 'table'">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9H21M3 15H21M9 3V21"/></svg>
-                                    Table
-                                </button>
-                                <button class="vmt-btn" :class="{ active: absenceViewMode === 'calendar' }" @click="absenceViewMode = 'calendar'">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2V6M8 2V6M3 10H21"/></svg>
-                                    Calendar
-                                </button>
-                                <button class="vmt-btn" :class="{ active: absenceViewMode === 'timeline' }" @click="absenceViewMode = 'timeline'">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h12"/><path d="M18 15l3 3-3 3"/></svg>
-                                    Timeline
-                                </button>
-                                <button class="vmt-btn" :class="{ active: absenceViewMode === 'coverage' }" @click="absenceViewMode = 'coverage'; loadOnCallSchedule()">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                    Coverage
+                                <button class="btn btn-primary" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    Record Absence
                                 </button>
                             </div>
                         </div>
                         <div class="filter-bar">
                             <select class="form-select" v-model="absenceFilters.staff">
                                 <option value="">All Staff</option>
-                                <option v-for="s in medicalStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                <option v-for="s in medicalStaff.filter(m => m.employment_status === 'active').sort((a,b) => a.full_name.localeCompare(b.full_name))" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                             </select>
                             <select class="form-select" v-model="absenceFilters.status">
                                 <option value="">Active</option>
@@ -11177,12 +11238,6 @@ tr.staff-table-row .tbl-btn {
                                 <option value="returned_to_duty">Returned</option>
                                 <option value="cancelled">Cancelled</option>
                             </select>
-                            <button class="btn btn-sm" :class="absenceFilters.hideReturned ? 'btn-ghost' : 'btn-primary'"
-                                    @click="absenceFilters.hideReturned = !absenceFilters.hideReturned"
-                                    style="white-space:nowrap;font-size:12px">
-                                <i class="fas" :class="absenceFilters.hideReturned ? 'fa-eye' : 'fa-eye-slash'"></i>
-                                {{ absenceFilters.hideReturned ? 'Show Past' : 'Hide Past' }}
-                            </button>
                             <select class="form-select" v-model="absenceFilters.reason">
                                 <option value="">All Reasons</option>
                                 <option value="vacation">Vacation</option>
@@ -11192,6 +11247,10 @@ tr.staff-table-row .tbl-btn {
                                 <option value="personal">Personal</option>
                                 <option value="other">Other</option>
                             </select>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--nm-text2);cursor:pointer;white-space:nowrap;user-select:none;">
+                                <input type="checkbox" v-model="absenceFilters.hideReturned" style="width:14px;height:14px;accent-color:var(--nm-teal);cursor:pointer;">
+                                Show past
+                            </label>
                             <input type="date" class="form-control" v-model="absenceFilters.startDate" style="max-width:160px;min-width:130px">
                             <input type="text" class="form-control" v-model="absenceFilters.search" placeholder="Search..." style="flex:1;max-width:220px;min-width:120px">
                         </div>
@@ -11296,10 +11355,15 @@ tr.staff-table-row .tbl-btn {
                             </div>
                         </div>
                         <!-- ── COVERAGE STRIP — 30-day forward availability ── -->
-                        <div style="margin-bottom:16px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                                <span style="font-size:12px;font-weight:600;color:var(--nm-text3);text-transform:uppercase;letter-spacing:.06em;">30-day coverage forecast</span>
-                                <span style="font-size:11px;color:var(--nm-text3);">{{ absCoverage30.filter(d=>d.pct < 0.8).length }} days below 80% coverage</span>
+                        <div style="padding:16px 20px 20px;border-top:0.5px solid var(--nm-border);">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+                                <span style="font-size:11px;font-weight:600;color:var(--nm-text3);text-transform:uppercase;letter-spacing:.07em;">30-day coverage forecast</span>
+                                <span style="font-size:11px;color:var(--nm-text3);">
+                                    <span v-if="absCoverage30.filter(d=>d.pct < 0.8).length > 0" style="color:#ef4444;font-weight:500;">
+                                        {{ absCoverage30.filter(d=>d.pct < 0.8).length }} days below 80%
+                                    </span>
+                                    <span v-else style="color:#059669;font-weight:500;">Full coverage</span>
+                                </span>
                             </div>
                             <div class="abs-coverage-strip">
                                 <div v-for="day in absCoverage30" :key="day.date"
