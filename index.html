@@ -8556,13 +8556,13 @@
                     <a href="#" class="nmsb-item" :class="{ active: currentView === 'staff_absence' }"
                        @click.prevent="switchView('staff_absence'); mobileMenuOpen = false"
                        v-if="hasPermission('staff_absence', 'read')"
-                       :title="sidebarCollapsed ? 'Absence' : null">
+                       :title="sidebarCollapsed ? 'Leave' : null">
                         <span class="nmsb-icon nmsb-icon--amber">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>
                         </span>
                         <span class="nmsb-label" v-if="!sidebarCollapsed">
-                            Absence
-                            <em class="nmsb-sub">{{ absenceKPIs.absentNow > 0 ? absenceKPIs.absentNow + ' absent now' : absenceKPIs.upcoming + ' upcoming' }}</em>
+                            Leave
+                            <em class="nmsb-sub">{{ absenceKPIs.absentNow > 0 ? absenceKPIs.absentNow + ' absent · ' + (absenceKPIs.noCoverage > 0 ? absenceKPIs.noCoverage + ' uncovered' : 'all covered') : absenceKPIs.upcoming > 0 ? absenceKPIs.upcoming + ' planned' : 'All present' }}</em>
                         </span>
                         <span v-if="absenceKPIs.absentNow > 0" class="nmsb-badge nmsb-badge--alert">{{ absenceKPIs.absentNow }}</span>
                     </a>
@@ -11198,7 +11198,7 @@
                         <div class="card-header">
                             <div class="card-title">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2v-2a4 4 0 0 1 4-4h3"/><circle cx="9" cy="7" r="4"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1 1"/></svg>
-                                Staff Absence
+                                Leave &amp; Coverage
                             </div>
                             <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
                                 <!-- Single unified view mode toggle -->
@@ -11222,7 +11222,7 @@
                                 </div>
                                 <button class="btn btn-primary" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                                    Record Absence
+                                    Record Leave
                                 </button>
                             </div>
                         </div>
@@ -11232,7 +11232,7 @@
                                 <option v-for="s in medicalStaff.filter(m => m.employment_status === 'active').sort((a,b) => a.full_name.localeCompare(b.full_name))" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                             </select>
                             <select class="form-select" v-model="absenceFilters.status">
-                                <option value="">Active</option>
+                                <option value="">All active</option>
                                 <option value="currently_absent">Absent Now</option>
                                 <option value="planned_leave">Planned</option>
                                 <option value="returned_to_duty">Returned</option>
