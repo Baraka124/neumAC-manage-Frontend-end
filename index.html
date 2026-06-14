@@ -733,7 +733,7 @@
       #app .content-area .card-title { font-size:14px !important; font-weight:500 !important; font-style:italic !important; color:var(--nm-text1) !important; display:flex !important; align-items:center !important; gap:8px !important; }
 
       /* ── FILTER BAR ── */
-      #app .content-area .filter-bar { display:flex !important; flex-wrap:wrap !important; align-items:center !important; gap:8px !important; padding:0 var(--s24) var(--s16) !important; background:var(--nm-surface2) !important; position:sticky !important; top:57px !important; z-index:calc(var(--z-sticky) - 1) !important; }
+      #app .content-area .filter-bar { display:flex !important; flex-wrap:wrap !important; align-items:center !important; gap:8px !important; padding:0 var(--s24) var(--s16) !important; background:var(--nm-surface2) !important; position:sticky !important; top:41px !important; z-index:calc(var(--z-sticky) - 1) !important; }
       #app .content-area .filter-bar .form-select, #app .content-area .filter-bar .form-control { min-width:0 !important; flex-shrink:1 !important; }
       #app .content-area .filter-bar select { max-width:180px; }
 
@@ -786,7 +786,10 @@
       #app .sm-network-opt { font-size:13px !important; }
 
       /* ── TABLE ── */
-      #app .content-area table th { font-size:12px !important; font-weight:500 !important; text-transform:none !important; letter-spacing:.01em !important; color:var(--nm-text3) !important; padding:var(--s8) var(--s24) !important; border-bottom:1px solid var(--nm-border) !important; background:var(--nm-surface2) !important; }
+      #app .content-area table th { font-size:12px !important; font-weight:500 !important; text-transform:none !important; letter-spacing:.01em !important; color:var(--nm-text3) !important; padding:var(--s8) var(--s24) !important; border-bottom:1px solid var(--nm-border) !important; background:var(--nm-surface2) !important; position:sticky !important; top:0 !important; z-index:2 !important; }
+      /* When filter-bar is present above table, thead sticks below it */
+      #app .content-area .filter-bar + .table-responsive table th,
+      #app .content-area .filter-bar ~ * table th { top:0 !important; }
       #app .content-area table td { font-size:13px !important; padding:var(--s12) var(--s24) !important; color:var(--nm-text1) !important; border-bottom:1px solid rgba(0,0,0,.04) !important; }
       #app .content-area table thead tr { border-top:1px solid var(--nm-border) !important; }
       #app .content-area .table-actions { opacity:1 !important; }
@@ -5089,7 +5092,7 @@
 
       /* ── Research Hub — three-level page navigation ──────────── */
       #app .rhub-page { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
-      #app .rhub-topbar { display:flex; align-items:center; gap:0; padding:0 20px; background:var(--nm-surface); border-bottom:0.5px solid var(--nm-border); flex-shrink:0; height:44px; }
+      #app .rhub-topbar { display:flex; align-items:center; gap:0; padding:0 20px; background:var(--nm-surface); border-bottom:0.5px solid var(--nm-border); flex-shrink:0; height:44px; position:sticky; top:0; z-index:var(--z-sticky); }
       #app .rhub-tabs   { display:flex; gap:0; height:44px; }
       #app .rhub-tab    { display:flex; align-items:center; gap:5px; padding:0 14px; font-size:12.5px; color:var(--nm-text3); border-bottom:2px solid transparent; border-radius:0; background:none; border-top:none; border-left:none; border-right:none; cursor:pointer; white-space:nowrap; transition:color .12s; }
       #app .rhub-tab:hover { color:var(--nm-text1); }
@@ -5100,7 +5103,7 @@
       #app .rhub-back-btn { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--nm-text3); background:none; border:none; cursor:pointer; padding:4px 0; white-space:nowrap; margin-bottom:0; }
       #app .rhub-back-btn:hover { color:var(--nm-text1); }
       /* KPI strip */
-      #app .rhub-kpi-strip { background:var(--nm-surface); border-bottom:0.5px solid var(--nm-border); padding:10px 20px; display:flex; align-items:center; gap:0; flex-shrink:0; }
+      #app .rhub-kpi-strip { background:var(--nm-surface); border-bottom:0.5px solid var(--nm-border); padding:10px 20px; display:flex; align-items:center; gap:0; flex-shrink:0; position:sticky; top:44px; z-index:calc(var(--z-sticky) - 1); }
       #app .rhub-kpi  { display:flex; flex-direction:column; gap:1px; padding:0 20px 0 0; }
       #app .rhub-kv   { font-size:24px; font-weight:500; line-height:1; letter-spacing:-.03em; color:var(--nm-text1); }
       #app .rhub-kv--ok { color:#0f6e56; }
@@ -5136,7 +5139,7 @@
       #app .rlc-kws    { display:flex; flex-wrap:wrap; gap:4px; padding:8px 16px; margin:0 -16px; border-top:0.5px solid var(--nm-border); }
       #app .rlc-kw     { font-size:10px; padding:2px 7px; border-radius:4px; background:var(--nm-surface2); color:var(--nm-text2); border:0.5px solid var(--nm-border); }
       /* Line detail head */
-      #app .rhub-line-head { padding:14px 20px; background:var(--nm-surface); border-bottom:0.5px solid var(--nm-border); border-left:3px solid transparent; flex-shrink:0; display:flex; flex-direction:column; gap:8px; }
+      #app .rhub-line-head { padding:14px 20px; background:var(--nm-surface); border-bottom:0.5px solid var(--nm-border); border-left:3px solid transparent; flex-shrink:0; position:sticky; top:0; z-index:var(--z-sticky); display:flex; flex-direction:column; gap:8px; }
       #app .rhub-line-hero { display:flex; align-items:center; gap:14px; }
       #app .rhub-line-num  { font-size:40px; font-weight:500; font-style:italic; line-height:1; letter-spacing:-.04em; flex-shrink:0; }
       #app .rhub-line-info { flex:1; min-width:0; }
@@ -9085,7 +9088,7 @@
 
                         <!-- On-call panel -->
                         <div class="db-panel">
-                            <div class="db-panel-head" style="position:sticky;top:0;z-index:2;background:var(--nm-surface);">
+                            <div class="db-panel-head">
                                 <span class="db-panel-title">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                                     On-call · Next 3 Days
@@ -9198,7 +9201,7 @@
                         <!-- Right col: rotations + coverage bar -->
                         <div class="db-right-col">
                             <div class="db-panel">
-                                <div class="db-panel-head" style="position:sticky;top:0;z-index:2;background:var(--nm-surface);">
+                                <div class="db-panel-head">
                                     <span class="db-panel-title">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
                                         Rotations · This Week
@@ -9236,7 +9239,7 @@
                             </div>
                             <!-- 14-day coverage bar -->
                             <div class="db-panel db-unit-panel">
-                                <div class="db-panel-head" style="position:sticky;top:0;z-index:2;background:var(--nm-surface);">
+                                <div class="db-panel-head">
                                     <span class="db-panel-title">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="14" height="14" rx="1"/><rect x="14" y="3" width="14" height="14" rx="1"/><rect x="3" y="14" width="14" height="14" rx="1"/><rect x="14" y="14" width="14" height="14" rx="1"/></svg>
                                         Rotation Units · Occupancy
