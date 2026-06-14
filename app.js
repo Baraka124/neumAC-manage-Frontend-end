@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
       oncall_schedule:       'On-call',
       resident_rotations:    'Rotations',
       training_units:        'Training Units',
-      staff_absence:         'Staff Absence',
+      staff_absence:         'Leave & Coverage',
       department_management: 'Departments',
       research_hub:          'Research',
       research_lines:        'Research',
