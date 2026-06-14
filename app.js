@@ -2169,26 +2169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return { reason, from, to, status: hit.current_status }
       })
 
-      // ── Moment B: absence modal — physician has on-call shifts during the absence period ──
-      const absenceOnCallConflict = computed(() => {
-        const pid   = absenceModal?.form?.staff_member_id
-        const start = absenceModal?.form?.start_date
-        const end   = absenceModal?.form?.end_date
-        if (!pid || !start || !end) return []
-        const s = Utils.normalizeDate(start)
-        const e = Utils.normalizeDate(end)
-        return (onCallSchedule?.value || []).filter(shift => {
-          const d = Utils.normalizeDate(shift.duty_date)
-          return d >= s && d <= e &&
-            (shift.primary_physician_id === pid || shift.backup_physician_id === pid)
-        }).map(shift => ({
-          date:  new Date(shift.duty_date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
-          role:  shift.primary_physician_id === pid ? 'Primary' : 'Backup',
-          area:  shift.coverage_area?.name || (coverageAreas?.value || []).find(a => a.id === shift.coverage_area_id)?.name || null,
-          time:  `${(shift.start_time||'').slice(0,5)} → ${(shift.end_time||'').slice(0,5)}`
-        }))
-      })
-
+      // absenceOnCallConflict moved to root setup (line ~6200)
+      // where both absenceModal and onCallSchedule are in scope
 
       const loadOnCallSchedule = async () => {
         loadingSchedule.value = true
@@ -2615,7 +2597,8 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredOnCallSchedules, filteredOnCallAll, oncallTotalPages, todaysOnCallCount,
         loadOnCallSchedule, loadCoverageAreas, coverageAreas, filteredCoverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal,
         editOnCallSchedule, saveOnCallSchedule, bulkOncall, bulkCalDays, bulkToggleDate, bulkAddToQueue, bulkClone, bulkTotalShifts, bulkTotalConflicts, bulkSave, openBulkOncall, deleteOnCallSchedule, contactPhysician,
-        onCallAbsenceConflict, absenceOnCallConflict,
+        onCallAbsenceConflict,
+        // absenceOnCallConflict exposed at root level
         // NEW compact view properties
         groupedOnCallSchedules,
         isShiftActive,
@@ -6126,7 +6109,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences })
-        const { onCallSchedule } = onCallOps
+        const { onCallSchedule, coverageAreas } = onCallOps
+
+        // ── Root-level cross-composable computed ─────────────────
+        // absenceOnCallConflict: needs absenceModal (useAbsences) AND
+        // onCallSchedule (useOnCall) — defined here where both are in scope
+        const absenceOnCallConflict = computed(() => {
+          const pid   = absenceOps.absenceModal?.form?.staff_member_id
+          const start = absenceOps.absenceModal?.form?.start_date
+          const end   = absenceOps.absenceModal?.form?.end_date
+          if (!pid || !start || !end) return []
+          const s = Utils.normalizeDate(start)
+          const e = Utils.normalizeDate(end)
+          return (onCallSchedule?.value || []).filter(shift => {
+            const d = Utils.normalizeDate(shift.duty_date)
+            return d >= s && d <= e &&
+              (shift.primary_physician_id === pid || shift.backup_physician_id === pid)
+          }).map(shift => ({
+            date: new Date(shift.duty_date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
+            role: shift.primary_physician_id === pid ? 'Primary' : 'Backup',
+            area: shift.coverage_area?.name || (coverageAreas?.value || []).find(a => a.id === shift.coverage_area_id)?.name || null,
+            time: `${(shift.start_time||'').slice(0,5)} → ${(shift.end_time||'').slice(0,5)}`
+          }))
+        })
 
         
         // ============ STAFF DEACTIVATION WORKFLOW ============
@@ -8109,6 +8114,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ...onCallOps,
           ...rotationOps,
           ...absenceOps,
+          absenceOnCallConflict,  // root-level: cross-composable computed
           formatTrainingYear: Utils.formatTrainingYear, formatStudyStatus, formatSpecialization: Utils.formatSpecialization, effectiveResidentYear: Utils.effectiveResidentYear,
           formatPhone: Utils.formatPhone, formatLicense: Utils.formatLicense,
           getResidentCategoryInfo: Utils.getResidentCategoryInfo, formatResidentCategorySimple: Utils.formatResidentCategorySimple,
@@ -8400,4 +8406,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});  
+});
