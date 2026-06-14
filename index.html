@@ -16537,6 +16537,30 @@
                                       placeholder="Optional handover or context notes…"></textarea>
                         </div>
 
+                        <!-- Recurring absence — only for new absences -->
+                        <div v-if="absenceModal.mode === 'add'" style="padding:12px 16px;background:var(--nm-surface2);border-radius:8px;border:0.5px solid var(--nm-border);">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+                                <input type="checkbox" v-model="absenceModal.form.is_recurring" style="width:15px;height:15px;accent-color:var(--nm-teal);cursor:pointer;">
+                                <span style="font-size:13px;font-weight:500;color:var(--nm-text1);">Recurring absence</span>
+                                <span style="font-size:11px;color:var(--nm-text3);">repeat this absence automatically</span>
+                            </label>
+                            <div v-if="absenceModal.form.is_recurring" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+                                <div class="sm-field" style="margin:0">
+                                    <div class="sm-label">Repeat every</div>
+                                    <select class="sm-input" v-model="absenceModal.form.recurrence_pattern">
+                                        <option value="weekly">Week</option>
+                                        <option value="biweekly">2 weeks</option>
+                                        <option value="monthly">Month</option>
+                                    </select>
+                                </div>
+                                <div class="sm-field" style="margin:0">
+                                    <div class="sm-label">Until</div>
+                                    <input type="date" class="sm-input" v-model="absenceModal.form.recurrence_end_date"
+                                           :min="absenceModal.form.end_date">
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- ── Footer — same buttons as enrollment ── -->
