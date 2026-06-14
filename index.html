@@ -1462,7 +1462,7 @@
       #app .absence-duration-label { font-size:12px !important; font-weight:400 !important; text-transform:none !important; letter-spacing:normal !important; color:var(--nm-text3) !important; font-family:inherit !important; margin-left:3px !important; }
 
       /* Coverage cell — compact, no wrap */
-      #app .coverage-ok  { font-size:12px !important; color:#059669 !important; font-weight:500 !important; flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; max-width:140px !important; }
+      #app .coverage-ok  { font-size:12px !important; color:#059669 !important; font-weight:500 !important; display:inline-flex !important; align-items:center !important; gap:4px !important; }
       #app .coverage-gap { font-size:12px !important; color:#a0a09b !important; font-weight:400 !important; }
 
       /* Staff avatar — flat colour not gradient */
@@ -1485,8 +1485,8 @@
          ══════════════════════════════════════════════════════════ */
 
       /* ── Staff table: semantic column widths ────────────────── */
-      #app .table-staff { min-width: 720px !important; table-layout: auto !important; }
-      #app .table-staff th:nth-child(1), #app .table-staff td:nth-child(1) { min-width:220px; width:auto; }
+      #app .table-staff { min-width: 760px !important; table-layout: auto !important; }
+      #app .table-staff th:nth-child(1), #app .table-staff td:nth-child(1) { min-width:240px; width:auto; }
       #app .table-staff th:nth-child(2), #app .table-staff td:nth-child(2) { min-width:130px; width:130px; }
       #app .table-staff th:nth-child(3), #app .table-staff td:nth-child(3) { min-width:180px; width:180px; }
       #app .table-staff th:nth-child(4), #app .table-staff td:nth-child(4) { min-width:110px; width:110px; }
@@ -1631,58 +1631,58 @@
       /* ── ABSENCE TABLE ─── Name(30) Reason(11) Status(11) From(9) Until(9) Dur(7) Coverage(13) Actions(10) */
       /* ── Absence table: semantic column widths ──────────────── */
       /* Columns: 1=Staff  2=Reason  3=Status  4=From  5=Until  6=Duration  7=Coverage  8=Actions */
-      #app .table-absence { min-width: 960px !important; table-layout: auto !important; }
+      #app .table-absence { min-width: 1000px !important; table-layout: auto !important; }
       #app .table-absence th:nth-child(1),
-      #app .table-absence td:nth-child(1) { min-width:200px; width:auto;  }  /* Staff name */
+      #app .table-absence td:nth-child(1) { min-width:220px; width:auto;  }
       #app .table-absence th:nth-child(2),
-      #app .table-absence td:nth-child(2) { min-width:120px; width:120px; }  /* Reason */
+      #app .table-absence td:nth-child(2) { min-width:120px; width:120px; }
       #app .table-absence th:nth-child(3),
-      #app .table-absence td:nth-child(3) { min-width:110px; width:110px; }  /* Status */
+      #app .table-absence td:nth-child(3) { min-width:110px; width:110px; }
       #app .table-absence th:nth-child(4),
-      #app .table-absence td:nth-child(4) { min-width:100px; width:100px; white-space:nowrap; }  /* From */
+      #app .table-absence td:nth-child(4) { min-width:100px; width:100px; white-space:nowrap; }
       #app .table-absence th:nth-child(5),
-      #app .table-absence td:nth-child(5) { min-width:100px; width:100px; white-space:nowrap; }  /* Until */
+      #app .table-absence td:nth-child(5) { min-width:100px; width:100px; white-space:nowrap; }
       #app .table-absence th:nth-child(6),
-      #app .table-absence td:nth-child(6) { min-width:80px;  width:80px;  }  /* Duration */
+      #app .table-absence td:nth-child(6) { min-width:80px;  width:80px;  }
       #app .table-absence th:nth-child(7),
-      #app .table-absence td:nth-child(7) { min-width:160px; width:160px; }  /* Coverage */
+      #app .table-absence td:nth-child(7) { min-width:180px; width:180px; }
       #app .table-absence th:nth-child(8),
-      #app .table-absence td:nth-child(8) { min-width:120px; width:120px; white-space:nowrap; }  /* Actions */
+      #app .table-absence td:nth-child(8) { min-width:120px; width:120px; white-space:nowrap; }
 
       /* ── ROTATION TABLE ─── Resident(30) Unit(26) Period(18) Days(8) Status(10) Actions(8) */
       /* ── Rotation table: semantic column widths ─────────────── */
       /* Columns: 1=Resident  2=Unit  3=Period  4=Days Left  5=Status  6=Supervisor  7=Actions */
-      #app .table-rotation { min-width: 920px !important; table-layout: auto !important; }
+      #app .table-rotation { min-width: 960px !important; table-layout: auto !important; }
       #app .table-rotation th:nth-child(1),
-      #app .table-rotation td:nth-child(1) { min-width:190px; width:auto;  }
+      #app .table-rotation td:nth-child(1) { min-width:200px; width:auto;  }
       #app .table-rotation th:nth-child(2),
-      #app .table-rotation td:nth-child(2) { min-width:170px; width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:170px; }
+      #app .table-rotation td:nth-child(2) { min-width:160px; width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:160px; }
       #app .table-rotation th:nth-child(3),
       #app .table-rotation td:nth-child(3) { min-width:190px; width:190px; white-space:nowrap; }
       #app .table-rotation th:nth-child(4),
-      #app .table-rotation td:nth-child(4) { min-width:150px; width:150px; }
+      #app .table-rotation td:nth-child(4) { min-width:140px; width:140px; }
       #app .table-rotation th:nth-child(5),
       #app .table-rotation td:nth-child(5) { min-width:110px; width:110px; }
       #app .table-rotation th:nth-child(6),
-      #app .table-rotation td:nth-child(6) { min-width:120px; width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px; }
+      #app .table-rotation td:nth-child(6) { min-width:180px; width:180px; }
       #app .table-rotation th:nth-child(7),
       #app .table-rotation td:nth-child(7) { min-width:72px;  width:72px;  white-space:nowrap; }
 
       /* ── On-call table: semantic column widths ───────────────── */
       /* Columns: 1=Shift Period  2=Physician  3=Type  4=Status  5=Backup  6=Actions */
-      #app .table-oncall { min-width: 860px !important; table-layout: auto !important; }
+      #app .table-oncall { min-width: 900px !important; table-layout: auto !important; }
       #app .table-oncall th:nth-child(1),
-      #app .table-oncall td:nth-child(1) { min-width:160px; width:160px; }  /* Shift period + time */
+      #app .table-oncall td:nth-child(1) { min-width:160px; width:160px; }
       #app .table-oncall th:nth-child(2),
-      #app .table-oncall td:nth-child(2) { min-width:200px; width:auto;  }  /* Physician — fill space */
+      #app .table-oncall td:nth-child(2) { min-width:200px; width:auto;  }
       #app .table-oncall th:nth-child(3),
-      #app .table-oncall td:nth-child(3) { min-width:120px; width:120px; }  /* Shift type */
+      #app .table-oncall td:nth-child(3) { min-width:110px; width:110px; }
       #app .table-oncall th:nth-child(4),
-      #app .table-oncall td:nth-child(4) { min-width:110px; width:110px; }  /* Status */
+      #app .table-oncall td:nth-child(4) { min-width:100px; width:100px; }
       #app .table-oncall th:nth-child(5),
-      #app .table-oncall td:nth-child(5) { min-width:160px; width:160px; }  /* Backup physician */
+      #app .table-oncall td:nth-child(5) { min-width:180px; width:180px; }
       #app .table-oncall th:nth-child(6),
-      #app .table-oncall td:nth-child(6) { min-width:90px;  width:90px;  white-space:nowrap; }  /* Actions */
+      #app .table-oncall td:nth-child(6) { min-width:90px;  width:90px;  white-space:nowrap; }
 
       /* ── Call-outs table: semantic column widths ─────────────── */
       /* Columns: 1=Physician  2=Called at  3=Type  4=Duration  5=Reason  6=Actions */
@@ -8591,7 +8591,7 @@ tr.staff-table-row .tbl-btn {
                         <span class="nmsb-user-dot"></span>
                     </div>
                     <div class="nmsb-user-body" v-if="!sidebarCollapsed">
-                        <div class="nmsb-user-name">{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ').slice(0,2).join(' ') : '—' }}</div>
+                        <div class="nmsb-user-name" :title="currentUser && currentUser.full_name">{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ').slice(0,2).join(' ') : '—' }}</div>
                         <div class="nmsb-user-role">{{ currentUser && currentUser.user_role ? getUserRoleDisplay(currentUser.user_role) : '' }}</div>
                     </div>
                     <button v-if="!sidebarCollapsed" class="nmsb-logout"
@@ -9572,7 +9572,7 @@ tr.staff-table-row .tbl-btn {
                                         <td>
                                             <span class="badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffTypeShortFn(staff.staff_type) }}</span>
                                         </td>
-                                        <td>
+                                        <td :title="getCurrentRotationForStaff(staff.id) ? getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) : ''">
                                             <div v-if="getCurrentRotationForStaff(staff.id)" class="staff-rotation-chip">
                                                 <span class="src-dot"></span>
                                                 <span class="src-unit">{{ getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) }}</span>
@@ -9879,7 +9879,10 @@ tr.staff-table-row .tbl-btn {
                                               {{ new Date(schedule.duty_date + 'T' + (schedule.start_time||'00:00')) > new Date() ? 'Upcoming' : isToday(schedule.duty_date) ? 'Live' : 'Done' }}
                                             </span>
                                         </td>
-                                        <td :data-label="'Backup'"><span v-if="schedule.backup_physician_id">{{ getPhysicianName(schedule.backup_physician_id) }}</span><span v-else class="na-value">—</span></td>
+                                        <td :data-label="'Backup'" :title="schedule.backup_physician_id ? getPhysicianName(schedule.backup_physician_id) : ''">
+                                            <span v-if="schedule.backup_physician_id">{{ getPhysicianName(schedule.backup_physician_id) }}</span>
+                                            <span v-else class="na-value">—</span>
+                                        </td>
                                         <td :data-label="'Actions'">
                                             <div class="table-actions">
                                                 <button class="tbl-btn tbl-btn--success" v-if="isToday(schedule.duty_date) && hasPermission('oncall_schedule','create')"
@@ -10038,7 +10041,7 @@ tr.staff-table-row .tbl-btn {
                                     </thead>
                                     <tbody>
                                         <tr v-for="c in callouts" :key="c.id" class="staff-table-row">
-                                            <td>
+                                            <td :title="c.staff?.full_name || ''">
                                                 <div class="staff-name-cell">
                                                     <div class="staff-table-av staff-table-av--attending">
                                                         {{ (c.staff?.full_name || c.staff_id || '??').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
@@ -10125,7 +10128,7 @@ tr.staff-table-row .tbl-btn {
                                     <tbody>
                                         <tr v-for="row in calloutDistribution.slice(0,12)" :key="row.id" class="staff-table-row"
                                                 :class="{ 'oc-summary-row--high': row.deviation > 40, 'oc-summary-row--low': row.deviation < -30 && row.total > 0 }">
-                                            <td>
+                                            <td :title="row.name || ''">
                                                 <div class="staff-name-cell">
                                                     <div class="staff-table-av staff-table-av--attending">
                                                         {{ (row.name||'??').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
@@ -10624,9 +10627,9 @@ tr.staff-table-row .tbl-btn {
                                                 </div><!-- /staff-name-block -->
                                             </div><!-- /staff-name-cell -->
                                         </td>
-                                        <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px;">
-                                            <div class="font-medium" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="getTrainingUnitName(rotation.training_unit_id)">{{ getTrainingUnitName(rotation.training_unit_id) }}</div>
-                                            <div v-if="rotation.training_unit?.dept?.name" style="font-size:var(--t-11);color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                        <td :title="getTrainingUnitName(rotation.training_unit_id)">
+                                            <div class="font-medium">{{ getTrainingUnitName(rotation.training_unit_id) }}</div>
+                                            <div v-if="rotation.training_unit?.dept?.name" style="font-size:var(--t-11);color:var(--text-3);">
                                                 {{ rotation.training_unit.dept.name }}
                                             </div>
                                         </td>
@@ -10654,10 +10657,8 @@ tr.staff-table-row .tbl-btn {
                                             <span v-else class="na-value">—</span>
                                         </td>
                                         <td><span class="status-indicator" :class="'status-' + rotation.rotation_status">{{ formatRotationStatus(rotation.rotation_status) }}</span></td>
-                                        <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">
-                                            <span v-if="rotation.supervising_attending_id"
-                                                  :title="getSupervisorName(rotation.supervising_attending_id)"
-                                                  style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">
+                                        <td :title="getSupervisorName(rotation.supervising_attending_id)">
+                                            <span v-if="rotation.supervising_attending_id" style="display:block;">
                                                 {{ getSupervisorName(rotation.supervising_attending_id) }}
                                             </span>
                                             <span v-else class="na-value">—</span>
@@ -11258,7 +11259,7 @@ tr.staff-table-row .tbl-btn {
                                         <td class="date-cell">{{ formatDate(absence.start_date) }}</td>
                                         <td class="date-cell">{{ formatDate(absence.end_date) }}</td>
                                         <td><span class="absence-duration">{{ calculateAbsenceDuration(absence.start_date, absence.end_date) }}</span><span class="absence-duration-label"> days</span></td>
-                                        <td>
+                                        <td :title="absence.coverage_arranged && absence.covering_staff_id ? getStaffName(absence.covering_staff_id) : ''">
                                             <span v-if="absence.coverage_arranged && absence.covering_staff_id" class="coverage-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg> {{ getStaffName(absence.covering_staff_id) }}</span>
                                             <span v-else-if="absence.coverage_arranged" class="coverage-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Covered</span>
                                             <span v-else class="coverage-gap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg> No coverage</span>
