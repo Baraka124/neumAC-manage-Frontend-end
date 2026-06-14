@@ -9391,7 +9391,7 @@
                             </select>
                             <select class="form-select" v-model="staffFilters.department">
                                 <option value="">All Departments</option>
-                                <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                <option v-for="dept in departments.filter(d => d.status !== 'inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
                             </select>
                             <select class="form-select" v-model="staffFilters.status">
                                 <option value="">All Status</option>
@@ -9627,8 +9627,12 @@
                                                             {{ getStaffNextEvent(staff.id).label }}
                                                         </span>
                                                     </div>
-                                                    <div class="staff-name-sub" v-if="staff.specialization || (isResidentType(staff.staff_type) && staff.resident_category)">
-                                                        <span v-if="staff.specialization">{{ staff.specialization }}</span>
+                                                    <div class="staff-name-sub" v-if="staff.specialization || (isResidentType(staff.staff_type) && staff.resident_category) || staff.affiliation_type === 'affiliated'">
+                                                        <span v-if="staff.affiliation_type === 'affiliated'"
+                                                              style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(245,158,11,.1);color:#d97706;border:0.5px solid rgba(245,158,11,.3);">
+                                                            Affiliated · {{ staff.primary_dept_name || 'External' }}
+                                                        </span>
+                                                        <span v-else-if="staff.specialization">{{ staff.specialization }}</span>
                                                         <span v-else-if="isResidentType(staff.staff_type) && staff.resident_category"
                                                               :class="staff.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'"
                                                               style="padding:1px 5px;border-radius:4px;font-size:11px;">
@@ -10815,7 +10819,7 @@
                             </span>
                             <select class="form-select" v-model="trainingUnitFilters.department">
                                 <option value="">All Departments</option>
-                                <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                <option v-for="dept in departments.filter(d => d.status !== 'inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
                             </select>
                             <select class="form-select" v-model="trainingUnitFilters.status">
                                 <option value="">All Status</option>
@@ -14993,8 +14997,28 @@
                                 <div class="sm-label">Department</div>
                                 <select class="sm-select" v-model="medicalStaffModal.form.department_id">
                                     <option value="">Select department…</option>
-                                    <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                    <!-- Only home/primary departments — external rotation services are not valid staff departments -->
+                                    <option v-for="dept in departments.filter(d => !d.is_external && d.status !== 'inactive')" :key="dept.id" :value="dept.id">
+                                        {{ dept.name }}{{ dept.is_primary ? ' ★' : '' }}
+                                    </option>
+                                    <!-- Affiliated staff only: external departments -->
+                                    <optgroup v-if="medicalStaffModal.form.affiliation_type === 'affiliated'" label="External (affiliated staff only)">
+                                        <option v-for="dept in departments.filter(d => d.is_external && d.status !== 'inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                    </optgroup>
                                 </select>
+
+                                <!-- Affiliation type -->
+                                <div class="sm-label" style="margin-top:10px;">Affiliation type</div>
+                                <select class="sm-select" v-model="medicalStaffModal.form.affiliation_type">
+                                    <option value="primary">Primary — Neumología staff member</option>
+                                    <option value="affiliated">Affiliated — external clinician participating in training</option>
+                                    <option value="visiting">Visiting — temporary visiting physician</option>
+                                    <option value="honorary">Honorary — emeritus / honorary</option>
+                                </select>
+                                <small v-if="medicalStaffModal.form.affiliation_type === 'affiliated'"
+                                       style="font-size:11px;color:var(--nm-text3);display:block;margin-top:4px;">
+                                    Affiliated clinicians belong to an external department but participate in resident supervision within the Neumología rotation programme.
+                                </small>
                             </div>
 
                             <!-- Resident category — appears when resident type selected -->
@@ -16070,7 +16094,12 @@
                             <div class="sm-label">Department / Service <span class="req">·</span></div>
                             <select class="sm-select" v-model="trainingUnitModal.form.department_id" required>
                                 <option value="">Select department…</option>
-                                <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                <optgroup label="Home Department">
+                                    <option v-for="dept in departments.filter(d => d.is_primary && d.status !== 'inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                </optgroup>
+                                <optgroup label="External Rotation Services">
+                                    <option v-for="dept in departments.filter(d => d.is_external && d.status !== 'inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                </optgroup>
                             </select>
                         </div>
 
