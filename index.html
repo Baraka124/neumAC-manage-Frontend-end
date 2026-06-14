@@ -722,7 +722,8 @@
       #app .top-navbar { background:var(--nm-surface) !important; border-bottom:1px solid var(--nm-border) !important; height:56px !important; flex-shrink:0 !important; }
 
       /* ── CONTENT-AREA ── */
-      #app .main-content > .content-area { display:block !important; flex:1 !important; min-height:0 !important; min-width:0 !important; width:100% !important; overflow-y:auto !important; overflow-x:hidden !important; box-sizing:border-box !important; background:var(--nm-surface2) !important; }
+      #app .main-content > .content-area:not(.content-area--fullheight) { display:block !important; flex:1 1 auto !important; min-height:0 !important; min-width:0 !important; width:100% !important; height:calc(100vh - 56px) !important; max-height:calc(100vh - 56px) !important; overflow-y:auto !important; overflow-x:hidden !important; box-sizing:border-box !important; background:var(--nm-surface2) !important; }
+      #app .main-content > .content-area.content-area--fullheight { display:flex !important; flex-direction:column !important; flex:1 1 auto !important; min-height:0 !important; min-width:0 !important; width:100% !important; height:calc(100vh - 56px) !important; max-height:calc(100vh - 56px) !important; overflow:hidden !important; padding:0 !important; box-sizing:border-box !important; background:var(--nm-surface2) !important; }
       #app .main-content > .content-area > div { display:block !important; width:100% !important; box-sizing:border-box !important; }
       #app .main-content > .content-area--fullheight > div { display:flex !important; flex-direction:column !important; flex:1 !important; min-height:0 !important; }
 
@@ -953,8 +954,8 @@
       }
 
       /* ── RESEARCH/NEWS LAYOUT ── */
-      #app .main-content > .research-hub { display:flex !important; flex-direction:column !important; flex:1 1 0% !important; min-height:0 !important; width:100% !important; max-height:calc(100vh - var(--topbar-h,60px)) !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
-      #app .main-content > .news-view    { display:flex !important; flex-direction:column !important; flex:1 1 0% !important; min-height:0 !important; width:100% !important; max-height:calc(100vh - var(--topbar-h,60px)) !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
+      #app .main-content > .research-hub { display:flex !important; flex-direction:column !important; flex:1 1 0% !important; min-height:0 !important; width:100% !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
+      #app .main-content > .news-view    { display:flex !important; flex-direction:column !important; flex:1 1 0% !important; min-height:0 !important; width:100% !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
       /* .rhub-tabs no longer used — new structure uses .rhub-topbar instead */
       #app .main-content > .research-hub > .rhub-page { flex:1 1 0% !important; min-height:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; }
       #app .main-content > .news-view > .news-filter-bar { flex-shrink:0 !important; }
@@ -8927,7 +8928,7 @@
             <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard', 'content-area--fullheight': ['research_hub','news'].includes(currentView)}">
 
                 <!-- Unit staffing alerts -->
-                <div v-if="understaffedUnitAlerts && understaffedUnitAlerts.length > 0" style="margin-bottom:12px;">
+                <div v-if="understaffedUnitAlerts && understaffedUnitAlerts.length > 0 && !["research_hub","news"].includes(currentView)" style="margin-bottom:12px;">
                     <div v-for="a in understaffedUnitAlerts" :key="a.id"
                          class="alert-banner alert-banner--unit"
                          style="cursor:pointer"
@@ -8941,7 +8942,7 @@
                 </div>
 
                 <!-- System Alert Banner -->
-                <div v-if="systemAlerts.length > 0" style="margin-bottom:24px;">
+                <div v-if="systemAlerts.length > 0 && !["research_hub","news"].includes(currentView)" style="margin-bottom:24px;">
                     <div v-for="alert in systemAlerts.slice(0, 1)" :key="alert.id" class="alert-banner">
                         <div style="display:flex;align-items:center;gap:12px;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
