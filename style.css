@@ -1712,9 +1712,15 @@ a { color: var(--blue); text-decoration: none; }
   min-width: 560px;
 }
 /* Fixed layout so page 2 columns match page 1 */
-.table-staff {
-  table-layout: fixed;
-}
+/* ── Table layout overrides — force auto for all data tables ── */
+/* These override earlier fixed-layout rules in this file */
+.table-staff,
+.table-oncall,
+.table-absence,
+.table-rotation,
+.table-callouts,
+.table-oncall-stats { table-layout: auto !important; }
+
 
 /* ═══════════════════════════════════════════════════════════════
    STAFF COMPACT — card grid
@@ -6189,8 +6195,8 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── 2. On-call table — fixed column proportions ─────────────── */
-.table-oncall { table-layout: fixed; }
+/* ── 2. On-call table — layout now handled by inline CSS in index.html ─ */
+/* .table-oncall { table-layout: fixed; } — REMOVED, using auto */
 .table-oncall col.col-period   { width: 26%; }
 .table-oncall col.col-physician{ width: 22%; }
 .table-oncall col.col-type     { width: 10%; }
@@ -11202,7 +11208,8 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 /* ════════════════════════════════════════════════════════
    ROTATIONS TABLE — consistent with medical staff table
    ════════════════════════════════════════════════════════ */
-.table-rot { table-layout: fixed; }
+/* ROTATIONS TABLE */
+/* table-layout: fixed removed — using auto layout */
 .table-rot .staff-table-row:hover {
   background: rgba(0,153,153,.03);
   box-shadow: inset 3px 0 0 #009999;
@@ -11227,7 +11234,8 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 /* ════════════════════════════════════════════════════════
    ABSENCES TABLE — consistent with medical staff table
    ════════════════════════════════════════════════════════ */
-.table-absence { table-layout: fixed; }
+/* ABSENCES TABLE */
+/* table-layout: fixed removed — using auto layout from index.html */
 .table-absence .staff-table-row:hover {
   background: rgba(239,159,39,.03);
   box-shadow: inset 3px 0 0 #ef9f27;
@@ -11259,7 +11267,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   background: rgba(239,159,39,.03);
   box-shadow: inset 3px 0 0 #ef9f27;
 }
-.table-oncall { table-layout: fixed; }
+/* table-layout: fixed removed — using auto layout */
 
 /* Primary physician cell with avatar */
 .oc-physician-cell { display: flex; align-items: center; gap: 9px; }
