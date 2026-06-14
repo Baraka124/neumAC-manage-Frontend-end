@@ -1403,7 +1403,10 @@ document.addEventListener('DOMContentLoaded', () => {
           residency_start_date: null, residency_year_override: null,
           is_chief_of_department: false, is_research_coordinator: false, 
           is_resident_manager: false, is_oncall_manager: false, clinical_study_certificates: [],
-          hospital_id: null, _networkHint: null
+          hospital_id: null, _networkHint: null,
+          // Affiliation fields
+          affiliation_type: 'primary',  // 'primary' | 'affiliated' | 'visiting' | 'honorary'
+          primary_dept_name: null        // For affiliated: their actual home department name
         }
       })
 
@@ -1467,6 +1470,7 @@ document.addEventListener('DOMContentLoaded', () => {
           f = f.filter(x => x.full_name?.toLowerCase().includes(q) || x.staff_id?.toLowerCase().includes(q) || x.professional_email?.toLowerCase().includes(q))
         }
         if (staffFilters.staffType) f = f.filter(x => x.staff_type === staffFilters.staffType)
+        // Department filter: match by department_id (works for both primary and affiliated staff)
         if (staffFilters.department) f = f.filter(x => x.department_id === staffFilters.department)
         if (staffFilters.status) f = f.filter(x => x.employment_status === staffFilters.status)
         if (staffFilters.residentCategory) f = f.filter(x => x.resident_category === staffFilters.residentCategory)
@@ -3709,7 +3713,11 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       // Use allDepartmentsLookup for name resolution so deactivated depts still resolve
-      const getDepartmentName = (id) => allDepartmentsLookup.value.find(d => d.id === id)?.name || departments.value.find(d => d.id === id)?.name || ''
+      const getDepartmentName  = (id) => allDepartmentsLookup.value.find(d => d.id === id)?.name || departments.value.find(d => d.id === id)?.name || ''
+      const getPrimaryDepartment = () => departments.value.find(d => d.is_primary) || null
+      const getExternalDepartments = () => departments.value.filter(d => d.is_external && d.status !== 'inactive')
+      const isDepartmentExternal = (id) => departments.value.find(d => d.id === id)?.is_external || false
+      const isDepartmentPrimary = (id) => departments.value.find(d => d.id === id)?.is_primary || false
       const getDepartmentUnits = (id) => trainingUnits.value.filter(u => u.department_id === id)
       const getDepartmentStaffCount = (id) => medicalStaff.value.filter(s => s.department_id === id).length
 
@@ -3885,7 +3893,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return {
         departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
-        filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
+        filteredDepartments, getDepartmentName, getPrimaryDepartment, getExternalDepartments, isDepartmentExternal, isDepartmentPrimary, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
         loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
         deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
         deptPanel, openDeptPanel, closeDeptPanel,
@@ -6033,7 +6041,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { getHorizonMonths } = rotationOps
 
         const { departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
-          filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
+          filteredDepartments, getDepartmentName, getPrimaryDepartment, getExternalDepartments, isDepartmentExternal, isDepartmentPrimary, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
           deptPanel, openDeptPanel, closeDeptPanel,
@@ -8134,7 +8142,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getDaysRemainingColor: Utils.getDaysRemainingColor, isToday,
           normalizeDate: Utils.normalizeDate, formatDateShort: Utils.formatDateShort,
           departments, allDepartmentsLookup, departmentFilters, departmentModal, deptReassignModal,
-          filteredDepartments, getDepartmentName, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
+          filteredDepartments, getDepartmentName, getPrimaryDepartment, getExternalDepartments, isDepartmentExternal, isDepartmentPrimary, getDepartmentUnits, getDepartmentStaffCount, getDeptResidentStats, getDeptHomeResidents,
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
           deptPanel, openDeptPanel, closeDeptPanel,
