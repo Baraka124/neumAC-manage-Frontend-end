@@ -1631,7 +1631,7 @@
       /* ── ABSENCE TABLE ─── Name(30) Reason(11) Status(11) From(9) Until(9) Dur(7) Coverage(13) Actions(10) */
       /* ── Absence table: semantic column widths ──────────────── */
       /* Columns: 1=Staff  2=Reason  3=Status  4=From  5=Until  6=Duration  7=Coverage  8=Actions */
-      #app .table-absence { min-width: 1000px !important; table-layout: auto !important; }
+      #app .table-absence { min-width: 1060px !important; table-layout: auto !important; }
       #app .table-absence th:nth-child(1),
       #app .table-absence td:nth-child(1) { min-width:220px; width:auto;  }
       #app .table-absence th:nth-child(2),
@@ -1647,7 +1647,7 @@
       #app .table-absence th:nth-child(7),
       #app .table-absence td:nth-child(7) { min-width:180px; width:180px; }
       #app .table-absence th:nth-child(8),
-      #app .table-absence td:nth-child(8) { min-width:160px; width:160px; white-space:nowrap; }
+      #app .table-absence td:nth-child(8) { min-width:220px; width:220px; white-space:nowrap; }
 
       /* ── ROTATION TABLE ─── Resident(30) Unit(26) Period(18) Days(8) Status(10) Actions(8) */
       /* ── Rotation table: semantic column widths ─────────────── */
@@ -11259,20 +11259,24 @@
                                 <table class="table table-striped table-absence"><thead><tr>
                                     <th>Staff member</th><th>Reason</th>
                                     <th>Status</th><th>From</th>
-                                    <th>Until</th><th>Duration</th><th>Actions</th>
+                                    <th>Until</th><th>Duration</th><th>Coverage</th><th></th>
                                 </tr></thead></table>
                                 <div style="display:flex;flex-direction:column;gap:0;">
-                                    <div v-for="i in 8" :key="i" style="display:grid;grid-template-columns:24% 12% 10% 12% 12% 14% auto;gap:0;padding:10px 20px;border-bottom:0.5px solid var(--nm-border);align-items:center;">
+                                    <div v-for="i in 8" :key="i" style="display:grid;grid-template-columns:200px 120px 110px 100px 100px 80px 1fr 160px;gap:0;padding:12px 20px;border-bottom:0.5px solid var(--nm-border);align-items:center;">
                                         <div style="display:flex;align-items:center;gap:8px;">
                                             <div class="nm-skeleton" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;"></div>
                                             <div class="nm-skeleton" style="height:13px;width:75%;border-radius:4px;"></div>
                                         </div>
+                                        <div class="nm-skeleton" style="height:20px;width:70%;border-radius:10px;"></div>
                                         <div class="nm-skeleton" style="height:20px;width:80%;border-radius:10px;"></div>
-                                        <div class="nm-skeleton" style="height:20px;width:85%;border-radius:10px;"></div>
                                         <div class="nm-skeleton" style="height:13px;width:80%;border-radius:4px;"></div>
                                         <div class="nm-skeleton" style="height:13px;width:80%;border-radius:4px;"></div>
                                         <div class="nm-skeleton" style="height:13px;width:60%;border-radius:4px;"></div>
-                                        <div class="nm-skeleton" style="height:13px;width:40%;border-radius:4px;"></div>
+                                        <div class="nm-skeleton" style="height:13px;width:70%;border-radius:4px;"></div>
+                                        <div style="display:flex;gap:5px;">
+                                            <div class="nm-skeleton" style="height:30px;width:54px;border-radius:7px;"></div>
+                                            <div class="nm-skeleton" style="height:30px;width:30px;border-radius:7px;"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -11323,18 +11327,32 @@
                                             <span v-else-if="absence.coverage_arranged" class="coverage-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Covered</span>
                                             <span v-else class="coverage-gap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg> No coverage</span>
                                         </td>
-                                        <td>
+                                        <td @click.stop style="white-space:nowrap;">
                                             <div class="table-actions">
-                                                <button v-if="absence.current_status==='returned_to_duty'" class="tbl-btn tbl-btn--success" @click.stop="openResolutionModal(absence)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Resolve</button>
-                                                <button class="tbl-btn" @click.stop="editAbsence(absence)" v-if="hasPermission('staff_absence','update') && absence.current_status!=='returned_to_duty' && absence.current_status!=='cancelled'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Edit</button>
+                                                <!-- Active/Planned: Edit + Return + Cancel -->
+                                                <button class="tbl-btn" @click.stop="editAbsence(absence)"
+                                                        v-if="hasPermission('staff_absence','update') && ['currently_absent','planned_leave'].includes(absence.current_status)"
+                                                        title="Edit">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                    Edit
+                                                </button>
                                                 <button class="tbl-btn tbl-btn--teal" @click.stop="returnToDuty(absence)"
                                                         v-if="hasPermission('staff_absence','update') && absence.current_status === 'currently_absent'"
-                                                        title="Return to Duty">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
+                                                        title="Mark returned to duty">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
                                                     Return
                                                 </button>
-                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteAbsence(absence)" v-if="hasPermission('staff_absence','delete') && absence.current_status!=='returned_to_duty' && absence.current_status!=='cancelled'" title="Cancel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></button>
-                                                <button class="tbl-btn tbl-btn--danger" @click.stop="purgeAbsence(absence)" v-if="currentUser && ['system_admin','department_head'].includes(currentUser.user_role)" title="Permanently delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                                <button class="tbl-btn tbl-btn--danger tbl-btn--icon" @click.stop="deleteAbsence(absence)"
+                                                        v-if="hasPermission('staff_absence','delete') && ['currently_absent','planned_leave'].includes(absence.current_status)"
+                                                        title="Cancel absence">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                                </button>
+                                                <!-- Returned/Cancelled: admin delete only -->
+                                                <button class="tbl-btn tbl-btn--danger tbl-btn--icon" @click.stop="purgeAbsence(absence)"
+                                                        v-if="currentUser && currentUser.user_role === 'system_admin' && ['returned_to_duty','cancelled'].includes(absence.current_status)"
+                                                        title="Permanently delete">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
