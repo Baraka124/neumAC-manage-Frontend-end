@@ -19340,7 +19340,7 @@
         }
 
         resize();
-        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });
+        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });  
         if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
     })();
     </script>
