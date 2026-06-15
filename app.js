@@ -165,9 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const VIEW_TITLES = {
-      dashboard:             'Dashboard',
-      medical_staff:         'Medical Staff',
-      oncall_schedule:       'On-call',
+      dashboard:             'Overview',
+      medical_staff:         'Clinical Staff',
+      oncall_schedule:       'On-call Schedule',
       resident_rotations:    'Rotations',
       training_units:        'Training Units',
       staff_absence:         'Leave & Coverage',
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
       analytics_dashboard:   'Research',
       analytics_performance: 'Research',
       analytics_partners:    'Research',
-      news:                  'News & Posts',
+      news:                  'Publications',
       system_settings:       'Settings'
     }
     
@@ -4975,7 +4975,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const trialDetailModal = reactive({ show: false, trial: null, study: null })
 
       const innovationProjectModal = reactive({ show: false, mode: 'add', form: {
-        title: '', category: 'Dispositivo', current_stage: 'Idea',
+        title: '', category: 'Dispositivo', current_stage: 'development',
         description: '', clinical_rationale: '', research_line_id: '',
         lead_investigator_id: '', co_investigators: [],
         partner_needs: [], partner_found: false, partner_name: '',
@@ -4984,13 +4984,16 @@ document.addEventListener('DOMContentLoaded', () => {
         keywords: [], keywordsInput: '', tags: [], milestones: [],
         featured_in_website: true, display_order: 0,
         start_date: '', estimated_end_date: '',
-        // New schema fields
         scope_finalized: false, target_diseases: [],
         scope_type: 'specific', scope_note: '',
         regulatory_pathway: 'none', population_type: 'adult',
-        // Team fields
-        team_roles: {},
-        external_team: [],
+        team_roles: {}, external_team: [],
+        // New fields
+        project_nature: 'clinical_innovation',  // 'clinical_study' | 'clinical_innovation' | 'hybrid'
+        project_url:    '',   // Primary URL (GitHub or deployed app)
+        repo_url:       '',   // GitHub repository
+        demo_url:       '',   // Live demo / deployed domain
+        is_featured:    false,
         _diseaseInput: '',
         _extMemberDraft: { name: '', institution: '', role: '', email: '' },
       }})
@@ -5679,6 +5682,28 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { showToast('Error', e.message, 'error') }
       }
 
+      const toggleNewsFeature = async (post) => {
+        const featuring = !post.is_featured
+        try {
+          const res = await API.request(`/api/news/${post.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_featured: featuring })
+          })
+          if (res.error) {
+            // Max 5 reached
+            showToast('Limit reached', res.message || 'Maximum 5 featured posts allowed', 'warning')
+            return
+          }
+          // Update local state
+          const idx = newsPosts.value.findIndex(p => p.id === post.id)
+          if (idx !== -1) newsPosts.value[idx] = { ...newsPosts.value[idx], is_featured: featuring }
+          showToast('Updated', featuring ? 'Post featured on homepage' : 'Post removed from homepage', 'success')
+        } catch (e) {
+          showToast('Error', 'Failed to update feature status', 'error')
+        }
+      }
+
       const archiveNews = async (post) => {
         showConfirmation({
           title: 'Archive Post',
@@ -5719,7 +5744,7 @@ document.addEventListener('DOMContentLoaded', () => {
         newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
         newsWordCount, newsWordLimit, activeNewsMenu,
         loadNews, showAddNewsModal, editNews, saveNews,
-        publishNews, archiveNews, deleteNews, togglePublic,
+        publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic,
         formatAuthorName, getLineName, autoExpiry
       }
     }
@@ -6570,7 +6595,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
                 newsWordCount, newsWordLimit,
                 loadNews, showAddNewsModal, editNews, saveNews,
-                publishNews, archiveNews, deleteNews, togglePublic: toggleNewsPublic,
+                publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic: toggleNewsPublic,
                 formatAuthorName: newsAuthorName, getLineName: newsLineName } = newsOps
 
         const openAssignRotationFromUnit = (unit, startDate) => {
@@ -8218,7 +8243,7 @@ document.addEventListener('DOMContentLoaded', () => {
           newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
           newsWordCount, newsWordLimit,
           loadNews, showAddNewsModal, editNews, saveNews,
-          publishNews, archiveNews, deleteNews, toggleNewsPublic,
+          publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
           newsDrawer, openNewsDrawer, closeNewsDrawer,
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
@@ -8425,4 +8450,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});   
+});  
