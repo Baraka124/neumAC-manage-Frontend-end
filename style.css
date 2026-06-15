@@ -11608,3 +11608,44 @@ textarea:focus-visible,
 }
 /* Suppress focus ring for mouse clicks (pointer events) */
 :focus:not(:focus-visible) { outline: none; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   FIX: Publications & Research Hub blank page
+   The content-area in fullheight mode must be a flex column so
+   .news-view and .research-hub can use flex:1 to fill height.
+   Also: news-list must be visible when posts exist regardless of
+   the newsLoading flag state.
+   ════════════════════════════════════════════════════════════ */
+
+/* Make content-area a flex column when in fullheight mode */
+.content-area.content-area--fullheight {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure news-view and research-hub fill the flex column */
+.content-area.content-area--fullheight > .news-view,
+.content-area.content-area--fullheight > .research-hub {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* news-list scrolls within the flex column */
+.news-view > .news-list {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+/* rhub-grid scrolls within its page */
+.research-hub .rhub-grid {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
