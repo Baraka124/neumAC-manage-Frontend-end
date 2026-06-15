@@ -12383,19 +12383,19 @@
                         <!-- Top tabs + action -->
                         <div class="rhub-topbar">
                             <div class="rhub-tabs">
-                                <button class="rhub-tab rhub-tab--on">
+                                <button :class="['rhub-tab', researchHubPage === 'overview' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'overview'">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                                     Lines <span class="rhub-tab-count">{{ researchLines.length }}</span>
                                 </button>
-                                <button class="rhub-tab" @click="researchHubPage = 'allstudies'">
+                                <button :class="['rhub-tab', researchHubPage === 'allstudies' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'allstudies'">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                                     Studies <span class="rhub-tab-count">{{ clinicalTrials.length }}</span>
                                 </button>
-                                <button class="rhub-tab" @click="researchHubPage = 'allprojects'">
+                                <button :class="['rhub-tab', researchHubPage === 'allprojects' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'allprojects'">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
                                     Projects <span class="rhub-tab-count">{{ innovationProjects.length }}</span>
                                 </button>
-                                <button class="rhub-tab" @click="researchHubPage = 'analytics'">
+                                <button :class="['rhub-tab', researchHubPage === 'analytics' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'analytics'">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
                                     Analytics
                                 </button>
@@ -12435,7 +12435,7 @@
                         </div>
 
                         <!-- Lines card grid -->
-                        <div class="rhub-grid" v-if="!researchLoading">
+                        <div class="rhub-grid" v-if="!researchLoading || researchLines.length > 0">
                             <div v-if="filteredResearchLines.length === 0" class="nm-empty" style="grid-column:1/-1;padding:60px 0">
                                 <div class="nm-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
                                 <div class="nm-empty-title">No research lines found</div>
@@ -12488,8 +12488,8 @@
                             </div>
                         </div>
 
-                        <!-- Loading skeleton -->
-                        <div v-if="researchLoading" class="rhub-grid">
+                        <!-- Loading skeleton — only when loading and no data yet -->
+                        <div v-if="researchLoading && researchLines.length === 0" class="rhub-grid">
                             <div v-for="i in 6" :key="i" class="rhub-line-card" style="pointer-events:none">
                                 <div class="rlc-accent nm-skeleton"></div>
                                 <div class="rlc-body" style="gap:10px">
@@ -13233,7 +13233,7 @@
                     </div>
 
                     <!-- Posts list — v-show keeps DOM stable during background refresh -->
-                    <div class="news-list" v-show="!newsLoading" style="flex:1;overflow-y:auto;min-height:0;">
+                    <div class="news-list" v-show="!newsLoading || newsPosts.length > 0" style="flex:1;overflow-y:auto;min-height:0;">
                         <div v-if="filteredNews.length === 0" class="news-empty">
                             <div class="nm-empty-icon">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
