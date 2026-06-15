@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue   
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
  
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
@@ -5583,14 +5583,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { newsPosts.value = [] }
         finally { newsLoading.value = false; newsLoaded.value = true }
       }
-      // Silent background preload — no loading flag, prevents blank Publications on fast navigation
       const preloadNews = async () => {
         if (newsLoaded.value || newsLoading.value) return
         try {
           const res = await API.request('/api/news')
           newsPosts.value = res?.data || Utils.ensureArray(res) || []
           newsLoaded.value = true
-        } catch { /* silent — user-triggered loadNews will retry with the loading indicator */ }
+        } catch { }
       }
 
       const showAddNewsModal = () => {
@@ -7031,11 +7030,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return
           }
           if (view === 'research_hub') {
-            // Direct navigation — always reset to overview (clears stale drill-down state)
+            // Direct navigation — always reset to overview
             researchOps.researchHubPage.value = 'overview'
             if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
-            // Load on-demand if background batch hasn't completed yet
             if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) {
               researchOps.loadAllResearch()
             }
@@ -7465,7 +7463,7 @@ document.addEventListener('DOMContentLoaded', () => {
               liveOps.loadActiveMedicalStaff(),
               researchOps.loadResearchLines(),
               loadSystemStats(),
-              newsOps.preloadNews() // silent prefetch — no loading flag, prevents blank Publications on fast navigation
+              newsOps.preloadNews() // silent prefetch — no loading flag
             ]).then(() => updateDashboardStats())
 
             // Low priority — research analytics
