@@ -959,13 +959,13 @@
         color: var(--nm-teal);
       }
 
-      /* ── RESEARCH/NEWS LAYOUT ── */
-      #app .main-content > .research-hub { display:flex !important; flex-direction:column !important; flex:1 1 0% !important; min-height:0 !important; width:100% !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
-      #app .main-content > .news-view    { display:flex !important; flex-direction:column !important; flex:1 1 0% !important; min-height:0 !important; width:100% !important; overflow:hidden !important; margin:0 !important; padding:0 !important; }
-      /* .rhub-tabs no longer used — new structure uses .rhub-topbar instead */
-      #app .main-content > .research-hub > .rhub-page { flex:1 1 0% !important; min-height:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; }
-      #app .main-content > .news-view > .news-filter-bar { flex-shrink:0 !important; }
-      #app .main-content > .news-view > .news-list { flex:1 1 0% !important; min-height:0 !important; overflow-y:auto !important; }
+
+
+
+
+
+
+
 
       /* ── CLINICAL UNITS ── */
       #app .tu-dept-header { display:flex !important; align-items:center !important; gap:12px !important; padding:20px 24px 8px !important; background:transparent !important; border-bottom:none !important; }
@@ -4618,7 +4618,7 @@
         flex-direction: column !important;
         flex: 1 !important;
         min-height: 0 !important;
-        height: 100% !important;
+        /* height is set by the more specific rule at line 726 */
       }
 
       /* Research hub: fill height and enable inner scroll */
@@ -4632,7 +4632,6 @@
         flex: 1 !important;
         min-height: 0 !important;
         overflow: hidden !important;
-        height: 100% !important;
       }
       /* New page containers fill the hub */
       #app .rhub-page {
@@ -8622,12 +8621,12 @@
                     </a>
                     <a href="#" class="nmsb-item" :class="{ active: currentView === 'news' }"
                        @click.prevent="switchView('news'); mobileMenuOpen = false"
-                       :title="sidebarCollapsed ? 'News &amp; Posts' : null">
+                       :title="sidebarCollapsed ? 'Publications' : null">
                         <span class="nmsb-icon nmsb-icon--violet">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                         </span>
                         <span class="nmsb-label" v-if="!sidebarCollapsed">
-                            News &amp; Posts
+                            Publications
                             <em class="nmsb-sub">{{ newsPosts.filter(p=>p.status==='published').length }} published{{ newsPosts.filter(p=>p.status==='draft').length ? ' · ' + newsPosts.filter(p=>p.status==='draft').length + ' drafts' : '' }}</em>
                         </span>
                         <span v-if="!sidebarCollapsed && newsPosts.filter(p=>p.status==='draft').length > 0"
@@ -9329,7 +9328,7 @@
                     </nav>
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4C7 4 5 4 5 7V13C5 17 9 19 12 19C15 19 19 17 19 13"/><circle cx="19" cy="11" r="2"/><path d="M5 9H9"/></svg> Medical Staff</div>
+                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4C7 4 5 4 5 7V13C5 17 9 19 12 19C15 19 19 17 19 13"/><circle cx="19" cy="11" r="2"/><path d="M5 9H9"/></svg> Clinical Staff</div>
                             <div class="header-actions" style="display:flex;gap:12px;align-items:center">
                                 <div class="view-toggle">
                                     <button class="btn-pill" :class="{ active: staffView === 'table' }" @click="staffView = 'table'">
@@ -13252,10 +13251,16 @@
                         </div>
 
                         <div class="news-body">
-                        <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="'news-card--' + post.post_type" @click.stop="openNewsDrawer(post)">
+                        <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="['news-card--' + post.post_type, post.is_featured ? 'news-card--featured' : '']" @click.stop="openNewsDrawer(post)">
 
                             <!-- Left accent stripe -->
                             <div class="news-card-left"></div>
+
+                            <!-- Featured badge -->
+                            <div v-if="post.is_featured" style="position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:3px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--nm-teal);padding:2px 6px;background:rgba(0,179,179,.08);border-radius:4px;border:0.5px solid rgba(0,179,179,.25);">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="var(--nm-teal)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                Homepage
+                            </div>
 
                             <!-- Content -->
                             <div class="news-card-body">
@@ -13339,6 +13344,15 @@
                                     <div class="nm-more-btn" @click.stop="activeNewsMenu = activeNewsMenu === post.id ? null : post.id">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                                         <div class="nm-dropdown" v-if="activeNewsMenu === post.id" @click.stop="() => {}">
+                                            <!-- Feature / Unfeature on homepage -->
+                                            <div class="nm-dropdown-item"
+                                                 v-if="post.status === 'published' && post.is_public && hasPermission('news_posts','update')"
+                                                 @click="toggleNewsFeature(post); activeNewsMenu=null"
+                                                 :style="post.is_featured ? 'color:var(--nm-teal);font-weight:500;' : ''">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" :stroke="post.is_featured ? 'var(--nm-teal)' : 'currentColor'" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                                {{ post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}
+                                            </div>
+                                            <div class="nm-dropdown-sep" v-if="post.status === 'published' && post.is_public && hasPermission('news_posts','update')"></div>
                                             <div class="nm-dropdown-item" @click="archiveNews(post); activeNewsMenu=null"
                                                  v-if="post.status === 'published' && hasPermission('news_posts','update')">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Archive
@@ -14181,7 +14195,7 @@
                             <button v-if="hasPermission('oncall_schedule','create')"
                                     class="pd-tab-action-btn"
                                     @click="staffProfileModal.show = false; showAddOnCallModal(staffProfileModal.staff)">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg> On-call
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>                            On-call Schedule
                             </button>
                             <button v-if="hasPermission('staff_absence','create')"
                                     class="pd-tab-action-btn"
@@ -17787,7 +17801,50 @@
                             </div>
                         </div>
 
-                </div><!-- /modal-body -->
+                </div><!-- /modal-body (external team end) -->
+
+                <!-- ── NEW FIELDS: URLs, Nature, Featured ─────────────── -->
+                <div style="border-top:0.5px solid var(--nm-border);padding:20px 24px;display:flex;flex-direction:column;gap:14px;background:var(--nm-surface2);">
+
+                    <!-- Project nature: clinical study vs innovation -->
+                    <div class="sm-field" style="margin:0">
+                        <div class="sm-label">Project Nature</div>
+                        <select class="sm-select" v-model="innovationProjectModal.form.project_nature">
+                            <option value="clinical_innovation">Clinical Innovation — internal tool / device / platform</option>
+                            <option value="clinical_study">Clinical Study — formal protocol, ethics, trial registration</option>
+                            <option value="hybrid">Hybrid — innovation becoming a formal study</option>
+                        </select>
+                    </div>
+
+                    <!-- URLs -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                        <div class="sm-field" style="margin:0">
+                            <div class="sm-label">Primary URL</div>
+                            <input type="url" class="sm-input" v-model="innovationProjectModal.form.project_url"
+                                   placeholder="https://…" />
+                            <small style="font-size:10px;color:var(--nm-text3);">GitHub, deployed app, or project page</small>
+                        </div>
+                        <div class="sm-field" style="margin:0">
+                            <div class="sm-label">GitHub Repo</div>
+                            <input type="url" class="sm-input" v-model="innovationProjectModal.form.repo_url"
+                                   placeholder="https://github.com/…" />
+                        </div>
+                        <div class="sm-field" style="margin:0">
+                            <div class="sm-label">Live Demo</div>
+                            <input type="url" class="sm-input" v-model="innovationProjectModal.form.demo_url"
+                                   placeholder="https://…" />
+                        </div>
+                    </div>
+
+                    <!-- Featured toggle -->
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:13px;color:var(--nm-text1);">
+                        <input type="checkbox" v-model="innovationProjectModal.form.is_featured"
+                               style="width:15px;height:15px;accent-color:var(--nm-teal);cursor:pointer;">
+                        <span>Feature on homepage</span>
+                        <small style="font-size:11px;color:var(--nm-text3);margin-left:4px;">Shows in the "From the Department" story section on neumact.org</small>
+                    </label>
+                </div>
+
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @click="innovationProjectModal.show = false">Cancel</button>
                     <button class="btn btn-primary" @click="saveInnovationProject" :disabled="saving">
@@ -19282,7 +19339,7 @@
 
         function animate(){
             frame++;
-            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;   
+            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;
             drawTree(breath);
             if(!REDUCED) raf = requestAnimationFrame(animate);
         }
