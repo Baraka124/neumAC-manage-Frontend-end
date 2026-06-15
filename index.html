@@ -1,5 +1,5 @@
 <!DOCTYPE html>       
-<html lang="en">      
+<html lang="en">   
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
@@ -19344,5 +19344,81 @@
         if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
     })();
     </script>
+
+<!-- neumDesk layout fix: ensures content-area fills viewport for all views -->
+<style>
+/* ── Height chain ─────────────────────────────────────────── */
+html, body, #app { height: 100%; }
+
+#app .nm-app-layout {
+  display: flex !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+#app .main-content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+/* ── Non-fullheight views (Ops Room, Settings, Medical Staff etc.) ── */
+#app .main-content > .content-area:not(.content-area--fullheight):not(.content-area--dash) {
+  display: block !important;
+  flex: 1 1 auto !important;
+  height: calc(100vh - 56px) !important;
+  max-height: calc(100vh - 56px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Fullheight views (Research Hub, Publications) ── */
+#app .main-content > .content-area.content-area--fullheight {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  height: calc(100vh - 56px) !important;
+  max-height: calc(100vh - 56px) !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#app .content-area--fullheight > .research-hub,
+#app .content-area--fullheight > .news-view {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ── Research grid scrolls ── */
+#app .rhub-grid {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+
+/* ── News list scrolls ── */
+#app .news-view > .news-list {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+
+/* ── Dashboard: normal block ── */
+#app .content-area--dash {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: calc(100vh - 56px) !important;
+}
+</style>
+
 </body>
 </html>
