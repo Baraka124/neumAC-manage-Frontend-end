@@ -43,7 +43,7 @@
       .mv-nav-horizon { display:flex; gap:4px; }
 
       /* ── Research hub two-panel layout ── */
-      .research-hub { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; height:100%; }
+      .research-hub { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; overflow:hidden; }
       .rhub-panel--mc { padding:0; display:flex; flex-direction:column; gap:0; flex:1; min-height:0; }
       .rp-kpi-strip { display:flex !important; flex-direction:row !important; align-items:center; gap:0; padding:12px 20px; border-bottom:1px solid #e3dfd6; background:#fdfcfb; flex-wrap:wrap; }
       .rp-kpi { display:flex; flex-direction:column; gap:2px; padding:0 20px 0 0; min-width:80px; }
@@ -724,7 +724,7 @@
       /* ── CONTENT-AREA ── */
       #app .main-content > .content-area:not(.content-area--fullheight) { display:block !important; flex:1 1 auto !important; min-height:0 !important; min-width:0 !important; width:100% !important; height:calc(100vh - 56px) !important; max-height:calc(100vh - 56px) !important; overflow-y:auto !important; overflow-x:hidden !important; box-sizing:border-box !important; background:var(--nm-surface2) !important; }
       #app .main-content > .content-area.content-area--fullheight { display:flex !important; flex-direction:column !important; flex:1 1 auto !important; min-height:0 !important; min-width:0 !important; width:100% !important; height:calc(100vh - 56px) !important; max-height:calc(100vh - 56px) !important; overflow:hidden !important; padding:0 !important; box-sizing:border-box !important; background:var(--nm-surface2) !important; }
-      #app .main-content > .content-area > div { display:block !important; width:100% !important; box-sizing:border-box !important; }
+      #app .main-content > .content-area > div:not(.research-hub):not(.news-view) { display:block !important; width:100% !important; box-sizing:border-box !important; }
       #app .main-content > .content-area--fullheight > .research-hub,
       #app .main-content > .content-area--fullheight > .news-view { display:flex !important; flex-direction:column !important; flex:1 !important; min-height:0 !important; overflow:hidden !important; }
 
@@ -4668,12 +4668,14 @@
       #app .rhub-trials-list, #app .rhub-projects-list { overflow-y:auto !important; flex:1 !important; min-height:0 !important; }
 
       /* News view: fill height and scroll */
+      /* ── News view — single authoritative block ── */
       #app .news-view {
         display: flex !important;
         flex-direction: column !important;
         flex: 1 !important;
         min-height: 0 !important;
         overflow: hidden !important;
+        /* No height:100% — flex:1 is sufficient in a flex container */
       }
       #app .news-grid,
       #app .news-feed {
@@ -4688,7 +4690,7 @@
         overflow-y: auto !important;
       }
 
-      /* ── News scroll body ────────────────────────────────── */
+      /* ── News scroll body ── */
       #app .news-body {
         flex: none !important;
         min-height: 0 !important;
@@ -4696,14 +4698,7 @@
         -webkit-overflow-scrolling: touch !important;
         padding: 0 0 60px !important;
       }
-      #app .news-view {
-        display: flex !important;
-        flex-direction: column !important;
-        height: 100% !important;
-        min-height: 0 !important;
-        overflow: hidden !important;
-      }
-      /* ── Settings scroll ─────────────────────────────────── */
+      /* ── Settings scroll ── */
       #app .content-area:not(.content-area--fullheight) {
         overflow-y: auto !important;
       }
