@@ -12488,7 +12488,7 @@
                             </div>
                         </div>
 
-                        <!-- Loading skeleton — only when loading and no data yet -->
+                        <!-- Loading skeleton -->
                         <div v-if="researchLoading && researchLines.length === 0" class="rhub-grid">
                             <div v-for="i in 6" :key="i" class="rhub-line-card" style="pointer-events:none">
                                 <div class="rlc-accent nm-skeleton"></div>
@@ -19340,7 +19340,7 @@
         }
 
         resize();
-        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });  
+        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });
         if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
     })();
     </script>
