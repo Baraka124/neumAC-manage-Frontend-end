@@ -5583,6 +5583,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { newsPosts.value = [] }
         finally { newsLoading.value = false; newsLoaded.value = true }
       }
+      // Silent background preload — used by loadAllData batch to prefetch news
+      // without setting newsLoading=true, so navigating to Publications never shows blank.
+      const preloadNews = async () => {
+        if (newsLoaded.value || newsLoading.value) return
+        try {
+          const res = await API.request('/api/news')
+          newsPosts.value = res?.data || Utils.ensureArray(res) || []
+          newsLoaded.value = true
+        } catch { /* silent — user-triggered loadNews will retry with loading indicator */ }
+      }
 
       const showAddNewsModal = () => {
         newsModal.mode = 'add'
@@ -5743,7 +5753,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
         newsWordCount, newsWordLimit, activeNewsMenu,
-        loadNews, showAddNewsModal, editNews, saveNews,
+        loadNews, preloadNews, showAddNewsModal, editNews, saveNews,
         publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic,
         formatAuthorName, getLineName, autoExpiry
       }
@@ -7022,7 +7032,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return
           }
           if (view === 'research_hub') {
-            // Direct navigation — default to lines tab
+            // Direct navigation — always return to overview (not a stale drill-down page)
+            researchOps.researchHubPage.value = 'overview'
             if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
             // Load on-demand if background batch hasn't completed yet
@@ -7455,7 +7466,7 @@ document.addEventListener('DOMContentLoaded', () => {
               liveOps.loadActiveMedicalStaff(),
               researchOps.loadResearchLines(),
               loadSystemStats(),
-              loadNews() // FIX Bug7: kept here but newsLoaded flag prevents duplicate call if user already navigated to news
+              newsOps.preloadNews() // silent prefetch — no loading flag, prevents blank Publications on fast navigation
             ]).then(() => updateDashboardStats())
 
             // Low priority — research analytics
@@ -8450,4 +8461,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});  
+});
