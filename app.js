@@ -5583,15 +5583,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { newsPosts.value = [] }
         finally { newsLoading.value = false; newsLoaded.value = true }
       }
-      // Silent background preload — used by loadAllData batch to prefetch news
-      // without setting newsLoading=true, so navigating to Publications never shows blank.
+      // Silent background preload — no loading flag, prevents blank Publications on fast navigation
       const preloadNews = async () => {
         if (newsLoaded.value || newsLoading.value) return
         try {
           const res = await API.request('/api/news')
           newsPosts.value = res?.data || Utils.ensureArray(res) || []
           newsLoaded.value = true
-        } catch { /* silent — user-triggered loadNews will retry with loading indicator */ }
+        } catch { /* silent — user-triggered loadNews will retry with the loading indicator */ }
       }
 
       const showAddNewsModal = () => {
@@ -7032,7 +7031,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return
           }
           if (view === 'research_hub') {
-            // Direct navigation — always return to overview (not a stale drill-down page)
+            // Direct navigation — always reset to overview (clears stale drill-down state)
             researchOps.researchHubPage.value = 'overview'
             if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
