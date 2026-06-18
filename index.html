@@ -9754,6 +9754,11 @@
                                 <button class="btn btn-primary" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Schedule
                                 </button>
+                            </div>
+                        </div>
+                        <!-- Filter Bar -->
+                        <div class="filter-bar">
+                            <input type="date" class="form-control" style="max-width:180px" v-model="onCallFilters.date">
                             <select class="form-select" v-model="onCallFilters.shiftType">
                                 <option value="">All Roles</option>
                                 <option value="primary_call">Primary Call</option>
@@ -19304,7 +19309,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=22"></script>
+    <script src="app.js?v=23"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
