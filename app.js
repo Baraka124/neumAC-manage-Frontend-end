@@ -1289,9 +1289,9 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       let _toastSeq = 0
-      const showToast = (title, message, type = 'info', duration = 5000) => {
-        const icons = { info: 'fas fa-info-circle', success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle' }
-        const toast = { id: ++_toastSeq, title, message, type, icon: icons[type] || icons.info, duration }
+      const showToast = (title, message, type = 'info', duration = 5000, action = null) => {
+        const icons = { info: 'fas fa-info-circle', success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle', warn: 'fas fa-exclamation-triangle' }
+        const toast = { id: ++_toastSeq, title, message, type: type === 'warn' ? 'warning' : type, icon: icons[type] || icons.info, duration, action }
         toasts.value.push(toast)
         if (duration > 0) setTimeout(() => removeToast(toast.id), duration)
       }
@@ -7626,6 +7626,259 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+
+      // ── Soft-delete with undo ──────────────────────────────────────────
+      // Shows a 5-second undo toast before actually deleting. If user clicks
+      // Undo, the delete is cancelled. If they don't, a real DELETE fires.
+      const pendingDeletes = reactive({})  // id -> timeout handle
+
+      const deleteWithUndo = (label, deleteFn, id) => {
+        if (pendingDeletes[id]) {
+          clearTimeout(pendingDeletes[id])
+          delete pendingDeletes[id]
+        }
+        showToast('Deleted', label + ' will be removed in 5s — ', 'warn', 5000, {
+          label: 'Undo',
+          fn: () => {
+            if (pendingDeletes[id]) { clearTimeout(pendingDeletes[id]); delete pendingDeletes[id] }
+            showToast('Restored', label + ' deletion cancelled', 'success')
+          }
+        })
+        pendingDeletes[id] = setTimeout(async () => {
+          delete pendingDeletes[id]
+          try { await deleteFn() }
+          catch (e) { showToast('Error', 'Could not delete ' + label, 'error') }
+        }, 5000)
+      }
+
+
+      // ── Notifications ─────────────────────────────────────────────────
+      const notifications = reactive({ items: [], unread: 0, open: false, loading: false })
+
+      // ── Template-safe handler methods (Vue rejects if/const in attribute bindings) ──
+      const toggleNotifBell = () => {
+        notifications.open = !notifications.open
+        if (notifications.open) loadNotifications()
+      }
+      const clickNotifItem = (n) => {
+        markNotifRead(n.id)
+        if (n.action_view) { switchView(n.action_view); notifications.open = false }
+      }
+      const maybeLoadPermUsers = () => {
+        if (!permMgmt.users.length && !permMgmt.loading) loadPermissionUsers()
+      }
+      const addNewsImage = (form) => {
+        if (form._imageInput?.trim()) { form.image_urls.push(form._imageInput.trim()); form._imageInput = '' }
+      }
+      const toggleResidentManagerRole = () => {
+        const f = medicalStaffModal.form
+        if (f.staff_type === 'attending_physician' && !(isRoleTaken('resident_manager') && !f.is_resident_manager)) {
+          handleRoleAssignment('resident_manager', !f.is_resident_manager)
+          f.is_resident_manager = !f.is_resident_manager
+        }
+      }
+      const toggleOncallManagerRole = () => {
+        const f = medicalStaffModal.form
+        if (f.staff_type === 'attending_physician' && !(isRoleTaken('oncall_manager') && !f.is_oncall_manager)) {
+          handleRoleAssignment('oncall_manager', !f.is_oncall_manager)
+          f.is_oncall_manager = !f.is_oncall_manager
+        }
+      }
+      const toggleResearchCoordinator = () => {
+        medicalStaffModal.form.is_research_coordinator = !medicalStaffModal.form.is_research_coordinator
+        if (!medicalStaffModal.form.is_research_coordinator) medicalStaffModal.form._coordLineId = null
+      }
+
+      const loadNotifications = async () => {
+        try {
+          notifications.loading = true
+          const data = await API.request('/api/notifications?limit=20')
+          notifications.items = data?.data || []
+          notifications.unread = data?.unread_count || 0
+        } catch (e) { console.error('[neumDesk] loadNotifications failed:', e) }
+        finally { notifications.loading = false }
+      }
+
+      const markNotifRead = async (id) => {
+        const n = notifications.items.find(x => x.id === id)
+        if (n && !n.read) {
+          n.read = true
+          notifications.unread = Math.max(0, notifications.unread - 1)
+          await API.request('/api/notifications/' + id + '/read', { method: 'PUT' }).catch(() => {})
+        }
+      }
+
+      const markAllNotifsRead = async () => {
+        notifications.items.forEach(n => { n.read = true })
+        notifications.unread = 0
+        await API.request('/api/notifications/read-all', { method: 'PUT' }).catch(() => {})
+      }
+
+      // Poll every 60s for new notifications
+      let _notifPollTimer = null
+      const startNotifPolling = () => {
+        if (_notifPollTimer) return
+        loadNotifications()
+        _notifPollTimer = setInterval(loadNotifications, 60000)
+      }
+      const stopNotifPolling = () => { if (_notifPollTimer) { clearInterval(_notifPollTimer); _notifPollTimer = null } }
+
+
+      // ── Bulk selection ────────────────────────────────────────────────
+      const bulkSelect = reactive({
+        active: false,        // selection mode on/off
+        selected: new Set(),  // selected IDs
+        module: null          // which module is in bulk mode
+      })
+
+      const toggleBulkMode = (module) => {
+        if (bulkSelect.active && bulkSelect.module === module) {
+          bulkSelect.active = false
+          bulkSelect.selected.clear()
+          bulkSelect.module = null
+        } else {
+          bulkSelect.active = true
+          bulkSelect.selected.clear()
+          bulkSelect.module = module
+        }
+      }
+
+      const toggleBulkItem = (id) => {
+        if (bulkSelect.selected.has(id)) bulkSelect.selected.delete(id)
+        else bulkSelect.selected.add(id)
+      }
+
+      const bulkApproveAbsences = async () => {
+        if (!bulkSelect.selected.size) return
+        const ids = Array.from(bulkSelect.selected)
+        let done = 0
+        for (const id of ids) {
+          try {
+            await API.request('/api/absences/' + id, { method: 'PUT', body: JSON.stringify({ status: 'approved' }) })
+            done++
+          } catch (e) { console.error('bulk approve failed for', id, e) }
+        }
+        showToast('Approved', done + ' absence' + (done !== 1 ? 's' : '') + ' approved', 'success')
+        bulkSelect.selected.clear()
+        bulkSelect.active = false
+        await loadAllData()
+      }
+
+      const bulkDeleteAbsences = async () => {
+        if (!bulkSelect.selected.size) return
+        const ids = Array.from(bulkSelect.selected)
+        showToast('Warning', 'Deleting ' + ids.length + ' records in 5s — ', 'warn', 5000, {
+          label: 'Undo',
+          fn: () => { bulkSelect.selected.clear(); showToast('Cancelled', 'Bulk delete cancelled', 'success') }
+        })
+        setTimeout(async () => {
+          for (const id of ids) {
+            await API.request('/api/absences/' + id, { method: 'DELETE' }).catch(() => {})
+          }
+          bulkSelect.selected.clear()
+          bulkSelect.active = false
+          await loadAllData()
+        }, 5000)
+      }
+
+
+      // ── Data export ───────────────────────────────────────────────────
+      const exportCSV = async (type) => {
+        try {
+          const token = localStorage.getItem('neumax_token') || ''
+          const BACKEND = window.CONFIG?.BACKEND_URL || 'https://neumac-manage-back-end-production.up.railway.app'
+          const url = BACKEND + '/api/export/' + type
+          const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } })
+          if (!res.ok) throw new Error('Export failed: ' + res.status)
+          const blob = await res.blob()
+          const a = document.createElement('a')
+          a.href = URL.createObjectURL(blob)
+          a.download = type + '-export.csv'
+          a.click()
+          URL.revokeObjectURL(a.href)
+          showToast('Downloaded', type + ' data exported as CSV', 'success')
+        } catch (e) {
+          showToast('Error', 'Export failed: ' + e.message, 'error')
+        }
+      }
+
+      const downloadIcal = async () => {
+        try {
+          const token = localStorage.getItem('neumax_token') || ''
+          const BACKEND = window.CONFIG?.BACKEND_URL || 'https://neumac-manage-back-end-production.up.railway.app'
+          const res = await fetch(BACKEND + '/api/ical/oncall', { headers: { Authorization: 'Bearer ' + token } })
+          if (!res.ok) throw new Error('iCal export failed')
+          const blob = await res.blob()
+          const a = document.createElement('a')
+          a.href = URL.createObjectURL(blob)
+          a.download = 'guardias-neumologia.ics'
+          a.click()
+          URL.revokeObjectURL(a.href)
+          showToast('Downloaded', 'iCal file ready — import into your calendar app', 'success')
+        } catch (e) {
+          showToast('Error', 'Could not download calendar file', 'error')
+        }
+      }
+
+      // Print helper — opens a print-optimised view
+      const printView = (title) => {
+        document.title = 'Print – ' + title + ' – neumDesk'
+        window.print()
+        setTimeout(() => { document.title = 'neumDesk' }, 2000)
+      }
+
+
+      // ── Onboarding tooltips ───────────────────────────────────────────
+      const onboarding = reactive({ active: false, step: 0 })
+      const ONBOARDING_KEY = 'neumax_onboarded_v1'
+
+      const ONBOARDING_STEPS = [
+        { selector: '.sidebar', title: 'Navigation', text: 'Use the sidebar to move between modules — clinical, operations, and research.' },
+        { selector: '[data-tour="staff"]', title: 'Medical Staff', text: 'All 94 staff members live here. Search, filter, view profiles, and manage rotations.' },
+        { selector: '[data-tour="oncall"]', title: 'On-call Schedule', text: 'See and manage guardias. The calendar view shows coverage gaps automatically.' },
+        { selector: '[data-tour="research"]', title: 'Research Hub', text: 'Research lines, clinical trials, and innovation projects all in one place.' },
+        { selector: '[data-tour="settings"]', title: 'Settings & Permissions', text: 'Manage staff types, services, and — if you are an admin — user permissions.' },
+      ]
+
+      const startOnboarding = () => { onboarding.step = 0; onboarding.active = true }
+      const nextOnboardingStep = () => {
+        if (onboarding.step < ONBOARDING_STEPS.length - 1) onboarding.step++
+        else finishOnboarding()
+      }
+      const finishOnboarding = () => {
+        onboarding.active = false
+        localStorage.setItem(ONBOARDING_KEY, '1')
+      }
+      const checkFirstVisit = () => {
+        if (!localStorage.getItem(ONBOARDING_KEY)) {
+          setTimeout(startOnboarding, 1500) // slight delay after login
+        }
+      }
+
+
+      // ── Background polling — real-time feel without WebSockets ────────
+      // Polls on-call schedule and absence records every 30s since these
+      // change most frequently during a working day.
+      let _realtimePoll = null
+      const startRealtimePolling = () => {
+        if (_realtimePoll) return
+        _realtimePoll = setInterval(async () => {
+          try {
+            await Promise.allSettled([
+              onCallOps?.loadOnCallSchedule?.(),
+              absenceOps?.loadAbsences?.()
+            ])
+          } catch (e) { /* non-fatal */ }
+        }, 30000)
+      }
+      const stopRealtimePolling = () => { if (_realtimePoll) { clearInterval(_realtimePoll); _realtimePoll = null } }
+
+      // Start polling and notifications when user logs in, stop on logout
+      watch(() => currentUser.value, (user) => {
+        if (user) { startRealtimePolling(); startNotifPolling(); checkFirstVisit() }
+        else { stopRealtimePolling(); stopNotifPolling() }
+      })
+
       const loadAllData = async () => {
           if (loading.value) return  // already in flight — don't double-fire
           loading.value = true
@@ -8464,6 +8717,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
           systemSettings, saveSystemSettings, loadSystemSettings, confirmMaintenanceModeToggle, activeSvcId,
           permMgmt, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, permPillStyle, isAdmin,
+          // Phase 3 features
+          deleteWithUndo, pendingDeletes,
+          notifications, loadNotifications, markNotifRead, markAllNotifsRead,
+          toggleNotifBell, clickNotifItem, maybeLoadPermUsers,
+          addNewsImage, toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
+          bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
+          exportCSV, downloadIcal, printView,
+          onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           rotationServices, rotationServicesLoading, rotationServiceModal,
