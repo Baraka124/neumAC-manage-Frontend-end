@@ -3,7 +3,35 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
- 
+
+    // ── DIAGNOSTIC: visible error banner ─────────────────────────────────
+    // Built with plain DOM calls (no Vue) so it still works even when the
+    // error that triggered it is a Vue render error breaking Vue itself.
+    // This turns "the page is blank" into "here's the actual error" so we
+    // never have to guess again.
+    let __neumaxErrorCount = 0
+    function showOnScreenError(title, err, extra) {
+      try {
+        __neumaxErrorCount++
+        if (__neumaxErrorCount > 6) return // avoid flooding the screen
+        const msg = (err && (err.message || String(err))) || 'Unknown error'
+        const stack = (err && err.stack) ? String(err.stack).split('\n').slice(0, 4).join('\n') : ''
+        let box = document.getElementById('neumax-diag-box')
+        if (!box) {
+          box = document.createElement('div')
+          box.id = 'neumax-diag-box'
+          box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;max-height:45vh;overflow:auto;z-index:999999;background:#1c1917;color:#fecaca;font:11px/1.5 ui-monospace,monospace;border:1px solid #ef4444;border-radius:8px;padding:10px 12px;box-shadow:0 4px 24px rgba(0,0,0,.4);'
+          document.body.appendChild(box)
+        }
+        const entry = document.createElement('div')
+        entry.style.cssText = 'border-top:1px solid rgba(239,68,68,.3);padding:6px 0;'
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + title + ': ' + msg + (extra ? ' (' + extra + ')' : '') + (stack ? '\n' + stack : '')
+        box.appendChild(entry)
+      } catch (_) { /* never let the diagnostic itself break the page */ }
+    }
+    window.addEventListener('error', (e) => showOnScreenError('Script error', e.error || e.message))
+    window.addEventListener('unhandledrejection', (e) => showOnScreenError('Unhandled promise rejection', e.reason))
+
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
@@ -7423,6 +7451,23 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e) { showToast('Error', e?.message || 'Failed to save settings', 'error') }
         }
 
+        // Maintenance Mode locks out every non-admin user system-wide — unlike the
+        // other toggles on this page, it needs its own confirmation and it needs to
+        // save immediately, not wait for the generic "Save Settings" button. Turning
+        // it back off never needs confirmation (that's always the safe direction).
+        const confirmMaintenanceModeToggle = (event) => {
+          const turningOn = event.target.checked
+          event.target.checked = systemSettings.maintenance_mode // revert visual state; reactive value below is the source of truth
+          if (!turningOn) { systemSettings.maintenance_mode = false; saveSystemSettings(); return }
+          showConfirmation({
+            title: 'Enable Maintenance Mode',
+            message: 'This blocks all non-admin access to the API immediately, for everyone, system-wide.',
+            details: 'You will still have access. Everyone else will see a maintenance notice until you turn this back off.',
+            icon: 'fa-exclamation-triangle', confirmButtonText: 'Enable Maintenance Mode', confirmButtonClass: 'btn-danger',
+            onConfirm: () => { systemSettings.maintenance_mode = true; saveSystemSettings() }
+          })
+        }
+
         const getUnitFillColor = (unit, rotations) => {
         const cur = (rotations?.value || rotations || []).filter(r => r.training_unit_id === unit.id && r.rotation_status === 'active').length
         const max = unit.maximum_residents || 1
@@ -8265,7 +8310,7 @@ document.addEventListener('DOMContentLoaded', () => {
           portfolioKPIs,
           getLineAccent:     getLineAccentGlobal,
 
-          systemSettings, saveSystemSettings, loadSystemSettings, activeSvcId,
+          systemSettings, saveSystemSettings, loadSystemSettings, confirmMaintenanceModeToggle, activeSvcId,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           rotationServices, rotationServicesLoading, rotationServiceModal,
@@ -8448,13 +8493,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
 
+    app.config.errorHandler = (err, instance, info) => {
+      console.error('[neumDesk render error]', err, info)
+      const viewName = instance?.setupState?.currentView?.value
+      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)
+    }
+
     app.mount('#app')
 
   } catch (error) {
+    console.error('[neumDesk fatal error]', error)
+    const safeMsg = (error && (error.message || String(error))) || 'Unknown error'
+    const safeStack = (error && error.stack) ? String(error.stack).split('\n').slice(0, 6).join('\n') : ''
     document.body.innerHTML = `
       <div style="padding:40px;text-align:center;margin-top:100px;color:#333;font-family:Arial,sans-serif;">
         <h2 style="color:#dc3545;">⚠️ Application Error</h2>
         <p style="margin:20px 0;color:#666;">The application failed to load. Please refresh the page.</p>
+        <pre style="text-align:left;max-width:700px;margin:0 auto 20px;padding:14px 16px;background:#1c1917;color:#fecaca;border-radius:8px;font-size:12px;white-space:pre-wrap;word-break:break-word;">${safeMsg}${safeStack ? '\n\n' + safeStack : ''}</pre>
         <button onclick="window.location.reload()"
                 style="padding:12px 24px;background:#007bff;color:white;border:none;border-radius:6px;cursor:pointer;">
           🔄 Refresh Page
@@ -8462,4 +8517,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});  
+});
