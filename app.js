@@ -6227,7 +6227,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences })
-        const { onCallSchedule, coverageAreas } = onCallOps
+        const { onCallSchedule, coverageAreas, oncallChipStyle } = onCallOps
 
         // ── Root-level cross-composable computed ─────────────────
         // absenceOnCallConflict: needs absenceModal (useAbsences) AND
