@@ -3574,7 +3574,7 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   .resident-details { grid-template-columns: 1fr 1fr; }
   .filter-bar { gap: 6px; }
   .filter-bar .form-control,
-  .filter-bar .form-select { min-width: 120px; max-width: 100%; }
+  .filter-bar .form-select { min-width: 120px; max-width: 100%; flex: 1 1 160px; }
   .research-lines-grid,
   .innovation-projects-grid { grid-template-columns: 1fr; }
 
