@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="style.css?v=10">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8156,11 +8156,35 @@
             <div class="toast-icon"><i :class="toast.icon"></i></div>
             <div class="toast-content">
                 <div class="toast-title">{{ toast.title }}</div>
-                <div class="toast-message">{{ toast.message }}</div>
+                <div class="toast-message">{{ toast.message }}<button v-if="toast.action" @click="toast.action.fn(); removeToast(toast.id)" style="margin-left:4px;background:none;border:none;color:inherit;font-weight:700;cursor:pointer;text-decoration:underline;font-size:12px;padding:0">{{ toast.action.label }}</button></div>
             </div>
             <button class="toast-close" @click="removeToast(toast.id)" aria-label="Close notification">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
             </button>
+        </div>
+    </div>
+
+    <!-- ============ ONBOARDING OVERLAY ============ -->
+    <div v-if="onboarding.active && currentUser" style="position:fixed;inset:0;z-index:9999;pointer-events:none">
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);pointer-events:all" @click="finishOnboarding"></div>
+        <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--nm-surface);border:1px solid var(--nm-border);border-radius:16px;padding:28px;width:340px;z-index:10000;pointer-events:all;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="font-size:11px;color:var(--nm-teal,#007A7A);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Getting started · {{ onboarding.step + 1 }} of {{ ONBOARDING_STEPS.length }}</div>
+                <button @click="finishOnboarding" style="background:none;border:none;cursor:pointer;color:var(--nm-text3);padding:2px" aria-label="Close tour">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                </button>
+            </div>
+            <div style="font-size:16px;font-weight:700;color:var(--nm-text1);margin-bottom:8px">{{ ONBOARDING_STEPS[onboarding.step].title }}</div>
+            <div style="font-size:13px;color:var(--nm-text2);line-height:1.5;margin-bottom:20px">{{ ONBOARDING_STEPS[onboarding.step].text }}</div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <div style="display:flex;gap:4px;flex:1">
+                    <div v-for="(s, i) in ONBOARDING_STEPS" :key="i"
+                         :style="'width:' + (i === onboarding.step ? '20' : '6') + 'px;height:6px;border-radius:100px;transition:all .2s;background:' + (i <= onboarding.step ? 'var(--nm-teal,#007A7A)' : 'var(--nm-border)')"></div>
+                </div>
+                <button @click="nextOnboardingStep" class="btn btn-primary btn-sm" style="flex-shrink:0">
+                    {{ onboarding.step < ONBOARDING_STEPS.length - 1 ? 'Next' : 'Done' }}
+                </button>
+            </div>
         </div>
     </div>
 
@@ -8855,7 +8879,36 @@
                                 v-if="hasPermission('communications', 'create')" aria-label="New announcement">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
                         </button>
+
+                        <!-- Notification Bell -->
                         <div style="position:relative;">
+                            <button class="btn btn-icon btn-secondary" @click="toggleNotifBell()" aria-label="Notifications" style="position:relative">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                                <span v-if="notifications.unread > 0" style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1">{{ notifications.unread > 9 ? '9+' : notifications.unread }}</span>
+                            </button>
+                            <div v-if="notifications.open" style="position:absolute;right:0;top:calc(100% + 8px);width:340px;background:var(--nm-surface);border:1px solid var(--nm-border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:200;overflow:hidden">
+                                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--nm-border)">
+                                    <span style="font-size:13px;font-weight:600;color:var(--nm-text1)">Notifications</span>
+                                    <button v-if="notifications.unread > 0" @click="markAllNotifsRead" style="font-size:11px;color:var(--nm-teal,#007A7A);background:none;border:none;cursor:pointer;padding:0">Mark all read</button>
+                                </div>
+                                <div style="max-height:320px;overflow-y:auto">
+                                    <div v-if="notifications.loading" style="padding:24px;text-align:center;color:var(--nm-text3);font-size:13px">Loading…</div>
+                                    <div v-else-if="!notifications.items.length" style="padding:24px;text-align:center;color:var(--nm-text3);font-size:13px">No notifications</div>
+                                    <div v-for="n in notifications.items" :key="n.id"
+                                         @click="clickNotifItem(n)"
+                                         :style="'padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--nm-border);' + (n.read ? '' : 'background:rgba(0,122,122,.05);')">
+                                        <div style="display:flex;align-items:flex-start;gap:10px">
+                                            <div :style="'width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0;background:' + (n.read ? 'transparent' : '#007A7A')"></div>
+                                            <div>
+                                                <div style="font-size:12px;font-weight:600;color:var(--nm-text1)">{{ n.title }}</div>
+                                                <div style="font-size:11px;color:var(--nm-text3);margin-top:2px">{{ n.message }}</div>
+                                                <div style="font-size:10px;color:var(--nm-text4,#9ca3af);margin-top:4px">{{ new Date(n.created_at).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                             <button class="navbar-user-btn" @click="userMenuOpen = !userMenuOpen">
                                 <div :class="nmAv(currentUser && currentUser.full_name, currentUser && currentUser.staff_type, 'sm')" style="border:1.5px solid rgba(0,179,179,.3)">{{ currentUser && currentUser.full_name ? nmAvI(currentUser.full_name) : 'BA' }}</div>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
@@ -9280,6 +9333,13 @@
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg> Compact
                                     </button>
                                 </div>
+                                <button class="btn btn-secondary btn-sm" @click="exportCSV('staff')" title="Export to CSV" aria-label="Export staff list to CSV">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    CSV
+                                </button>
+                                <button class="btn btn-secondary btn-sm" @click="printView('Medical Staff')" title="Print" aria-label="Print staff list">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                </button>
                                 <button class="btn btn-primary" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Staff</button>
                             </div>
                         </div>
@@ -9680,14 +9740,20 @@
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9H21M3 15H21M9 3V21M15 3V21"/></svg> Detailed
                                     </button>
                                 </div>
+                                <button class="btn btn-secondary btn-sm" @click="downloadIcal" title="Subscribe to calendar" aria-label="Download iCal file">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    iCal
+                                </button>
+                                <button class="btn btn-secondary btn-sm" @click="exportCSV('oncall')" aria-label="Export on-call schedule to CSV">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    CSV
+                                </button>
+                                <button class="btn btn-secondary btn-sm" @click="printView('On-call Schedule')" aria-label="Print on-call schedule">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                </button>
                                 <button class="btn btn-primary" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Schedule
                                 </button>
-                            </div>
-                        </div>
-                        <!-- Filter Bar -->
-                        <div class="filter-bar">
-                            <input type="date" class="form-control" style="max-width:180px" v-model="onCallFilters.date">
                             <select class="form-select" v-model="onCallFilters.shiftType">
                                 <option value="">All Roles</option>
                                 <option value="primary_call">Primary Call</option>
@@ -12312,7 +12378,7 @@
 
                     <!-- ══ USERS & PERMISSIONS ══════════════════════════════════ -->
                     <div class="card mb-6" v-if="isAdmin()" style="margin-top:16px">
-                        <div class="card-header" style="cursor:pointer" @click="if(!permMgmt.users.length && !permMgmt.loading) loadPermissionUsers()">
+                        <div class="card-header" style="cursor:pointer" @click="maybeLoadPermUsers()">
                             <div class="card-title">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                                 Users &amp; Permissions
@@ -13572,10 +13638,10 @@
                                     <div v-if="newsModal.form.image_urls.length < 5" style="display:flex;gap:6px;">
                                         <input type="url" class="sm-input" v-model="newsModal.form._imageInput"
                                                placeholder="https://… paste image URL"
-                                               @keydown.enter.prevent="if(newsModal.form._imageInput.trim()){ newsModal.form.image_urls.push(newsModal.form._imageInput.trim()); newsModal.form._imageInput='' }"
+                                               @keydown.enter.prevent="addNewsImage(newsModal.form)"
                                                style="flex:1"/>
                                         <button class="btn btn-outline btn-sm" style="flex-shrink:0;white-space:nowrap"
-                                                @click.prevent="if(newsModal.form._imageInput.trim()){ newsModal.form.image_urls.push(newsModal.form._imageInput.trim()); newsModal.form._imageInput='' }">
+                                                @click.prevent="addNewsImage(newsModal.form)">
                                             + Add
                                         </button>
                                     </div>
@@ -15341,7 +15407,7 @@
                                         </div>
                                     </div>
                                     <div class="sm-toggle" :class="{ on: medicalStaffModal.form.is_resident_manager, disabled: medicalStaffModal.form.staff_type !== 'attending_physician' || (isRoleTaken('resident_manager') && !medicalStaffModal.form.is_resident_manager) }"
-                                         @click="if(medicalStaffModal.form.staff_type === 'attending_physician' && !(isRoleTaken('resident_manager') && !medicalStaffModal.form.is_resident_manager)){ handleRoleAssignment('resident_manager', !medicalStaffModal.form.is_resident_manager); medicalStaffModal.form.is_resident_manager = !medicalStaffModal.form.is_resident_manager }">
+                                         @click="toggleResidentManagerRole()">
                                         <div class="sm-toggle-thumb"></div>
                                     </div>
                                 </div>
@@ -15360,7 +15426,7 @@
                                         </div>
                                     </div>
                                     <div class="sm-toggle" :class="{ on: medicalStaffModal.form.is_oncall_manager, disabled: medicalStaffModal.form.staff_type !== 'attending_physician' || (isRoleTaken('oncall_manager') && !medicalStaffModal.form.is_oncall_manager) }"
-                                         @click="if(medicalStaffModal.form.staff_type === 'attending_physician' && !(isRoleTaken('oncall_manager') && !medicalStaffModal.form.is_oncall_manager)){ handleRoleAssignment('oncall_manager', !medicalStaffModal.form.is_oncall_manager); medicalStaffModal.form.is_oncall_manager = !medicalStaffModal.form.is_oncall_manager }">
+                                         @click="toggleOncallManagerRole()">
                                         <div class="sm-toggle-thumb"></div>
                                     </div>
                                 </div>
@@ -15446,7 +15512,7 @@
                                             </div>
                                         </div>
                                         <div class="sm-toggle" :class="{ on: medicalStaffModal.form.is_research_coordinator }"
-                                             @click="medicalStaffModal.form.is_research_coordinator = !medicalStaffModal.form.is_research_coordinator; if(!medicalStaffModal.form.is_research_coordinator) medicalStaffModal.form._coordLineId = null">
+                                             @click="toggleResearchCoordinator()">
                                             <div class="sm-toggle-thumb"></div>
                                         </div>
                                     </div>
@@ -19238,7 +19304,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=18"></script>
+    <script src="app.js?v=20"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
