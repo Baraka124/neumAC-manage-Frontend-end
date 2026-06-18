@@ -7581,7 +7581,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           await API.request(`/api/permissions/${user.id}/${moduleKey}`, {
             method: 'PUT',
-            body: JSON.stringify({ can_read, can_write })
+            body: { can_read, can_write }
           })
           // Update local state immediately — no full reload needed
           if (!user.permissions) user.permissions = []
@@ -7618,7 +7618,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           await API.request(`/api/permissions/${user.id}/admin-level`, {
             method: 'PUT',
-            body: JSON.stringify({ admin_level: newLevel })
+            body: { admin_level: newLevel }
           })
           user.admin_level = newLevel
           showToast('Updated', newLevel ? `${user.full_name} is now an admin` : `Admin removed from ${user.full_name}`, 'success')
@@ -7756,7 +7756,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let done = 0
         for (const id of ids) {
           try {
-            await API.request('/api/absences/' + id, { method: 'PUT', body: JSON.stringify({ status: 'approved' }) })
+            await API.request('/api/absences/' + id, { method: 'PUT', body: { status: 'approved' } })
             done++
           } catch (e) { console.error('bulk approve failed for', id, e) }
         }
