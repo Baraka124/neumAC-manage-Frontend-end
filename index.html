@@ -12230,7 +12230,7 @@
                                         <div class="stl-sub">Blocks all non-admin API access</div>
                                     </div>
                                     <label class="nm-toggle">
-                                        <input type="checkbox" v-model="systemSettings.maintenance_mode" :disabled="!hasPermission('system_settings','update')">
+                                        <input type="checkbox" :checked="systemSettings.maintenance_mode" @change="confirmMaintenanceModeToggle" :disabled="!hasPermission('system_settings','update')">
                                         <span class="nm-toggle-track"></span>
                                     </label>
                                 </div>
@@ -12344,6 +12344,9 @@
                                     Analytics
                                 </button>
                             </div>
+                            <button v-if="hasPermission('analytics','export')" class="rhub-add-btn" style="background:var(--nm-surface2);color:var(--nm-text1);border:0.5px solid var(--nm-border);margin-right:8px;" @click="showExportModal">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Export
+                            </button>
                             <button v-if="hasPermission('research_lines','create')" class="rhub-add-btn" @click="showAddResearchLineModal">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add line
                             </button>
@@ -19176,7 +19179,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=14"></script>
+    <script src="app.js?v=15"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
