@@ -2221,6 +2221,16 @@ document.addEventListener('DOMContentLoaded', () => {
       // absenceOnCallConflict moved to root setup (line ~6200)
       // where both absenceModal and onCallSchedule are in scope
 
+      // Returns inline style for on-call calendar shift chips based on coverage area colour.
+      // Extracted from template because Vue's compiler rejects IIFEs with const declarations.
+      const oncallChipStyle = (shift) => {
+        const c = coverageAreas.value?.find(a => a.id === shift.coverage_area_id)?.color || '#00b3b3'
+        const r = parseInt(c.slice(1,3) || '00', 16)
+        const g = parseInt(c.slice(3,5) || 'b3', 16)
+        const b2 = parseInt(c.slice(5,7) || 'b3', 16)
+        return { color: c, background: `rgba(${r},${g},${b2},.1)`, borderLeft: `2px solid ${c}` }
+      }
+
       const loadOnCallSchedule = async () => {
         loadingSchedule.value = true
         try {
@@ -7590,6 +7600,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      // Returns inline style string for a permission pill tag.
+      // Extracted from the template because Vue's compiler rejects IIFEs with if-statements.
+      const permPillStyle = (user, moduleKey) => {
+        const base = 'padding:4px 10px;border-radius:100px;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid;white-space:nowrap;'
+        const saving = permMgmt.saving === user.id + ':' + moduleKey
+        if (saving) return base + 'opacity:.5;cursor:wait;background:var(--nm-surface2);border-color:var(--nm-border);color:var(--nm-text3)'
+        const p = getUserPerm(user, moduleKey)
+        if (!p || (!p.can_read && !p.can_write)) return base + 'background:var(--nm-surface2);border-color:var(--nm-border);color:var(--nm-text3)'
+        if (p.can_read && !p.can_write) return base + 'background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.35);color:#3b82f6'
+        return base + 'background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.45);color:#059669'
+      }
+
       const toggleAdminLevel = async (user) => {
         const newLevel = (user.admin_level >= 1) ? 0 : 1
         try {
@@ -8441,7 +8463,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getLineAccent:     getLineAccentGlobal,
 
           systemSettings, saveSystemSettings, loadSystemSettings, confirmMaintenanceModeToggle, activeSvcId,
-          permMgmt, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, isAdmin,
+          permMgmt, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, permPillStyle, isAdmin,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           rotationServices, rotationServicesLoading, rotationServiceModal,
@@ -8594,7 +8616,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // NEW: Compact view properties - now coming from composables
           rotationView,
           onCallView, oncallTab, oncallMonthOffset, calloutsByArea, calloutsByReason,
-          oncallMonthEmptyCells, oncallMonthDays, getOncallShiftsForDay, isOncallCellToday, oncallMonthSummary,
+          oncallMonthEmptyCells, oncallMonthDays, getOncallShiftsForDay, isOncallCellToday, oncallMonthSummary, oncallChipStyle,
           residentsWithRotations: rotationOps.residentsWithRotations,
           groupedOnCallSchedules: onCallOps.groupedOnCallSchedules,
           staffWithOnCallOrbs: onCallOps.staffWithOnCallOrbs,
@@ -8648,4 +8670,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});   
+});
