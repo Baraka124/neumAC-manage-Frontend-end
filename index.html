@@ -8818,7 +8818,7 @@
                                    v-model="globalSearchQuery"
                                    @keyup="handleGlobalSearch"
                                    @keyup.escape="clearSearch"
-                                   @blur="window.setTimeout(() => { searchResultsOpen = false }, 200)"
+                                   @blur="closeSearchOnBlur"
                                    aria-label="Search across system">
                         </div>
                         <!-- Live results dropdown -->
@@ -19179,7 +19179,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=15"></script>
+    <script src="app.js?v=16"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
