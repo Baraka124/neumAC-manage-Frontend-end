@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
     const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
- 
+
     // ── DIAGNOSTIC: visible error banner ─────────────────────────────────
     // Built with plain DOM calls (no Vue) so it still works even when the
     // error that triggered it is a Vue render error breaking Vue itself.
@@ -1637,7 +1637,7 @@ document.addEventListener('DOMContentLoaded', () => {
         medicalStaffModal.show = true
       }
 
-      const loadStaffCertificates = async (staffId) => {
+      const loadMedicalStaffModalCertificates = async (staffId) => {
         try {
           medicalStaffModal._certs = await API.getStaffCertificates(staffId)
         } catch { medicalStaffModal._certs = [] }
@@ -1653,7 +1653,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renewal_months: c.renewal_months || 24
           })
           medicalStaffModal._addingCert = false
-          await loadStaffCertificates(medicalStaffModal.form.id)
+          await loadMedicalStaffModalCertificates(medicalStaffModal.form.id)
           showToast('Saved', 'Certificate added', 'success')
         } catch (e) { showToast('Error', e?.message || 'Failed to save certificate', 'error') }
       }
@@ -1661,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const deleteCertificate = async (cert) => {
         try {
           await API.deleteStaffCertificate(medicalStaffModal.form.id, cert.id)
-          await loadStaffCertificates(medicalStaffModal.form.id)
+          await loadMedicalStaffModalCertificates(medicalStaffModal.form.id)
           showToast('Removed', 'Certificate removed', 'success')
         } catch (e) { showToast('Error', e?.message || 'Failed to remove certificate', 'error') }
       }
@@ -1710,6 +1710,8 @@ document.addEventListener('DOMContentLoaded', () => {
           _networkHint: null
         }
         medicalStaffModal.show = true
+        medicalStaffModal._certs = []
+        loadMedicalStaffModalCertificates(staff.id)
       }
 
       const saveMedicalStaff = async (saving) => {
@@ -1876,7 +1878,7 @@ document.addEventListener('DOMContentLoaded', () => {
         staffFilters, staffProfileModal, medicalStaffModal,
         filteredMedicalStaff, filteredMedicalStaffAll, staffTotalPages,
         loadMedicalStaff, loadHospitals, addHospitalInline,
-        loadStaffCertificates, saveCertificate, deleteCertificate,
+        loadMedicalStaffModalCertificates, saveCertificate, deleteCertificate,
         showAddMedicalStaffModal, editMedicalStaff, saveMedicalStaff, deactivateStaffMember,
         formatTrainingYear: Utils.formatTrainingYear, formatSpecialization: Utils.formatSpecialization, effectiveResidentYear: Utils.effectiveResidentYear,
         formatPhone: Utils.formatPhone, formatLicense: Utils.formatLicense,
