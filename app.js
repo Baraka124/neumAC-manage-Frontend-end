@@ -7217,6 +7217,14 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         const clearSearch = () => { ui.globalSearchQuery.value = ''; ui.searchResultsOpen.value = false }
+        // BUG FIX: this used to be an inline template expression calling
+        // window.setTimeout(...) directly. Vue's template compiler doesn't
+        // treat 'window' as a safe bare global inside expressions, so it
+        // compiled to _ctx.window.setTimeout(...) — and since the component
+        // has no 'window' property, that's undefined.setTimeout(...), which
+        // threw on every blur of the search input. Moving it into a real
+        // function avoids the whole class of problem.
+        const closeSearchOnBlur = () => { setTimeout(() => { ui.searchResultsOpen.value = false }, 200) }
 
         // ── Academic Degrees Management ────────────────────────────────────────
         const academicDegreeModal = reactive({
@@ -8295,7 +8303,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getStaffPulseState, getStaffNextEvent,
           absCalendarDays, absCalendarTitle, absCalendarMonth, absCalendarYear,
           absCalPrevMonth, absCalNextMonth, absenceViewMode, absTimelineHorizon, absTimelineOffset, absTimelinePlanning, absTimelineStaff, getStaffAbsencesInHorizon, getAbsenceBarStyle, absTimelineCoverage, absTimelineTodayPct, getAbsHorizonLabel, ABS_COLOURS,
-          absCoverage30, getUnit30DayTimeline, deptPulseStats, handleGlobalSearch, globalSearchResults, clearSearch, isOnline,
+          absCoverage30, getUnit30DayTimeline, deptPulseStats, handleGlobalSearch, globalSearchResults, clearSearch, closeSearchOnBlur, isOnline,
           getPhaseColor: (p) => Utils.getPhaseColor(p),
           getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates,
           newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
