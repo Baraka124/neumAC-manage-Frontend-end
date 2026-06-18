@@ -273,6 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
       'Scientific Advisor', 'Regulatory Advisor',
     ]
     class Utils {
+      // Lightweight debounce — delays fn execution until `wait` ms after last call
+      static debounce(fn, wait = 250) {
+        let timer
+        return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), wait) }
+      }
       // Date utilities
       static localDateStr(d) {
         // Returns YYYY-MM-DD in LOCAL timezone — prevents UTC offset issues
@@ -1234,17 +1239,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const loginForm = reactive({ email: '', password: '', remember_me: false })
       const loginLoading = ref(false)
 
+      // hasPermission reads from the explicit permissions array returned by the backend
+      // at login and /api/auth/me — no static matrix, no role inference.
+      // action: 'read' checks can_read, anything else checks can_write.
       const hasPermission = (module, action = 'read') => {
-        // B13 FIX: Backend DB returns 'user_role'; JWT payload uses 'role'.
-        // After auth/me merge both should be present, but defensively check both
-        // so a race condition or unexpected response shape never silently breaks permissions.
-        const role = currentUser.value?.user_role || currentUser.value?.role
-        if (!role) return false
-        if (role === ROLES.ADMIN) return true
-        return PERMISSION_MATRIX[role]?.[module]?.includes(action) ?? false
+        const user = currentUser.value
+        if (!user) return false
+        const perms = user.permissions
+        if (!Array.isArray(perms)) return false
+        const p = perms.find(x => x.module === module)
+        if (!p) return false
+        return action === 'read' ? p.can_read : p.can_write
       }
 
-      return { currentUser, loginForm, loginLoading, hasPermission }
+      // isAdmin — true if the user has admin_level > 0 (can manage permissions)
+      const isAdmin = () => (currentUser.value?.admin_level ?? 0) >= 1
+
+      return { currentUser, loginForm, loginLoading, hasPermission, isAdmin }
     }
 
     // ============ 6.2 useUI ============
@@ -1407,6 +1418,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const hospitalsList = ref([])   // all hospitals from DB
       const clinicalUnits = ref([])   // clinical units (Pneumology + others)
       const staffFilters = reactive({ search: '', staffType: '', department: '', status: '', residentCategory: '', hospital: '', networkType: '' })
+      const debouncedStaffSearch = ref('')
+      watch(() => staffFilters.search, Utils.debounce(v => { debouncedStaffSearch.value = v }, 250))
       const clearStaffFilters = () => { staffFilters.search = ''; staffFilters.staffType = ''; staffFilters.department = ''; staffFilters.status = ''; staffFilters.residentCategory = ''; staffFilters.hospital = ''; staffFilters.networkType = '' }
       const hasActiveStaffFilters = computed(() => !!(staffFilters.search || staffFilters.staffType || staffFilters.department || staffFilters.status || staffFilters.residentCategory || staffFilters.hospital || staffFilters.networkType))
       const staffProfileModal = reactive({ 
@@ -1493,8 +1506,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const filteredMedicalStaffAll = computed(() => {
         let f = medicalStaff.value
-        if (staffFilters.search) {
-          const q = staffFilters.search.toLowerCase()
+        if (debouncedStaffSearch.value) {
+          const q = debouncedStaffSearch.value.toLowerCase()
           f = f.filter(x => x.full_name?.toLowerCase().includes(q) || x.staff_id?.toLowerCase().includes(q) || x.professional_email?.toLowerCase().includes(q))
         }
         if (staffFilters.staffType) f = f.filter(x => x.staff_type === staffFilters.staffType)
@@ -1899,6 +1912,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const todaysOnCall = ref([])
       const loadingSchedule = ref(false)
       const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
+      const debouncedOnCallSearch = ref('')
+      watch(() => onCallFilters.search, Utils.debounce(v => { debouncedOnCallSearch.value = v }, 250))
       // ── Bulk On-call Scheduler ───────────────────────────────────
       const bulkOncall = Vue.reactive({
         show:     false,
@@ -2108,7 +2123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let f = onCallSchedule.value
         // Default: hide past shifts unless user explicitly filters to a past date or searches
         const today = Utils.normalizeDate(new Date())
-        if (!onCallFilters.date && !onCallFilters.search) {
+        if (!onCallFilters.date && !debouncedOnCallSearch.value) {
           f = f.filter(s => Utils.normalizeDate(s.duty_date) >= today)
         }
         if (onCallFilters.date) f = f.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
@@ -2116,8 +2131,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
         // M6 FIX: coverage_area is not a real DB column — filter on coverage_notes instead
         if (onCallFilters.coverageArea) f = f.filter(s => s.coverage_area_id === onCallFilters.coverageArea || s.coverage_area?.id === onCallFilters.coverageArea)
-        if (onCallFilters.search) {
-          const q = onCallFilters.search.toLowerCase()
+        if (debouncedOnCallSearch.value) {
+          const q = debouncedOnCallSearch.value.toLowerCase()
           f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_notes || '').toLowerCase().includes(q))
         }
         return applySort(f, 'oncall')
@@ -2133,15 +2148,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Respect same filters as detailed view
         let shifts = onCallSchedule.value || []
         // Default: hide past shifts unless date filter or search is active
-        if (!onCallFilters.date && !onCallFilters.search) {
+        if (!onCallFilters.date && !debouncedOnCallSearch.value) {
           shifts = shifts.filter(s => Utils.normalizeDate(s.duty_date) >= today)
         }
         if (onCallFilters.date)       shifts = shifts.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
         if (onCallFilters.shiftType)  shifts = shifts.filter(s => s.shift_type === onCallFilters.shiftType)
         if (onCallFilters.coverageArea) shifts = shifts.filter(s => s.coverage_area_id === onCallFilters.coverageArea || s.coverage_area?.id === onCallFilters.coverageArea)
         if (onCallFilters.physician)  shifts = shifts.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
-        if (onCallFilters.search) {
-          const q = onCallFilters.search.toLowerCase()
+        if (debouncedOnCallSearch.value) {
+          const q = debouncedOnCallSearch.value.toLowerCase()
           shifts = shifts.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_notes || '').toLowerCase().includes(q))
         }
         const map = {}
@@ -2235,7 +2250,7 @@ document.addEventListener('DOMContentLoaded', () => {
               contactInfo: item.primary_physician?.professional_email || 'No contact info', raw: item
             }
           })
-        } catch { todaysOnCall.value = [] }
+        } catch (e) { todaysOnCall.value = []; console.error('[neumDesk] loadTodaysOnCall failed:', e) }
       }
 
       const showAddOnCallModal = (physician = null) => {
@@ -2375,9 +2390,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (onCallFilters.shiftType && shift.shift_type !== onCallFilters.shiftType) return
           if (onCallFilters.physician && shift.primary_physician_id !== onCallFilters.physician &&
               shift.backup_physician_id !== onCallFilters.physician) return
-          if (onCallFilters.search) {
+          if (debouncedOnCallSearch.value) {
             const physicianName = getPhysicianName(shift.primary_physician_id).toLowerCase()
-            if (!physicianName.includes(onCallFilters.search.toLowerCase())) return
+            if (!physicianName.includes(debouncedOnCallSearch.value.toLowerCase())) return
           }
 
           if (!groups[date]) {
@@ -2646,6 +2661,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser }) {
       // rotations is a shared ref hoisted in main setup — do not redeclare
       const rotationFilters = reactive({ resident: '', status: '', trainingUnit: '', supervisor: '', search: '' })
+      const debouncedRotationSearch = ref('')
+      watch(() => rotationFilters.search, Utils.debounce(v => { debouncedRotationSearch.value = v }, 250))
       const rotationModal = reactive({
         show: false, mode: 'add',
         form: { rotation_id: '', resident_id: '', training_unit_id: '', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)), rotation_status: 'scheduled', rotation_category: 'clinical_rotation', supervising_attending_id: '' },
@@ -2863,8 +2880,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rotationFilters.status) f = f.filter(r => r.rotation_status === rotationFilters.status)
         if (rotationFilters.trainingUnit) f = f.filter(r => r.training_unit_id === rotationFilters.trainingUnit)
         if (rotationFilters.supervisor) f = f.filter(r => r.supervising_attending_id === rotationFilters.supervisor)
-        if (rotationFilters.search) {
-          const q = rotationFilters.search.toLowerCase()
+        if (debouncedRotationSearch.value) {
+          const q = debouncedRotationSearch.value.toLowerCase()
           f = f.filter(r => getResidentName(r.resident_id).toLowerCase().includes(q) || getTrainingUnitName(r.training_unit_id).toLowerCase().includes(q))
         }
         return applySort(f, 'rotations')
@@ -3122,7 +3139,7 @@ document.addEventListener('DOMContentLoaded', () => {
           (!rotationFilters.resident || r.id === rotationFilters.resident) &&
           (!rotationFilters.trainingUnit || r.allRotations.some(rot => rot.training_unit_id === rotationFilters.trainingUnit)) &&
           (!rotationFilters.status || r.allRotations.some(rot => rot.rotation_status === rotationFilters.status)) &&
-          (!rotationFilters.search || r.full_name.toLowerCase().includes(rotationFilters.search.toLowerCase()))
+          (!debouncedRotationSearch.value || r.full_name.toLowerCase().includes(debouncedRotationSearch.value.toLowerCase()))
         )
       })
 
@@ -3329,6 +3346,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule }) {
       const absences = ref([])
             const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', hideReturned: true })
+            const debouncedAbsenceSearch = ref('')
+            watch(() => absenceFilters.search, Utils.debounce(v => { debouncedAbsenceSearch.value = v }, 250))
       const absenceModal = reactive({
         show: false, mode: 'add',
         form: {
@@ -3429,8 +3448,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (absenceFilters.status) f = f.filter(a => a.current_status === absenceFilters.status)
         if (absenceFilters.reason) f = f.filter(a => a.absence_reason === absenceFilters.reason)
         if (absenceFilters.startDate) f = f.filter(a => Utils.normalizeDate(a.start_date) >= absenceFilters.startDate)
-        if (absenceFilters.search) {
-          const q = absenceFilters.search.toLowerCase()
+        if (debouncedAbsenceSearch.value) {
+          const q = debouncedAbsenceSearch.value.toLowerCase()
           f = f.filter(a => getStaffName(a.staff_member_id).toLowerCase().includes(q) || (ABSENCE_REASON_LABELS[a.absence_reason] || '').toLowerCase().includes(q))
         }
         return applySort(f, 'absences')
@@ -3936,6 +3955,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup, allDepartmentsLookup }) {
       // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
+      const debouncedTrainingSearch = ref('')
+      watch(() => trainingUnitFilters.search, Utils.debounce(v => { debouncedTrainingSearch.value = v }, 250))
       
       // ── Unit staff (attendings who work in each unit) ─────────────────────
       const unitStaffCache  = ref({})   // { [unitId]: [{ id, role, staff: {...} }] }
@@ -4002,7 +4023,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  u.unit_code === 'UCRI' || u.unit_code === 'PFR' || u.unit_code === 'UTB' ||
                  u.unit_code === 'SUEÑO' || u.unit_code === 'TRANSP'
         })
-        if (trainingUnitFilters.search) { const q = trainingUnitFilters.search.toLowerCase(); f = f.filter(u => u.unit_name?.toLowerCase().includes(q)) }
+        if (debouncedTrainingSearch.value) { const q = debouncedTrainingSearch.value.toLowerCase(); f = f.filter(u => u.unit_name?.toLowerCase().includes(q)) }
         if (trainingUnitFilters.department) f = f.filter(u => u.department_id === trainingUnitFilters.department)
         if (trainingUnitFilters.status) {
           if (trainingUnitFilters.status === 'available') {
@@ -4638,7 +4659,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const res = await API.getOpsMetrics()
           opsMetrics.value = res?.data || []
-        } catch(e) { opsMetrics.value = [] }
+        } catch(e) { opsMetrics.value = []; console.error('[neumDesk] loadOpsMetrics failed:', e) }
         finally { opsLoading.value = false }
       }
 
@@ -4906,7 +4927,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadClinicalStatus = async () => {
         isLoadingStatus.value = true
         try { const r = await API.getClinicalStatus(); clinicalStatus.value = r?.success ? r.data : null }
-        catch { clinicalStatus.value = null }
+        catch (e) { clinicalStatus.value = null; console.error('[neumDesk] loadClinicalStatus failed:', e) }
         finally { isLoadingStatus.value = false }
       }
 
@@ -4961,6 +4982,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const clinicalTrials        = ref([])
       const innovationProjects    = ref([])
       const researchLineFilters = reactive({ search: '', active: '' })
+      const debouncedResearchSearch = ref('')
+      watch(() => researchLineFilters.search, Utils.debounce(v => { debouncedResearchSearch.value = v }, 250))
       const trialFilters = reactive({ line: '', phase: '', status: '', search: '' })
       const projectFilters = reactive({ research_line_id: '', category: '', stage: '', funding_status: '', search: '' })
 
@@ -5035,8 +5058,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const filteredResearchLines = computed(() => {
         let f = researchLines.value
-        if (researchLineFilters.search) {
-          const q = researchLineFilters.search.toLowerCase()
+        if (debouncedResearchSearch.value) {
+          const q = debouncedResearchSearch.value.toLowerCase()
           f = f.filter(l =>
             (l.research_line_name || l.name)?.toLowerCase().includes(q) ||
             l.description?.toLowerCase().includes(q) ||
@@ -5178,9 +5201,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const researchLoading = ref(false)
 
-      const loadResearchLines = async () => { try { researchLines.value = await API.getResearchLines() } catch { } }
-      const loadClinicalTrials = async () => { try { clinicalTrials.value = await API.getAllClinicalTrials() } catch { } }
-      const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch { } }
+      const loadResearchLines = async () => { try { researchLines.value = await API.getResearchLines() } catch (e) { console.error('[neumDesk] loadResearchLines failed:', e) } }
+      const loadClinicalTrials = async () => { try { clinicalTrials.value = await API.getAllClinicalTrials() } catch (e) { console.error('[neumDesk] loadClinicalTrials failed:', e) } }
+      const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch (e) { console.error('[neumDesk] loadInnovationProjects failed:', e) } }
 
       // Load all three research datasets together — used by on-demand navigation
       const loadAllResearch = async () => {
@@ -5495,7 +5518,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { showToast('Error', 'Failed to load partner data', 'error') }
       }
       const loadTrialsTimeline = async (years = 3) => { if (!hasPermission('analytics', 'read')) return; try { trialsTimeline.value = await API.getClinicalTrialsTimeline(years) } catch { showToast('Error', 'Failed to load timeline', 'error') } }
-      const loadAnalyticsSummary = async () => { if (!hasPermission('analytics', 'read')) return; try { analyticsSummary.value = await API.getAnalyticsSummary() } catch { } }
+      const loadAnalyticsSummary = async () => { if (!hasPermission('analytics', 'read')) return; try { analyticsSummary.value = await API.getAnalyticsSummary() } catch (e) { console.error('[neumDesk] loadAnalyticsSummary failed:', e) } }
 
       const loadStaffResearchProfile = async (staffProfileModal, staffId) => {
         if (!staffId || !hasPermission('analytics', 'read')) return
@@ -5547,6 +5570,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
       const newsFilters    = reactive({ type: '', status: '', search: '', scope: '' })
+      const debouncedNewsSearch = ref('')
+      watch(() => newsFilters.search, Utils.debounce(v => { debouncedNewsSearch.value = v }, 250))
       const newsWordCount  = computed(() => {
         const t = newsModal.form.body || ''
         return t.trim() === '' ? 0 : t.trim().split(/\s+/).length
@@ -5591,8 +5616,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (newsFilters.status) posts = posts.filter(p => p.status === newsFilters.status)
         if (newsFilters.scope === 'public')   posts = posts.filter(p => p.is_public)
         if (newsFilters.scope === 'internal') posts = posts.filter(p => !p.is_public)
-        if (newsFilters.search) {
-          const q = newsFilters.search.toLowerCase()
+        if (debouncedNewsSearch.value) {
+          const q = debouncedNewsSearch.value.toLowerCase()
           posts = posts.filter(p =>
             (p.title || '').toLowerCase().includes(q) ||
             (p.body  || '').toLowerCase().includes(q)
@@ -5610,7 +5635,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // fallback would flatten the nested author/research_line join objects.
           const res = await API.request('/api/news')
           newsPosts.value = res?.data || Utils.ensureArray(res) || []
-        } catch { newsPosts.value = [] }
+        } catch (e) { newsPosts.value = []; console.error('[neumDesk] loadNews failed:', e); showToast('Error', 'Could not load publications', 'error') }
         finally { newsLoading.value = false; newsLoaded.value = true }
       }
       const preloadNews = async () => {
@@ -5619,7 +5644,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const res = await API.request('/api/news')
           newsPosts.value = res?.data || Utils.ensureArray(res) || []
           newsLoaded.value = true
-        } catch { }
+        } catch (e) { console.error('[neumDesk] preloadNews failed:', e) }
       }
 
       const showAddNewsModal = () => {
@@ -5808,7 +5833,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const loadSystemStats = async () => {
-        try { const data = await API.getSystemStats(); if (data?.success) Object.assign(systemStats.value, data.data) } catch { }
+        try { const data = await API.getSystemStats(); if (data?.success) Object.assign(systemStats.value, data.data) } catch (e) { console.error('[neumDesk] loadSystemStats failed:', e) }
       }
 
       const updateDashboardStats = () => {
@@ -6049,7 +6074,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const handleForgotPassword = () => { showToast('Info', 'Password reset link sent', 'info') }
 
         const auth = useAuth()
-        const { currentUser, loginForm, loginLoading, hasPermission } = auth
+        const { currentUser, loginForm, loginLoading, hasPermission, isAdmin } = auth
         const ui = useUI()
         const { showToast, showConfirmation, currentView, userMenuOpen, userProfileModal } = ui
 
@@ -6456,7 +6481,7 @@ document.addEventListener('DOMContentLoaded', () => {
           try {
             const p = new URLSearchParams({ year: calloutPeriod.year, month: calloutPeriod.month })
             calloutSummary.value = await API.request(`/api/emergency-callouts/summary?${p}`) || []
-          } catch(e) { /* silently ignore */ }
+          } catch(e) { console.error('[neumDesk] loadCalloutSummary failed:', e) }
         }
 
         const openLogCalloutModal = () => {
@@ -7485,7 +7510,102 @@ document.addEventListener('DOMContentLoaded', () => {
         return pct >= 1 ? '#e24b4a' : pct >= 0.75 ? '#ef9f27' : cur === 0 ? 'var(--nm-surface3)' : '#10b981'
       }
 
+      // ══════════════════════════════════════════════════════════════
+      // PERMISSIONS MANAGEMENT — admin UI for granting per-user tags
+      // ══════════════════════════════════════════════════════════════
+      const permMgmt = reactive({
+        users: [],       // all app_users with their permissions arrays
+        loading: false,
+        saving: null,    // userId:module being saved right now
+        error: null
+      })
+
+      const ALL_MODULES = [
+        { key: 'medical_staff',        label: 'Medical Staff',      icon: '👤' },
+        { key: 'oncall_schedule',       label: 'On-call Schedule',   icon: '📞' },
+        { key: 'resident_rotations',    label: 'Rotations',          icon: '🔄' },
+        { key: 'training_units',        label: 'Training Units',     icon: '🏥' },
+        { key: 'staff_absence',         label: 'Absences',           icon: '📅' },
+        { key: 'communications',        label: 'Communications',     icon: '📢' },
+        { key: 'research_lines',        label: 'Research Lines',     icon: '🔬' },
+        { key: 'clinical_trials',       label: 'Clinical Trials',    icon: '⚗️' },
+        { key: 'innovation_projects',   label: 'Innovation',         icon: '💡' },
+        { key: 'analytics',             label: 'Analytics',          icon: '📊' },
+        { key: 'news_posts',            label: 'Publications',       icon: '📰' },
+        { key: 'system_settings',       label: 'Settings',           icon: '⚙️' },
+        { key: 'user_management',       label: 'User Management',    icon: '🔐' },
+      ]
+
+      const loadPermissionUsers = async () => {
+        permMgmt.loading = true
+        permMgmt.error = null
+        try {
+          const data = await API.request('/api/permissions/users')
+          permMgmt.users = data?.data || []
+        } catch (e) {
+          permMgmt.error = 'Could not load users'
+          console.error('[neumDesk] loadPermissionUsers failed:', e)
+        } finally {
+          permMgmt.loading = false
+        }
+      }
+
+      const getUserPerm = (user, moduleKey) => {
+        return user.permissions?.find(p => p.module === moduleKey) || null
+      }
+
+      // Cycle through permission states: none → read → read+write → none
+      const cyclePermission = async (user, moduleKey) => {
+        const key = user.id + ':' + moduleKey
+        permMgmt.saving = key
+        try {
+          const current = getUserPerm(user, moduleKey)
+          let can_read = false, can_write = false
+          if (!current || (!current.can_read && !current.can_write)) {
+            can_read = true; can_write = false   // none → read
+          } else if (current.can_read && !current.can_write) {
+            can_read = true; can_write = true    // read → read+write
+          } else {
+            can_read = false; can_write = false  // read+write → none (revoke)
+          }
+          await API.request(`/api/permissions/${user.id}/${moduleKey}`, {
+            method: 'PUT',
+            body: JSON.stringify({ can_read, can_write })
+          })
+          // Update local state immediately — no full reload needed
+          if (!user.permissions) user.permissions = []
+          const idx = user.permissions.findIndex(p => p.module === moduleKey)
+          if (!can_read && !can_write) {
+            if (idx >= 0) user.permissions.splice(idx, 1)
+          } else {
+            const updated = { module: moduleKey, can_read, can_write }
+            if (idx >= 0) Object.assign(user.permissions[idx], updated)
+            else user.permissions.push(updated)
+          }
+        } catch (e) {
+          showToast('Error', `Could not update ${moduleKey} permission`, 'error')
+          console.error('[neumDesk] cyclePermission failed:', e)
+        } finally {
+          permMgmt.saving = null
+        }
+      }
+
+      const toggleAdminLevel = async (user) => {
+        const newLevel = (user.admin_level >= 1) ? 0 : 1
+        try {
+          await API.request(`/api/permissions/${user.id}/admin-level`, {
+            method: 'PUT',
+            body: JSON.stringify({ admin_level: newLevel })
+          })
+          user.admin_level = newLevel
+          showToast('Updated', newLevel ? `${user.full_name} is now an admin` : `Admin removed from ${user.full_name}`, 'success')
+        } catch (e) {
+          showToast('Error', 'Could not update admin level', 'error')
+        }
+      }
+
       const loadAllData = async () => {
+          if (loading.value) return  // already in flight — don't double-fire
           loading.value = true
           try {
             // Wake Railway immediately — runs in background while we set up
@@ -8321,6 +8441,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getLineAccent:     getLineAccentGlobal,
 
           systemSettings, saveSystemSettings, loadSystemSettings, confirmMaintenanceModeToggle, activeSvcId,
+          permMgmt, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, isAdmin,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
           rotationServices, rotationServicesLoading, rotationServiceModal,
@@ -8527,4 +8648,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});
+});   
