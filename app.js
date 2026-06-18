@@ -2658,6 +2658,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editOnCallSchedule, saveOnCallSchedule, bulkOncall, bulkCalDays, bulkToggleDate, bulkAddToQueue, bulkClone, bulkTotalShifts, bulkTotalConflicts, bulkSave, openBulkOncall, deleteOnCallSchedule, contactPhysician,
         onCallAbsenceConflict,
         // absenceOnCallConflict exposed at root level
+        oncallChipStyle,
         // NEW compact view properties
         groupedOnCallSchedules,
         isShiftActive,
@@ -7726,31 +7727,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Bulk selection ────────────────────────────────────────────────
       const bulkSelect = reactive({
-        active: false,        // selection mode on/off
-        selected: new Set(),  // selected IDs
-        module: null          // which module is in bulk mode
+        active: false,
+        selected: [],   // plain array — Vue reactive() cannot track Set mutations
+        module: null
       })
 
       const toggleBulkMode = (module) => {
         if (bulkSelect.active && bulkSelect.module === module) {
           bulkSelect.active = false
-          bulkSelect.selected.clear()
+          bulkSelect.selected.splice(0)
           bulkSelect.module = null
         } else {
           bulkSelect.active = true
-          bulkSelect.selected.clear()
+          bulkSelect.selected.splice(0)
           bulkSelect.module = module
         }
       }
 
       const toggleBulkItem = (id) => {
-        if (bulkSelect.selected.has(id)) bulkSelect.selected.delete(id)
-        else bulkSelect.selected.add(id)
+        const idx = bulkSelect.selected.indexOf(id)
+        if (idx > -1) bulkSelect.selected.splice(idx, 1)
+        else bulkSelect.selected.push(id)
       }
 
       const bulkApproveAbsences = async () => {
-        if (!bulkSelect.selected.size) return
-        const ids = Array.from(bulkSelect.selected)
+        if (!bulkSelect.selected.length) return
+        const ids = [...bulkSelect.selected]
         let done = 0
         for (const id of ids) {
           try {
@@ -7759,23 +7761,23 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e) { console.error('bulk approve failed for', id, e) }
         }
         showToast('Approved', done + ' absence' + (done !== 1 ? 's' : '') + ' approved', 'success')
-        bulkSelect.selected.clear()
+        bulkSelect.selected.splice(0)
         bulkSelect.active = false
         await loadAllData()
       }
 
       const bulkDeleteAbsences = async () => {
-        if (!bulkSelect.selected.size) return
-        const ids = Array.from(bulkSelect.selected)
+        if (!bulkSelect.selected.length) return
+        const ids = [...bulkSelect.selected]
         showToast('Warning', 'Deleting ' + ids.length + ' records in 5s — ', 'warn', 5000, {
           label: 'Undo',
-          fn: () => { bulkSelect.selected.clear(); showToast('Cancelled', 'Bulk delete cancelled', 'success') }
+          fn: () => { bulkSelect.selected.splice(0); showToast('Cancelled', 'Bulk delete cancelled', 'success') }
         })
         setTimeout(async () => {
           for (const id of ids) {
             await API.request('/api/absences/' + id, { method: 'DELETE' }).catch(() => {})
           }
-          bulkSelect.selected.clear()
+          bulkSelect.selected.splice(0)
           bulkSelect.active = false
           await loadAllData()
         }, 5000)
