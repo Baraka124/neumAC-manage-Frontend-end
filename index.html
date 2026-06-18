@@ -9268,8 +9268,7 @@
                     </nav>
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4C7 4 5 4 5 7V13C5 17 9 19 12 19C15 19 19 17 19 13"/><circle cx="19" cy="11" r="2"/><path d="M5 9H9"/></svg> Clinical Staff</div>
-                            <div class="header-actions" style="display:flex;gap:12px;align-items:center">
+                            <div class="header-actions" style="display:flex;gap:12px;align-items:center;margin-left:auto">
                                 <div class="view-toggle">
                                     <button class="btn-pill" :class="{ active: staffView === 'table' }" @click="staffView = 'table'">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01"/></svg> Table
@@ -9672,8 +9671,7 @@
                     <div v-show="oncallTab === 'schedule'">
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg> On-call Schedule</div>
-                            <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
+                            <div class="header-actions" style="display: flex; gap: 12px; align-items: center; margin-left:auto">
                                 <div class="view-toggle">
                                     <button class="btn-pill" :class="{ active: onCallView === 'compact' }" @click="onCallView = 'compact'">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg> Compact
@@ -10319,8 +10317,7 @@
                     </div>
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 15l2 2 4-4"/></svg> Resident Rotations</div>
-                            <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
+                            <div class="header-actions" style="display: flex; gap: 12px; align-items: center; margin-left:auto">
                                 <!-- View Toggle -->
                                 <div class="view-toggle">
                                     <button class="btn-pill" :class="{ active: rotationView === 'compact' }" 
@@ -10711,8 +10708,7 @@
 
                     <div class="card mb-6">
                         <div class="card-header">
-                            <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg> Training Units</div>
-                            <div style="display:flex;gap:8px;align-items:center">
+                            <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
                                 <button class="btn btn-primary" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Unit</button>
                             </div>
                         </div>
