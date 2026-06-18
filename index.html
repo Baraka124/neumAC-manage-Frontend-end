@@ -721,12 +721,10 @@
       #app .main-content { display:flex !important; flex-direction:column !important; flex:1 !important; min-width:0 !important; height:100vh !important; overflow:hidden !important; }
       #app .top-navbar { background:var(--nm-surface) !important; border-bottom:1px solid var(--nm-border) !important; height:56px !important; flex-shrink:0 !important; }
 
-      /* ── CONTENT-AREA ── */
-      #app .main-content > .content-area:not(.content-area--fullheight) { display:block !important; flex:1 1 auto !important; min-height:0 !important; min-width:0 !important; width:100% !important; height:calc(100vh - 56px) !important; max-height:calc(100vh - 56px) !important; overflow-y:auto !important; overflow-x:hidden !important; box-sizing:border-box !important; background:var(--nm-surface2) !important; }
-      #app .main-content > .content-area.content-area--fullheight { display:flex !important; flex-direction:column !important; flex:1 1 auto !important; min-height:0 !important; min-width:0 !important; width:100% !important; height:calc(100vh - 56px) !important; max-height:calc(100vh - 56px) !important; overflow:hidden !important; padding:0 !important; box-sizing:border-box !important; background:var(--nm-surface2) !important; }
+      /* ── CONTENT-AREA — see the single authoritative block at the end of
+         this file ("Height chain") for .content-area / --fullheight / --dash ── */
       #app .main-content > .content-area > div:not(.research-hub):not(.news-view) { display:block !important; width:100% !important; box-sizing:border-box !important; }
-      #app .main-content > .content-area--fullheight > .research-hub,
-      #app .main-content > .content-area--fullheight > .news-view { display:flex !important; flex-direction:column !important; flex:1 !important; min-height:0 !important; overflow:hidden !important; }
+
 
       /* ── CARDS ── */
       #app .content-area .card { background:var(--nm-surface) !important; border:1px solid var(--nm-border) !important; border-radius:var(--r12) !important; box-shadow:none !important; }
@@ -4607,53 +4605,18 @@
 
 
       /* ═══════════════════════════════════════════════
-         LAYOUT FIXES — content-area fullheight + scroll
+         LAYOUT — content-area fullheight + scroll
+         The authoritative rules for .content-area, .content-area--fullheight,
+         .content-area--dash, .research-hub, .news-view and .rhub-grid live in
+         ONE place only: the style block at the end of this file (search
+         "Height chain"). Do not redeclare them here — four competing copies
+         of these same selectors across this file and style.css is exactly
+         what caused the Dashboard/Research Hub/Publications blank-page bug.
+         Only the rules below are unique to this block and kept here.
          ═══════════════════════════════════════════════ */
 
-      /* Full-height views: no padding, flex column, fills viewport */
-      #app .content-area--fullheight {
-        padding: 0 !important;
-        overflow: hidden !important;
-        display: flex !important;
-        flex-direction: column !important;
-        flex: 1 !important;
-        min-height: 0 !important;
-        /* height is set by the more specific rule at line 726 */
-      }
-
-      /* Research hub: fill height and enable inner scroll */
-      /* ── Research hub — new three-level page navigation ───────
-         These rules replace the old rhub-panel/rhub-tabs system.
-         The new structure uses .rhub-page inside .research-hub.
-      ─────────────────────────────────────────────────────────── */
-      #app .research-hub {
-        display: flex !important;
-        flex-direction: column !important;
-        flex: 1 !important;
-        min-height: 0 !important;
-        overflow: hidden !important;
-      }
-      /* New page containers fill the hub */
-      #app .rhub-page {
-        display: flex !important;
-        flex-direction: column !important;
-        flex: 1 !important;
-        min-height: 0 !important;
-        overflow: hidden !important;
-      }
-      /* Grid scrolls, topbar and kpi strip stay fixed */
-      #app .rhub-grid {
-        flex: 1 !important;
-        overflow-y: auto !important;
-        min-height: 0 !important;
-      }
-      /* Line body scrolls */
-      #app .rhub-line-body {
-        flex: 1 !important;
-        overflow-y: auto !important;
-        min-height: 0 !important;
-      }
-      /* Study/project detail body scrolls */
+      /* Line/study/project detail bodies scroll within their page */
+      #app .rhub-line-body,
       #app .rhub-study-body {
         flex: 1 !important;
         overflow-y: auto !important;
@@ -4667,27 +4630,12 @@
       #app .rp-detail { flex:1 !important; overflow-y:auto !important; min-width:0 !important; }
       #app .rhub-trials-list, #app .rhub-projects-list { overflow-y:auto !important; flex:1 !important; min-height:0 !important; }
 
-      /* News view: fill height and scroll */
-      /* ── News view — single authoritative block ── */
-      #app .news-view {
-        display: flex !important;
-        flex-direction: column !important;
-        flex: 1 !important;
-        min-height: 0 !important;
-        overflow: hidden !important;
-        /* No height:100% — flex:1 is sufficient in a flex container */
-      }
       #app .news-grid,
       #app .news-feed {
         flex: 1 !important;
         overflow-y: auto !important;
         min-height: 0 !important;
         padding-bottom: 40px !important;
-      }
-
-      /* Settings: normal scroll within content-area */
-      #app .content-area:not(.content-area--fullheight) {
-        overflow-y: auto !important;
       }
 
       /* ── News scroll body ── */
@@ -4697,10 +4645,6 @@
         overflow-y: visible !important;
         -webkit-overflow-scrolling: touch !important;
         padding: 0 0 60px !important;
-      }
-      /* ── Settings scroll ── */
-      #app .content-area:not(.content-area--fullheight) {
-        overflow-y: auto !important;
       }
 
 /* ═══════════════════════════════════════════════════════════
@@ -19350,7 +19294,7 @@
 /* ── Height chain ─────────────────────────────────────────── */
 html, body, #app { height: 100%; }
 
-#app .nm-app-layout {
+#app .app-layout {
   display: flex !important;
   height: 100vh !important;
   overflow: hidden !important;
@@ -19369,11 +19313,15 @@ html, body, #app { height: 100%; }
 #app .main-content > .content-area:not(.content-area--fullheight):not(.content-area--dash) {
   display: block !important;
   flex: 1 1 auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
   height: calc(100vh - 56px) !important;
   max-height: calc(100vh - 56px) !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   box-sizing: border-box !important;
+  background: var(--nm-surface2) !important;
 }
 
 /* ── Fullheight views (Research Hub, Publications) ── */
@@ -19381,11 +19329,15 @@ html, body, #app { height: 100%; }
   display: flex !important;
   flex-direction: column !important;
   flex: 1 1 auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
   height: calc(100vh - 56px) !important;
   max-height: calc(100vh - 56px) !important;
   overflow: hidden !important;
   padding: 0 !important;
   box-sizing: border-box !important;
+  background: var(--nm-surface2) !important;
 }
 
 #app .content-area--fullheight > .research-hub,
