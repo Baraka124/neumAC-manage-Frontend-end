@@ -6978,7 +6978,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await API.login(loginForm.email, loginForm.password)
             currentUser.value = response.user; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
             showToast('Success', `Welcome, ${response.user.full_name}!`, 'success')
-            await loadAllData(); currentView.value = 'dashboard'
+            // FIX: set currentView BEFORE loadAllData — currentUser already triggers the
+            // app-layout (v-else on !currentUser), so leaving currentView at 'login' here
+            // meant the dashboard had no matching v-if branch and rendered blank with the
+            // breadcrumb falling back to 'neumDesk' until loadAllData fully resolved.
+            currentView.value = 'dashboard'
+            await loadAllData()
           } catch (e) { loginError.value = e.message || 'Invalid email or password'; showToast('Error', 'Login failed', 'error') }
           finally { loginLoading.value = false }
         }
@@ -8436,7 +8441,6 @@ document.addEventListener('DOMContentLoaded', () => {
           cmdQuery, cmdSelectedIdx, cmdItems, executeCmdItem,
           isOffline: ui.isOffline, isMaintenanceMode: ui.isMaintenanceMode,
           callouts, calloutsLoading, calloutSummary, calloutPeriod, calloutModal,
-          calloutFairnessAlert,
           calloutKPIs, calloutDistribution, calloutFairnessAlert, calloutReasonLabels, calloutTimeTypes,
           openLogCalloutModal, suggestCalloutArea, editCallout, saveCallout, deleteCallout,
           loadCallouts, loadCalloutSummary,
@@ -8458,4 +8462,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});
+});  
