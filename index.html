@@ -8164,30 +8164,6 @@
         </div>
     </div>
 
-    <!-- ============ ONBOARDING OVERLAY ============ -->
-    <div v-if="onboarding.active && currentUser" style="position:fixed;inset:0;z-index:9999;pointer-events:none">
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);pointer-events:all" @click="finishOnboarding"></div>
-        <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--nm-surface);border:1px solid var(--nm-border);border-radius:16px;padding:28px;width:340px;z-index:10000;pointer-events:all;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                <div style="font-size:11px;color:var(--nm-teal,#007A7A);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Getting started · {{ onboarding.step + 1 }} of {{ ONBOARDING_STEPS.length }}</div>
-                <button @click="finishOnboarding" style="background:none;border:none;cursor:pointer;color:var(--nm-text3);padding:2px" aria-label="Close tour">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
-                </button>
-            </div>
-            <div style="font-size:16px;font-weight:700;color:var(--nm-text1);margin-bottom:8px">{{ ONBOARDING_STEPS[onboarding.step].title }}</div>
-            <div style="font-size:13px;color:var(--nm-text2);line-height:1.5;margin-bottom:20px">{{ ONBOARDING_STEPS[onboarding.step].text }}</div>
-            <div style="display:flex;gap:8px;align-items:center">
-                <div style="display:flex;gap:4px;flex:1">
-                    <div v-for="(s, i) in ONBOARDING_STEPS" :key="i"
-                         :style="'width:' + (i === onboarding.step ? '20' : '6') + 'px;height:6px;border-radius:100px;transition:all .2s;background:' + (i <= onboarding.step ? 'var(--nm-teal,#007A7A)' : 'var(--nm-border)')"></div>
-                </div>
-                <button @click="nextOnboardingStep" class="btn btn-primary btn-sm" style="flex-shrink:0">
-                    {{ onboarding.step < ONBOARDING_STEPS.length - 1 ? 'Next' : 'Done' }}
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- ============ LOGIN SCREEN ============ -->
     <div v-if="!currentUser" class="login-container">
 
@@ -8305,6 +8281,30 @@
 
     <!-- ============ MAIN APPLICATION ============ -->
     <div v-else class="app-layout">
+
+        <!-- ============ ONBOARDING OVERLAY (inside app, so currentUser always exists) ============ -->
+        <div v-if="onboarding.active" style="position:fixed;inset:0;z-index:9999;pointer-events:none">
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);pointer-events:all" @click="finishOnboarding"></div>
+            <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--nm-surface);border:1px solid var(--nm-border);border-radius:16px;padding:28px;width:340px;z-index:10000;pointer-events:all;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                    <div style="font-size:11px;color:var(--nm-teal,#007A7A);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Getting started · {{ onboarding.step + 1 }} of {{ ONBOARDING_STEPS.length }}</div>
+                    <button @click="finishOnboarding" style="background:none;border:none;cursor:pointer;color:var(--nm-text3);padding:2px" aria-label="Close tour">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
+                    </button>
+                </div>
+                <div style="font-size:16px;font-weight:700;color:var(--nm-text1);margin-bottom:8px">{{ ONBOARDING_STEPS[onboarding.step].title }}</div>
+                <div style="font-size:13px;color:var(--nm-text2);line-height:1.5;margin-bottom:20px">{{ ONBOARDING_STEPS[onboarding.step].text }}</div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <div style="display:flex;gap:4px;flex:1">
+                        <div v-for="(s, i) in ONBOARDING_STEPS" :key="i"
+                             :style="'width:' + (i === onboarding.step ? '20' : '6') + 'px;height:6px;border-radius:100px;transition:all .2s;background:' + (i <= onboarding.step ? 'var(--nm-teal,#007A7A)' : 'var(--nm-border)')"></div>
+                    </div>
+                    <button @click="nextOnboardingStep" class="btn btn-primary btn-sm" style="flex-shrink:0">
+                        {{ onboarding.step < ONBOARDING_STEPS.length - 1 ? 'Next' : 'Done' }}
+                    </button>
+                </div>
+            </div>
+        </div>
 
     <!-- ── Loading splash — shown while initial data loads ── -->
     <transition name="splash-fade">
@@ -19304,7 +19304,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=21"></script>
+    <script src="app.js?v=22"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
