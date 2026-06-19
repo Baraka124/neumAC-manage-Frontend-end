@@ -13652,12 +13652,22 @@
                                     <!-- Add image URL -->
                                     <div v-if="newsModal.form.image_urls.length < 5" style="display:flex;gap:6px;">
                                         <input type="url" class="sm-input" v-model="newsModal.form._imageInput"
-                                               placeholder="https://… paste image URL"
+                                               placeholder="https://… paste image URL, or upload →"
                                                @keydown.enter.prevent="addNewsImage(newsModal.form)"
                                                style="flex:1"/>
                                         <button class="btn btn-outline btn-sm" style="flex-shrink:0;white-space:nowrap"
                                                 @click.prevent="addNewsImage(newsModal.form)">
                                             + Add
+                                        </button>
+                                        <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                                               :id="'newsImageFileInput'" style="display:none"
+                                               @change="uploadNewsImage(newsModal.form, $event)">
+                                        <button class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap"
+                                                :disabled="newsImageUploading"
+                                                @click.prevent="triggerNewsImagePicker"
+                                                title="Upload from your device" aria-label="Upload image from your device">
+                                            <svg v-if="!newsImageUploading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                            {{ newsImageUploading ? 'Uploading…' : 'Upload' }}
                                         </button>
                                     </div>
                                     <small class="sm-field-hint">
@@ -17924,6 +17934,15 @@
                                style="width:15px;height:15px;accent-color:var(--nm-teal);cursor:pointer;">
                         <span>Feature on website</span>
                         <small style="font-size:11px;color:var(--nm-text3);margin-left:4px;">Shows in the "Active Projects" section on the Innovation page of neumact.org</small>
+                    </label>
+
+                    <!-- Homepage spotlight toggle — only meaningful once the project is published to the website -->
+                    <label v-if="innovationProjectModal.form.featured_in_website"
+                           style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:13px;color:var(--nm-text1);margin-top:10px;">
+                        <input type="checkbox" v-model="innovationProjectModal.form.is_featured"
+                               style="width:15px;height:15px;accent-color:var(--nm-teal);cursor:pointer;">
+                        <span>Spotlight on homepage</span>
+                        <small style="font-size:11px;color:var(--nm-text3);margin-left:4px;">Eligible for the rotating project spotlight on the neumact.org homepage</small>
                     </label>
                 </div>
 
