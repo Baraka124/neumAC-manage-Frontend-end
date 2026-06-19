@@ -14238,15 +14238,15 @@
                 <div class="pd-content" v-if="staffProfileModal.staff">
 
                     <!-- Certificate expiry warning — visible on any tab -->
-                    <div v-if="(staffProfileModal.certificates||[]).some(c => c.renewal_date && (new Date(c.renewal_date) - new Date()) < 60*86400000)"
+                    <div v-if="(staffProfileModal.certificates||[]).some(c => c.expiry_date && (new Date(c.expiry_date) - new Date()) < 60*86400000)"
                          class="pd-cert-alert"
                          @click="staffProfileModal.activeTab = 'certs'; loadStaffCertificates(staffProfileModal.staff.id)">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         <span>
                             <strong>
-                                {{ (staffProfileModal.certificates||[]).filter(c => c.renewal_date && new Date(c.renewal_date) < new Date()).length > 0
-                                    ? (staffProfileModal.certificates||[]).filter(c => c.renewal_date && new Date(c.renewal_date) < new Date()).length + ' certificate' + ((staffProfileModal.certificates||[]).filter(c => c.renewal_date && new Date(c.renewal_date) < new Date()).length > 1 ? 's' : '') + ' expired'
-                                    : (staffProfileModal.certificates||[]).filter(c => c.renewal_date && (new Date(c.renewal_date) - new Date()) < 60*86400000).length + ' certificate' + ((staffProfileModal.certificates||[]).filter(c => c.renewal_date && (new Date(c.renewal_date) - new Date()) < 60*86400000).length > 1 ? 's' : '') + ' expiring soon'
+                                {{ (staffProfileModal.certificates||[]).filter(c => c.expiry_date && new Date(c.expiry_date) < new Date()).length > 0
+                                    ? (staffProfileModal.certificates||[]).filter(c => c.expiry_date && new Date(c.expiry_date) < new Date()).length + ' certificate' + ((staffProfileModal.certificates||[]).filter(c => c.expiry_date && new Date(c.expiry_date) < new Date()).length > 1 ? 's' : '') + ' expired'
+                                    : (staffProfileModal.certificates||[]).filter(c => c.expiry_date && (new Date(c.expiry_date) - new Date()) < 60*86400000).length + ' certificate' + ((staffProfileModal.certificates||[]).filter(c => c.expiry_date && (new Date(c.expiry_date) - new Date()) < 60*86400000).length > 1 ? 's' : '') + ' expiring soon'
                                 }}
                             </strong>
                             — click to review
@@ -14440,19 +14440,19 @@
                             <div class="pd-stat-row"
                                  v-if="(staffProfileModal.researchProfile.trials?.asPI||0)+(staffProfileModal.researchProfile.trials?.asCoI||0)+(staffProfileModal.researchProfile.trials?.active||0)+(staffProfileModal.researchProfile.projects?.asLead||0) > 0">
                                 <div class="pd-stat-block" v-if="staffProfileModal.researchProfile.trials?.asPI > 0">
-                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.studies.asPI }}</div>
+                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.trials.asPI }}</div>
                                     <div class="pd-stat-lbl">Principal Investigator</div>
                                 </div>
                                 <div class="pd-stat-block" v-if="staffProfileModal.researchProfile.trials?.asCoI > 0">
-                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.studies.asCoI }}</div>
+                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.trials.asCoI }}</div>
                                     <div class="pd-stat-lbl">Co-Investigator</div>
                                 </div>
                                 <div class="pd-stat-block" v-if="staffProfileModal.researchProfile.trials?.asSubI > 0">
-                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.studies.asSubI }}</div>
+                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.trials.asSubI }}</div>
                                     <div class="pd-stat-lbl">Sub-Investigator</div>
                                 </div>
                                 <div class="pd-stat-block" v-if="staffProfileModal.researchProfile.trials?.active > 0">
-                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.studies.active }}</div>
+                                    <div class="pd-stat-num">{{ staffProfileModal.researchProfile.trials.active }}</div>
                                     <div class="pd-stat-lbl">Active Studies</div>
                                 </div>
                                 <div class="pd-stat-block" v-if="staffProfileModal.researchProfile.projects?.asLead > 0">
@@ -14582,15 +14582,15 @@
                         <template v-else>
                             <div class="pd-cert-summary" v-if="(staffProfileModal.certificates || []).length">
                                 <span class="pd-badge pd-badge--ok">{{ (staffProfileModal.certificates || []).length }} certificate{{ (staffProfileModal.certificates||[]).length !== 1 ? 's' : '' }}</span>
-                                <span class="pd-badge" :class="(staffProfileModal.certificates||[]).some(x => x.renewal_date && new Date(x.renewal_date) < new Date()) ? 'pd-badge--danger' : 'pd-badge--neutral'">
-                                    {{ (staffProfileModal.certificates||[]).filter(x => x.renewal_date && new Date(x.renewal_date) < new Date()).length > 0 ? (staffProfileModal.certificates||[]).filter(x => x.renewal_date && new Date(x.renewal_date) < new Date()).length + ' expired' : 'All current' }}
+                                <span class="pd-badge" :class="(staffProfileModal.certificates||[]).some(x => x.expiry_date && new Date(x.expiry_date) < new Date()) ? 'pd-badge--danger' : 'pd-badge--neutral'">
+                                    {{ (staffProfileModal.certificates||[]).filter(x => x.expiry_date && new Date(x.expiry_date) < new Date()).length > 0 ? (staffProfileModal.certificates||[]).filter(x => x.expiry_date && new Date(x.expiry_date) < new Date()).length + ' expired' : 'All current' }}
                                 </span>
                             </div>
                             <div v-if="(staffProfileModal.certificates || []).length === 0" class="pd-empty">
                                 <div class="pd-empty-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                                 <div class="pd-empty-title">No certificates on record</div>
                             </div>
-                            <div v-for="cert in (staffProfileModal.certificates || [])" :key="cert.id" class="pd-cert-card" :class="{'pd-cert-card--expired': cert.renewal_date && new Date(cert.renewal_date) < new Date()}">
+                            <div v-for="cert in (staffProfileModal.certificates || [])" :key="cert.id" class="pd-cert-card" :class="{'pd-cert-card--expired': cert.expiry_date && new Date(cert.expiry_date) < new Date()}">
                                 <div class="pd-cert-icon">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
                                 </div>
@@ -14598,14 +14598,14 @@
                                     <div class="pd-cert-name">{{ cert.certificate_name }}</div>
                                     <div class="pd-cert-meta">
                                         <span v-if="cert.issued_date">Issued {{ formatDate(cert.issued_date) }}</span>
-                                        <span v-if="cert.renewal_date" :class="{'pd-cert-expired-label': new Date(cert.renewal_date) < new Date()}">
-                                            · {{ new Date(cert.renewal_date) < new Date() ? 'Expired' : 'Renews' }} {{ formatDate(cert.renewal_date) }}
+                                        <span v-if="cert.expiry_date" :class="{'pd-cert-expired-label': new Date(cert.expiry_date) < new Date()}">
+                                            · {{ new Date(cert.expiry_date) < new Date() ? 'Expired' : 'Renews' }} {{ formatDate(cert.expiry_date) }}
                                         </span>
                                     </div>
                                 </div>
                                 <div class="pd-cert-status">
-                                    <span v-if="cert.renewal_date && new Date(cert.renewal_date) < new Date()" class="pd-badge pd-badge--danger" style="font-size:11px;">Expired</span>
-                                    <span v-else-if="cert.renewal_date && (new Date(cert.renewal_date) - new Date()) < 90*86400000" class="pd-badge pd-badge--warn" style="font-size:11px;">Due soon</span>
+                                    <span v-if="cert.expiry_date && new Date(cert.expiry_date) < new Date()" class="pd-badge pd-badge--danger" style="font-size:11px;">Expired</span>
+                                    <span v-else-if="cert.expiry_date && (new Date(cert.expiry_date) - new Date()) < 90*86400000" class="pd-badge pd-badge--warn" style="font-size:11px;">Due soon</span>
                                     <span v-else class="pd-badge pd-badge--ok" style="font-size:11px;">Valid</span>
                                 </div>
                             </div>
@@ -15029,6 +15029,10 @@
                         <button class="sm-edit-tab" :class="{ active: medicalStaffModal.activeTab === 'roles' }" @click="medicalStaffModal.activeTab = 'roles'">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M4 19C4 16.2 6.2 14 9 14"/><path d="M15 11L21 11M15 15H19M15 19H17"/></svg>
                             Roles
+                        </button>
+                        <button class="sm-edit-tab" :class="{ active: medicalStaffModal.activeTab === 'public' }" @click="medicalStaffModal.activeTab = 'public'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            Public Profile
                         </button>
                     </div>
 
@@ -15556,6 +15560,57 @@
                                 </div>
                             </div>
 
+                        </template>
+
+                        <!-- ═══ PUBLIC PROFILE TAB ═══════════════════════════ -->
+                        <template v-if="medicalStaffModal.activeTab === 'public'">
+                            <div class="sm-section">
+                                <div class="sm-section-title">Website visibility</div>
+                                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;user-select:none;padding:12px;border:1px solid var(--border-2);border-radius:8px;background:var(--surface-2);">
+                                    <input type="checkbox" v-model="medicalStaffModal.form.is_public"
+                                           style="width:16px;height:16px;margin-top:1px;accent-color:var(--teal,#00b3b3);cursor:pointer;flex-shrink:0;">
+                                    <div>
+                                        <div style="font-size:13px;font-weight:600;color:var(--ink);">Show on neumact.org team page</div>
+                                        <div style="font-size:12px;color:var(--text-3);margin-top:2px;">
+                                            When enabled, this person's public photo and bio below appear on the public website's team page. Internal-only fields (contact details, employment status, etc.) are never exposed regardless of this setting.
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="sm-section" v-if="medicalStaffModal.form.is_public">
+                                <div class="sm-section-title">Public photo</div>
+                                <div style="display:flex;align-items:center;gap:16px;">
+                                    <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border-2);">
+                                        <img v-if="medicalStaffModal.form.public_photo_url" :src="medicalStaffModal.form.public_photo_url" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+                                        <span v-else style="font-size:11px;color:var(--text-3);">No photo</span>
+                                    </div>
+                                    <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                                        <div style="display:flex;gap:6px;">
+                                            <input type="url" class="sm-input" v-model="medicalStaffModal.form.public_photo_url"
+                                                   placeholder="https://… paste image URL, or upload →" style="flex:1">
+                                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                                                   id="staffPhotoFileInput" style="display:none"
+                                                   @change="uploadStaffPhoto(medicalStaffModal.form, $event)">
+                                            <button class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap"
+                                                    :disabled="staffPhotoUploading"
+                                                    @click.prevent="triggerStaffPhotoPicker"
+                                                    title="Upload from your device" aria-label="Upload photo from your device">
+                                                <svg v-if="!staffPhotoUploading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                                {{ staffPhotoUploading ? 'Uploading…' : 'Upload' }}
+                                            </button>
+                                        </div>
+                                        <small class="sm-field-hint">Square photos work best. Shown as a circular avatar on the public site.</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="sm-section" v-if="medicalStaffModal.form.is_public">
+                                <div class="sm-section-title">Public bio</div>
+                                <textarea class="sm-input" v-model="medicalStaffModal.form.public_bio" rows="5" maxlength="2000"
+                                          placeholder="A short public-facing biography — research interests, clinical focus, background. This is separate from internal notes and is only shown if 'Show on team page' is enabled above."></textarea>
+                                <small class="sm-field-hint">{{ (medicalStaffModal.form.public_bio || '').length }}/2000 characters</small>
+                            </div>
                         </template>
 
                     </div><!-- /sm-form-body -->
@@ -19338,7 +19393,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=27"></script>
+    <script src="app.js?v=29"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
