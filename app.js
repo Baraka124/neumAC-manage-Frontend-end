@@ -829,7 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return { current: active, currentCount: active.length, pastCount: past, totalDaysSupervised };
         } catch (error) {
           console.error('Failed to load supervision data:', error);
-          return { current: [], currentCount: 0, pastCount: 0, avgEvaluation: 0 };
+          return { current: [], currentCount: 0, pastCount: 0, totalDaysSupervised: 0 };
         }
       }
 
@@ -1448,7 +1448,9 @@ document.addEventListener('DOMContentLoaded', () => {
           hospital_id: null, _networkHint: null,
           // Affiliation fields
           affiliation_type: 'primary',  // 'primary' | 'affiliated' | 'visiting' | 'honorary'
-          primary_dept_name: null        // For affiliated: their actual home department name
+          primary_dept_name: null,        // For affiliated: their actual home department name
+          // Public profile fields — surfaced on neumact.org's team page when is_public=true
+          is_public: false, public_bio: '', public_photo_url: ''
         }
       })
 
@@ -1721,6 +1723,9 @@ document.addEventListener('DOMContentLoaded', () => {
           external_contact_phone: staff.external_contact_phone || null,
           clinical_study_certificates: Array.isArray(staff.clinical_study_certificates) ? [...staff.clinical_study_certificates] : [],
           hospital_id: staff.hospital_id || null,
+          is_public: staff.is_public || false,
+          public_bio: staff.public_bio || '',
+          public_photo_url: staff.public_photo_url || '',
           _networkHint: null
         }
         medicalStaffModal.show = true
@@ -1767,7 +1772,10 @@ document.addEventListener('DOMContentLoaded', () => {
             office_phone: f.office_phone || null,
             years_experience: f.years_experience || null,
             hospital_id: f.hospital_id || null,
-            clinical_study_certificates: f.clinical_study_certificates || []
+            clinical_study_certificates: f.clinical_study_certificates || [],
+            is_public: f.is_public || false,
+            public_bio: clean(f.public_bio),
+            public_photo_url: f.public_photo_url?.trim() || null
           }
           let savedStaff
           if (medicalStaffModal.mode === 'add') {
@@ -7716,6 +7724,36 @@ document.addEventListener('DOMContentLoaded', () => {
           newsImageUploading.value = false
         }
       }
+
+      // Staff public-profile photo upload — same pattern as news images,
+      // but the result is written directly to form.public_photo_url
+      // (a single field) rather than pushed onto an array.
+      const staffPhotoUploading = ref(false)
+      const triggerStaffPhotoPicker = () => { document.getElementById('staffPhotoFileInput')?.click() }
+      const uploadStaffPhoto = async (form, fileInputEvent) => {
+        const file = fileInputEvent.target.files?.[0]
+        fileInputEvent.target.value = ''
+        if (!file) return
+        staffPhotoUploading.value = true
+        try {
+          const token = localStorage.getItem(CONFIG.TOKEN_KEY) || ''
+          const fd = new FormData()
+          fd.append('file', file)
+          const res = await fetch(CONFIG.API_BASE_URL + '/api/upload/staff-photo', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + token },
+            body: fd
+          })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data?.error || 'Upload failed')
+          form.public_photo_url = data.url
+          showToast('Uploaded', 'Photo updated', 'success')
+        } catch (e) {
+          showToast('Error', e.message || 'Could not upload photo', 'error')
+        } finally {
+          staffPhotoUploading.value = false
+        }
+      }
       const toggleResidentManagerRole = () => {
         const f = medicalStaffModal.form
         if (f.staff_type === 'attending_physician' && !(isRoleTaken('resident_manager') && !f.is_resident_manager)) {
@@ -8768,7 +8806,9 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
           toggleNotifBell, clickNotifItem, maybeLoadPermUsers,
-          addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker, toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
+          addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
+          uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
+          toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
