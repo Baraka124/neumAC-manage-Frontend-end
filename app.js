@@ -1425,7 +1425,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const staffProfileModal = reactive({ 
         show: false, staff: null, activeTab: 'activity',
         researchProfile: null, supervisionData: null, leaveBalance: null,
-        loadingResearch: false, loadingSupervision: false, loadingLeave: false
+        loadingResearch: false, loadingSupervision: false, loadingLeave: false,
+        units: [], unitsLoading: false
       })
       const medicalStaffModal = reactive({
         show: false, mode: 'add', activeTab: 'basic',
@@ -5233,7 +5234,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: '', sort_order: researchLines.value.length + 1, active: true, keywords: [], keywordsInput: '' }); researchLineModal.show = true }
       const showAddTrialModal = (line = null) => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1, start_date: '', end_date: '' }); clinicalTrialModal.show = true }
-      const showAddProjectModal = (line = null) => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
+      const showAddProjectModal = (line = null) => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, is_featured: false, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, research_line_name: l.research_line_name || l.name || '', keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
@@ -6813,6 +6814,19 @@ document.addEventListener('DOMContentLoaded', () => {
           finally { staffOps.staffProfileModal.loadingCerts = false }
         }
 
+        const loadStaffUnits = async (staffId) => {
+          if (!staffId) return
+          staffOps.staffProfileModal.unitsLoading = true
+          staffOps.staffProfileModal.units = []
+          try {
+            const res = await API.request(`/api/staff/${staffId}/units`)
+            staffOps.staffProfileModal.units = Array.isArray(res?.data) ? res.data : []
+          } catch (e) {
+            staffOps.staffProfileModal.units = []
+            console.error('[neumDesk] loadStaffUnits failed:', e)
+          } finally { staffOps.staffProfileModal.unitsLoading = false }
+        }
+
         const viewStaffDetails = async (staff) => {
           if (!staff || !staff.id) { console.warn('viewStaffDetails: staff object is undefined or missing id'); return; }
           staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'activity'; staffOps.staffProfileModal.show = true
@@ -7670,6 +7684,37 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const addNewsImage = (form) => {
         if (form._imageInput?.trim()) { form.image_urls.push(form._imageInput.trim()); form._imageInput = '' }
+      }
+
+      // Uploads a picked file to Supabase Storage via the backend and adds
+      // the returned public URL to the post's image list. Raw fetch (not
+      // API.request) because FormData must not be JSON.stringify'd.
+      const newsImageUploading = ref(false)
+      const triggerNewsImagePicker = () => { document.getElementById('newsImageFileInput')?.click() }
+      const uploadNewsImage = async (form, fileInputEvent) => {
+        const file = fileInputEvent.target.files?.[0]
+        fileInputEvent.target.value = '' // allow picking the same file again later
+        if (!file) return
+        if (form.image_urls.length >= 5) { showToast('Limit reached', 'Maximum 5 images per post', 'warning'); return }
+        newsImageUploading.value = true
+        try {
+          const token = localStorage.getItem(CONFIG.TOKEN_KEY) || ''
+          const fd = new FormData()
+          fd.append('file', file)
+          const res = await fetch(CONFIG.API_BASE_URL + '/api/upload/news-image', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + token },
+            body: fd
+          })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data?.error || 'Upload failed')
+          form.image_urls.push(data.url)
+          showToast('Uploaded', 'Image added', 'success')
+        } catch (e) {
+          showToast('Error', e.message || 'Could not upload image', 'error')
+        } finally {
+          newsImageUploading.value = false
+        }
       }
       const toggleResidentManagerRole = () => {
         const f = medicalStaffModal.form
@@ -8704,7 +8749,7 @@ document.addEventListener('DOMContentLoaded', () => {
           absCalPrevMonth, absCalNextMonth, absenceViewMode, absTimelineHorizon, absTimelineOffset, absTimelinePlanning, absTimelineStaff, getStaffAbsencesInHorizon, getAbsenceBarStyle, absTimelineCoverage, absTimelineTodayPct, getAbsHorizonLabel, ABS_COLOURS,
           absCoverage30, getUnit30DayTimeline, deptPulseStats, handleGlobalSearch, globalSearchResults, clearSearch, closeSearchOnBlur, isOnline,
           getPhaseColor: (p) => Utils.getPhaseColor(p),
-          getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates,
+          getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates, loadStaffUnits,
           newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
           newsWordCount, newsWordLimit,
           loadNews, showAddNewsModal, editNews, saveNews,
@@ -8723,7 +8768,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
           toggleNotifBell, clickNotifItem, maybeLoadPermUsers,
-          addNewsImage, toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
+          addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker, toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
@@ -8933,4 +8978,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});   
+});
