@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=12">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8169,7 +8169,7 @@
                 <div class="toast-title">{{ toast.title }}</div>
                 <div class="toast-message">{{ toast.message }}<button v-if="toast.action" @click="toast.action.fn(); removeToast(toast.id)" style="margin-left:4px;background:none;border:none;color:inherit;font-weight:700;cursor:pointer;text-decoration:underline;font-size:12px;padding:0">{{ toast.action.label }}</button></div>
             </div>
-            <button class="toast-close" @click="removeToast(toast.id)" aria-label="Close notification">
+            <button class="toast-close" @click="removeToast(toast.id)" aria-label="Close notification" title="Close notification">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
             </button>
         </div>
@@ -8263,7 +8263,7 @@
                                autocomplete="current-password"
                                @input="clearLoginError('password')"
                                @keyup.enter="handleLogin">
-                        <button type="button" class="lc-eye" @click="showPassword = !showPassword" tabindex="-1" aria-label="Toggle password visibility">
+                        <button type="button" class="lc-eye" @click="showPassword = !showPassword" tabindex="-1" aria-label="Toggle password visibility" title="Toggle password visibility">
                             <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                         </button>
                     </div>
@@ -8299,7 +8299,7 @@
             <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--nm-surface);border:1px solid var(--nm-border);border-radius:16px;padding:28px;width:340px;z-index:10000;pointer-events:all;box-shadow:0 20px 60px rgba(0,0,0,.3)">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                     <div style="font-size:11px;color:var(--nm-teal,#007A7A);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Getting started · {{ onboarding.step + 1 }} of {{ ONBOARDING_STEPS.length }}</div>
-                    <button @click="finishOnboarding" style="background:none;border:none;cursor:pointer;color:var(--nm-text3);padding:2px" aria-label="Close tour">
+                    <button @click="finishOnboarding" style="background:none;border:none;cursor:pointer;color:var(--nm-text3);padding:2px" aria-label="Close tour" title="Close tour">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                     </button>
                 </div>
@@ -8649,7 +8649,7 @@
 
         <!-- Live Statistics Sidebar Toggle -->
         <button class="stats-toggle-btn" @click="toggleStatsSidebar"
-                :aria-label="statsSidebarOpen ? 'Close live statistics' : 'Open live statistics'">
+                :aria-label="statsSidebarOpen ? 'Close live statistics' : 'Open live statistics'" title="statsSidebarOpen ? 'Close live statistics' : 'Open live statistics'">
             <i class="fas" :class="statsSidebarOpen ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
             <span class="toggle-label">Status</span>
         </button>
@@ -8664,14 +8664,14 @@
                         <p class="header-subtitle">Real-time department updates</p>
                     </div>
                 </div>
-                <button class="header-close" @click="statsSidebarOpen = false" aria-label="Close panel">
+                <button class="header-close" @click="statsSidebarOpen = false" aria-label="Close panel" title="Close panel">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                 </button>
             </div>
             <div class="status-timeline">
                 <div class="timeline-header">
                     <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/></svg> Status Timeline</h4>
-                    <button class="timeline-refresh" @click="refreshStatus" aria-label="Refresh status"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+                    <button class="timeline-refresh" @click="refreshStatus" aria-label="Refresh status" title="Refresh status"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
                 </div>
                 <div class="timeline-items">
                     <div class="timeline-item" v-if="clinicalStatus">
@@ -8835,7 +8835,7 @@
             <header class="top-navbar">
                 <div class="navbar-left">
                     <!-- Hamburger — visible on mobile only via CSS -->
-                    <button class="nm-hamburger" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle menu">
+                    <button class="nm-hamburger" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle menu" title="Toggle menu">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                             <path v-if="!mobileMenuOpen" d="M3 6h18M3 12h18M3 18h18"/>
                             <path v-else d="M6 6l12 12M18 6L6 18"/>
@@ -8887,13 +8887,13 @@
                     </div>
                     <div style="display:flex;align-items:center;gap:12px;">
                         <button class="btn btn-icon btn-secondary" @click="showCommunicationsModal"
-                                v-if="hasPermission('communications', 'create')" aria-label="New announcement">
+                                v-if="hasPermission('communications', 'create')" aria-label="New announcement" title="New announcement">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
                         </button>
 
                         <!-- Notification Bell -->
                         <div style="position:relative;">
-                            <button class="btn btn-icon btn-secondary" @click="toggleNotifBell()" aria-label="Notifications" style="position:relative">
+                            <button class="btn btn-icon btn-secondary" @click="toggleNotifBell()" aria-label="Notifications" title="Notifications" style="position:relative">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                                 <span v-if="notifications.unread > 0" style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1">{{ notifications.unread > 9 ? '9+' : notifications.unread }}</span>
                             </button>
@@ -8958,7 +8958,7 @@
                                 <span v-if="systemAlerts.length > 1" class="alert-more">(and {{ systemAlerts.length - 1 }} more)</span>
                             </span>
                         </div>
-                        <button @click="dismissAlert(alert.id)" aria-label="Dismiss alert"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                        <button @click="dismissAlert(alert.id)" aria-label="Dismiss alert" title="Dismiss alert"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                     </div>
                 </div>
 
@@ -9666,13 +9666,13 @@
                                         </td>
                                         <td @click.stop="() => {}">
                                             <div class="table-actions">
-                                                <button class="tbl-btn" @click.stop="viewStaffDetails(staff)" aria-label="View staff profile">
+                                                <button class="tbl-btn" @click.stop="viewStaffDetails(staff)" aria-label="View staff profile" title="View staff profile">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                                 </button>
-                                                <button class="tbl-btn" @click.stop="editMedicalStaff(staff)" v-if="hasPermission('medical_staff','update')" aria-label="Edit staff member">
+                                                <button class="tbl-btn" @click.stop="editMedicalStaff(staff)" v-if="hasPermission('medical_staff','update')" aria-label="Edit staff member" title="Edit staff member">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
                                                 </button>
-                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteMedicalStaff(staff)" v-if="hasPermission('medical_staff','delete')" aria-label="Delete staff member">
+                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteMedicalStaff(staff)" v-if="hasPermission('medical_staff','delete')" aria-label="Delete staff member" title="Delete staff member">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                                                 </button>
                                             </div>
@@ -9695,7 +9695,7 @@
                                 </tbody>
                             </table>
                             <div class="pagination" v-if="staffTotalPages > 1">
-                                <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page - 1)" :disabled="pagination.medical_staff.page === 1" aria-label="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+                                <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page - 1)" :disabled="pagination.medical_staff.page === 1" aria-label="Previous page" title="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
                                 <span class="pagination-info">Page {{ pagination.medical_staff.page }} of {{ staffTotalPages }} · {{ filteredMedicalStaffAll.length }} results</span>
                                 <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page + 1)" :disabled="pagination.medical_staff.page === staffTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                             </div>
@@ -9754,11 +9754,11 @@
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                     iCal
                                 </button>
-                                <button class="btn btn-secondary btn-sm" @click="exportCSV('oncall')" aria-label="Export on-call schedule to CSV">
+                                <button class="btn btn-secondary btn-sm" @click="exportCSV('oncall')" aria-label="Export on-call schedule to CSV" title="Export on-call schedule to CSV">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                     CSV
                                 </button>
-                                <button class="btn btn-secondary btn-sm" @click="printView('On-call Schedule')" aria-label="Print on-call schedule">
+                                <button class="btn btn-secondary btn-sm" @click="printView('On-call Schedule')" aria-label="Print on-call schedule" title="Print on-call schedule">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                                 </button>
                                 <button class="btn btn-primary" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule', 'create')">
@@ -9981,8 +9981,8 @@
                                                         @click.stop="openLogCalloutModal(); calloutModal.form.staff_id = schedule.primary_physician_id">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5"/><path d="M4 19h16"/></svg>
                                                 </button>
-                                                <button class="tbl-btn" @click.stop="editOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule','update')" aria-label="Edit on-call shift"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule','delete')" aria-label="Delete on-call shift"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                                <button class="tbl-btn" @click.stop="editOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule','update')" aria-label="Edit on-call shift" title="Edit on-call shift"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule','delete')" aria-label="Delete on-call shift" title="Delete on-call shift"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -9995,7 +9995,7 @@
                                                 <span v-else>No on-call shifts have been scheduled yet</span>
                                             </div>
                                             <button v-if="!onCallFilters.date && !onCallFilters.shiftType && !onCallFilters.physician && hasPermission('oncall_schedule', 'create')"
-                                                    class="btn btn-primary btn-sm" @click="showAddOnCallModal" aria-label="Add on-call shift">
+                                                    class="btn btn-primary btn-sm" @click="showAddOnCallModal" aria-label="Add on-call shift" title="Add on-call shift">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Schedule First Shift
                                             </button>
                                         </td>
@@ -10003,7 +10003,7 @@
                                 </tbody>
                             </table>
                             <div class="pagination" v-if="oncallTotalPages > 1">
-                                <button class="btn-pill" @click="goToPage('oncall', pagination.oncall.page - 1)" :disabled="pagination.oncall.page === 1" aria-label="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+                                <button class="btn-pill" @click="goToPage('oncall', pagination.oncall.page - 1)" :disabled="pagination.oncall.page === 1" aria-label="Previous page" title="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
                                 <span class="pagination-info">Page {{ pagination.oncall.page }} of {{ oncallTotalPages }}</span>
                                 <button class="btn-pill" @click="goToPage('oncall', pagination.oncall.page + 1)" :disabled="pagination.oncall.page === oncallTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                             </div>
@@ -10275,14 +10275,14 @@
                         <!-- Nav bar -->
                         <div class="ocm-nav">
                             <div style="display:flex;align-items:center;gap:10px">
-                                <button class="ocm-nav-btn" @click="oncallMonthOffset--" aria-label="Previous month">
+                                <button class="ocm-nav-btn" @click="oncallMonthOffset--" aria-label="Previous month" title="Previous month">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
                                 </button>
                                 <span class="ocm-month-label">{{
                                     new Date(new Date().getFullYear(), new Date().getMonth() + oncallMonthOffset, 1)
                                     .toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
                                 }}</span>
-                                <button class="ocm-nav-btn" @click="oncallMonthOffset++" aria-label="Next month">
+                                <button class="ocm-nav-btn" @click="oncallMonthOffset++" aria-label="Next month" title="Next month">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
                                 </button>
                                 <button class="ocm-nav-btn" @click="oncallMonthOffset = 0" v-if="oncallMonthOffset !== 0"
@@ -10292,7 +10292,7 @@
                                 <span style="font-size:11px;color:var(--nm-text3)">
                                     {{ oncallMonthSummary }}
                                 </span>
-                                <button class="btn btn-primary btn-sm" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule','create')" aria-label="Add on-call shift">
+                                <button class="btn btn-primary btn-sm" @click="showAddOnCallModal" v-if="hasPermission('oncall_schedule','create')" aria-label="Add on-call shift" title="Add on-call shift">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add
                                 </button>
                             </div>
@@ -10777,7 +10777,7 @@
                                 </tbody>
                             </table>
                             <div class="pagination" v-if="rotationTotalPages > 1">
-                                <button class="btn-pill" @click="goToPage('rotations', pagination.rotations.page - 1)" :disabled="pagination.rotations.page === 1" aria-label="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+                                <button class="btn-pill" @click="goToPage('rotations', pagination.rotations.page - 1)" :disabled="pagination.rotations.page === 1" aria-label="Previous page" title="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
                                 <span class="pagination-info">Page {{ pagination.rotations.page }} of {{ rotationTotalPages }} · {{ filteredRotationsAll.length }} results</span>
                                 <button class="btn-pill" @click="goToPage('rotations', pagination.rotations.page + 1)" :disabled="pagination.rotations.page === rotationTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                             </div>
@@ -10801,19 +10801,19 @@
                                 <div class="tu-kpi-sub">slots open now</div>
                             </div>
                             <div class="tu-kpi-div"></div>
-                            <div class="tu-kpi tu-kpi--warn">
+                            <div class="tu-kpi tu-kpi--warn" :class="{'tu-kpi--zero': filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) > 0 && getUnitActiveRotationCount(u.id) < u.maximum_residents && getUnitActiveRotationCount(u.id) / u.maximum_residents > 0.5).length === 0}">
                                 <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) > 0 && getUnitActiveRotationCount(u.id) < u.maximum_residents && getUnitActiveRotationCount(u.id) / u.maximum_residents > 0.5).length }}</div>
                                 <div class="tu-kpi-label">Filling up</div>
                                 <div class="tu-kpi-sub">&gt;50% occupied</div>
                             </div>
                             <div class="tu-kpi-div"></div>
-                            <div class="tu-kpi tu-kpi--full tu-kpi--clickable" @click="trainingUnitFilters.status = trainingUnitFilters.status === 'full' ? '' : 'full'" :class="{ 'tu-kpi--active': trainingUnitFilters.status === 'full' }">
+                            <div class="tu-kpi tu-kpi--full tu-kpi--clickable" :class="{ 'tu-kpi--active': trainingUnitFilters.status === 'full', 'tu-kpi--zero': filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) >= u.maximum_residents).length === 0 }" @click="trainingUnitFilters.status = trainingUnitFilters.status === 'full' ? '' : 'full'">
                                 <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) >= u.maximum_residents).length }}</div>
                                 <div class="tu-kpi-label">Full</div>
                                 <div class="tu-kpi-sub">no slots now</div>
                             </div>
                             <div class="tu-kpi-div"></div>
-                            <div class="tu-kpi tu-kpi--danger">
+                            <div class="tu-kpi tu-kpi--danger" :class="{'tu-kpi--zero': filteredTrainingUnits.filter(u => !!getUnitOverlapWarning(u.id)).length === 0}">
                                 <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => !!getUnitOverlapWarning(u.id)).length }}</div>
                                 <div class="tu-kpi-label">Overlap alert</div>
                                 <div class="tu-kpi-sub">scheduled conflict</div>
@@ -10864,14 +10864,14 @@
                             <div v-if="trainingUnitView === 'weekly'" class="tuc-weekly-view">
                                 <!-- Header: nav + week label -->
                                 <div class="tuc-weekly-nav">
-                                    <button class="tuc-weekly-nav-btn" @click="weeklyGridOffset--" aria-label="Previous week">
+                                    <button class="tuc-weekly-nav-btn" @click="weeklyGridOffset--" aria-label="Previous week" title="Previous week">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
                                     </button>
                                     <span class="tuc-weekly-nav-label">
                                         {{ weeklyStaffingGrid.monday?.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}
                                         — {{ new Date(weeklyStaffingGrid.monday?.getTime() + 6*86400000).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) }}
                                     </span>
-                                    <button class="tuc-weekly-nav-btn" @click="weeklyGridOffset++" aria-label="Next week">
+                                    <button class="tuc-weekly-nav-btn" @click="weeklyGridOffset++" aria-label="Next week" title="Next week">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
                                     </button>
                                     <button v-if="weeklyGridOffset !== 0" class="tuc-weekly-today-btn" @click="weeklyGridOffset = 0">Today</button>
@@ -11394,7 +11394,7 @@
                                 </tbody>
                             </table>
                             <div class="pagination" v-if="absenceTotalPages > 1">
-                                <button class="btn-pill" @click="goToPage('absences', pagination.absences.page - 1)" :disabled="pagination.absences.page === 1" aria-label="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+                                <button class="btn-pill" @click="goToPage('absences', pagination.absences.page - 1)" :disabled="pagination.absences.page === 1" aria-label="Previous page" title="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
                                 <span class="pagination-info">Page {{ pagination.absences.page }} of {{ absenceTotalPages }}</span>
                                 <button class="btn-pill" @click="goToPage('absences', pagination.absences.page + 1)" :disabled="pagination.absences.page === absenceTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
                             </div>
@@ -11519,13 +11519,13 @@
                                         @click="absTimelineHorizon = h">{{ h }}mo</button>
                             </div>
                             <div class="abs-tl-period-nav">
-                                <button class="abs-tl-pg" @click="absTimelineOffset -= absTimelineHorizon" aria-label="Previous period">
+                                <button class="abs-tl-pg" @click="absTimelineOffset -= absTimelineHorizon" aria-label="Previous period" title="Previous period">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
                                 </button>
                                 <span class="abs-tl-period-label">{{ getAbsHorizonLabel() }}</span>
                                 <button v-if="absTimelineOffset !== 0" class="abs-tl-today-btn"
                                         @click="absTimelineOffset = 0">Today</button>
-                                <button class="abs-tl-pg" @click="absTimelineOffset += absTimelineHorizon" aria-label="Next period">
+                                <button class="abs-tl-pg" @click="absTimelineOffset += absTimelineHorizon" aria-label="Next period" title="Next period">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
                                 </button>
                             </div>
@@ -11995,7 +11995,7 @@
                                                 @click="broadcastForm.type = t">
                                             {{ broadcastTypeConfig[t].label }}
                                         </button>
-                                        <button class="oco-close" @click="broadcastForm.show = false" aria-label="Close broadcast form">
+                                        <button class="oco-close" @click="broadcastForm.show = false" aria-label="Close broadcast form" title="Close broadcast form">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7l10 10M17 7l-10 10"/></svg>
                                         </button>
                                     </div>
@@ -12058,7 +12058,7 @@
                                                 <button class="ops-fi-btn" @click="editAnnouncement(item)" v-if="hasPermission('communications','update')">
                                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Edit
                                                 </button>
-                                                <button class="ops-fi-btn ops-fi-btn--del" @click="deleteAnnouncement(item)" v-if="hasPermission('communications','delete')" aria-label="Delete announcement">
+                                                <button class="ops-fi-btn ops-fi-btn--del" @click="deleteAnnouncement(item)" v-if="hasPermission('communications','delete')" aria-label="Delete announcement" title="Delete announcement">
                                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                                                 </button>
                                             </div>
@@ -12079,7 +12079,7 @@
                 <div v-if="currentView === 'system_settings'">
 
                     <!-- Page header -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:24px 4px 20px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 4px 16px">
                         <div>
                             <div style="font-size:18px;font-weight:700;color:var(--nm-text1);line-height:1.2">Settings</div>
                             <div style="font-size:12px;color:var(--nm-text3);margin-top:3px">Staff types, degrees, services, coverage areas &amp; system configuration</div>
@@ -12740,8 +12740,8 @@
                                     </div>
                                     <div class="rhsc-arr"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div>
                                     <div class="rht-actions rht-actions--always" @click.stop>
-                                        <button class="nm-icon-btn" @click.stop="editProject(proj)" aria-label="Edit project"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                                        <button class="nm-icon-btn nm-icon-btn--danger" @click.stop="deleteInnovationProject(proj.id)" aria-label="Delete project"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
+                                        <button class="nm-icon-btn" @click.stop="editProject(proj)" aria-label="Edit project" title="Edit project"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                                        <button class="nm-icon-btn nm-icon-btn--danger" @click.stop="deleteInnovationProject(proj.id)" aria-label="Delete project" title="Delete project"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></button>
                                     </div>
                                 </div>
                             </div>
@@ -13502,7 +13502,7 @@
                                             : 'background:rgba(245,158,11,.1);color:#f59e0b;border-color:rgba(245,158,11,.2);'">
                                     {{ newsModal.form.status || 'draft' }}
                                 </span>
-                                <button class="sm-form-close" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);" @click="newsModal.show = false" aria-label="Close">
+                                <button class="sm-form-close" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);" @click="newsModal.show = false" aria-label="Close" title="Close">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                                 </button>
                             </div>
@@ -13768,7 +13768,7 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>
                         {{ academicDegreeModal?.mode === 'add' ? 'Add Academic Degree' : 'Edit Academic Degree' }}
                     </div>
-                    <button class="modal-close" @click="academicDegreeModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="academicDegreeModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group mb-3">
@@ -13805,7 +13805,7 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                         {{ rotationServiceModal.mode === 'add' ? 'Add Rotation Service' : 'Edit Rotation Service' }}
                     </div>
-                    <button class="modal-close" @click="rotationServiceModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="rotationServiceModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group mb-3">
@@ -13852,7 +13852,7 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5"/><path d="M4 19h16"/></svg>
                         {{ calloutModal.mode === 'add' ? 'Log emergency call-out' : 'Edit call-out record' }}
                     </div>
-                    <button class="modal-close" @click="calloutModal.show = false" aria-label="Close">
+                    <button class="modal-close" @click="calloutModal.show = false" aria-label="Close" title="Close">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                     </button>
                 </div>
@@ -13927,7 +13927,7 @@
             <div class="modal-container" style="max-width:480px">
                 <div class="modal-header">
                     <div class="modal-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> {{ staffTypeModal.mode === 'add' ? 'Add Staff Type' : 'Edit Staff Type' }}</div>
-                    <button class="modal-close" @click="staffTypeModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="staffTypeModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:16px">
@@ -14879,7 +14879,7 @@
                         <i class="fas" :class="activationModal.action === 'activate' ? 'fa-play-circle' : 'fa-check-circle'"></i>
                         {{ activationModal.action === 'activate' ? 'Activate Rotation' : 'Complete Rotation' }}
                     </h3>
-                    <button class="modal-close" @click="activationModal.show = false" aria-label="Close">&times;</button>
+                    <button class="modal-close" @click="activationModal.show = false" aria-label="Close" title="Close">&times;</button>
                 </div>
                 <div class="modal-body" v-if="activationModal.selectedRotation">
                     <div class="alert alert-info">
@@ -15000,7 +15000,7 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                                 Delete
                             </button>
-                            <button class="sm-form-close" @click="medicalStaffModal.show = false" aria-label="Close">
+                            <button class="sm-form-close" @click="medicalStaffModal.show = false" aria-label="Close" title="Close">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                             </button>
                         </div>
@@ -15041,7 +15041,7 @@
                                             <option value="" disabled>Select type…</option>
                                             <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
                                         </select>
-                                        <button type="button" class="btn btn-sm btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:12px;padding:4px 8px;" @click="medicalStaffModal._addingStaffType = !medicalStaffModal._addingStaffType" aria-label="Toggle add staff type">
+                                        <button type="button" class="btn btn-sm btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:12px;padding:4px 8px;" @click="medicalStaffModal._addingStaffType = !medicalStaffModal._addingStaffType" aria-label="Toggle add staff type" title="Toggle add staff type">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path :d="medicalStaffModal._addingStaffType ? 'M7 7L17 17M17 7L7 17' : 'M12 5v14M5 12h14'"/></svg>
                                         </button>
                                     </div>
@@ -15201,7 +15201,7 @@
                                         <optgroup label="External"><option v-for="h in hospitalsList.filter(x=>x.parent_complex==='external')" :key="h.id" :value="h.id">{{ h.name }}</option></optgroup>
                                     </template>
                                 </select>
-                                <button type="button" class="btn btn-sm btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:12px;padding:4px 8px;" @click="medicalStaffModal._addingHospital = !medicalStaffModal._addingHospital" aria-label="Toggle add hospital">
+                                <button type="button" class="btn btn-sm btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:12px;padding:4px 8px;" @click="medicalStaffModal._addingHospital = !medicalStaffModal._addingHospital" aria-label="Toggle add hospital" title="Toggle add hospital">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path :d="medicalStaffModal._addingHospital ? 'M7 7L17 17M17 7L7 17' : 'M12 5v14M5 12h14'"/></svg>
                                 </button>
                             </div>
@@ -15337,7 +15337,7 @@
                                                 <option value="R1">R1</option><option value="R2">R2</option>
                                                 <option value="R3">R3</option><option value="R4">R4</option><option value="R4+">R4+</option>
                                             </select>
-                                            <button v-if="medicalStaffModal.form.residency_start_date && medicalStaffModal.form.residency_year_override" type="button" class="ryear-override-btn ryear-override-btn--clear" @click="medicalStaffModal.form.residency_year_override = null" aria-label="Clear residency year override">
+                                            <button v-if="medicalStaffModal.form.residency_start_date && medicalStaffModal.form.residency_year_override" type="button" class="ryear-override-btn ryear-override-btn--clear" @click="medicalStaffModal.form.residency_year_override = null" aria-label="Clear residency year override" title="Clear residency year override">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                                             </button>
                                         </div>
@@ -15358,7 +15358,7 @@
                                             <span class="cert-row-dot" :class="cert.expiry_date && new Date(cert.expiry_date) < new Date() ? 'cert-dot--expired' : 'cert-dot--ok'"></span>
                                             <span class="cert-row-name">{{ cert.certificate_name }}</span>
                                             <span class="cert-row-dates" v-if="cert.expiry_date">exp. {{ new Date(cert.expiry_date).toLocaleDateString('es-ES',{month:'short',year:'numeric'}) }}</span>
-                                            <button type="button" class="cert-row-del" @click="deleteCertificate(cert)" aria-label="Remove certificate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                                            <button type="button" class="cert-row-del" @click="deleteCertificate(cert)" aria-label="Remove certificate" title="Remove certificate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                                         </div>
                                     </template>
                                     <div v-else class="cert-empty">No certificates yet</div>
@@ -15641,7 +15641,7 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1111.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                             {{ onCallModal.mode === 'add' ? 'Schedule On-Call' : 'Edit On-Call Shift' }}
                         </div>
-                        <button class="sm-form-close" @click="onCallModal.show = false" aria-label="Close">
+                        <button class="sm-form-close" @click="onCallModal.show = false" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                         </button>
                     </div>
@@ -15768,7 +15768,7 @@
                         <div class="rds-unit">{{ rotationViewModal.rotation.unitName }}</div>
                         <div class="rds-resident">{{ rotationViewModal.rotation.residentName }}</div>
                     </div>
-                    <button class="pd-close" @click="rotationViewModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="pd-close" @click="rotationViewModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
             </div>
 
@@ -15931,7 +15931,7 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
                             {{ rotationModal.mode === 'add' ? 'Add Rotation' : 'Edit Rotation' }}
                         </div>
-                        <button class="sm-form-close" @click="rotationModal.show = false" aria-label="Close">
+                        <button class="sm-form-close" @click="rotationModal.show = false" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                         </button>
                     </div>
@@ -16162,7 +16162,7 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg>
                             {{ trainingUnitModal.mode === 'add' ? 'New Clinical Unit' : 'Edit Clinical Unit' }}
                         </div>
-                        <button class="sm-form-close" @click="trainingUnitModal.show = false" aria-label="Close">
+                        <button class="sm-form-close" @click="trainingUnitModal.show = false" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                         </button>
                     </div>
@@ -16297,7 +16297,7 @@
                             {{ formatDate(absenceResolutionModal.absence.end_date) }}
                         </div>
                     </div>
-                    <button class="modal-close" @click="absenceResolutionModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="absenceResolutionModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
 
@@ -16496,7 +16496,7 @@
                             </svg>
                             {{ absenceModal.mode === 'add' ? 'Record Absence' : 'Edit Absence' }}
                         </div>
-                        <button class="sm-form-close" @click="absenceModal.show = false" aria-label="Close">
+                        <button class="sm-form-close" @click="absenceModal.show = false" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                         </button>
                     </div>
@@ -16736,7 +16736,7 @@
             <div class="modal-container">
                 <div class="modal-header">
                     <div class="modal-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="2" y="14" width="8" height="4" rx="1"/><rect x="14" y="14" width="8" height="4" rx="1"/><path d="M12 6v4M6 14v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg>{{ departmentModal.mode === 'add' ? 'Add Department' : 'Edit Department' }}</div>
-                    <button class="modal-close" @click="departmentModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="departmentModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <!-- Institution -->
@@ -16812,7 +16812,7 @@
                 <span class="tl-popover-slot">Slot {{ tlPopover.slotIdx }}</span>
                 <span class="tl-popover-sep">·</span>
                 <span class="tl-popover-month">{{ tlPopover.monthLabel }}</span>
-                <button class="tl-popover-close" @click="closeCellPopover" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                <button class="tl-popover-close" @click="closeCellPopover" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
             </div>
             <div class="tl-popover-body">
                 <div v-for="(entry, i) in tlPopover.entries" :key="i" class="tl-popover-entry">
@@ -16851,7 +16851,7 @@
                             </span>
                         </div>
                     </div>
-                    <button class="modal-close" @click="announcementReadModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="announcementReadModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <p style="white-space:pre-wrap;line-height:1.7;">{{ announcementReadModal.announcement?.content }}</p>
@@ -16867,7 +16867,7 @@
             <div class="modal-container modal-wide">
                 <div class="modal-header">
                     <div class="modal-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg><span>{{ communicationsModal.mode === 'edit' ? 'Edit Announcement' : 'Department Communications' }}</span></div>
-                    <button class="modal-close" @click="communicationsModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="communicationsModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <div class="comms-tabs" v-if="communicationsModal.mode !== 'edit'">
@@ -16942,7 +16942,7 @@
             <div class="modal-container">
                 <div class="modal-header">
                     <div class="modal-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profile Settings</div>
-                    <button class="modal-close" @click="userProfileModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="userProfileModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <div class="space-y-4">
@@ -16983,7 +16983,7 @@
                         </div>
                         {{ confirmationModal.title || 'Confirm Action' }}
                     </div>
-                    <button class="modal-close" @click="cancelConfirmation" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="cancelConfirmation" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body modal-confirm-body">
                     <p class="confirm-message">{{ confirmationModal.message }}</p>
@@ -17014,7 +17014,7 @@
             <div class="modal-container modal-sm">
                 <div class="modal-header">
                     <div class="modal-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 14l-1 4h2l-1 4M11 14l1 4h-2l1 4"/></svg> Assign Coordinator</div>
-                    <button class="modal-close" @click="assignCoordinatorModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="assignCoordinatorModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <p class="mb-4" style="font-size:13px;color:var(--text-2);">Assigning coordinator for: <strong style="color:var(--text-1)">{{ assignCoordinatorModal.lineName }}</strong></p>
@@ -17050,7 +17050,7 @@
             <div class="modal-container modal-sm">
                 <div class="modal-header">
                     <div class="modal-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 19H19M8 14l4 5 4-5"/></svg> Export Data</div>
-                    <button class="modal-close" @click="exportModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="exportModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -17086,7 +17086,7 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21M12 8V11M10.5 9.5H13.5"/></svg>
                         <span>{{ unitResidentsModal.unit ? unitResidentsModal.unit.unit_name : '' }}</span>
                     </div>
-                    <button class="modal-close" @click="unitResidentsModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="unitResidentsModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
 
                 <!-- Occupancy strip -->
@@ -17184,7 +17184,7 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                         Clinical team — {{ unitCliniciansModal.unit?.unit_name }}
                     </div>
-                    <button class="modal-close" @click="unitCliniciansModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="unitCliniciansModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body" style="padding:0">
                     <p class="ucm-hint" style="padding:14px 20px 8px;margin:0;border-bottom:1px solid var(--nm-border,#e3dfd6)">
@@ -17291,7 +17291,7 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
                             {{ researchLineModal.mode === 'add' ? 'New Research Line' : 'Edit Research Line' }}
                         </div>
-                        <button class="sm-form-close" @click="researchLineModal.show = false" aria-label="Close">
+                        <button class="sm-form-close" @click="researchLineModal.show = false" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                         </button>
                     </div>
@@ -17484,7 +17484,7 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
                             {{ clinicalTrialModal.mode === 'add' ? 'New Clinical Study' : 'Edit Clinical Study' }}
                         </div>
-                        <button class="sm-form-close" @click="clinicalTrialModal.show = false" aria-label="Close">
+                        <button class="sm-form-close" @click="clinicalTrialModal.show = false" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                         </button>
                     </div>
@@ -17683,7 +17683,7 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
                         {{ innovationProjectModal.mode === 'add' ? 'New Innovation Project' : 'Edit Innovation Project' }}
                     </div>
-                    <button class="modal-close" @click="innovationProjectModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="innovationProjectModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
 
@@ -17951,7 +17951,7 @@
                             upcoming assignment(s). Reassign or leave unassigned before proceeding.
                         </p>
                     </div>
-                    <button class="modal-close" @click="reassignmentModal.show = false" :disabled="reassignmentModal.saving" aria-label="Close">
+                    <button class="modal-close" @click="reassignmentModal.show = false" :disabled="reassignmentModal.saving" aria-label="Close" title="Close">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                     </button>
                 </div>
@@ -18074,7 +18074,7 @@
             <div class="modal-container rsm-container">
                 <div class="modal-header">
                     <div class="modal-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V5H19V21M9 21V16H15V21M9 9H10M14 9H15M9 13H10M14 13H15"/></svg> Deactivate Department</div>
-                    <button class="modal-close" @click="deptReassignModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="deptReassignModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
 
                 <div class="modal-body">
@@ -18155,7 +18155,7 @@
                             <span class="tdm-phase-badge" :class="'tdm-phase--' + (trialDetailModal.trial?.phase||'').toLowerCase().replace(/ /g,'-')">{{ trialDetailModal.study?.phase }}</span>
                             <span v-if="trialDetailModal.trial?.study_type" class="tdm-study-type-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> {{ trialDetailModal.trial.study_type }}</span>
                         </div>
-                        <button class="modal-close tdm-close" @click="trialDetailModal.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                        <button class="modal-close tdm-close" @click="trialDetailModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                     </div>
                     <h2 class="tdm-title" v-if="trialDetailModal.trial">{{ trialDetailModal.trial.title }}</h2>
                     <div class="tdm-meta-strip" v-if="trialDetailModal.trial">
@@ -18305,7 +18305,7 @@
                             </div>
                         </div>
                     </div>
-                    <button class="uop-close" @click="closeDeptPanel" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="uop-close" @click="closeDeptPanel" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
 
                 <!-- ── Stat bar ── -->
@@ -18503,7 +18503,7 @@
                             <div class="uop-subtitle">{{ (occupancyPanelUnits || []).filter(u => u?.occ?.status === 'free').length }} available now · {{ (occupancyPanelUnits || []).filter(u => u?.occ?.status === 'closing').length }} closing soon</div>
                         </div>
                     </div>
-                    <button class="uop-close" @click="occupancyPanel.show = false" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="uop-close" @click="occupancyPanel.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="uop-body">
                     <!-- Available -->
@@ -18595,7 +18595,7 @@
                                 title="Delete unit">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                         </button>
-                        <button class="udd-close" @click="unitDetailDrawer.show = false" aria-label="Close">
+                        <button class="udd-close" @click="unitDetailDrawer.show = false" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                         </button>
                     </div>
@@ -18842,7 +18842,7 @@
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                       {{ coverageAreaModal.mode === 'add' ? 'New Coverage Area' : 'Edit Coverage Area' }}
                   </div>
-                  <button class="tbl-btn" @click="coverageAreaModal.show = false" aria-label="Close">
+                  <button class="tbl-btn" @click="coverageAreaModal.show = false" aria-label="Close" title="Close">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7l10 10M17 7l-10 10"/></svg>
                   </button>
               </div>
@@ -18941,7 +18941,7 @@
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3C11.2 3 9 7.5 12 11C15 14.5 21 12.8 21 12.8Z"/></svg>
                           On-call Schedule
                       </div>
-                      <button class="db-drawer-close" @click="closeDbDrawer" aria-label="Close">
+                      <button class="db-drawer-close" @click="closeDbDrawer" aria-label="Close" title="Close">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7l-10 10"/></svg>
                       </button>
                   </div>
@@ -19005,7 +19005,7 @@
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
                           Active &amp; Upcoming Rotations
                       </div>
-                      <button class="db-drawer-close" @click="closeDbDrawer" aria-label="Close">
+                      <button class="db-drawer-close" @click="closeDbDrawer" aria-label="Close" title="Close">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7l-10 10"/></svg>
                       </button>
                   </div>
@@ -19138,7 +19138,7 @@
           <div class="boc-right">
 
             <!-- Close -->
-            <button class="boc-close" @click="bulkOncall.show = false" aria-label="Close">
+            <button class="boc-close" @click="bulkOncall.show = false" aria-label="Close" title="Close">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7l10 10M17 7l-10 10"/></svg>
             </button>
 
@@ -19319,7 +19319,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=25"></script>
+    <script src="app.js?v=26"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
