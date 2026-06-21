@@ -5031,6 +5031,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sponsor_name: '', sponsor_type: '', study_type: 'Observational',
         enrollment_target: null, actual_enrollment: null, funding_amount: null,
         tags: [], milestones: [],
+        additional_line_ids: [],
         // New schema fields
         protocol_finalized: false, ethics_status: null,
         funding_status: 'not_applicable', target_diseases: [],
@@ -5055,6 +5056,7 @@ document.addEventListener('DOMContentLoaded', () => {
         funding_status: 'not_applicable', funding_source: '',
         budget: null, trl_level: null, ip_status: '',
         keywords: [], keywordsInput: '', tags: [], milestones: [],
+        additional_line_ids: [],
         featured_in_website: true, display_order: 0,
         start_date: '', estimated_end_date: '',
         scope_finalized: false, target_diseases: [],
@@ -5241,8 +5243,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: '', sort_order: researchLines.value.length + 1, active: true, keywords: [], keywordsInput: '' }); researchLineModal.show = true }
-      const showAddTrialModal = (line = null) => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1, start_date: '', end_date: '' }); clinicalTrialModal.show = true }
-      const showAddProjectModal = (line = null) => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, is_featured: false, display_order: innovationProjects.value.length + 1 }); innovationProjectModal.show = true }
+      const showAddTrialModal = (line = null) => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1, start_date: '', end_date: '', additional_line_ids: [] }); clinicalTrialModal.show = true }
+      const showAddProjectModal = (line = null) => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, is_featured: false, display_order: innovationProjects.value.length + 1, additional_line_ids: [] }); innovationProjectModal.show = true }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, research_line_name: l.research_line_name || l.name || '', keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
@@ -5254,11 +5256,12 @@ document.addEventListener('DOMContentLoaded', () => {
           end_date:          t.end_date || t.estimated_end_date || '',
           start_date:        t.start_date || '',
           co_investigators:  Array.isArray(t.co_investigators)  ? [...t.co_investigators]  : (t.co_investigator_id  ? [t.co_investigator_id]  : []),
-          sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : [])
+          sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : []),
+          additional_line_ids: Array.isArray(t.additional_lines) ? t.additional_lines.map(l => l.id) : []
         }
         clinicalTrialModal.show = true
       }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '' }; innovationProjectModal.show = true }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [] }; innovationProjectModal.show = true }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.study = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
