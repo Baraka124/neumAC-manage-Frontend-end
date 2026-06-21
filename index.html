@@ -13628,8 +13628,8 @@
                                               placeholder="Brief summary of the publication findings…"></textarea>
                                 </div>
 
-                                <!-- Images — articles and highlights, up to 5 -->
-                                <div class="sm-field" v-if="newsModal.form.post_type === 'article' || newsModal.form.post_type === 'highlight'">
+                                <!-- Images — articles, highlights, and publications, up to 5 -->
+                                <div class="sm-field" v-if="newsModal.form.post_type === 'article' || newsModal.form.post_type === 'highlight' || newsModal.form.post_type === 'publication'">
                                     <div class="sm-label" style="display:flex;justify-content:space-between;align-items:center;">
                                         <span>
                                             Images
@@ -17577,6 +17577,24 @@
                             </div>
                         </div>
 
+                        <div class="sm-field">
+                            <div class="sm-label">
+                                Also spans <span class="hint">— other lines this study touches, if any</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px;border:0.5px solid var(--nm-border);border-radius:8px;padding:8px 10px;max-height:160px;overflow-y:auto;">
+                                <label v-for="l in researchLines.filter(l => l.id !== clinicalTrialModal.form.research_line_id)" :key="l.id"
+                                       style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:3px 0;">
+                                    <input type="checkbox"
+                                           :value="l.id"
+                                           v-model="clinicalTrialModal.form.additional_line_ids"
+                                           style="margin:0;cursor:pointer;">
+                                    <span style="font-family:monospace;color:#00B3B3;font-weight:700;flex-shrink:0;">L{{ l.line_number }}</span>
+                                    <span style="color:var(--nm-text2);">{{ l.research_line_name || l.name }}</span>
+                                </label>
+                                <p v-if="researchLines.length <= 1" style="font-size:11px;color:var(--nm-text3);margin:2px 0;">No other lines to choose from.</p>
+                            </div>
+                        </div>
+
                         <div class="sm-field" :class="{'has-error': fieldErrors.trial?.title}">
                             <div class="sm-label">Study Title <span class="req">·</span></div>
                             <input type="text" class="sm-input" :class="{filled: clinicalTrialModal.form.title, 'is-invalid': fieldErrors.trial?.title}"
@@ -17786,6 +17804,21 @@
                                 <option value="">Select Research Line</option>
                                 <option v-for="line in researchLines" :key="line.id" :value="line.id">L{{ line.line_number }}: {{ line.research_line_name || line.name }}</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Also spans <span style="font-weight:400;color:var(--nm-text3,#888);">— other lines this project touches, if any</span></label>
+                            <div style="display:flex;flex-direction:column;gap:4px;border:0.5px solid var(--nm-border,#ddd);border-radius:8px;padding:8px 10px;max-height:160px;overflow-y:auto;">
+                                <label v-for="line in researchLines.filter(l => l.id !== innovationProjectModal.form.research_line_id)" :key="line.id"
+                                       style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:3px 0;font-weight:400;">
+                                    <input type="checkbox"
+                                           :value="line.id"
+                                           v-model="innovationProjectModal.form.additional_line_ids"
+                                           style="margin:0;cursor:pointer;">
+                                    <span style="font-family:monospace;color:#00B3B3;font-weight:700;flex-shrink:0;">L{{ line.line_number }}</span>
+                                    <span>{{ line.research_line_name || line.name }}</span>
+                                </label>
+                                <p v-if="researchLines.length <= 1" style="font-size:11px;color:var(--nm-text3,#888);margin:2px 0;">No other lines to choose from.</p>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Category *</label>
