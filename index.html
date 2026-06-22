@@ -8155,7 +8155,7 @@
     <transition name="banner-slide">
       <div v-if="isMaintenanceMode" style="position:fixed;top:0;left:0;right:0;z-index:9998;background:#0f172a;color:#e2e8f0;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 16px;border-bottom:1px solid #334155;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        System maintenance in progress — read-only mode. Changes may not be saved.
+        System maintenance in progress. Most actions are unavailable until it's lifted.
         <button @click="isMaintenanceMode = false" style="margin-left:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;">Dismiss</button>
       </div>
     </transition>
@@ -12406,47 +12406,70 @@
 
                         <div v-if="permMgmt.error" style="padding:12px 24px;color:var(--nm-danger,#ef4444);font-size:13px">{{ permMgmt.error }}</div>
 
-                        <div v-if="permMgmt.users.length" style="padding:0 0 8px">
-                            <!-- Legend -->
-                            <div style="display:flex;gap:10px;align-items:center;padding:10px 20px 6px;border-bottom:1px solid var(--nm-border);flex-wrap:wrap">
+                        <div v-if="permMgmt.users.length" style="padding:16px 20px 8px">
+                            <!-- Legend + filter -->
+                            <div style="display:flex;gap:10px;align-items:center;padding:0 0 14px;flex-wrap:wrap">
                                 <span style="font-size:11px;color:var(--nm-text3)">Permission tags:</span>
                                 <span style="font-size:11px;padding:2px 8px;border-radius:100px;background:var(--nm-surface2);color:var(--nm-text3);border:1px solid var(--nm-border)">No access</span>
                                 <span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.3)">Read</span>
                                 <span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(16,185,129,.15);color:#059669;border:1px solid rgba(16,185,129,.4)">Read + Write</span>
                                 <span style="font-size:11px;color:var(--nm-text3);margin-left:4px">Click a tag to cycle through states.</span>
+                                <select v-model="permMgmt.moduleFilter" style="margin-left:auto;font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--nm-border);background:var(--nm-surface,#fff);color:var(--nm-text1)">
+                                    <option value="">Who has access to…</option>
+                                    <option v-for="mod in ALL_MODULES" :key="mod.key" :value="mod.key">{{ mod.icon }} {{ mod.label }}</option>
+                                </select>
+                            </div>
+                            <div v-if="permMgmt.moduleFilter" style="font-size:11px;color:var(--nm-text3);padding:0 0 10px">
+                                {{ sortedPermUsers.length }} {{ sortedPermUsers.length === 1 ? 'person' : 'people' }} with access to {{ ALL_MODULES.find(m=>m.key===permMgmt.moduleFilter)?.label }}
+                                <a href="#" @click.prevent="permMgmt.moduleFilter=''" style="color:var(--nm-teal,#007A7A);margin-left:6px">Clear</a>
                             </div>
 
-                            <!-- User rows -->
-                            <div v-for="user in permMgmt.users" :key="user.id" style="padding:16px 20px;border-bottom:1px solid var(--nm-border)">
-                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-                                    <!-- Avatar -->
-                                    <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--nm-teal,#007A7A),#1e40af);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0">
-                                        {{ user.full_name?.split(' ').map(w=>w[0]).slice(0,2).join('') }}
+                            <!-- User cards — admins first, then by how many modules they can access -->
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+                                <div v-for="user in sortedPermUsers" :key="user.id"
+                                     style="border:1px solid var(--nm-border);border-radius:12px;padding:16px;background:var(--nm-surface,#fff)">
+                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                                        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--nm-teal,#007A7A),#1e40af);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;flex-shrink:0">
+                                            {{ user.full_name?.split(' ').map(w=>w[0]).slice(0,2).join('') }}
+                                        </div>
+                                        <div style="flex:1;min-width:0">
+                                            <div style="font-size:14px;font-weight:600;color:var(--nm-text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ user.full_name }}</div>
+                                            <div style="font-size:11px;color:var(--nm-text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ user.job_title || user.user_role || 'No title' }}</div>
+                                        </div>
+                                        <button v-if="user.id !== currentUser?.id"
+                                            @click="toggleAdminLevel(user)"
+                                            :style="user.admin_level >= 1 ? 'padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(245,158,11,.5);background:rgba(245,158,11,.12);color:#d97706;flex-shrink:0' : 'padding:3px 9px;border-radius:100px;font-size:11px;cursor:pointer;border:1px solid var(--nm-border);background:transparent;color:var(--nm-text3);flex-shrink:0'">
+                                            {{ user.admin_level >= 1 ? '★ Admin' : 'Make Admin' }}
+                                        </button>
+                                        <span v-else style="font-size:11px;color:var(--nm-text3);flex-shrink:0">(you)</span>
                                     </div>
-                                    <!-- Name + role -->
-                                    <div style="flex:1;min-width:0">
-                                        <div style="font-size:13px;font-weight:600;color:var(--nm-text1)">{{ user.full_name }}</div>
-                                        <div style="font-size:11px;color:var(--nm-text3)">{{ user.job_title || user.user_role || 'No title' }} · {{ user.account_status }}</div>
-                                    </div>
-                                    <!-- Admin toggle -->
-                                    <button v-if="user.id !== currentUser?.id"
-                                        @click="toggleAdminLevel(user)"
-                                        :style="user.admin_level >= 1 ? 'padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(245,158,11,.5);background:rgba(245,158,11,.12);color:#d97706' : 'padding:3px 10px;border-radius:100px;font-size:11px;cursor:pointer;border:1px solid var(--nm-border);background:transparent;color:var(--nm-text3)'">
-                                        {{ user.admin_level >= 1 ? '★ Admin' : 'Make Admin' }}
-                                    </button>
-                                    <span v-else style="font-size:11px;color:var(--nm-text3);padding:3px 8px">(you)</span>
-                                </div>
 
-                                <!-- Permission pills -->
-                                <div style="display:flex;flex-wrap:wrap;gap:6px">
-                                    <button v-for="mod in ALL_MODULES" :key="mod.key"
-                                        @click="cyclePermission(user, mod.key)"
-                                        :disabled="permMgmt.saving === user.id + ':' + mod.key"
-                                        :style="permPillStyle(user, mod.key)">
-                                        {{ mod.icon }} {{ mod.label }}
-                                        <span v-if="getUserPerm(user, mod.key)?.can_write"> ✎</span>
-                                    </button>
+                                    <!-- Linked clinical profile status -->
+                                    <div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-top:1px solid var(--nm-border);margin-bottom:10px;font-size:12px">
+                                        <template v-if="user.linked_staff">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                                            <span style="color:var(--nm-text2)">Linked: {{ user.linked_staff.full_name }}</span>
+                                        </template>
+                                        <template v-else>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--nm-text3)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.5 9.5a2.5 2.5 0 015 0M9 15h6"/></svg>
+                                            <span style="color:var(--nm-text3)">No linked clinical profile</span>
+                                        </template>
+                                    </div>
+
+                                    <!-- Permission pills -->
+                                    <div style="display:flex;flex-wrap:wrap;gap:6px">
+                                        <button v-for="mod in ALL_MODULES" :key="mod.key"
+                                            @click="cyclePermission(user, mod.key)"
+                                            :disabled="permMgmt.saving === user.id + ':' + mod.key"
+                                            :style="permPillStyle(user, mod.key)">
+                                            {{ mod.icon }} {{ mod.label }}
+                                            <span v-if="getUserPerm(user, mod.key)?.can_write"> ✎</span>
+                                        </button>
+                                    </div>
                                 </div>
+                            </div>
+                            <div v-if="permMgmt.moduleFilter && !sortedPermUsers.length" style="padding:32px;text-align:center;color:var(--nm-text3);font-size:13px">
+                                Nobody currently has access to {{ ALL_MODULES.find(m=>m.key===permMgmt.moduleFilter)?.label }}.
                             </div>
                         </div>
 
