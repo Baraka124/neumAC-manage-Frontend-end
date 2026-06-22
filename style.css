@@ -11336,14 +11336,9 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
    NEWS VIEW
    ════════════════════════════════════════════════════════ */
 
-/* Author avatar initials */
-.news-author-av {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: linear-gradient(135deg,#009999,#4A9EE8);
-  font-size: 7px; font-weight: 700; color: #fff;
-  margin-right: 4px; flex-shrink: 0; vertical-align: middle;
-}
+/* .news-author-av defined in index.html's #app-scoped block, which
+   always wins (entire app mounts under #app) — removed here to avoid
+   a third competing definition. */
 
 /* Status dot for published (exception badge only for draft/archived) */
 .news-status-dot {
@@ -11656,7 +11651,7 @@ textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 2px;
-}
+}    
 /* Override for dark sidebar — use lighter focus ring */
 .sidebar button:focus-visible,
 .sidebar a:focus-visible {
