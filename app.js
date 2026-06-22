@@ -3190,8 +3190,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const viewRotationDetails = (rotation) => {
         if (!rotation) return
         // Enrich rotation with display-friendly fields expected by the detail sheet
-        const resident  = medicalStaff.value.find(s => s.id === rotation.resident_id)
-        const supervisor = medicalStaff.value.find(s => s.id === rotation.supervising_attending_id)
+        const resident  = (allStaffLookup?.value || []).find(s => s.id === rotation.resident_id) || medicalStaff.value.find(s => s.id === rotation.resident_id)
+        const supervisor = (allStaffLookup?.value || []).find(s => s.id === rotation.supervising_attending_id) || medicalStaff.value.find(s => s.id === rotation.supervising_attending_id)
         const startD = new Date(Utils.normalizeDate(rotation.start_date) + 'T00:00:00')
         const endD   = new Date(Utils.normalizeDate(rotation.end_date)   + 'T00:00:00')
         const today  = new Date(); today.setHours(0,0,0,0)
@@ -3949,7 +3949,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!unit) return null
         const supId = unit.supervisor_id || unit.default_supervisor_id
         if (!supId) return null
-        return medicalStaff.value.find(s => s.id === supId)?.full_name || null
+        return ((allStaffLookup?.value || []).find(s => s.id === supId) || medicalStaff.value.find(s => s.id === supId))?.full_name || null
       }
 
       // Days remaining for a rotation
@@ -5835,7 +5835,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    function useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits = ref([]) }) {
+    function useDashboard({ medicalStaff, allStaffLookup, rotations, absences, onCallSchedule, trainingUnits = ref([]) }) {
       const systemStats = ref({
         totalStaff: 0, activeAttending: 0, activeResidents: 0, onCallNow: 0, inSurgery: 0,
         activeRotations: 0, endingThisWeek: 0, startingNextWeek: 0, onLeaveStaff: 0,
@@ -5923,7 +5923,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         if (endingThisWeek.length > 0) {
           const names = endingThisWeek.slice(0,2).map(r => {
-            const s = medicalStaff.value.find(x => x.id === r.resident_id)
+            const s = (allStaffLookup?.value || []).find(x => x.id === r.resident_id) || medicalStaff.value.find(x => x.id === r.resident_id)
             return s ? Utils.formatDrName(s.full_name) : 'Unknown'
           }).join(', ')
           const more = endingThisWeek.length > 2 ? ` +${endingThisWeek.length-2}` : ''
@@ -5994,7 +5994,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return e >= todayDate && e <= in30
         })
         endingSoon.forEach(rot => {
-          const resident = medicalStaff.value.find(s => s.id === rot.resident_id)
+          const resident = (allStaffLookup?.value || []).find(s => s.id === rot.resident_id) || medicalStaff.value.find(s => s.id === rot.resident_id)
           if (!resident) return
           // Find units with free slots opening around the same time
           trainingUnits.value.forEach(unit => {
@@ -6445,7 +6445,7 @@ document.addEventListener('DOMContentLoaded', () => {
           researchOps.clinicalTrials,
           researchOps.innovationProjects
         )
-        const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits })
+        const dashOps = useDashboard({ medicalStaff, allStaffLookup, rotations, absences, onCallSchedule, trainingUnits })
 
         const newsOps = useNews({ showToast, showConfirmation, medicalStaff, allStaffLookup, researchLines: researchOps.researchLines })
 
@@ -8855,7 +8855,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // ── Inline handler methods (extracted from templates — Vue doesn't allow const/if inline) ──
           // ── view resident from rotation row (lines 1928, 6365) ──
           openResidentProfile: (residentId) => {
-            const s = medicalStaff.value.find(x => x.id === residentId)
+            const s = (allStaffLookup?.value || []).find(x => x.id === residentId) || medicalStaff.value.find(x => x.id === residentId)
             if (s) staffOps.viewStaffDetails(s)
           },
           // ── toggle PI/CoI investigator role on staff form (line 4913) ──
