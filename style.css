@@ -11651,7 +11651,7 @@ textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 2px;
-}    
+}
 /* Override for dark sidebar — use lighter focus ring */
 .sidebar button:focus-visible,
 .sidebar a:focus-visible {
