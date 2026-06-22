@@ -7020,12 +7020,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const availableReplacementStaff = computed(() => medicalStaff.value.filter(s => s.employment_status === 'active'))
 
         const showUserProfileModal = () => {
-          // Find linked staff record by email match
-          const linkedStaff = (currentUser.value?.email || currentUser.value?.full_name)
-            ? medicalStaff.value.find(s =>
-                s.professional_email === currentUser.value?.email ||
-                s.full_name === currentUser.value?.full_name)
-            : null
+          // Real link from the backend (app_users.medical_staff_id),
+          // not a runtime email/name guess — see B-something fix below.
+          const linkedStaff = currentUser.value?.linked_staff || null
           userProfileModal.form = {
             full_name: currentUser.value?.full_name || '',
             email: currentUser.value?.email || '',
@@ -7123,6 +7120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!staffTypesList.value.length) loadStaffTypes(true)
             if (!rotationServices.value.length) loadRotationServices()
             if (!onCallOps.coverageAreas.value.length) onCallOps.loadCoverageAreas()
+            if (isAdmin() && !permMgmt.users.length && !permMgmt.loading) loadPermissionUsers()
             return
           }
           if (view === 'research_hub') {
@@ -7553,7 +7551,31 @@ document.addEventListener('DOMContentLoaded', () => {
         users: [],       // all app_users with their permissions arrays
         loading: false,
         saving: null,    // userId:module being saved right now
-        error: null
+        error: null,
+        moduleFilter: '' // '' = show everyone; a module key = only show users with any access to it
+      })
+
+      // Sorted/grouped view of permMgmt.users — admins first (already the
+      // people most worth checking), then everyone else ordered by how
+      // many modules they can access, most to least. Within the filtered
+      // view, "who can edit X" reads naturally top to bottom.
+      const sortedPermUsers = computed(() => {
+        let users = permMgmt.users
+        if (permMgmt.moduleFilter) {
+          users = users.filter(u => {
+            const p = getUserPerm(u, permMgmt.moduleFilter)
+            return p && (p.can_read || p.can_write)
+          })
+        }
+        return [...users].sort((a, b) => {
+          const aAdmin = a.admin_level >= 1 ? 1 : 0
+          const bAdmin = b.admin_level >= 1 ? 1 : 0
+          if (aAdmin !== bAdmin) return bAdmin - aAdmin
+          const aCount = (a.permissions || []).filter(p => p.can_read || p.can_write).length
+          const bCount = (b.permissions || []).filter(p => p.can_read || p.can_write).length
+          if (aCount !== bCount) return bCount - aCount
+          return (a.full_name || '').localeCompare(b.full_name || '')
+        })
       })
 
       const ALL_MODULES = [
@@ -7593,9 +7615,17 @@ document.addEventListener('DOMContentLoaded', () => {
       // Cycle through permission states: none → read → read+write → none
       const cyclePermission = async (user, moduleKey) => {
         const key = user.id + ':' + moduleKey
+        const current = getUserPerm(user, moduleKey)
+        // The cycle is none -> read -> read+write -> none. Revoking happens
+        // on the read+write -> none step. Block that specific transition
+        // when it's the admin's own row, so they can't lock themselves out.
+        const aboutToRevoke = current && current.can_read && current.can_write
+        if (aboutToRevoke && user.id === currentUser.value?.id) {
+          showToast('Not allowed', `You can't revoke your own access to ${moduleKey}. Ask another admin if you need this changed.`, 'error')
+          return
+        }
         permMgmt.saving = key
         try {
-          const current = getUserPerm(user, moduleKey)
           let can_read = false, can_write = false
           if (!current || (!current.can_read && !current.can_write)) {
             can_read = true; can_write = false   // none → read
@@ -8804,7 +8834,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getLineAccent:     getLineAccentGlobal,
 
           systemSettings, saveSystemSettings, loadSystemSettings, confirmMaintenanceModeToggle, activeSvcId,
-          permMgmt, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, permPillStyle, isAdmin,
+          permMgmt, sortedPermUsers, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, permPillStyle, isAdmin,
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
