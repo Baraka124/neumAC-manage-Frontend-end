@@ -5576,7 +5576,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================
     // NEWS & BLOG — useNews composable
     // ============================================================
-    function useNews({ showToast, showConfirmation, medicalStaff, researchLines }) {
+    function useNews({ showToast, showConfirmation, medicalStaff, allStaffLookup, researchLines }) {
       const newsPosts      = ref([])
       const newsLoading    = ref(false)
       const activeNewsMenu = ref(null)
@@ -5603,7 +5603,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Helpers ─────────────────────────────────────────────
       const formatAuthorName = (staffId) => {
-        const s = (medicalStaff.value || []).find(m => m.id === staffId)
+        const s = (allStaffLookup?.value || []).find(m => m.id === staffId) || (medicalStaff.value || []).find(m => m.id === staffId)
         if (!s) return '—'
         const parts = (s.full_name || '').trim().split(' ')
         const last  = parts[parts.length - 1]
@@ -6447,7 +6447,7 @@ document.addEventListener('DOMContentLoaded', () => {
         )
         const dashOps = useDashboard({ medicalStaff, rotations, absences, onCallSchedule, trainingUnits })
 
-        const newsOps = useNews({ showToast, showConfirmation, medicalStaff, researchLines: researchOps.researchLines })
+        const newsOps = useNews({ showToast, showConfirmation, medicalStaff, allStaffLookup, researchLines: researchOps.researchLines })
 
         // ── EMERGENCY CALLOUTS (DUTY LOG) ─────────────────────────────
         const callouts        = ref([])
@@ -9021,4 +9021,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});   
+});
