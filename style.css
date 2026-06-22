@@ -7880,7 +7880,7 @@ tr:not(:hover) .btn-pill-purge {
 .rha-perf-card:hover { border-color: var(--blue-mid); box-shadow: 0 2px 12px rgba(37,99,235,.08); }
 .rha-perf-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
 .rha-perf-number { font-family: var(--font-display, Georgia, serif); font-size: 13px; font-weight: 400; font-style: italic; color: var(--blue); background: var(--blue-lt); border: 1px solid var(--blue-mid); padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
-.rha-perf-name { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; min-width: 0; white-space: normal; word-break: break-word; /* overflow: hidden; text-overflow: ellipsis; }
+.rha-perf-name { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; min-width: 0; white-space: normal; word-break: break-word; }
 .rha-perf-coord { font-size: 11px; color: var(--text-3); flex-shrink: 0; }
 .rha-perf-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 10px; }
 .rha-ps { background: var(--surface-2); border-radius: 5px; padding: 6px 4px; text-align: center; }
@@ -8517,7 +8517,8 @@ tr:not(:hover) .btn-pill-purge {
   font-family: var(--font-display, Georgia, serif);
   font-size: 32px; font-weight: 400; font-style: italic;; font-style: italic;
   color: var(--text-1); line-height: 1; letter-spacing: -.02em;
-}0px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); margin-top: 4px; }
+}
+.rp-ds-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); margin-top: 4px; }
 .rp-ds-sub   { font-size: 10px; color: var(--text-4); margin-top: 2px; font-weight: 600; }
 
 .rp-detail-section { display: flex; flex-direction: column; gap: 8px; }
@@ -8867,6 +8868,22 @@ tr:not(:hover) .btn-pill-purge {
 .ntb--update     { background: var(--warn-lt); color: var(--warn); border: 1px solid var(--warn-mid); }
 .ntb--article    { background: var(--blue-lt);  color: var(--blue); border: 1px solid var(--blue-mid); }
 .ntb--publication{ background: rgba(124,111,207,.1); color: #7c6fcf; border: 1px solid rgba(124,111,207,.25); }
+
+/* .news-card-tag — same compact pill pattern as .news-type-badge above,
+   for the tag rendered inside the card body (markup uses this class,
+   not news-type-badge, on the actual card list). Previously had zero
+   CSS at all — rendered as an unstyled full-width block, the wide pale
+   bar visible across every card. */
+.news-card-tag {
+  display: inline-flex; align-items: center;
+  padding: 3px 8px; border-radius: 20px; margin-bottom: 6px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; white-space: nowrap; width: fit-content;
+}
+.tag-update      { background: var(--warn-lt); color: var(--warn); border: 1px solid var(--warn-mid); }
+.tag-article     { background: var(--blue-lt);  color: var(--blue); border: 1px solid var(--blue-mid); }
+.tag-highlight   { background: rgba(224,92,75,.1); color: #e05c4b; border: 1px solid rgba(224,92,75,.2); }
+.tag-publication { background: rgba(124,111,207,.1); color: #7c6fcf; border: 1px solid rgba(124,111,207,.25); }
 
 .news-card-body { flex: 1; min-width: 0; padding: 14px 12px; }
 
@@ -11334,10 +11351,24 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   background: #639922; vertical-align: middle;
 }
 
-/* News card hover — teal accent */
-.news-card:hover {
-  border-color: rgba(0,153,153,.3) !important;
-  box-shadow: inset 3px 0 0 #009999, 0 2px 8px rgba(0,153,153,.08) !important;
+/* News card hover — accent matches each card's own type color,
+   instead of forcing teal on every card regardless of type and
+   erasing the update/article/publication color-coding on hover. */
+.news-card--update:hover {
+  border-color: rgba(217,119,6,.3) !important;
+  box-shadow: inset 3px 0 0 var(--warn), 0 2px 8px rgba(217,119,6,.08) !important;
+}
+.news-card--article:hover {
+  border-color: rgba(37,99,235,.3) !important;
+  box-shadow: inset 3px 0 0 var(--blue), 0 2px 8px rgba(37,99,235,.08) !important;
+}
+.news-card--publication:hover {
+  border-color: rgba(124,111,207,.3) !important;
+  box-shadow: inset 3px 0 0 #7c6fcf, 0 2px 8px rgba(124,111,207,.08) !important;
+}
+.news-card--highlight:hover, .news-card--photo_story:hover {
+  border-color: rgba(224,92,75,.3) !important;
+  box-shadow: inset 3px 0 0 #e05c4b, 0 2px 8px rgba(224,92,75,.08) !important;
 }
 
 /* News tabs — teal active (override blue) */
