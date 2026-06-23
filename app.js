@@ -5705,8 +5705,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const saveNews = async () => {
         const _t = (v) => (v == null ? '' : String(v)).trim()
         if (!_t(newsModal.form.title)) { showToast('Validation', 'Title is required', 'warning'); return }
-        if (newsModal.form.post_type === 'highlight' && !_t(newsModal.form.featured_image_url)) {
-          showToast('Validation', 'Highlight requires an image URL', 'warning'); return
+        if (newsModal.form.post_type === 'highlight' && !(newsModal.form.image_urls?.length)) {
+          showToast('Validation', 'Highlight requires at least one image', 'warning'); return
         }
         // Publication validation — require journal name or DOI
         if (newsModal.form.post_type === 'publication' && !_t(newsModal.form.journal_name) && !_t(newsModal.form.doi)) {
@@ -5726,7 +5726,7 @@ document.addEventListener('DOMContentLoaded', () => {
           research_line_id:   newsModal.form.research_line_id || null,
           is_public:          newsModal.form.is_public,
           status:             newsModal.form.status,
-          featured_image_url: _t(newsModal.form.featured_image_url) || null,
+          image_urls:         Array.isArray(newsModal.form.image_urls) ? newsModal.form.image_urls : [],
           expires_at:         newsModal.form.expires_at || null,
           journal_name:       _t(newsModal.form.journal_name) || null,
           authors_text:       _t(newsModal.form.authors_text) || null,
@@ -9051,4 +9051,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});
+});  
