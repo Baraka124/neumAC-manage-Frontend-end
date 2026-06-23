@@ -2625,7 +2625,7 @@
       }
       #app .rha-kpi-val {
         font-size:28px; font-weight:700; color:var(--nm-text1);
-        font-family:'IBM Plex Mono',monospace; line-height:1;
+        font-family:'DM Mono',monospace; line-height:1;
         margin-bottom:4px;
       }
       #app .rha-kpi-label {
@@ -2810,7 +2810,7 @@
       }
       #app .bar-value {
         font-size:12px; font-weight:600; color:var(--nm-text2);
-        text-align:right; font-family:'IBM Plex Mono',monospace;
+        text-align:right; font-family:'DM Mono',monospace;
       }
       #app .empty-chart {
         font-size:12px; color:var(--nm-text3); text-align:center;
@@ -2969,7 +2969,7 @@
       }
       #app .pd-stat-num {
         font-size:26px; font-weight:700; color:var(--nm-text1);
-        font-family:'IBM Plex Mono',monospace; line-height:1;
+        font-family:'DM Mono',monospace; line-height:1;
       }
       #app .pd-stat-lbl {
         font-size:11px; color:var(--nm-text3); margin-top:4px;
@@ -8996,7 +8996,7 @@
                                     <span class="dbh-health-dot" :style="{ background: systemSummary.healthColor }"></span>
                                     {{ systemSummary.healthLabel }}
                                     <span style="opacity:.5;margin:0 2px">·</span>
-                                    <span style="font-family:'IBM Plex Mono',monospace;">{{ systemSummary.healthScore }}%</span>
+                                    <span style="font-family:'DM Mono',monospace;">{{ systemSummary.healthScore }}%</span>
                                 </div>
                                 <button class="dbh-btn" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff','create')">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
@@ -13369,7 +13369,16 @@
                             </div>
 
                             <!-- Content -->
-                            <div class="news-card-body">
+                            <div class="news-card-body" :style="post.post_type === 'highlight' ? 'display:flex;gap:12px;' : ''">
+                                <!-- Highlight thumbnail — the photo is the actual content here,
+                                     shown inline in the row, not as a strip below the text the
+                                     way articles use it. Highlights require an image, so this is
+                                     never empty in practice. -->
+                                <div v-if="post.post_type === 'highlight'" style="width:48px;height:48px;border-radius:6px;background:var(--surface-2);flex-shrink:0;overflow:hidden;">
+                                    <img v-if="post.image_urls?.[0] || post.featured_image_url" :src="post.image_urls?.[0] || post.featured_image_url"
+                                         style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+                                </div>
+                                <div style="flex:1;min-width:0;">
                                 <div class="news-card-tag" :class="'tag-' + post.post_type">
                                     {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'highlight' ? 'Highlight' : 'Publication' }}
                                 </div>
@@ -13389,11 +13398,15 @@
                                           style="font-size:11px;color:var(--text-4);font-style:italic;">No publication details added yet</span>
                                 </div>
 
-                                <!-- Body preview (non-publications) -->
-                                <div v-if="post.body && post.post_type !== 'publication'" class="news-card-excerpt">{{ post.body }}</div>
+                                <!-- Body preview — articles and updates only. Highlights aren't
+                                     really "written"; the photo + title is the whole content,
+                                     so an excerpt here would just repeat the title or show
+                                     nothing useful. -->
+                                <div v-if="post.body && post.post_type !== 'publication' && post.post_type !== 'highlight'" class="news-card-excerpt">{{ post.body }}</div>
 
-                                <!-- Image strip — articles and highlights -->
-                                <div v-if="(post.image_urls?.length || post.featured_image_url) && (post.post_type === 'article' || post.post_type === 'highlight')"
+                                <!-- Image strip — articles only. Highlights use the inline
+                                     thumbnail above instead. -->
+                                <div v-if="(post.image_urls?.length || post.featured_image_url) && post.post_type === 'article'"
                                      style="display:flex;gap:5px;margin-top:8px;overflow:hidden;border-radius:6px;">
                                     <img v-for="(url, idx) in (post.image_urls?.length ? post.image_urls : [post.featured_image_url]).slice(0,5)"
                                          :key="idx" :src="url"
@@ -13414,13 +13427,14 @@
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14H10M8 18H10M14 14H16M14 18H16"/></svg>
                                         {{ formatNewsDate(post.published_at || post.created_at) }}
                                     </span>
-                                    <span v-if="post.word_count && post.post_type !== 'publication'" class="news-meta-item news-wc">
+                                    <span v-if="post.word_count && post.post_type !== 'publication' && post.post_type !== 'highlight'" class="news-meta-item news-wc">
                                         {{ post.word_count }}w
                                     </span>
-                                    <span v-if="post.expires_at && post.post_type !== 'publication'" class="news-meta-item news-expiry"
+                                    <span v-if="post.expires_at && post.post_type !== 'publication' && post.post_type !== 'highlight'" class="news-meta-item news-expiry"
                                           :class="{ 'news-expiry--warn': new Date(post.expires_at) < new Date(Date.now() + 14*86400000) }">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Expires {{ formatDate(post.expires_at) }}
                                     </span>
+                                </div>
                                 </div>
                             </div>
 
@@ -15622,20 +15636,23 @@
                                         <span v-else style="font-size:11px;color:var(--text-3);">No photo</span>
                                     </div>
                                     <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
-                                        <div style="display:flex;gap:6px;">
-                                            <input type="url" class="sm-input" v-model="medicalStaffModal.form.public_photo_url"
-                                                   placeholder="https://… paste image URL, or upload →" style="flex:1">
-                                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-                                                   id="staffPhotoFileInput" style="display:none"
-                                                   @change="uploadStaffPhoto(medicalStaffModal.form, $event)">
-                                            <button class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap"
-                                                    :disabled="staffPhotoUploading"
-                                                    @click.prevent="triggerStaffPhotoPicker"
-                                                    title="Upload from your device" aria-label="Upload photo from your device">
-                                                <svg v-if="!staffPhotoUploading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                                {{ staffPhotoUploading ? 'Uploading…' : 'Upload' }}
-                                            </button>
+                                        <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                                               id="staffPhotoFileInput" style="display:none"
+                                               @change="uploadStaffPhoto(medicalStaffModal.form, $event)">
+                                        <button class="btn btn-primary btn-sm" style="justify-content:center;"
+                                                :disabled="staffPhotoUploading"
+                                                @click.prevent="triggerStaffPhotoPicker"
+                                                title="Upload a photo from your device" aria-label="Upload photo from your device">
+                                            <svg v-if="!staffPhotoUploading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                            {{ staffPhotoUploading ? 'Uploading…' : 'Upload photo from your device' }}
+                                        </button>
+                                        <div style="display:flex;align-items:center;gap:8px;margin:2px 0;">
+                                            <div style="flex:1;height:1px;background:var(--border-2);"></div>
+                                            <span style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">or</span>
+                                            <div style="flex:1;height:1px;background:var(--border-2);"></div>
                                         </div>
+                                        <input type="url" class="sm-input" v-model="medicalStaffModal.form.public_photo_url"
+                                               placeholder="Paste an image URL you already have">
                                         <small class="sm-field-hint">Square photos work best. Shown as a circular avatar on the public site.</small>
                                     </div>
                                 </div>
@@ -19681,4 +19698,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html>
+</html>  
