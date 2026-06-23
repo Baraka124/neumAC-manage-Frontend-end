@@ -13673,26 +13673,38 @@
                                                     @click.prevent="newsModal.form.image_urls.splice(idx, 1)">×</button>
                                         </div>
                                     </div>
-                                    <!-- Add image URL -->
-                                    <div v-if="newsModal.form.image_urls.length < 5" style="display:flex;gap:6px;">
-                                        <input type="url" class="sm-input" v-model="newsModal.form._imageInput"
-                                               placeholder="https://… paste image URL, or upload →"
-                                               @keydown.enter.prevent="addNewsImage(newsModal.form)"
-                                               style="flex:1"/>
-                                        <button class="btn btn-outline btn-sm" style="flex-shrink:0;white-space:nowrap"
-                                                @click.prevent="addNewsImage(newsModal.form)">
-                                            + Add
-                                        </button>
-                                        <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-                                               :id="'newsImageFileInput'" style="display:none"
-                                               @change="uploadNewsImage(newsModal.form, $event)">
-                                        <button class="btn btn-secondary btn-sm" style="flex-shrink:0;white-space:nowrap"
-                                                :disabled="newsImageUploading"
-                                                @click.prevent="triggerNewsImagePicker"
-                                                title="Upload from your device" aria-label="Upload image from your device">
-                                            <svg v-if="!newsImageUploading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                            {{ newsImageUploading ? 'Uploading…' : 'Upload' }}
-                                        </button>
+                                    <!-- Add image: upload is the primary path (most people have a
+                                         file, not a pre-hosted URL) — shown first and styled as the
+                                         main action; URL-paste is the secondary option for anyone
+                                         who already has a hosted image link. -->
+                                    <div v-if="newsModal.form.image_urls.length < 5" style="display:flex;flex-direction:column;gap:8px;">
+                                        <div style="display:flex;gap:6px;align-items:center;">
+                                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                                                   :id="'newsImageFileInput'" style="display:none"
+                                                   @change="uploadNewsImage(newsModal.form, $event)">
+                                            <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center;"
+                                                    :disabled="newsImageUploading"
+                                                    @click.prevent="triggerNewsImagePicker"
+                                                    title="Upload an image from your device" aria-label="Upload image from your device">
+                                                <svg v-if="!newsImageUploading" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                                {{ newsImageUploading ? 'Uploading…' : 'Upload image from your device' }}
+                                            </button>
+                                        </div>
+                                        <div style="display:flex;align-items:center;gap:8px;margin:2px 0;">
+                                            <div style="flex:1;height:1px;background:var(--nm-border);"></div>
+                                            <span style="font-size:10px;color:var(--nm-text3);text-transform:uppercase;letter-spacing:.05em;">or</span>
+                                            <div style="flex:1;height:1px;background:var(--nm-border);"></div>
+                                        </div>
+                                        <div style="display:flex;gap:6px;">
+                                            <input type="url" class="sm-input" v-model="newsModal.form._imageInput"
+                                                   placeholder="Paste an image URL you already have"
+                                                   @keydown.enter.prevent="addNewsImage(newsModal.form)"
+                                                   style="flex:1"/>
+                                            <button class="btn btn-outline btn-sm" style="flex-shrink:0;white-space:nowrap"
+                                                    @click.prevent="addNewsImage(newsModal.form)">
+                                                + Add
+                                            </button>
+                                        </div>
                                     </div>
                                     <small class="sm-field-hint">
                                         First image is the lead/featured image. Drag to reorder not yet supported — add in order.
