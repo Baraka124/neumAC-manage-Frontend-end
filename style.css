@@ -8905,14 +8905,17 @@ tr:not(:hover) .btn-pill-purge {
 .news-doi:hover{ text-decoration: underline; }
 
 .news-card-meta {
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; row-gap: 8px;
 }
 .news-meta-item {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 10px; color: var(--text-4); font-family: var(--font-data);
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-4); font-family: var(--font-data);
 }
-.news-meta-item i { font-size: 9px; }
-.news-meta-line { color: var(--blue); }
+.news-meta-item:not(:first-child)::before {
+  content: '·'; margin-right: 6px; color: var(--border-2);
+}
+.news-meta-item i { font-size: 10px; }
+.news-meta-line { color: var(--blue); font-weight: 500; }
 .news-wc { color: var(--text-4); }
 .news-expiry { color: var(--text-4); }
 .news-expiry--warn { color: var(--danger); }
@@ -10912,14 +10915,14 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
 /* Hide old rldp-number */
 .rldp-number { display: none; }
 
-/* ════════════════════════════════════════════════════════
-   RESEARCH HUB — Creative typography system
-   ════════════════════════════════════════════════════════ */
-
-/* Tab bar — warm surface, left-aligned, editorial feel */
+/* RESEARCH HUB tab bar — consolidated. This selector set used to be
+   defined twice (two "Creative typography system" sections, ~35 lines
+   apart) with the second silently winning by cascade order on most
+   properties but never restating font-weight:600 on the active tab,
+   which the first block had set. Merged into one definition here. */
 .rhub-tabs {
   display: flex; align-items: center; gap: 0;
-  border-bottom: 0.5px solid var(--border, #e3dfd6);
+  border-bottom: 1.5px solid var(--border, #e3dfd6);
   background: var(--surface, #fdfcfb);
   padding: 0 2px; margin-bottom: 0;
 }
@@ -10931,7 +10934,7 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   margin-bottom: -0.5px; transition: color .15s, border-color .15s;
   white-space: nowrap; letter-spacing: 0;
 }
-.rhub-tab:hover { color: var(--text-1, #07111f); }
+.rhub-tab:hover { color: var(--text-2, var(--text-1, #07111f)); }
 .rhub-tab--active {
   color: #009999; border-bottom-color: #009999; font-weight: 600;
 }
@@ -10943,24 +10946,14 @@ n-top: 2px; flex-shrink: 0; color: var(--blue); }
   border: 0.5px solid var(--border, #e3dfd6);
 }
 .rhub-tab--active .rhub-tab-count {
-  background: rgba(0,179,179,.1); color: #009999;
-  border-color: rgba(0,179,179,.25);
+  background: rgba(0,153,153,.08); color: #009999;
+  border-color: rgba(0,153,153,.2);
 }
 
 /* ════════════════════════════════════════════════════════
    RESEARCH HUB — CREATIVE TYPOGRAPHY SYSTEM
    Rule: Fraunces italic for numbers/codes · DM Sans for names/prose
    ════════════════════════════════════════════════════════ */
-
-/* ── Tab bar — teal accent, not blue ── */
-.rhub-tabs { border-bottom: 1.5px solid var(--border); }
-.rhub-tab { font-size: 12.5px; font-weight: 500; }
-.rhub-tab--active { color: #009999; border-bottom-color: #009999; }
-.rhub-tab--active .rhub-tab-count {
-  background: rgba(0,153,153,.08); color: #009999;
-  border-color: rgba(0,153,153,.2);
-}
-.rhub-tab:hover { color: var(--text-2); }
 
 /* ── L-number hero in detail head ── */
 .rp-detail-num {
