@@ -5611,7 +5611,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const getLineName = (lineId) => {
         const l = (researchLines.value || []).find(r => r.id === lineId)
-        return l ? `L${l.line_number} — ${l.research_line_name || l.name}` : '—'
+        return l ? `L${l.line_number} — ${l.short_name || l.research_line_name || l.name}` : '—'
       }
       const autoExpiry = (type) => {
         const d = new Date()
