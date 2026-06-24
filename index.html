@@ -8527,6 +8527,7 @@
                             Rotations
                             <em class="nmsb-sub">{{ rotations.filter(r=>r.rotation_status==='active').length }} active</em>
                         </span>
+                        <span v-if="systemStats.endingThisWeek > 0" class="nmsb-badge nmsb-badge--alert" :title="systemStats.endingThisWeek + ' ending this week'">{{ systemStats.endingThisWeek }}</span>
                     </a>
                 </div>
 
