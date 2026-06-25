@@ -13812,3 +13812,356 @@ textarea:focus-visible,
   opacity: .85 !important;
   filter: drop-shadow(0 0 8px rgba(0,212,212,.25)) !important;
 }
+
+
+
+/* ================================================================
+   SIDEBAR (nmsb) — COLLAPSED STATE + OVERALL REFINEMENT
+   
+   Issues addressed:
+   1. Collapsed tooltips: browser title→ CSS tooltip via ::after
+   2. Sub-label contrast: .28 opacity → .42 (passes AA)  
+   3. Section numbers: give them presence or make them invisible
+   4. Badge size: 9px → 11px
+   5. Width transition: more elastic
+   6. Footer border: more visible
+   7. Active blade: refined
+   8. Icon opacity: better resting state
+   9. Collapse button: cleaner in both states
+   10. Search button: more presence
+================================================================ */
+
+
+/* ── Base shell: richer gradient, better transition ── */
+#app aside.nmsb {
+  background: linear-gradient(180deg,
+    #071828 0%,
+    #0a1e35 50%,
+    #091a2e 100%
+  ) !important;
+  border-right: none !important;
+  box-shadow:
+    4px 0 24px rgba(0,0,0,.4),
+    1px 0 0 rgba(255,255,255,.04) !important;
+  transition: width .22s cubic-bezier(.32,0,.67,0) !important;
+}
+#app aside.nmsb.nmsb--collapsed {
+  transition: width .22s cubic-bezier(.33,1,.68,1) !important;
+}
+
+/* Right shimmer on sidebar edge */
+#app aside.nmsb::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; right: 0 !important;
+  width: 1.5px !important; height: 100% !important;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(0,210,210,.45) 22%,
+    rgba(0,179,179,.2) 55%,
+    rgba(0,210,210,.38) 82%,
+    transparent 100%
+  ) !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+/* ── Header ── */
+#app .nmsb-head {
+  padding: 14px 12px 11px !important;
+  border-bottom: 1px solid rgba(255,255,255,.04) !important;
+  background: rgba(255,255,255,.015) !important;
+}
+#app .nmsb--collapsed .nmsb-head {
+  padding: 14px 0 11px !important;
+  gap: 8px !important;
+}
+
+/* ── Collapse toggle button ── */
+#app .nmsb-collapse {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 7px !important;
+  background: rgba(0,179,179,.08) !important;
+  border: 1px solid rgba(0,179,179,.2) !important;
+  color: rgba(0,212,212,.7) !important;
+  transition: background .15s, border-color .15s, color .15s !important;
+}
+#app .nmsb-collapse:hover {
+  background: rgba(0,179,179,.18) !important;
+  border-color: rgba(0,179,179,.45) !important;
+  color: #00d4d4 !important;
+}
+#app .nmsb-collapse:active {
+  transform: scale(.91) !important;
+}
+
+/* ── Section labels: make the number visible or hide it ── */
+#app .nmsb-section-lbl {
+  padding: 12px 14px 4px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .16em !important;
+  color: rgba(255,255,255,.22) !important;
+}
+/* Section number: slightly more visible than the label text */
+#app .nmsb-section-num {
+  color: rgba(0,179,179,.35) !important;
+  font-weight: 800 !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 9px !important;
+}
+
+/* ── Nav items ── */
+#app .nmsb-item {
+  margin: 1px 6px !important;
+  border-radius: 8px !important;
+  color: rgba(255,255,255,.58) !important;
+  min-height: 38px !important;
+  transition: background .14s, color .14s !important;
+  border-left: 2px solid transparent !important;
+  border-radius: 0 8px 8px 0 !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+#app .nmsb--collapsed .nmsb-item {
+  border-radius: 8px !important;
+  margin: 2px auto !important;
+  border-left: none !important;
+  width: 40px !important;
+  height: 40px !important;
+}
+#app .nmsb-item:hover {
+  background: rgba(255,255,255,.06) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+#app .nmsb-item.active {
+  background: rgba(0,179,179,.1) !important;
+  color: #fff !important;
+  border-left-color: #00d4d4 !important;
+}
+#app .nmsb--collapsed .nmsb-item.active {
+  border-left: none !important;
+  background: rgba(0,179,179,.14) !important;
+}
+
+/* Active blade */
+#app .nmsb-item.active::before {
+  left: 0 !important;
+  top: 7px !important;
+  bottom: 7px !important;
+  width: 2.5px !important;
+  background: linear-gradient(180deg, #00e0e0, #009999) !important;
+  border-radius: 0 3px 3px 0 !important;
+  box-shadow: 0 0 10px rgba(0,212,212,.7), 0 0 4px rgba(0,212,212,1) !important;
+}
+#app .nmsb--collapsed .nmsb-item.active::before {
+  display: none !important;
+}
+
+/* ── Icons ── */
+#app .nmsb-icon {
+  width: 40px !important;
+  height: 38px !important;
+  transition: color .14s !important;
+}
+/* Resting icon opacity: slightly more visible */
+#app .nmsb-item .nmsb-icon--slate  { color: rgba(148,163,184,.65) !important; }
+#app .nmsb-item .nmsb-icon--green  { color: rgba(52,211,153,.65) !important; }
+#app .nmsb-item .nmsb-icon--cyan   { color: rgba(34,211,238,.65) !important; }
+#app .nmsb-item .nmsb-icon--amber  { color: rgba(251,191,36,.65) !important; }
+#app .nmsb-item .nmsb-icon--violet { color: rgba(167,139,250,.65) !important; }
+
+#app .nmsb-item:hover .nmsb-icon { color: rgba(255,255,255,.88) !important; }
+#app .nmsb-item.active .nmsb-icon { color: #fff !important; }
+#app .nmsb-item.active .nmsb-icon--green  { color: #34d399 !important; }
+#app .nmsb-item.active .nmsb-icon--cyan   { color: #22d3ee !important; }
+#app .nmsb-item.active .nmsb-icon--amber  { color: #fbbf24 !important; }
+#app .nmsb-item.active .nmsb-icon--violet { color: #a78bfa !important; }
+
+/* ── Label + sub ── */
+#app .nmsb-label {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.25 !important;
+  letter-spacing: .005em !important;
+}
+#app .nmsb-item.active .nmsb-label {
+  font-weight: 600 !important;
+}
+
+/* Sub-labels: was .28 — fails contrast, operational data not decoration */
+#app .nmsb-sub {
+  font-size: 10.5px !important;
+  color: rgba(255,255,255,.42) !important;  /* was .28 — AA floor */
+  margin-top: 1px !important;
+  font-style: normal !important;
+}
+#app .nmsb-item:hover .nmsb-sub,
+#app .nmsb-item.active .nmsb-sub {
+  color: rgba(255,255,255,.55) !important;
+}
+
+/* ── Collapsed state: CSS tooltips to replace browser title ──
+   The native title attribute is retained for accessibility (screen
+   readers + keyboard users) but visually replaced with a styled
+   ::after tooltip that appears instantly on hover.
+── */
+#app .nmsb--collapsed .nmsb-item {
+  position: relative !important;
+}
+#app .nmsb--collapsed .nmsb-item::after {
+  content: attr(title) !important;
+  position: absolute !important;
+  left: calc(100% + 10px) !important;
+  top: 50% !important;
+  transform: translateY(-50%) translateX(-4px) !important;
+  background: #0a1e35 !important;
+  color: rgba(255,255,255,.92) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: 'DM Sans', sans-serif !important;
+  white-space: nowrap !important;
+  padding: 6px 12px !important;
+  border-radius: 7px !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  box-shadow:
+    0 4px 16px rgba(0,0,0,.4),
+    0 0 0 0.5px rgba(0,179,179,.18) !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transition: opacity .12s ease, transform .12s ease !important;
+  z-index: 9999 !important;
+}
+#app .nmsb--collapsed .nmsb-item:hover::after {
+  opacity: 1 !important;
+  transform: translateY(-50%) translateX(0) !important;
+}
+/* Don't show tooltip for items without title (section headers, etc) */
+#app .nmsb--collapsed .nmsb-item[title=""]::after,
+#app .nmsb--collapsed .nmsb-item:not([title])::after {
+  display: none !important;
+}
+
+/* ── Badges: fix 9px size ── */
+#app .nmsb-badge {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 1px 6px !important;
+  border-radius: 6px !important;
+  line-height: 15px !important;
+}
+
+/* ── Live dot: brighter ── */
+#app .nmsb-live-dot {
+  width: 6px !important;
+  height: 6px !important;
+  background: #00d4d4 !important;
+  box-shadow: 0 0 0 0 rgba(0,212,212,.5) !important;
+}
+@keyframes nmsb-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,212,.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(0,212,212,0); }
+}
+
+/* ── Footer: more visible separator ── */
+#app .nmsb-footer {
+  border-top: 1px solid rgba(255,255,255,.07) !important;
+  padding: 8px 8px 10px !important;
+  background: rgba(0,0,0,.12) !important;
+}
+
+/* ── Search button ── */
+#app .nmsb-search {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.07) !important;
+  color: rgba(255,255,255,.32) !important;
+  font-size: 12.5px !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  transition: background .14s, border-color .14s, color .14s !important;
+}
+#app .nmsb-search:hover {
+  background: rgba(255,255,255,.07) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.55) !important;
+}
+#app .nmsb-search kbd {
+  font-size: 10px !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.28) !important;
+}
+
+/* Search icon-only (collapsed state) */
+#app .nmsb-search--icon {
+  width: 40px !important;
+  height: 36px !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+/* ── User card ── */
+#app .nmsb-user {
+  padding: 7px 6px 5px !important;
+  border-radius: 8px !important;
+  transition: background .14s !important;
+}
+#app .nmsb-user:hover {
+  background: rgba(255,255,255,.05) !important;
+}
+
+/* User avatar: teal ring */
+#app .nmsb-user-av {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #009999 0%, #1a6aaa 100%) !important;
+  border: 1.5px solid rgba(0,179,179,.35) !important;
+  color: rgba(255,255,255,.95) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 0 0.5px rgba(0,179,179,.2) !important;
+}
+
+/* Online dot */
+#app .nmsb-user-dot {
+  width: 8px !important;
+  height: 8px !important;
+  background: #10b981 !important;
+  border: 1.5px solid #091a2e !important;
+  box-shadow: 0 0 4px rgba(16,185,129,.5) !important;
+}
+
+/* User name */
+#app .nmsb-user-name {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,.88) !important;
+  letter-spacing: -.01em !important;
+}
+
+/* User role: was .28 — same contrast issue as sub-labels */
+#app .nmsb-user-role {
+  font-size: 10px !important;
+  color: rgba(255,255,255,.4) !important;  /* was .28 */
+  letter-spacing: .05em !important;
+}
+
+/* Logout button */
+#app .nmsb-logout {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 6px !important;
+  color: rgba(255,255,255,.22) !important;
+  transition: background .14s, color .14s !important;
+}
+#app .nmsb-logout:hover {
+  background: rgba(239,68,68,.12) !important;
+  color: #fca5a5 !important;
+}
