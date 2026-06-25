@@ -1,3 +1,55 @@
+/* ================================================================
+   neumDesk — style.css
+   Clinical Operations Platform UI Override Stylesheet
+   
+   Architecture: All rules are appended overrides on top of the
+   base styles in index.html <style> blocks and style__10_.css.
+   Cascade strategy: html #app .classname for specificity wins.
+   
+   Fonts loaded:  Instrument Serif (display/KPI)
+                  DM Sans (UI/navigation)
+                  DM Mono (data/code)
+   
+   Clinical blue: #1a4f8a  (primary dark surfaces)
+   Teal accent:   #009999 / #00d4d4 (active states, CTAs)
+   Canvas:        #edecea  (warm background)
+   Card surface:  #ffffff  (elevated content)
+   
+   ── TABLE OF CONTENTS ────────────────────────────────────────
+   
+   §00  CSS VARIABLE SYSTEM          (line ~auto)
+   §01  LOGIN SCREEN                 
+   §02  SPLASH / LOADING SCREENS     
+   §03  SIDEBAR (nmsb)               
+   §04  NAVBAR + BREADCRUMB          
+   §05  LAYOUT — content-area, canvas, cards
+   §06  FILTER BAR + FORM CONTROLS   
+   §07  TYPOGRAPHY SYSTEM            
+   §08  KPI / STAT STRIPS            
+   §09  BUTTONS + CTAs               
+   §10  MODALS + DRAWERS             
+   §11  DASHBOARD                    
+   §12  MEDICAL STAFF                
+   §13  RESIDENT ROTATIONS           
+   §14  TRAINING UNITS               
+   §15  STAFF ABSENCE                
+   §16  ON-CALL SCHEDULE             
+   §17  OPS ROOM / COMMUNICATIONS    
+   §18  SYSTEM SETTINGS              
+   §19  RESEARCH HUB — Lines grid    
+   §20  RESEARCH HUB — Studies list  
+   §21  RESEARCH HUB — Study detail  
+   §22  PUBLICATIONS — List          
+   §23  PUBLICATIONS — News drawer   
+   §24  STAFF PROFILE DRAWER         
+   §25  ACCESSIBILITY                
+   §26  HIGH-SPECIFICITY OVERRIDES   
+   §27  BUG FIXES + PATTERN FIXES    
+   
+   ─────────────────────────────────────────────────────────────
+   Last updated: neumDesk UI redesign session
+================================================================ */
+
 /*- ═══════════════════════════════════════════════════════════════
    RESIDENCY YEAR — auto/override display
 ═══════════════════════════════════════════════════════════════ */
@@ -13816,7 +13868,7 @@ textarea:focus-visible,
 
 
 /* ================================================================
-   SIDEBAR (nmsb) — COLLAPSED STATE + OVERALL REFINEMENT
+   §03  SIDEBAR (nmsb)
    
    Issues addressed:
    1. Collapsed tooltips: browser title→ CSS tooltip via ::after
@@ -14169,7 +14221,7 @@ textarea:focus-visible,
 
 
 /* ================================================================
-   ARCHITECTURAL FIXES — Layout coherence + navbar/sidebar bridge
+   §04  NAVBAR + BREADCRUMB + HEADER ZONES
    
    Two root problems identified from screenshots:
    
@@ -14519,7 +14571,7 @@ body {
 
 
 /* ================================================================
-   RESEARCH HUB — ALL THREE LEVELS
+   §19 + §20 + §21  RESEARCH HUB — ALL THREE LEVELS
    Based on actual rendered screenshots.
    
    Level 1: Lines grid — KPI strip grounding, card elevation,
@@ -15208,7 +15260,7 @@ body {
 
 
 /* ================================================================
-   HEADER ZONE — SAFE TARGETED FIXES
+   §04b  HEADER ZONE — SAFE TARGETED FIXES
    
    Approach: work WITH the existing DOM structure.
    Navbar stays 56px horizontal flex. We reduce vertical waste
@@ -15696,7 +15748,7 @@ body {
 
 
 /* ================================================================
-   HIGH-SPECIFICITY OVERRIDES
+   §26  HIGH-SPECIFICITY OVERRIDES
    
    The HTML <style> blocks use #app .classname with !important.
    Since they load after style.css, same-specificity rules in
@@ -16372,7 +16424,7 @@ html #app .content-area .card.mb-6 .card-body div {
 
 
 /* ================================================================
-   HEADER TYPOGRAPHY + COLOR REFINEMENT
+   §07  HEADER TYPOGRAPHY + COLOUR REFINEMENT
    
    Changes:
    1. Drop Instrument Serif italic from navbar title →
@@ -16713,7 +16765,7 @@ html #app .top-navbar .search-input:focus {
 
 
 /* ================================================================
-   MODULE-BY-MODULE HEADER CONSISTENCY PASS
+   §04c  MODULE HEADER CONSISTENCY PASS
    
    Fills the gaps: on-call, staff absence, settings, ops room,
    news tab bar. Makes every module use the same #0d2137 navy
@@ -17105,7 +17157,7 @@ html #app .content-area .card-header .card-title svg,
 
 
 /* ================================================================
-   CLINICAL BLUE SYSTEM + OPS ROOM + PUBLICATIONS FIXES
+   §09 + §17  CLINICAL BLUE SYSTEM + OPS ROOM + PUBLICATIONS
    
    1. Switch from #0d2137 navy → #1a4f8a clinical blue
       (referenced by all dark surfaces throughout)
@@ -17601,7 +17653,7 @@ html #app .dbh-frame,
 
 
 /* ================================================================
-   GLOBAL CONTRAST + VIBRANCY LIFT
+   §08  GLOBAL CONTRAST + VIBRANCY LIFT
    
    The app is reading as faint across all areas. Root causes:
    1. nm-text2/text3/text4 are too washed out
@@ -18013,7 +18065,7 @@ html #app .breadcrumb-item.active {
 
 
 /* ================================================================
-   COMPACT ROTATION VIEW + STAFF PROFILE BUTTONS + PATTERN FIXES
+   §13 + §24  ROTATIONS + STAFF PROFILE + PATTERN FIXES
 ================================================================ */
 
 
@@ -18444,7 +18496,7 @@ html #app .breadcrumb-item.active {
 
 
 /* ================================================================
-   COMPREHENSIVE BUG FIX PASS
+   §27  COMPREHENSIVE BUG FIX PASS
    
    Issues found in systematic audit:
    
@@ -18945,7 +18997,7 @@ textarea::placeholder,
 
 
 /* ================================================================
-   LOGIN SCREEN + SPLASH SCREENS — COMPREHENSIVE REDESIGN
+   §01 + §02  LOGIN SCREEN + SPLASH SCREENS — COMPREHENSIVE REDESIGN
    
    Login issues found:
    - Background #04111f → clinical blue family
@@ -19447,7 +19499,7 @@ textarea::placeholder,
 
 
 /* ================================================================
-   RESEARCH HUB — COMPREHENSIVE UI FIX
+   §19-21  RESEARCH HUB — COMPREHENSIVE UI FIX
    
    Issues from screenshots:
    
@@ -20192,7 +20244,7 @@ textarea::placeholder,
 
 
 /* ================================================================
-   PUBLICATIONS / NEWS — REMOVE CARD WRAPPING, FLAT LIST ROWS
+   §22  PUBLICATIONS — Flat List Rows (remove card wrapping)
    
    Posts should be flat editorial rows separated by hairline dividers,
    not individual cards. The left accent blade (4px coloured stripe)
@@ -20533,7 +20585,7 @@ textarea::placeholder,
 
 
 /* ================================================================
-   PUBLICATIONS LIST + NEWS DRAWER — COMPREHENSIVE FIX
+   §22 + §23  PUBLICATIONS LIST + NEWS DRAWER
    
    LIST ISSUES:
    1. news-card-left: grey thumbnail placeholder showing for highlights
@@ -21034,4 +21086,198 @@ textarea::placeholder,
 .nrd-wc-track,
 #app .nrd-wc-track {
   background: rgba(255,255,255,.1) !important;
+}
+
+
+
+/* ================================================================
+   §03 FINAL  SIDEBAR + PHASE BADGES + TYPOGRAPHY FINAL FIXES
+   1. Phase badges: smaller, less dominant
+   2. Sidebar: stronger contrast, better tonal hierarchy
+   3. Research hub typography: tighten remaining issues
+================================================================ */
+
+/* ── PHASE BADGES: right-sized for inline list ── */
+html #app .rht-phase-badge,
+#app .rht-phase-badge {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 7px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  flex-shrink: 0 !important;
+  letter-spacing: -.02em !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18) !important;
+}
+
+/* Hero badge in detail: larger */
+html #app .rhub-study-hero .rht-phase-badge,
+#app .rhub-study-hero .rht-phase-badge {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 11px !important;
+  font-size: 15px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.22) !important;
+}
+
+/* Phase IV: slightly lighter clinical blue so it reads against white */
+#app .rht-phase--pIV { background: #1a4f8a !important; }
+#app .rht-phase--pI  { background: #2563eb !important; }
+#app .rht-phase--pII { background: #059669 !important; color: #fff !important; }
+#app .rht-phase--pIII { background: #7c3aed !important; }
+
+
+/* ── SIDEBAR: stronger tonal hierarchy ── */
+
+/* Container: richer gradient */
+#app aside.nmsb,
+.sidebar,
+#app .sidebar {
+  background: linear-gradient(180deg,
+    #0d2847 0%,
+    #112f55 35%,
+    #0f2a4d 65%,
+    #0c2340 100%
+  ) !important;
+  border-right: 1px solid rgba(255,255,255,.06) !important;
+}
+
+/* Logo area */
+#app .nmsb-head {
+  padding: 16px 14px 13px !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  background: rgba(0,0,0,.12) !important;
+}
+
+/* Section labels: more visible */
+#app .nmsb-section-lbl {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .18em !important;
+  color: rgba(255,255,255,.28) !important;
+  padding: 14px 16px 4px !important;
+  text-transform: uppercase !important;
+}
+
+/* Section numbers: teal tint */
+#app .nmsb-section-num {
+  color: rgba(0,212,212,.4) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+}
+
+/* Nav items */
+#app .nmsb-item {
+  margin: 1px 8px !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+  min-height: 40px !important;
+  transition: background .14s !important;
+}
+
+#app .nmsb-item:hover {
+  background: rgba(255,255,255,.07) !important;
+}
+
+#app .nmsb-item.active {
+  background: rgba(0,212,212,.12) !important;
+}
+
+/* Item label: stronger */
+#app .nmsb-label {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: rgba(255,255,255,.88) !important;
+  letter-spacing: -.01em !important;
+}
+
+#app .nmsb-item.active .nmsb-label {
+  font-weight: 600 !important;
+  color: #fff !important;
+}
+
+/* Sub-label: more readable */
+#app .nmsb-sub {
+  font-size: 11px !important;
+  color: rgba(255,255,255,.48) !important;
+  margin-top: 1px !important;
+}
+
+#app .nmsb-item:hover .nmsb-sub,
+#app .nmsb-item.active .nmsb-sub {
+  color: rgba(255,255,255,.6) !important;
+}
+
+/* Icon resting opacity */
+#app .nmsb-item .nmsb-icon--slate { color: rgba(148,163,184,.7) !important; }
+#app .nmsb-item:hover .nmsb-icon,
+#app .nmsb-item.active .nmsb-icon { color: rgba(255,255,255,.9) !important; }
+
+/* Active blade */
+#app .nmsb-item.active::before {
+  width: 3px !important;
+  background: linear-gradient(180deg, #00e0e0, #009999) !important;
+  box-shadow: 0 0 8px rgba(0,212,212,.6) !important;
+  border-radius: 0 2px 2px 0 !important;
+  top: 8px !important;
+  bottom: 8px !important;
+}
+
+/* Footer */
+#app .nmsb-footer {
+  border-top: 1px solid rgba(255,255,255,.07) !important;
+  background: rgba(0,0,0,.12) !important;
+  padding: 8px 8px 10px !important;
+}
+
+/* Search bar */
+#app .nmsb-search {
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 8px !important;
+  color: rgba(255,255,255,.38) !important;
+  font-size: 12.5px !important;
+}
+#app .nmsb-search:hover {
+  background: rgba(255,255,255,.08) !important;
+  color: rgba(255,255,255,.55) !important;
+}
+
+/* User name and role */
+#app .nmsb-user-name {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,.92) !important;
+}
+#app .nmsb-user-role {
+  font-size: 10.5px !important;
+  color: rgba(255,255,255,.45) !important;
+  letter-spacing: .04em !important;
+}
+
+/* User avatar */
+#app .nmsb-user-av {
+  background: linear-gradient(135deg, #009999 0%, #1a4f8a 100%) !important;
+  border: 1.5px solid rgba(0,179,179,.4) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+
+/* Online dot */
+#app .nmsb-user-dot {
+  background: #10b981 !important;
+  border: 1.5px solid #0d2847 !important;
+  box-shadow: 0 0 4px rgba(16,185,129,.5) !important;
+}
+
+/* Collapse button */
+#app .nmsb-collapse {
+  background: rgba(0,212,212,.08) !important;
+  border: 1px solid rgba(0,212,212,.2) !important;
+  color: rgba(0,212,212,.65) !important;
+}
+#app .nmsb-collapse:hover {  
+  background: rgba(0,212,212,.16) !important;
+  color: #00d4d4 !important;
 }
