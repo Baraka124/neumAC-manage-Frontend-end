@@ -17101,3 +17101,499 @@ html #app .content-area .card-header .card-title svg,
   width: 14px !important;
   height: 14px !important;
 }
+
+
+
+/* ================================================================
+   CLINICAL BLUE SYSTEM + OPS ROOM + PUBLICATIONS FIXES
+   
+   1. Switch from #0d2137 navy → #1a4f8a clinical blue
+      (referenced by all dark surfaces throughout)
+   2. Ops room feed: text contrast, announcement tag visibility,
+      compose area, feed tab bar
+   3. Publications: meta text contrast, badge readability
+   4. rgw-strip: already good, minor polish
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   1. CLINICAL BLUE — replace dark navy across all surfaces
+   
+   #1a4f8a — deep clinical blue, readable as medical authority.
+   Sits between dark-navy and bright-corporate-blue.
+   Same family as Epic MyChart (#1f5c8b) and NEJM (#0072b2).
+════════════════════════════════════════════════════════════════ */
+
+:root {
+  --clinical-blue:    #1a4f8a;
+  --clinical-blue-2:  #163f70;
+  --clinical-blue-3:  #112f55;
+  --clinical-blue-ctrl: #143660;
+}
+
+/* Navbar */
+html #app .top-navbar,
+#app .top-navbar,
+.top-navbar {
+  background: #1a4f8a !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+/* Breadcrumb */
+html #app .breadcrumb,
+#app .breadcrumb,
+.breadcrumb {
+  background: #163f70 !important;
+}
+
+/* Card-header control strip */
+html #app .content-area .card.mb-6 .card-header,
+html #app .content-area .card-header,
+#app .content-area .card.mb-6 .card-header,
+#app .tuc-card-header {
+  background: #143660 !important;
+}
+
+html #app .tuc-card-header,
+#app .tuc-card-header {
+  background: #143660 !important;
+}
+
+/* Sidebar */
+.sidebar,
+#app .sidebar,
+#app aside.nmsb {
+  background: linear-gradient(180deg,
+    #112f55 0%,
+    #163f70 50%,
+    #112f55 100%
+  ) !important;
+}
+
+/* Research hub topbar */
+html #app .rhub-topbar,
+#app .rhub-topbar {
+  background: #1a4f8a !important;
+}
+
+/* News tab bar */
+.news-view > .rhub-tabs,
+#app .news-view > .rhub-tabs,
+#app .content-area > div > .rhub-tabs {
+  background: #1a4f8a !important;
+}
+
+/* On-call tab bar */
+#app .content-area > div > .rhub-tabs {
+  background: #1a4f8a !important;
+}
+
+/* Dashboard hero frame */
+html #app .dbh-frame,
+#app .dbh-frame {
+  background: linear-gradient(135deg, #1a4f8a 0%, #1f5c9e 60%, #1a4f8a 100%) !important;
+}
+
+/* Login */
+.login-container {
+  background: linear-gradient(160deg, #0e2d55 0%, #1a4f8a 50%, #0e2d55 100%) !important;
+}
+
+/* Splash screens */
+.app-loading-splash,
+.nd-splash {
+  background: linear-gradient(160deg, #0e2d55 0%, #1a4f8a 50%, #0e2d55 100%) !important;
+}
+
+/* Ops left column — was #0d1b2e hardcoded */
+#app .ops-left,
+.ops-left {
+  background: #112f55 !important;
+  border-right: 1px solid rgba(255,255,255,.08) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   2. OPS ROOM — feed readability and layout
+════════════════════════════════════════════════════════════════ */
+
+/* Right column: slightly off-white surface */
+#app .ops-right,
+.ops-right {
+  background: #f8f7f5 !important;
+}
+
+/* Compose dormant bar */
+#app .ops-compose-dormant,
+.ops-compose-dormant {
+  background: #fff !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+}
+
+#app .ops-compose-dormant:hover {
+  border-color: rgba(26,79,138,.25) !important;
+  background: #fff !important;
+}
+
+/* Compose dormant placeholder text */
+#app .ops-compose-placeholder,
+.ops-compose-placeholder {
+  color: #909399 !important;
+  font-size: 13.5px !important;
+}
+
+/* Type buttons: Broadcast / Protocol / Note / Kudos */
+#app .ops-type-btn,
+.ops-type-btn {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 10px !important;
+  border-radius: 5px !important;
+  border: 1px solid !important;
+  cursor: pointer !important;
+  transition: all .14s !important;
+}
+
+/* Feed zone */
+#app .ops-feed-zone,
+.ops-feed-zone {
+  background: #fdfcfb !important;
+  padding: 14px 20px 0 !important;
+}
+
+/* Feed tab filters: All / Broadcast / Protocol / Announcement / Recognition */
+#app .ops-feed-header,
+.ops-feed-header {
+  border-bottom: 1px solid #e3dfd6 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+#app .ops-feed-filters,
+.ops-feed-filters {
+  gap: 2px !important;
+}
+
+#app .ops-feed-filter,
+.ops-feed-filter {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 6px 12px !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  color: #5a6472 !important;
+  background: transparent !important;
+  transition: color .14s, border-color .14s !important;
+  margin-bottom: -1px !important;
+}
+
+#app .ops-feed-filter:hover {
+  color: #07111f !important;
+  background: transparent !important;
+}
+
+#app .ops-feed-filter.active {
+  color: #1a4f8a !important;
+  border-bottom-color: #1a4f8a !important;
+  font-weight: 600 !important;
+  background: transparent !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+}
+
+/* Feed items */
+#app .ops-feed,
+.ops-feed {
+  padding: 0 !important;
+}
+
+#app .ops-fi,
+.ops-fi {
+  padding: 12px 0 !important;
+  border-bottom: 1px solid #f0eeea !important;
+  gap: 10px !important;
+  transition: background .12s !important;
+}
+#app .ops-fi:hover {
+  background: rgba(26,79,138,.02) !important;
+  margin: 0 -20px !important;
+  padding: 12px 20px !important;
+  border-radius: 0 !important;
+}
+
+/* Avatar: more distinctive */
+#app .ops-fi-av,
+.ops-fi-av {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #1a4f8a, #009999) !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Left colour bar */
+#app .ops-fi-bar,
+.ops-fi-bar {
+  width: 3px !important;
+  border-radius: 2px !important;
+  flex-shrink: 0 !important;
+  min-height: 30px !important;
+}
+
+/* Author name */
+#app .ops-fi-author,
+.ops-fi-author {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+}
+
+/* Type tag — the nearly-invisible grey announcement badge */
+#app .ops-fi-tag,
+.ops-fi-tag {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+}
+
+/* Explicit tag colours since they come from broadcastTypeConfig inline styles */
+/* broadcast = red, protocol = green, announcement = blue, kudos = sky */
+/* We can't override inline styles but we can set a base that applies when
+   the inline style is absent or uses our variables */
+
+/* Announcement tag specifically: was nearly invisible rgba(148,163,184,.08) + #94a3b8 */
+/* Since it's inline we target it by ensuring the parent class has contrast */
+
+/* Timestamp */
+#app .ops-fi-time,
+.ops-fi-time {
+  font-size: 11px !important;
+  color: #909399 !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .01em !important;
+}
+
+/* Title (bold subject line) */
+#app .ops-fi-title,
+.ops-fi-title {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+  margin-bottom: 3px !important;
+  letter-spacing: -.01em !important;
+  line-height: 1.35 !important;
+}
+
+/* Body text — was #6b6b67, too muted */
+#app .ops-fi-text,
+.ops-fi-text {
+  font-size: 13px !important;
+  color: #344154 !important;   /* up from #6b6b67 — proper secondary text */
+  line-height: 1.55 !important;
+}
+
+/* Action buttons */
+#app .ops-fi-btn,
+.ops-fi-btn {
+  font-size: 11px !important;
+  padding: 3px 9px !important;
+  border-radius: 5px !important;
+  border: 1px solid #e3dfd6 !important;
+  color: #5a6472 !important;
+}
+#app .ops-fi-btn:hover {
+  border-color: #009999 !important;
+  color: #009999 !important;
+}
+
+/* Announcement type correction: since inline styles override CSS,
+   we increase specificity on the tag when it's in Announcement type */
+/* The JS sets bg: rgba(148,163,184,.08) and color: #94a3b8 — nearly invisible.
+   We inject a stronger rule with !important on the parent's child */
+#app .ops-fi .ops-fi-tag[style*="148,163,184"] {
+  background: rgba(26,79,138,.08) !important;
+  color: #1a4f8a !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   3. PUBLICATIONS — meta text contrast + badge colours
+════════════════════════════════════════════════════════════════ */
+
+/* News meta items: was using nm-text2 (#6b6b67) — too faint */
+.news-meta-item,
+#app .news-meta-item {
+  font-size: 12px !important;
+  color: #5a6472 !important;   /* up from #6b6b67 */
+}
+
+/* Article badge: was dark navy-blue on pale blue, read as black */
+.tag-article,
+#app .tag-article,
+.ntb--article,
+#app .ntb--article {
+  background: rgba(26,79,138,.1) !important;
+  color: #1a4f8a !important;
+  border: 1px solid rgba(26,79,138,.2) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  text-transform: uppercase !important;
+}
+
+/* Update badge: teal */
+.tag-update,
+#app .tag-update,
+.ntb--update,
+#app .ntb--update {
+  background: rgba(0,153,153,.1) !important;
+  color: #007a7a !important;
+  border: 1px solid rgba(0,153,153,.2) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  text-transform: uppercase !important;
+}
+
+/* Publication badge: indigo */
+.tag-publication,
+#app .tag-publication,
+.ntb--publication,
+#app .ntb--publication {
+  background: rgba(99,102,241,.1) !important;
+  color: #4338ca !important;
+  border: 1px solid rgba(99,102,241,.2) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  text-transform: uppercase !important;
+}
+
+/* Highlight badge: amber */
+.tag-highlight,
+#app .tag-highlight,
+.ntb--highlight,
+#app .ntb--highlight {
+  background: rgba(217,119,6,.1) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(217,119,6,.22) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  text-transform: uppercase !important;
+}
+
+/* news-card-tag (used in the list template) */
+.news-card-tag,
+#app .news-card-tag {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  display: inline-block !important;
+  margin-bottom: 6px !important;
+}
+
+/* Card title */
+.news-card-title,
+#app .news-card-title {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.015em !important;
+  margin-bottom: 5px !important;
+}
+
+/* Card excerpt */
+.news-card-excerpt,
+#app .news-card-excerpt {
+  font-size: 13px !important;
+  color: #374151 !important;   /* up from nm-text2 */
+  line-height: 1.58 !important;
+  margin-bottom: 9px !important;
+}
+
+/* Research line chip in meta */
+.news-meta-line,
+#app .news-meta-line {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #1a4f8a !important;
+  background: rgba(26,79,138,.07) !important;
+  border: 1px solid rgba(26,79,138,.18) !important;
+  border-radius: 4px !important;
+  padding: 1px 6px !important;
+}
+
+/* Right action column */
+.news-card-right,
+#app .news-card-right {
+  padding: 12px 14px 12px 10px !important;
+  border-left: 1px solid #f0eeea !important;
+  background: rgba(0,0,0,.012) !important;
+}
+
+/* Visibility badge */
+.news-vis-btn,
+#app .news-vis-btn {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #5a6472 !important;
+  background: #f5f4f0 !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 5px !important;
+  padding: 3px 9px !important;
+  white-space: nowrap !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   4. SIDEBAR — match clinical blue system
+════════════════════════════════════════════════════════════════ */
+
+/* Active blade: stays teal (good contrast on clinical blue) */
+#app .nmsb-item.active::before {
+  background: linear-gradient(180deg, #00e0e0, #009999) !important;
+  box-shadow: 0 0 10px rgba(0,212,212,.7) !important;
+}
+
+/* Active item background */
+#app .nmsb-item.active {
+  background: rgba(255,255,255,.12) !important;
+}
+
+/* Dept dot */
+#app .sidebar-dept-dot,
+.sidebar-dept-dot {
+  background: #00d4d4 !important;
+  box-shadow: 0 0 8px rgba(0,212,212,.8) !important;
+}
+
+/* User avatar */
+#app .nmsb-user-av,
+.nmsb-user-av {
+  background: linear-gradient(135deg, #009999 0%, #1a4f8a 100%) !important;
+  border-color: rgba(0,179,179,.35) !important;
+}
