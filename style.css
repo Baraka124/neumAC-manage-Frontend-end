@@ -24818,3 +24818,722 @@ html #app .content-area .filter-bar select {
   #app .rhub-line-content,
   #app .news-list { animation: none !important; }
 }
+
+
+
+/* ================================================================
+   §35  ELITE PASS — LOGIN + SPLASH + RESEARCH HUB + STAFF PROFILE
+   
+   Login: full clinical blue system alignment
+   Splash: fix flash, better copy, smoother loading
+   Research Hub: 10 typography/spacing improvements  
+   Staff Profile: 10 typography/spacing improvements
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   LOGIN — FULL CLINICAL BLUE ALIGNMENT
+════════════════════════════════════════════════════════════════ */
+
+/* 1. Background: deep clinical blue, not near-black */
+.login-container,
+#app .login-container {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(26,79,138,.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 20%, rgba(0,179,179,.18) 0%, transparent 45%),
+    radial-gradient(ellipse at 60% 80%, rgba(22,63,112,.4) 0%, transparent 50%),
+    #0d2847 !important;
+}
+
+/* 2. Orbs: clinical blue family */
+.lc-orb--1 {
+  background: radial-gradient(circle, rgba(26,79,138,.35) 0%, transparent 70%) !important;
+}
+.lc-orb--2 {
+  background: radial-gradient(circle, rgba(0,179,179,.18) 0%, transparent 70%) !important;
+}
+.lc-orb--3 {
+  background: radial-gradient(circle, rgba(12,35,64,.4) 0%, transparent 70%) !important;
+}
+
+/* 3. Card: crisper, more substantial */
+.login-card,
+#app .login-card {
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 36px 34px 34px !important;
+  max-width: 420px !important;
+  box-shadow:
+    0 0 0 1px rgba(26,79,138,.12),
+    0 4px 8px rgba(0,0,0,.08),
+    0 24px 64px rgba(0,0,0,.28),
+    0 0 100px rgba(26,79,138,.12) !important;
+  overflow: hidden !important;
+}
+
+/* 4. Top accent: teal → clinical blue gradient */
+.login-card::before,
+#app .login-card::before {
+  background: linear-gradient(90deg,
+    #00d4d4 0%, #1a4f8a 50%, #0d2847 100%) !important;
+  height: 3px !important;
+}
+
+/* 5. Brand strip */
+.lc-brand,
+#app .lc-brand {
+  border-bottom: 1px solid rgba(26,79,138,.1) !important;
+  margin-bottom: 26px !important;
+  padding-bottom: 22px !important;
+}
+
+.lc-brand-divider,
+#app .lc-brand-divider {
+  background: linear-gradient(to bottom,
+    transparent, rgba(26,79,138,.35), transparent) !important;
+}
+
+/* 6. Institution name: was 9.5px */
+.lc-brand-area span,
+#app .lc-brand-area span {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #1a4f8a !important;
+  letter-spacing: .07em !important;
+  line-height: 1.45 !important;
+}
+
+/* 7. Product name gradient: clinical blue system */
+.lc-product-name span,
+#app .lc-product-name span {
+  background: linear-gradient(90deg, #1a4f8a 0%, #009999 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-weight: 700 !important;
+}
+
+.lc-product-name,
+#app .lc-product-name {
+  font-size: 30px !important;
+  font-weight: 300 !important;
+  color: #0a1628 !important;
+  letter-spacing: -.025em !important;
+  line-height: 1 !important;
+  margin-bottom: 7px !important;
+}
+
+/* 8. Subtitle */
+.lc-product-sub,
+#app .lc-product-sub {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: #6b7280 !important;
+}
+
+/* Attribution */
+.lc-product-attr,
+#app .lc-product-attr {
+  font-size: 11.5px !important;
+  color: #9ca3af !important;
+  font-style: italic !important;
+  margin-top: 5px !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}
+
+/* Separator */
+.lc-sep,
+#app .lc-sep {
+  background: linear-gradient(to right,
+    transparent, rgba(26,79,138,.15), transparent) !important;
+  margin: 4px 0 22px !important;
+}
+
+/* 9. Labels */
+.lc-label,
+#app .lc-label {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase !important;
+}
+
+/* 10. Inputs: visible borders */
+.lc-input,
+#app .lc-input {
+  border: 1.5px solid #d1d5db !important;
+  border-radius: 11px !important;
+  font-size: 14px !important;
+  color: #0a1628 !important;
+  height: 48px !important;
+}
+.lc-input::placeholder,
+#app .lc-input::placeholder { color: #9ca3af !important; }
+
+.lc-input:focus,
+#app .lc-input:focus {
+  border-color: #1a4f8a !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.12) !important;
+}
+.lc-input-wrap:focus-within .lc-input-icon,
+#app .lc-input-wrap:focus-within .lc-input-icon {
+  color: #1a4f8a !important;
+}
+
+/* 11. Remember / forgot */
+.lc-remember,
+#app .lc-remember {
+  color: #6b7280 !important;
+  font-size: 13px !important;
+}
+.lc-remember input,
+#app .lc-remember input { accent-color: #1a4f8a !important; }
+
+.lc-forgot,
+#app .lc-forgot {
+  color: #1a4f8a !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+.lc-forgot:hover,
+#app .lc-forgot:hover {
+  color: #163f70 !important;
+  text-decoration: underline !important;
+}
+
+/* 12. Submit: solid clinical blue */
+.lc-submit,
+#app .lc-submit {
+  background: linear-gradient(135deg, #1a4f8a 0%, #163f70 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(26,79,138,.4) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  height: 50px !important;
+}
+.lc-submit:hover:not(:disabled),
+#app .lc-submit:hover:not(:disabled) {
+  opacity: 1 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 28px rgba(26,79,138,.5) !important;
+  background: linear-gradient(135deg, #1f5c9e 0%, #1a4f8a 100%) !important;
+}
+
+/* Error states */
+.login-error,
+#app .login-error {
+  border-radius: 10px !important;
+  font-size: 13px !important;
+}
+.lc-field--error .lc-input,
+#app .lc-field--error .lc-input {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.08) !important;
+}
+.lc-field-err,
+#app .lc-field-err {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Eye toggle */
+.lc-eye:hover,
+#app .lc-eye:hover { color: #1a4f8a !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   PRIMARY SPLASH (nd-splash)
+   Clinical blue background, stronger tagline
+════════════════════════════════════════════════════════════════ */
+
+.nd-splash,
+#app .nd-splash {
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(26,79,138,.4) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 60%, rgba(0,179,179,.15) 0%, transparent 50%),
+    #0d2847 !important;
+}
+
+/* Mark container: slightly larger, more presence */
+.nd-splash-mark,
+#app .nd-splash-mark {
+  width: 88px !important;
+  height: 88px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1.5px solid rgba(255,255,255,.14) !important;
+  border-radius: 26px !important;
+  margin-bottom: 18px !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.04),
+    0 8px 32px rgba(0,0,0,.35),
+    0 0 60px rgba(26,79,138,.3) !important;
+}
+
+/* Wordmark: teal gradient */
+.nd-splash-wordmark,
+#app .nd-splash-wordmark {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.5px !important;
+  margin-bottom: 5px !important;
+  background: linear-gradient(90deg, #7ff5d7, #00d4d4, #8be9ff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* Tagline: more visible */
+.nd-splash-tagline,
+#app .nd-splash-tagline {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: rgba(255,255,255,.55) !important;
+  letter-spacing: .02em !important;
+  margin-bottom: 6px !important;
+}
+
+/* Sig line */
+.nd-splash-sig-line,
+#app .nd-splash-sig-line {
+  background: rgba(255,255,255,.12) !important;
+  width: 32px !important;
+}
+
+/* Progress bar */
+.nd-splash-bar,
+#app .nd-splash-bar {
+  width: 160px !important;
+  height: 2px !important;
+  background: rgba(255,255,255,.08) !important;
+}
+.nd-splash-bar-fill,
+#app .nd-splash-bar-fill {
+  background: linear-gradient(90deg, #00d4d4, #7ff5d7) !important;
+  box-shadow: 0 0 8px rgba(0,212,212,.4) !important;
+}
+
+/* Transition: smooth fade-scale */
+.splash-fade-leave-active,
+#app .splash-fade-leave-active {
+  transition: opacity .5s ease, transform .5s ease !important;
+  pointer-events: none !important;
+}
+.splash-fade-leave-to,
+#app .splash-fade-leave-to {
+  opacity: 0 !important;
+  transform: scale(1.04) !important;
+}
+
+/* Enter transition too — prevents flash on mount */
+.splash-fade-enter-active,
+#app .splash-fade-enter-active {
+  transition: opacity .2s ease !important;
+}
+.splash-fade-enter-from,
+#app .splash-fade-enter-from {
+  opacity: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   APP-LOADING-SPLASH (als-*) — FIX FLASH + NEW COPY
+   
+   Flash cause: the splash removes from DOM while app underneath
+   is still rendering, creating a brief white/canvas flash.
+   Fix: ensure backdrop covers fully during transition, use
+   the same background as nd-splash for visual continuity.
+   
+   New tagline: "Connecting clinical data..." reflects the action.
+════════════════════════════════════════════════════════════════ */
+
+.app-loading-splash,
+#app .app-loading-splash {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9998 !important;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(26,79,138,.4) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 60%, rgba(0,179,179,.15) 0%, transparent 50%),
+    #0d2847 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  /* IMPORTANT: will-change forces GPU compositing layer
+     preventing the flash when element is removed */
+  will-change: opacity !important;
+  backface-visibility: hidden !important;
+}
+
+/* als-inner: centered column */
+.als-inner,
+#app .als-inner {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+/* Mark: larger, more finished */
+#app .als-mark,
+.als-mark {
+  width: 72px !important;
+  height: 72px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1.5px solid rgba(255,255,255,.14) !important;
+  border-radius: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 22px !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.04),
+    0 8px 24px rgba(0,0,0,.3),
+    0 0 40px rgba(26,79,138,.25) !important;
+}
+
+/* Bar wrap */
+.als-bar-wrap,
+#app .als-bar-wrap {
+  width: 180px !important;
+  height: 2px !important;
+  background: rgba(255,255,255,.08) !important;
+  border-radius: 1px !important;
+  overflow: hidden !important;
+  margin-bottom: 14px !important;
+}
+
+/* Indeterminate loading bar: smooth infinite sweep
+   (replaces fixed-width animation that could stall) */
+.als-bar,
+#app .als-bar {
+  height: 100% !important;
+  width: 45% !important;
+  background: linear-gradient(90deg,
+    transparent, #00d4d4 30%, #7ff5d7 60%, transparent) !important;
+  box-shadow: 0 0 12px rgba(0,212,212,.5) !important;
+  border-radius: 1px !important;
+  animation: als-sweep 1.5s cubic-bezier(.4,0,.2,1) infinite !important;
+  transform-origin: left !important;
+}
+
+@keyframes als-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(500%); }
+}
+
+/* Tagline: "Connecting research data..." */
+#app .als-tagline,
+.als-tagline {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: rgba(255,255,255,.5) !important;
+  letter-spacing: .04em !important;
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  text-align: center !important;
+}
+
+/* Transition: ensure no flash */
+.splash-fade-leave-active .app-loading-splash,
+#app .splash-fade-leave-active {
+  transition: opacity .4s ease !important;
+}
+.splash-fade-leave-to .app-loading-splash,
+#app .splash-fade-leave-to {
+  opacity: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   RESEARCH HUB — 10 ELITE TYPOGRAPHY IMPROVEMENTS
+════════════════════════════════════════════════════════════════ */
+
+/* RH-01: Lines grid — L-label refined */
+html #app .rlc-num,
+#app .rlc-num {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: .14em !important;
+  color: rgba(26,79,138,.6) !important;
+  -webkit-text-fill-color: rgba(26,79,138,.6) !important;
+  background: rgba(26,79,138,.06) !important;
+  border: 1px solid rgba(26,79,138,.12) !important;
+  padding: 3px 8px !important;
+  border-radius: 5px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+/* RH-02: Line card title — bolder, tighter leading */
+html #app .rlc-title,
+#app .rlc-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #07111f !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.02em !important;
+  -webkit-text-fill-color: #07111f !important;
+}
+
+/* RH-03: Coordinator name — proper hierarchy */
+html #app .rlc-coord-name,
+#app .rlc-coord-name {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+}
+
+/* RH-04: Stat values in line cards */
+html #app .rlc-stat-v,
+#app .rlc-stat-v {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 24px !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+  color: #07111f !important;
+  -webkit-text-fill-color: #07111f !important;
+}
+
+/* RH-05: Stat labels */
+html #app .rlc-stat-l,
+#app .rlc-stat-l {
+  font-size: 9.5px !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  font-weight: 700 !important;
+  font-family: 'DM Mono', monospace !important;
+  margin-top: 3px !important;
+}
+
+/* RH-06: Study list title — no more truncation at wrong point */
+html #app .rht-title,
+#app .rht-title {
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+  line-height: 1.38 !important;
+  letter-spacing: -.015em !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+/* RH-07: Study detail field labels — clear hierarchy */
+html #app .rfc-label,
+#app .rfc-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  font-family: 'DM Mono', monospace !important;
+  margin-bottom: 3px !important;
+}
+
+html #app .rfc-val,
+#app .rfc-val {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: #07111f !important;
+  line-height: 1.5 !important;
+}
+
+/* RH-08: Protocol chip in study rows */
+html #app .rht-protocol,
+#app .rht-protocol,
+html #app .rhsc-proto,
+#app .rhsc-proto {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  color: #6b7280 !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  letter-spacing: .03em !important;
+}
+
+/* RH-09: Health strip labels */
+html #app .rhub-hl,
+#app .rhub-hl {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  font-family: 'DM Mono', monospace !important;
+  line-height: 1.3 !important;
+  margin-top: 4px !important;
+}
+
+html #app .rhub-hv,
+#app .rhub-hv {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 30px !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+}
+
+/* RH-10: Line detail back button + line name */
+html #app .rhub-back-btn,
+#app .rhub-back-btn {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  letter-spacing: 0 !important;
+}
+
+html #app .rhub-line-name,
+#app .rhub-line-name {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: #07111f !important;
+  letter-spacing: -.025em !important;
+  line-height: 1.25 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   STAFF PROFILE — 10 ELITE TYPOGRAPHY IMPROVEMENTS
+════════════════════════════════════════════════════════════════ */
+
+/* SP-01: Name — larger, more presence on dark bg */
+.pd-name,
+#app .pd-name {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  letter-spacing: -.02em !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+}
+
+/* SP-02: Role — readable monospace label */
+.pd-role,
+#app .pd-role {
+  font-size: 10.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.58) !important;
+  text-align: center !important;
+  margin-top: 2px !important;
+}
+
+/* SP-03: Stats — Instrument Serif italic, clear labels */
+.pd-stat-n,
+#app .pd-stat-n {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 24px !important;
+  font-weight: 400 !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+  color: rgba(255,255,255,.9) !important;
+}
+.pd-stat-n--teal,
+#app .pd-stat-n--teal { color: #00d4d4 !important; }
+
+.pd-stat-l,
+#app .pd-stat-l {
+  font-size: 9.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.42) !important;
+  margin-top: 4px !important;
+  line-height: 1.3 !important;
+}
+
+/* SP-04: Section titles — just barely readable */
+.pd-section-title,
+#app .pd-section-title {
+  font-size: 9.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.35) !important;
+}
+
+/* SP-05: Info row key/value */
+.pd-row-key,
+#app .pd-row-key {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.52) !important;
+  font-weight: 400 !important;
+}
+.pd-row-val,
+#app .pd-row-val {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.9) !important;
+  font-weight: 500 !important;
+}
+
+/* SP-06: Hero chips */
+.pd-hero-chip,
+#app .pd-hero-chip {
+  font-size: 10px !important;
+  padding: 3px 9px !important;
+  border-radius: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .06em !important;
+}
+
+/* SP-07: Tab labels — DM Sans, not monospace */
+.pd-tab,
+#app .pd-tab {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+}
+.pd-tab.active,
+#app .pd-tab.active {
+  font-weight: 600 !important;
+  letter-spacing: -.01em !important;
+}
+
+/* SP-08: Card titles in content panel */
+.pd-card-title,
+#app .pd-card-title {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  letter-spacing: -.01em !important;
+}
+
+/* SP-09: KV pairs in content panel */
+.pd-kv-k,
+#app .pd-kv-k {
+  font-size: 9.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+  color: #9ca3af !important;
+  line-height: 1.3 !important;
+}
+.pd-kv-v,
+#app .pd-kv-v {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #07111f !important;
+  line-height: 1.4 !important;
+}
+
+/* SP-10: Rotation name in activity tab */
+.pd-rotation-name,
+#app .pd-rotation-name {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #07111f !important;
+  letter-spacing: -.015em !important;
+  padding: 12px 14px 8px !important;
+  line-height: 1.25 !important;
+}
