@@ -17592,8 +17592,1854 @@ html #app .dbh-frame,
 }
 
 /* User avatar */
-#app .nmsb-user-av,  
+#app .nmsb-user-av,
 .nmsb-user-av {
   background: linear-gradient(135deg, #009999 0%, #1a4f8a 100%) !important;
   border-color: rgba(0,179,179,.35) !important;
+}
+
+
+
+/* ================================================================
+   GLOBAL CONTRAST + VIBRANCY LIFT
+   
+   The app is reading as faint across all areas. Root causes:
+   1. nm-text2/text3/text4 are too washed out
+   2. nm-border is rgba(0,0,0,.07) — nearly invisible
+   3. Card backgrounds too close to canvas (#fdfcfb vs #f5f4f0)
+   4. KPI labels at 9.5px tracked uppercase in #909399 — faint
+   5. Training unit cards: names/dept text/slot cells all too muted
+   6. Filter bar inputs: placeholder too faint, borders invisible
+   
+   Fix: override the CSS variable chain and lift every text/border
+   to proper contrast levels. Also fix the three specific items
+   mentioned: publication list blades, unit cards, sidebar labels.
+================================================================ */
+
+
+/* ── GLOBAL TEXT VARIABLE OVERRIDES ──
+   Can't reassign :root vars that are already declared without
+   higher specificity. We target #app directly.
+── */
+#app {
+  --nm-text1: #0d1117 !important;   /* was #111110 — darker, punchier */
+  --nm-text2: #374151 !important;   /* was #6b6b67 — proper secondary */
+  --nm-text3: #6b7280 !important;   /* was #a0a09b — readable tertiary */
+  --nm-text4: #9ca3af !important;   /* was #c8c7c1 — visible hint text */
+  --nm-border: rgba(0,0,0,.12) !important;  /* was .07 — visible dividers */
+  --nm-surface:  #ffffff !important;         /* was #fdfcfb — pure white cards */
+  --nm-surface2: #f5f4f0 !important;         /* was same — keep warm secondary */
+  --nm-surface3: #edebe5 !important;         /* slot backgrounds */
+}
+
+
+/* ── CANVAS BACKGROUND ── */
+#app .content-area,
+html body #app .content-area,
+html body .content-area {
+  background: #edecea !important;  /* slightly darker warm canvas */
+}
+
+body {
+  background: #edecea !important;
+}
+
+
+/* ── CARD SURFACES: pure white on warm canvas ── */
+html #app .content-area .card,
+#app .content-area .card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.1) !important;
+}
+
+/* Training unit cards specifically */
+html #app .tuc,
+#app .tuc {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.1) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+}
+html #app .tuc:hover,
+#app .tuc:hover {
+  border-color: rgba(0,153,153,.3) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Unit name: dark, readable */
+html #app .tuc-name,
+#app .tuc-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.01em !important;
+}
+
+/* Unit dept/meta */
+html #app .tuc-card-meta,
+#app .tuc-card-meta {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  padding: 0 16px 10px !important;
+}
+
+/* Free slot rows */
+html #app .tuc-resident-row--free .tuc-res-name,
+#app .tuc-resident-row--free .tuc-res-name {
+  font-size: 11.5px !important;
+  color: #9ca3af !important;
+}
+
+/* Assign clinical team text */
+html #app .tuc-tl-team-strip--empty,
+#app .tuc-tl-team-strip--empty {
+  color: #9ca3af !important;
+  font-size: 12px !important;
+}
+
+/* Slot capacity badge denom */
+html #app .tuc-cap-badge-denom,
+#app .tuc-cap-badge-denom {
+  color: #6b7280 !important;
+  font-size: 13px !important;
+}
+
+/* Card footer */
+html #app .tuc-card-footer,
+#app .tuc-card-footer {
+  background: #f8f7f5 !important;
+  border-top: 1px solid rgba(0,0,0,.08) !important;
+}
+
+
+/* ── KPI STRIPS: stronger text across all modules ── */
+
+/* tu-kpi labels */
+html #app .tu-kpi-label,
+#app .tu-kpi-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+  color: #6b7280 !important;   /* was #909399 */
+}
+
+html #app .tu-kpi-sub,
+#app .tu-kpi-sub {
+  font-size: 11px !important;
+  color: #374151 !important;   /* was #5a6472 */
+}
+
+html #app .tu-kpi-num,
+#app .tu-kpi-num {
+  font-size: 30px !important;
+}
+
+/* Faint zero values in kpi: make them read as data not ghosts */
+html #app .tu-kpi-num[style*="#a0a09b"],
+html #app .tu-kpi-num[style*="#909399"],
+html #app .tu-kpi-num[style*="text3"] {
+  color: #9ca3af !important;  /* still muted for zero but not invisible */
+}
+
+/* dept-pulse-bar labels */
+html #app .dpb-label,
+#app .dpb-label {
+  color: #6b7280 !important;
+}
+
+html #app .dpb-sub,
+#app .dpb-sub {
+  color: #374151 !important;
+}
+
+/* absence kpi */
+html #app .absence-kpi-label,
+#app .absence-kpi-label {
+  color: #6b7280 !important;
+}
+
+html #app .absence-kpi-sub,
+#app .absence-kpi-sub {
+  color: #374151 !important;
+}
+
+/* KPI strip backgrounds: slightly more contrast vs canvas */
+html #app .tu-kpi-strip,
+#app .tu-kpi-strip,
+html #app .dept-pulse-bar,
+#app .dept-pulse-bar,
+html #app .absence-kpi-strip,
+#app .absence-kpi-strip {
+  background: #f8f7f5 !important;
+  border-bottom: 1px solid rgba(0,0,0,.1) !important;
+}
+
+
+/* ── FILTER BAR: visible inputs ── */
+html #app .content-area .filter-bar,
+#app .content-area .filter-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,.1) !important;
+}
+
+html #app .content-area .filter-bar .form-control,
+html #app .content-area .filter-bar .form-select,
+html #app .content-area .filter-bar input,
+html #app .content-area .filter-bar select,
+#app .content-area .filter-bar input,
+#app .content-area .filter-bar select {
+  background: #ffffff !important;
+  border: 1.5px solid #d1d5db !important;  /* was #dde4ee — clearly visible */
+  color: #0d1117 !important;
+  font-size: 13px !important;
+  height: 36px !important;
+}
+
+html #app .content-area .filter-bar input::placeholder,
+#app .content-area .filter-bar input::placeholder {
+  color: #9ca3af !important;  /* was very faint */
+}
+
+html #app .content-area .filter-bar input:focus,
+html #app .content-area .filter-bar select:focus {
+  border-color: #1a4f8a !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.12) !important;
+}
+
+
+/* ── SIDEBAR: stronger text across labels and sub-items ── */
+#app .nmsb-label {
+  color: rgba(255,255,255,.82) !important;  /* was .68 */
+}
+
+#app .nmsb-sub {
+  color: rgba(255,255,255,.52) !important;  /* was .42 */
+}
+
+#app .nmsb-section-lbl {
+  color: rgba(255,255,255,.28) !important;  /* was .22 */
+}
+
+#app .nmsb-user-name {
+  color: rgba(255,255,255,.92) !important;
+}
+
+#app .nmsb-user-role {
+  color: rgba(255,255,255,.48) !important;  /* was .4 */
+}
+
+#app .sidebar-dept-name,
+.sidebar-dept-name {
+  color: rgba(255,255,255,.82) !important;
+}
+
+#app .sidebar-dept-sub,
+.sidebar-dept-sub {
+  color: rgba(255,255,255,.45) !important;
+}
+
+
+/* ── TABLE TEXT: stronger ── */
+html #app .content-area table td,
+#app .content-area table td {
+  color: #0d1117 !important;
+  font-size: 13px !important;
+}
+
+html #app .content-area table th,
+#app .content-area table th {
+  color: #6b7280 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  background: #f8f7f5 !important;
+  border-bottom: 1px solid rgba(0,0,0,.1) !important;
+}
+
+html #app .content-area table tbody tr:hover,
+#app .content-area table tbody tr:hover {
+  background: rgba(26,79,138,.03) !important;
+}
+
+
+/* ── PUBLICATION LIST: stronger contrast ── */
+
+/* Left accent blade: 4px */
+.news-card--article     { border-left-width: 4px !important; }
+.news-card--update      { border-left-width: 4px !important; }
+.news-card--publication { border-left-width: 5px !important; }
+.news-card--highlight   { border-left-width: 5px !important; }
+
+/* Row separators: visible */
+.news-card,
+#app .news-card {
+  border-bottom: 1px solid rgba(0,0,0,.07) !important;
+  background: #ffffff !important;
+}
+
+/* Title */
+.news-card-title,
+#app .news-card-title {
+  color: #0d1117 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+/* Excerpt */
+.news-card-excerpt,
+#app .news-card-excerpt {
+  color: #374151 !important;
+  font-size: 13px !important;
+  line-height: 1.58 !important;
+}
+
+/* Meta items */
+.news-meta-item,
+#app .news-meta-item {
+  color: #6b7280 !important;
+  font-size: 12px !important;
+}
+
+/* Publication list background: white so cards float */
+.news-list,
+#app .news-list {
+  background: #edecea !important;
+  gap: 8px !important;
+  padding: 14px 20px 28px !important;
+}
+
+
+/* ── RESEARCH HUB CARDS: stronger ── */
+#app .rlc-title {
+  color: #0d1117 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+#app .rlc-coord-name {
+  color: #374151 !important;
+  font-size: 12px !important;
+}
+
+#app .rlc-stat-l {
+  color: #6b7280 !important;
+}
+
+/* rhub-line-card: proper white surface */
+#app .rhub-line-card,
+html #app .rhub-line-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.1) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+}
+
+
+/* ── STUDY LIST CARDS ── */
+#app .rhub-study-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.1) !important;
+}
+
+#app .rhsc-title {
+  color: #0d1117 !important;
+}
+
+#app .rhsc-proto {
+  color: #6b7280 !important;
+}
+
+
+/* ── GENERAL CARD / PANEL TEXT ── */
+#app .card-body,
+html #app .content-area .card.mb-6 .card-body {
+  color: #0d1117 !important;
+}
+
+/* Form labels throughout */
+#app .form-label,
+#app label {
+  color: #374151 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+}
+
+/* Form inputs throughout */
+#app .form-control,
+#app .form-select,
+#app input[type="text"],
+#app input[type="email"],
+#app input[type="search"],
+#app textarea,
+#app select {
+  color: #0d1117 !important;
+  border-color: #d1d5db !important;
+  background: #ffffff !important;
+}
+
+#app .form-control::placeholder,
+#app input::placeholder,
+#app textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+
+/* ── NAVBAR: stronger text ── */
+html #app .navbar-title,
+#app .navbar-title,
+.navbar-title {
+  color: #ffffff !important;
+  font-weight: 600 !important;   /* bump from 500 */
+  font-size: 16px !important;
+}
+
+html #app .navbar-subtitle,
+#app .navbar-subtitle {
+  color: rgba(255,255,255,.6) !important;  /* was .42 */
+}
+
+/* Breadcrumb: stronger */
+html #app .breadcrumb button,
+#app .breadcrumb button {
+  color: rgba(255,255,255,.55) !important;  /* was .3 */
+}
+
+html #app .bc-current,
+html #app .breadcrumb-item.active {
+  color: rgba(0,212,212,.9) !important;  /* was .72 */
+  font-weight: 600 !important;
+}
+
+
+
+/* ================================================================
+   COMPACT ROTATION VIEW + STAFF PROFILE BUTTONS + PATTERN FIXES
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   1. COMPACT ROTATION VIEW
+   
+   Issue: column layout makes each resident take full-width blocks.
+   This is the responsive behaviour at narrower widths.
+   Fixes: row separation, avatar visibility, orb contrast, 
+   add-slot visibility.
+════════════════════════════════════════════════════════════════ */
+
+/* Row: proper separation */
+#app .rot-compact .rot-row,
+.rot-compact .rot-row {
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+  padding: 14px 20px !important;
+  background: #ffffff !important;
+  transition: background .12s !important;
+}
+#app .rot-compact .rot-row:hover,
+.rot-compact .rot-row:hover {
+  background: rgba(26,79,138,.03) !important;
+}
+#app .rot-compact .rot-row:last-child,
+.rot-compact .rot-row:last-child {
+  border-bottom: none !important;
+}
+
+/* Avatar: clinical blue, readable icon */
+#app .rot-who-avatar,
+.rot-who-avatar {
+  background: linear-gradient(135deg, #1a4f8a, #009999) !important;
+  border: none !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 9px !important;  /* rounded square, not circle */
+  color: rgba(255,255,255,.9) !important;
+}
+#app .rot-who-avatar svg,
+.rot-who-avatar svg {
+  stroke: rgba(255,255,255,.75) !important;
+}
+
+/* Resident name */
+#app .rot-who-name,
+.rot-who-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  line-height: 1.2 !important;
+}
+
+/* PGY year */
+#app .rot-who-meta,
+.rot-who-meta {
+  font-size: 10.5px !important;
+  color: #6b7280 !important;
+  font-weight: 600 !important;
+  letter-spacing: .05em !important;
+  margin-top: 1px !important;
+}
+
+/* Department */
+#app .rot-who-dept,
+.rot-who-dept,
+#app .rot-compact .rot-row [style*="var(--text-4)"],
+.rot-compact .rot-row [style*="color:var(--text-4)"] {
+  color: #9ca3af !important;
+  font-size: 12px !important;
+}
+
+/* Orb track */
+#app .rot-track,
+.rot-track {
+  margin-top: 8px !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+  overflow: visible !important;
+}
+
+/* DONE orbs: readable */
+#app .rot-orb--done,
+.rot-orb--done {
+  background: #f3f4f6 !important;
+  border: 1.5px solid #d1d5db !important;
+  color: #9ca3af !important;
+}
+#app .rot-orb--done:hover,
+.rot-orb--done:hover {
+  background: #e5e7eb !important;
+  border-color: #9ca3af !important;
+  color: #374151 !important;
+}
+
+/* ACTIVE orbs: clinical blue */
+#app .rot-compact .rot-orb--active,
+.rot-compact .rot-orb--active {
+  background: #1a4f8a !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.25), 0 2px 8px rgba(26,79,138,.3) !important;
+}
+
+/* SCHEDULED orbs: blue outline */
+#app .rot-compact .rot-orb--scheduled,
+.rot-compact .rot-orb--scheduled {
+  background: transparent !important;
+  border: 2px solid #1a4f8a !important;
+  color: #1a4f8a !important;
+}
+#app .rot-compact .rot-orb--scheduled:hover,
+.rot-compact .rot-orb--scheduled:hover {
+  background: rgba(26,79,138,.08) !important;
+}
+
+/* ADD orb: visible dashed circle */
+#app .rot-orb--add,
+.rot-orb--add {
+  border: 2px dashed #d1d5db !important;
+  color: #9ca3af !important;
+  background: transparent !important;
+}
+#app .rot-orb--add:hover,
+.rot-orb--add:hover {
+  border-color: #1a4f8a !important;
+  color: #1a4f8a !important;
+  background: rgba(26,79,138,.06) !important;
+}
+
+/* Connector arrow */
+#app .rot-connector,
+.rot-connector {
+  color: #d1d5db !important;
+  font-size: 16px !important;
+}
+
+/* NIL state */
+#app .rot-nil,
+.rot-nil {
+  color: #9ca3af !important;
+  font-style: italic !important;
+  font-size: 12.5px !important;
+}
+
+/* Legend */
+#app .rot-legend,
+.rot-legend {
+  background: #f8f7f5 !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+  padding: 8px 20px !important;
+}
+#app .rot-legend-item,
+.rot-legend-item {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+  font-weight: 600 !important;
+}
+#app .rot-legend-item--note,
+.rot-legend-item--note {
+  font-size: 11.5px !important;
+  color: #9ca3af !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-weight: 400 !important;
+}
+#app .rot-legend-dot--active,
+.rot-legend-dot--active {
+  background: #10b981 !important;
+  box-shadow: 0 0 6px rgba(16,185,129,.4) !important;
+}
+#app .rot-legend-dot--scheduled,
+.rot-legend-dot--scheduled {
+  background: transparent !important;
+  border: 2px solid #1a4f8a !important;
+}
+#app .rot-legend-dot--done,
+.rot-legend-dot--done {
+  background: #d1d5db !important;
+}
+
+/* Orb label */
+#app .rot-orb-label,
+.rot-orb-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .03em !important;
+}
+
+/* Compact view background canvas */
+#app .rot-compact,
+.rot-compact {
+  background: #edecea !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   2. STAFF PROFILE DRAWER — button visibility
+   
+   pd-identity has background:#0f2d54 hardcoded.
+   Update to clinical blue and fix button contrast.
+════════════════════════════════════════════════════════════════ */
+
+.pd-identity,
+#app .pd-identity {
+  background: #1a4f8a !important;
+  border-right: 0.5px solid rgba(255,255,255,.08) !important;
+}
+
+/* Status bar: teal accent */
+.pd-status-bar,
+#app .pd-status-bar {
+  background: linear-gradient(90deg, #00d4d4 0%, rgba(0,212,212,0) 100%) !important;
+}
+
+/* Edit/action button: was nearly invisible on dark bg */
+.pd-edit-btn,
+#app .pd-edit-btn {
+  background: rgba(255,255,255,.1) !important;
+  border: 1px solid rgba(255,255,255,.2) !important;
+  color: rgba(255,255,255,.88) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+.pd-edit-btn:hover,
+#app .pd-edit-btn:hover {
+  background: rgba(255,255,255,.18) !important;
+  border-color: rgba(255,255,255,.35) !important;
+  color: #ffffff !important;
+}
+
+/* Close button */
+.pd-close,
+#app .pd-close {
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  color: rgba(255,255,255,.7) !important;
+}
+.pd-close:hover,
+#app .pd-close:hover {
+  background: rgba(255,255,255,.16) !important;
+  color: #ffffff !important;
+}
+
+/* Status dot border update */
+.pd-status-dot,
+#app .pd-status-dot {
+  border-color: #1a4f8a !important;
+}
+
+/* Name and role on dark bg */
+.pd-hero .pd-name,
+#app .pd-hero .pd-name {
+  color: #ffffff !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.01em !important;
+}
+.pd-hero .pd-role,
+#app .pd-hero .pd-role {
+  color: rgba(255,255,255,.72) !important;
+  font-size: 12px !important;
+}
+
+/* Nav items in profile left panel */
+.pd-nav-item,
+#app .pd-nav-item {
+  color: rgba(255,255,255,.62) !important;
+  font-size: 12.5px !important;
+  transition: background .14s, color .14s !important;
+}
+.pd-nav-item.active,
+#app .pd-nav-item.active,
+.pd-nav-item:hover,
+#app .pd-nav-item:hover {
+  background: rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.95) !important;
+}
+.pd-nav-item.active,
+#app .pd-nav-item.active {
+  background: rgba(255,255,255,.14) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* nm-btn-primary inside profile modal on dark surfaces */
+#app .pd-identity .nm-btn-primary,
+#app .pd-identity .nm-btn {
+  background: rgba(255,255,255,.12) !important;
+  border-color: rgba(255,255,255,.22) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+#app .pd-identity .nm-btn-primary:hover,
+#app .pd-identity .nm-btn:hover {
+  background: rgba(255,255,255,.2) !important;
+  color: #ffffff !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   3. UNIVERSAL nm-btn SYSTEM — contrast fixes
+   
+   nm-btn-primary uses background:var(--nm-text1) — now #0d1117.
+   On light surfaces this is fine (dark button).
+   On dark surfaces (card-headers, profile panel) it's invisible.
+   We fix the dark-surface context.
+════════════════════════════════════════════════════════════════ */
+
+/* nm-btn base: ensure visible border */
+#app .nm-btn {
+  border-color: #d1d5db !important;
+  color: #0d1117 !important;
+}
+#app .nm-btn:hover {
+  background: #f8f7f5 !important;
+  border-color: #9ca3af !important;
+}
+
+/* nm-btn-primary on light: dark solid */
+#app .nm-btn-primary {
+  background: #1a4f8a !important;
+  border-color: #1a4f8a !important;
+  color: #ffffff !important;
+}
+#app .nm-btn-primary:hover {
+  background: #163f70 !important;
+  opacity: 1 !important;
+}
+
+/* nm-btn-outline: visible border */
+#app .nm-btn-outline {
+  background: transparent !important;
+  border-color: #d1d5db !important;
+  color: #374151 !important;
+}
+#app .nm-btn-outline:hover {
+  background: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+  color: #0d1117 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   4. UDD (USER DETAIL DRAWER) — sidebar profile header
+   Has hardcoded background:#0f2d54 inline style on line 147
+════════════════════════════════════════════════════════════════ */
+
+.udd-header,
+#app .udd-header {
+  background: #1a4f8a !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   5. MISC PATTERN FIXES
+   
+   Various places where white-on-white or faint-on-faint patterns
+   appear across the app.
+════════════════════════════════════════════════════════════════ */
+
+/* btn.btn-primary throughout app: clinical blue */
+#app .btn.btn-primary,
+#app .btn-primary {
+  background: #1a4f8a !important;
+  border-color: #1a4f8a !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+#app .btn.btn-primary:hover,
+#app .btn-primary:hover {
+  background: #163f70 !important;
+  opacity: 1 !important;
+}
+
+/* btn.btn-secondary: visible */
+#app .btn.btn-secondary,
+#app .btn-secondary {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+}
+#app .btn.btn-secondary:hover,
+#app .btn-secondary:hover {
+  background: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+}
+
+/* Small buttons */
+#app .btn-sm {
+  font-size: 12px !important;
+  padding: 5px 12px !important;
+}
+
+/* Badge contrast */
+#app .badge {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+/* Table action buttons */
+#app .table-actions .btn,
+#app .btn-action {
+  background: transparent !important;
+  border: 1px solid #e5e7eb !important;
+  color: #6b7280 !important;
+}
+#app .table-actions .btn:hover,
+#app .btn-action:hover {
+  background: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+  color: #374151 !important;
+}
+
+/* Skeleton/loading states: keep them visible */
+#app .nm-skeleton,
+.nm-skeleton {
+  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%) !important;
+  background-size: 200% 100% !important;
+  animation: skeleton-sweep 1.4s ease-in-out infinite !important;
+}
+@keyframes skeleton-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+
+
+/* ================================================================
+   COMPREHENSIVE BUG FIX PASS
+   
+   Issues found in systematic audit:
+   
+   1.  --nm-navy = #07111f — used in sidebar, sm-modal btns, calendar
+       today highlight, dropdown. Update via #app variable override.
+   2.  --nm-navy2 = #0f2d54 — used in avatar status dot border
+   3.  --nm-navy3 = #162b48 — minor
+   4.  nm-header hardcoded #07111f — news/comms modal header
+   5.  Hardcoded #0f2d54 in: rp-nav, rp-detail-head, udd-header,
+       staff-table-av, abs-tl-av, nm-av, udd-assign-cta, oncall tab bar
+   6.  Hardcoded #0d1b2e in: ops-left
+   7.  32 remaining hardcoded old-navy instances in HTML
+   8.  --text-4 = #c8c7c1 — far too faint, used in 15+ places
+   9.  --text-3 = old value (partially fixed via nm-text3)
+   10. font-family:monospace (bare) instead of DM Mono
+   11. .58rem font sizes (≈9.3px) — 6 inline occurrences
+   12. var(--blue) = #2563eb in style10 — 301 usages, fine but
+       should coexist with clinical blue system
+   13. Avatar colours inconsistent — attending avatars all #0f2d54
+   14. Empty/nil states too faint
+   15. var(--text-4) faint in oncall-shift-label, form-help,
+       dept-tbl-code, breadcrumb-sep, rot-connector
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   1. CSS VARIABLE SYSTEM UPDATE
+   Override all navy/text variables at highest specificity.
+   These cascade through all components that use them.
+════════════════════════════════════════════════════════════════ */
+#app {
+  /* Navy system → clinical blue */
+  --nm-navy:  #1a4f8a !important;
+  --nm-navy2: #163f70 !important;
+  --nm-navy3: #112f55 !important;
+
+  /* Text system → higher contrast */
+  --nm-text1: #0d1117 !important;
+  --nm-text2: #374151 !important;
+  --nm-text3: #6b7280 !important;
+  --nm-text4: #9ca3af !important;
+
+  /* text-N variables (style10 uses both systems) */
+  --text-1: #0d1117 !important;
+  --text-2: #374151 !important;
+  --text-3: #6b7280 !important;
+  --text-4: #9ca3af !important;  /* was #c8c7c1 — critical: used in 15+ places */
+
+  /* Border */
+  --nm-border:  rgba(0,0,0,.1) !important;
+  --nm-border2: rgba(0,0,0,.15) !important;
+  --border-color: rgba(0,0,0,.1) !important;
+
+  /* Surface */
+  --nm-surface:  #ffffff !important;
+  --nm-surface2: #f5f4f0 !important;
+  --nm-surface3: #edebe5 !important;
+  --surface-1: #ffffff !important;
+  --surface-2: #f5f4f0 !important;
+  --surface-3: #edebe5 !important;
+
+  /* Teal system — unify all variants */
+  --nm-teal: #009999 !important;
+  --teal: #009999 !important;
+  --teal-2: #00b3b3 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   2. HARDCODED COLOUR OVERRIDES
+   These can't be fixed via variables since they use literal hex.
+════════════════════════════════════════════════════════════════ */
+
+/* nm-header (news/comms modal header) */
+.nm-header,
+#app .nm-header {
+  background: #1a4f8a !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+
+/* nm-type-bar (compose modal type switcher) */
+.nm-type-bar,
+#app .nm-type-bar {
+  background: #163f70 !important;
+}
+
+/* rp-nav (research hub left nav) */
+.rp-nav,
+#app .rp-nav {
+  background: #163f70 !important;
+  border-right: 0.5px solid rgba(255,255,255,.08) !important;
+}
+
+/* rp-detail-head (research hub detail panel header) */
+.rp-detail-head,
+#app .rp-detail-head {
+  background: #1a4f8a !important;
+  border-left: 2px solid rgba(0,212,212,.25) !important;
+}
+
+/* udd-assign-cta */
+.udd-assign-cta,
+#app .udd-assign-cta {
+  background: #1a4f8a !important;
+  color: #fff !important;
+}
+.udd-assign-cta:hover,
+#app .udd-assign-cta:hover {
+  background: #163f70 !important;
+}
+
+/* Staff table attending avatars */
+html #app .staff-table-av--attending,
+#app .staff-table-av--attending {
+  background: #1a4f8a !important;
+}
+
+/* Absence timeline attending avatar */
+#app .abs-tl-av--att {
+  background: #1a4f8a !important;
+}
+
+/* nm-av attending colour variant */
+.nm-av--attending.nm-av--c0,
+#app .nm-av--attending.nm-av--c0 {
+  background: #1a4f8a !important;
+  color: #00d4d4 !important;
+}
+
+/* Absence timeline dot */
+#app .abs-tl-sec-dot--att {
+  background: #1a4f8a !important;
+}
+
+/* Dashboard accent navy */
+#app .dbsr-accent--navy {
+  background: #1a4f8a !important;
+}
+
+/* Calendar today highlight */
+#app .ucc-tl-day.is-today {
+  background: #1a4f8a !important;
+}
+
+/* Dropdown/popover background */
+#app .dropdown-menu,
+#app .ucm-menu,
+#app .context-menu {
+  background: #1a4f8a !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+}
+
+/* On-call tab bar inline style override — 
+   has style="background:#0f2d54" which we can't directly beat,
+   but targeting the class beats the inline at same specificity
+   when using html prefix */
+html #app .rhub-tabs[style*="background:#0f2d54"],
+html #app .rhub-tabs[style*="background: #0f2d54"] {
+  background: #1a4f8a !important;
+}
+
+/* Offline/maintenance banners — update navy */
+#app [style*="background:#07111f"],
+#app [style*="background: #07111f"] {
+  background: #1a4f8a !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   3. FONT-SIZE FLOOR — inline .58rem occurrences
+   
+   .58rem ≈ 9.3px. Used in modals for labels in small dark chips.
+   We can't override inline styles directly but we can set a
+   global minimum via the property on the containing elements.
+   These appear in clinical trial modal and profile views.
+════════════════════════════════════════════════════════════════ */
+
+/* Target the known containers where .58rem appears */
+#app .sm-modal [style*=".58rem"],
+#app .modal-container [style*=".58rem"],
+#app [style*="font-size:.58rem"],
+#app [style*="font-size: .58rem"] {
+  font-size: 11px !important;
+}
+
+#app [style*="font-size:.62rem"],
+#app [style*="font-size: .62rem"] {
+  font-size: 11px !important;
+}
+
+#app [style*="font-size:9.5px"],
+#app [style*="font-size: 9.5px"] {
+  font-size: 11px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   4. BARE monospace → DM Mono
+   Can't target 100 inline instances, but override the CSS classes.
+════════════════════════════════════════════════════════════════ */
+
+.mv-year-label,
+.mv-resident-year,
+.mv-nav-today,
+.mv-hz-btn,
+.rp-trial-meta,
+.rp-trial-status,
+.rp-view-all,
+.udd-cap-chip,
+.udd-sched-chip,
+.udd-rot-dates,
+.tuc-free-chip,
+.tuc-cap-label {
+  font-family: 'DM Mono', 'Courier New', monospace !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   5. --text-4 LIFTED COMPONENTS
+   
+   var(--text-4) was #c8c7c1 — now #9ca3af via variable override.
+   But these classes are in style10.css and may have cached values.
+   Explicitly set them.
+════════════════════════════════════════════════════════════════ */
+
+.dept-tbl-code,
+#app .dept-tbl-code {
+  color: #9ca3af !important;
+  font-size: 10.5px !important;
+}
+
+.dept-tbl-empty,
+#app .dept-tbl-empty {
+  color: #9ca3af !important;
+  font-size: 12px !important;
+}
+
+.oncall-shift-label,
+#app .oncall-shift-label {
+  color: #9ca3af !important;
+  font-size: 10.5px !important;
+}
+
+.form-help,
+#app .form-help {
+  color: #6b7280 !important;
+  font-size: 11px !important;
+}
+
+.breadcrumb-sep,
+.bc-sep {
+  color: rgba(255,255,255,.2) !important;  /* on dark surface */
+}
+
+.rot-connector,
+#app .rot-connector {
+  color: #d1d5db !important;
+}
+
+.rot-nil,
+#app .rot-nil {
+  color: #9ca3af !important;
+  font-size: 12.5px !important;
+}
+
+.text-gray-400,
+#app .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.search-input::placeholder,
+#app .search-input::placeholder {
+  color: rgba(255,255,255,.35) !important;  /* on dark navbar */
+}
+
+.form-control::placeholder,
+textarea::placeholder,
+#app .form-control::placeholder,
+#app textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   6. EMPTY / NIL STATE VISIBILITY
+════════════════════════════════════════════════════════════════ */
+
+.empty-state-title,
+#app .empty-state-title {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.empty-state-description,
+#app .empty-state-description {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  line-height: 1.55 !important;
+}
+
+.empty-chart,
+#app .empty-chart {
+  color: #6b7280 !important;
+  background: #f8f7f5 !important;
+  font-size: 13px !important;
+}
+
+.ops-feed-empty,
+#app .ops-feed-empty {
+  color: #9ca3af !important;
+  font-size: 13px !important;
+}
+
+.empty-timeline h5,
+#app .empty-timeline h5 {
+  color: #6b7280 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.empty-timeline p,
+#app .empty-timeline p {
+  color: #9ca3af !important;
+  font-size: 12px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   7. MONTHLY ROTATION VIEW — mv-* classes
+   Has own hardcoded navy and small fonts
+════════════════════════════════════════════════════════════════ */
+
+.mv-name-header,
+#app .mv-name-header {
+  background: #1a4f8a !important;
+  color: rgba(255,255,255,.88) !important;
+  font-size: 10px !important;
+  letter-spacing: .07em !important;
+}
+
+.mv-year-label,
+#app .mv-year-label {
+  font-size: 10px !important;
+  color: #374151 !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+.mv-resident-year,
+#app .mv-resident-year {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+}
+
+.mv-nav-today,
+#app .mv-nav-today {
+  background: rgba(0,153,153,.1) !important;
+  color: #009999 !important;
+  border-color: rgba(0,153,153,.2) !important;
+  font-size: 11px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   8. UDD (unit detail drawer) text colours
+════════════════════════════════════════════════════════════════ */
+
+.udd-rot-name,
+#app .udd-rot-name {
+  color: #0d1117 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+}
+
+.udd-sched-name,
+#app .udd-sched-name {
+  color: #374151 !important;
+  font-size: 12px !important;
+}
+
+.udd-rot-dates,
+#app .udd-rot-dates {
+  color: #6b7280 !important;
+  font-size: 11px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   9. STATUS BADGES — improve contrast
+════════════════════════════════════════════════════════════════ */
+
+#app .status-completed {
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+#app .status-inactive {
+  background: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+#app .badge-secondary {
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+#app .coverage-gap {
+  color: #9ca3af !important;
+  font-size: 12px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   10. ONCALL-SHIFT-LABEL — time axis labels
+════════════════════════════════════════════════════════════════ */
+
+.oncall-shift-label,
+#app .oncall-shift-label {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  color: #9ca3af !important;
+  letter-spacing: .06em !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   11. RHT TRIAL ROW (research hub study list within line detail)
+════════════════════════════════════════════════════════════════ */
+
+.rp-trial-meta,
+#app .rp-trial-meta {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+.rp-trial-status,
+#app .rp-trial-status {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+.rp-view-all,
+#app .rp-view-all {
+  font-size: 12px !important;
+  color: #009999 !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   12. SIDEBAR base from variable
+   The HTML has: background:var(--nm-navy) !important on .sidebar
+   Since we've now updated --nm-navy to #1a4f8a this cascades.
+   But our explicit gradient on aside.nmsb is more specific — keep.
+════════════════════════════════════════════════════════════════ */
+
+/* Ensure old .sidebar class also gets clinical blue */
+#app .sidebar {
+  background: linear-gradient(180deg, #112f55 0%, #163f70 50%, #112f55 100%) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   13. FORM ELEMENTS — global polish
+════════════════════════════════════════════════════════════════ */
+
+#app .form-control:focus,
+#app .form-select:focus,
+#app input:focus,
+#app textarea:focus,
+#app select:focus {
+  border-color: #1a4f8a !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.12) !important;
+  outline: none !important;
+}
+
+/* Required field marker */
+#app .req,
+.req {
+  color: #dc2626 !important;
+}
+
+/* Form section headers */
+#app .sm-section-title,
+.sm-section-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: #6b7280 !important;
+}
+
+
+
+/* ================================================================
+   LOGIN SCREEN + SPLASH SCREENS — COMPREHENSIVE REDESIGN
+   
+   Login issues found:
+   - Background #04111f → clinical blue family
+   - Card accent gradient → clinical blue + teal
+   - Product name gradient → clinical blue
+   - Input focus / submit button → clinical blue
+   - Brand area text: 9.5px → 11px
+   - Product sub: muted → readable
+   - lc-product-attr on white card: .28 opacity → visible grey
+   - Orb colours: all old blue → clinical blue family
+   
+   Splash issues:
+   - nd-splash background: #07111f → clinical blue
+   - nd-splash-tagline: .35 opacity → .55
+   - als-tagline: .28 opacity → .45
+   - als-mark: match new blue
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   LOGIN CONTAINER + BACKGROUND
+════════════════════════════════════════════════════════════════ */
+
+.login-container,
+#app .login-container {
+  background: #0e2d55 !important;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(26,79,138,.4) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(0,179,179,.15) 0%, transparent 50%) !important;
+}
+
+/* Animated orbs: clinical blue family */
+.lc-orb--1 {
+  background: radial-gradient(circle, rgba(26,79,138,.35) 0%, transparent 70%) !important;
+}
+.lc-orb--2 {
+  background: radial-gradient(circle, rgba(0,179,179,.2) 0%, transparent 70%) !important;
+}
+.lc-orb--3 {
+  background: radial-gradient(circle, rgba(15,45,84,.3) 0%, transparent 70%) !important;
+}
+
+/* Dot grid: slightly more visible */
+.lc-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,.07) 1px, transparent 1px) !important;
+  background-size: 28px 28px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   LOGIN CARD
+════════════════════════════════════════════════════════════════ */
+
+.login-card,
+#app .login-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 34px 32px 32px !important;
+  max-width: 420px !important;
+  box-shadow:
+    0 0 0 1px rgba(26,79,138,.12),
+    0 4px 6px rgba(0,0,0,.06),
+    0 24px 64px rgba(0,0,0,.24),
+    0 0 80px rgba(26,79,138,.1) !important;
+}
+
+/* Top accent line: teal → clinical blue */
+.login-card::before,
+#app .login-card::before {
+  background: linear-gradient(90deg, #00d4d4 0%, #1a4f8a 50%, #0e2d55 100%) !important;
+  height: 3px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   BRAND STRIP
+════════════════════════════════════════════════════════════════ */
+
+.lc-brand,
+#app .lc-brand {
+  margin-bottom: 24px !important;
+  padding-bottom: 22px !important;
+  border-bottom: 1px solid rgba(26,79,138,.1) !important;
+}
+
+.lc-brand-divider,
+#app .lc-brand-divider {
+  background: linear-gradient(to bottom,
+    transparent, rgba(26,79,138,.4), transparent) !important;
+}
+
+/* Institution name: was 9.5px + #0077b6 */
+.lc-brand-area span,
+#app .lc-brand-area span {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #1a4f8a !important;
+  letter-spacing: .07em !important;
+  line-height: 1.45 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   PRODUCT IDENTITY
+════════════════════════════════════════════════════════════════ */
+
+.lc-product-name,
+#app .lc-product-name {
+  font-size: 30px !important;
+  font-weight: 300 !important;
+  color: #0d1117 !important;
+  letter-spacing: -.03em !important;
+  line-height: 1 !important;
+  margin-bottom: 6px !important;
+}
+
+/* "Desk" part gradient: clinical blue to teal */
+.lc-product-name span,
+#app .lc-product-name span {
+  font-weight: 700 !important;
+  background: linear-gradient(90deg, #1a4f8a 0%, #009999 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* "Clinical Operations Platform" subtitle */
+.lc-product-sub,
+#app .lc-product-sub {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: #6b7280 !important;  /* was #7a90b0 — more neutral, readable */
+  margin-top: 2px !important;
+}
+
+/* "a neumAC platform" attribution: was .28 opacity on white — invisible */
+.lc-product-attr,
+#app .lc-product-attr {
+  font-size: 11.5px !important;
+  color: #9ca3af !important;   /* proper grey, not opacity on white */
+  font-style: italic !important;
+  margin-top: 5px !important;
+  letter-spacing: .01em !important;
+  -webkit-text-fill-color: #9ca3af !important;  /* override gradient reset */
+}
+
+/* Separator */
+.lc-sep,
+#app .lc-sep {
+  background: linear-gradient(to right,
+    transparent, rgba(26,79,138,.18), transparent) !important;
+  margin: 6px 0 22px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   FORM FIELDS
+════════════════════════════════════════════════════════════════ */
+
+.lc-label,
+#app .lc-label {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;  /* was #3d5278 — more neutral */
+  letter-spacing: .05em !important;
+  text-transform: uppercase !important;
+}
+
+.lc-input,
+#app .lc-input {
+  width: 100% !important;
+  height: 48px !important;
+  padding: 0 44px 0 40px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #d1d5db !important;  /* was #d8e2ee — more visible */
+  border-radius: 11px !important;
+  font-size: 14px !important;
+  color: #0d1117 !important;
+  transition: border-color .2s, box-shadow .2s !important;
+  outline: none !important;
+}
+
+.lc-input::placeholder,
+#app .lc-input::placeholder {
+  color: #9ca3af !important;  /* was #aab8cc */
+}
+
+.lc-input:focus,
+#app .lc-input:focus {
+  border-color: #1a4f8a !important;  /* was #0077b6 */
+  box-shadow: 0 0 0 3px rgba(26,79,138,.12) !important;
+  background: #ffffff !important;
+}
+
+.lc-input-wrap:focus-within .lc-input-icon,
+#app .lc-input-wrap:focus-within .lc-input-icon {
+  color: #1a4f8a !important;
+}
+
+.lc-input-icon,
+#app .lc-input-icon {
+  color: #9ca3af !important;
+  left: 14px !important;
+}
+
+/* Password eye toggle */
+.lc-eye,
+#app .lc-eye {
+  color: #9ca3af !important;
+}
+.lc-eye:hover,
+#app .lc-eye:hover {
+  color: #1a4f8a !important;
+}
+
+/* Error state */
+.lc-field--error .lc-input,
+#app .lc-field--error .lc-input {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.08) !important;
+}
+
+.lc-field-err,
+#app .lc-field-err {
+  font-size: 12px !important;
+  color: #dc2626 !important;
+  font-weight: 500 !important;
+}
+
+/* Error banner */
+.login-error,
+#app .login-error {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  color: #dc2626 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  margin-bottom: 16px !important;
+}
+
+.login-error--warn,
+#app .login-error--warn {
+  background: #fffbeb !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   REMEMBER / FORGOT
+════════════════════════════════════════════════════════════════ */
+
+.lc-remember,
+#app .lc-remember {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+}
+
+.lc-remember input,
+#app .lc-remember input {
+  accent-color: #1a4f8a !important;
+}
+
+.lc-forgot,
+#app .lc-forgot {
+  font-size: 13px !important;
+  color: #1a4f8a !important;
+  font-weight: 500 !important;
+}
+.lc-forgot:hover,
+#app .lc-forgot:hover {
+  color: #163f70 !important;
+  text-decoration: underline !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SUBMIT BUTTON — clinical authority
+════════════════════════════════════════════════════════════════ */
+
+.lc-submit,
+#app .lc-submit {
+  margin-top: 10px !important;
+  width: 100% !important;
+  height: 50px !important;
+  background: linear-gradient(135deg, #1a4f8a 0%, #163f70 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: .02em !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 20px rgba(26,79,138,.4) !important;
+  transition: opacity .2s, transform .15s, box-shadow .2s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+.lc-submit:hover:not(:disabled),
+#app .lc-submit:hover:not(:disabled) {
+  opacity: 1 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 28px rgba(26,79,138,.5) !important;
+  background: linear-gradient(135deg, #1f5c9e 0%, #1a4f8a 100%) !important;
+}
+
+.lc-submit:active:not(:disabled),
+#app .lc-submit:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(26,79,138,.3) !important;
+}
+
+.lc-submit:disabled,
+#app .lc-submit:disabled {
+  opacity: .55 !important;
+  cursor: not-allowed !important;
+}
+
+.lc-submit-arrow,
+#app .lc-submit-arrow {
+  font-size: 13px !important;
+  transition: transform .2s !important;
+}
+.lc-submit:hover:not(:disabled) .lc-submit-arrow,
+#app .lc-submit:hover:not(:disabled) .lc-submit-arrow {
+  transform: translateX(3px) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   PRIMARY SPLASH (nd-splash)
+════════════════════════════════════════════════════════════════ */
+
+.nd-splash,
+#app .nd-splash {
+  background: linear-gradient(160deg,
+    #0a2240 0%,
+    #0e2d55 40%,
+    #1a4f8a 100%
+  ) !important;
+}
+
+/* Mark container */
+.nd-splash-mark,
+#app .nd-splash-mark {
+  width: 80px !important;
+  height: 80px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1.5px solid rgba(255,255,255,.14) !important;
+  border-radius: 24px !important;
+  margin-bottom: 16px !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.04),
+    0 8px 32px rgba(0,0,0,.3) !important;
+}
+
+/* Wordmark: keep the gradient but adjust stops */
+.nd-splash-wordmark,
+#app .nd-splash-wordmark {
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.5px !important;
+  margin-bottom: 4px !important;
+  background: linear-gradient(90deg, #7ff5d7, #00d4d4, #8be9ff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* Tagline: was .35 — too faint */
+.nd-splash-tagline,
+#app .nd-splash-tagline {
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  color: rgba(255,255,255,.55) !important;  /* was .35 */
+  letter-spacing: .03em !important;
+  margin-bottom: 5px !important;
+}
+
+/* Sig line */
+.nd-splash-sig-line,
+#app .nd-splash-sig-line {
+  background: rgba(255,255,255,.14) !important;  /* was .1 */
+  width: 28px !important;
+}
+
+/* Progress bar */
+.nd-splash-bar,
+#app .nd-splash-bar {
+  width: 140px !important;
+  height: 2px !important;
+  background: rgba(255,255,255,.1) !important;
+  border-radius: 1px !important;
+}
+
+.nd-splash-bar-fill,
+#app .nd-splash-bar-fill {
+  background: linear-gradient(90deg, #00d4d4, #7ff5d7) !important;
+  box-shadow: 0 0 8px rgba(0,212,212,.4) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SECOND LOADING SCREEN (app-loading-splash / als-*)
+════════════════════════════════════════════════════════════════ */
+
+.app-loading-splash,
+#app .app-loading-splash {
+  background: linear-gradient(160deg,
+    #0a2240 0%,
+    #0e2d55 40%,
+    #1a4f8a 100%
+  ) !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9998 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+/* Mark: larger, more presence */
+#app .als-mark {
+  width: 68px !important;
+  height: 68px !important;
+  background: rgba(255,255,255,.07) !important;
+  border: 1.5px solid rgba(255,255,255,.16) !important;
+  border-radius: 20px !important;
+  margin-bottom: 18px !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.04),
+    0 8px 24px rgba(0,0,0,.3) !important;
+}
+
+/* Bar wrap */
+.als-bar-wrap,
+#app .als-bar-wrap {
+  width: 160px !important;
+  height: 2px !important;
+  background: rgba(255,255,255,.1) !important;
+  border-radius: 1px !important;
+  overflow: hidden !important;
+  margin-top: 20px !important;
+}
+
+/* Sliding bar: teal sweep */
+.als-bar,
+#app .als-bar {
+  background: linear-gradient(90deg,
+    transparent, #00d4d4, #7ff5d7, transparent
+  ) !important;
+  box-shadow: 0 0 10px rgba(0,212,212,.5) !important;
+  height: 100% !important;
+  width: 50% !important;
+  animation: als-sweep 1.6s ease-in-out infinite !important;
+}
+
+@keyframes als-sweep {
+  0%   { transform: translateX(-150%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Tagline: was .28 — nearly invisible */
+#app .als-tagline {
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  color: rgba(255,255,255,.55) !important;  /* was .28 */
+  letter-spacing: .04em !important;
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   TRANSITION: splash → app
+   Both splash screens fade out cleanly.
+════════════════════════════════════════════════════════════════ */
+
+.splash-fade-leave-active,
+#app .splash-fade-leave-active {
+  transition: opacity .4s ease, transform .4s ease !important;
+}
+
+.splash-fade-leave-to,
+#app .splash-fade-leave-to {
+  opacity: 0 !important;
+  transform: scale(1.03) !important;
 }
