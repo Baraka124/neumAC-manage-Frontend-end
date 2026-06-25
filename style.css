@@ -14165,3 +14165,353 @@ textarea:focus-visible,
   background: rgba(239,68,68,.12) !important;
   color: #fca5a5 !important;
 }
+
+
+
+/* ================================================================
+   ARCHITECTURAL FIXES — Layout coherence + navbar/sidebar bridge
+   
+   Two root problems identified from screenshots:
+   
+   1. DEAD SPACE: Every view has a `card mb-6` whose `card-header`
+      contains only right-aligned actions (margin-left:auto) with
+      nothing on the left. This renders 56-70px of empty white
+      before any content. Fix: collapse the card-header min-height,
+      tighten padding, and ensure the header looks intentional even
+      when actions-only.
+   
+   2. NAVBAR/SIDEBAR DISCONNECT: The top navbar is pure white
+      (rgba(255,255,255,.97)) sitting immediately to the right of
+      a dark navy sidebar with a hard border between them. No visual
+      bridge. The navbar title ("Training Units", "Rotations") is in
+      Instrument Serif italic — good — but it floats on bright white
+      with no relationship to the sidebar's dark glass.
+   
+   Fix strategy: navbar transitions to a warm-dark surface that
+   bridges the sidebar. Not full dark (that would collapse with
+   the sidebar) — a very dark warm navy at low opacity so it reads
+   as a connected zone without being another sidebar. Content area
+   gets slightly tighter top padding so content begins closer to
+   the navbar.
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   1. NAVBAR — bridge to sidebar
+   
+   The current pure-white navbar creates a hard horizontal cut
+   between the dark sidebar world and the warm content world.
+   A deep translucent surface with the same teal shimmer language
+   creates continuity across the top of the app.
+════════════════════════════════════════════════════════════════ */
+
+.top-navbar,
+#app .top-navbar {
+  background: #07111f !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 2px 16px rgba(0,0,0,.2) !important;
+}
+
+/* Navbar title: was dark text on white — now white on dark */
+.navbar-title {
+  color: rgba(255,255,255,.95) !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 20px !important;
+  font-weight: 400 !important;
+  letter-spacing: -.01em !important;
+}
+
+/* Navbar subtitle: muted on dark background */
+.navbar-subtitle {
+  color: rgba(255,255,255,.38) !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  letter-spacing: .02em !important;
+}
+
+/* Search input: dark-surface style */
+.search-input,
+#app .search-input {
+  background: rgba(255,255,255,.07) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.88) !important;
+  border-radius: 8px !important;
+}
+.search-input::placeholder,
+#app .search-input::placeholder {
+  color: rgba(255,255,255,.3) !important;
+}
+.search-input:focus,
+#app .search-input:focus {
+  background: rgba(255,255,255,.1) !important;
+  border-color: rgba(0,179,179,.5) !important;
+  box-shadow: 0 0 0 3px rgba(0,179,179,.15) !important;
+  color: #fff !important;
+  outline: none !important;
+}
+.search-icon,
+#app .search-icon {
+  color: rgba(255,255,255,.3) !important;
+}
+
+/* Icon buttons in navbar: ghost on dark */
+.top-navbar .btn-icon,
+.top-navbar .btn.btn-icon,
+#app .top-navbar .btn.btn-icon {
+  background: transparent !important;
+  border-color: rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.5) !important;
+}
+.top-navbar .btn-icon:hover,
+#app .top-navbar .btn.btn-icon:hover {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.18) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+/* User avatar in navbar */
+.navbar-user-btn {
+  border-radius: 8px !important;
+  transition: background .14s !important;
+}
+.navbar-user-btn:hover {
+  background: rgba(255,255,255,.07) !important;
+}
+.navbar-user-avatar {
+  background: linear-gradient(135deg, #009999, #1a6aaa) !important;
+  border: 1.5px solid rgba(0,179,179,.35) !important;
+}
+
+/* Breadcrumb: adapt to sitting below the dark navbar on warm canvas */
+.breadcrumb,
+#app .breadcrumb {
+  color: #5a6472 !important;
+  font-size: 12.5px !important;
+  padding: 10px 0 8px !important;
+  margin-bottom: 12px !important;
+}
+.breadcrumb button,
+#app .breadcrumb button {
+  color: #5a6472 !important;
+  font-size: 12.5px !important;
+}
+.breadcrumb button:hover,
+#app .breadcrumb button:hover {
+  color: #009999 !important;
+}
+.breadcrumb-link,
+.bc-current,
+#app .breadcrumb-link {
+  color: #009999 !important;
+  font-size: 12.5px !important;
+}
+.bc-sep,
+.breadcrumb-sep {
+  color: #c0bdb8 !important;
+}
+
+/* Hamburger for mobile — adapt to dark navbar */
+.nm-hamburger {
+  background: rgba(255,255,255,.06) !important;
+  color: rgba(255,255,255,.7) !important;
+  border-radius: 7px !important;
+}
+.nm-hamburger:hover {
+  background: rgba(0,179,179,.15) !important;
+  color: #00d4d4 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   2. CONTENT AREA — tighter, closer to navbar
+   
+   Current: clamp(18px, 1.8vw, 28px) top padding.
+   On a 1440px screen that's ~26px. With the breadcrumb below
+   that and the card's own padding, content starts ~110px below
+   the navbar. Pull it in.
+════════════════════════════════════════════════════════════════ */
+
+:root {
+  --content-pad-y: clamp(12px, 1.2vw, 18px) !important;
+  --content-pad-x: clamp(20px, 2.4vw, 40px) !important;
+}
+
+.content-area,
+#app .content-area {
+  padding-top: clamp(12px, 1.2vw, 18px) !important;
+  padding-left: clamp(20px, 2.4vw, 40px) !important;
+  padding-right: clamp(20px, 2.4vw, 40px) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   3. CARD-HEADER DEAD SPACE — the core architectural fix
+   
+   `card-header` with only right-aligned actions (margin-left:auto)
+   generates 56-70px of empty white space before content. The header
+   is padded at 20px 24px (var(--s20) var(--s24)) making it tall
+   even when empty.
+   
+   Fix: when card-header contains ONLY actions (no title), reduce
+   height. We do this by targeting `card mb-6 .card-header` which
+   is the consistent pattern for these action-only headers.
+   
+   We also add a subtle left context label via the card-header
+   content area — but since we can't add HTML, we reduce the
+   empty-state height and make the actions themselves more visually
+   grounded.
+════════════════════════════════════════════════════════════════ */
+
+/* card-header in mb-6 cards: tighter padding since these are action bars */
+#app .content-area .card.mb-6 .card-header {
+  padding: 12px 20px !important;
+  min-height: 0 !important;
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  position: relative !important;
+  top: auto !important;
+}
+
+/* View toggle pills: give them better presence */
+#app .view-toggle {
+  display: flex !important;
+  gap: 3px !important;
+  background: #f0eeea !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 9px !important;
+  padding: 3px !important;
+}
+#app .btn-pill {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #5a6472 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: all .14s !important;
+  cursor: pointer !important;
+}
+#app .btn-pill.active {
+  background: #fff !important;
+  color: #07111f !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08) !important;
+}
+#app .btn-pill:not(.active):hover {
+  background: rgba(255,255,255,.6) !important;
+  color: #344154 !important;
+}
+#app .btn-pill svg { opacity: .7 !important; }
+#app .btn-pill.active svg { opacity: 1 !important; }
+
+/* Primary action button in card-header: consistent teal */
+#app .content-area .card-header .btn.btn-primary,
+#app .content-area .card-header .btn-primary {
+  background: #07111f !important;
+  border-color: #07111f !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 7px 16px !important;
+  border-radius: 9px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: opacity .14s, transform .14s !important;
+}
+#app .content-area .card-header .btn.btn-primary:hover,
+#app .content-area .card-header .btn-primary:hover {
+  opacity: .88 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* header-actions: when it's the only content, anchor it better */
+#app .content-area .card-header .header-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  justify-content: flex-end !important;
+}
+
+/* card mb-6 itself: tighter bottom margin */
+#app .content-area .card.mb-6 {
+  margin-bottom: 16px !important;
+  border-radius: 12px !important;
+  border: 1px solid #e3dfd6 !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(7,17,31,.04) !important;
+}
+
+/* Filter bar: sits tight under card-header */
+#app .content-area .filter-bar {
+  padding: 10px 20px !important;
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  gap: 8px !important;
+}
+
+/* Card body: first element should not add extra top space */
+#app .content-area .card-body {
+  padding: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   4. GLOBAL CARD SURFACE — warm, not clinical white
+════════════════════════════════════════════════════════════════ */
+
+#app .content-area .card {
+  background: #fdfcfb !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(7,17,31,.04) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   5. CANVAS BACKGROUND — consistent warm tone
+════════════════════════════════════════════════════════════════ */
+
+body {
+  background: #f0efeb !important;
+  background-image: radial-gradient(
+    circle, rgba(10,22,40,.05) 1px, transparent 1px
+  ) !important;
+  background-size: 24px 24px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   6. USER DROPDOWN — adapt to dark navbar context
+════════════════════════════════════════════════════════════════ */
+
+.user-dropdown,
+#app .user-dropdown {
+  background: #07111f !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4) !important;
+}
+.user-dropdown button,
+#app .user-dropdown button {
+  color: rgba(255,255,255,.72) !important;
+  font-size: 13px !important;
+}
+.user-dropdown button:hover,
+#app .user-dropdown button:hover {
+  background: rgba(255,255,255,.06) !important;
+  color: rgba(255,255,255,.95) !important;
+}
+.user-dropdown button i,
+#app .user-dropdown button i {
+  color: rgba(255,255,255,.35) !important;
+}
