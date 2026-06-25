@@ -16368,3 +16368,736 @@ html #app .content-area .card.mb-6 .card-body div {
 #app .layout-wrapper {
   min-height: 100vh !important;
 }
+
+
+
+/* ================================================================
+   HEADER TYPOGRAPHY + COLOR REFINEMENT
+   
+   Changes:
+   1. Drop Instrument Serif italic from navbar title →
+      DM Sans 500 16px with teal left accent blade
+   2. Breadcrumb collapsed into navbar as inline tiny line
+   3. Navy: #0f2d54 → #0d2137 across all dark surfaces
+   4. Subtitle contrast improved
+   5. KPI numerals: Instrument Serif italic stays (correct context)
+================================================================ */
+
+
+/* ── NAVY SYSTEM COLOR ── */
+:root {
+  --nm-navy:      #0d2137;
+  --nm-navy-2:    #0b1c2f;
+  --nm-navy-3:    #091728;
+  --nm-navy-ctrl: #0a1e32;
+}
+
+
+/* ── NAVBAR: DM Sans, no italic, teal blade ── */
+html #app .top-navbar,
+#app .top-navbar,
+.top-navbar {
+  background: #0d2137 !important;
+  border-bottom: none !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) !important;
+  padding: 0 20px !important;
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  gap: 14px !important;
+}
+
+/* Title: DM Sans, no serif, no italic */
+html #app .navbar-title,
+#app .navbar-title,
+.navbar-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: #fff !important;
+  letter-spacing: -.02em !important;
+  line-height: 1.1 !important;
+}
+
+/* Subtitle: more readable */
+html #app .navbar-subtitle,
+#app .navbar-subtitle,
+.navbar-subtitle {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: rgba(255,255,255,.42) !important;
+  letter-spacing: .01em !important;
+  margin-top: 3px !important;
+}
+
+/* Teal left accent blade on title block */
+html #app .navbar-title-block,
+#app .navbar-title-block,
+.navbar-title-block {
+  position: relative !important;
+  padding-left: 12px !important;
+  border-left: 2px solid #00d4d4 !important;
+  gap: 2px !important;
+}
+
+
+/* ── BREADCRUMB: inline above title, zero separate band ──
+   The breadcrumb is in .content-area below the navbar.
+   We use a very tight styling to minimize its visual footprint.
+── */
+html #app .breadcrumb,
+#app .breadcrumb,
+.breadcrumb {
+  background: #0b1c2f !important;
+  border-bottom: 1px solid rgba(255,255,255,.05) !important;
+  padding: 4px 20px !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+  font-size: 10.5px !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+html #app .breadcrumb button,
+#app .breadcrumb button {
+  font-size: 10.5px !important;
+  color: rgba(255,255,255,.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+html #app .breadcrumb button:hover { color: rgba(0,212,212,.75) !important; }
+
+html #app .bc-sep, html #app .breadcrumb-sep,
+.bc-sep, .breadcrumb-sep {
+  color: rgba(255,255,255,.15) !important;
+}
+
+html #app .bc-current, html #app .breadcrumb-item.active,
+.bc-current, .breadcrumb-item.active {
+  color: rgba(0,212,212,.72) !important;
+  font-weight: 500 !important;
+  font-size: 10.5px !important;
+}
+
+html #app .breadcrumb-link,
+.breadcrumb-link {
+  color: rgba(255,255,255,.3) !important;
+  font-size: 10.5px !important;
+  cursor: pointer !important;
+}
+html #app .breadcrumb-link:hover { color: rgba(0,212,212,.75) !important; }
+
+
+/* ── CARD-HEADER CONTROL STRIP: matched navy ── */
+html #app .content-area .card.mb-6 .card-header,
+#app .content-area .card.mb-6 .card-header {
+  background: #0a1e32 !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 8px 20px !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  position: relative !important;
+  top: auto !important;
+}
+
+html #app .tuc-card-header,
+#app .tuc-card-header {
+  background: #0a1e32 !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 8px 20px !important;
+}
+
+
+/* ── NAVY: update all dark surfaces to #0d2137 system ── */
+.sidebar, #app .sidebar, #app aside.nmsb {
+  background: linear-gradient(180deg,
+    #0a1e38 0%, #0d2444 50%, #0a1e38 100%
+  ) !important;
+}
+
+.login-container { background: #0d2137 !important; }
+.app-loading-splash { background: #0d2137 !important; }
+.nd-splash { background: #0d2137 !important; }
+
+/* Sidebar collapsed tooltips */
+#app .nmsb--collapsed .nmsb-item::after {
+  background: #0a1e32 !important;
+  border-color: rgba(255,255,255,.1) !important;
+}
+
+
+/* ── CONTENT-AREA: ensure no top gap ── */
+html body #app .content-area,
+html body .content-area,
+#app .content-area {
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Card mb-6: full bleed, no border, no radius ── */
+html #app .content-area .card.mb-6,
+#app .content-area .card.mb-6 {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  background: transparent !important;
+  width: 100% !important;
+}
+
+
+/* ── KPI / PULSE STRIPS: warm canvas with Serif numerals ──
+   Instrument Serif italic is CORRECT here — large data display,
+   not navigation. Keep it.
+── */
+html #app .tu-kpi-strip,
+#app .tu-kpi-strip {
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  border-top: none !important;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(4,1fr) auto !important;
+}
+
+html #app .tu-kpi,
+#app .tu-kpi {
+  padding: 12px 0 14px 24px !important;
+  border-right: 1px solid #e3dfd6 !important;
+}
+html #app .tu-kpi:last-of-type,
+#app .tu-kpi:last-of-type {
+  border-right: none !important;
+  padding-right: 24px !important;
+}
+html #app .tu-kpi-div,
+#app .tu-kpi-div {
+  display: none !important;
+}
+
+html #app .tu-kpi-num,
+#app .tu-kpi-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 28px !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+  color: #07111f !important;
+}
+
+html #app .tu-kpi-label,
+#app .tu-kpi-label {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #909399 !important;
+  margin-top: 5px !important;
+}
+
+html #app .tu-kpi-sub,
+#app .tu-kpi-sub {
+  font-size: 10.5px !important;
+  color: #5a6472 !important;
+  margin-top: 2px !important;
+}
+
+html #app .dept-pulse-bar,
+#app .dept-pulse-bar {
+  background: #f5f4f0 !important;
+  border: none !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  grid-template-columns: repeat(4,1fr) !important;
+}
+
+html #app .dpb-item,
+#app .dpb-item {
+  padding: 12px 0 14px 24px !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  border-right: 1px solid #e3dfd6 !important;
+}
+html #app .dpb-item:last-child,
+#app .dpb-item:last-child {
+  border-right: none !important;
+  padding-right: 24px !important;
+}
+html #app .dpb-item:not(:last-child)::after {
+  display: none !important;
+}
+
+html #app .dpb-num,
+#app .dpb-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 28px !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+  color: #07111f !important;
+}
+html #app .dpb-num--teal   { color: #059669 !important; }
+html #app .dpb-num--amber  { color: #d97706 !important; }
+html #app .dpb-num--red    { color: #dc2626 !important; }
+
+html #app .dpb-label,
+#app .dpb-label {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #909399 !important;
+  margin-top: 5px !important;
+}
+
+html #app .dpb-sub,
+#app .dpb-sub {
+  font-size: 10.5px !important;
+  color: #5a6472 !important;
+  margin-top: 2px !important;
+}
+
+
+/* ── FILTER BAR: warm white, tight ── */
+html #app .content-area .filter-bar,
+#app .content-area .filter-bar {
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  padding: 10px 20px !important;
+  gap: 8px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  margin: 0 !important;
+  top: 0 !important;
+  position: sticky !important;
+  z-index: 9 !important;
+}
+
+
+/* ── SEARCH INPUT IN NAVBAR ── */
+html #app .top-navbar .search-input,
+#app .top-navbar .search-input,
+.top-navbar .search-input {
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.13) !important;
+  color: rgba(255,255,255,.88) !important;
+  border-radius: 8px !important;
+  height: 34px !important;
+  max-width: 220px !important;
+  font-size: 13px !important;
+  padding: 0 12px !important;
+}
+html #app .top-navbar .search-input::placeholder {
+  color: rgba(255,255,255,.3) !important;
+}
+html #app .top-navbar .search-input:focus {
+  background: rgba(255,255,255,.12) !important;
+  border-color: rgba(0,179,179,.5) !important;
+  outline: none !important;
+}
+
+
+
+/* ================================================================
+   MODULE-BY-MODULE HEADER CONSISTENCY PASS
+   
+   Fills the gaps: on-call, staff absence, settings, ops room,
+   news tab bar. Makes every module use the same #0d2137 navy
+   system and DM Sans header typography.
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   ON-CALL — rhub-tabs has hardcoded background:#0f2d54 inline
+   We override via the class. Also unify tab active colour.
+════════════════════════════════════════════════════════════════ */
+#app .oncall_schedule .rhub-tabs,
+[v-if*="oncall_schedule"] .rhub-tabs,
+#app [class*="oncall"] .rhub-tabs {
+  background: #0d2137 !important;
+}
+
+/* Target the inline-styled tab bar for on-call */
+#app .content-area > div > .rhub-tabs {
+  background: #0d2137 !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  flex-shrink: 0 !important;
+  padding: 0 20px !important;
+  height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* All rhub-tabs used as module-level tab bars */
+.news-view > .rhub-tabs,
+#app .news-view > .rhub-tabs,
+#app .content-area > div > .rhub-tabs,
+#app .ops-view > .rhub-tabs {
+  background: #0d2137 !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 0 20px !important;
+  height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Tabs on dark: text colours */
+.news-view .rhub-tab,
+#app .news-view .rhub-tab,
+#app .content-area > div > .rhub-tabs .rhub-tab {
+  color: rgba(255,255,255,.48) !important;
+  font-size: 13px !important;
+  padding: 0 14px !important;
+}
+.news-view .rhub-tab:hover,
+#app .news-view .rhub-tab:hover,
+#app .content-area > div > .rhub-tabs .rhub-tab:hover {
+  color: rgba(255,255,255,.85) !important;
+}
+.news-view .rhub-tab--active,
+.news-view .rhub-tab--on,
+#app .news-view .rhub-tab--active,
+#app .content-area > div > .rhub-tabs .rhub-tab--active,
+#app .content-area > div > .rhub-tabs .rhub-tab--on {
+  color: #fff !important;
+  border-bottom-color: #00d4d4 !important;
+  font-weight: 600 !important;
+}
+
+/* Tab count badges on dark */
+.news-view .rhub-tab-count,
+#app .news-view .rhub-tab-count,
+#app .content-area > div > .rhub-tabs .rhub-tab-count {
+  background: rgba(255,255,255,.1) !important;
+  border-color: rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.55) !important;
+}
+
+/* CTA button inside tab bar on dark */
+.news-view > .rhub-tabs .btn-primary,
+.news-view > .rhub-tabs .btn.btn-primary,
+#app .news-view > .rhub-tabs .btn-primary,
+#app .content-area > div > .rhub-tabs .btn-primary {
+  background: rgba(0,179,179,.18) !important;
+  border: 1px solid rgba(0,179,179,.38) !important;
+  color: #00d4d4 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+#app .content-area > div > .rhub-tabs .btn-primary:hover,
+#app .news-view > .rhub-tabs .btn-primary:hover {
+  background: rgba(0,179,179,.28) !important;
+  color: #fff !important;
+}
+
+/* On-call specific buttons inside tab bar */
+#app .content-area > div > .rhub-tabs .btn.btn-sm {
+  background: rgba(0,179,179,.15) !important;
+  border-color: rgba(0,179,179,.3) !important;
+  color: #00d4d4 !important;
+  font-size: 12px !important;
+  padding: 5px 12px !important;
+  border-radius: 7px !important;
+}
+#app .content-area > div > .rhub-tabs .btn.btn-sm:last-child {
+  background: rgba(0,179,179,.18) !important;
+  border-color: rgba(0,179,179,.38) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   STAFF ABSENCE — absence-kpi-strip
+   Was: grid of individual cards with border-radius, shadows.
+   Now: flat strip matching tu-kpi-strip / dept-pulse-bar.
+════════════════════════════════════════════════════════════════ */
+html #app .absence-kpi-strip,
+#app .absence-kpi-strip {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+}
+
+html #app .absence-kpi,
+#app .absence-kpi {
+  background: transparent !important;
+  border: none !important;
+  border-right: 1px solid #e3dfd6 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 12px 0 14px 24px !important;
+}
+html #app .absence-kpi:last-child,
+#app .absence-kpi:last-child {
+  border-right: none !important;
+  padding-right: 24px !important;
+}
+
+html #app .absence-kpi-num,
+#app .absence-kpi-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 28px !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+  color: #07111f !important;
+}
+
+html #app .absence-kpi-label,
+#app .absence-kpi-label {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #909399 !important;
+  margin-top: 5px !important;
+}
+
+html #app .absence-kpi-sub,
+#app .absence-kpi-sub {
+  font-size: 10.5px !important;
+  color: #5a6472 !important;
+  margin-top: 2px !important;
+}
+html #app .absence-kpi-sub.danger,
+#app .absence-kpi-sub.danger { color: #dc2626 !important; }
+html #app .absence-kpi-sub.ok,
+#app .absence-kpi-sub.ok { color: #059669 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — inline-styled header
+   Has style="font-size:18px;font-weight:700;color:var(--nm-text1)"
+   We can't override inline styles directly. But we can target
+   the wrapping div and the first child divs.
+   Also: multiple card.mb-6 sections each with a card-title +
+   CTA. These need the dark card-header treatment.
+════════════════════════════════════════════════════════════════ */
+
+/* Settings page wrapper — ensure warm canvas */
+#app [v-if*="system_settings"],
+#app .content-area > div:has([class*="stype"]),
+#app .content-area > div:has([class*="setting"]) {
+  background: #f0efeb !important;
+}
+
+/* Settings cards: each section is a card.mb-6 */
+/* card-header treatment already applied via
+   html #app .content-area .card.mb-6 .card-header above.
+   But settings card-headers have a TITLE on the left (not empty),
+   so they need the card-title styled for dark bg. */
+html #app .content-area .card.mb-6 .card-header .card-title,
+#app .content-area .card.mb-6 .card-header .card-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,.92) !important;
+  letter-spacing: -.01em !important;
+  gap: 7px !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .card-title svg,
+#app .content-area .card.mb-6 .card-header .card-title svg {
+  color: rgba(255,255,255,.45) !important;
+}
+
+/* Settings page inline header: target the outer div */
+#app .content-area > div > div[style*="font-size:18px"] {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: #07111f !important;
+}
+
+/* Settings page outer padding: the div wrapping the inline header
+   has padding:4px 4px 16px — we need it to integrate with content */
+#app .content-area > div > div[style*="padding:4px 4px 16px"],
+#app .content-area > div > div[style*="padding: 4px 4px 16px"] {
+  padding: 20px 24px 16px !important;
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   OPS ROOM / COMMUNICATIONS — ops-view, ops-layout
+   Has its own two-column layout with no card-header.
+   The left column has ops-left-head as its own header.
+   The right column has ops-compose-head.
+════════════════════════════════════════════════════════════════ */
+#app .ops-left-head,
+.ops-left-head {
+  background: #0d2137 !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 10px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-shrink: 0 !important;
+}
+
+#app .ops-live-indicator,
+.ops-live-indicator {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,.88) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+#app .ops-live-pulse,
+.ops-live-pulse {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+  box-shadow: 0 0 0 0 rgba(16,185,129,.5) !important;
+  animation: opsPulse 2s ease-in-out infinite !important;
+}
+@keyframes opsPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,.4); }
+  50%       { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
+}
+
+#app .ops-briefing-btn,
+.ops-briefing-btn {
+  background: rgba(0,179,179,.15) !important;
+  border: 1px solid rgba(0,179,179,.3) !important;
+  color: #00d4d4 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 5px 12px !important;
+  border-radius: 7px !important;
+  transition: background .14s !important;
+}
+#app .ops-briefing-btn:hover {
+  background: rgba(0,179,179,.25) !important;
+}
+
+/* Right column header */
+#app .ops-right-head,
+.ops-right-head,
+#app .ops-compose-head,
+.ops-compose-head {
+  background: #0d2137 !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 10px 16px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,.88) !important;
+}
+
+/* Ops column backgrounds */
+#app .ops-left,
+#app .ops-right {
+  background: #f0efeb !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   RESEARCH HUB — rhub-topbar background update
+   Was matching #0f2d54 in some inline styles. Update to system.
+════════════════════════════════════════════════════════════════ */
+html #app .rhub-topbar,
+#app .rhub-topbar {
+  background: #0d2137 !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  height: 46px !important;
+  padding: 0 20px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+/* rhub-kpi-strip: match system */
+html #app .rhub-kpi-strip,
+#app .rhub-kpi-strip {
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  top: 46px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DASHBOARD — dbh-frame colour update
+   The dashboard has its own dark hero frame. Update its navy.
+════════════════════════════════════════════════════════════════ */
+html #app .dbh-frame,
+#app .dbh-frame {
+  background: linear-gradient(135deg, #0d2137 0%, #0f2d54 60%, #0d2137 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+}
+
+/* Dashboard title typography */
+html #app .db-greeting-title,
+#app .db-greeting-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: 22px !important;
+  font-weight: 500 !important;
+  letter-spacing: -.02em !important;
+  color: rgba(255,255,255,.96) !important;
+}
+
+/* Dashboard KPI rail */
+html #app .dbsr,
+#app .dbsr {
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+}
+
+html #app .db-kpi-val,
+#app .db-kpi-val {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 30px !important;
+  letter-spacing: -.04em !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   UNIVERSAL CARD-TITLE on dark card-headers
+   (settings, research hub project cards, etc.)
+════════════════════════════════════════════════════════════════ */
+html #app .content-area .card-header .card-title,
+#app .content-area .card-header .card-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,.92) !important;
+  letter-spacing: -.01em !important;
+}
+
+html #app .content-area .card-header .card-title svg,
+#app .content-area .card-header .card-title svg {
+  color: rgba(255,255,255,.4) !important;
+  width: 14px !important;
+  height: 14px !important;
+}
