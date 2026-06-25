@@ -15201,3 +15201,839 @@ body {
   font-family: 'DM Mono', monospace !important;
   margin-top: 2px !important;
 }
+
+
+
+/* ================================================================
+   HEADER ZONE UNIFICATION — the core architectural fix
+   
+   Problem (from sketch): 4 separate zones stack to ~234px before
+   first content row:
+     56px  navbar (dark)
+     34px  breadcrumb (warm canvas — orphaned between dark and white)
+     68px  card-header with only right-aligned action (empty left)
+     76px  tu-kpi-strip / equivalent KPI row (white)
+   
+   Fix: collapse everything into 2 zones:
+     Zone 1: dark navy — extends navbar to include breadcrumb
+             + title + subtitle + primary action + KPIs
+     Zone 2: filter bar — first warm element, sits flush below
+   
+   The navbar already IS dark. We pull everything else into it
+   by: removing the breadcrumb's own row, killing card-header
+   dead space, and pulling KPI strips into the dark surface.
+   
+   CSS-only. HTML is unchanged.
+================================================================ */
+
+
+/* ── 1. NAVBAR: becomes the unified dark header zone ── */
+
+.top-navbar,
+#app .top-navbar {
+  background: #07111f !important;
+  border-bottom: none !important;        /* seam removed — KPIs join it */
+  box-shadow: none !important;
+  height: auto !important;               /* grow to fit content */
+  min-height: 56px !important;
+  padding: 12px 24px 0 !important;       /* bottom-0: KPI strip sits flush */
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+}
+
+/* Navbar inner row: title + actions side by side */
+.navbar-left,
+#app .navbar-left {
+  align-items: flex-start !important;
+  flex: 0 0 auto !important;
+  padding-bottom: 8px !important;
+}
+
+.navbar-right,
+#app .navbar-right {
+  margin-left: auto !important;
+  align-items: flex-start !important;
+  padding-top: 2px !important;
+}
+
+/* Title: white on dark */
+.navbar-title,
+#app .navbar-title {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 20px !important;
+  font-weight: 400 !important;
+  color: rgba(255,255,255,.95) !important;
+  letter-spacing: -.01em !important;
+  line-height: 1.1 !important;
+}
+
+/* Subtitle */
+.navbar-subtitle,
+#app .navbar-subtitle {
+  font-size: 11px !important;
+  color: rgba(255,255,255,.38) !important;
+  font-weight: 400 !important;
+  margin-top: 2px !important;
+}
+
+/* Title block */
+.navbar-title-block,
+#app .navbar-title-block {
+  gap: 1px !important;
+}
+
+
+/* ── 2. BREADCRUMB: pull into the dark navbar ──
+   The breadcrumb sits inside .content-area, below the navbar.
+   We kill its visible space and instead display it as a tiny
+   line ABOVE the navbar title using CSS.
+   
+   Since we can't restructure the DOM, the approach:
+   — breadcrumb gets position:absolute, floats into the navbar
+     visual space via negative margin-top
+   — its content-area wrapper gets zero top padding so it
+     doesn't create a new zone
+   — the navbar's bottom padding absorbs it
+── */
+
+/* Breadcrumb: absorb into navbar visually */
+.breadcrumb,
+#app .breadcrumb {
+  font-size: 10.5px !important;
+  color: rgba(255,255,255,.32) !important;
+  padding: 0 24px 6px !important;
+  margin: 0 -24px !important;           /* full-bleed on the dark surface */
+  background: #07111f !important;
+  border-bottom: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  /* Pull it up into the navbar bottom area */
+  margin-top: -4px !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.breadcrumb button,
+#app .breadcrumb button {
+  color: rgba(255,255,255,.32) !important;
+  font-size: 10.5px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+.breadcrumb button svg,
+#app .breadcrumb button svg {
+  color: rgba(255,255,255,.25) !important;
+}
+.breadcrumb button:hover,
+#app .breadcrumb button:hover {
+  color: rgba(0,212,212,.75) !important;
+}
+.bc-sep,
+.breadcrumb-sep,
+#app .bc-sep {
+  color: rgba(255,255,255,.18) !important;
+  font-size: 10px !important;
+}
+.bc-current,
+.breadcrumb-link,
+.breadcrumb-item.active,
+#app .bc-current {
+  color: rgba(0,212,212,.65) !important;
+  font-size: 10.5px !important;
+  font-weight: 500 !important;
+}
+
+/* Content area: remove top padding so breadcrumb sits flush */
+.content-area,
+#app .content-area {
+  padding-top: 0 !important;
+}
+
+
+/* ── 3. TU-KPI-STRIP: join the dark zone ──
+   The training units KPI strip was white/surface.
+   Pull it dark so it reads as part of the header.
+── */
+
+#app .tu-kpi-strip,
+.tu-kpi-strip {
+  background: #07111f !important;
+  border-top: 1px solid rgba(255,255,255,.06) !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  padding: 10px 24px 14px !important;
+  margin: 0 -24px !important;           /* bleed to edges */
+}
+
+#app .tu-kpi-num,
+.tu-kpi-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 28px !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+}
+#app .tu-kpi--ok   .tu-kpi-num { color: #34d399 !important; }
+#app .tu-kpi--warn .tu-kpi-num { color: #fbbf24 !important; }
+#app .tu-kpi--full .tu-kpi-num,
+#app .tu-kpi--danger .tu-kpi-num { color: #f87171 !important; }
+/* Zero values: dimmed white */
+#app .tu-kpi .tu-kpi-num { color: rgba(255,255,255,.88) !important; }
+#app .tu-kpi--ok   .tu-kpi-num { color: #34d399 !important; }
+
+#app .tu-kpi-label,
+.tu-kpi-label {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.35) !important;
+  margin-top: 4px !important;
+}
+
+#app .tu-kpi-sub,
+.tu-kpi-sub {
+  font-size: 10px !important;
+  color: rgba(255,255,255,.28) !important;
+}
+
+#app .tu-kpi-div,
+.tu-kpi-div {
+  background: rgba(255,255,255,.08) !important;
+}
+
+/* Hover on dark surface */
+#app .tu-kpi--clickable:hover {
+  background: rgba(255,255,255,.05) !important;
+  border-radius: 6px !important;
+}
+#app .tu-kpi--active {
+  background: rgba(0,179,179,.12) !important;
+  border-radius: 6px !important;
+}
+
+/* Full overview button on dark */
+#app .tu-kpi-strip .btn-ghost,
+#app .tu-kpi-strip button {
+  color: rgba(0,212,212,.7) !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+  border: none !important;
+}
+#app .tu-kpi-strip .btn-ghost:hover,
+#app .tu-kpi-strip button:hover {
+  color: #00d4d4 !important;
+}
+
+
+/* ── 4. CARD mb-6 CARD-HEADER: eliminate the dead zone ──
+   The card-header that contains ONLY a right-aligned action
+   button generates 56-70px of empty white. Since we can't
+   add HTML, we shrink it to the minimum needed and compensate
+   with a dark bottom border to signal the zone transition.
+── */
+
+#app .content-area .card.mb-6 {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  margin-bottom: 0 !important;
+}
+
+#app .content-area .card.mb-6 .card-header {
+  background: #07111f !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  padding: 10px 24px !important;
+  min-height: 0 !important;
+  position: relative !important;
+  top: auto !important;
+  /* Since left side is empty, we add a ghost label via ::before */
+}
+
+/* Ghost view controls label on left */
+#app .content-area .card.mb-6 .card-header::before {
+  content: '' !important;
+  flex: 1 !important;
+  display: block !important;
+}
+
+/* Actions inside dark card-header */
+#app .content-area .card.mb-6 .card-header .header-actions,
+#app .content-area .card.mb-6 .card-header > div {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* View toggle pills on dark */
+#app .content-area .card.mb-6 .card-header .view-toggle,
+#app .content-area .card.mb-6 .card-header .tuc-view-toggle {
+  background: rgba(255,255,255,.07) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 8px !important;
+  padding: 3px !important;
+}
+
+#app .content-area .card.mb-6 .card-header .btn-pill,
+#app .content-area .card.mb-6 .card-header .tuc-view-btn {
+  color: rgba(255,255,255,.45) !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  padding: 5px 11px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+#app .content-area .card.mb-6 .card-header .btn-pill.active,
+#app .content-area .card.mb-6 .card-header .tuc-view-btn.active {
+  background: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.9) !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+#app .content-area .card.mb-6 .card-header .btn-pill:not(.active):hover,
+#app .content-area .card.mb-6 .card-header .tuc-view-btn:not(.active):hover {
+  color: rgba(255,255,255,.7) !important;
+  background: rgba(255,255,255,.06) !important;
+}
+
+/* Primary CTA on dark header */
+#app .content-area .card.mb-6 .card-header .btn.btn-primary,
+#app .content-area .card.mb-6 .card-header .btn-primary {
+  background: rgba(0,179,179,.2) !important;
+  border: 1px solid rgba(0,179,179,.4) !important;
+  color: #00d4d4 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transition: background .15s !important;
+}
+#app .content-area .card.mb-6 .card-header .btn.btn-primary:hover,
+#app .content-area .card.mb-6 .card-header .btn-primary:hover {
+  background: rgba(0,179,179,.3) !important;
+  color: #fff !important;
+}
+
+
+/* ── 5. FILTER BAR: first warm-surface element ──
+   Sits directly below the unified dark header. No gap.
+── */
+
+.filter-bar,
+#app .filter-bar,
+#app .content-area .filter-bar {
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  padding: 10px 24px !important;
+  gap: 8px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  margin: 0 !important;
+}
+
+
+/* ── 6. CONTENT AREA: warm canvas, no top gap ── */
+
+#app .main-content > .content-area:not(.content-area--fullheight):not(.content-area--dash) {
+  background: #f0efeb !important;
+  padding: 0 !important;
+}
+
+/* First child of content area (tables, card grids) gets top padding */
+#app .content-area > .card.mb-6 + * {
+  padding-top: 16px !important;
+}
+
+/* Tables directly in content area */
+#app .content-area .table-responsive,
+#app .content-area > .table-responsive {
+  background: #fdfcfb !important;
+  margin: 0 !important;
+}
+
+#app .content-area table {
+  background: #fdfcfb !important;
+}
+
+/* Remove the gap between the dark zone and warm zone */
+#app .content-area .card.mb-6 + .card,
+#app .content-area .card.mb-6 + .table-responsive,
+#app .content-area .card.mb-6 + div {
+  border-top: none !important;
+  margin-top: 0 !important;
+}
+
+
+
+/* ================================================================
+   CROSS-MODULE HEADER UNIFICATION
+   
+   Every module has the same stacking problem:
+   navbar (dark) → breadcrumb (orphaned) → card-header (dead) → 
+   KPI/stat strip (white) → filter bar → content
+   
+   Fix applied module by module to every stat/pulse strip:
+   pull them all into the dark zone.
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   MEDICAL STAFF — dept-pulse-bar → dark zone
+════════════════════════════════════════════════════════════════ */
+
+#app .dept-pulse-bar {
+  background: #07111f !important;
+  border: none !important;
+  border-top: 1px solid rgba(255,255,255,.06) !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 -24px 0 !important;
+  padding: 12px 24px 16px !important;
+  gap: 0 !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+#app .dpb-item {
+  padding: 0 20px 0 0 !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+}
+
+#app .dpb-item:not(:last-child)::after {
+  background: rgba(255,255,255,.08) !important;
+  right: 10px !important;
+}
+
+#app .dpb-item:hover {
+  opacity: 1 !important;
+  background: rgba(255,255,255,.04) !important;
+  border-radius: 6px !important;
+}
+
+#app .dpb-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 28px !important;
+  letter-spacing: -.04em !important;
+  color: rgba(255,255,255,.88) !important;
+  line-height: 1 !important;
+}
+
+#app .dpb-num--teal   { color: #34d399 !important; }
+#app .dpb-num--amber  { color: #fbbf24 !important; }
+#app .dpb-num--red    { color: #f87171 !important; }
+#app .dpb-num--purple { color: #a78bfa !important; }
+
+#app .dpb-label {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.35) !important;
+  margin-top: 4px !important;
+}
+
+#app .dpb-sub {
+  font-size: 10px !important;
+  color: rgba(255,255,255,.28) !important;
+  margin-top: 1px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   RESIDENT ROTATIONS — gap warning strip on dark
+   The amber strip is fine semantically but should sit
+   INSIDE the dark zone as an inset alert, not float below it
+   on the warm canvas as its own separate surface.
+════════════════════════════════════════════════════════════════ */
+
+.rgw-strip,
+#app .rgw-strip {
+  background: rgba(245,158,11,.08) !important;
+  border: 1px solid rgba(245,158,11,.2) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 10px 24px !important;
+  /* Joins the dark zone visually */
+  background: linear-gradient(
+    135deg,
+    rgba(245,158,11,.07) 0%,
+    rgba(245,158,11,.04) 100%
+  ) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  border-top: 1px solid rgba(245,158,11,.15) !important;
+}
+
+.rgw-header,
+#app .rgw-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.rgw-title,
+#app .rgw-title {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #fbbf24 !important;
+}
+
+.rgw-title svg,
+#app .rgw-title svg,
+.rgw-header svg,
+#app .rgw-header svg {
+  color: #fbbf24 !important;
+}
+
+.rgw-sub,
+#app .rgw-sub {
+  font-size: 11.5px !important;
+  color: rgba(255,255,255,.35) !important;
+  margin-left: auto !important;
+}
+
+.rgw-toggle,
+#app .rgw-toggle {
+  color: rgba(255,255,255,.3) !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Gap resident items */
+.rgw-list,
+#app .rgw-list {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-top: 8px !important;
+}
+
+.rgw-item,
+#app .rgw-item {
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  transition: background .14s !important;
+}
+.rgw-item:hover,
+#app .rgw-item:hover {
+  background: rgba(255,255,255,.1) !important;
+}
+
+.rgw-avatar,
+#app .rgw-avatar {
+  background: rgba(245,158,11,.2) !important;
+  color: #fbbf24 !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+}
+
+.rgw-name,
+#app .rgw-name {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: rgba(255,255,255,.88) !important;
+}
+
+.rgw-year,
+#app .rgw-year {
+  font-size: 10px !important;
+  color: rgba(255,255,255,.38) !important;
+}
+
+.rgw-gap-pill,
+#app .rgw-gap-pill {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  background: rgba(245,158,11,.18) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245,158,11,.25) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   UNIVERSAL: every card.mb-6 whose card-header is action-only
+   gets the dark treatment + minimum height
+════════════════════════════════════════════════════════════════ */
+
+/* All modules — card-header is now part of the dark zone */
+#app .content-area .card.mb-6 .card-header {
+  background: #07111f !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 10px 24px !important;
+  min-height: 0 !important;
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* All modules — card body gets no extra top space */
+#app .content-area .card.mb-6 .card-body {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* All modules — card itself is transparent/borderless in this zone */
+#app .content-area .card.mb-6 {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   CLINICAL UNITS — tuc-card-header and tuc-view-toggle
+   on dark surface
+════════════════════════════════════════════════════════════════ */
+
+#app .tuc-card-header {
+  background: #07111f !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 10px 24px !important;
+}
+
+#app .tuc-view-toggle {
+  display: flex !important;
+  gap: 3px !important;
+  background: rgba(255,255,255,.07) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 8px !important;
+  padding: 3px !important;
+}
+
+#app .tuc-view-btn {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 5px 11px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255,255,255,.45) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: all .14s !important;
+  cursor: pointer !important;
+}
+#app .tuc-view-btn.active {
+  background: rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.95) !important;
+  font-weight: 600 !important;
+}
+#app .tuc-view-btn:not(.active):hover {
+  background: rgba(255,255,255,.07) !important;
+  color: rgba(255,255,255,.7) !important;
+}
+#app .tuc-view-btn svg { opacity: .7 !important; }
+#app .tuc-view-btn.active svg { opacity: 1 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   VIEW TOGGLE (universal) — btn-pill on dark card-header
+════════════════════════════════════════════════════════════════ */
+
+#app .content-area .card.mb-6 .card-header .view-toggle {
+  display: flex !important;
+  gap: 3px !important;
+  background: rgba(255,255,255,.07) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 8px !important;
+  padding: 3px !important;
+}
+
+#app .content-area .card.mb-6 .card-header .btn-pill {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 5px 11px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255,255,255,.45) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: all .14s !important;
+  cursor: pointer !important;
+}
+#app .content-area .card.mb-6 .card-header .btn-pill.active {
+  background: rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.95) !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+#app .content-area .card.mb-6 .card-header .btn-pill:not(.active):hover {
+  background: rgba(255,255,255,.07) !important;
+  color: rgba(255,255,255,.7) !important;
+}
+
+/* Secondary buttons on dark header */
+#app .content-area .card.mb-6 .card-header .btn.btn-secondary,
+#app .content-area .card.mb-6 .card-header .btn-secondary {
+  background: rgba(255,255,255,.07) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.6) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 6px 12px !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+  transition: all .14s !important;
+}
+#app .content-area .card.mb-6 .card-header .btn.btn-secondary:hover,
+#app .content-area .card.mb-6 .card-header .btn-secondary:hover {
+  background: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+/* CTA button: teal ghost on dark */
+#app .content-area .card.mb-6 .card-header .btn.btn-primary,
+#app .content-area .card.mb-6 .card-header .btn-primary {
+  background: rgba(0,179,179,.18) !important;
+  border: 1px solid rgba(0,179,179,.38) !important;
+  color: #00d4d4 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  transition: background .15s !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+#app .content-area .card.mb-6 .card-header .btn.btn-primary:hover,
+#app .content-area .card.mb-6 .card-header .btn-primary:hover {
+  background: rgba(0,179,179,.28) !important;
+  color: #fff !important;
+}
+
+/* SVG icons inside dark header buttons */
+#app .content-area .card.mb-6 .card-header .btn svg,
+#app .content-area .card.mb-6 .card-header .btn-pill svg {
+  opacity: .75 !important;
+}
+#app .content-area .card.mb-6 .card-header .btn.active svg,
+#app .content-area .card.mb-6 .card-header .btn-pill.active svg {
+  opacity: 1 !important;
+}
+
+/* header-actions-right: space it from the toggle */
+#app .content-area .card.mb-6 .card-header .header-actions-right {
+  margin-left: 8px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   FILTER BAR (universal) — warm surface, no top gap
+   Sits flush under the unified dark header zone.
+════════════════════════════════════════════════════════════════ */
+
+#app .content-area .filter-bar {
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  padding: 10px 24px !important;
+  gap: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  margin: 0 !important;
+  top: 0 !important;
+  position: sticky !important;
+  z-index: 10 !important;
+}
+
+/* Form controls in filter bar */
+#app .content-area .filter-bar .form-control,
+#app .content-area .filter-bar .form-select,
+#app .content-area .filter-bar input,
+#app .content-area .filter-bar select {
+  background: #fff !important;
+  border: 1px solid #dde4ee !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  color: #07111f !important;
+  height: 34px !important;
+  padding: 0 10px !important;
+}
+#app .content-area .filter-bar .form-control:focus,
+#app .content-area .filter-bar .form-select:focus,
+#app .content-area .filter-bar input:focus,
+#app .content-area .filter-bar select:focus {
+  border-color: #009999 !important;
+  box-shadow: 0 0 0 3px rgba(0,153,153,.1) !important;
+  outline: none !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   CONTENT BODY — sits on warm canvas immediately after filter bar
+════════════════════════════════════════════════════════════════ */
+
+/* Remove all top padding from content area — filter bar is zone 2 */
+#app .content-area {
+  padding-top: 0 !important;
+  background: #f0efeb !important;
+}
+
+/* Table container: white surface on warm canvas */
+#app .content-area .table-responsive {
+  background: #fdfcfb !important;
+  margin: 0 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+}
+
+/* Table header row */
+#app .content-area table thead th {
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+  color: #909399 !important;
+  padding: 10px 14px !important;
+  top: 0 !important;
+  position: sticky !important;
+}
+
+/* Table body rows */
+#app .content-area table tbody tr {
+  border-bottom: 0.5px solid #f0eeea !important;
+  transition: background .12s !important;
+}
+#app .content-area table tbody tr:hover {
+  background: rgba(0,153,153,.03) !important;
+}
+#app .content-area table tbody td {
+  font-size: 13px !important;
+  color: #07111f !important;
+  padding: 10px 14px !important;
+  vertical-align: middle !important;
+}
