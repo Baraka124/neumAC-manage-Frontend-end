@@ -9530,12 +9530,13 @@
                                  }"
                                  @click="viewStaffDetails(item)">
 
-                                <!-- Left: avatar with initials -->
+                                <!-- Left: avatar — real photo if set, initials otherwise -->
                                 <div class="scc-avatar"
                                      :class="item.employment_status === 'on_leave'    ? 'scc-avatar--leave'
                                            : isResidentType(item.staff_type)           ? 'scc-avatar--resident'
                                            : 'scc-avatar--attending'">
-                                    <span class="scc-initials">{{ (item.full_name || '').split(' ').filter(Boolean).map(w => w[0]).slice(0,2).join('') }}</span>
+                                    <img v-if="item.public_photo_url" :src="item.public_photo_url" :alt="item.full_name" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                                    <span class="scc-initials" :style="item.public_photo_url ? 'display:none' : ''">{{ (item.full_name || '').split(' ').filter(Boolean).map(w => w[0]).slice(0,2).join('') }}</span>
                                     <span class="scc-dot" :class="'scc-dot--' + item.employment_status"
                                           :title="formatEmploymentStatus(item.employment_status)"></span>
                                 </div>
