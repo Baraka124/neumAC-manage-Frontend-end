@@ -20529,3 +20529,509 @@ textarea::placeholder,
   background: rgba(0,179,179,.28) !important;
   color: #ffffff !important;
 }
+
+
+
+/* ================================================================
+   PUBLICATIONS LIST + NEWS DRAWER — COMPREHENSIVE FIX
+   
+   LIST ISSUES:
+   1. news-card-left: grey thumbnail placeholder showing for highlights
+      → hide it; accent is on border-left
+   2. Row spacing: too loose for short posts → adaptive padding
+   3. Highlight rows: cream background too subtle → slightly warmer
+   4. Expired date in amber: needs icon treatment
+   5. Right column actions: better structure
+   6. Title hover colour: match accent by type
+   
+   DRAWER ISSUES:
+   7. nrd-update-body: amber background too faint (.08) → more presence
+   8. nrd-footer buttons: white btn-secondary on near-black → styled for dark
+   9. Next/Prev nav: barely visible → proper button treatment
+   10. nrd-drawer background: update to match clinical blue system
+   11. nrd-hdr: cleaner header
+   12. nrd-type-badge: match clinical colours
+   13. nrd-title: remove any text-transform forcing
+   14. Content width: 65ch is good, keep
+   15. Archive button: amber warning treatment
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   LIST — FIX THUMBNAIL PLACEHOLDER
+   news-card-left was showing a grey box for highlights.
+   We've moved the accent to border-left; kill the left column.
+════════════════════════════════════════════════════════════════ */
+
+.news-card-left,
+#app .news-card-left {
+  display: none !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   LIST — ROW STRUCTURE BY TYPE
+   Different types need different padding since they have
+   different content density.
+════════════════════════════════════════════════════════════════ */
+
+/* Base row */
+.news-card,
+#app .news-card {
+  padding: 0 !important;
+}
+
+.news-card-body,
+#app .news-card-body {
+  padding: 14px 18px 14px 20px !important;
+}
+
+/* Highlight: slightly warmer cream + a bit more top padding */
+.news-card--highlight .news-card-body,
+#app .news-card--highlight .news-card-body {
+  padding: 16px 18px 16px 20px !important;
+}
+
+/* Update: compact — just title + meta, no excerpt needed if short */
+.news-card--update .news-card-body,
+#app .news-card--update .news-card-body {
+  padding: 12px 18px 12px 20px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   LIST — TITLE HOVER ACCENT BY TYPE
+════════════════════════════════════════════════════════════════ */
+
+.news-card--article:hover .news-card-title,
+#app .news-card--article:hover .news-card-title {
+  color: #1a4f8a !important;
+}
+.news-card--update:hover .news-card-title,
+#app .news-card--update:hover .news-card-title {
+  color: #007a7a !important;
+}
+.news-card--publication:hover .news-card-title,
+#app .news-card--publication:hover .news-card-title {
+  color: #4338ca !important;
+}
+.news-card--highlight:hover .news-card-title,
+#app .news-card--highlight:hover .news-card-title {
+  color: #b45309 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   LIST — EXPIRED DATE WARNING
+   Expired dates render in amber — add a more explicit warning style
+════════════════════════════════════════════════════════════════ */
+
+.news-expiry.expired,
+#app .news-expiry.expired,
+.news-meta-item.news-expiry[style*="#f59e0b"],
+.news-meta-item.news-expiry[style*="#d97706"],
+.news-meta-item.news-expiry[style*="orange"],
+.news-meta-item[style*="color:#f59e0b"],
+.news-meta-item[style*="color: #f59e0b"] {
+  background: rgba(245,158,11,.08) !important;
+  color: #b45309 !important;
+  border-radius: 4px !important;
+  padding: 1px 6px !important;
+  font-weight: 600 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   LIST — RIGHT COLUMN
+   Actions column: visibility badge + edit + menu
+════════════════════════════════════════════════════════════════ */
+
+.news-card-right,
+#app .news-card-right {
+  padding: 14px 14px 14px 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  min-width: 100px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Visibility badge */
+.news-vis-btn,
+#app .news-vis-btn {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  padding: 3px 8px !important;
+  border-radius: 5px !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  color: #6b7280 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* Edit button */
+.news-actions .btn,
+#app .news-actions .btn,
+.news-edit-btn,
+#app .news-edit-btn {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 3px 6px !important;
+  cursor: pointer !important;
+  transition: color .14s !important;
+}
+.news-actions .btn:hover,
+#app .news-actions .btn:hover {
+  color: #1a4f8a !important;
+}
+
+/* Live dot */
+.news-status-dot,
+#app .news-status-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+  box-shadow: 0 0 5px rgba(16,185,129,.5) !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DRAWER — BACKGROUND: clinical blue family, not near-black
+   The #0d1520 dark worked as a "reading mode" but reads
+   as a completely different product from the clinical blue app.
+   Shift to deep clinical blue (#0a1f3d) — still dark enough
+   for comfortable reading, but clearly in the same design system.
+════════════════════════════════════════════════════════════════ */
+
+.nrd-drawer,
+#app .nrd-drawer {
+  background: #0a1f3d !important;
+  color: #e8eef5 !important;
+  border-radius: 20px 0 0 20px !important;
+  box-shadow: -32px 0 80px rgba(0,0,0,.5) !important;
+}
+
+.nrd-drawer .nrd-body,
+#app .nrd-drawer .nrd-body {
+  background: #0a1f3d !important;
+  color: #e8eef5 !important;
+}
+
+/* Force all body text to read */
+.nrd-drawer .nrd-body p,
+.nrd-drawer .nrd-body div,
+.nrd-drawer .nrd-body span:not(.nrd-type-badge):not(.nrd-status-pill):not(.nrd-vis-pill):not(.nrd-line-tag):not(.update-line-pill) {
+  color: inherit !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DRAWER — HEADER
+════════════════════════════════════════════════════════════════ */
+
+.nrd-hdr,
+#app .nrd-hdr {
+  background: rgba(0,0,0,.2) !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 12px 20px !important;
+}
+
+/* Status pills: published / draft / archived */
+.nrd-status-pill.pub {
+  background: rgba(5,150,105,.2) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(5,150,105,.3) !important;
+  font-size: 10px !important;
+}
+.nrd-vis-pill.public {
+  background: rgba(26,79,138,.2) !important;
+  color: #7eb8f7 !important;
+  border: 1px solid rgba(26,79,138,.35) !important;
+  font-size: 10px !important;
+}
+.nrd-vis-pill.internal {
+  background: rgba(255,255,255,.07) !important;
+  color: rgba(255,255,255,.6) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  font-size: 10px !important;
+}
+
+/* Close button */
+.nrd-close,
+#app .nrd-close {
+  background: rgba(255,255,255,.07) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.7) !important;
+  border-radius: 8px !important;
+}
+.nrd-close:hover,
+#app .nrd-close:hover {
+  background: rgba(220,38,38,.15) !important;
+  color: #f87171 !important;
+  border-color: rgba(220,38,38,.3) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DRAWER — TYPE BADGE + LINE TAG
+════════════════════════════════════════════════════════════════ */
+
+/* Article type badge: clinical blue */
+.nrd-drawer.nrd--article .nrd-type-badge,
+#app .nrd-drawer.nrd--article .nrd-type-badge {
+  background: rgba(26,79,138,.2) !important;
+  color: #7eb8f7 !important;
+  border-color: rgba(26,79,138,.4) !important;
+}
+
+/* Update type badge: teal */
+.nrd-drawer.nrd--update .nrd-type-badge,
+#app .nrd-drawer.nrd--update .nrd-type-badge {
+  background: rgba(0,179,179,.15) !important;
+  color: #00d4d4 !important;
+  border-color: rgba(0,179,179,.3) !important;
+}
+
+/* Highlight type badge: amber */
+.nrd-drawer.nrd--highlight .nrd-type-badge,
+#app .nrd-drawer.nrd--highlight .nrd-type-badge {
+  background: rgba(245,158,11,.15) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245,158,11,.3) !important;
+}
+
+/* Publication type badge: indigo */
+.nrd-drawer.nrd--publication .nrd-type-badge,
+#app .nrd-drawer.nrd--publication .nrd-type-badge {
+  background: rgba(99,102,241,.15) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(99,102,241,.3) !important;
+}
+
+/* Line tag chip */
+.nrd-line-tag,
+#app .nrd-line-tag {
+  font-size: 11px !important;
+  background: rgba(255,255,255,.07) !important;
+  color: rgba(255,255,255,.8) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 4px !important;
+}
+
+/* Read time */
+.nrd-read-time,
+#app .nrd-read-time {
+  font-size: 11px !important;
+  color: rgba(255,255,255,.5) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DRAWER — TITLE + BYLINE
+════════════════════════════════════════════════════════════════ */
+
+.nrd-title,
+#app .nrd-title {
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -.025em !important;
+  color: #f0ede8 !important;
+  margin-bottom: 1rem !important;
+  text-transform: none !important;  /* don't force case — display as written */
+}
+
+.nrd-byline,
+#app .nrd-byline {
+  border-bottom: 1px solid rgba(255,255,255,.1) !important;
+  padding-bottom: 1.25rem !important;
+  margin-bottom: 1.5rem !important;
+  color: rgba(255,255,255,.75) !important;
+}
+
+.nrd-byline-author,
+#app .nrd-byline-author {
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+.nrd-avatar,
+#app .nrd-avatar {
+  background: rgba(26,79,138,.3) !important;
+  color: #7eb8f7 !important;
+  border: 1px solid rgba(26,79,138,.4) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DRAWER — CONTENT TYPOGRAPHY
+════════════════════════════════════════════════════════════════ */
+
+.nrd-content p,
+#app .nrd-content p {
+  font-size: 1rem !important;
+  line-height: 1.88 !important;
+  color: #c8d8e8 !important;
+  margin-bottom: 1.375rem !important;
+  max-width: 65ch !important;
+}
+.nrd-content p:first-child,
+#app .nrd-content p:first-child {
+  font-size: 1.0625rem !important;
+  color: #dce8f4 !important;
+}
+
+/* Update body: amber blockquote — more presence */
+.nrd-update-body,
+#app .nrd-update-body {
+  font-size: 1rem !important;
+  line-height: 1.88 !important;
+  color: #dce8f4 !important;
+  border-left: 3px solid #f59e0b !important;
+  padding: 1rem 1.5rem !important;
+  background: rgba(245,158,11,.12) !important;  /* was .08 — more visible */
+  border-radius: 0 10px 10px 0 !important;
+  max-width: 65ch !important;
+}
+
+/* Photo gallery in drawer */
+.nrd-photo-gallery,
+#app .nrd-photo-gallery {
+  margin: 0 -2.5rem 1.5rem !important;  /* bleed to edges */
+  overflow: hidden !important;
+}
+.nrd-photo-gallery img,
+#app .nrd-photo-gallery img {
+  width: 100% !important;
+  max-height: 380px !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DRAWER — FOOTER BUTTONS
+   btn-secondary on dark background becomes dark text on white.
+   Need explicit dark-surface treatment.
+════════════════════════════════════════════════════════════════ */
+
+.nrd-footer,
+#app .nrd-footer {
+  background: rgba(0,0,0,.2) !important;
+  border-top: 1px solid rgba(255,255,255,.07) !important;
+  padding: 12px 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+/* All footer buttons: ghost on dark */
+.nrd-footer .btn,
+#app .nrd-footer .btn {
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.82) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 7px 14px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: background .14s, color .14s !important;
+}
+.nrd-footer .btn:hover,
+#app .nrd-footer .btn:hover {
+  background: rgba(255,255,255,.14) !important;
+  color: #fff !important;
+}
+
+/* Back button: leftward arrow, slightly different */
+.nrd-footer .btn:first-child,
+#app .nrd-footer .btn:first-child {
+  background: transparent !important;
+  border-color: rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.6) !important;
+}
+.nrd-footer .btn:first-child:hover,
+#app .nrd-footer .btn:first-child:hover {
+  color: rgba(255,255,255,.9) !important;
+  background: rgba(255,255,255,.06) !important;
+}
+
+/* Publish/success button: teal */
+.nrd-footer .btn-success,
+#app .nrd-footer .btn-success {
+  background: rgba(0,179,179,.2) !important;
+  border-color: rgba(0,179,179,.38) !important;
+  color: #00d4d4 !important;
+}
+.nrd-footer .btn-success:hover,
+#app .nrd-footer .btn-success:hover {
+  background: rgba(0,179,179,.32) !important;
+  color: #fff !important;
+  filter: none !important;
+}
+
+/* Archive button: amber warning */
+.nrd-footer .btn:last-child,
+#app .nrd-footer .btn:last-child {
+  color: rgba(245,158,11,.8) !important;
+  border-color: rgba(245,158,11,.2) !important;
+  background: rgba(245,158,11,.08) !important;
+}
+.nrd-footer .btn:last-child:hover,
+#app .nrd-footer .btn:last-child:hover {
+  background: rgba(245,158,11,.16) !important;
+  color: #fbbf24 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DRAWER — NEXT/PREV NAVIGATION
+   Was barely visible inline text with a circle.
+════════════════════════════════════════════════════════════════ */
+
+/* Override the inline onclick-targeted rule */
+.nrd-body [onclick],
+#app .nrd-body [onclick] {
+  color: rgba(255,255,255,.7) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: color .14s !important;
+}
+.nrd-body [onclick]:hover,
+#app .nrd-body [onclick]:hover {
+  color: #00d4d4 !important;
+}
+
+/* Progress bar: accent colour */
+.nrd-progress,
+#app .nrd-progress {
+  background: rgba(255,255,255,.06) !important;
+  height: 2px !important;
+}
+
+.nrd-progress-fill,
+#app .nrd-progress-fill {
+  background: #00d4d4 !important;
+}
+
+/* Word count bar */
+.nrd-wc-track,
+#app .nrd-wc-track {
+  background: rgba(255,255,255,.1) !important;
+}
