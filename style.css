@@ -25537,3 +25537,662 @@ html #app .rhub-line-name,
   padding: 12px 14px 8px !important;
   line-height: 1.25 !important;
 }
+
+
+
+/* ================================================================
+   §36  ELITE PASS — SETTINGS + ON-CALL SCHEDULE
+   
+   SETTINGS (18 CSS hits → comprehensive):
+   01 stype-chip-key: 10px → 11px DM Mono
+   02 stype-chip-res badge: 9px → 10px
+   03 stype-chip-badge: teal → clinical blue
+   04 stype-chip hover: teal ring → clinical blue
+   05 settings-section-divider: 9px → 10px
+   06 nm-toggle checked: teal → clinical blue
+   07 nm-svc-card hover/open: teal → clinical blue
+   08 nm-svc-detail-link: teal → clinical blue
+   09 nm-svc-empty hover: teal → clinical blue
+   10 rds-span-label: 9px → 11px
+   11 rds-unit: italic serif → DM Sans 600
+   12 rds-badge--scheduled: var(--blue) → clinical blue
+   13 rds-fill--scheduled: var(--blue-mid) → clinical blue
+   14 settings-toggle-row: better hover, more readable
+   15 nm-deg-card: white surface, proper borders
+   16 Service card typography: institution/type hierarchy
+   17 Card section headers: clinical blue context
+   18 Empty service tile: better affordance
+   19 settings-form-grid labels: uppercase tracked
+   20 stl-sub: already 11px — lift colour contrast
+   
+   ON-CALL (93 CSS hits but many are old):
+   01 oncall-tl-card: white surface, proper shadow
+   02 oncall-tl-name: bolder, larger
+   03 oncall-tl-role: bare monospace → DM Mono 
+   04 oncall-tl-from/to: DM Mono, better size
+   05 oncall-tl-dot: clinical blue for active
+   06 oncall-tl-connector: clinical blue family
+   07 oncall-tl-date: DM Mono, readable
+   08 db-oc-dayrow: dashboard on-call area
+   09 on-call area colours: old teal → system
+   10 oncall-shift-label: 11px DM Mono
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — STAFF TYPES (stype-chip)
+════════════════════════════════════════════════════════════════ */
+
+/* S-01/02/03: Badge — clinical blue, not teal */
+html #app .stype-chip-badge,
+#app .stype-chip-badge {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 9px !important;
+  background: rgba(26,79,138,.1) !important;
+  color: #1a4f8a !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: .05em !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: background .14s !important;
+}
+html #app .stype-chip:hover .stype-chip-badge,
+#app .stype-chip:hover .stype-chip-badge {
+  background: rgba(26,79,138,.16) !important;
+}
+
+/* S-04: Chip hover — clinical blue ring */
+html #app .stype-chip,
+#app .stype-chip {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 11px !important;
+  padding: 12px 14px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05) !important;
+  transition: border-color .14s, box-shadow .14s !important;
+}
+html #app .stype-chip:hover,
+#app .stype-chip:hover {
+  border-color: rgba(26,79,138,.3) !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.08), 0 2px 8px rgba(0,0,0,.06) !important;
+}
+html #app .stype-chip.inactive,
+#app .stype-chip.inactive {
+  opacity: .5 !important;
+  filter: grayscale(.3) !important;
+}
+
+/* S-01: Chip name */
+html #app .stype-chip-name,
+#app .stype-chip-name {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.01em !important;
+}
+
+/* S-01: Chip key — was 10px, bare monospace */
+html #app .stype-chip-key,
+#app .stype-chip-key {
+  font-size: 11px !important;
+  color: #9ca3af !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .04em !important;
+  margin-top: 2px !important;
+}
+
+/* S-02: Resident badge — was 9px */
+html #app .stype-chip-res,
+#app .stype-chip-res {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  background: rgba(99,102,241,.1) !important;
+  color: #6366f1 !important;
+  letter-spacing: .06em !important;
+}
+
+/* S-06: Toggle switch — clinical blue when on */
+html #app .nm-toggle input:checked + .nm-toggle-track,
+#app .nm-toggle input:checked + .nm-toggle-track {
+  background: #1a4f8a !important;
+  border-color: #1a4f8a !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — TOGGLE ROWS
+════════════════════════════════════════════════════════════════ */
+
+html #app .settings-toggle-row,
+#app .settings-toggle-row {
+  padding: 14px 24px !important;
+  border-bottom: 1px solid rgba(0,0,0,.07) !important;
+  transition: background .12s !important;
+}
+html #app .settings-toggle-row:hover,
+#app .settings-toggle-row:hover {
+  background: rgba(26,79,138,.025) !important;
+}
+
+html #app .stl-label,
+#app .stl-label {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #07111f !important;
+  letter-spacing: -.01em !important;
+}
+html #app .stl-sub,
+#app .stl-sub {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  margin-top: 2px !important;
+  line-height: 1.45 !important;
+}
+html #app .stl-danger .stl-label,
+#app .stl-danger .stl-label { color: #dc2626 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — SECTION DIVIDERS
+   was 9px — critical violation
+════════════════════════════════════════════════════════════════ */
+
+html #app .settings-section-divider,
+#app .settings-section-divider {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  padding: 20px 0 8px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+html #app .settings-section-divider::after,
+#app .settings-section-divider::after {
+  background: rgba(0,0,0,.08) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — SERVICE CARDS (nm-svc-*)
+   S-07/08/09/16/18
+════════════════════════════════════════════════════════════════ */
+
+html #app .nm-svc-card,
+#app .nm-svc-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05) !important;
+  transition: border-color .15s, box-shadow .15s !important;
+}
+html #app .nm-svc-card:hover,
+#app .nm-svc-card:hover {
+  border-color: rgba(26,79,138,.25) !important;
+  box-shadow: 0 4px 14px rgba(26,79,138,.08) !important;
+}
+html #app .nm-svc-card.nm-open,
+#app .nm-svc-card.nm-open {
+  border-color: #1a4f8a !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.1) !important;
+}
+html #app .nm-svc-card.nm-open .nm-svc-chev,
+#app .nm-svc-card.nm-open .nm-svc-chev {
+  color: #1a4f8a !important;
+}
+
+/* Service name */
+html #app .nm-svc-name,
+#app .nm-svc-name {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+  letter-spacing: -.01em !important;
+  line-height: 1.3 !important;
+}
+
+/* Institution */
+html #app .nm-svc-inst,
+#app .nm-svc-inst {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  margin-top: 2px !important;
+}
+
+/* Type pill */
+html #app .nm-svc-type,
+#app .nm-svc-type {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 9px !important;
+  border-radius: 10px !important;
+  letter-spacing: .02em !important;
+}
+html #app .nm-svc-type--int,
+#app .nm-svc-type--int {
+  background: rgba(5,150,105,.1) !important;
+  color: #047857 !important;
+}
+html #app .nm-svc-type--ext,
+#app .nm-svc-type--ext {
+  background: rgba(245,158,11,.1) !important;
+  color: #b45309 !important;
+}
+
+/* Detail link — clinical blue not teal */
+html #app .nm-svc-detail-link,
+#app .nm-svc-detail-link {
+  color: #1a4f8a !important;
+  font-size: 12.5px !important;
+}
+html #app .nm-svc-detail-link:hover,
+#app .nm-svc-detail-link:hover {
+  color: #163f70 !important;
+}
+
+html #app .nm-svc-detail-row,
+#app .nm-svc-detail-row {
+  font-size: 12.5px !important;
+  color: #374151 !important;
+}
+
+/* Detail background */
+html #app .nm-svc-detail,
+#app .nm-svc-detail {
+  background: #f8f7f5 !important;
+  border-top: 1px solid rgba(0,0,0,.07) !important;
+}
+
+/* Action buttons */
+html #app .nm-svc-btn--edit,
+#app .nm-svc-btn--edit {
+  background: #ffffff !important;
+  border: 1.5px solid #d1d5db !important;
+  color: #374151 !important;
+  font-size: 12px !important;
+  border-radius: 7px !important;
+}
+html #app .nm-svc-btn--edit:hover,
+#app .nm-svc-btn--edit:hover {
+  border-color: #1a4f8a !important;
+  color: #1a4f8a !important;
+}
+
+/* Empty tile */
+html #app .nm-svc-empty,
+#app .nm-svc-empty {
+  background: #fdfcfb !important;
+  border: 1.5px dashed #d1d5db !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
+  color: #9ca3af !important;
+  min-height: 64px !important;
+  font-weight: 500 !important;
+}
+html #app .nm-svc-empty:hover,
+#app .nm-svc-empty:hover {
+  border-color: #1a4f8a !important;
+  background: rgba(26,79,138,.03) !important;
+  color: #1a4f8a !important;
+}
+
+/* Preview strip */
+html #app .nm-svc-preview,
+#app .nm-svc-preview {
+  font-size: 12px !important;
+  color: #9ca3af !important;
+  border-top: 1px solid rgba(0,0,0,.06) !important;
+  padding: 0 14px 12px !important;
+}
+
+/* Icon containers */
+html #app .nm-svc-ico--int,
+#app .nm-svc-ico--int {
+  background: rgba(5,150,105,.1) !important;
+}
+html #app .nm-svc-ico--ext,
+#app .nm-svc-ico--ext {
+  background: rgba(245,158,11,.1) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — ACADEMIC DEGREES
+════════════════════════════════════════════════════════════════ */
+
+html #app .nm-deg-card,
+#app .nm-deg-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 9px !important;
+  padding: 10px 14px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  transition: border-color .14s !important;
+}
+html #app .nm-deg-card:hover,
+#app .nm-deg-card:hover {
+  border-color: rgba(26,79,138,.2) !important;
+}
+
+html #app .nm-deg-name,
+#app .nm-deg-name {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+}
+html #app .nm-deg-abbr,
+#app .nm-deg-abbr {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  color: #9ca3af !important;
+  margin-top: 1px !important;
+}
+
+html #app .nm-deg-btn,
+#app .nm-deg-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #9ca3af !important;
+  padding: 4px !important;
+  border-radius: 5px !important;
+  cursor: pointer !important;
+  transition: color .14s, background .14s !important;
+}
+html #app .nm-deg-btn:hover,
+#app .nm-deg-btn:hover {
+  color: #1a4f8a !important;
+  background: rgba(26,79,138,.07) !important;
+}
+html #app .nm-deg-btn--del:hover,
+#app .nm-deg-btn--del:hover {
+  color: #dc2626 !important;
+  background: rgba(220,38,38,.07) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — ROTATION DETAIL DRAWER (rds-*)
+   S-10/11/12/13
+════════════════════════════════════════════════════════════════ */
+
+/* S-11: rds-unit — was italic serif. Rotation unit names are
+   operational labels, not editorial display. DM Sans. */
+html #app .rds-unit,
+.rds-unit {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: #07111f !important;
+  letter-spacing: -.02em !important;
+  line-height: 1.25 !important;
+  margin-bottom: 3px !important;
+}
+
+/* S-12: Badge scheduled — clinical blue */
+.rds-badge--scheduled,
+#app .rds-badge--scheduled {
+  background: rgba(26,79,138,.1) !important;
+  color: #1a4f8a !important;
+  border-color: rgba(26,79,138,.22) !important;
+}
+
+/* S-13: Fill scheduled */
+.rds-fill--scheduled,
+#app .rds-fill--scheduled {
+  background: linear-gradient(90deg, #1a4f8a, #2563eb) !important;
+}
+
+/* S-10: rds-span-label — was 9px */
+.rds-span-label,
+#app .rds-span-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .12em !important;
+  color: #9ca3af !important;
+  font-family: 'DM Mono', monospace !important;
+  margin-bottom: 3px !important;
+}
+
+.rds-span-day,
+#app .rds-span-day {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+}
+
+.rds-span-dur,
+#app .rds-span-dur {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+.rds-resident,
+#app .rds-resident {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: #6b7280 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   ON-CALL — TIMELINE VIEW (oncall-tl-*)
+════════════════════════════════════════════════════════════════ */
+
+/* OC-01: Card */
+.oncall-tl-card,
+#app .oncall-tl-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 12px !important;
+  padding: 13px 16px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06) !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.oncall-tl-item.is-now .oncall-tl-card,
+#app .oncall-tl-item.is-now .oncall-tl-card {
+  border-color: rgba(26,79,138,.3) !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.1), 0 2px 8px rgba(0,0,0,.08) !important;
+}
+
+/* OC-02: Name */
+.oncall-tl-name,
+#app .oncall-tl-name {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #07111f !important;
+  letter-spacing: -.01em !important;
+  line-height: 1.25 !important;
+}
+
+/* OC-03: Role — was bare monospace */
+.oncall-tl-role,
+#app .oncall-tl-role {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  color: #9ca3af !important;
+  font-weight: 500 !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase !important;
+  margin-top: 2px !important;
+}
+
+/* OC-04: Time from/to */
+.oncall-tl-from,
+#app .oncall-tl-from {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #07111f !important;
+  line-height: 1 !important;
+  letter-spacing: -.02em !important;
+}
+.oncall-tl-to,
+#app .oncall-tl-to {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 11.5px !important;
+  color: #9ca3af !important;
+  line-height: 1 !important;
+}
+
+/* OC-05/06: Dot and connector — clinical blue for active */
+.oncall-tl-dot,
+#app .oncall-tl-dot {
+  width: 11px !important;
+  height: 11px !important;
+  border-radius: 50% !important;
+  background: #e5e7eb !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,.12) !important;
+  flex-shrink: 0 !important;
+  z-index: 1 !important;
+  position: relative !important;
+}
+.oncall-tl-item.is-now .oncall-tl-dot,
+#app .oncall-tl-item.is-now .oncall-tl-dot {
+  background: #1a4f8a !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.25) !important;
+  width: 13px !important;
+  height: 13px !important;
+}
+
+.oncall-tl-connector::before,
+#app .oncall-tl-connector::before {
+  background: rgba(0,0,0,.1) !important;
+  width: 1.5px !important;
+}
+
+/* OC-07: Date label */
+.oncall-tl-date,
+#app .oncall-tl-date {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 11px !important;
+  color: #9ca3af !important;
+  font-weight: 500 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+  text-align: right !important;
+}
+
+/* OC-07: Time column */
+.oncall-tl-time,
+#app .oncall-tl-time {
+  width: 84px !important;
+  flex-shrink: 0 !important;
+  text-align: right !important;
+}
+
+/* OC-08: Avatar on timeline */
+.oncall-tl-avatar,
+#app .oncall-tl-avatar {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #009999, #1a4f8a) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  border: none !important;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.8), 0 0 0 3.5px rgba(26,79,138,.25) !important;
+}
+
+/* OC-09: Badges on timeline */
+.oncall-tl-badges,
+#app .oncall-tl-badges {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  flex-wrap: wrap !important;
+  margin-top: 4px !important;
+}
+
+/* OC-10: Shift label */
+.oncall-shift-label,
+#app .oncall-shift-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+/* On-call item spacing */
+.oncall-tl-item,
+#app .oncall-tl-item {
+  padding: 14px 0 !important;
+  gap: 14px !important;
+}
+
+/* On-call view background */
+#app .content-area .oncall-timeline,
+.oncall-timeline {
+  padding: 4px 0 !important;
+}
+
+/* On-call compact view canvas */
+.rot-compact,
+#app .rot-compact {
+  background: #edecea !important;
+}
+
+/* Upcoming shifts count */
+.oncall-tl-item:not(.is-now) .oncall-tl-card,
+#app .oncall-tl-item:not(.is-now) .oncall-tl-card {
+  border-color: rgba(0,0,0,.07) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — FORM GRID LABELS
+════════════════════════════════════════════════════════════════ */
+
+html #app .settings-form-grid .form-label,
+#app .settings-form-grid .form-label {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase !important;
+  margin-bottom: 5px !important;
+}
+
+html #app .settings-form-grid .form-control,
+html #app .settings-form-grid .form-select,
+#app .settings-form-grid .form-control,
+#app .settings-form-grid .form-select {
+  border: 1.5px solid #d1d5db !important;
+  border-radius: 9px !important;
+  font-size: 13.5px !important;
+  height: 42px !important;
+  color: #07111f !important;
+}
+html #app .settings-form-grid .form-control:focus,
+html #app .settings-form-grid .form-select:focus {
+  border-color: #1a4f8a !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.1) !important;
+}
