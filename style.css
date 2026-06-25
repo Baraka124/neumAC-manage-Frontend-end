@@ -11661,3 +11661,286 @@ textarea:focus-visible,
    across style.css and two separate inline <style> blocks in index.html,
    each with slightly different values, is what caused the Dashboard /
    Research Hub / Publications blank-page bug. Do not re-add them here. */
+
+
+/* ================================================================
+   NEUMDESK — TARGETED FIXES
+   Sidebar · Research Hub · News
+   Addresses: tooltip z-index, dark header collision, research
+   analytics density, news editorial layer, tab size unification.
+================================================================ */
+
+
+/* ── 1. SIDEBAR — collapsed tooltip z-index ─────────────────────
+   Was var(--z-modal) = 300, which layered over open modals.
+   Tooltips belong at dropdown level.
+─────────────────────────────────────────────────────────────── */
+.sidebar-collapsed .sidebar-menu-link::after {
+  z-index: var(--z-dropdown) !important; /* 100 — below modals */
+}
+
+
+/* ── 2. RESEARCH HUB — dark header collision ────────────────────
+   Problem: left nav (#0f2d54) + detail head (#0f2d54) read as one
+   undivided dark band. Fix: step detail head lighter + add a teal
+   left-edge separator so the two surfaces are visually distinct.
+─────────────────────────────────────────────────────────────── */
+.rp-detail-head {
+  background: #112949 !important;             /* stepped lighter than nav */
+  border-left: 2px solid rgba(0,179,179,.28) !important; /* teal seam */
+}
+
+/* Reinforce the nav/detail boundary at the grid level */
+.rp-mc {
+  border-top: none;
+}
+.rp-nav {
+  border-right: 1px solid rgba(0,179,179,.14) !important; /* teal-tinted divider */
+}
+
+
+/* ── 3. RESEARCH HUB — analytics sub-tab density ───────────────
+   rha-* cells are cramped. Give the perf scorecard and KPI strip
+   more breathing room. The 6-cell per-line stat grid is also
+   addressed with a min-width so cells don't collapse to nothing.
+─────────────────────────────────────────────────────────────── */
+.rha-kpi-strip {
+  gap: 14px !important;
+  margin-bottom: 20px !important;
+}
+.rha-kpi {
+  padding: 16px 20px !important;
+}
+.rha-kpi-val {
+  font-size: 36px !important;
+  letter-spacing: -.04em !important;
+}
+.rha-kpi-label {
+  margin-top: 6px !important;
+  font-size: 10px !important;
+}
+.rha-kpi-sub {
+  font-size: 12px !important;
+  margin-top: 4px !important;
+}
+
+.rha-perf-grid {
+  gap: 12px !important;
+}
+.rha-perf-card {
+  padding: 16px 18px !important;
+}
+.rha-perf-stats {
+  grid-template-columns: repeat(3, 1fr) !important; /* was 6 — too compressed */
+  gap: 6px !important;
+  margin-bottom: 12px !important;
+}
+.rha-ps {
+  padding: 8px 6px !important;
+}
+.rha-ps-val {
+  font-size: 20px !important;
+}
+.rha-ps-label {
+  font-size: 9px !important;
+  margin-top: 3px !important;
+}
+
+/* Lines overview table — more row padding */
+.rha-lt-header,
+.rha-lt-row {
+  padding: 8px 12px !important;
+  gap: 14px !important;
+}
+.rha-lt-row {
+  font-size: 13px !important;
+}
+.rha-charts-row {
+  gap: 14px !important;
+  margin-bottom: 14px !important;
+}
+.rha-chart-card {
+  padding: 18px 20px !important;
+}
+.rha-chart-title {
+  font-size: 11px !important;
+  margin-bottom: 16px !important;
+}
+
+
+/* ── 4. NEWS — tab size unification ────────────────────────────
+   nm-type-opt (.72rem) and nm-tab (.75rem) are adjacent chrome
+   at different sizes — a drift, not a decision. Unified to 12px.
+─────────────────────────────────────────────────────────────── */
+.nm-type-opt {
+  font-size: 12px !important;
+}
+.nm-tab {
+  font-size: 12px !important;
+}
+
+
+/* ── 5. NEWS — editorial layer ──────────────────────────────────
+   The news feed had structure but no reading hierarchy. Fixes:
+   — Title up to 14.5px with tighter leading
+   — Excerpt up from 11.5px, more contrast
+   — Dateline / meta gets a real visual weight
+   — Priority HIGH gets a treatment beyond just left-border colour
+   — Author avatar made more distinctive
+   — Journal name for publications gets editorial weight
+   — Card hover becomes more intentional (lift + teal echo)
+   — Type badge unified size
+   — Card min-heights relaxed so content breathes
+─────────────────────────────────────────────────────────────── */
+
+/* Card baseline */
+.news-card {
+  min-height: auto !important;
+  transition: box-shadow .18s, border-color .18s, transform .18s !important;
+}
+.news-card:hover {
+  box-shadow: 0 4px 16px rgba(7,17,31,.09) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Left accent blade — slightly thicker, more intentional */
+.news-card--update      { border-left-width: 3px !important; }
+.news-card--article     { border-left-width: 3px !important; }
+.news-card--publication { border-left-width: 3px !important; }
+.news-card--highlight   { border-left-width: 4px !important; } /* priority: thicker */
+
+/* Highlight / high-priority card gets a warm surface wash */
+.news-card--highlight {
+  background: linear-gradient(135deg, #fffbf0 0%, var(--surface, #fdfcfb) 60%) !important;
+}
+
+/* Card body padding */
+.news-card-body {
+  padding: 14px 14px 12px !important;
+}
+
+/* Title — the primary reading entry point */
+.news-card-title {
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: var(--text-1, #07111f) !important;
+  margin-bottom: 5px !important;
+  letter-spacing: -.01em !important;
+}
+
+/* Excerpt — readable, not footnote-level */
+.news-card-excerpt {
+  font-size: 12.5px !important;
+  color: var(--text-2, #344154) !important;
+  line-height: 1.55 !important;
+  margin-bottom: 8px !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+/* Meta row — dateline, author, read-time */
+.news-card-meta {
+  gap: 10px !important;
+  margin-top: 2px !important;
+}
+.news-meta-item {
+  font-size: 11.5px !important;
+  color: var(--text-3, #5a6472) !important;
+  gap: 4px !important;
+}
+.news-meta-item i {
+  font-size: 10px !important;
+  opacity: .7 !important;
+}
+
+/* Dateline — the most important meta signal. Give it weight. */
+.news-meta-item:first-child {
+  font-family: var(--font-data, 'DM Mono', monospace) !important;
+  font-weight: 600 !important;
+  color: var(--text-2, #344154) !important;
+  letter-spacing: .01em !important;
+}
+
+/* Author avatar — make it feel like a person, not a dot */
+.news-author-av {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, #0f2d54, #00b3b3) !important;
+  box-shadow: 0 0 0 1.5px rgba(0,179,179,.25) !important;
+}
+
+/* Type badge — unified, slightly larger */
+.news-type-badge {
+  font-size: 10px !important;
+  padding: 3px 8px !important;
+  letter-spacing: .05em !important;
+  font-weight: 700 !important;
+}
+
+/* Publication cards — journal + authors get editorial weight */
+.news-journal {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: var(--text-1, #07111f) !important;
+  letter-spacing: -.01em !important;
+}
+.news-authors {
+  font-size: 11.5px !important;
+  color: var(--text-2, #344154) !important;
+  font-style: italic !important;
+}
+.news-doi {
+  font-size: 11px !important;
+  color: var(--blue, #2563eb) !important;
+  margin-top: 2px !important;
+}
+
+/* Right column — align actions to top, not center */
+.news-card-right {
+  padding: 12px 12px 12px 8px !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+}
+
+/* Status dot — live pulse on published items */
+.news-status-dot {
+  width: 7px !important;
+  height: 7px !important;
+  animation: newsDotPulse 2.5s ease-in-out infinite !important;
+}
+@keyframes newsDotPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 5px rgba(16,185,129,.5); }
+  50%       { opacity: .65; box-shadow: 0 0 10px rgba(16,185,129,.3); }
+}
+
+/* News list — slightly more breathing room between cards */
+.news-list {
+  gap: 10px !important;
+  padding: 14px 22px 28px !important;
+}
+
+/* Filter bar — match editorial register */
+.news-filter-bar {
+  padding: 11px 22px !important;
+  background: var(--surface-2, #f5f4f0) !important;
+  border-bottom: 1px solid var(--border, #e3dfd6) !important;
+}
+
+/* News modal (compose/read) — header stepped to match research hub */
+.nm-header {
+  background: #0f2d54 !important;  /* was #07111f — too near-black vs rest of UI */
+  padding: 16px 20px !important;
+}
+
+/* nm-type-bar (dark switcher inside compose modal) — same step */
+.nm-type-bar {
+  background: #0d2444 !important;
+}
