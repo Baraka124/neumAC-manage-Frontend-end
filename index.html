@@ -14064,11 +14064,12 @@
                     <div class="pd-hero">
                         <button class="pd-close" @click="staffProfileModal.show = false" title="Close" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
 
-                        <!-- Avatar initials -->
+                        <!-- Avatar — real photo if set, initials otherwise -->
                         <div class="pd-avatar-block">
                             <div class="pd-avatar"
                                  :class="{'pd-avatar--resident': isResidentType(staffProfileModal.staff.staff_type)}"
-                                 :data-initials="staffProfileModal.staff.full_name ? staffProfileModal.staff.full_name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase() : '?'">
+                                 :data-initials="staffProfileModal.staff.public_photo_url ? '' : (staffProfileModal.staff.full_name ? staffProfileModal.staff.full_name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase() : '?')">
+                                <img v-if="staffProfileModal.staff.public_photo_url" :src="staffProfileModal.staff.public_photo_url" :alt="staffProfileModal.staff.full_name" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
                             </div>
                             <div class="pd-status-dot" :class="'dot--' + staffProfileModal.staff.employment_status"
                                  :title="formatEmploymentStatus(staffProfileModal.staff.employment_status)"></div>
