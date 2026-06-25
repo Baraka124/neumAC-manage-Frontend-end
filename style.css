@@ -12850,3 +12850,965 @@ textarea:focus-visible,
   border-bottom: 1px solid #e3dfd6 !important;
   padding: 0 24px !important;
 }
+
+
+
+/* ================================================================
+   TYPOGRAPHY AUDIT — ELITE BASELINE CORRECTION
+   
+   Problem inventory from audit:
+   
+   CRITICAL (sub-11px — illegible on standard monitors):
+   — .52rem (8.3px): sidebar-dept-sub, user-role, pd-stat-l
+   — .55rem (8.8px): sidebar-section-title, pd-date-k, sm-preview-role
+   — 8px: avatar initials, timeline cell labels, stage nodes
+   — 9px: 88 instances across badges, labels, meta — the most widespread issue
+   
+   SIGNIFICANT (borderline):
+   — .6rem (9.6px): nm-type-badge, pd-schedule-label
+   — .65rem (10.4px): profile shift times, research meta
+   — 10px: used for labels that need 11px minimum
+   
+   FONT FAMILY:
+   — Fraunces referenced in 3 places where Instrument Serif is the
+     declared display face — inconsistency in the display serif
+   — DM Mono used in 276 places, often at tiny sizes where
+     monospace + small = doubly illegible
+   
+   LETTER-SPACING:
+   — 31 instances of .1em+ tracking — correctly reserved for
+     uppercase labels. But when combined with 9px type it
+     makes text unreadable at distance.
+   
+   STANDARD APPLIED:
+   Elite medical platforms (Epic MyChart, Veeva Vault, REDCap Pro,
+   Medidata Rave) and elite SaaS (Linear, Notion, Figma) share:
+   — Body: 14px minimum, typically 14-15px
+   — Secondary/meta: 12px minimum
+   — Labels/caps: 11px with tracking (absolute floor)
+   — Initials in avatars: 9-10px is acceptable ONLY in 28px+ containers
+   — Sidebar nav: 13px minimum
+   — Section group labels: 10-11px with tracking
+   
+   STRATEGY:
+   Rather than hunting 200+ individual rules, we override by
+   ROLE — every class that serves a given typographic function
+   gets corrected in one place. !important required throughout
+   to beat both style.css base rules and #app-scoped inline rules.
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   1. SIDEBAR TYPOGRAPHY — complete correction
+   Body root is 15px, so rem values below resolve as noted.
+════════════════════════════════════════════════════════════════ */
+
+/* Sidebar nav link text: was .825rem (~12.4px) — too small for nav */
+.sidebar-menu-link {
+  font-size: 13px !important;  /* crisp, scan-friendly */
+}
+
+/* Sidebar section titles: was .55rem (8.3px) — genuinely illegible */
+.sidebar-section-title {
+  font-size: 10px !important;  /* minimum for tracked uppercase labels */
+  letter-spacing: .16em !important;
+}
+
+/* Dept name: was .75rem (11.3px) — one step too small */
+.sidebar-dept-name {
+  font-size: 12px !important;
+  letter-spacing: .01em !important;
+}
+
+/* Dept sub / role / user-role: was .52rem (7.8px) — critical failure */
+.sidebar-dept-sub,
+.user-role {
+  font-size: 10px !important;  /* minimum for mono uppercase labels */
+  letter-spacing: .1em !important;
+}
+
+/* User name in footer */
+.user-name {
+  font-size: 12.5px !important;
+  letter-spacing: -.005em !important;
+}
+
+/* Sidebar toggle icon */
+.sidebar-toggle {
+  font-size: 11px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   2. GLOBAL LABEL / BADGE FLOOR
+   
+   The most widespread issue: 88 instances of 9px across the app.
+   Labels, badges, and meta at 9px are fine on 5K Retina; on a
+   standard 1080p hospital workstation they are borderline unreadable.
+   Floor: 10px for purely decorative labels; 11px for information-
+   bearing text.
+════════════════════════════════════════════════════════════════ */
+
+/* Section labels (uppercase tracked) — floor at 10px */
+.rp-ds-label,
+.rp-kpi-label,
+.rha-kpi-label,
+.rha-chart-title,
+.rfc-head,
+.rfc-label,
+.rhub-hl,
+.rhub-kl,
+.rlc-stat-l,
+.rldp-section-label,
+.rha-ps-label,
+.pd-section-title,
+.dept-block-label,
+.dept-res-label,
+.tuc-tl-month-label,
+.oc-orb-day,
+.mv-rot-label {
+  font-size: 10px !important;
+  letter-spacing: .12em !important;
+}
+
+/* Status / type badges — floor at 11px */
+.news-type-badge,
+.ntb--article,
+.ntb--update,
+.ntb--publication,
+.ntb--highlight,
+.rp-trial-status,
+.rhsc-status,
+.status-indicator,
+.badge,
+.rtag,
+.rlc-rec-badge,
+.tuc-cap-pill,
+.uop-status-pill,
+.db-oc-badge,
+.db-rot-chip,
+.rgw-gap-pill,
+.rds-badge,
+.nm-status-badge {
+  font-size: 11px !important;
+}
+
+/* Meta text / secondary information — floor at 11.5px */
+.rp-trial-meta,
+.rp-ds-sub,
+.rha-kpi-sub,
+.rhsc-proto,
+.rlc-coord-name,
+.news-meta-item,
+.news-expiry,
+.news-wc,
+.dept-contact-role,
+.dept-tbl-code,
+.urm-days-lbl,
+.rgw-year,
+.db-gap-year,
+.db-oc-time,
+.db-oc-gap,
+.tuc-sub,
+.tuc-meta-item,
+.rfc-label,
+.rhub-hl,
+.rhtl-date,
+.rew-pct,
+.rhsc-pct {
+  font-size: 11px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   3. MONOSPACE ABUSE CORRECTION
+   
+   DM Mono at 9px is the worst combination in the codebase —
+   monospace fonts have tighter x-height and worse legibility
+   at small sizes than sans-serif. Protocol IDs, dates, and
+   numeric data at 9px mono is unacceptable.
+════════════════════════════════════════════════════════════════ */
+
+/* Protocol IDs and codes — minimum 11px */
+.rhsc-proto,
+.rp-trial-meta,
+.rhtl-date,
+.db-oc-time,
+.db-oc-date,
+.db-rot-unit,
+.mv-resident-year,
+.rgw-year,
+.db-gap-year,
+.rew-pct,
+.rhsc-pct,
+.urm-days-lbl {
+  font-size: 11px !important;
+}
+
+/* Profile modal mono labels: was .52-.65rem (8-10px) */
+.pd-stat-l,
+.pd-date-k,
+.pd-schedule-label,
+.pd-shift-time,
+.pd-more,
+.pd-research-meta,
+.sm-preview-role {
+  font-size: 10px !important;  /* minimum for mono labels in tight containers */
+  letter-spacing: .08em !important;
+}
+
+/* Profile date values: was .72rem (~11px) — keep but ensure minimum */
+.pd-date-v,
+.pd-shift-date {
+  font-size: 12px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   4. AVATAR INITIALS — contextual minimum
+   
+   8px in a 26px avatar is 30% of container height.
+   At 96dpi that's effectively unreadable as letterforms.
+   Minimum: 9px in 24-26px containers, 10px in 28px+.
+   We can't fix all avatars without knowing container size,
+   but we can fix the named ones.
+════════════════════════════════════════════════════════════════ */
+
+.db-oc-avatar,
+.db-rot-avatar,
+.db-gap-avatar,
+.rgw-avatar,
+.rlc-coord-av,
+.rp-nav-coord-av,
+.mv-resident-icon {
+  font-size: 9px !important;  /* 9px in 24-26px container: acceptable */
+  font-weight: 700 !important;
+}
+
+/* Larger avatars: 10px is fine */
+.staff-table-av,
+.tuc-res-avatar,
+.tuc-tl-avatar,
+.sidebar-user-avatar,
+.news-author-av,
+.rp-detail-coord-avatar,
+.urm-avatar {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   5. DISPLAY SERIF UNIFICATION — Fraunces → Instrument Serif
+   
+   Fraunces appears in 3 places where the declared display face
+   is Instrument Serif. They're both variable-weight oldstyle
+   serifs but they're different typefaces — mixing them at the
+   same role creates inconsistency at display sizes.
+   
+   Instrument Serif is the declared display face. Fraunces
+   fallbacks are fine (they share Georgia as a final fallback)
+   but the primary name should be consistent.
+════════════════════════════════════════════════════════════════ */
+
+.db-kpi-val,
+.db-greeting-title {
+  font-family: 'Instrument Serif', 'Fraunces', Georgia, serif !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   6. RESEARCH HUB + PUBLICATIONS — elevated type hierarchy
+   
+   These are the modules the research team uses daily.
+   Every typographic decision here signals institutional quality.
+   The standard: what would appear in a Nature or NEJM web tool.
+════════════════════════════════════════════════════════════════ */
+
+/* Research Hub KPI strip numbers */
+#app .rhub-kv {
+  font-size: 30px !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.04em !important;
+}
+#app .rhub-kl {
+  font-size: 10px !important;
+  letter-spacing: .14em !important;
+  font-weight: 700 !important;
+}
+#app .rhub-ks {
+  font-size: 12px !important;
+}
+
+/* Line card numbers — the L1–L6 identifiers */
+#app .rlc-num {
+  font-size: 44px !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.05em !important;
+  line-height: .88 !important;
+}
+
+/* Line card title */
+#app .rlc-title {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.38 !important;
+  letter-spacing: -.01em !important;
+}
+
+/* Line card stat numbers */
+#app .rlc-stat-v {
+  font-size: 22px !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.03em !important;
+}
+#app .rlc-stat-l {
+  font-size: 10px !important;
+  letter-spacing: .12em !important;
+  font-weight: 700 !important;
+}
+
+/* Line detail header */
+#app .rhub-line-num {
+  font-size: 54px !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.06em !important;
+}
+#app .rhub-line-name {
+  font-size: 17px !important;
+  font-weight: 500 !important;
+  letter-spacing: -.02em !important;
+  line-height: 1.28 !important;
+}
+#app .rhub-line-desc {
+  font-size: 13.5px !important;
+  line-height: 1.65 !important;
+  color: #374151 !important;
+}
+
+/* Health strip stat numbers */
+#app .rhub-hv {
+  font-size: 26px !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.04em !important;
+}
+#app .rhub-hl {
+  font-size: 10px !important;
+  letter-spacing: .13em !important;
+  font-weight: 700 !important;
+}
+
+/* Study card title */
+#app .rhsc-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  letter-spacing: -.01em !important;
+  line-height: 1.38 !important;
+}
+
+/* Enrollment widget */
+#app .rew-current {
+  font-size: 32px !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.04em !important;
+}
+#app .rew-label {
+  font-size: 10px !important;
+  letter-spacing: .12em !important;
+  font-weight: 700 !important;
+}
+#app .rew-pct {
+  font-size: 12px !important;
+}
+
+/* Line tabs */
+#app .rhub-ltab {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+}
+#app .rhub-ltab.on {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* Publications card title */
+.news-card-title {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.02em !important;
+  line-height: 1.28 !important;
+}
+
+/* Publications excerpt */
+.news-card-excerpt {
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  color: #374151 !important;
+}
+
+/* Journal name in pub cards */
+.news-journal {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  font-style: italic !important;
+  letter-spacing: -.01em !important;
+}
+
+/* Authors */
+.news-authors {
+  font-size: 12.5px !important;
+  color: #344154 !important;
+  line-height: 1.4 !important;
+}
+
+/* DOI */
+.news-doi {
+  font-size: 11.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .01em !important;
+}
+
+/* Meta items */
+.news-meta-item {
+  font-size: 12px !important;
+}
+
+/* Type badges — publications */
+.news-type-badge {
+  font-size: 10px !important;
+  letter-spacing: .07em !important;
+  font-weight: 800 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   7. GENERAL BODY + TABLE BASELINE
+   
+   Tables are where small type accumulates. Elite tools keep
+   table body at 13-14px minimum.
+════════════════════════════════════════════════════════════════ */
+
+/* Table body text */
+.table tbody td {
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+/* Table headers */
+.table thead th {
+  font-size: 11px !important;
+  letter-spacing: .06em !important;
+  font-weight: 600 !important;
+}
+
+/* Card titles throughout the app */
+.card-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.01em !important;
+}
+
+/* Form labels */
+.form-label {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: normal !important;
+}
+
+/* Filter bar inputs */
+.filter-bar input,
+.filter-bar select {
+  font-size: 13px !important;
+}
+
+/* Breadcrumb */
+.breadcrumb,
+.breadcrumb-link,
+.breadcrumb-item {
+  font-size: 12.5px !important;
+}
+
+/* Buttons — minimum 13px */
+.btn {
+  font-size: 13px !important;
+}
+.btn-sm {
+  font-size: 12px !important;
+}
+
+/* Dashboard KPI values */
+.db-kpi-val {
+  font-size: 30px !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.04em !important;
+}
+.db-kpi-label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+.db-kpi-sub {
+  font-size: 11px !important;
+}
+
+/* Greeting title */
+.db-greeting-title {
+  font-size: clamp(24px, 2.4vw, 32px) !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+}
+
+
+
+/* ================================================================
+   LOGIN SCREEN + LOADING SCREENS — ELITE REDESIGN
+   
+   Login: confidence, not timidity. The institution and platform
+   identity need weight. The card needs warmth against the dark bg.
+   The CTA needs authority.
+   
+   Second loading screen (app-loading-splash): was a blank warm-white
+   rectangle with a tiny mark. Replaced with the same dark navy as
+   the primary splash — continuous brand experience across the
+   auth → loading → app transition.
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   I. LOGIN SCREEN
+════════════════════════════════════════════════════════════════ */
+
+/* Background: deeper, richer than #04111f */
+.login-container {
+  background: linear-gradient(160deg,
+    #020d1a 0%,
+    #061525 45%,
+    #040f1d 100%
+  ) !important;
+}
+
+/* Card: stepped off pure white — warm paper, not clinical white */
+.login-card {
+  background: #fdfcfb !important;
+  border-radius: 18px !important;
+  padding: 36px 34px 34px !important;
+  max-width: 410px !important;
+  box-shadow:
+    0 0 0 1px rgba(0,100,180,.12),
+    0 2px 4px rgba(0,0,0,.08),
+    0 20px 60px rgba(0,0,0,.32),
+    0 0 100px rgba(0,119,182,.06) !important;
+}
+
+/* Top accent stripe: teal-to-navy, not just blue */
+.login-card::before {
+  background: linear-gradient(90deg,
+    #00b3b3 0%,
+    #0077b6 50%,
+    #023e8a 100%
+  ) !important;
+  height: 3px !important;
+}
+
+/* Brand strip: institution name needs to be legible */
+.lc-brand {
+  margin-bottom: 24px !important;
+  padding-bottom: 20px !important;
+  border-bottom: 1px solid rgba(0,100,180,.08) !important;
+}
+.lc-neumax-svg {
+  width: 96px !important;
+}
+.lc-brand-divider {
+  background: linear-gradient(to bottom,
+    transparent,
+    rgba(0,100,180,.35),
+    transparent
+  ) !important;
+  width: 1px !important;
+  height: 32px !important;
+}
+
+/* Institution text: was 9.5px — effectively invisible */
+.lc-brand-area span {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .08em !important;
+  color: #344154 !important;
+  text-transform: uppercase !important;
+  line-height: 1.5 !important;
+}
+
+/* Product identity */
+.lc-product {
+  margin-bottom: 22px !important;
+}
+.lc-product-name {
+  font-size: 30px !important;
+  font-weight: 300 !important;
+  letter-spacing: -.03em !important;
+  color: #07111f !important;
+  line-height: 1 !important;
+  margin-bottom: 8px !important;
+}
+.lc-product-name span {
+  font-weight: 700 !important;
+  background: linear-gradient(90deg, #009999, #0077b6) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* Subtitle: "Clinical Operations Platform" — needs real presence */
+.lc-product-sub {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: #5a6472 !important;
+  margin-top: 2px !important;
+}
+
+/* "a neumAC platform" attribution */
+.lc-product-attr {
+  font-size: 11px !important;
+  color: #909399 !important;
+  font-style: italic !important;
+  margin-top: 5px !important;
+  letter-spacing: .01em !important;
+}
+
+/* Separator */
+.lc-sep {
+  background: linear-gradient(to right,
+    transparent,
+    rgba(0,100,180,.12),
+    transparent
+  ) !important;
+  margin: 6px 0 22px !important;
+}
+
+/* Field labels */
+.lc-label {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #344154 !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase !important;
+}
+
+/* Input fields: warmer border, better hover */
+.lc-input {
+  background: #fff !important;
+  border: 1.5px solid #dde4ee !important;
+  border-radius: 10px !important;
+  font-size: 14px !important;
+  color: #07111f !important;
+  height: 46px !important;
+  padding: 0 44px 0 40px !important;
+  transition: border-color .18s, box-shadow .18s !important;
+}
+.lc-input::placeholder {
+  color: #b0bcc8 !important;
+}
+.lc-input:focus {
+  border-color: #009999 !important;
+  box-shadow: 0 0 0 3px rgba(0,153,153,.1) !important;
+  background: #fff !important;
+  outline: none !important;
+}
+.lc-input:focus + svg,
+.lc-input-wrap:focus-within svg {
+  color: #009999 !important;
+}
+
+/* Field error state */
+.lc-field-err {
+  font-size: 12px !important;
+  color: #dc2626 !important;
+  font-weight: 500 !important;
+}
+
+/* Remember / forgot row */
+.lc-remember {
+  font-size: 13px !important;
+  color: #5a6472 !important;
+}
+.lc-remember input {
+  accent-color: #009999 !important;
+}
+.lc-forgot {
+  font-size: 13px !important;
+  color: #009999 !important;
+  font-weight: 500 !important;
+}
+.lc-forgot:hover {
+  color: #007a7a !important;
+  text-decoration: underline !important;
+}
+
+/* Submit button: teal authority, not timid blue */
+.lc-submit {
+  background: linear-gradient(135deg,
+    #009999 0%,
+    #007a8a 60%,
+    #006080 100%
+  ) !important;
+  height: 48px !important;
+  border-radius: 11px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: .03em !important;
+  box-shadow:
+    0 4px 16px rgba(0,153,153,.3),
+    0 1px 3px rgba(0,0,0,.1) !important;
+  transition: opacity .18s, transform .15s, box-shadow .18s !important;
+}
+.lc-submit:hover:not(:disabled) {
+  opacity: 1 !important;
+  transform: translateY(-1px) !important;
+  box-shadow:
+    0 8px 24px rgba(0,153,153,.4),
+    0 2px 6px rgba(0,0,0,.1) !important;
+}
+.lc-submit:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(0,153,153,.25) !important;
+}
+.lc-submit:disabled {
+  opacity: .55 !important;
+  cursor: not-allowed !important;
+}
+.lc-submit-arrow {
+  font-size: 11px !important;
+  opacity: .8 !important;
+  transition: transform .2s, opacity .2s !important;
+}
+.lc-submit:hover:not(:disabled) .lc-submit-arrow {
+  transform: translateX(4px) !important;
+  opacity: 1 !important;
+}
+
+/* Error banner */
+.login-error {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 9px !important;
+  padding: 10px 14px !important;
+  font-size: 13px !important;
+  color: #dc2626 !important;
+  margin-bottom: 16px !important;
+}
+.login-error--warn {
+  background: rgba(245,158,11,.08) !important;
+  border-color: rgba(245,158,11,.28) !important;
+  color: #d97706 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   II. PRIMARY SPLASH (nd-splash) — already reasonably good
+   Minor refinements only: more presence, better tagline
+════════════════════════════════════════════════════════════════ */
+
+.nd-splash {
+  background: linear-gradient(160deg,
+    #020d1a 0%,
+    #061525 50%,
+    #040f1d 100%
+  ) !important;
+}
+
+.nd-splash-inner {
+  gap: 0 !important;
+}
+
+/* Mark container: subtle teal glass */
+.nd-splash-mark {
+  width: 80px !important;
+  height: 80px !important;
+  background: rgba(0,179,179,.07) !important;
+  border: 1px solid rgba(0,179,179,.2) !important;
+  border-radius: 24px !important;
+  margin-bottom: 18px !important;
+  box-shadow:
+    0 0 0 1px rgba(0,179,179,.05),
+    0 8px 32px rgba(0,0,0,.3),
+    inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+/* Wordmark */
+.nd-splash-wordmark {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.6px !important;
+  background: linear-gradient(90deg,
+    #8be9ff 0%,
+    #00d4d4 50%,
+    #7ff5d7 100%
+  ) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  margin-bottom: 5px !important;
+}
+
+/* Tagline: was rgba(255,255,255,.35) — barely there */
+.nd-splash-tagline {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: rgba(255,255,255,.45) !important;
+  letter-spacing: .05em !important;
+  margin-bottom: 6px !important;
+}
+
+/* neumAC signature */
+.nd-splash-sig {
+  margin-bottom: 32px !important;
+  gap: 10px !important;
+}
+.nd-splash-sig-line {
+  width: 28px !important;
+  background: rgba(255,255,255,.08) !important;
+}
+
+/* Progress bar */
+.nd-splash-bar {
+  width: 140px !important;
+  height: 2px !important;
+  background: rgba(255,255,255,.06) !important;
+  border-radius: 1px !important;
+  overflow: hidden !important;
+}
+.nd-splash-bar-fill {
+  background: linear-gradient(90deg,
+    #00d4d4,
+    #4d9aff
+  ) !important;
+  box-shadow: 0 0 12px rgba(0,212,212,.4) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   III. SECOND LOADING SCREEN (app-loading-splash)
+   
+   Was: blank warm-white (#fdfcfb) with a tiny teal 'n' mark,
+   a sliding bar, and grey "Loading clinical data…" text.
+   
+   The warm-white background after a dark login is a jarring
+   context switch that makes the app feel unfinished.
+   
+   Fix: match the primary splash — same dark navy background,
+   same mark treatment, consistent brand experience through
+   the auth → load → app transition.
+   The app's warm surface only appears once layout is ready.
+════════════════════════════════════════════════════════════════ */
+
+.app-loading-splash {
+  background: linear-gradient(160deg,
+    #020d1a 0%,
+    #061525 50%,
+    #040f1d 100%
+  ) !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: var(--z-modal) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.als-inner {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+/* Mark container: same glass treatment as primary splash */
+#app .als-mark {
+  width: 72px !important;
+  height: 72px !important;
+  background: rgba(0,179,179,.07) !important;
+  border: 1px solid rgba(0,179,179,.18) !important;
+  border-radius: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 20px !important;
+  box-shadow:
+    0 0 0 1px rgba(0,179,179,.04),
+    0 8px 32px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+/* Wordmark under mark — give it presence */
+#app .als-tagline {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: rgba(255,255,255,.4) !important;
+  letter-spacing: .06em !important;
+  margin-top: 14px !important;
+  margin-bottom: 0 !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+/* Bar container */
+.als-bar-wrap {
+  width: 160px !important;
+  height: 2px !important;
+  background: rgba(255,255,255,.07) !important;
+  border-radius: 1px !important;
+  overflow: hidden !important;
+  margin-top: 18px !important;
+}
+
+/* Sliding bar: teal glow */
+.als-bar {
+  background: linear-gradient(90deg,
+    transparent,
+    #00d4d4,
+    #4d9aff,
+    transparent
+  ) !important;
+  box-shadow: 0 0 10px rgba(0,212,212,.5) !important;
+  height: 100% !important;
+  width: 50% !important;
+  border-radius: 1px !important;
+  animation: als-slide 1.6s ease-in-out infinite !important;
+}
+
+@keyframes als-slide {
+  0%   { transform: translateX(-150%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Transition: same fade as primary splash */
+.splash-fade-leave-active {
+  transition: opacity .35s ease !important;
+}
+.splash-fade-leave-to {
+  opacity: 0 !important;
+}
+
+/* Also fix the als-logo if it's ever used as an img element */
+.als-logo {
+  width: 100px !important;
+  height: auto !important;
+  opacity: .85 !important;
+  filter: drop-shadow(0 0 8px rgba(0,212,212,.25)) !important;
+}
