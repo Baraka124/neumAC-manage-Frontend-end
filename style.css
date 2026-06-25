@@ -14515,3 +14515,689 @@ body {
 #app .user-dropdown button i {
   color: rgba(255,255,255,.35) !important;
 }
+
+
+
+/* ================================================================
+   RESEARCH HUB — ALL THREE LEVELS
+   Based on actual rendered screenshots.
+   
+   Level 1: Lines grid — KPI strip grounding, card elevation,
+            topbar tab styling
+   Level 2: Studies list — filter pills, study rows, phase badges,
+            title truncation
+   Level 3: Study detail — study head, phase badge context,
+            completeness banner, field cards, right sidebar priority
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   LEVEL 1 — LINES GRID
+════════════════════════════════════════════════════════════════ */
+
+/* Topbar: the tab row needs separation from the content area */
+#app .rhub-topbar {
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  height: 46px !important;
+  padding: 0 22px !important;
+}
+
+/* Tabs: teal active underline, not dark */
+#app .rhub-tab {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: #5a6472 !important;
+  padding: 0 16px !important;
+  transition: color .14s !important;
+}
+#app .rhub-tab:hover { color: #07111f !important; }
+#app .rhub-tab--on {
+  color: #009999 !important;
+  border-bottom-color: #009999 !important;
+  font-weight: 600 !important;
+}
+#app .rhub-tab-count {
+  font-size: 10px !important;
+  background: #f0eeea !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 6px !important;
+  padding: 1px 6px !important;
+  color: #5a6472 !important;
+}
+#app .rhub-tab--on .rhub-tab-count {
+  background: rgba(0,153,153,.1) !important;
+  border-color: rgba(0,153,153,.2) !important;
+  color: #009999 !important;
+}
+
+/* Add button */
+#app .rhub-add-btn {
+  background: #07111f !important;
+  color: #fff !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 7px 16px !important;
+  border-radius: 8px !important;
+  transition: opacity .14s !important;
+}
+#app .rhub-add-btn:hover { opacity: .85 !important; }
+
+/* KPI strip: ground it with a surface */
+#app .rhub-kpi-strip {
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  padding: 14px 22px !important;
+  top: 46px !important; /* below the 46px topbar */
+}
+
+/* KPI numbers: Instrument Serif italic */
+#app .rhub-kv {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 30px !important;
+  letter-spacing: -.04em !important;
+  color: #07111f !important;
+  line-height: 1 !important;
+}
+#app .rhub-kv--ok { color: #059669 !important; }
+#app .rhub-kl {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  color: #909399 !important;
+  margin-top: 4px !important;
+  text-transform: uppercase !important;
+}
+#app .rhub-ks {
+  font-size: 11.5px !important;
+  color: #5a6472 !important;
+  margin-top: 2px !important;
+}
+#app .rhub-kdiv {
+  height: 34px !important;
+  background: #e3dfd6 !important;
+  margin: 0 6px 0 0 !important;
+}
+
+/* Lines grid: warm background so cards float */
+#app .rhub-grid {
+  background: #f0efeb !important;
+  padding: 18px 20px 28px !important;
+  gap: 14px !important;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+}
+
+/* Line card: proper elevation */
+#app .rhub-line-card {
+  background: #fdfcfb !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 1px 4px rgba(7,17,31,.05) !important;
+  transition: box-shadow .2s, transform .2s, border-color .2s !important;
+}
+#app .rhub-line-card:hover {
+  border-color: rgba(7,17,31,.18) !important;
+  box-shadow: 0 6px 24px rgba(7,17,31,.1) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Accent top stripe: thicker */
+#app .rlc-accent { height: 4px !important; }
+
+/* Card body */
+#app .rlc-body {
+  padding: 16px 18px 14px !important;
+  gap: 10px !important;
+}
+
+/* L-number: the identity marker */
+#app .rlc-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 44px !important;
+  letter-spacing: -.05em !important;
+  line-height: .9 !important;
+}
+
+/* Title */
+#app .rlc-title {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.38 !important;
+  letter-spacing: -.01em !important;
+  color: #07111f !important;
+  white-space: normal !important; /* allow wrapping */
+}
+
+/* Coordinator */
+#app .rlc-coord-name {
+  font-size: 11.5px !important;
+  color: #344154 !important;
+  font-weight: 500 !important;
+}
+
+/* Active badge */
+#app .rlc-rec-badge {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  padding: 2px 8px !important;
+  border-radius: 10px !important;
+  background: rgba(5,150,105,.1) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(5,150,105,.2) !important;
+}
+
+/* Stat numbers */
+#app .rlc-stat-v {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 22px !important;
+  letter-spacing: -.03em !important;
+  color: #07111f !important;
+  line-height: 1 !important;
+}
+#app .rlc-stat-v.ok { color: #059669 !important; }
+#app .rlc-stat-l {
+  font-size: 9.5px !important;
+  letter-spacing: .12em !important;
+  color: #909399 !important;
+  margin-top: 3px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+/* Stats row banding */
+#app .rlc-stats {
+  margin: 4px -18px 0 !important;
+  padding: 0 18px !important;
+  background: rgba(0,0,0,.015) !important;
+  border-top: 1px solid #e3dfd6 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+}
+#app .rlc-stat { padding: 10px 0 !important; }
+#app .rlc-stat + .rlc-stat {
+  padding-left: 14px !important;
+  border-left: 1px solid #e3dfd6 !important;
+}
+
+/* Keywords */
+#app .rlc-kws {
+  padding: 9px 18px !important;
+  margin: 0 -18px !important;
+  gap: 5px !important;
+  border-top: 1px solid #e3dfd6 !important;
+  background: rgba(0,0,0,.01) !important;
+}
+#app .rlc-kw {
+  font-size: 10.5px !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  background: #f5f4f0 !important;
+  color: #5a6472 !important;
+  border: 1px solid #e3dfd6 !important;
+  font-weight: 500 !important;
+}
+
+/* Search input in KPI strip */
+#app .rhub-search-input {
+  font-size: 12.5px !important;
+  padding: 7px 12px !important;
+  border: 1px solid #dde4ee !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  width: 200px !important;
+}
+#app .rhub-search-input:focus {
+  border-color: #009999 !important;
+  box-shadow: 0 0 0 3px rgba(0,153,153,.1) !important;
+  width: 220px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   LEVEL 2 — STUDIES LIST
+════════════════════════════════════════════════════════════════ */
+
+/* Back button: more visible */
+#app .rhub-back-btn {
+  font-size: 12px !important;
+  color: #5a6472 !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 0 !important;
+  transition: color .14s !important;
+}
+#app .rhub-back-btn:hover { color: #07111f !important; }
+
+/* Status filter strip */
+#app .rhub-status-strip {
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  padding: 10px 22px 0 !important;
+}
+
+/* Filter pills: cleaner selected state */
+#app .rss-pill {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 5px 14px !important;
+  border-radius: 20px !important;
+  border: 1px solid #e3dfd6 !important;
+  background: #fdfcfb !important;
+  color: #5a6472 !important;
+  transition: all .14s !important;
+  margin-bottom: 10px !important;
+}
+#app .rss-pill:hover {
+  border-color: #009999 !important;
+  color: #009999 !important;
+  background: rgba(0,153,153,.04) !important;
+}
+#app .rss-pill--active,
+#app .rss-pill--active-sel {
+  background: #07111f !important;
+  border-color: #07111f !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+#app .rss-count { font-size: 11.5px !important; font-weight: 700 !important; }
+#app .rss-dot { width: 6px !important; height: 6px !important; }
+#app .rss-dot--recruiting { background: #10b981 !important; }
+#app .rss-dot--active { background: #009999 !important; }
+#app .rss-dot--prep { background: #f59e0b !important; }
+
+/* Study list container */
+#app .rhub-study-list {
+  padding: 16px 22px 24px !important;
+  gap: 8px !important;
+  background: #f0efeb !important;
+}
+
+/* Study card rows: elevation + hover */
+#app .rhub-study-card {
+  background: #fdfcfb !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(7,17,31,.05) !important;
+  overflow: hidden !important;
+  transition: box-shadow .18s, border-color .18s, transform .18s !important;
+}
+#app .rhub-study-card:hover {
+  border-color: rgba(0,153,153,.28) !important;
+  box-shadow: 0 4px 16px rgba(0,153,153,.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Phase badge: slightly larger, more readable */
+#app .rht-phase-badge {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  flex-shrink: 0 !important;
+  color: #fff !important;
+}
+/* Phase colour overrides: keep the existing colour logic */
+#app .rht-phase--pI   { background: #4d9aff !important; }
+#app .rht-phase--pII  { background: #00c47a !important; color: #fff !important; }
+#app .rht-phase--pIII { background: #f59e0b !important; color: #fff !important; }
+#app .rht-phase--pIV  { background: #e24b4a !important; }
+
+/* Study card body */
+#app .rhsc-body {
+  padding: 13px 16px !important;
+  gap: 6px !important;
+}
+
+/* Study title: should wrap, not truncate */
+#app .rhsc-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #07111f !important;
+  line-height: 1.38 !important;
+  letter-spacing: -.01em !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+/* Protocol + meta */
+#app .rhsc-proto {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  color: #5a6472 !important;
+  background: #f0eeea !important;
+  border: 1px solid #e3dfd6 !important;
+  padding: 1px 6px !important;
+  border-radius: 3px !important;
+}
+
+/* Status badge on study rows */
+#app .rhsc-status {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 2px 8px !important;
+  border-radius: 5px !important;
+}
+#app .sp-rec  { background: rgba(16,185,129,.1) !important; color: #059669 !important; border: 1px solid rgba(16,185,129,.2) !important; }
+#app .sp-act  { background: rgba(0,153,153,.1) !important;  color: #007a7a !important;  border: 1px solid rgba(0,153,153,.2) !important; }
+#app .sp-prep { background: rgba(245,158,11,.1) !important; color: #b45309 !important; border: 1px solid rgba(245,158,11,.2) !important; }
+#app .sp-done { background: rgba(107,114,128,.1) !important; color: #6b7280 !important; border: 1px solid rgba(107,114,128,.2) !important; }
+
+/* Enrollment right panel */
+#app .rhsc-enroll {
+  padding: 12px 14px !important;
+  min-width: 80px !important;
+  border-left: 1px solid #e3dfd6 !important;
+  background: rgba(0,0,0,.018) !important;
+}
+#app .rhsc-enroll-nums {
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #07111f !important;
+}
+#app .rhsc-bar {
+  height: 3px !important;
+  background: #e3dfd6 !important;
+  border-radius: 2px !important;
+  margin-top: 5px !important;
+}
+#app .rhsc-fill {
+  background: linear-gradient(90deg, #059669, #10b981) !important;
+}
+#app .rhsc-pct {
+  font-size: 11px !important;
+  color: #5a6472 !important;
+  margin-top: 3px !important;
+}
+#app .rhsc-arr {
+  padding: 0 14px !important;
+  border-left: 1px solid #e3dfd6 !important;
+  color: #c0bdb8 !important;
+}
+
+/* Phase-specific RHT status badges */
+#app .rht-status {
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  border-radius: 5px !important;
+  letter-spacing: .03em !important;
+  text-transform: none !important;
+}
+#app .rht-status--recruiting { background: rgba(5,150,105,.1) !important; color: #047857 !important; border: 1px solid rgba(5,150,105,.2) !important; }
+#app .rht-status--activo     { background: rgba(0,153,153,.1) !important; color: #007a7a !important; border: 1px solid rgba(0,153,153,.2) !important; }
+#app .rht-status--completado { background: rgba(107,114,128,.1) !important; color: #6b7280 !important; border: 1px solid rgba(107,114,128,.2) !important; }
+#app .rht-status--prep       { background: rgba(245,158,11,.1) !important; color: #b45309 !important; border: 1px solid rgba(245,158,11,.2) !important; }
+
+/* Filter bar for studies */
+#app .rht-filter-bar {
+  padding: 10px 22px !important;
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  gap: 8px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   LEVEL 3 — STUDY DETAIL
+════════════════════════════════════════════════════════════════ */
+
+/* Study head: warm surface, not flat white */
+#app .rhub-study-head {
+  background: #fdfcfb !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  padding: 18px 24px !important;
+  gap: 12px !important;
+}
+
+/* Study hero: title + phase badge */
+#app .rhub-study-hero {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+}
+
+/* Phase badge in detail: large, grounded in a subtle container */
+#app .rhub-study-hero .rht-phase-badge {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15) !important;
+  flex-shrink: 0 !important;
+}
+
+/* Study title in detail */
+#app .rhub-study-hero .rht-main h2,
+#app .rhub-study-hero [class*="rht-title"],
+#app .rhub-study-head h2 {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.02em !important;
+  color: #07111f !important;
+  white-space: normal !important;
+}
+
+/* Status + protocol meta under title */
+#app .rhub-study-hero .rhsc-status {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+#app .rhub-study-hero .rhsc-proto {
+  font-size: 11.5px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+/* Study body: 2-column layout */
+#app .rhub-study-body {
+  padding: 20px 24px 32px !important;
+  gap: 16px !important;
+  grid-template-columns: 1fr 260px !important;
+  background: #f0efeb !important;
+}
+
+/* ── Completeness banner: clearer priority ── */
+#app .rhub-completeness {
+  background: #fffbeb !important;
+  border: 1px solid #fcd34d !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  margin-bottom: 12px !important;
+}
+#app .rc-head {
+  padding: 10px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #92400e !important;
+  border-bottom: 1px solid #fde68a !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+#app .rc-head svg { color: #d97706 !important; flex-shrink: 0 !important; }
+#app .rc-missing {
+  padding: 10px 16px 12px !important;
+  gap: 6px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+}
+
+/* Missing field chips: clearer, not uniform */
+#app .rc-missing .rtag,
+#app .rc-missing [class*="rtag"],
+#app .rc-chip {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 9px !important;
+  border-radius: 5px !important;
+  background: rgba(217,119,6,.1) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(217,119,6,.22) !important;
+}
+
+/* ── Field cards: elevated ── */
+#app .rhub-field-card {
+  background: #fdfcfb !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 1px 3px rgba(7,17,31,.04) !important;
+}
+#app .rfc-head {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .14em !important;
+  padding: 10px 16px !important;
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid #e3dfd6 !important;
+  color: #909399 !important;
+}
+#app .rfc-body {
+  padding: 14px 16px !important;
+  gap: 12px !important;
+}
+#app .rfc-row {
+  gap: 12px !important;
+}
+#app .rfc-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: #909399 !important;
+  margin-bottom: 3px !important;
+}
+#app .rfc-val {
+  font-size: 13.5px !important;
+  color: #07111f !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+}
+
+/* ── Right sidebar: fix priority order ──
+   ENROLLMENT should feel important, not like a widget.
+   ACTIONS should be visually demoted — edit is secondary,
+   delete is tertiary (not a red-bordered dominant element).
+── */
+#app .rhub-study-right { gap: 12px !important; }
+
+/* Enrollment widget: give it presence */
+#app .rhub-enroll-widget {
+  background: #fdfcfb !important;
+  border: 1px solid #e3dfd6 !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 1px 3px rgba(7,17,31,.04) !important;
+}
+#app .rew-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #909399 !important;
+  margin-bottom: 10px !important;
+}
+#app .rew-current {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 34px !important;
+  font-weight: 400 !important;
+  letter-spacing: -.04em !important;
+  color: #059669 !important;
+  line-height: 1 !important;
+}
+#app .rew-sep { font-size: 18px !important; color: #c0bdb8 !important; }
+#app .rew-target { font-size: 18px !important; color: #5a6472 !important; }
+#app .rew-bar {
+  height: 5px !important;
+  background: #e3dfd6 !important;
+  border-radius: 3px !important;
+  margin: 10px 0 5px !important;
+}
+#app .rew-fill {
+  background: linear-gradient(90deg, #059669, #10b981) !important;
+  border-radius: 3px !important;
+}
+#app .rew-pct { font-size: 12px !important; color: #5a6472 !important; }
+
+/* Actions card: demote the delete button visually */
+#app .rhub-study-right .rhub-field-card .nm-btn-outline {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid #e3dfd6 !important;
+  color: #344154 !important;
+  background: #fdfcfb !important;
+  justify-content: flex-start !important;
+  transition: all .14s !important;
+}
+#app .rhub-study-right .rhub-field-card .nm-btn-outline:hover {
+  background: #f5f4f0 !important;
+  border-color: #c0bdb8 !important;
+  color: #07111f !important;
+}
+/* Delete: neutral ghost, not alarming red border at rest */
+#app .rhub-study-right .rhub-field-card .nm-btn-outline[style*="danger"],
+#app .rhub-study-right .rhub-field-card .nm-btn-outline[style*="red"] {
+  color: #909399 !important;
+  border-color: #e3dfd6 !important;
+  background: transparent !important;
+  font-size: 12px !important;
+}
+#app .rhub-study-right .rhub-field-card .nm-btn-outline[style*="danger"]:hover,
+#app .rhub-study-right .rhub-field-card .nm-btn-outline[style*="red"]:hover {
+  color: #dc2626 !important;
+  border-color: rgba(220,38,38,.3) !important;
+  background: rgba(220,38,38,.05) !important;
+}
+
+/* Timeline */
+#app .rhub-timeline {
+  padding-left: 18px !important;
+}
+#app .rhub-timeline::before {
+  left: 4px !important;
+  background: #e3dfd6 !important;
+}
+#app .rhtl-dot {
+  left: -16px !important;
+  width: 8px !important;
+  height: 8px !important;
+  border: 1.5px solid #e3dfd6 !important;
+  background: #fdfcfb !important;
+}
+#app .rhtl-dot.done { background: #059669 !important; border-color: #059669 !important; }
+#app .rhtl-dot.active {
+  background: #009999 !important;
+  border-color: #009999 !important;
+  box-shadow: 0 0 0 3px rgba(0,153,153,.2) !important;
+}
+#app .rhtl-label {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #07111f !important;
+}
+#app .rhtl-label.done {
+  color: #909399 !important;
+  text-decoration: line-through !important;
+}
+#app .rhtl-date {
+  font-size: 11px !important;
+  color: #5a6472 !important;
+  font-family: 'DM Mono', monospace !important;
+  margin-top: 2px !important;
+}
