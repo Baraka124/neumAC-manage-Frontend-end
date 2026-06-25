@@ -20439,122 +20439,98 @@ html #app .rot-orb--scheduled:hover {
 
 
 /* ================================================================
-   MOBILE FILTER-BAR HEIGHT FIX
-   The search input inside filter-bars was growing to fill available 
-   column space. The root: flex-shrink:1 from a (1,3,1) specificity 
-   rule was overriding our (1,1,1) flex:0 0 auto fix.
-   This rule matches the high-specificity pattern + !important.
-================================================================ */
-@media (max-width: 768px) {
-  #app .content-area .filter-bar .form-control,
-  #app .content-area .filter-bar .form-select,
-  #app .content-area .filter-bar input,
-  #app .content-area .filter-bar select,
-  #app .content-area .filter-bar input[type="text"],
-  #app .content-area .filter-bar input[type="search"],
-  #app .content-area .filter-bar input[type="date"] {
-    flex: 0 0 auto !important;
-    width: 100% !important;
-    height: 44px !important;
-    min-height: unset !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-  }
-}
-
-@media (max-width: 480px) {
-  #app .content-area .filter-bar .form-control,
-  #app .content-area .filter-bar .form-select,
-  #app .content-area .filter-bar input,
-  #app .content-area .filter-bar select,
-  #app .content-area .filter-bar input[type="text"],
-  #app .content-area .filter-bar input[type="search"],
-  #app .content-area .filter-bar input[type="date"] {
-    flex: 0 0 auto !important;
-    width: 100% !important;
-    height: 44px !important;
-    min-height: unset !important;
-    font-size: 16px !important;
-  }
-}
-
-
-/* ================================================================
-   DARK MODULE CARD-HEADER PATTERN
-   Module-level card-headers (the top bar with title + actions)
-   use nm-navy for clear visual hierarchy and module identity.
-   This overrides the default nm-surface background.
-   Uses the native --nm-navy and --nm-teal variables.
+   §FIX2 — TARGETED VISUAL FIXES (from screenshot review)
+   
+   FIX-01: Search bar too wide
+   The neumac-layout block sets .search-input { width:auto !important }
+   which overrides style10's width:210px. Width:auto in a flex 
+   container = stretch. Fix: restore explicit width with higher
+   specificity and constrain navbar-right.
+   
+   FIX-02: Dark card-header pattern
+   The card-header is being set to var(--nm-surface) (white) by
+   the §LAYOUT block. The dark card-header was intentional for 
+   module headers. Restore it for .card-header inside .card.mb-6
+   at the top of each module view.
+   
+   FIX-03: navbar-title uses var(--font-display) = Instrument Serif
+   italic at 20px — correct per the design system.
 ================================================================ */
 
-#app .content-area .card > .card-header {
+/* FIX-01: Search bar — constrain to fixed width */
+#app .top-navbar .search-container,
+#app .search-container {
+  width: 220px !important;
+  flex-shrink: 0 !important;
+}
+#app .top-navbar .search-input,
+#app .search-input {
+  width: 100% !important;
+}
+#app .search-input:focus {
+  width: 100% !important;
+}
+/* Constrain navbar-right so it doesn't expand */
+#app .navbar-right {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  gap: 8px !important;
+}
+/* Ensure navbar-left takes up remaining space */
+#app .navbar-left {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* FIX-02: Dark card-header — module level headers */
+/* The main module card (card.mb-6) header should be dark navy */
+#app .content-area > .card > .card-header,
+#app .content-area > div > .card > .card-header {
   background: var(--nm-navy, #07111f) !important;
   border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  color: rgba(255,255,255,.9) !important;
 }
-
-#app .content-area .card > .card-header .card-title {
-  color: rgba(255,255,255,.92) !important;
+/* Card title inside dark header */
+#app .content-area > .card > .card-header .card-title,
+#app .content-area > div > .card > .card-header .card-title {
+  color: rgba(255,255,255,.9) !important;
+  font-style: normal !important;
 }
-#app .content-area .card > .card-header .card-title svg {
-  opacity: .7;
-}
-
-/* Action buttons on dark header */
-#app .content-area .card > .card-header .btn-pill {
-  background: rgba(255,255,255,.07) !important;
-  border-color: rgba(255,255,255,.12) !important;
-  color: rgba(255,255,255,.6) !important;
-}
-#app .content-area .card > .card-header .btn-pill.active {
+/* Buttons inside dark header */
+#app .content-area > .card > .card-header .btn-primary {
   background: rgba(0,179,179,.18) !important;
   border-color: rgba(0,179,179,.35) !important;
-  color: var(--nm-teal, #00b3b3) !important;
+  color: #00d4d4 !important;
 }
-#app .content-area .card > .card-header .btn-pill:hover {
-  background: rgba(255,255,255,.12) !important;
-  color: #fff !important;
-}
-
-/* Secondary buttons on dark header */
-#app .content-area .card > .card-header .btn-secondary,
-#app .content-area .card > .card-header .btn.btn-secondary {
-  background: rgba(255,255,255,.07) !important;
-  border-color: rgba(255,255,255,.14) !important;
-  color: rgba(255,255,255,.75) !important;
-}
-#app .content-area .card > .card-header .btn-secondary:hover {
-  background: rgba(255,255,255,.14) !important;
-  color: #fff !important;
-}
-
-/* Primary button on dark header — teal ghost */
-#app .content-area .card > .card-header .btn-primary,
-#app .content-area .card > .card-header .btn.btn-primary {
-  background: rgba(0,179,179,.18) !important;
-  border-color: rgba(0,179,179,.38) !important;
-  color: var(--nm-teal, #00b3b3) !important;
-}
-#app .content-area .card > .card-header .btn-primary:hover {
+#app .content-area > .card > .card-header .btn-primary:hover {
   background: rgba(0,179,179,.28) !important;
   color: #fff !important;
 }
-
-/* SVG icons on dark header */
-#app .content-area .card > .card-header svg {
-  color: rgba(255,255,255,.6);
+/* View toggle buttons in dark header */
+#app .content-area > .card > .card-header .btn-icon,
+#app .content-area > .card > .card-header .view-toggle-btn {
+  color: rgba(255,255,255,.5) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  background: transparent !important;
+}
+#app .content-area > .card > .card-header .btn-icon:hover,
+#app .content-area > .card > .card-header .view-toggle-btn:hover {
+  color: rgba(255,255,255,.9) !important;
+  background: rgba(255,255,255,.08) !important;
+}
+#app .content-area > .card > .card-header .btn-icon.active,
+#app .content-area > .card > .card-header .view-toggle-btn.active {
+  background: rgba(0,179,179,.18) !important;
+  color: #00d4d4 !important;
+  border-color: rgba(0,179,179,.3) !important;
 }
 
-/* Settings: stacked cards should NOT have dark headers (they overlap) */
-#app .content-area .card.mb-6 .card-header {
-  background: var(--nm-navy, #07111f) !important;
-}
-
-/* View toggle dividers on dark */
-#app .content-area .card > .card-header .view-toggle {
-  display: flex;
-  gap: 4px;
-  background: rgba(255,255,255,.06);
-  border-radius: 8px;
-  padding: 3px;
+/* FIX-03: Navbar title — keep the design system italic serif */
+#app .navbar-title {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif) !important;
+  font-style: italic !important;
+  font-size: 20px !important;
+  font-weight: 400 !important;
+  color: var(--nm-text1, #111110) !important;
 }
