@@ -17592,7 +17592,7 @@ html #app .dbh-frame,
 }
 
 /* User avatar */
-#app .nmsb-user-av,
+#app .nmsb-user-av,  
 .nmsb-user-av {
   background: linear-gradient(135deg, #009999 0%, #1a4f8a 100%) !important;
   border-color: rgba(0,179,179,.35) !important;
