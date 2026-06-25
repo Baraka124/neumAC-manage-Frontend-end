@@ -16129,3 +16129,242 @@ html .rgw-gaps {
   gap: 4px !important;
   flex-shrink: 0 !important;
 }
+
+
+
+/* ================================================================
+   TARGETED FIXES — based on rendered screenshots
+   
+   1. Content-area top padding gap → zero
+   2. Card-header island: lighter navy, no rounding, edge-to-edge
+   3. Publications: hide inline article images in list view
+   4. KPI strip: internal padding so numbers breathe
+   5. Settings legibility: ensure text visible on dark surfaces
+   6. Navbar color: softer true navy replacing near-black
+================================================================ */
+
+
+/* ── 1. CONTENT-AREA: kill the top padding gap ──
+   The gap between breadcrumb and card-header island.
+   Must beat both the base .content-area rule (no #app prefix)
+   and the #app scoped rule in the HTML.
+── */
+html body #app .content-area,
+html body .content-area,
+#app .content-area {
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* But give inner content breathing room */
+#app .content-area > .card.mb-6 + *,
+#app .content-area > div:not(.card):not(.filter-bar),
+#app .content-area > .table-responsive {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+
+/* ── 2. NAVBAR COLOR: true navy, not near-black ──
+   #07111f reads as almost pure black on most monitors.
+   #0f2d54 is a proper dark navy with visible blue character.
+   Warmer, more distinctive, less oppressive.
+── */
+html #app .top-navbar,
+#app .top-navbar {
+  background: #0f2d54 !important;
+}
+
+html #app .breadcrumb,
+#app .breadcrumb {
+  background: #0c2645 !important;
+}
+
+html #app .content-area .card.mb-6 .card-header,
+html #app .content-area .card-header,
+#app .content-area .card.mb-6 .card-header {
+  background: #0a1f3d !important;
+}
+
+html #app .tuc-card-header,
+#app .tuc-card-header {
+  background: #0a1f3d !important;
+}
+
+/* Sidebar: match the new navy */
+.sidebar,
+#app .sidebar {
+  background: linear-gradient(180deg,
+    #0a1e38 0%,
+    #0d2444 50%,
+    #0a1e38 100%
+  ) !important;
+}
+
+/* Login screen: match */
+.login-container {
+  background: linear-gradient(160deg,
+    #071428 0%,
+    #0d2444 50%,
+    #071428 100%
+  ) !important;
+}
+
+/* Second loading screen: match */
+.app-loading-splash {
+  background: linear-gradient(160deg,
+    #071428 0%,
+    #0d2444 50%,
+    #071428 100%
+  ) !important;
+}
+
+
+/* ── 3. CARD-HEADER ISLAND: edge-to-edge, no floating ──
+   The island effect happens because content-area has
+   horizontal padding and the card has border-radius.
+   Force full bleed + no radius on the card.mb-6.
+── */
+html #app .content-area .card.mb-6 {
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+html #app .content-area .card.mb-6 .card-header {
+  border-radius: 0 !important;
+  /* Extend to full width */
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+}
+
+
+/* ── 4. KPI/PULSE STRIP INTERNAL PADDING ──
+   Numbers were hugging the left edge.
+   Add internal breathing room to each stat cell.
+── */
+html #app .tu-kpi,
+#app .tu-kpi {
+  padding: 6px 24px 6px 0 !important;
+}
+html #app .tu-kpi:first-child,
+#app .tu-kpi:first-child {
+  padding-left: 24px !important;
+}
+
+html #app .dpb-item,
+#app .dpb-item {
+  padding: 6px 0 6px 24px !important;
+}
+html #app .dpb-item:last-child {
+  padding-right: 24px !important;
+}
+
+html #app .dept-pulse-bar,
+#app .dept-pulse-bar {
+  padding: 12px 0 !important;
+}
+
+html #app .tu-kpi-strip,
+#app .tu-kpi-strip {
+  padding: 12px 0 !important;
+}
+
+
+/* ── 5. PUBLICATIONS: hide inline images in list view ──
+   Images render as a strip below the excerpt for article posts.
+   CSS-only hide: target the image container div inline style.
+   The div uses inline style="display:flex;gap:5px;margin-top:8px..."
+   We can't target inline styles, but we can target the img
+   elements inside .news-card-body that follow .news-card-excerpt.
+   
+   The most reliable selector: img inside .news-card-body
+   that is NOT inside .highlight (highlights use a 48px thumbnail
+   which is fine to keep).
+   
+   We hide ALL imgs inside non-highlight cards in list view.
+   The detail drawer still shows images (different DOM context).
+── */
+.news-card:not(.news-card--highlight) .news-card-body img,
+#app .news-card:not(.news-card--highlight) .news-card-body img {
+  display: none !important;
+}
+
+/* Also hide the containing flex div (preserves layout) */
+.news-card:not(.news-card--highlight) .news-card-body > div[style*="border-radius:6px"],
+#app .news-card:not(.news-card--highlight) .news-card-body > div[style*="border-radius:6px"],
+.news-card:not(.news-card--highlight) .news-card-body > div[style*="overflow:hidden"],
+#app .news-card:not(.news-card--highlight) .news-card-body > div[style*="overflow:hidden"] {
+  display: none !important;
+}
+
+
+/* ── 6. SETTINGS LEGIBILITY ──
+   The dark background is masking text in settings panels.
+   Settings uses the same card-header treatment but its
+   body content needs warm-surface, not dark continuation.
+── */
+#app .content-area .settings-section,
+#app .content-area .settings-panel,
+#app .content-area .settings-card,
+#app [class*="settings"] .card-body,
+#app [class*="settings"] .panel-body {
+  background: #fdfcfb !important;
+  color: #07111f !important;
+}
+
+#app .content-area [class*="settings"] label,
+#app .content-area [class*="settings"] .form-label,
+#app .content-area [class*="settings"] p,
+#app .content-area [class*="settings"] span:not(.badge) {
+  color: #07111f !important;
+}
+
+/* Settings form inputs: warm surface */
+#app .content-area [class*="settings"] input,
+#app .content-area [class*="settings"] select,
+#app .content-area [class*="settings"] textarea {
+  background: #fff !important;
+  color: #07111f !important;
+  border-color: #dde4ee !important;
+}
+
+/* Ensure any content AFTER the dark card-header is on warm surface */
+html #app .content-area .card.mb-6 .card-body {
+  background: #fdfcfb !important;
+  color: #07111f !important;
+  padding: 0 !important;
+}
+
+/* All text inside warm card bodies */
+html #app .content-area .card.mb-6 .card-body p,
+html #app .content-area .card.mb-6 .card-body label,
+html #app .content-area .card.mb-6 .card-body span,
+html #app .content-area .card.mb-6 .card-body div {
+  color: inherit !important;
+}
+
+
+/* ── 7. SIDEBAR GAP: ensure sidebar extends full height ──
+   The sidebar should reach the full viewport height with
+   no gap between it and the content area.
+── */
+.sidebar,
+#app .sidebar,
+#app aside.nmsb {
+  min-height: 100vh !important;
+  height: 100% !important;
+}
+
+#app .main-wrapper,
+#app .app-wrapper,
+#app .layout-wrapper {
+  min-height: 100vh !important;
+}
