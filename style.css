@@ -19443,3 +19443,1089 @@ textarea::placeholder,
   opacity: 0 !important;
   transform: scale(1.03) !important;
 }
+
+
+
+/* ================================================================
+   RESEARCH HUB — COMPREHENSIVE UI FIX
+   
+   Issues from screenshots:
+   
+   STUDIES LIST (Image 1):
+   1. Phase badges: red/pink/yellow palette reads as urgency not phase
+      → Softer, more academic colour palette
+   2. rht-title truncates with ellipsis unnecessarily → allow wrap
+   3. rht-protocol: 9px → 11px
+   4. Row hover: rgba(.025) invisible → proper hover
+   5. Right chevron: more visible
+   6. rht-row padding: too tight → more breathing room
+   
+   LINE DETAIL (Image 2):
+   7. L6 number in pink (#9d174d) reads as alert → use clinical blue
+      for the large display number, keep accent colour for the stripe
+   8. Description text only uses half width → fix layout
+   9. Health strip: all warning counts same visual weight as active
+      → differentiate with colour semantics
+   10. rhub-ltab active: dark underline → teal
+   11. Study rows in detail: more structure, readable
+   12. Empty space right of study cards → fix grid
+   13. ⚠ incompleto badge: too much padding → tighter
+   14. rfc-head labels: too faint
+   15. rfc-val: proper size
+   
+   PATTERN (throughout):
+   16. Phase badge on inline list: 28px too small → 36px
+   17. Phase badge in detail hero: 44px inline style → ensure consistent
+   18. Completeness missing field tags → clearer
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   1. PHASE BADGES — academic palette, not urgency
+   
+   Roman numerals in clinical trials are stage markers, not alerts.
+   Current palette: red (IV), blue (I), green (II), yellow (III).
+   Red for Phase IV (the most common, mature phase) is backwards.
+   
+   New palette: neutral-to-warm academic spectrum.
+   Phase I  → blue (exploratory, early)
+   Phase II → teal (intermediate)
+   Phase III → indigo (advanced, pivotal)
+   Phase IV → slate-blue (post-market, established)
+   Non-phase (Observational etc) → warm grey
+════════════════════════════════════════════════════════════════ */
+
+/* List view badge: 36px */
+#app .rht-phase-badge {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.01em !important;
+  flex-shrink: 0 !important;
+  color: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.12) !important;
+}
+
+/* Phase colours: academic spectrum */
+#app .rht-phase--pI    { background: #2563eb !important; }  /* blue — exploratory */
+#app .rht-phase--pII   { background: #059669 !important; color: #fff !important; }  /* emerald */
+#app .rht-phase--pIII  { background: #7c3aed !important; }  /* indigo — pivotal */
+#app .rht-phase--pIV   { background: #1a4f8a !important; }  /* clinical blue — established */
+
+/* Detail hero badge: 44px inline override */
+#app .rhub-study-hero .rht-phase-badge,
+#app [style*="width:44px"] .rht-phase-badge,
+#app .rht-phase-badge[style*="44px"] {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,.18) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   2. STUDIES LIST ROWS — better structure and readability
+════════════════════════════════════════════════════════════════ */
+
+/* Row container */
+#app .rht-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 14px 20px !important;
+  border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  background: #ffffff !important;
+  cursor: pointer !important;
+  transition: background .14s !important;
+}
+#app .rht-row:hover {
+  background: rgba(26,79,138,.03) !important;
+}
+#app .rht-row:last-child { border-bottom: none !important; }
+
+/* Study title: allow wrapping, proper size */
+#app .rht-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  white-space: normal !important;      /* was nowrap — was truncating */
+  overflow: visible !important;
+  text-overflow: unset !important;
+  line-height: 1.38 !important;
+  letter-spacing: -.01em !important;
+  margin-bottom: 5px !important;
+}
+
+/* Meta row */
+#app .rht-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  font-size: 11.5px !important;
+  color: #6b7280 !important;
+}
+
+/* Protocol chip: was 9px */
+#app .rht-protocol {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  color: #6b7280 !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+  letter-spacing: .02em !important;
+}
+
+/* Status badges */
+#app .rht-status {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 9px !important;
+  border-radius: 5px !important;
+  letter-spacing: .02em !important;
+  text-transform: none !important;
+}
+#app .rht-status--recruiting {
+  background: rgba(5,150,105,.1) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(5,150,105,.2) !important;
+}
+#app .rht-status--activo {
+  background: rgba(26,79,138,.1) !important;
+  color: #1a4f8a !important;
+  border: 1px solid rgba(26,79,138,.2) !important;
+}
+#app .rht-status--completado {
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+}
+#app .rht-status--prep {
+  background: rgba(245,158,11,.1) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245,158,11,.2) !important;
+}
+
+/* sp- status classes (used in study detail) */
+#app .sp-rec  { background: rgba(5,150,105,.1) !important; color: #047857 !important; border: 1px solid rgba(5,150,105,.2) !important; }
+#app .sp-act  { background: rgba(26,79,138,.1) !important; color: #1a4f8a !important; border: 1px solid rgba(26,79,138,.2) !important; }
+#app .sp-prep { background: rgba(245,158,11,.1) !important; color: #b45309 !important; border: 1px solid rgba(245,158,11,.2) !important; }
+#app .sp-done { background: #f3f4f6 !important; color: #6b7280 !important; border: 1px solid #e5e7eb !important; }
+
+/* Enrolment numbers */
+#app .rht-enroll-nums {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  white-space: nowrap !important;
+}
+
+/* Right chevron */
+#app .rht-row > svg,
+#app .rht-row .rht-arr {
+  color: #d1d5db !important;
+  flex-shrink: 0 !important;
+  transition: color .14s, transform .14s !important;
+}
+#app .rht-row:hover > svg,
+#app .rht-row:hover .rht-arr {
+  color: #1a4f8a !important;
+  transform: translateX(2px) !important;
+}
+
+/* Filter bar for studies */
+#app .rht-filter-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+  padding: 10px 20px !important;
+  gap: 8px !important;
+}
+
+/* Status filter strip pills */
+#app .rss-pill {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 6px 14px !important;
+  border-radius: 20px !important;
+  border: 1px solid #e5e7eb !important;
+  background: #ffffff !important;
+  color: #6b7280 !important;
+  cursor: pointer !important;
+  transition: all .14s !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+#app .rss-pill:hover {
+  border-color: #1a4f8a !important;
+  color: #1a4f8a !important;
+}
+#app .rss-pill--active,
+#app .rss-pill--active-sel {
+  background: #0d1117 !important;
+  border-color: #0d1117 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Status dot */
+#app .rss-dot { width: 7px !important; height: 7px !important; border-radius: 50% !important; }
+#app .rss-dot--recruiting { background: #10b981 !important; }
+#app .rss-dot--active     { background: #1a4f8a !important; }
+#app .rss-dot--prep       { background: #f59e0b !important; }
+
+/* Study list container */
+#app .rhub-study-list {
+  background: #edecea !important;
+  padding: 16px 20px 24px !important;
+  gap: 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Study card in list */
+#app .rhub-study-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.08) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05) !important;
+  transition: box-shadow .18s, border-color .18s, transform .18s !important;
+  cursor: pointer !important;
+}
+#app .rhub-study-card:hover {
+  border-color: rgba(26,79,138,.25) !important;
+  box-shadow: 0 4px 14px rgba(26,79,138,.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   3. LINE DETAIL — rhub-line-head, L-number, health strip
+════════════════════════════════════════════════════════════════ */
+
+/* Line head: proper surface */
+#app .rhub-line-head {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+  padding: 20px 24px 16px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+/* L-number: use clinical blue instead of line accent on white bg
+   The accent colour works on dark cards (lines grid) but pink/magenta
+   on a white detail page reads as error, not identifier.
+   We override just the colour — keep the italic serif. */
+#app .rhub-line-num {
+  font-size: 48px !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.05em !important;
+  line-height: .88 !important;
+  color: #1a4f8a !important;  /* clinical blue — always, regardless of line accent */
+}
+
+/* Line name */
+#app .rhub-line-name {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.02em !important;
+}
+
+/* Line description */
+#app .rhub-line-desc {
+  font-size: 14px !important;
+  color: #374151 !important;
+  line-height: 1.65 !important;
+  max-width: 720px !important;
+}
+
+/* Back button */
+#app .rhub-back-btn {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 0 !important;
+  cursor: pointer !important;
+  transition: color .14s !important;
+}
+#app .rhub-back-btn:hover { color: #0d1117 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   4. HEALTH STRIP — semantic differentiation
+   Active/Recruiting = positive (green tint)
+   In Preparation = neutral (blue tint)
+   Missing PI / No Ethics / No Diseases = warning (amber)
+════════════════════════════════════════════════════════════════ */
+
+#app .rhub-health-strip {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  background: #f8f7f5 !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+  flex-shrink: 0 !important;
+}
+
+#app .rhub-health-cell {
+  padding: 12px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  border-right: 1px solid rgba(0,0,0,.07) !important;
+  cursor: pointer !important;
+  transition: background .14s !important;
+}
+#app .rhub-health-cell:last-child { border-right: none !important; }
+#app .rhub-health-cell:hover { background: rgba(0,0,0,.025) !important; }
+
+/* Health values: semantic colours */
+#app .rhub-hv {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 28px !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+  color: #0d1117 !important;
+}
+#app .rhub-hv--ok   { color: #059669 !important; }
+#app .rhub-hv--warn { color: #d97706 !important; }
+
+#app .rhub-hl {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  margin-top: 3px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   5. LINE TABS (Studies / Projects / About)
+════════════════════════════════════════════════════════════════ */
+
+#app .rhub-line-tabs,
+#app .rhub-ltab-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+  padding: 0 20px !important;
+  display: flex !important;
+}
+
+#app .rhub-ltab {
+  padding: 11px 16px !important;
+  font-size: 13.5px !important;
+  font-weight: 400 !important;
+  color: #6b7280 !important;
+  border-bottom: 2px solid transparent !important;
+  cursor: pointer !important;
+  transition: color .14s, border-color .14s !important;
+  background: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+#app .rhub-ltab:hover { color: #0d1117 !important; }
+#app .rhub-ltab.on {
+  color: #1a4f8a !important;
+  border-bottom-color: #1a4f8a !important;
+  font-weight: 600 !important;
+}
+
+/* Tab count badge */
+#app .rhub-ltab .rhub-tab-count,
+#app .rhub-ltab-count {
+  font-size: 10px !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  padding: 1px 6px !important;
+  color: #6b7280 !important;
+}
+#app .rhub-ltab.on .rhub-tab-count,
+#app .rhub-ltab.on .rhub-ltab-count {
+  background: rgba(26,79,138,.1) !important;
+  border-color: rgba(26,79,138,.2) !important;
+  color: #1a4f8a !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   6. STUDY ROWS IN LINE DETAIL
+════════════════════════════════════════════════════════════════ */
+
+/* Study row container */
+#app .rhsc-body {
+  padding: 14px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+#app .rhsc-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  line-height: 1.38 !important;
+  letter-spacing: -.01em !important;
+  white-space: normal !important;
+}
+
+#app .rhsc-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+#app .rhsc-proto {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  color: #6b7280 !important;
+  padding: 2px 7px !important;
+  border-radius: 4px !important;
+}
+
+/* ⚠ incompleto badge: tighter */
+#app .rhsc-meta [class*="incompleto"],
+#app .rhsc-meta [class*="incomplete"],
+#app .rhsc-meta span[style*="warning"],
+#app [class*="incompleto"] {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 2px 8px !important;
+  border-radius: 5px !important;
+  background: rgba(245,158,11,.1) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245,158,11,.2) !important;
+}
+
+/* Sponsor/type tags */
+#app .rhsc-meta span:not([class*="status"]):not([class*="proto"]):not([class*="incomplete"]) {
+  font-size: 11.5px !important;
+  color: #6b7280 !important;
+}
+
+/* Generic tag chips in study rows */
+#app .rtag {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  border: 1px solid #e5e7eb !important;
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+#app .rtag--ok   { background: rgba(5,150,105,.1) !important; border-color: rgba(5,150,105,.2) !important; color: #047857 !important; }
+#app .rtag--warn { background: rgba(245,158,11,.1) !important; border-color: rgba(245,158,11,.2) !important; color: #b45309 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   7. FIELD CARDS (study/project detail right layout)
+════════════════════════════════════════════════════════════════ */
+
+#app .rhub-field-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05) !important;
+}
+
+#app .rfc-head {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .14em !important;
+  padding: 10px 16px !important;
+  background: #f8f7f5 !important;
+  border-bottom: 1px solid rgba(0,0,0,.07) !important;
+  color: #9ca3af !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+#app .rfc-body {
+  padding: 14px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+#app .rfc-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+
+#app .rfc-field {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+#app .rfc-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+}
+
+#app .rfc-val {
+  font-size: 13.5px !important;
+  color: #0d1117 !important;
+  line-height: 1.4 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   8. COMPLETENESS BANNER
+════════════════════════════════════════════════════════════════ */
+
+#app .rhub-completeness {
+  background: #fffbeb !important;
+  border: 1px solid #fcd34d !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  margin-bottom: 12px !important;
+}
+
+#app .rc-head {
+  padding: 10px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #92400e !important;
+  border-bottom: 1px solid #fde68a !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+#app .rc-missing {
+  padding: 10px 16px 12px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+/* Missing field chips */
+#app .rc-missing .rtag,
+#app .rc-missing span {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 9px !important;
+  border-radius: 5px !important;
+  background: rgba(217,119,6,.1) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(217,119,6,.2) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   9. ENROLLMENT WIDGET
+════════════════════════════════════════════════════════════════ */
+
+#app .rhub-enroll-widget {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+}
+
+#app .rew-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  margin-bottom: 10px !important;
+}
+
+#app .rew-current {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 36px !important;
+  font-weight: 400 !important;
+  letter-spacing: -.04em !important;
+  color: #059669 !important;
+  line-height: 1 !important;
+}
+#app .rew-sep   { font-size: 20px !important; color: #d1d5db !important; }
+#app .rew-target { font-size: 20px !important; color: #6b7280 !important; }
+
+#app .rew-bar {
+  height: 5px !important;
+  background: #e5e7eb !important;
+  border-radius: 3px !important;
+  margin: 10px 0 5px !important;
+}
+#app .rew-fill {
+  background: linear-gradient(90deg, #059669, #10b981) !important;
+  border-radius: 3px !important;
+}
+#app .rew-pct {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   10. ACTIONS RIGHT COLUMN
+════════════════════════════════════════════════════════════════ */
+
+#app .rhub-study-right {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+/* Edit/delete icon buttons in study rows */
+#app .rhsc-arr,
+#app .rht-row .btn-icon,
+#app .rhub-study-card .btn-icon {
+  color: #d1d5db !important;
+  transition: color .14s !important;
+}
+#app .rhub-study-card:hover .btn-icon {
+  color: #9ca3af !important;
+}
+
+/* Study row edit/delete actions */
+#app [class*="rhsc"] button,
+#app .rhub-study-card button {
+  color: #9ca3af !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 5px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: background .14s, color .14s !important;
+}
+#app [class*="rhsc"] button:hover {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+}
+#app [class*="rhsc"] button[title*="Delete"]:hover,
+#app [class*="rhsc"] button[aria-label*="Delete"]:hover {
+  background: rgba(220,38,38,.08) !important;
+  color: #dc2626 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   11. STUDY BODY LAYOUT — full width content
+════════════════════════════════════════════════════════════════ */
+
+#app .rhub-study-body {
+  padding: 20px 24px 32px !important;
+  gap: 16px !important;
+  background: #edecea !important;
+  display: grid !important;
+  grid-template-columns: 1fr 260px !important;
+  align-content: start !important;
+}
+
+#app .rhub-study-main {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  min-width: 0 !important;
+}
+
+/* Study head */
+#app .rhub-study-head {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+  padding: 18px 24px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Study hero: phase badge + title */
+#app .rhub-study-hero {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+}
+
+/* Study title in detail */
+#app .rhub-study-hero [class*="title"],
+#app .rhub-study-hero h2,
+#app .rhsc-title-lg {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  letter-spacing: -.02em !important;
+  line-height: 1.3 !important;
+}
+
+
+
+/* ================================================================
+   PUBLICATIONS / NEWS — REMOVE CARD WRAPPING, FLAT LIST ROWS
+   
+   Posts should be flat editorial rows separated by hairline dividers,
+   not individual cards. The left accent blade (4px coloured stripe)
+   is the only visual type indicator needed.
+   
+   Design: Linear issue list / Notion database list aesthetic.
+   Each row is full-width, white background, divider below.
+   No border-radius, no box-shadow, no individual card border.
+   The list itself sits on the warm canvas.
+================================================================ */
+
+
+/* ── List container: warm canvas background ── */
+.news-list,
+#app .news-list {
+  background: #edecea !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* ── POST ROW: flat, no card ── */
+.news-card,
+#app .news-card {
+  border-radius: 0 !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(0,0,0,.07) !important;
+  border-left: 4px solid transparent !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: stretch !important;
+  cursor: pointer !important;
+  transition: background .12s !important;
+  transform: none !important;
+  min-height: 0 !important;
+}
+
+.news-card:hover,
+#app .news-card:hover {
+  background: #fafafa !important;
+  box-shadow: none !important;
+  transform: none !important;
+  border-color: inherit !important;
+  border-bottom-color: rgba(0,0,0,.07) !important;
+}
+
+.news-card:last-child,
+#app .news-card:last-child {
+  border-bottom: none !important;
+}
+
+/* ── LEFT ACCENT BLADE: type colour ── */
+.news-card--article,
+#app .news-card--article {
+  border-left-color: #1a4f8a !important;
+}
+.news-card--update,
+#app .news-card--update {
+  border-left-color: #009999 !important;
+}
+.news-card--publication,
+#app .news-card--publication {
+  border-left-color: #6366f1 !important;
+}
+.news-card--highlight,
+#app .news-card--highlight {
+  border-left-color: #f59e0b !important;
+  background: #fffef8 !important;
+}
+.news-card--highlight:hover,
+#app .news-card--highlight:hover {
+  background: #fffef0 !important;
+}
+
+/* ── CARD BODY: generous padding ── */
+.news-card-body,
+#app .news-card-body {
+  flex: 1 !important;
+  min-width: 0 !important;
+  padding: 14px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+/* ── TYPE BADGE ── */
+.news-card-tag,
+#app .news-card-tag {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .07em !important;
+  text-transform: uppercase !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  margin-bottom: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+.tag-article,  #app .tag-article  { background: rgba(26,79,138,.1)  !important; color: #1a4f8a !important; border: 1px solid rgba(26,79,138,.18) !important; }
+.tag-update,   #app .tag-update   { background: rgba(0,153,153,.1)  !important; color: #007a7a !important; border: 1px solid rgba(0,153,153,.18) !important; }
+.tag-publication, #app .tag-publication { background: rgba(99,102,241,.1) !important; color: #4338ca !important; border: 1px solid rgba(99,102,241,.18) !important; }
+.tag-highlight, #app .tag-highlight { background: rgba(245,158,11,.1) !important; color: #b45309 !important; border: 1px solid rgba(245,158,11,.2) !important; }
+
+/* ── TITLE ── */
+.news-card-title,
+#app .news-card-title {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -.015em !important;
+  margin-bottom: 5px !important;
+}
+
+/* ── EXCERPT ── */
+.news-card-excerpt,
+#app .news-card-excerpt {
+  font-size: 13px !important;
+  color: #374151 !important;
+  line-height: 1.58 !important;
+  margin-bottom: 9px !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+/* ── META ROW ── */
+.news-card-meta,
+#app .news-card-meta {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-top: 0 !important;
+}
+.news-meta-item,
+#app .news-meta-item {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* Author avatar */
+.news-author-av,
+#app .news-author-av {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #1a4f8a, #009999) !important;
+  color: #fff !important;
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Research line chip */
+.news-meta-line,
+#app .news-meta-line {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #1a4f8a !important;
+  background: rgba(26,79,138,.07) !important;
+  border: 1px solid rgba(26,79,138,.15) !important;
+  border-radius: 4px !important;
+  padding: 1px 6px !important;
+}
+
+/* ── RIGHT COLUMN: actions ── */
+.news-card-right,
+#app .news-card-right {
+  padding: 12px 14px 12px 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-width: 110px !important;
+  flex-shrink: 0 !important;
+  border-left: none !important;
+  background: transparent !important;
+}
+
+/* Visibility badge */
+.news-vis-btn,
+#app .news-vis-btn {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 5px !important;
+  padding: 3px 9px !important;
+  white-space: nowrap !important;
+}
+
+/* Status dot */
+.news-status-dot,
+#app .news-status-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+  box-shadow: 0 0 5px rgba(16,185,129,.5) !important;
+  display: inline-block !important;
+}
+
+/* ── PUBLICATION SPECIFIC: citation block ── */
+.news-pub-meta,
+#app .news-pub-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  margin-bottom: 8px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 0.5px solid rgba(0,0,0,.07) !important;
+}
+.news-journal,
+#app .news-journal {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  font-style: italic !important;
+  color: #0d1117 !important;
+}
+.news-authors,
+#app .news-authors {
+  font-size: 12.5px !important;
+  color: #374151 !important;
+}
+.news-doi,
+#app .news-doi {
+  font-size: 11.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  color: #1a4f8a !important;
+  opacity: .8 !important;
+}
+
+/* ── HIDE INLINE IMAGES in list ── */
+.news-card .news-card-body img,
+#app .news-card .news-card-body img {
+  display: none !important;
+}
+.news-card:not(.news-card--highlight) .news-card-body > div[style*="border-radius"],
+#app .news-card:not(.news-card--highlight) .news-card-body > div[style*="border-radius"] {
+  display: none !important;
+}
+
+/* ── FILTER BAR above the list ── */
+.news-filter-bar,
+#app .news-filter-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,.08) !important;
+  padding: 10px 20px !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* ── LEFT COLUMN (if used) ── */
+.news-card-left,
+#app .news-card-left {
+  display: none !important;  /* removed — accent is on the row's border-left */
+}
+
+/* ── NEWS TAB BAR ── */
+.news-view > .rhub-tabs,
+#app .news-view > .rhub-tabs {
+  background: #1a4f8a !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  padding: 0 20px !important;
+  height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.news-view .rhub-tab,
+#app .news-view .rhub-tab {
+  color: rgba(255,255,255,.5) !important;
+  font-size: 13px !important;
+  padding: 0 14px !important;
+  height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border-bottom: 2px solid transparent !important;
+  transition: color .14s, border-color .14s !important;
+}
+.news-view .rhub-tab:hover,
+#app .news-view .rhub-tab:hover { color: rgba(255,255,255,.88) !important; }
+.news-view .rhub-tab--active,
+#app .news-view .rhub-tab--active {
+  color: #ffffff !important;
+  border-bottom-color: #00d4d4 !important;
+  font-weight: 600 !important;
+}
+.news-view .rhub-tab-count,
+#app .news-view .rhub-tab-count {
+  background: rgba(255,255,255,.12) !important;
+  border: none !important;
+  color: rgba(255,255,255,.6) !important;
+  font-size: 10px !important;
+  padding: 1px 7px !important;
+  border-radius: 10px !important;
+}
+
+/* New Post button in tab bar */
+.news-view > .rhub-tabs .btn-primary,
+#app .news-view > .rhub-tabs .btn-primary,
+.news-view > .rhub-tabs .btn.btn-primary,
+#app .news-view > .rhub-tabs .btn.btn-primary {
+  background: rgba(0,179,179,.18) !important;
+  border: 1px solid rgba(0,179,179,.38) !important;
+  color: #00d4d4 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  margin-left: auto !important;
+}
+.news-view > .rhub-tabs .btn-primary:hover,
+#app .news-view > .rhub-tabs .btn-primary:hover {
+  background: rgba(0,179,179,.28) !important;
+  color: #ffffff !important;
+}
