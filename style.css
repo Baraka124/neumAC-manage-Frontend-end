@@ -22823,7 +22823,1998 @@ html #app .content-area .card.mb-6 .card-header .btn.btn-primary {
   border: 1px solid rgba(0,179,179,.38) !important;
   color: #00d4d4 !important;
 }
-html #app .content-area .card.mb-6 .card-header .btn-primary:hover {   
+html #app .content-area .card.mb-6 .card-header .btn-primary:hover {
   background: rgba(0,179,179,.28) !important;
   color: #ffffff !important;
+}
+
+
+
+/* ================================================================
+   §31  VIEW TOGGLE SYSTEMS — DARK HEADER FIXES
+   
+   All view toggles (Compact/Detailed/Monthly, Table/People/Compact,
+   Table/Calendar/Timeline/Coverage, etc.) live inside dark
+   card-headers (background: #143660).
+   
+   Problems:
+   - .btn-pill inactive: dark text → invisible on dark bg
+   - .vmt-btn: color:var(--nm-text3)=#6b7280 → invisible on dark
+   - Active states: white pill floats disconnected
+   - .view-toggle container: needs pill-group styling on dark
+   - .view-mode-toggle: same
+   
+   Fix: treat ALL view toggle containers uniformly on dark surface.
+   Active = white background, clinical blue text.
+   Inactive = transparent, white at 50% opacity.
+================================================================ */
+
+
+/* ── VIEW-TOGGLE container: pill group on dark ── */
+html #app .content-area .card.mb-6 .card-header .view-toggle,
+html #app .content-area .card.mb-6 .card-header .view-mode-toggle,
+html #app .tuc-card-header .tuc-view-toggle,
+#app .content-area .card.mb-6 .card-header .view-toggle,
+#app .content-area .card.mb-6 .card-header .view-mode-toggle {
+  display: flex !important;
+  gap: 2px !important;
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 9px !important;
+  padding: 3px !important;
+}
+
+
+/* ── BTN-PILL on dark card-header ── */
+html #app .content-area .card.mb-6 .card-header .view-toggle .btn-pill,
+#app .content-area .card.mb-6 .card-header .view-toggle .btn-pill {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 5px 12px !important;
+  border-radius: 7px !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255,255,255,.52) !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: color .14s, background .14s !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .view-toggle .btn-pill svg,
+#app .content-area .card.mb-6 .card-header .view-toggle .btn-pill svg {
+  opacity: .6 !important;
+  flex-shrink: 0 !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .view-toggle .btn-pill.active,
+#app .content-area .card.mb-6 .card-header .view-toggle .btn-pill.active {
+  background: #ffffff !important;
+  color: #1a4f8a !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15) !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .view-toggle .btn-pill.active svg {
+  opacity: 1 !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .view-toggle .btn-pill:not(.active):hover,
+#app .content-area .card.mb-6 .card-header .view-toggle .btn-pill:not(.active):hover {
+  color: rgba(255,255,255,.85) !important;
+  background: rgba(255,255,255,.07) !important;
+}
+
+
+/* ── VMT-BTN (Staff Absence: Table/Calendar/Timeline/Coverage) ── */
+html #app .content-area .card.mb-6 .card-header .vmt-btn,
+#app .content-area .card.mb-6 .card-header .vmt-btn {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 5px 10px !important;
+  border-radius: 7px !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255,255,255,.52) !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  transition: color .14s, background .14s !important;
+  box-shadow: none !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .vmt-btn.active,
+#app .content-area .card.mb-6 .card-header .vmt-btn.active {
+  background: #ffffff !important;
+  color: #1a4f8a !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15) !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .vmt-btn:not(.active):hover,
+#app .content-area .card.mb-6 .card-header .vmt-btn:not(.active):hover {
+  color: rgba(255,255,255,.85) !important;
+  background: rgba(255,255,255,.07) !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .vmt-btn svg,
+#app .content-area .card.mb-6 .card-header .vmt-btn svg {
+  opacity: .65 !important;
+  flex-shrink: 0 !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .vmt-btn.active svg {
+  opacity: 1 !important;
+}
+
+
+/* ── TUC-VIEW-BTN (Training Units: Timeline/People/Compact) ── */
+html #app .tuc-card-header .tuc-view-toggle,
+#app .tuc-card-header .tuc-view-toggle {
+  display: flex !important;
+  gap: 2px !important;
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 9px !important;
+  padding: 3px !important;
+}
+
+html #app .tuc-view-btn,
+#app .tuc-view-btn {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 5px 12px !important;
+  border-radius: 7px !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255,255,255,.52) !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: color .14s, background .14s !important;
+  white-space: nowrap !important;
+}
+
+html #app .tuc-view-btn.active,
+#app .tuc-view-btn.active {
+  background: #ffffff !important;
+  color: #1a4f8a !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15) !important;
+}
+
+html #app .tuc-view-btn:not(.active):hover,
+#app .tuc-view-btn:not(.active):hover {
+  color: rgba(255,255,255,.85) !important;
+  background: rgba(255,255,255,.07) !important;
+}
+
+
+/* ── CARD-TITLE on dark card-header (Absence: "Leave & Coverage") ── */
+html #app .content-area .card.mb-6 .card-header .card-title,
+#app .content-area .card.mb-6 .card-header .card-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,.88) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .card-title svg,
+#app .content-area .card.mb-6 .card-header .card-title svg {
+  color: rgba(255,255,255,.45) !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* ── PRIMARY ACTION BUTTON (Add Rotation / Record Leave / Add Staff) ── */
+html #app .content-area .card.mb-6 .card-header .btn.btn-primary,
+html #app .content-area .card.mb-6 .card-header .btn-primary,
+#app .content-area .card.mb-6 .card-header .btn.btn-primary {
+  background: rgba(0,179,179,.2) !important;
+  border: 1px solid rgba(0,179,179,.4) !important;
+  color: #00d4d4 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: background .15s !important;
+  white-space: nowrap !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .btn.btn-primary:hover,
+#app .content-area .card.mb-6 .card-header .btn.btn-primary:hover {
+  background: rgba(0,179,179,.32) !important;
+  color: #ffffff !important;
+}
+
+
+/* ── SECONDARY BUTTONS (CSV, Print) ── */
+html #app .content-area .card.mb-6 .card-header .btn.btn-secondary,
+html #app .content-area .card.mb-6 .card-header .btn-secondary {
+  background: rgba(255,255,255,.07) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.65) !important;
+  font-size: 12px !important;
+  padding: 5px 11px !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+html #app .content-area .card.mb-6 .card-header .btn.btn-secondary:hover {
+  background: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+
+
+/* ================================================================
+   §32  STAFF PROFILE DRAWER — COMPREHENSIVE REDESIGN
+   
+   Issues found from CSS audit + screenshot:
+   
+   LEFT PANEL:
+   1. pd-identity: #0f2d54 → clinical blue
+   2. pd-role: .575rem (9.2px) → 11px
+   3. pd-hero-chip: .575rem → 10px
+   4. pd-section-title: 8.5px → 10.5px
+   5. pd-date-k: .55rem → 10px
+   6. pd-stat-l: .52rem (8.3px) → 10px critical
+   7. pd-row-key/val: .675rem → 12px
+   8. pd-badge: .58rem → 10px
+   9. pd-stat-n: teal → clinical blue for active stat
+   10. pd-edit-btn: barely visible → proper ghost button
+   
+   RIGHT PANEL (pd-content):
+   11. pd-tabs bg: var(--surface-2) = f8f9fa → white with border
+   12. pd-tab active: teal → clinical blue
+   13. pd-tab-action-btn: 0.5px rgba border INVISIBLE → proper border
+       This is the "On-call Schedule", "Add Rotation", "Absence"
+       buttons that are white on white — completely invisible
+   14. pd-card-head: surface-2 → proper warm header
+   15. pd-kv-k: .58rem → 10.5px
+   16. Various font sizes lifted throughout
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   LEFT IDENTITY PANEL
+════════════════════════════════════════════════════════════════ */
+
+.pd-identity,
+#app .pd-identity {
+  background: #1a4f8a !important;
+  border-right: 1px solid rgba(255,255,255,.07) !important;
+}
+
+/* Top accent stripe: teal */
+.pd-status-bar,
+#app .pd-status-bar {
+  background: linear-gradient(90deg, #00d4d4 0%, rgba(0,212,212,0) 100%) !important;
+  height: 3px !important;
+}
+
+/* Hero: avatar + name + role */
+.pd-hero,
+#app .pd-hero {
+  padding: 24px 18px 16px !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+}
+
+/* Avatar */
+.pd-avatar,
+#app .pd-avatar {
+  width: 68px !important;
+  height: 68px !important;
+  border-radius: 50% !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #009999, #1a4f8a) !important;
+  box-shadow: 0 0 0 2.5px rgba(0,212,212,.3), 0 0 0 5px rgba(0,212,212,.08) !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+/* Status dot: border matches clinical blue */
+.pd-status-dot,
+#app .pd-status-dot {
+  border-color: #1a4f8a !important;
+  width: 11px !important;
+  height: 11px !important;
+}
+
+/* Name */
+.pd-name,
+#app .pd-name {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  line-height: 1.25 !important;
+  letter-spacing: -.01em !important;
+  text-align: center !important;
+}
+
+/* Role: was .575rem (9.2px) — critical fix */
+.pd-role,
+#app .pd-role {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.65) !important;
+  text-align: center !important;
+}
+
+/* Hero meta chips */
+.pd-hero-chip,
+#app .pd-hero-chip {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+  padding: 3px 9px !important;
+  border-radius: 10px !important;
+  background: rgba(0,179,179,.15) !important;
+  border: 1px solid rgba(0,179,179,.25) !important;
+  color: #00d4d4 !important;
+}
+
+.pd-hero-chip--neutral,
+#app .pd-hero-chip--neutral {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.18) !important;
+  color: rgba(255,255,255,.75) !important;
+}
+
+.pd-hero-chip--resident,
+#app .pd-hero-chip--resident {
+  background: rgba(99,102,241,.15) !important;
+  border-color: rgba(99,102,241,.25) !important;
+  color: #a5b4fc !important;
+}
+
+/* Close button */
+.pd-close,
+#app .pd-close {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  color: rgba(255,255,255,.7) !important;
+}
+.pd-close:hover,
+#app .pd-close:hover {
+  background: rgba(255,255,255,.15) !important;
+  color: #ffffff !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   STATS STRIP
+════════════════════════════════════════════════════════════════ */
+
+.pd-stats-strip,
+#app .pd-stats-strip {
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  background: rgba(0,0,0,.1) !important;
+}
+
+.pd-stat,
+#app .pd-stat {
+  padding: 12px 10px !important;
+  border-right: 1px solid rgba(255,255,255,.07) !important;
+  text-align: center !important;
+}
+.pd-stat:last-child,
+#app .pd-stat:last-child {
+  border-right: none !important;
+}
+
+/* Stat numbers: Instrument Serif italic */
+.pd-stat-n,
+#app .pd-stat-n {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 22px !important;
+  letter-spacing: -.04em !important;
+  color: rgba(255,255,255,.88) !important;
+  line-height: 1 !important;
+}
+
+.pd-stat-n--teal,
+#app .pd-stat-n--teal {
+  color: #00d4d4 !important;
+}
+
+/* Stat labels: was .52rem (8.3px) — most critical fix */
+.pd-stat-l,
+#app .pd-stat-l {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.45) !important;
+  margin-top: 4px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   INFO SECTIONS (left panel body)
+════════════════════════════════════════════════════════════════ */
+
+.pd-section,
+#app .pd-section {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+}
+
+/* Section title: was 8.5px */
+.pd-section-title,
+#app .pd-section-title {
+  font-size: 10.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.38) !important;
+}
+
+/* Info rows */
+.pd-row-key,
+#app .pd-row-key {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.55) !important;
+}
+
+.pd-row-val,
+#app .pd-row-val {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.9) !important;
+  font-weight: 500 !important;
+}
+
+/* Date keys: was .55rem */
+.pd-date-k,
+#app .pd-date-k {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.48) !important;
+}
+
+.pd-date-v,
+#app .pd-date-v {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.92) !important;
+  font-weight: 500 !important;
+}
+
+/* Contact rows */
+.pd-contact-row,
+#app .pd-contact-row {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.72) !important;
+}
+.pd-contact-row:hover,
+#app .pd-contact-row:hover {
+  color: #fff !important;
+}
+
+/* Origin block */
+.pd-origin-name,
+#app .pd-origin-name {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.88) !important;
+}
+.pd-origin-contact,
+#app .pd-origin-contact {
+  font-size: 11px !important;
+  color: rgba(255,255,255,.5) !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+/* Edit / action button */
+.pd-edit-btn,
+#app .pd-edit-btn {
+  margin: 10px 14px !important;
+  padding: 8px 12px !important;
+  border-radius: 9px !important;
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  color: rgba(255,255,255,.82) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  cursor: pointer !important;
+  justify-content: center !important;
+  transition: all .15s !important;
+  width: calc(100% - 28px) !important;
+}
+.pd-edit-btn:hover,
+#app .pd-edit-btn:hover {
+  background: rgba(255,255,255,.14) !important;
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,.28) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   RIGHT CONTENT PANEL
+════════════════════════════════════════════════════════════════ */
+
+.pd-content,
+#app .pd-content {
+  background: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Tab bar */
+.pd-tabs,
+#app .pd-tabs {
+  display: flex !important;
+  align-items: center !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,.09) !important;
+  padding: 0 18px !important;
+  flex-shrink: 0 !important;
+  gap: 0 !important;
+}
+
+/* Tabs */
+.pd-tab,
+#app .pd-tab {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 12px 14px !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: #6b7280 !important;
+  border-bottom: 2px solid transparent !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  background: none !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: color .14s, border-color .14s !important;
+}
+.pd-tab:hover,
+#app .pd-tab:hover {
+  color: #0d1117 !important;
+}
+
+/* Active tab: clinical blue */
+.pd-tab.active,
+#app .pd-tab.active {
+  color: #1a4f8a !important;
+  border-bottom-color: #1a4f8a !important;
+  font-weight: 600 !important;
+}
+
+.pd-tab svg,
+#app .pd-tab svg {
+  opacity: .6 !important;
+  flex-shrink: 0 !important;
+}
+.pd-tab.active svg,
+#app .pd-tab.active svg {
+  opacity: 1 !important;
+  stroke: #1a4f8a !important;
+}
+
+
+/* ── TAB ACTION BUTTONS — THE INVISIBLE BUTTONS FIX ──
+   "Add Rotation", "On-call Schedule", "Absence"
+   Were: background:transparent; border:0.5px solid rgba(0,0,0,.1)
+   On #f8f9fa background = completely invisible.
+   Fix: explicit white bg, visible border, clear text.
+── */
+.pd-tab-actions,
+#app .pd-tab-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 0 0 0 8px !important;
+  margin-left: auto !important;
+}
+
+.pd-tab-action-btn,
+#app .pd-tab-action-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  background: #ffffff !important;
+  border: 1.5px solid #d1d5db !important;   /* was 0.5px rgba — now clearly visible */
+  border-radius: 7px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all .14s !important;
+}
+
+.pd-tab-action-btn:hover,
+#app .pd-tab-action-btn:hover {
+  border-color: #1a4f8a !important;
+  color: #1a4f8a !important;
+  background: rgba(26,79,138,.04) !important;
+}
+
+.pd-tab-action-btn svg,
+#app .pd-tab-action-btn svg {
+  opacity: .7 !important;
+  flex-shrink: 0 !important;
+}
+.pd-tab-action-btn:hover svg,
+#app .pd-tab-action-btn:hover svg {
+  opacity: 1 !important;
+  stroke: #1a4f8a !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   TAB BODY CONTENT
+════════════════════════════════════════════════════════════════ */
+
+.pd-tab-body,
+#app .pd-tab-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 16px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  background: #f8f7f5 !important;   /* warm canvas inside the panel */
+}
+
+/* Cards */
+.pd-card,
+#app .pd-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05) !important;
+}
+
+.pd-card-head,
+#app .pd-card-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 14px !important;
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid rgba(0,0,0,.07) !important;
+}
+
+.pd-card-title,
+#app .pd-card-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  flex: 1 !important;
+  letter-spacing: -.01em !important;
+}
+
+/* Badge: was .58rem */
+.pd-badge,
+#app .pd-badge {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  padding: 2px 8px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+  letter-spacing: .03em !important;
+}
+
+.pd-badge--ok,
+#app .pd-badge--ok {
+  background: rgba(5,150,105,.08) !important;
+  color: #059669 !important;
+  border-color: rgba(5,150,105,.2) !important;
+}
+.pd-badge--danger,
+#app .pd-badge--danger {
+  background: rgba(220,38,38,.08) !important;
+  color: #dc2626 !important;
+  border-color: rgba(220,38,38,.2) !important;
+}
+.pd-badge--warn,
+#app .pd-badge--warn {
+  background: rgba(245,158,11,.08) !important;
+  color: #d97706 !important;
+  border-color: rgba(245,158,11,.2) !important;
+}
+.pd-badge--teal,
+#app .pd-badge--teal {
+  background: rgba(0,153,153,.08) !important;
+  color: #007a7a !important;
+  border-color: rgba(0,153,153,.2) !important;
+}
+.pd-badge--blue,
+#app .pd-badge--blue {
+  background: rgba(26,79,138,.08) !important;
+  color: #1a4f8a !important;
+  border-color: rgba(26,79,138,.2) !important;
+}
+
+/* KV grid */
+.pd-kv-k,
+#app .pd-kv-k {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+  color: #9ca3af !important;
+}
+.pd-kv-v,
+#app .pd-kv-v {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #0d1117 !important;
+}
+.pd-kv-v--accent,
+#app .pd-kv-v--accent {
+  color: #1a4f8a !important;
+}
+
+/* History rows */
+.pd-history-unit,
+#app .pd-history-unit {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #0d1117 !important;
+}
+.pd-history-dates,
+#app .pd-history-dates {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  color: #6b7280 !important;
+}
+.pd-history-badge,
+#app .pd-history-badge {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  padding: 2px 7px !important;
+  border-radius: 10px !important;
+}
+
+/* Schedule grid */
+.pd-schedule-label,
+#app .pd-schedule-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  margin-bottom: 6px !important;
+}
+.pd-shift-date,
+#app .pd-shift-date {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #0d1117 !important;
+}
+.pd-shift-time,
+#app .pd-shift-time {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  color: #6b7280 !important;
+}
+
+/* Research rows */
+.pd-research-title,
+#app .pd-research-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+}
+.pd-research-meta,
+#app .pd-research-meta {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  color: #6b7280 !important;
+}
+
+/* Rotation name */
+.pd-rotation-name,
+#app .pd-rotation-name {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+  padding: 12px 14px 8px !important;
+}
+
+/* Nil / empty */
+.pd-nil,
+#app .pd-nil {
+  font-size: 13px !important;
+  color: #9ca3af !important;
+  padding: 12px 14px !important;
+}
+
+/* Clear row */
+.pd-clear-row,
+#app .pd-clear-row {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  background: #f8f7f5 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 9px !important;
+  padding: 12px 14px !important;
+}
+
+/* More link */
+.pd-more,
+#app .pd-more {
+  font-size: 11px !important;
+  color: #9ca3af !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+/* Resident category badge */
+.resident-category-badge,
+#app .resident-category-badge {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+  padding: 3px 8px !important;
+  border-radius: 10px !important;
+}
+
+
+
+/* ================================================================
+   §33  STAFF PHOTO AVATAR SUPPORT
+   
+   index__83_.html adds public_photo_url image rendering inside:
+   - .pd-avatar (profile drawer)
+   - .scc-initials container (medical staff compact view)
+   
+   The img inherits container sizing but needs object-fit:cover
+   and border-radius to match the circular avatar shape.
+================================================================ */
+
+/* Profile drawer avatar photo */
+.pd-avatar img,
+#app .pd-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  display: block !important;
+}
+
+/* When photo is showing, hide the ::before initials */
+.pd-avatar:has(img),
+#app .pd-avatar:has(img) {
+  font-size: 0 !important;
+}
+.pd-avatar:has(img)::before,
+#app .pd-avatar:has(img)::before {
+  display: none !important;
+}
+
+/* Staff compact card (scc) avatar photo */
+.scc-av img,
+#app .scc-av img,
+.scc-avatar img,
+#app .scc-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+}
+
+/* Photo loading state: keep gradient bg visible during load */
+.pd-avatar,
+#app .pd-avatar {
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+
+
+/* ================================================================
+   §34  SYSTEMATIC IMPROVEMENT PASS — ALL 20 ITEMS
+   
+   01 Sub-11px font violations (remaining)
+   02 Line-height system
+   03 DM Mono consistency  
+   04 Empty state icons
+   05 Skeleton shimmer
+   06 Table headers
+   07 Research grid responsive
+   08 Profile drawer width
+   09 Filter bar wrapping
+   10 Touch targets
+   11 Notification panel
+   12 Focus rings
+   13 Scrollbars
+   14 Print styles
+   15 Transition performance
+   16 Ellipsis + overflow pairing
+   17 Dashboard
+   18 Command palette
+   19 Tab switch animations
+   20 Reduced motion
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   01  REMAINING SUB-11PX VIOLATIONS
+════════════════════════════════════════════════════════════════ */
+
+/* Medical Staff people-grid */
+#app .dept-res-label,
+.dept-res-label { font-size: 11px !important; }
+
+#app .dept-res-num,
+.dept-res-num { font-size: 18px !important; }
+
+/* Training Units timeline cells */
+#app .tuc-tl-cell,
+.tuc-tl-cell { font-size: 11px !important; }
+
+#app .tuc-tl-label,
+.tuc-tl-label { font-size: 11px !important; }
+
+#app [style*="font-size:8px"],
+#app [style*="font-size: 8px"] { font-size: 11px !important; }
+
+/* On-call compact */
+#app .oncall-shift-label,
+.oncall-shift-label { font-size: 11px !important; }
+
+/* Various .52rem stat labels */
+#app .db-oc-badge,
+.db-oc-badge { font-size: 11px !important; }
+
+#app .db-gap-year,
+.db-gap-year { font-size: 11px !important; }
+
+#app .db-gap-pill,
+.db-gap-pill { font-size: 11px !important; }
+
+#app .dept-summary-label,
+.dept-summary-label { font-size: 11px !important; }
+
+#app .dept-tbl-code,
+.dept-tbl-code { font-size: 11px !important; }
+
+#app .dept-tbl-mail,
+.dept-tbl-mail { font-size: 11px !important; }
+
+#app .dept-contact-role,
+.dept-contact-role { font-size: 11px !important; }
+
+#app .form-hint,
+.form-hint { font-size: 11px !important; }
+
+#app .tuc-free-chip,
+.tuc-free-chip { font-size: 11px !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   02  LINE-HEIGHT SYSTEM
+════════════════════════════════════════════════════════════════ */
+
+/* Global baseline */
+#app { line-height: 1.5 !important; }
+
+/* Long-form reading text */
+#app .nrd-content p,
+#app .rhub-line-desc,
+#app .news-card-excerpt,
+#app .nrd-update-body { line-height: 1.72 !important; }
+
+/* UI labels and data cells */
+#app .pd-row-key,
+#app .pd-row-val,
+#app .rfc-val,
+#app .table td { line-height: 1.4 !important; }
+
+/* One-line UI elements */
+#app .btn,
+#app .badge,
+#app .pd-badge,
+#app .tag-article,
+#app .rht-status { line-height: 1 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   03  DM MONO CONSISTENCY
+   All data-display elements → DM Mono
+════════════════════════════════════════════════════════════════ */
+
+#app .db-oc-time,
+#app .db-oc-date,
+#app .db-rot-unit,
+#app .db-rot-chip,
+#app .db-oc-assign,
+#app .db-cc-link,
+#app .db-gap-pill,
+#app .db-gap-year,
+#app .db-kpi-sub,
+#app .oncall-tl-from,
+#app .oncall-tl-to,
+#app .abs-tl-time,
+#app .tuc-tl-cell,
+#app .rht-protocol,
+#app .rhsc-proto,
+#app .dept-tbl-code,
+#app .pd-shift-time,
+#app .pd-history-dates,
+#app .pd-research-meta,
+#app .news-meta-item {
+  font-family: 'DM Mono', 'Courier New', monospace !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   04  EMPTY STATES
+   Icon: was opacity:.18 on blue = invisible
+   Fix: neutral grey, full opacity, readable title
+════════════════════════════════════════════════════════════════ */
+
+#app .empty-state-icon,
+.empty-state-icon {
+  color: #d1d5db !important;
+  opacity: 1 !important;
+  font-size: 36px !important;
+}
+
+#app .empty-state-title,
+.empty-state-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  letter-spacing: -.01em !important;
+}
+
+#app .empty-state-description,
+.empty-state-description {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+  line-height: 1.6 !important;
+}
+
+#app .empty-state,
+.empty-state {
+  padding: 32px 24px !important;
+  text-align: center !important;
+}
+
+#app .table .empty-state-icon { font-size: 28px !important; }
+#app .table .empty-state-title { font-size: 13px !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   05  SKELETON SHIMMER
+   Was: surface-2 → border sweep — barely visible on warm canvas
+   Fix: explicit grey → lighter-grey sweep on white base
+════════════════════════════════════════════════════════════════ */
+
+#app .skeleton,
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0eeea 0%,
+    #e5e3de 35%,
+    #f0eeea 70%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: neumSkeleton 1.5s ease-in-out infinite !important;
+  border-radius: 6px !important;
+}
+
+@keyframes neumSkeleton {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+#app .skeleton-row  {
+  height: 50px !important;
+  margin-bottom: 3px !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid rgba(0,0,0,.04) !important;
+}
+#app .skeleton-card {
+  height: 120px !important;
+  margin-bottom: 12px !important;
+  border-radius: 12px !important;
+}
+#app .skeleton-text {
+  height: 13px !important;
+  margin-bottom: 7px !important;
+  border-radius: 4px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   06  TABLE HEADERS — unified
+   Three competing definitions → one consistent system
+════════════════════════════════════════════════════════════════ */
+
+html #app .table thead th,
+#app .table thead th {
+  background: #f5f4f0 !important;
+  padding: 10px 16px !important;
+  font-family: 'DM Mono', 'Courier New', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+  color: #6b7280 !important;
+  border-bottom: 1.5px solid rgba(0,0,0,.09) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  white-space: nowrap !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  border-radius: 0 !important;
+}
+
+html #app .table thead th:hover,
+#app .table thead th:hover {
+  color: #0d1117 !important;
+  background: #ede9e3 !important;
+}
+
+html #app .table thead th i,
+html #app .table thead th svg,
+#app .table thead th svg {
+  color: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+html #app .table tbody tr:hover td,
+#app .table tbody tr:hover td {
+  background: rgba(26,79,138,.025) !important;
+}
+
+html #app .table tbody td,
+#app .table tbody td {
+  padding: 11px 16px !important;
+  font-size: 13px !important;
+  color: #0d1117 !important;
+  border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  vertical-align: middle !important;
+}
+
+html #app .table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   07  RESEARCH HUB GRID — responsive
+════════════════════════════════════════════════════════════════ */
+
+#app .rhub-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+  gap: 14px !important;
+  padding: 18px 20px 28px !important;
+  background: #edecea !important;
+}
+
+@media (max-width: 1100px) {
+  #app .rhub-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #app .rhub-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  #app .rhub-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   08  PROFILE DRAWER WIDTH
+   820px on 1024px screen = 80% coverage, no backdrop visible
+   Drop to 680px max with responsive narrowing
+════════════════════════════════════════════════════════════════ */
+
+.profile-drawer,
+#app .profile-drawer {
+  width: min(760px, 96vw) !important;
+}
+
+@media (max-width: 1280px) {
+  .profile-drawer,
+  #app .profile-drawer { width: min(680px, 96vw) !important; }
+}
+
+@media (max-width: 1024px) {
+  .profile-drawer,
+  #app .profile-drawer { width: min(600px, 96vw) !important; }
+
+  .pd-identity,
+  #app .pd-identity { width: 200px !important; }
+}
+
+@media (max-width: 768px) {
+  .profile-drawer,
+  #app .profile-drawer {
+    width: 100vw !important;
+    flex-direction: column !important;
+  }
+  .pd-identity,
+  #app .pd-identity {
+    width: 100% !important;
+    max-height: 260px !important;
+    flex-direction: row !important;
+  }
+  .pd-body,
+  #app .pd-body { display: none !important; }
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   09  FILTER BAR — no-wrap strategy
+════════════════════════════════════════════════════════════════ */
+
+html #app .content-area .filter-bar {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html #app .content-area .filter-bar::-webkit-scrollbar {
+  display: none !important;
+}
+
+html #app .content-area .filter-bar .form-control,
+html #app .content-area .filter-bar input[type="text"],
+html #app .content-area .filter-bar input[type="search"] {
+  min-width: 0 !important;
+  flex-shrink: 1 !important;
+}
+
+html #app .content-area .filter-bar .form-select,
+html #app .content-area .filter-bar select {
+  min-width: 110px !important;
+  flex-shrink: 1 !important;
+}
+
+/* Time-range toggles: shrink label text on narrow */
+@media (max-width: 1200px) {
+  #app .filter-bar .filter-period-btn span,
+  #app .filter-bar .showing-label { display: none !important; }
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   10  TOUCH TARGETS
+   Icon-only buttons → 36×36px minimum
+════════════════════════════════════════════════════════════════ */
+
+/* Overflow menus, edit icons, delete icons in lists */
+#app .rhsc-arr,
+#app .rht-row > svg,
+#app .news-card-right .btn,
+#app [class*="rhsc"] button,
+#app .rhub-study-card button,
+#app .ofi-actions button,
+#app .nrd-close,
+#app .pd-close {
+  min-width: 36px !important;
+  min-height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Table row action buttons */
+#app .table .btn-sm,
+#app .table-actions .btn {
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+/* Form elements: standard 42px height */
+#app .form-control,
+#app .form-select,
+#app .sm-input,
+#app input[type="text"],
+#app input[type="email"],
+#app input[type="date"],
+#app input[type="search"],
+#app select {
+  min-height: 40px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   11  NOTIFICATION PANEL
+   Entirely inline-styled — can only target the container class
+   Since all styles are inline, we focus on the container shape
+════════════════════════════════════════════════════════════════ */
+
+/* Notification dropdown container */
+#app .notif-dropdown,
+#app [style*="width:340px"][style*="border-radius:12px"],
+#app [style*="width: 340px"][style*="border-radius: 12px"] {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.1) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.08) !important;
+}
+
+/* Notification badge: red dot on bell icon */
+#app [style*="background:#ef4444"][style*="border-radius:50%"][style*="width:16px"] {
+  background: #dc2626 !important;
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+}
+
+/* Unread items: slight teal tint */
+#app [style*="background:rgba(0,122,122,.05)"] {
+  background: rgba(26,79,138,.04) !important;
+}
+
+/* Unread dot: clinical blue */
+#app [style*="background:#007A7A"][style*="width:6px"] {
+  background: #1a4f8a !important;
+}
+
+/* Mark all read button */
+#app [style*="color:var(--nm-teal,#007A7A)"] {
+  color: #1a4f8a !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   12  KEYBOARD FOCUS RINGS
+   Replaces outline:none with visible :focus-visible rings
+════════════════════════════════════════════════════════════════ */
+
+/* Remove outline-none globally and replace */
+*:focus {
+  outline: none;
+}
+
+/* Visible focus only for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #1a4f8a !important;
+  outline-offset: 2px !important;
+}
+
+/* Buttons */
+#app button:focus-visible,
+#app .btn:focus-visible {
+  outline: 2px solid #1a4f8a !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(26,79,138,.15) !important;
+}
+
+/* Form inputs */
+#app input:focus-visible,
+#app select:focus-visible,
+#app textarea:focus-visible {
+  outline: none !important;
+  border-color: #1a4f8a !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.12) !important;
+}
+
+/* Sidebar nav items */
+#app .nmsb-item:focus-visible {
+  outline: 2px solid rgba(0,212,212,.7) !important;
+  outline-offset: -2px !important;
+}
+
+/* Links */
+#app a:focus-visible {
+  outline: 2px solid #1a4f8a !important;
+  outline-offset: 2px !important;
+  border-radius: 3px !important;
+}
+
+/* Skip to content (if added) */
+.skip-to-content:focus {
+  position: fixed !important;
+  top: 8px !important;
+  left: 8px !important;
+  z-index: 9999 !important;
+  background: #1a4f8a !important;
+  color: #fff !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   13  SCROLLBARS — unified thin style
+════════════════════════════════════════════════════════════════ */
+
+/* Global: thin, warm */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: #d1d5db transparent; }
+
+/* Sidebar nav: keep hidden */
+#app .nmsb-nav::-webkit-scrollbar,
+#app aside.nmsb::-webkit-scrollbar { width: 0 !important; }
+
+/* Profile drawer body */
+#app .pd-tab-body::-webkit-scrollbar { width: 3px; }
+#app .pd-body::-webkit-scrollbar { width: 3px; }
+
+/* News drawer */
+#app .nrd-body::-webkit-scrollbar { width: 3px; }
+#app .nrd-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); }
+
+/* Research hub scroll areas */
+#app .rhub-grid::-webkit-scrollbar { width: 4px; }
+#app .rhub-study-list::-webkit-scrollbar { width: 4px; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   14  PRINT STYLES
+   Clinical use-case: rotations, on-call rosters, study records
+════════════════════════════════════════════════════════════════ */
+
+@media print {
+  /* Hide navigation */
+  #app aside.nmsb,
+  #app .sidebar,
+  #app .top-navbar,
+  #app .breadcrumb,
+  #app .nrd-drawer,
+  #app .profile-drawer,
+  .profile-drawer-backdrop { display: none !important; }
+
+  /* Full width content */
+  #app .main-content { margin-left: 0 !important; }
+
+  /* Dark card-headers: convert to light for print */
+  #app .content-area .card.mb-6 .card-header,
+  #app .tuc-card-header,
+  #app .rhub-topbar {
+    background: #f5f5f5 !important;
+    color: #111 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #app .content-area .card.mb-6 .card-header .card-title,
+  #app .content-area .card.mb-6 .card-header .btn-pill,
+  #app .tuc-card-header .card-title {
+    color: #111 !important;
+  }
+
+  /* KPI strips: visible on paper */
+  #app .tu-kpi-strip,
+  #app .dept-pulse-bar {
+    background: #f9f9f9 !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+
+  /* Tables: clean */
+  #app .table thead th {
+    background: #f0f0f0 !important;
+    color: #333 !important;
+    border-bottom: 2px solid #999 !important;
+  }
+
+  /* Buttons: hidden in print */
+  #app .btn,
+  #app .filter-bar,
+  #app .view-toggle { display: none !important; }
+
+  /* Links: show URL */
+  a[href]:after { content: " (" attr(href) ")"; font-size: 10px; color: #666; }
+
+  /* Page breaks */
+  #app .rhub-line-card,
+  #app .pd-card { page-break-inside: avoid; }
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   15  TRANSITION PERFORMANCE
+   Replace 'transition: all' with specific properties only
+════════════════════════════════════════════════════════════════ */
+
+/* Override the most expensive transitions */
+#app .btn,
+#app button {
+  transition: background-color .14s ease, color .14s ease,
+              border-color .14s ease, box-shadow .14s ease !important;
+}
+
+#app .nmsb-item {
+  transition: background-color .14s ease !important;
+}
+
+#app .rhub-line-card,
+#app .tuc,
+#app .rhub-study-card {
+  transition: box-shadow .18s ease, transform .18s ease,
+              border-color .18s ease !important;
+}
+
+#app .news-card {
+  transition: background-color .12s ease !important;
+}
+
+#app .form-control,
+#app .sm-input {
+  transition: border-color .18s ease, box-shadow .18s ease !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   16  ELLIPSIS + OVERFLOW PAIRING
+   Text-overflow requires overflow:hidden to work
+════════════════════════════════════════════════════════════════ */
+
+#app .rht-title,
+#app .rhsc-title,
+#app .rlc-title,
+#app .news-card-title,
+#app .db-rot-unit,
+#app .tuc-name,
+#app .nmsb-label,
+#app .navbar-title {
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+/* But allow multi-line truncation where needed */
+#app .rht-title,
+#app .rhsc-title,
+#app .rlc-title,
+#app .news-card-title {
+  white-space: normal !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: unset !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   17  DASHBOARD
+   db-panel, db-kpi, db-greeting, db-content-grid, db-oc-*, db-rot-*
+════════════════════════════════════════════════════════════════ */
+
+/* Greeting area */
+#app .db-greeting {
+  margin-bottom: 20px !important;
+  padding: 20px 24px 0 !important;
+}
+
+#app .db-greeting-time {
+  font-size: 11.5px !important;
+  color: rgba(255,255,255,.55) !important;
+  font-family: 'DM Mono', monospace !important;
+  letter-spacing: .05em !important;
+  margin-bottom: 4px !important;
+}
+
+#app .db-greeting-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: clamp(20px, 2vw, 28px) !important;
+  font-weight: 500 !important;
+  color: rgba(255,255,255,.96) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -.02em !important;
+}
+
+#app .db-greeting-title span {
+  color: #00d4d4 !important;
+}
+
+/* Quick actions bar */
+#app .db-quick-actions {
+  background: rgba(255,255,255,.1) !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  border-radius: 10px !important;
+  padding: 6px 8px !important;
+}
+
+#app .db-qa-btn {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.75) !important;
+  border-radius: 7px !important;
+}
+#app .db-qa-btn:hover {
+  background: rgba(255,255,255,.12) !important;
+  color: #ffffff !important;
+}
+#app .db-qa-btn--primary {
+  background: rgba(0,179,179,.2) !important;
+  color: #00d4d4 !important;
+}
+#app .db-qa-btn--primary:hover {
+  background: rgba(0,179,179,.3) !important;
+}
+#app .db-qa-divider {
+  background: rgba(255,255,255,.15) !important;
+}
+
+/* Alert ribbon */
+#app .dbr-strip {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.08) !important;
+  border-radius: 10px !important;
+  margin: 0 24px 20px !important;
+}
+#app .dbr-label {
+  color: #1a4f8a !important;
+  background: rgba(26,79,138,.08) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 10.5px !important;
+}
+#app .dbr-item { font-size: 12px !important; }
+
+/* KPI bar */
+#app .dbsr {
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid rgba(0,0,0,.09) !important;
+  padding: 0 !important;
+}
+
+#app .db-kpi {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 12px !important;
+  padding: 16px 18px !important;
+  transition: box-shadow .18s, border-color .18s !important;
+  cursor: pointer !important;
+}
+#app .db-kpi:hover {
+  border-color: rgba(26,79,138,.2) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.08) !important;
+}
+
+#app .db-kpi-val {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  font-size: 30px !important;
+  letter-spacing: -.04em !important;
+  color: #0d1117 !important;
+  line-height: 1 !important;
+}
+
+#app .db-kpi-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: #9ca3af !important;
+  margin-top: 6px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+#app .db-kpi-sub {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+  margin-top: 6px !important;
+  font-family: 'DM Mono', monospace !important;
+  gap: 6px !important;
+}
+
+#app .db-kpi-icon {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 9px !important;
+}
+
+/* Content grid */
+#app .db-content-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 14px !important;
+  padding: 0 24px 24px !important;
+}
+
+@media (max-width: 1100px) {
+  #app .db-content-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Content cards */
+#app .db-content-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05) !important;
+}
+
+#app .db-cc-head {
+  background: #f5f4f0 !important;
+  border-bottom: 1px solid rgba(0,0,0,.07) !important;
+  padding: 11px 18px !important;
+}
+
+#app .db-cc-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: #6b7280 !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+#app .db-cc-link {
+  font-size: 11.5px !important;
+  color: #1a4f8a !important;  /* was teal — now clinical blue */
+  font-family: 'DM Sans', monospace !important;
+  font-weight: 500 !important;
+}
+#app .db-cc-link:hover { color: #163f70 !important; }
+
+/* On-call rows */
+#app .db-oc-row {
+  padding: 10px 18px !important;
+  border-bottom: 1px solid rgba(0,0,0,.05) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+#app .db-oc-row:last-child { border-bottom: none !important; }
+
+#app .db-oc-date {
+  font-size: 11.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  color: #6b7280 !important;
+  width: 54px !important;
+}
+#app .db-oc-date--today {
+  color: #1a4f8a !important;
+  font-weight: 700 !important;
+}
+
+#app .db-oc-name { font-size: 12.5px !important; font-weight: 600 !important; color: #0d1117 !important; }
+#app .db-oc-time { font-size: 11px !important; color: #6b7280 !important; font-family: 'DM Mono', monospace !important; }
+
+#app .db-oc-avatar {
+  background: linear-gradient(135deg, #009999, #1a4f8a) !important;
+  font-size: 9px !important;
+}
+
+#app .db-oc-badge--primary {
+  background: rgba(26,79,138,.08) !important;
+  color: #1a4f8a !important;
+  border-color: rgba(26,79,138,.18) !important;
+  font-size: 11px !important;
+}
+#app .db-oc-assign {
+  color: #1a4f8a !important;
+  font-size: 11px !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+/* Rotation rows */
+#app .db-rot-row {
+  padding: 10px 18px !important;
+  border-bottom: 1px solid rgba(0,0,0,.05) !important;
+}
+#app .db-rot-name { font-size: 12.5px !important; font-weight: 600 !important; color: #0d1117 !important; }
+#app .db-rot-unit { font-size: 11.5px !important; color: #6b7280 !important; }
+#app .db-rot-avatar {
+  background: linear-gradient(135deg, #1e40af, #1a4f8a) !important;
+  font-size: 9px !important;
+}
+
+/* Resident gap items */
+#app .db-gap-item {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,.09) !important;
+  border-radius: 10px !important;
+}
+#app .db-gap-item:hover { border-color: #d97706 !important; }
+#app .db-gap-name { font-size: 12.5px !important; color: #0d1117 !important; }
+#app .db-gap-year { font-size: 11px !important; color: #9ca3af !important; }
+#app .db-gap-pill {
+  font-size: 11px !important;
+  background: rgba(217,119,6,.1) !important;
+  color: #b45309 !important;
+  border-color: rgba(217,119,6,.2) !important;
+}
+
+/* Empty dashboard state */
+#app .db-cc-empty {
+  font-size: 13px !important;
+  color: #9ca3af !important;
+  padding: 20px 18px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   18  COMMAND PALETTE / QUICK SEARCH (⌘K)
+   ucm-* components — update to clinical blue system
+════════════════════════════════════════════════════════════════ */
+
+#app .ucm-row {
+  border-radius: 9px !important;
+  padding: 10px 12px !important;
+  transition: background .12s !important;
+}
+
+#app .ucm-row:hover {
+  background: rgba(26,79,138,.04) !important;
+}
+
+#app .ucm-row--checked {
+  background: rgba(26,79,138,.08) !important;
+  border-color: rgba(26,79,138,.2) !important;
+}
+
+#app .ucm-name {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #0d1117 !important;
+}
+
+#app .ucm-type {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+#app .ucm-avatar {
+  border-radius: 9px !important;
+  background: linear-gradient(135deg, #1a4f8a, #009999) !important;
+  color: #fff !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+#app .ucm-sup-label {
+  font-size: 10.5px !important;
+  border-color: #e5e7eb !important;
+  color: #6b7280 !important;
+  font-family: 'DM Mono', monospace !important;
+  border-radius: 10px !important;
+  padding: 4px 10px !important;
+}
+
+#app .ucm-hint {
+  font-size: 11.5px !important;
+  color: #9ca3af !important;
+  font-family: 'DM Mono', monospace !important;
+  padding: 6px 12px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   19  MICRO-ANIMATIONS
+   Tab switches, view changes — 120ms ease-out cross-fade
+════════════════════════════════════════════════════════════════ */
+
+/* Profile drawer tab panels */
+#app .pd-tab-body {
+  animation: fadePanel .12s ease-out !important;
+}
+
+/* Research hub content areas */
+#app .rhub-line-content,
+#app .rhub-study-body {
+  animation: fadePanel .14s ease-out !important;
+}
+
+/* News view content */
+#app .news-list {
+  animation: fadePanel .12s ease-out !important;
+}
+
+@keyframes fadePanel {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Sidebar active state transition */
+#app .nmsb-item::before {
+  transition: opacity .14s ease, box-shadow .14s ease !important;
+}
+
+/* Card hover lift */
+#app .rhub-line-card,
+#app .tuc,
+#app .db-kpi,
+#app .db-gap-item {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   20  REDUCED MOTION
+   All animations off for users who prefer it
+════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep progress bars static */
+  #app .nd-splash-bar-fill,
+  #app .als-bar { animation: none !important; width: 60% !important; }
+
+  /* Keep live dot visible but not pulsing */
+  #app .nmsb-user-dot,
+  #app .ops-live-pulse { animation: none !important; }
+
+  /* Keep skeleton visible but not shimmering */
+  #app .skeleton {
+    animation: none !important;
+    background: #f0eeea !important;
+  }
+
+  /* Tab panel: no fade animation */
+  #app .pd-tab-body,
+  #app .rhub-line-content,
+  #app .news-list { animation: none !important; }
 }
