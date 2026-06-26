@@ -35060,3 +35060,489 @@ html #app .content-area .card.mb-6 > .card-header .btn-icon:hover {
   background: rgba(255,255,255,.12) !important;
   color: rgba(255,255,255,.9) !important;
 }
+
+
+
+/* ================================================================
+   §50  ROTATION ORBS — TEXT BLEED FIX
+   
+   Bug: orb labels bleeding outside pill boundaries when track
+   is too narrow. Cause: rot-track has overflow:hidden + nowrap,
+   forcing orbs into insufficient space.
+   
+   Fix: allow orbs to show text correctly with a horizontal
+   scroll on the track instead of clipping. Also ensure each
+   orb has enough padding to contain its label.
+================================================================ */
+
+/* Allow orb track to scroll horizontally instead of clipping */
+html #app .rot-track,
+.rot-track {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+html #app .rot-track::-webkit-scrollbar,
+.rot-track::-webkit-scrollbar { display: none !important; }
+
+/* Orb: ensure pill has enough room for label */
+html #app .rot-orb,
+.rot-orb {
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 36px !important;
+  max-width: 140px !important;
+  white-space: nowrap !important;
+}
+
+/* Active orb: slightly larger but still capped */
+html #app .rot-orb--active,
+.rot-orb--active {
+  min-width: 44px !important;
+  max-width: 160px !important;
+}
+
+/* Orb label: must not overflow its parent */
+html #app .rot-orb-label,
+.rot-orb-label {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+}
+
+/* Also fix the scheduled orb colour — was #3b82f6 (old blue) 
+   from the HTML inline block line 1040 */
+html #app .rot-orb--scheduled {
+  border-color: #1a4f8a !important;
+  color: #1a4f8a !important;
+}
+html #app .rot-orb--scheduled:hover {
+  background: rgba(26,79,138,.07) !important;
+  border-color: #1a4f8a !important;
+}
+html #app .rot-compact .rot-orb--scheduled {
+  background: #1a4f8a !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+
+
+/* ================================================================
+   §51  UNIVERSAL OVERFLOW / OVERLAP FIX — ALL MODULES
+   
+   Root cause: many containers have overflow:hidden on flex rows
+   where children use white-space:nowrap. When children are wider
+   than the container, text bleeds rather than truncating cleanly.
+   
+   Fix strategy per context:
+   - Text labels in fixed-width containers → ellipsis truncation
+   - Orb/pill tracks → horizontal scroll (invisible scrollbar)
+   - Tooltip anchors → z-index + pointer-events fix
+   - Absolute children of overflow:hidden → restructure to relative
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   ROTATIONS — orb track horizontal scroll (already in §50)
+   Additional: row-level name column
+════════════════════════════════════════════════════════════════ */
+
+html #app .rot-who-name,
+.rot-who-name {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow: visible !important;
+}
+
+/* mv-rot-bar: monthly view bars must clip cleanly */
+html #app .mv-rot-bar,
+.mv-rot-bar {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   TRAINING UNITS — tuc card text containment
+════════════════════════════════════════════════════════════════ */
+
+/* tuc-name: 2-line clamp already set; ensure parent clips */
+html #app .tuc-head,
+.tuc-head { overflow: hidden !important; }
+
+/* tuc-slot-name: clips cleanly in slot rows */
+html #app .tuc-slot-name,
+.tuc-slot-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+/* tuc-supervisor-chip: clip not overflow */
+html #app .tuc-supervisor-chip,
+.tuc-supervisor-chip {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   MEDICAL STAFF — scc rows
+════════════════════════════════════════════════════════════════ */
+
+/* scc-meta-row: nowrap row, allow scroll */
+html #app .scc-meta-row,
+.scc-meta-row {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+html #app .scc-meta-row::-webkit-scrollbar { display: none !important; }
+
+/* scc-name: single line ellipsis */
+html #app .scc-name,
+.scc-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+/* scc-spec: allow wrap on narrow */
+html #app .scc-spec,
+.scc-spec {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+/* dept-unit-name: clip */
+html #app .dept-unit-name,
+.dept-unit-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   RESEARCH HUB — card titles and stat labels
+════════════════════════════════════════════════════════════════ */
+
+/* rlc-title: already has 2-line clamp in §35 */
+html #app .rlc-title,
+.rlc-title { min-width: 0 !important; }
+
+/* rht-title: already has 2-line clamp */
+html #app .rht-title,
+.rht-title { min-width: 0 !important; }
+
+/* rhub-grid: should scroll not clip */
+html #app .rhub-grid {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* rlc-coord-name: single line */
+html #app .rlc-coord-name,
+.rlc-coord-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   PUBLICATIONS / NEWS — card rows
+════════════════════════════════════════════════════════════════ */
+
+/* news-card-title: already 2-line clamp in §35 */
+html #app .news-card-title,
+.news-card-title { min-width: 0 !important; }
+
+/* news-meta-item row: scroll not clip */
+html #app .news-card-meta,
+.news-card-meta {
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  flex-wrap: nowrap !important;
+}
+html #app .news-card-meta::-webkit-scrollbar { display: none !important; }
+
+/* news-meta-item: don't overflow parent */
+html #app .news-meta-item,
+.news-meta-item {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   ON-CALL — timeline name column
+════════════════════════════════════════════════════════════════ */
+
+html #app .oncall-tl-name,
+.oncall-tl-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+html #app .oncall-tl-from,
+html #app .oncall-tl-to,
+.oncall-tl-from,
+.oncall-tl-to {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DASHBOARD — content card rows
+════════════════════════════════════════════════════════════════ */
+
+/* db-oc-name: single line */
+html #app .db-oc-name,
+.db-oc-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+/* db-rot-unit: single line */
+html #app .db-rot-unit,
+.db-rot-unit {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+/* db-rot-name */
+html #app .db-rot-name,
+.db-rot-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+/* db-oc-info: must shrink */
+html #app .db-oc-info,
+.db-oc-info {
+  min-width: 0 !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   ABSENCE TIMELINE
+════════════════════════════════════════════════════════════════ */
+
+/* abs-tl-bar: position:absolute children must not escape */
+html #app .abs-tl-bar,
+.abs-tl-bar {
+  overflow: visible !important;  /* allow today marker to show */
+  position: relative !important;
+}
+
+/* abs-tl-name: clip */
+html #app .abs-tl-name,
+.abs-tl-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   OPS ROOM — broadcast cards + feed items
+════════════════════════════════════════════════════════════════ */
+
+html #app .ops-broadcast-card,
+.ops-broadcast-card { overflow: hidden !important; }
+
+html #app .obc-text,
+.obc-text {
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+html #app .ofi-title,
+.ofi-title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+html #app .ofi-author,
+.ofi-author {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+  flex-shrink: 1 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   PROFILE DRAWER — left identity panel
+════════════════════════════════════════════════════════════════ */
+
+/* pd-name: allow 2 lines */
+html #app .pd-name,
+.pd-name {
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  white-space: normal !important;
+}
+
+/* pd-row-val: wrap allowed */
+html #app .pd-row-val,
+.pd-row-val {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+/* pd-rotation-name: single line */
+html #app .pd-rotation-name,
+.pd-rotation-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   SETTINGS — service/degree cards
+════════════════════════════════════════════════════════════════ */
+
+html #app .nm-svc-name,
+.nm-svc-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+html #app .nm-deg-name,
+.nm-deg-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+html #app .stype-chip-label,
+.stype-chip-label {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   TOOLTIPS — ensure they escape overflow:hidden parents
+   
+   Tooltips use position:absolute and need to escape their
+   overflow:hidden parent. Fix: parent needs position:relative
+   and overflow:visible, OR tooltip uses position:fixed.
+   
+   The rot-orb tooltip already uses position:absolute with
+   bottom:calc(100% + 10px) — it needs the rot-orb parent
+   to be position:relative (it is) but the rot-track parent
+   must NOT clip it.
+════════════════════════════════════════════════════════════════ */
+
+/* rot-orb: ensure tooltip can escape */
+html #app .rot-orb,
+.rot-orb {
+  overflow: visible !important;  /* tooltip must escape */
+  position: relative !important;
+}
+/* But clip the label text specifically */
+html #app .rot-orb-label,
+.rot-orb-label {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 120px !important;
+  display: block !important;
+}
+
+/* rot-track: visible for tooltips, scroll for orbs */
+html #app .rot-track,
+.rot-track {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-width: none !important;
+}
+html #app .rot-track::-webkit-scrollbar { display: none !important; }
+
+/* nmsb tooltip */
+html #app .nmsb-item,
+.nmsb-item { overflow: visible !important; }
+
+/* Sidebar tooltip escape */
+html #app aside.nmsb,
+.sidebar {
+  overflow: visible !important;
+}
+/* But sidebar nav must still clip horizontally when collapsed */
+html #app .nmsb-nav {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   GLOBAL SAFE DEFAULTS
+   min-width:0 on all flex children prevents text overflow
+════════════════════════════════════════════════════════════════ */
+
+/* Every direct child of a flex row should have min-width:0
+   unless it's explicitly flex-shrink:0 */
+html #app .rot-row > *,
+html #app .db-oc-row > *,
+html #app .db-rot-row > *,
+html #app .abs-tl-item > *,
+html #app .scc > *,
+html #app .news-card > * {
+  min-width: 0 !important;
+}
+
+/* Explicit flex-shrink:0 overrides above for fixed elements */
+html #app .rot-orb,
+html #app .rot-who,
+html #app .db-oc-date,
+html #app .db-oc-avatar,
+html #app .db-oc-badge,
+html #app .news-card-left,
+html #app .news-card-right,
+html #app .abs-tl-bar,
+html #app .abs-tl-dot {
+  flex-shrink: 0 !important;
+  min-width: unset !important;
+}
