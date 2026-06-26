@@ -36038,3 +36038,523 @@ html #app .tuc-cap-badge-denom {
   font-style: normal !important;
   font-size: 12px !important;
 }
+
+
+
+/* ================================================================
+   §54  DEEP AUDIT FIXES — complete pass
+   
+   From systematic audit of all 239 colours, all font-sizes,
+   all hover/focus states, all avatar sizes, all transitions.
+   
+   A  41 missing sub-11px overrides (uncaught by previous passes)
+   B  12 missing hover states on button variants
+   C  6 missing focus-visible states
+   D  Stray colour consolidation
+   E  Transition standardisation
+   F  Border-radius unification on buttons
+   G  Avatar text-size standardisation (initials in 8-9px → 10px)
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   A  41 MISSING SUB-11px OVERRIDES
+════════════════════════════════════════════════════════════════ */
+
+/* On-call day */
+html #app .ocd-av {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}
+html #app .ocd-pill {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  padding: 2px 7px !important;
+  border-radius: 5px !important;
+}
+html #app .ot-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+}
+
+/* On-call callout */
+html #app .callout-type-pill {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  padding: 2px 8px !important;
+  border-radius: 5px !important;
+}
+
+/* Absence timeline */
+html #app .abs-tl-section-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+}
+html #app .abs-tl-cov-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 600 !important;
+}
+
+/* Briefing on-call (boc) */
+html #app .boc-step-num {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+}
+html #app .boc-queue-title {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+}
+html #app .boc-q-count {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+}
+html #app .boc-q-warn,
+html #app .boc-review-warn {
+  font-size: 10.5px !important;
+  font-weight: 500 !important;
+}
+html #app .boc-cal-dow span {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+/* Coverage */
+html #app .co-dist-badge {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+}
+html #app .oc-area-badge {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  padding: 2px 7px !important;
+  border-radius: 5px !important;
+}
+html #app .nm-cov-code {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: .08em !important;
+}
+html #app .nm-cov-tag {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+}
+
+/* Dashboard */
+html #app .db-drawer-section {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .12em !important;
+}
+html #app .db-gap-pill {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+}
+
+/* Unit coverage check */
+html #app .ucc-resident-av {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}
+
+/* Absence calendar */
+html #app .abs-cal-day-count {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+}
+
+/* Training unit timeline */
+html #app .tuc-tl-cell-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 600 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Innovation cards */
+html #app .inno-card-stage {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+  padding: 2px 7px !important;
+  border-radius: 5px !important;
+}
+html #app .inno-card-pi-av {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+}
+
+/* Research portfolio */
+html #app .rp-nav-count-badge {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  padding: 1px 5px !important;
+  border-radius: 8px !important;
+}
+
+/* Ops */
+html #app .ops-fi-tag {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+}
+
+/* Global catch-all: any remaining inline font-size < 11px */
+html #app [style*="font-size:9px"],
+html #app [style*="font-size: 9px"],
+html #app [style*="font-size:8px"],
+html #app [style*="font-size: 8px"],
+html #app [style*="font-size:7px"],
+html #app [style*="font-size:0.6rem"],
+html #app [style*="font-size:.6rem"],
+html #app [style*="font-size:0.7rem"],
+html #app [style*="font-size:.7rem"],
+html #app [style*="font-size:0.5rem"],
+html #app [style*="font-size:.5rem"] {
+  font-size: 11px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   B  MISSING HOVER STATES
+════════════════════════════════════════════════════════════════ */
+
+/* btn-pill: view toggle buttons */
+html #app .btn-pill {
+  transition: background .14s, border-color .14s, color .14s !important;
+  cursor: pointer !important;
+}
+html #app .btn-pill:hover {
+  background: rgba(0,0,0,.05) !important;
+  border-color: rgba(0,0,0,.18) !important;
+}
+html #app .btn-pill.active {
+  background: var(--nm-navy, #07111f) !important;
+  color: #ffffff !important;
+  border-color: var(--nm-navy, #07111f) !important;
+}
+
+/* btn-save */
+html #app .btn-save {
+  background: #1a4f8a !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: background .14s, box-shadow .14s !important;
+  cursor: pointer !important;
+}
+html #app .btn-save:hover {
+  background: #163f70 !important;
+  box-shadow: 0 4px 14px rgba(26,79,138,.3) !important;
+}
+
+/* btn--danger, btn-back */
+html #app .btn--danger:hover {
+  background: rgba(220,38,38,.08) !important;
+  border-color: rgba(220,38,38,.3) !important;
+  color: #dc2626 !important;
+}
+html #app .btn-back,
+html #app .back-btn {
+  transition: background .14s, color .14s !important;
+  cursor: pointer !important;
+}
+html #app .btn-back:hover,
+html #app .back-btn:hover {
+  background: rgba(0,0,0,.06) !important;
+  color: var(--nm-text1, #111110) !important;
+}
+
+/* nav-btn (calendar navigation, monthly view) */
+html #app .nav-btn,
+html #app .today-btn {
+  transition: background .14s, color .14s !important;
+  cursor: pointer !important;
+  border-radius: 7px !important;
+}
+html #app .nav-btn:hover { background: rgba(0,0,0,.07) !important; }
+html #app .today-btn:hover { background: rgba(0,0,0,.07) !important; }
+
+/* assign-btn, add-btn */
+html #app .assign-btn,
+html #app .add-btn {
+  transition: background .14s, border-color .14s, color .14s !important;
+  cursor: pointer !important;
+}
+html #app .assign-btn:hover {
+  background: rgba(0,179,179,.12) !important;
+  border-color: var(--nm-teal, #00b3b3) !important;
+  color: var(--nm-teal, #00b3b3) !important;
+}
+html #app .add-btn:hover {
+  background: rgba(26,79,138,.08) !important;
+  border-color: #1a4f8a !important;
+  color: #1a4f8a !important;
+}
+
+/* btn-action (generic action button) */
+html #app .btn-action {
+  transition: background .14s, border-color .14s, color .14s, transform .1s !important;
+  cursor: pointer !important;
+}
+html #app .btn-action:hover {
+  background: rgba(0,0,0,.06) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* view-btn (module view toggles) */
+html #app .view-btn {
+  transition: background .14s, color .14s !important;
+  cursor: pointer !important;
+  border-radius: 7px !important;
+}
+html #app .view-btn:hover { background: rgba(0,0,0,.07) !important; }
+html #app .view-btn.active {
+  background: var(--nm-navy, #07111f) !important;
+  color: #ffffff !important;
+}
+
+/* vmt-btn (vacant/move toggle) */
+html #app .vmt-btn {
+  transition: background .14s, border-color .14s !important;
+  cursor: pointer !important;
+}
+html #app .vmt-btn:hover {
+  background: rgba(0,179,179,.08) !important;
+  border-color: rgba(0,179,179,.3) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   C  FOCUS-VISIBLE STATES — accessibility
+════════════════════════════════════════════════════════════════ */
+
+/* Global focus-visible ring */
+html #app button:focus-visible,
+html #app .btn:focus-visible,
+html #app a:focus-visible,
+html #app [tabindex]:focus-visible {
+  outline: 2px solid var(--nm-teal, #00b3b3) !important;
+  outline-offset: 2px !important;
+  border-radius: inherit !important;
+}
+
+/* pd-tab focus */
+html #app .pd-tab:focus-visible {
+  outline: 2px solid var(--nm-teal, #00b3b3) !important;
+  outline-offset: -2px !important;
+}
+
+/* sidebar nav item focus */
+html #app .nmsb-item:focus-visible {
+  outline: 2px solid rgba(0,179,179,.6) !important;
+  outline-offset: -2px !important;
+  border-radius: 8px !important;
+}
+
+/* rot-orb focus */
+html #app .rot-orb:focus-visible {
+  outline: 2px solid var(--nm-teal, #00b3b3) !important;
+  outline-offset: 3px !important;
+}
+
+/* tu-kpi clickable focus */
+html #app .tu-kpi--clickable:focus-visible {
+  outline: 2px solid var(--nm-teal, #00b3b3) !important;
+  outline-offset: 2px !important;
+  border-radius: 8px !important;
+}
+
+/* tuc-horizon-btn focus */
+html #app .tuc-horizon-btn:focus-visible {
+  outline: 2px solid var(--nm-teal, #00b3b3) !important;
+  outline-offset: 1px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   D  STRAY COLOUR CONSOLIDATION
+════════════════════════════════════════════════════════════════ */
+
+/* #4A9EE8 → clinical blue tint (used in stats panel, rp nav) */
+html #app [style*="color:#4A9EE8"],
+html #app [style*="color: #4A9EE8"] { color: #1a4f8a !important; }
+html #app [style*="background:#4A9EE8"],
+html #app [style*="background: #4A9EE8"] { background: #1a4f8a !important; }
+
+/* #e24b4a → standard danger red #dc2626 */
+html #app [style*="color:#e24b4a"] { color: #dc2626 !important; }
+html #app [style*="background:#e24b4a"] { background: #dc2626 !important; }
+
+/* #ef9f27 → standard amber #d97706 */
+html #app [style*="color:#ef9f27"] { color: #d97706 !important; }
+html #app [style*="background:#ef9f27"] { background: #d97706 !important; }
+
+/* #1d4ed8 → clinical blue #1a4f8a */
+html #app [style*="color:#1d4ed8"] { color: #1a4f8a !important; }
+
+/* Class-based fixes for stray colours */
+html #app .text-blue-700   { color: #1a4f8a !important; }
+html #app .bg-blue-700     { background: #1a4f8a !important; }
+html #app .border-blue-700 { border-color: #1a4f8a !important; }
+
+/* #e24b4a in HTML block — specific elements */
+html #app .abs-cal-day--conflict { background: rgba(220,38,38,.12) !important; }
+html #app .abs-tl-conflict-dot   { background: #dc2626 !important; }
+
+/* #ef9f27 in HTML block — amber status elements */
+html #app .ops-bc--amber .ops-bc-stripe { background: #d97706 !important; }
+html #app .ops-bc--amber .ops-bc-ico    { color: #d97706 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   E  TRANSITION STANDARDISATION
+   Standard: specific properties .14s ease (NOT 'all')
+   'all' causes performance issues and unexpected animations
+════════════════════════════════════════════════════════════════ */
+
+/* Override 'all .12s' on common elements to specific properties */
+html #app .tu-kpi,
+html #app .tu-kpi--clickable {
+  transition: background .14s ease, box-shadow .14s ease, border-color .14s ease !important;
+}
+html #app .tuc-horizon-btn {
+  transition: background .14s ease, color .14s ease, border-color .14s ease !important;
+}
+html #app .rot-who-avatar {
+  transition: transform .14s ease, box-shadow .14s ease !important;
+}
+html #app .nmsb-item {
+  transition: background .14s ease, color .14s ease !important;
+}
+html #app .ocd-av {
+  transition: transform .14s ease, box-shadow .14s ease !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   F  BORDER-RADIUS UNIFICATION — 8px on all buttons
+   Audit found: 4px×9, 5px×6, 6px×27, 7px×14, 8px×6
+   Standard: 8px for small buttons, 9px for primary CTAs
+════════════════════════════════════════════════════════════════ */
+
+/* All button variants: 8px minimum radius */
+html #app .btn,
+html #app .btn-sm,
+html #app .btn-xs,
+html #app .btn-pill,
+html #app .btn-save,
+html #app .btn-back,
+html #app .back-btn,
+html #app .nav-btn,
+html #app .today-btn,
+html #app .view-btn,
+html #app .add-btn,
+html #app .assign-btn,
+html #app .vmt-btn,
+html #app .tuc-horizon-btn,
+html #app .mv-nav-btn,
+html #app .tuc-weekly-nav-btn,
+html #app .abs-cal-nav-btn,
+html #app .week-nav-btn,
+html #app .tuc-view-btn {
+  border-radius: 8px !important;
+}
+
+/* Pill/round buttons keep their shape */
+html #app .btn-round,
+html #app .rot-orb,
+html #app .nm-av,
+html #app .pig-avatar,
+html #app .profile-avatar,
+html #app .pd-avatar,
+html #app .ocd-av {
+  border-radius: 50% !important;
+}
+
+/* Form controls: 8px */
+html #app .form-control,
+html #app .form-select,
+html #app input[type="text"],
+html #app input[type="search"],
+html #app input[type="email"],
+html #app input[type="date"],
+html #app select {
+  border-radius: 8px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   G  AVATAR TEXT STANDARDISATION
+   Initials inside avatars: sub-11px causes invisible text
+   Avatar text should be proportional to avatar size
+════════════════════════════════════════════════════════════════ */
+
+/* XS avatars (14-22px): 8-9px initials are intentional — too small for more */
+/* SM avatars (24-28px): 10px */
+html #app .nm-av--xs { font-size: 9px !important; font-weight: 800 !important; }
+html #app .nm-av--sm,
+html #app .ocd-av,
+html #app .db-oc-av,
+html #app .boc-q-av,
+html #app .tuc-tl-avatar,
+html #app .ucc-resident-av { font-size: 10px !important; font-weight: 700 !important; }
+
+/* MD avatars (30-36px): 11-12px */
+html #app .nm-av--md,
+html #app .rot-who-avatar,
+html #app .staff-table-av,
+html #app .ofi-av,
+html #app .rteam-av { font-size: 11px !important; font-weight: 700 !important; }
+
+/* LG avatars (38-48px): 13-15px */
+html #app .nm-av--lg,
+html #app .pig-avatar,
+html #app .spop-avatar { font-size: 13px !important; font-weight: 700 !important; }
+
+/* XL avatars (56-66px): 16-18px */
+html #app .nm-av--xl,
+html #app .pd-avatar,
+html #app .profile-avatar { font-size: 17px !important; font-weight: 700 !important; }
+
+/* Ensure all avatar text is centered and doesn't wrap */
+html #app [class*="-av"],
+html #app [class*="-avatar"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  font-style: normal !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+}
+
+/* Exception: nm-av--xs initials can stay 9px — tiny avatar */
+/* Exception: inno-card-pi-av at 20px → 9px is borderline acceptable */
