@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=13">
+    <link rel="stylesheet" href="style.css?v=14">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8277,6 +8277,12 @@
 /* mobile-nav-item.active: #1a4f8a — stats sidebar system, leave */
 /* --blue var: #1a4f8a — semantic variable used for informational/article states, keep */
 /* #0077b6: login screen only, intentional ocean blue, keep */
+/* Phase colour inline-style overrides (JS-injected via getPhaseColor()) */
+/* These catch any runtime JS-injected inline styles from getPhaseColor() */
+#app [style*="#4d9aff"]  { color:#1a4f8a !important; }
+#app [style*="#00e5a0"]  { color:#059669 !important; }
+#app [style*="#ffbe3d"]  { color:#d97706 !important; }
+#app [style*="#ff5566"]  { color:#dc2626 !important; }
 
 </style>
 </head>
@@ -19880,4 +19886,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html>
+</html> 
