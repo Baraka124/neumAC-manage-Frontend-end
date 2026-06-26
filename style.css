@@ -12721,3 +12721,20 @@ html, body, #app { height: 100%; }
 @media (max-width: 768px) {
   html body #app .top-navbar .search-container { display: none !important; }
 }
+
+/* ── Active states (§62 equivalent) ── */
+#app .btn-primary:active,
+.btn-primary:active    { opacity:.85 !important; transform:translateY(1px) !important; }
+#app .btn-secondary:active,
+.btn-secondary:active  { background:rgba(0,0,0,.09) !important; transform:translateY(1px) !important; }
+#app .btn-save:active,
+.btn-save:active       { opacity:.85 !important; transform:translateY(1px) !important; }
+#app .dbh-btn:active,
+.dbh-btn:active        { opacity:.8 !important; transform:translateY(1px) !important; }
+#app .nmsb-item:active { background:rgba(0,179,179,.08) !important; }
+#app .pd-tab:active    { background:rgba(0,0,0,.04) !important; }
+#app .rhub-tab:active  { background:rgba(0,0,0,.04) !important; }
+#app .tuc-horizon-btn:active { transform:translateY(1px) !important; }
+#app .rot-orb:active   { transform:scale(.96) !important; }
+#app .dbsr-stat:active { background:rgba(0,0,0,.04) !important; }
+#app .db-panel-link:active { background:rgba(0,0,0,.04) !important; }
