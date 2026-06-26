@@ -39112,7 +39112,7 @@ html body #app .content-area input {
 }
 
 /* ── navbar stays above everything ── */
-html body #app .top-navbar {
+html body #app .top-navbar {  
   position: relative !important;
   z-index: 100 !important;
 }
