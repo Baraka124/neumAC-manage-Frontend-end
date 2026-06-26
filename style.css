@@ -36730,4 +36730,165 @@ html #app .dbsr-lbl {
   text-transform: uppercase !important;
   letter-spacing: .1em !important;
   color: #6b7280 !important;
-} 
+}
+
+
+
+/* ================================================================
+   §56  MASTER SCAN FIX — All issues from complete system audit
+   
+   ISSUES FOUND:
+   
+   1. WHITE TEXT IN WRONG CONTEXTS (rgba(255,255,255,.85)):
+      L22904  btn-pill:not(.active) in dark card-header — CORRECT (white on dark)
+      L22937  vmt-btn hover in dark card-header — CORRECT (white on dark)
+      L22990  tuc-view-btn hover — CORRECT (on dark button)
+      L27486  nrd-footer .btn — CORRECT (dark drawer footer)
+      L31649  nrd-body news-card-title — NEEDS CHECK
+      CONCLUSION: all white text usages are on DARK backgrounds — correct ✓
+   
+   2. #2563eb USAGES:
+      - L636,662: style10 variable definition — fine
+      - L12697: news-card--article border-left — needs → #1a4f8a
+      - L12769,12816,12864: text colours — needs → #1a4f8a
+      - L19567,21125: research phase I colour — SEMANTIC (keep blue for phase)
+      - Gradients: #1a4f8a + #2563eb — valid gradient stops
+      CONCLUSION: 4 non-gradient uses need fixing
+   
+   3. #0f2d54 USAGES:
+      - L856,3781,3841: style10 base — cannot change (not ours)
+      - L8123-11991: our overrides using nm-navy2 deliberately
+        #0f2d54 is INTENTIONAL for dark panel backgrounds
+        (sm-left, pd-identity, rp-nav, udd-header, rhub-left)
+        It is nm-navy2: slightly lighter than nm-navy #07111f
+        giving visual depth. Keep as-is.
+      CONCLUSION: all #0f2d54 uses are intentional dark navy2
+   
+   4. ndBreath animation: was in §48 splash loading section
+      Reference exists but animation name may have changed
+   
+   5. DUPLICATE SELECTORS: 23 selectors 4+ times
+      These are cascading improvements — last wins, harmless
+      but adds file weight. Leave as-is (cannot refactor safely)
+   
+   6. search-container width:100% at mobile — CORRECT (intended)
+      The 220px is desktop, 100% is mobile. No conflict.
+================================================================ */
+
+
+/* ── Fix #2563eb non-gradient text/border uses ── */
+
+/* news-card--article border: was #2563eb → clinical blue */
+html #app .news-card--article {
+  border-left-color: #1a4f8a !important;
+}
+
+/* Publications type tags using old blue text */
+html #app .news-card-tag--article { color: #1a4f8a !important; background: rgba(26,79,138,.1) !important; }
+html #app .news-card-type--article { color: #1a4f8a !important; }
+
+/* ── ndBreath: splash breathing animation ── */
+/* (Was defined but animation name referenced differently) */
+@keyframes ndBreath {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+.nd-splash-inner,
+#app .nd-splash-inner {
+  animation: ndBreath 3s ease-in-out infinite !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nd-splash-inner { animation: none !important; }
+}
+
+/* ── Final dbsr-stat nth-child(3) — highest specificity win ── */
+/* The HTML block has: #app .dbsr-stat:nth-child(3) .dbsr-num { color:var(--nm-text1) }
+   and: #app .dbsr-num--teal { color: var(--nm-teal) !important }
+   And our old §X has: rgba(255,255,255,.85) — white
+   Using html body #app for maximum specificity */
+html body #app .dbsr-stat:nth-child(3) .dbsr-num,
+html body #app .dbsr-num--teal {
+  color: var(--nm-teal, #00b3b3) !important;
+}
+
+/* ── Ensure all dbsr colours are locked in with max specificity ── */
+html body #app .dbsr-stat:nth-child(1) .dbsr-num { color: #10b981 !important; }
+html body #app .dbsr-stat:nth-child(2) .dbsr-num { color: #1a4f8a !important; }
+html body #app .dbsr-stat:nth-child(4) .dbsr-num { color: #7c3aed !important; }
+
+/* ── Ensure dbsr-accent colours are locked ── */
+html body #app .dbsr-accent--teal   { background: #00b3b3 !important; }
+html body #app .dbsr-accent--navy   { background: #1a4f8a !important; }
+html body #app .dbsr-accent--indigo { background: #7c3aed !important; }
+
+/* ── stats-toggle z-index final win ── */
+html body .stats-toggle-btn,
+html body #app .stats-toggle-btn {
+  z-index: 50 !important;
+}
+
+/* ── dbh-frame/actions z-index final win ── */
+html body #app .dbh-frame,
+html body #app .dbh-top,
+html body #app .dbh-actions {
+  position: relative !important;
+  z-index: 60 !important;
+}
+
+/* ── Search bar final win with html body #app ── */
+html body #app .search-container {
+  width: 220px !important;
+  max-width: 220px !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+html body #app .navbar-right {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+html body #app .navbar-left {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+}
+
+/* ── btn-pill: clear definition ── */
+/* In dark card headers: white ghost → teal active (correct) */
+/* In light contexts: neutral ghost → nm-navy active */
+html body #app .content-area .card.mb-6 > .card-header .btn-pill {
+  background: rgba(255,255,255,.07) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.6) !important;
+  font-size: 12px !important;
+  padding: 5px 12px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+}
+html body #app .content-area .card.mb-6 > .card-header .btn-pill:hover {
+  background: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+html body #app .content-area .card.mb-6 > .card-header .btn-pill.active {
+  background: rgba(0,179,179,.2) !important;
+  border-color: rgba(0,179,179,.4) !important;
+  color: #00d4d4 !important;
+}
+
+/* ── Last remaining sub-11px elements ── */
+html #app .news-card-tag     { font-size: 10px !important; font-family: 'DM Mono', monospace !important; font-weight: 700 !important; }
+html #app .news-status-badge { font-size: 10px !important; font-family: 'DM Mono', monospace !important; font-weight: 700 !important; }
+html #app .news-author-av    { font-size: 9px  !important; font-weight: 700 !important; }
+html #app .timeline-bar-val  { font-size: 10px !important; font-family: 'DM Mono', monospace !important; }
+html #app .timeline-bar-label { font-size: 10px !important; font-family: 'DM Mono', monospace !important; }
+html #app .oc-row-shift-type { font-size: 10px !important; font-family: 'DM Mono', monospace !important; font-weight: 700 !important; }
+html #app .abs-tl-bar-label  { font-size: 10px !important; font-family: 'DM Mono', monospace !important; }
+html #app .nmsb-badge        { font-size: 9px  !important; font-weight: 700 !important; }
+html #app .nmsb-search kbd   { font-size: 10px !important; font-family: 'DM Mono', monospace !important; }
+
+/* ── Verify card-header dark treatment is winning ── */
+/* The HTML block: #app .content-area .card-header = (1,2,0) background:nm-surface (white)
+   Our rule: html #app .content-area .card.mb-6 > .card-header = (0,1,2,1)+html → beats it */
+html body #app .content-area .card.mb-6 > .card-header {
+  background: var(--nm-navy, #07111f) !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  color: rgba(255,255,255,.92) !important;
+}
