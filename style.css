@@ -22451,9 +22451,7 @@ html #app .content-area .card.mb-6 .card-header,
 
 /* Research hub topbar */
 html #app .rhub-topbar,
-#app .rhub-topbar {
-  background: #1a4f8a !important;
-}
+
 
 /* News / publications tab bar */
 html #app .news-view > .rhub-tabs,
@@ -26787,11 +26785,8 @@ html #app .settings-form-grid .form-select:focus {
   }
 
   /* Filter bar: stacked on mobile */
-  html #app .content-area .filter-bar {
-    padding: 8px 12px !important;
-    gap: 6px !important;
-    flex-wrap: wrap !important;
-  }
+  
+
 
   /* Research hub grid: 1 column */
   #app .rhub-grid {
@@ -28505,10 +28500,6 @@ html #app .cmd-foot-item kbd,
   transform-origin: left !important;
 }
 
-@keyframes als-sweep {
-  0%   { transform: translateX(-150%); }
-  100% { transform: translateX(450%); }
-}
 
 /* Tagline: "Connecting clinical data..." */
 #app .als-tagline,
@@ -31782,17 +31773,7 @@ html #app .rot-view-modal .modal-body {
 }
 
 /* 07: Month label in monthly view */
-html #app .mv-month-hdr {
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-  color: #0d1117 !important;
-  padding: 10px 16px !important;
-  background: #f8f7f5 !important;
-  border-bottom: 1px solid rgba(0,0,0,.07) !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 5 !important;
-}
+
 
 /* 08: Ops room announcement cards */
 html #app .announcement-card,
@@ -32819,19 +32800,8 @@ html #app .staff-table-av--resident {
 
 /* Sidebar is correctly position:fixed (already in style10) */
 /* We just need to ensure main-content has the right margin */
-#app .main-content {
-  margin-left: var(--sidebar-w, 228px) !important;
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100vh !important;
-  overflow: hidden !important;
-  min-width: 0 !important;
-}
+
 #app.sidebar-collapsed .main-content,
-.sidebar-collapsed .main-content {
-  margin-left: var(--sidebar-sm, 56px) !important;
-}
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -33494,10 +33464,7 @@ html #app .rot-orb--scheduled,
 
 /* Frame background: was #0f2d54 */
 html #app .dbh-frame,
-#app .dbh-frame {
-  background: #1a4f8a !important;
-  padding: 16px 24px 0 !important;
-}
+
 
 /* Hero top row */
 html #app .dbh-top,
@@ -33925,14 +33892,7 @@ html #app .mv-row:hover,
 #app .mv-row:hover {
   background: rgba(26,79,138,.025) !important;
 }
-html #app .mv-row--header {
-  background: #f8f7f5 !important;
-  min-height: 36px !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 3 !important;
-  border-bottom: 1.5px solid rgba(0,0,0,.1) !important;
-}
+
 
 html #app .mv-day,
 #app .mv-day {
@@ -33971,22 +33931,7 @@ html #app .mv-rot-bar--scheduled { background: #1a4f8a !important; color: #fffff
 html #app .mv-rot-bar--completed { background: #9ca3af !important; color: #ffffff !important; opacity: .7 !important; }
 
 /* Resident name column */
-html #app .mv-res-col,
-#app .mv-res-col {
-  width: 140px !important;
-  flex-shrink: 0 !important;
-  padding: 0 12px !important;
-  font-size: 12.5px !important;
-  font-weight: 600 !important;
-  color: #07111f !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  position: sticky !important;
-  left: 0 !important;
-  background: inherit !important;
-  z-index: 1 !important;
-}
+
 
 /* Month header */
 html #app .mv-month-label,
@@ -35743,10 +35688,7 @@ html #app .staff-table-av--attending {
 }
 
 /* Dashboard hero frame */
-html #app .dbh-frame {
-  background: #1a4f8a !important;
-  padding: 10px 20px 0 !important;
-}
+
 
 /* Dashboard stat accent — navy variant */
 html #app .dbsr-accent--navy {
