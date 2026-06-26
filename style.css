@@ -22825,7 +22825,6 @@ html #app .content-area .card.mb-6 .card-header .btn-primary:hover {
 }
 
 
-
 /* ================================================================
    §31  VIEW TOGGLE SYSTEMS — DARK HEADER FIXES
    
@@ -23056,7 +23055,6 @@ html #app .content-area .card.mb-6 .card-header .btn.btn-secondary:hover {
   background: rgba(255,255,255,.12) !important;
   color: rgba(255,255,255,.9) !important;
 }
-
 
 
 /* ================================================================
@@ -23685,7 +23683,6 @@ html #app .content-area .card.mb-6 .card-header .btn.btn-secondary:hover {
 }
 
 
-
 /* ================================================================
    §33  STAFF PHOTO AVATAR SUPPORT
    
@@ -23737,7 +23734,6 @@ html #app .content-area .card.mb-6 .card-header .btn.btn-secondary:hover {
   overflow: hidden !important;
   position: relative !important;
 }
-
 
 
 /* ================================================================
@@ -24816,7 +24812,6 @@ html #app .content-area .filter-bar select {
 }
 
 
-
 /* ================================================================
    §35  ELITE PASS — LOGIN + SPLASH + RESEARCH HUB + STAFF PROFILE
    
@@ -25535,7 +25530,6 @@ html #app .rhub-line-name,
 }
 
 
-
 /* ================================================================
    §36  ELITE PASS — SETTINGS + ON-CALL SCHEDULE
    
@@ -26192,7 +26186,6 @@ html #app .settings-form-grid .form-select:focus {
   border-color: #1a4f8a !important;
   box-shadow: 0 0 0 3px rgba(26,79,138,.1) !important;
 }
-
 
 
 /* ================================================================
@@ -27006,7 +26999,6 @@ html #app .settings-form-grid .form-select:focus {
 }
 
 
-
 /* ================================================================
    §38  RESEARCH HUB + PUBLICATIONS — ELITE LEVEL REDESIGN
    
@@ -27818,7 +27810,6 @@ html #app .settings-form-grid .form-select:focus {
   align-items: center !important;
   gap: 8px !important;
 }
-
 
 
 /* ================================================================
@@ -28720,7 +28711,6 @@ html #app .cmd-foot-item kbd,
 }
 
 
-
 /* ================================================================
    §40  TYPOGRAPHY HIERARCHY + CARD PROPORTIONALITY
    
@@ -29257,7 +29247,6 @@ html #app .cmd-foot-item kbd,
 #app .modal-confirm-footer .btn {
   min-width: 100px !important;
 }
-
 
 
 /* ================================================================
@@ -29935,7 +29924,6 @@ html #app .bc-sep {
 #app .status-dot--busy    { background: #d97706 !important; }
 #app .status-dot--away    { background: #9ca3af !important; }
 #app .status-dot--offline { background: #e5e7eb !important; }
-
 
 
 /* ================================================================
@@ -30644,7 +30632,6 @@ html #app .tuc-card-header {
 }
 
 
-
 /* ================================================================
    §42b  TUC CARD — PRECISE TEMPLATE-AWARE REDESIGN
    
@@ -31046,7 +31033,6 @@ html #app .tu-kpi--active {
 }
 
 
-
 /* ================================================================
    §43  FINAL GLOBAL SWEEP — ALL REMAINING VIOLATIONS
    
@@ -31277,7 +31263,6 @@ html #app .nm-av--xs {
 /* This means var(--blue) now = #1a4f8a everywhere remaining */
 /* var(--blue-lt) = rgba(26,79,138,.08) — clinical blue tint */
 /* All hover states using var(--blue-lt) now use clinical tint */
-
 
 
 /* ================================================================
@@ -32046,7 +32031,6 @@ html #app .rhub-empty {
   html #app .cmd-panel { animation: none !important; }
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
-
 
 
 /* ================================================================
@@ -32835,7 +32819,6 @@ html #app .staff-table-av--resident {
 ================================================================ */
 
 
-
 /* ================================================================
    §46  BUG FIXES + HYPER-RESPONSIVE IMPROVEMENTS
    
@@ -33350,7 +33333,6 @@ html body .content-area {
     font-size: 16px !important;
   }
 }
-
 
 
 /* ================================================================
@@ -34350,7 +34332,6 @@ html #app .src-dur,
 }
 
 
-
 /* ================================================================
    §48  SIGN-IN / LOADING EXPERIENCE + SETTINGS + CONFLICT FIXES
    
@@ -34854,8 +34835,6 @@ html #app .dbsr-num--teal { color: #007a7a !important; }
 }
 
 
-
-
 /* ================================================================
    §49  FINAL FIXES — from screenshot review 26 Jun 2026
    
@@ -34951,7 +34930,6 @@ html #app .content-area .card.mb-6 > .card-header .btn-icon:hover {
 }
 
 
-
 /* ================================================================
    §50  ROTATION ORBS — TEXT BLEED FIX
    
@@ -35017,7 +34995,6 @@ html #app .rot-compact .rot-orb--scheduled {
   color: #fff !important;
   border: none !important;
 }
-
 
 
 /* ================================================================
@@ -35435,7 +35412,6 @@ html #app .abs-tl-dot {
 }
 
 
-
 /* ================================================================
    §52  TYPOGRAPHY — CORRECT BASE SIZES
    
@@ -35622,7 +35598,6 @@ html #app #app .content-area table th { /* double #app for extra specificity */
   text-transform: uppercase !important;
   font-family: 'DM Mono', monospace !important;
 }
-
 
 
 /* ================================================================
@@ -36025,7 +36000,6 @@ html #app .tuc-cap-badge-denom {
   font-style: normal !important;
   font-size: 12px !important;
 }
-
 
 
 /* ================================================================
@@ -36547,38 +36521,7 @@ html #app [class*="-avatar"] {
 /* Exception: inno-card-pi-av at 20px → 9px is borderline acceptable */
 
 
-
-/* ================================================================
-   §55  CRITICAL BUG FIXES — from screenshot 26 Jun 2026
-   
-   BUG 1: stats-toggle-btn (position:fixed; right:0; z-index:91)
-           covers the dashboard hero action buttons (On-call,
-           Rotation, Announce) which are near the right edge.
-           Only Add Staff (leftmost) remained clickable.
-           Fix: give dbh-actions padding-right to clear the tab,
-           AND lower stats-toggle-btn z-index so content wins.
-   
-   BUG 2: dbsr-stat:nth-child(3) .dbsr-num was set to
-           rgba(255,255,255,.85) (white) in an old pass (§X)
-           assuming dark background. The dbsr has white background.
-           White text on white = invisible "0" for On-call Today.
-           Fix: restore correct teal colour for the 3rd stat.
-   
-   BUG 3: dbsr-accent--navy had no colour override.
-           The 2nd stat (Active Rotations) uses dbsr-accent--navy
-           which should be clinical blue, not old navy #0f2d54.
-   
-   BUG 4: Search bar width — previous fix had insufficient
-           specificity. Use html body #app prefix to win.
-================================================================ */
-
-
-/* ════════════════════════════════════════════════════════════════
-   BUG 1: stats-toggle-btn blocking dashboard buttons
-════════════════════════════════════════════════════════════════ */
-
 /* Lower z-index so normal content shows above it */
-.stats-toggle-btn,
 /* [z-removed] */
 
 /* Add padding-right to dbh-actions so buttons don't reach the tab */
@@ -36587,10 +36530,7 @@ html #app .dbh-actions {
 }
 
 /* When stats sidebar is OPEN, it's full-width — no longer a small tab */
-html #app .live-stats-sidebar.open ~ * .dbh-actions,
-html #app .live-stats-sidebar.open + .dbh-actions {
-  padding-right: 16px !important;
-}
+
 
 /* Alternative: ensure dbh-frame content is above the tab */
 /* [z-removed] */
@@ -36709,7 +36649,6 @@ html #app .dbsr-lbl {
 }
 
 
-
 /* ================================================================
    §56  MASTER SCAN FIX — All issues from complete system audit
    
@@ -36797,8 +36736,7 @@ html body #app .dbsr-accent--teal   { background: #00b3b3 !important; }
 html body #app .dbsr-accent--navy   { background: #1a4f8a !important; }
 html body #app .dbsr-accent--indigo { background: #7c3aed !important; }
 
-/* ── stats-toggle z-index final win ── */
-html body .stats-toggle-btn,
+
 /* [z-removed] */
 
 /* ── dbh-frame/actions z-index final win ── */
@@ -36865,7 +36803,6 @@ html body #app .content-area .card.mb-6 > .card-header {
 }
 
 
-
 /* ================================================================
    §57  VISUAL FIXES — from screenshot analysis 27 Jun 2026
    
@@ -36891,7 +36828,6 @@ html body #app .content-area .card.mb-6 > .card-header {
       Fix: ensure top-navbar has z-index > dbh-frame
    
    D. Overall — buttons now clickable ✓ (confirmed from Image 2)
-      The stats-toggle z:50 + dbh-frame z:60 fix worked
 ================================================================ */
 
 
@@ -36928,8 +36864,7 @@ html #app .navbar-user-btn > svg {
 html body #app .dbh-top,
 /* [z-removed] */
 
-/* Protect stats-toggle: stays at z:50 (between hero z:10 and navbar z:70) */
-html body .stats-toggle-btn,
+
 /* [z-removed] */
 
 /* navbar-title: explicit colour so it's readable on white navbar */
@@ -36986,68 +36921,14 @@ html body #app .top-navbar .navbar-left {
 }
 
 
-
-/* ================================================================
-   §58  Z-INDEX FINAL CORRECT HIERARCHY
-   
-   The correct stack from top to bottom:
-   
-   navbar:          z:70 — always visible above everything
-   stats-toggle:    z:60 — visible above content but below navbar
-   dbh-frame:       z:55 — hero content above stats-toggle? NO:
-   
-   PROBLEM: dbh-frame needs to be ABOVE stats-toggle (z:60) for 
-   buttons to be clickable over the stats tab.
-   BUT navbar needs to be ABOVE dbh-frame.
-   
-   SOLUTION:
-   navbar:          z:100 — definitively above all
-   dbh-frame:       z:62  — above stats-toggle (z:60)
-   stats-toggle:    z:60  — just below dbh-frame
-   content:         z:auto — normal flow
-================================================================ */
-
 /* [z-removed] */
 
 html body #app .dbh-frame,
 html body #app .dbh-top,
 /* [z-removed] */
 
-html body .stats-toggle-btn,
 /* [z-removed] */
 
-
-
-/* ================================================================
-   §59  DEFINITIVE CLICK FIX
-   
-   After exhaustive audit of all 52 position:fixed elements,
-   all pointer-events rules, all overflow:hidden containers,
-   all v-if/v-show patterns — the root cause is:
-   
-   dbh-frame with position:relative + z-index:62 creates a
-   stacking context that covers the entire content area below it.
-   Any element with z-index:auto (normal flow) sits BELOW this
-   stacking context, making the content area below the hero
-   potentially unclickable.
-   
-   FIX: Remove z-index from dbh-frame entirely.
-   The stats-toggle button click conflict is solved differently:
-   by giving ONLY dbh-actions (the button strip) a higher z-index,
-   not the entire hero frame.
-   
-   Also: stats-toggle uses position:fixed + z:60 (our value).
-   The HTML block defines it at calc(z-dropdown - 9) = 91.
-   Our z:50 override brought it below content but our dbh-frame
-   z:62 created a stacking context problem.
-   
-   CORRECT HIERARCHY:
-   - navbar: z:100 (always on top)
-   - stats-toggle: z:51 (visible above content, below navbar)
-   - dbh-actions: z:52 (just above stats-toggle)
-   - dbh-frame: z-index:auto (NO stacking context, normal flow)
-   - All content: z:auto (normal flow, NEVER blocked by hero)
-================================================================ */
 
 /* Remove stacking context from dbh-frame - it was blocking content below */
 /* [z-removed] */
@@ -37057,8 +36938,7 @@ html body .stats-toggle-btn,
 /* [z-removed] */
 /* [z-removed] */
 
-/* stats-toggle: just below dbh-actions */
-html body .stats-toggle-btn,
+
 /* [z-removed] */
 
 /* navbar: definitively on top */
@@ -37071,7 +36951,6 @@ html body #app .content-area {
   overflow-y: auto !important;
   overflow-x: hidden !important;
 }
-
 
 
 /* ================================================================
@@ -37297,7 +37176,6 @@ html #app .news-card-excerpt a {
   min-height: unset !important;
   padding: 0 !important;
 }
-
 
 
 /* ================================================================
@@ -37598,7 +37476,6 @@ html body #app .abs-tl-name {
 }
 
 
-
 /* ================================================================
    §62  FINAL SWEEP — all remaining issues from deep audit
    
@@ -37879,7 +37756,6 @@ html #app button[aria-label="Notifications"] > span {
   justify-content: center !important;
   padding: 0 4px !important;
 }
-
 
 
 /* ================================================================
@@ -38810,7 +38686,6 @@ html #app .dbh-health-pill, html #app .nm-status-chip, html #app [class*="-pill"
 #app .scc-role          { font-size:12px!important; color:#767673!important; overflow:hidden!important; text-overflow:ellipsis!important; white-space:nowrap!important; }
 
 
-
 /* ── Height chain ─────────────────────────────────────────── */
 html, body, #app { height: 100%; }
 
@@ -38914,23 +38789,6 @@ html, body, #app { height: 100%; }
 }
 
 
-/* ================================================================
-   §ZFINAL  DEFINITIVE Z-INDEX & CLICK FIX — single source of truth
-
-   THE PROBLEM:
-   stats-toggle-btn is position:fixed; right:0; z-index:91 (calc(100-9))
-   It sits at the right edge of the viewport permanently.
-   When content extends to the right edge, the toggle's hit area blocks clicks.
-
-   THE FIX:
-   1. navbar z:100 — always visible above everything
-   2. stats-toggle z:51 — below navbar, above normal content  
-   3. live-stats-sidebar:not(.open) pointer-events:none — closed sidebar never blocks
-   4. NO z-index on content-area — no stacking context, no interference
-   5. dbh-actions z:62 — hero buttons beat the toggle (62 > 51)
-   6. dbh-frame z:auto — no stacking context on the hero container
-================================================================ */
-
 /* Navbar: always on top */
 html body #app .top-navbar {
   position: relative !important;
@@ -38943,22 +38801,44 @@ html body #app .dbh-top    { position: relative !important; z-index: auto !impor
 html body #app .dbh-actions { position: relative !important; z-index: 62 !important; }
 
 /* Stats toggle: below hero buttons but above scrolled content */
-html body #app .stats-toggle-btn,
-html body .stats-toggle-btn {
-  z-index: 51 !important;
-}
+
 
 /* Closed sidebar: completely non-interactive */
-html body #app .live-stats-sidebar:not(.open),
-html body .live-stats-sidebar:not(.open) {
-  pointer-events: none !important;
-}
-html body #app .live-stats-sidebar.open {
-  pointer-events: auto !important;
-}
+
 
 /* Mobile: hide toggle when mobile menu open, correct bottom-sheet z */
 @media (max-width: 768px) {
-  .stats-toggle-btn { z-index: 40 !important; }
-  .live-stats-sidebar:not(.open) { pointer-events: none !important; }
-}  
+
+
+}
+
+
+/* Override the accumulated z-index noise from previous passes */
+
+
+/* When sidebar is closed: extremely thin so it doesn't cover content */
+
+
+/* Closed sidebar: pointer-events none so 8px strip never blocks */
+
+
+/* Remove content-area z-index — it was fighting the fixed toggle */
+html body #app .content-area {
+  z-index: auto !important;
+}
+
+/* navbar: stays on top */
+html body #app .top-navbar {
+  z-index: 100 !important;
+  position: relative !important;
+}
+
+/* dbh-actions: hero buttons still above toggle */
+html body #app .dbh-actions {
+  position: relative !important;
+  z-index: 62 !important;
+}
+html body #app .dbh-frame,
+html body #app .dbh-top {
+  z-index: auto !important;
+}
