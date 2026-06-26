@@ -38915,252 +38915,50 @@ html, body, #app { height: 100%; }
 
 
 /* ================================================================
-   §ZFINAL  DEFINITIVE Z-INDEX — single source of truth
-   
-   Hierarchy (highest to lowest):
-   9999  skip-to-content, splash, loading (already defined)
-    400  live-stats-sidebar, cmd-backdrop, toasts (var-based, correct)
-    300  modals, profile-drawer (var-based, correct)
-    200  panels, drawers (var-based, correct)
-    100  top-navbar  ← must be above everything interactive
-     62  dbh-actions ← hero buttons must beat stats-toggle
-     51  stats-toggle-btn ← just below hero buttons
-     10  normal sticky headers (card-header, filter-bar)
-   auto  everything else — no stacking context
+   §ZFINAL  DEFINITIVE Z-INDEX & CLICK FIX — single source of truth
+
+   THE PROBLEM:
+   stats-toggle-btn is position:fixed; right:0; z-index:91 (calc(100-9))
+   It sits at the right edge of the viewport permanently.
+   When content extends to the right edge, the toggle's hit area blocks clicks.
+
+   THE FIX:
+   1. navbar z:100 — always visible above everything
+   2. stats-toggle z:51 — below navbar, above normal content  
+   3. live-stats-sidebar:not(.open) pointer-events:none — closed sidebar never blocks
+   4. NO z-index on content-area — no stacking context, no interference
+   5. dbh-actions z:62 — hero buttons beat the toggle (62 > 51)
+   6. dbh-frame z:auto — no stacking context on the hero container
 ================================================================ */
 
-/* top-navbar: position:relative (flex child), z:100 beats all content */
+/* Navbar: always on top */
 html body #app .top-navbar {
   position: relative !important;
   z-index: 100 !important;
-  background: var(--nm-surface, #fdfcfb) !important;
 }
 
-/* dbh-frame: NO stacking context — avoids covering content below */
-html body #app .dbh-frame {
-  position: relative !important;
-  z-index: auto !important;
-}
+/* Hero buttons: above the toggle */
+html body #app .dbh-frame  { position: relative !important; z-index: auto !important; }
+html body #app .dbh-top    { position: relative !important; z-index: auto !important; }
+html body #app .dbh-actions { position: relative !important; z-index: 62 !important; }
 
-/* dbh-actions ONLY gets elevated — just the button strip */
-html body #app .dbh-actions {
-  position: relative !important;
-  z-index: 62 !important;
-}
-
-/* dbh-top: no stacking context */
-html body #app .dbh-top {
-  position: relative !important;
-  z-index: auto !important;
-}
-
-/* stats-toggle: just below dbh-actions buttons */
+/* Stats toggle: below hero buttons but above scrolled content */
 html body #app .stats-toggle-btn,
 html body .stats-toggle-btn {
   z-index: 51 !important;
 }
 
-
-/* ================================================================
-   §HITFIX  FINAL HIT AREA FIXES
-   Remaining padding:0 elements found by HTML block audit
-================================================================ */
-
-/* sidebar-menu-link: padding:0 in HTML block → add real padding */
-html body #app .sidebar .sidebar-menu-link,
-html body #app .sidebar-menu-link {
-  padding: 7px 10px 7px 0 !important;
-  min-height: 36px !important;
-  display: flex !important;
-  align-items: center !important;
-  width: 100% !important;
-}
-
-/* table .btn-pill: padding:0 → real padding */
-html body #app .table .btn-pill,
-html body #app .content-area .table .btn-pill {
-  padding: 4px 10px !important;
-  min-height: 28px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  cursor: pointer !important;
-}
-
-/* rot-action-btn: padding:0 → real padding */
-html body #app .rot-action-btn {
-  padding: 0 8px !important;
-  min-height: 32px !important;
-  min-width: 32px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-}
-
-/* Global: every button must have min 36×36 hit area */
-html body #app button:not([disabled]):not(.btn-icon-xs) {
-  min-height: 36px !important;
-  cursor: pointer !important;
-}
-
-/* button children: clicks pass through to parent button */
-html body #app button span,
-html body #app button svg,
-html body #app button i,
-html body #app .btn span,
-html body #app .btn svg,
-html body #app .btn i {
-  pointer-events: none !important;
-}
-
-/* Remove any accidental pointer-events:none on interactive containers */
-html body #app .dbh-actions,
-html body #app .dbh-actions *:not([disabled]),
-html body #app .filter-bar,
-html body #app .filter-bar button,
-html body #app .content-area .card-header button,
-html body #app .tuc-card-header button {
-  pointer-events: auto !important;
-}
-
-
-
-/* ================================================================
-   §STATUS_FIX  STATUS SIDEBAR & TOGGLE — definitive fix
-   
-   Problem: stats-toggle-btn (position:fixed; right:0; z:var(--z-toast)=400)
-   permanently blocks the rightmost ~40px of the content area.
-   When the sidebar opens (360px wide, same z:400), it blocks even more.
-   
-   Fix:
-   1. Lower toggle z-index below interactive content
-   2. Add padding-right to main-content to clear the toggle
-   3. Remove the §HITFIX wildcard pointer-events:auto that broke things
-================================================================ */
-
-/* ── Lower stats-toggle z so content is above it ── */
-/* Content interactive elements need z > toggle */
-html body #app .stats-toggle-btn,
-html body .stats-toggle-btn,
-.stats-toggle-btn {
-  z-index: 40 !important;  /* below content interactive elements */
-  pointer-events: auto !important;  /* toggle itself still clickable */
-}
-
-/* ── Main content: padding-right to clear the toggle button ── */
-/* Toggle is ~38px wide at right:0 */
-/* main-content: no padding-right needed — content z:41 beats toggle z:40 */
-html body #app .main-content {
-  box-sizing: border-box !important;
-}
-
-/* When sidebar is OPEN: expand padding to clear sidebar */
-/* The sidebar adds .open class to .live-stats-sidebar */
-/* We can't directly detect this in CSS without JS,
-   but the open sidebar itself handles its own layout */
-html body #app .live-stats-sidebar {
-  /* Ensure closed state is truly off-screen */
-  transition: transform .25s cubic-bezier(.4,0,.2,1) !important;
-}
-html body #app .live-stats-sidebar:not(.open) {
-  /* Extra insurance: closed sidebar blocks nothing */
+/* Closed sidebar: completely non-interactive */
+html body #app .live-stats-sidebar:not(.open),
+html body .live-stats-sidebar:not(.open) {
   pointer-events: none !important;
 }
 html body #app .live-stats-sidebar.open {
   pointer-events: auto !important;
 }
 
-/* ── FIX §HITFIX wildcard that broke pointer-events ── */
-/* The wildcard * selector was too broad — remove it */
-/* Only specific elements should get pointer-events:auto */
-html body #app .dbh-actions {
-  pointer-events: auto !important;
-}
-html body #app .dbh-actions > * {
-  pointer-events: auto !important;  /* direct children only, not all descendants */
-}
-html body #app .content-area .card-header {
-  pointer-events: auto !important;
-}
-html body #app .content-area .card-header > * {
-  pointer-events: auto !important;
-}
-html body #app .tuc-card-header {
-  pointer-events: auto !important;
-}
-html body #app .tuc-card-header > * {
-  pointer-events: auto !important;
-}
-html body #app .filter-bar {
-  pointer-events: auto !important;
-}
-
-/* ── Content area: ensure it's above the toggle ── */
-html body #app .content-area {
-  position: relative !important;
-  z-index: 41 !important;  /* above stats-toggle z:40 */
-}
-
-/* ── Ensure all interactive elements in content are clickable ── */
-html body #app .content-area button,
-html body #app .content-area a,
-html body #app .content-area [role="button"],
-html body #app .content-area select,
-html body #app .content-area input {
-  pointer-events: auto !important;
-  position: relative !important;
-}
-
-/* ── navbar stays above everything ── */
-html body #app .top-navbar {
-  position: relative !important;
-  z-index: 100 !important;
-}
-
-
-
-/* ================================================================
-   §MOBILE_STATUS  STATUS TOGGLE — mobile fixes
-   
-   On mobile (max-width:768px) the sidebar opens as an overlay.
-   The STATUS toggle should be hidden behind the sidebar when open.
-   Also ensure the bottom-sheet variant of the sidebar closes correctly.
-================================================================ */
-
-/* Hide stats-toggle behind mobile sidebar overlay */
+/* Mobile: hide toggle when mobile menu open, correct bottom-sheet z */
 @media (max-width: 768px) {
-  /* When mobile sidebar is open, hide the toggle */
-  #app .sidebar.mobile-open ~ * .stats-toggle-btn,
-  body.mobile-open .stats-toggle-btn {
-    display: none !important;
-  }
-  /* Stats toggle is at bottom on mobile — lower z so content is above */
-  .stats-toggle-btn {
-    z-index: 40 !important;
-  }
-  /* Closed bottom-sheet variant: translateY(100%) hides it below viewport */
-  .live-stats-sidebar:not(.open) {
-    pointer-events: none !important;
-  }
-  /* Ensure main content is always above the closed sidebar */
-  .main-content {
-    position: relative !important;
-    z-index: 41 !important;
-  }
-}
-
-/* Desktop: toggle stays at z:40, content at z:41 */
-@media (min-width: 769px) {
-  html body #app .stats-toggle-btn,
-  html body .stats-toggle-btn {
-    z-index: 40 !important;
-  }
-  html body #app .content-area {
-    position: relative !important;
-    z-index: 41 !important;
-  }
-  /* Closed sidebar: truly non-interactive */
-  html body #app .live-stats-sidebar:not(.open) {
-    pointer-events: none !important;
-  }
+  .stats-toggle-btn { z-index: 40 !important; }
+  .live-stats-sidebar:not(.open) { pointer-events: none !important; }
 }  
