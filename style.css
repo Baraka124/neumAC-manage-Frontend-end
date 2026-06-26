@@ -39022,3 +39022,97 @@ html body #app .content-area .card-header button,
 html body #app .tuc-card-header button {
   pointer-events: auto !important;
 }
+
+
+
+/* ================================================================
+   §STATUS_FIX  STATUS SIDEBAR & TOGGLE — definitive fix
+   
+   Problem: stats-toggle-btn (position:fixed; right:0; z:var(--z-toast)=400)
+   permanently blocks the rightmost ~40px of the content area.
+   When the sidebar opens (360px wide, same z:400), it blocks even more.
+   
+   Fix:
+   1. Lower toggle z-index below interactive content
+   2. Add padding-right to main-content to clear the toggle
+   3. Remove the §HITFIX wildcard pointer-events:auto that broke things
+================================================================ */
+
+/* ── Lower stats-toggle z so content is above it ── */
+/* Content interactive elements need z > toggle */
+html body #app .stats-toggle-btn,
+html body .stats-toggle-btn,
+.stats-toggle-btn {
+  z-index: 40 !important;  /* below content interactive elements */
+  pointer-events: auto !important;  /* toggle itself still clickable */
+}
+
+/* ── Main content: padding-right to clear the toggle button ── */
+/* Toggle is ~38px wide at right:0 */
+html body #app .main-content {
+  padding-right: 42px !important;  /* clears the 38px toggle + margin */
+  box-sizing: border-box !important;
+}
+
+/* When sidebar is OPEN: expand padding to clear sidebar */
+/* The sidebar adds .open class to .live-stats-sidebar */
+/* We can't directly detect this in CSS without JS,
+   but the open sidebar itself handles its own layout */
+html body #app .live-stats-sidebar {
+  /* Ensure closed state is truly off-screen */
+  transition: transform .25s cubic-bezier(.4,0,.2,1) !important;
+}
+html body #app .live-stats-sidebar:not(.open) {
+  /* Extra insurance: closed sidebar blocks nothing */
+  pointer-events: none !important;
+}
+html body #app .live-stats-sidebar.open {
+  pointer-events: auto !important;
+}
+
+/* ── FIX §HITFIX wildcard that broke pointer-events ── */
+/* The wildcard * selector was too broad — remove it */
+/* Only specific elements should get pointer-events:auto */
+html body #app .dbh-actions {
+  pointer-events: auto !important;
+}
+html body #app .dbh-actions > * {
+  pointer-events: auto !important;  /* direct children only, not all descendants */
+}
+html body #app .content-area .card-header {
+  pointer-events: auto !important;
+}
+html body #app .content-area .card-header > * {
+  pointer-events: auto !important;
+}
+html body #app .tuc-card-header {
+  pointer-events: auto !important;
+}
+html body #app .tuc-card-header > * {
+  pointer-events: auto !important;
+}
+html body #app .filter-bar {
+  pointer-events: auto !important;
+}
+
+/* ── Content area: ensure it's above the toggle ── */
+html body #app .content-area {
+  position: relative !important;
+  z-index: 41 !important;  /* above stats-toggle z:40 */
+}
+
+/* ── Ensure all interactive elements in content are clickable ── */
+html body #app .content-area button,
+html body #app .content-area a,
+html body #app .content-area [role="button"],
+html body #app .content-area select,
+html body #app .content-area input {
+  pointer-events: auto !important;
+  position: relative !important;
+}
+
+/* ── navbar stays above everything ── */
+html body #app .top-navbar {
+  position: relative !important;
+  z-index: 100 !important;
+} 
