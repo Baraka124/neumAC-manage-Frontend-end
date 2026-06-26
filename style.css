@@ -26518,6 +26518,7 @@ html #app .settings-form-grid .form-select:focus {
   object-fit: cover !important;
   border-radius: inherit !important;
   display: block !important;
+  pointer-events: none !important;
 }
 
 /* When photo loads, hide initials */
@@ -36483,9 +36484,7 @@ html #app [class*="-avatar"] {
 /* [z-removed] */
 
 /* Add padding-right to dbh-actions so buttons don't reach the tab */
-html #app .dbh-actions {
-  padding-right: 52px !important;  /* clears the 40px tab + margin */
-}
+
 
 /* When stats sidebar is OPEN, it's full-width — no longer a small tab */
 
@@ -38753,7 +38752,7 @@ html, body, #app { height: 100%; }
 /* Hero buttons: above the toggle */
 html body #app .dbh-frame  { position: relative !important; z-index: auto !important; }
 html body #app .dbh-top    { position: relative !important; z-index: auto !important; }
-html body #app .dbh-actions { position: relative !important; z-index: 62 !important; }
+
 
 /* Stats toggle: below hero buttons but above scrolled content */
 
@@ -38778,19 +38777,11 @@ html body #app .dbh-actions { position: relative !important; z-index: 62 !import
 
 
 /* Remove content-area z-index — it was fighting the fixed toggle */
-html body #app .content-area {
-  z-index: auto !important;
-}
+
 
 /* navbar: stays on top */
 
 
 /* dbh-actions: hero buttons still above toggle */
-html body #app .dbh-actions {
-  position: relative !important;
-  z-index: 62 !important;
-}
+
 html body #app .dbh-frame,
-html body #app .dbh-top {
-  z-index: auto !important;
-}
