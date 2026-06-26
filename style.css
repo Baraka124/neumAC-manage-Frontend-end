@@ -8751,7 +8751,7 @@ tr:not(:hover) .btn-pill-purge {
   transition: transform .24s cubic-bezier(.22,.61,.36,1), opacity .2s ease;
   pointer-events: none;
 }
-.udd--open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: all); }
+.udd--open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: all; }
 .udd-header { padding: 22px 28px 18px; flex-shrink: 0; background: #0f2d54; }
 .udd-header-top { display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0; }
 .udd-icon { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; background: rgba(0,179,179,.2); display: flex; align-items: center; justify-content: center; color: #00B3B3; }
@@ -35505,12 +35505,10 @@ html #app .rot-track::-webkit-scrollbar { display: none !important; }
 html #app .nmsb-item,
 .nmsb-item { overflow: visible !important; }
 
-/* Sidebar tooltip escape */
-html #app aside.nmsb,
-.sidebar {
-  overflow: visible !important;
-}
-/* But sidebar nav must still clip horizontally when collapsed */
+/* Sidebar tooltip escape:
+   Do NOT set overflow:visible on sidebar — it intercepts clicks on main content.
+   Instead, tooltips use position:fixed (handled by JS or ::after with fixed) */
+/* sidebar keeps overflow:hidden from HTML inline block */
 html #app .nmsb-nav {
   overflow-x: hidden !important;
   overflow-y: auto !important;
@@ -35698,7 +35696,6 @@ html #app .rot-orb-label,
 
 /* ── General body text floor: ensure nothing below 12px in content ── */
 html #app .content-area * {
-  min-font-size: 12px; /* CSS4, not widely supported but harmless */
 }
 
 /* ── DM Mono data elements: 11-12px range ── */
