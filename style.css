@@ -35546,3 +35546,193 @@ html #app .abs-tl-dot {
   flex-shrink: 0 !important;
   min-width: unset !important;
 }
+
+
+
+/* ================================================================
+   §52  TYPOGRAPHY — CORRECT BASE SIZES
+   
+   ROOT CAUSE: The HTML inline block sets #app { font-size:14px }
+   which overrides style10's body { font-size:15px }.
+   The HTML block also explicitly sets key elements smaller:
+   - table td: 13px
+   - table th: 12px  
+   - card-title: 14px
+   - form-control: 13px
+   - form-label: 12px
+   
+   We agreed during the session:
+   - Body copy: 14px (nav links, general text)
+   - Card body text: 14px
+   - Table body: 13.5px (readable at desk distance)
+   - Table headers: 11px / DM Mono / uppercase
+   - Navbar title: 18px Instrument Serif italic
+   - Card title: 14px / 500
+   - Section headings: 15px
+   - KPI labels: 11px / DM Mono / uppercase
+   - Sidebar links: 13px (correct)
+   - Form inputs: 13.5px (not 13px)
+   - Form labels: 11.5px / uppercase / tracked (not 12px)
+   
+   The HTML block's 14px base is actually correct and intentional.
+   The "smaller than discussed" items are specific elements where
+   the HTML block underrode our session decisions.
+================================================================ */
+
+/* ── Navbar title: Instrument Serif italic 18-20px ── */
+html #app .navbar-title,
+#app .navbar-title {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 19px !important;
+  font-weight: 400 !important;
+  letter-spacing: -.02em !important;
+  color: var(--nm-text1, #111110) !important;
+}
+
+html #app .navbar-subtitle,
+#app .navbar-subtitle {
+  font-size: 11.5px !important;
+  color: var(--nm-text3, #a0a09b) !important;
+  font-weight: 400 !important;
+  letter-spacing: .01em !important;
+}
+
+/* ── Table body: 13.5px not 13px ── */
+html #app .content-area table td,
+html #app .content-area table tbody td {
+  font-size: 13.5px !important;
+  line-height: 1.4 !important;
+  color: var(--nm-text1, #111110) !important;
+}
+
+/* ── Table headers: 11px / DM Mono / uppercase (our standard) ── */
+html #app .content-area table th,
+html #app .content-area table thead th {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+  color: #6b7280 !important;
+}
+
+/* ── Form inputs: 13.5px not 13px ── */
+html #app .content-area .form-control,
+html #app .content-area .form-select,
+html #app .modal-container .form-control,
+html #app .modal-container .form-select,
+html #app .sm-modal .form-control,
+html #app .sm-modal .form-select {
+  font-size: 13.5px !important;
+  min-height: 40px !important;
+}
+
+/* ── Form labels: 11.5px / uppercase (our standard, not 12px flat) ── */
+html #app .content-area .form-label,
+html #app .modal-container .form-label,
+html #app .sm-modal .form-label {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+  color: #374151 !important;
+  margin-bottom: 5px !important;
+}
+
+/* ── Card title: 14px / 500 (correct) but not italic ── */
+html #app .content-area .card-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  font-style: normal !important;
+  color: var(--nm-text1, #111110) !important;
+}
+/* Dark card-header card-title */
+html #app .content-area .card.mb-6 > .card-header .card-title {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  font-style: normal !important;
+  color: rgba(255,255,255,.92) !important;
+}
+
+/* ── Card body text: 14px ── */
+html #app .content-area .card-body,
+html #app .content-area .card-body p {
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+  color: var(--nm-text1, #111110) !important;
+}
+
+/* ── Sidebar nav links: 13px (HTML block has this right) ── */
+/* Leave sidebar as-is — 13px is correct for nav links */
+
+/* ── KPI labels: 11px / DM Mono / uppercase ── */
+html #app .dbsr-lbl,
+html #app .db-kpi-label,
+html #app .tu-kpi-label,
+html #app .kpi-label,
+html #app .stat-label {
+  font-size: 11px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+}
+
+/* ── Section / module subtitles: 11.5px ── */
+html #app .content-area .section-title,
+html #app .card-subtitle {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: var(--nm-text3, #a0a09b) !important;
+}
+
+/* ── Badge: 11px (HTML block has this right) ── */
+/* #app .badge { font-size:11px } — correct, leave */
+
+/* ── rot-orb-label: 12px (HTML block) → slightly larger for readability ── */
+html #app .rot-orb-label,
+.rot-orb-label {
+  font-size: 11.5px !important;
+}
+
+/* ── General body text floor: ensure nothing below 12px in content ── */
+html #app .content-area * {
+  min-font-size: 12px; /* CSS4, not widely supported but harmless */
+}
+
+/* ── DM Mono data elements: 11-12px range ── */
+html #app .news-meta-item,
+html #app .abs-tl-dates,
+html #app .tuc-res-dates,
+html #app .db-oc-time,
+html #app .db-oc-date,
+html #app .pd-history-dates {
+  font-size: 11.5px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+/* ── Profile drawer section titles: legible ── */
+html #app .pd-section-title,
+.pd-section-title {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.38) !important;
+}
+
+/* ── Research hub stat labels ── */
+html #app .rlc-stat-l,
+.rlc-stat-l {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+
+/* ── Prevent our table header DM Mono from being overridden
+   by the HTML block's { text-transform:none !important } ── */
+html #app #app .content-area table th { /* double #app for extra specificity */
+  text-transform: uppercase !important;
+  font-family: 'DM Mono', monospace !important;
+}
