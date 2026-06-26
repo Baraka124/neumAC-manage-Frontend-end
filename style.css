@@ -39049,8 +39049,8 @@ html body .stats-toggle-btn,
 
 /* ── Main content: padding-right to clear the toggle button ── */
 /* Toggle is ~38px wide at right:0 */
+/* main-content: no padding-right needed — content z:41 beats toggle z:40 */
 html body #app .main-content {
-  padding-right: 42px !important;  /* clears the 38px toggle + margin */
   box-sizing: border-box !important;
 }
 
@@ -39112,7 +39112,55 @@ html body #app .content-area input {
 }
 
 /* ── navbar stays above everything ── */
-html body #app .top-navbar {  
+html body #app .top-navbar {
   position: relative !important;
   z-index: 100 !important;
 }
+
+
+
+/* ================================================================
+   §MOBILE_STATUS  STATUS TOGGLE — mobile fixes
+   
+   On mobile (max-width:768px) the sidebar opens as an overlay.
+   The STATUS toggle should be hidden behind the sidebar when open.
+   Also ensure the bottom-sheet variant of the sidebar closes correctly.
+================================================================ */
+
+/* Hide stats-toggle behind mobile sidebar overlay */
+@media (max-width: 768px) {
+  /* When mobile sidebar is open, hide the toggle */
+  #app .sidebar.mobile-open ~ * .stats-toggle-btn,
+  body.mobile-open .stats-toggle-btn {
+    display: none !important;
+  }
+  /* Stats toggle is at bottom on mobile — lower z so content is above */
+  .stats-toggle-btn {
+    z-index: 40 !important;
+  }
+  /* Closed bottom-sheet variant: translateY(100%) hides it below viewport */
+  .live-stats-sidebar:not(.open) {
+    pointer-events: none !important;
+  }
+  /* Ensure main content is always above the closed sidebar */
+  .main-content {
+    position: relative !important;
+    z-index: 41 !important;
+  }
+}
+
+/* Desktop: toggle stays at z:40, content at z:41 */
+@media (min-width: 769px) {
+  html body #app .stats-toggle-btn,
+  html body .stats-toggle-btn {
+    z-index: 40 !important;
+  }
+  html body #app .content-area {
+    position: relative !important;
+    z-index: 41 !important;
+  }
+  /* Closed sidebar: truly non-interactive */
+  html body #app .live-stats-sidebar:not(.open) {
+    pointer-events: none !important;
+  }
+}  
