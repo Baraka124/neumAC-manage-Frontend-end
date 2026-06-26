@@ -2,13 +2,13 @@
  * neumDesk — style.css  (unified, single source of truth)
  * Version: 13
  *
- * §BASE    Original style.css base
- * §LAYOUT  neumac-layout design system (extracted from index.html)
- * §FIX     Height chain + layout fixes (extracted from index.html)
- * §IMPROVE Targeted improvements (typography, WCAG, mobile, UX)
+ * §BASE    Original style.css base (style10)
+ * §LAYOUT  neumac-layout design system (was inline in index.html)
+ * §FIX     Height chain + layout fixes (was inline in index.html)
+ * §IMPROVE Targeted improvements — typography, WCAG, proportions, mobile
+ * §RESTORE Session improvements lost in extraction — dark headers, toggles
  *
- * No inline <style> blocks remain in index.html.
- * Single cascade. No conflicts.
+ * index.html has zero <style> blocks. Single cascade. No conflicts.
  */
 
 
@@ -18,7 +18,7 @@
 
 /*- ═══════════════════════════════════════════════════════════════
    RESIDENCY YEAR — auto/override display
-═══════════════════════════════════════════════════════════════ */  
+═══════════════════════════════════════════════════════════════ */
 .form-hint { font-size: 10.5px; color: var(--text-3); font-weight: 400; margin-left: 4px; } 
 .form-hint--auto     { color: var(--ok); }
 .form-hint--override { color: var(--warn); }
@@ -19899,7 +19899,7 @@ html, body, #app { height: 100%; }
 
 
 /* ================================================================
-   §IMPROVE
+   §IMPROVE + §RESTORE
 ================================================================ */
 
 /* ================================================================
@@ -20365,4 +20365,144 @@ html #app .rot-orb--scheduled:hover { background: rgba(0,179,179,.07) !important
   .nd-splash-bar-fill { width: 100% !important; animation: none !important; }
   .nd-splash-inner { animation: none !important; }
   #app .als-bar { animation: none !important; }
+}
+
+
+
+/* ================================================================
+   §RESTORE — Improvements from session that extraction removed
+   These were never in the original HTML/CSS — they are additions.
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   R1  DARK CARD-HEADER — module level
+   Original had NO background on card-header (transparent).
+   This is our improvement: dark navy header on all module cards.
+════════════════════════════════════════════════════════════════ */
+
+#app .content-area .card.mb-6 > .card-header {
+  background: var(--nm-navy, #07111f) !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  color: rgba(255,255,255,.92) !important;
+  border-radius: var(--r12, 12px) var(--r12, 12px) 0 0 !important;
+  margin-bottom: 0 !important;
+  padding-bottom: var(--s20, 20px) !important;
+}
+
+/* Card title inside dark header */
+#app .content-area .card.mb-6 > .card-header .card-title {
+  color: rgba(255,255,255,.92) !important;
+  font-style: normal !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+#app .content-area .card.mb-6 > .card-header .card-title i,
+#app .content-area .card.mb-6 > .card-header .card-title svg {
+  color: var(--nm-teal, #00b3b3) !important;
+  opacity: 1 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   R2  VIEW TOGGLE BUTTONS inside dark card-header
+   btn-pill / view-toggle buttons: white ghost → teal when active
+════════════════════════════════════════════════════════════════ */
+
+#app .content-area .card.mb-6 > .card-header .btn-pill {
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.55) !important;
+  font-size: 12px !important;
+  padding: 5px 11px !important;
+}
+#app .content-area .card.mb-6 > .card-header .btn-pill:hover {
+  background: rgba(255,255,255,.11) !important;
+  color: rgba(255,255,255,.88) !important;
+}
+#app .content-area .card.mb-6 > .card-header .btn-pill.active {
+  background: rgba(0,179,179,.18) !important;
+  border-color: rgba(0,179,179,.35) !important;
+  color: #00d4d4 !important;
+}
+
+/* Primary CTA button in dark header */
+#app .content-area .card.mb-6 > .card-header .btn-primary,
+#app .content-area .card.mb-6 > .card-header .btn.btn-primary {
+  background: rgba(0,179,179,.18) !important;
+  border-color: rgba(0,179,179,.35) !important;
+  color: #00d4d4 !important;
+  box-shadow: none !important;
+  font-size: 12.5px !important;
+  padding: 6px 14px !important;
+}
+#app .content-area .card.mb-6 > .card-header .btn-primary:hover {
+  background: rgba(0,179,179,.28) !important;
+  color: #fff !important;
+}
+
+/* Secondary / icon buttons in dark header */
+#app .content-area .card.mb-6 > .card-header .btn-secondary,
+#app .content-area .card.mb-6 > .card-header .btn-icon,
+#app .content-area .card.mb-6 > .card-header .btn-sm {
+  background: rgba(255,255,255,.06) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.55) !important;
+}
+#app .content-area .card.mb-6 > .card-header .btn-secondary:hover,
+#app .content-area .card.mb-6 > .card-header .btn-icon:hover,
+#app .content-area .card.mb-6 > .card-header .btn-sm:hover {
+  background: rgba(255,255,255,.12) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+/* Any badge/count in dark header */
+#app .content-area .card.mb-6 > .card-header .badge {
+  background: rgba(0,179,179,.18) !important;
+  color: #00d4d4 !important;
+  border: 1px solid rgba(0,179,179,.3) !important;
+}
+
+/* Text colour for any spans in dark header */
+#app .content-area .card.mb-6 > .card-header span:not(.badge):not(.btn-pill) {
+  color: rgba(255,255,255,.55) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   R3  FILTER BAR — sticky, correct background
+   Original: position:sticky top:41px (below nav)
+   Block1 overrides this to sticky:top:0 in some contexts.
+   Our addition: ensure it sticks correctly with right z-index.
+════════════════════════════════════════════════════════════════ */
+
+#app .content-area .filter-bar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background: var(--nm-surface2, #f5f4f0) !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   R4  TABLE HEADER STICKY
+════════════════════════════════════════════════════════════════ */    
+
+#app .content-area table thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 5 !important;
+}
+#app .content-area table thead th {
+  background: var(--nm-surface2, #f5f4f0) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   R5  CARD-TITLE not italic (block1 sets font-style:italic)
+════════════════════════════════════════════════════════════════ */
+
+#app .content-area .card.mb-6 .card-body .card-title {
+  font-style: normal !important;
 }
