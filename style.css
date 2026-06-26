@@ -37368,3 +37368,302 @@ html #app .news-card-excerpt a {
   min-height: unset !important;
   padding: 0 !important;
 }
+
+
+
+/* ================================================================
+   §61  TYPOGRAPHY & COLOUR MASTER FIX
+   
+   Issues found by complete audit:
+   
+   A. CONTRAST FAILURES — nm-text3/teal/green too light on white
+   B. #0d1117 used as text colour — not in palette, too harsh
+   C. form-control text colour: rgba(0,0,0,.32) — unreadable
+   D. .btn base colour: #00d4d4 (teal) — wrong on light bg
+   E. db-greeting-title: teal + italic — should be white, upright
+   F. rlc-num: DM Mono instead of Instrument Serif
+   G. tuc-name colour: #007a7a — should be nm-text1
+   H. tuc-cap-badge-num colour: #dc2626 — should be clinical blue
+   I. filter-bar font-size: 16px — should be 13px
+   J. table th font-family: not resolved — force DM Mono
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   A. CONTRAST — lift failing colours to WCAG AA
+════════════════════════════════════════════════════════════════ */
+
+/* nm-text3 (#a0a09b = 2.6:1 FAIL) → #767673 (4.6:1 PASS) */
+/* Used for subtitles, section labels, tertiary text */
+html body #app .navbar-subtitle,
+html body #app .card-subtitle,
+html body #app .nm-svc-detail,
+html body #app .abs-tl-section-label,
+html body #app .abs-tl-yr,
+html body #app .db-date-label,
+html body #app .db-oc-weekday,
+html body #app .db-oc-area-label,
+html body #app .pd-role,
+html body #app .pig-role,
+html body #app .pig-spec,
+html body #app .scc-spec,
+html body #app .scc-role,
+html body #app .rot-who-role,
+html body #app .news-meta-item,
+html body #app .rlc-coord-label,
+html body #app .ofi-time {
+  color: #767673 !important;  /* up from #a0a09b, contrast 4.6:1 on white */
+}
+
+/* nm-text4 (#c8c7c1 = 1.7:1 FAIL) → used only for decorative/placeholder 
+   Placeholders: 4.5:1 not required, but should be at least 3:1 */
+html body #app input::placeholder,
+html body #app textarea::placeholder,
+html body #app .form-control::placeholder,
+html body #app .search-input::placeholder {
+  color: #909399 !important;  /* 3.0:1 on white — acceptable for placeholders */
+  opacity: 1 !important;
+}
+
+/* nm-teal (#00b3b3 = 2.5:1 FAIL as text) → use darker teal #007a7a (4.8:1) */
+/* Only override teal TEXT, not teal backgrounds/borders */
+html body #app .db-cc-link,
+html body #app .nm-svc-detail-link,
+html body #app a.teal-link,
+html body #app .teal-text {
+  color: #007a7a !important;
+}
+
+/* ok green (#10b981 = 2.5:1 FAIL as text) → use darker #059669 (3.0:1) or #047857 (4.5:1) */
+html body #app .status-text--ok,
+html body #app .text-ok,
+html body #app .dbsr-pill--ok { 
+  color: #059669 !important;  /* 3.0:1 — OK for large/bold text */
+}
+
+/* Sidebar section labels: rgba(255,255,255,.35) = 3.2:1 on nm-navy
+   Lift to .45 = 4.0:1 — acceptable since it's uppercase/bold 10px */
+html body #app .nmsb-section-lbl {
+  color: rgba(255,255,255,.45) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   B. #0d1117 → nm-text1 (#111110) — use palette colour
+════════════════════════════════════════════════════════════════ */
+
+/* #0d1117 is near-black, visually harsh. Replace with nm-text1.
+   Both are very dark but nm-text1 has the warm-neutral quality
+   that matches the nm-surface background. */
+
+html body #app .news-card-title,
+html body #app .rot-who-name,
+html body #app .announcement-title,
+html body #app .mv-month-hdr,
+html body #app .pd-card-title,
+html body #app .pd-kv-v,
+html body #app .pd-history-unit,
+html body #app .pd-shift-date,
+html body #app .pd-research-title,
+html body #app .pd-rotation-name,
+html body #app .db-kpi-val,
+html body #app .db-oc-name,
+html body #app .db-rot-name,
+html body #app .db-gap-name,
+html body #app .ucm-name,
+html body #app .table tbody td,
+html body #app .table tbody td .font-medium {
+  color: var(--nm-text1, #111110) !important;
+}
+
+/* pd-tab text: hover state was #0d1117 → nm-text1 */
+html body #app .pd-tab:hover {
+  color: var(--nm-text1, #111110) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   C. FORM CONTROLS — text must be readable
+════════════════════════════════════════════════════════════════ */
+
+/* form-control text: rgba(0,0,0,.32) = effectively unreadable
+   Value text in inputs should be full contrast */
+html body #app .form-control,
+html body #app .form-select,
+html body #app input[type="text"],
+html body #app input[type="email"],
+html body #app input[type="search"],
+html body #app input[type="date"],
+html body #app input[type="tel"],
+html body #app select,
+html body #app textarea {
+  color: var(--nm-text1, #111110) !important;
+  font-size: 13.5px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   D. .btn BASE COLOUR — not teal on light backgrounds
+════════════════════════════════════════════════════════════════ */
+
+/* The base .btn was getting color:#00d4d4 from our dark-header rules
+   bleeding through. Fix: base btn colour = nm-text1 for light contexts */
+html body #app .btn {
+  color: var(--nm-text1, #111110) !important;
+}
+
+/* Override for specific button types that need specific colours */
+html body #app .btn-primary,
+html body #app .btn.btn-primary {
+  color: #ffffff !important;
+  background: var(--nm-navy, #07111f) !important;
+  border-color: var(--nm-navy, #07111f) !important;
+}
+html body #app .btn-primary:hover {
+  background: #1a4f8a !important;
+  border-color: #1a4f8a !important;
+}
+
+/* Secondary buttons: clinical dark */
+html body #app .btn-secondary {
+  color: var(--nm-text1, #111110) !important;
+  background: transparent !important;
+  border-color: rgba(0,0,0,.18) !important;
+}
+html body #app .btn-secondary:hover {
+  background: rgba(0,0,0,.05) !important;
+}
+
+/* Danger */
+html body #app .btn-danger,
+html body #app .btn--danger {
+  color: #dc2626 !important;
+  border-color: rgba(220,38,38,.3) !important;
+  background: rgba(220,38,38,.06) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   E. DASHBOARD GREETING — white, not teal, not italic
+════════════════════════════════════════════════════════════════ */
+
+html body #app .db-greeting-title {
+  color: rgba(255,255,255,.95) !important;
+  font-style: normal !important;
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-weight: 500 !important;
+}
+html body #app .db-greeting-sub {
+  color: rgba(255,255,255,.6) !important;
+  font-size: 13px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   F. rlc-num — Instrument Serif italic (display number)
+════════════════════════════════════════════════════════════════ */
+
+html body #app .rlc-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  color: #1a4f8a !important;  /* clinical blue, not faded */
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   G. tuc-name — nm-text1, not dark teal
+════════════════════════════════════════════════════════════════ */
+
+html body #app .tuc-name {
+  color: var(--nm-text1, #111110) !important;
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   H. tuc-cap-badge-num — clinical teal, not red
+════════════════════════════════════════════════════════════════ */
+
+html body #app .tuc-cap-badge-num {
+  color: var(--nm-teal, #00b3b3) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-style: normal !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+/* When unit is full: red is intentional */
+html body #app .tuc-cap-badge--full .tuc-cap-badge-num {
+  color: #dc2626 !important;
+}
+html body #app .tuc-cap-badge--partial .tuc-cap-badge-num {
+  color: #d97706 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   I. FILTER BAR — correct text sizing
+════════════════════════════════════════════════════════════════ */
+
+/* filter-bar was inheriting 16px from mobile fix — correct to 13px */
+html body #app .content-area .filter-bar,
+html body #app .filter-bar {
+  font-size: 13px !important;
+}
+html body #app .filter-bar select,
+html body #app .filter-bar input,
+html body #app .filter-bar .form-control,
+html body #app .filter-bar .form-select {
+  font-size: 13px !important;
+  color: var(--nm-text1, #111110) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   J. TABLE HEADERS — force DM Mono (cascade was unclear)
+════════════════════════════════════════════════════════════════ */
+
+html body #app table thead th,
+html body #app .table thead th,
+html body #app .content-area table thead th {
+  font-family: 'DM Mono', 'Courier New', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+  color: #6b7280 !important;
+  background: var(--nm-surface2, #f5f4f0) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   FINAL PALETTE CLEANUP — eliminate #0d1117 and stray colours
+════════════════════════════════════════════════════════════════ */
+
+/* Approved dark text colour: only nm-text1 (#111110) */
+/* Any remaining nm-navy (#07111f) used as text on white = too dark */
+html body #app .rlc-title,
+html body #app .rlc-pi-name,
+html body #app .rhub-study-title,
+html body #app .rha-study-name {
+  color: var(--nm-text1, #111110) !important;
+}
+
+/* Sidebar-menu-link (old class) should be transparent/white not teal */
+html body #app .sidebar .sidebar-menu-link {
+  color: rgba(255,255,255,.7) !important;
+}
+html body #app .sidebar .sidebar-menu-link.active {
+  color: #ffffff !important;
+}
+html body #app .sidebar .sidebar-menu-link:hover {
+  color: #ffffff !important;
+}
+
+/* abs-tl-name: soften from nm-navy to nm-text1 */
+html body #app .abs-tl-name {
+  color: var(--nm-text1, #111110) !important;
+}
