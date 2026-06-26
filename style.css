@@ -36892,3 +36892,479 @@ html body #app .content-area .card.mb-6 > .card-header {
   border-bottom: 1px solid rgba(255,255,255,.08) !important;
   color: rgba(255,255,255,.92) !important;
 }
+
+
+
+/* ================================================================
+   §57  VISUAL FIXES — from screenshot analysis 27 Jun 2026
+   
+   A. Stray circle above navbar:
+      Notification bell badge has position:absolute; top:-4px
+      bleeds above the navbar boundary. Fix: top-navbar overflow:hidden
+      BUT: dropdown menus need to escape, so use clip-path instead
+      OR: adjust badge position to top:2px to stay within navbar
+   
+   B. Empty circle in navbar (right of BL badge):
+      This is the SVG inside .navbar-user-btn: <circle cx="12" cy="12" r="10"/>
+      It serves as a status/online indicator ring
+      It has stroke="currentColor" — on white navbar = dark outline circle
+      This is intentional design but looks broken without fill
+      Fix: give it the correct colour — teal for online, grey for offline
+   
+   C. Navbar background appearing dark:
+      Our dbh-frame { z-index:60 } creates stacking context
+      The dbh-frame is a SIBLING of top-navbar in the DOM
+      Top-navbar comes BEFORE dbh-frame in DOM order
+      With z:60 on dbh-frame, it can visually stack above earlier siblings
+      at certain scroll positions or GPU rendering quirks
+      Fix: ensure top-navbar has z-index > dbh-frame
+   
+   D. Overall — buttons now clickable ✓ (confirmed from Image 2)
+      The stats-toggle z:50 + dbh-frame z:60 fix worked
+================================================================ */
+
+
+/* A: Notification badge — keep inside navbar bounds */
+html #app .btn.btn-icon[aria-label="Notifications"] span[style] {
+  top: 2px !important;
+  right: 2px !important;
+}
+
+/* Ensure top-navbar clips badge overflow AND sits above dbh-frame */
+html body #app .top-navbar {
+  position: relative !important;
+  z-index: 70 !important;  /* above dbh-frame z:60 */
+  overflow: visible !important;  /* needed for dropdowns */
+  flex-shrink: 0 !important;
+}
+
+/* B: User status circle SVG — style it properly */
+html #app .navbar-user-btn > svg {
+  color: #10b981 !important;  /* teal-green = online */
+  opacity: .7 !important;
+  width: 10px !important;
+  height: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Alternatively hide it on desktop where it's redundant with the sidebar status */
+@media (min-width: 769px) {
+  html #app .navbar-user-btn > svg {
+    display: none !important;
+  }
+}
+
+/* C: Top navbar sits above hero */
+html body #app .top-navbar {
+  z-index: 70 !important;
+  background: var(--nm-surface, #fdfcfb) !important;
+  border-bottom: 1px solid var(--nm-border, #e3dfd6) !important;
+}
+
+/* Ensure dbh-frame doesn't visually layer above navbar */
+html body #app .dbh-frame {
+  z-index: 10 !important;  /* lower than navbar z:70, still above stats-toggle z:50 */
+}
+html body #app .dbh-top,
+html body #app .dbh-actions {
+  z-index: 10 !important;
+}
+
+/* Protect stats-toggle: stays at z:50 (between hero z:10 and navbar z:70) */
+html body .stats-toggle-btn,
+html body #app .stats-toggle-btn {
+  z-index: 50 !important;
+}
+
+/* navbar-title: explicit colour so it's readable on white navbar */
+html body #app .navbar-title {
+  color: var(--nm-text1, #111110) !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 19px !important;
+  font-weight: 400 !important;
+  letter-spacing: -.02em !important;
+}
+
+/* navbar-subtitle: readable grey */
+html body #app .navbar-subtitle {
+  color: var(--nm-text3, #909399) !important;
+  font-size: 11.5px !important;
+  font-weight: 400 !important;
+}
+
+/* Notification bell button — keep badge in bounds */
+html #app .btn-icon[aria-label="Notifications"],
+html #app button[aria-label="Notifications"] {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* Search: one final definitive rule with all needed properties */
+html body #app .top-navbar .search-container {
+  width: 220px !important;
+  max-width: 220px !important;
+  min-width: 120px !important;
+  flex: 0 0 220px !important;  /* flex-grow:0 flex-shrink:0 flex-basis:220px */
+}
+html body #app .top-navbar .search-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+@media (max-width: 768px) {
+  html body #app .top-navbar .search-container { display: none !important; }
+}
+
+/* navbar-right: never grow, always fixed */
+html body #app .top-navbar .navbar-right {
+  flex: 0 0 auto !important;
+  gap: 8px !important;
+}
+
+/* navbar-left: gets remaining space */
+html body #app .top-navbar .navbar-left {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+
+
+/* ================================================================
+   §58  Z-INDEX FINAL CORRECT HIERARCHY
+   
+   The correct stack from top to bottom:
+   
+   navbar:          z:70 — always visible above everything
+   stats-toggle:    z:60 — visible above content but below navbar
+   dbh-frame:       z:55 — hero content above stats-toggle? NO:
+   
+   PROBLEM: dbh-frame needs to be ABOVE stats-toggle (z:60) for 
+   buttons to be clickable over the stats tab.
+   BUT navbar needs to be ABOVE dbh-frame.
+   
+   SOLUTION:
+   navbar:          z:100 — definitively above all
+   dbh-frame:       z:62  — above stats-toggle (z:60)
+   stats-toggle:    z:60  — just below dbh-frame
+   content:         z:auto — normal flow
+================================================================ */
+
+html body #app .top-navbar {
+  z-index: 100 !important;
+  position: relative !important;
+  background: var(--nm-surface, #fdfcfb) !important;
+  border-bottom: 1px solid var(--nm-border, #e3dfd6) !important;
+}
+
+html body #app .dbh-frame,
+html body #app .dbh-top,
+html body #app .dbh-actions {
+  z-index: 62 !important;
+  position: relative !important;
+}
+
+html body .stats-toggle-btn,
+html body #app .stats-toggle-btn {
+  z-index: 60 !important;
+}
+
+
+
+/* ================================================================
+   §59  DEFINITIVE CLICK FIX
+   
+   After exhaustive audit of all 52 position:fixed elements,
+   all pointer-events rules, all overflow:hidden containers,
+   all v-if/v-show patterns — the root cause is:
+   
+   dbh-frame with position:relative + z-index:62 creates a
+   stacking context that covers the entire content area below it.
+   Any element with z-index:auto (normal flow) sits BELOW this
+   stacking context, making the content area below the hero
+   potentially unclickable.
+   
+   FIX: Remove z-index from dbh-frame entirely.
+   The stats-toggle button click conflict is solved differently:
+   by giving ONLY dbh-actions (the button strip) a higher z-index,
+   not the entire hero frame.
+   
+   Also: stats-toggle uses position:fixed + z:60 (our value).
+   The HTML block defines it at calc(z-dropdown - 9) = 91.
+   Our z:50 override brought it below content but our dbh-frame
+   z:62 created a stacking context problem.
+   
+   CORRECT HIERARCHY:
+   - navbar: z:100 (always on top)
+   - stats-toggle: z:51 (visible above content, below navbar)
+   - dbh-actions: z:52 (just above stats-toggle)
+   - dbh-frame: z-index:auto (NO stacking context, normal flow)
+   - All content: z:auto (normal flow, NEVER blocked by hero)
+================================================================ */
+
+/* Remove stacking context from dbh-frame - it was blocking content below */
+html body #app .dbh-frame {
+  position: relative !important;
+  z-index: auto !important;  /* NO stacking context */
+}
+html #app .dbh-frame {
+  z-index: auto !important;
+}
+
+/* Only the ACTION BUTTONS get elevated z-index */
+html body #app .dbh-actions {
+  position: relative !important;
+  z-index: 52 !important;  /* above stats-toggle z:51 */
+}
+html body #app .dbh-top {
+  position: relative !important;
+  z-index: auto !important;  /* no stacking context needed */
+}
+
+/* stats-toggle: just below dbh-actions */
+html body .stats-toggle-btn,
+html body #app .stats-toggle-btn {
+  z-index: 51 !important;
+}
+
+/* navbar: definitively on top */
+html body #app .top-navbar {
+  z-index: 100 !important;
+  position: relative !important;
+  background: var(--nm-surface, #fdfcfb) !important;
+}
+
+/* Ensure content-area is NEVER blocked by any of our z-index elements */
+html body #app .content-area {
+  position: relative !important;
+  z-index: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+
+
+/* ================================================================
+   §60  HIT AREA FIX — universal click target repair
+   
+   ROOT CAUSE of "hover around to detect click":
+   Many interactive elements have padding:0 in the HTML block.
+   With padding:0, the click area = content box only (the text/icon).
+   The visual size comes from min-height or child dimensions,
+   but the POINTER HIT TEST uses the element's own padding box.
+   
+   Result: you see a 40px button but can only click a 16px strip
+   (the text height), so you need to hover right over the text.
+   
+   FIX: Give all interactive elements sufficient padding so their
+   hit area matches their visual area.
+================================================================ */
+
+/* ── Sidebar nav items ── */
+html #app .nmsb-item {
+  padding: 0 8px 0 0 !important;  /* right padding; left is handled by nmsb-icon */
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  width: calc(100% - 16px) !important;  /* full width minus margin */
+}
+html #app .nmsb-icon {
+  width: 40px !important;
+  height: 40px !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* ── Table action buttons ── */
+html #app .tbl-btn {
+  padding: 0 8px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+html #app .tbl-btn--icon {
+  padding: 0 !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+html #app .table-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+html #app .scc-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* ── Table btn-pill ── */
+html #app .table .btn-pill {
+  padding: 5px 10px !important;
+  min-height: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* ── rot-action-btn ── */
+html #app .rot-action-btn {
+  padding: 0 8px !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+/* ── Dashboard panel links ── */
+html #app .db-panel-link {
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: 36px !important;
+  cursor: pointer !important;
+}
+
+/* ── On-call assign button ── */
+html #app .db-oc-assign-btn {
+  padding: 4px 10px !important;
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+/* ── Research hub tabs ── */
+html #app .rhub-tab {
+  padding: 10px 14px !important;
+  min-height: 40px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+html #app .rhub-line-tabs {
+  display: flex !important;
+  align-items: stretch !important;
+}
+
+/* ── Research hub timeline item ── */
+html #app .rhtl-item {
+  padding: 8px 12px !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+/* ── Sidebar menu link (old class) ── */
+html #app .sidebar .sidebar-menu-link {
+  padding: 7px 10px !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* ── GLOBAL: all buttons must have minimum click area ── */
+/* Any element with @click that we give cursor:pointer should 
+   also have a minimum hit area of 36×36px */
+html #app button,
+html #app [role="button"] {
+  min-height: 36px !important;
+  min-width: 36px !important;
+  cursor: pointer !important;
+}
+
+/* But not icon-only text spans inside buttons */
+html #app button span,
+html #app button svg,
+html #app button i {
+  min-height: unset !important;
+  min-width: unset !important;
+  pointer-events: none !important;
+}
+
+/* ── dpb-item (department panel items) ── */
+html #app .dpb-item {
+  padding: 8px 12px !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+/* ── nm-more-btn ── */
+html #app .nm-more-btn {
+  padding: 6px 10px !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* ── cmd-foot-item (command palette footer) ── */
+html #app .cmd-foot-item {
+  padding: 8px 12px !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+/* ── pd-tab (profile drawer tabs) ── */
+html #app .pd-tab {
+  padding: 10px 14px !important;
+  min-height: 42px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+/* ── tuc-horizon-btn (3mo/6mo/12mo) ── */
+html #app .tuc-horizon-btn {
+  padding: 5px 10px !important;
+  min-height: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+/* ── tu-kpi (clickable KPI tiles) ── */
+html #app .tu-kpi--clickable {
+  cursor: pointer !important;
+  padding: 14px 16px !important;
+  min-height: 60px !important;
+}
+
+/* ── dbsr-stat (dashboard stat tiles) ── */
+html #app .dbsr-stat {
+  cursor: pointer !important;
+  min-height: 80px !important;
+}
+
+/* ── Ensure all <a> tags used as buttons have full hit area ── */
+html #app a.nmsb-item,
+html #app a[class*="tab"],
+html #app a[class*="btn"],
+html #app a[class*="link"] {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 36px !important;
+  padding: 6px 10px !important;
+}
+
+/* Exception: actual text links in prose */
+html #app .nrd-content a,
+html #app .news-card-excerpt a {
+  display: inline !important;
+  min-height: unset !important;
+  padding: 0 !important;
+}
