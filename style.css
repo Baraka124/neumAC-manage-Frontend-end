@@ -22423,9 +22423,7 @@ html #app .sm-left .status-pill {
 /* Navbar */
 html #app .top-navbar,
 #app .top-navbar,
-.top-navbar {
-  background: #1a4f8a !important;
-}
+
 
 /* Breadcrumb */
 html #app .breadcrumb,
@@ -26675,28 +26673,7 @@ html #app .settings-form-grid .form-select:focus {
 
 /* Search input */
 #app .top-navbar .search-input,
-.top-navbar .search-input {
-  height: 34px !important;
-  padding: 0 12px 0 34px !important;
-  background: rgba(255,255,255,.08) !important;
-  border: 1px solid rgba(255,255,255,.14) !important;
-  border-radius: 8px !important;
-  color: rgba(255,255,255,.9) !important;
-  font-size: 13px !important;
-  width: 200px !important;
-  transition: width .2s ease, background .14s, border-color .14s !important;
-  min-width: 0 !important;
-}
-#app .top-navbar .search-input::placeholder {
-  color: rgba(255,255,255,.35) !important;
-}
-#app .top-navbar .search-input:focus {
-  width: 260px !important;
-  background: rgba(255,255,255,.12) !important;
-  border-color: rgba(0,212,212,.45) !important;
-  outline: none !important;
-  box-shadow: 0 0 0 3px rgba(0,212,212,.12) !important;
-}
+
 
 /* Search icon */
 #app .search-icon,
@@ -26717,18 +26694,8 @@ html #app .settings-form-grid .form-select:focus {
 
 /* On mobile: smaller, icon-only when not focused */
 @media (max-width: 768px) {
-  #app .top-navbar .search-input {
-    width: 36px !important;
-    padding: 0 !important;
-    text-indent: -999px !important;
-    border-radius: 50% !important;
-  }
-  #app .top-navbar .search-input:focus {
-    width: 180px !important;
-    padding: 0 12px 0 34px !important;
-    text-indent: 0 !important;
-    border-radius: 8px !important;
-  }
+
+
   #app .search-icon {
     left: 11px !important;
   }
@@ -26741,12 +26708,7 @@ html #app .settings-form-grid .form-select:focus {
 ════════════════════════════════════════════════════════════════ */
 
 /* Ensure viewport meta equivalent behaviour */
-#app .top-navbar {
-  min-height: 52px !important;
-  max-height: 56px !important;
-  flex-wrap: nowrap !important;
-  overflow: hidden !important;
-}
+
 
 /* Navbar right: collapse on small screens */
 @media (max-width: 640px) {
@@ -26755,9 +26717,7 @@ html #app .settings-form-grid .form-select:focus {
   }
 
   /* Hide non-essential navbar icons on mobile */
-  #app .top-navbar .navbar-right > button:not([aria-label]):not(.navbar-user-btn):not([aria-label="Notifications"]) {
-    display: none !important;
-  }
+
 
   /* Title block: shrink */
   #app .navbar-title-block {
@@ -29992,9 +29952,7 @@ html body #app .content-area {
 #app .top-navbar,
 /* [z-removed] */
 #app.sidebar-collapsed .top-navbar,
-.sidebar-collapsed .top-navbar {
-  left: var(--sidebar-sm, 56px) !important;
-}
+
 
 /* [REMOVED — was causing click-blocking due to incorrect sticky top:0] */
 
@@ -33114,7 +33072,7 @@ html body .content-area {
   #app .nm-hamburger { display: flex !important; }
 
   /* Navbar */
-  #app .top-navbar { padding: 0 12px !important; height: 52px !important; }
+
   #app .navbar-search-wrap { display: none !important; }
 
   /* Dashboard */
@@ -33252,7 +33210,7 @@ html body .content-area {
 
 /* ── 360px: small phone ── */
 @media (max-width: 360px) {
-  #app .top-navbar { padding: 0 8px !important; height: 48px !important; }
+
   #app .dbsr-num   { font-size: 20px !important; }
   html #app .tuc-cap-badge-num { font-size: 15px !important; }
   #app .pig-avatar { width: 40px !important; height: 40px !important; font-size: 13px !important; }
@@ -33283,7 +33241,7 @@ html body .content-area {
 
 /* ── Landscape phone ── */
 @media (max-height: 480px) and (orientation: landscape) {
-  #app .top-navbar { height: 44px !important; }
+
   #app .dbh-frame  { padding: 6px 12px 0 !important; }
   #app .dbsr-num   { font-size: 20px !important; }
   #app .sm-modal   { max-height: 100vh !important; }
@@ -36904,7 +36862,7 @@ html body #app .top-navbar .search-input {
   min-width: 0 !important;
 }
 @media (max-width: 768px) {
-  html body #app .top-navbar .search-container { display: none !important; }
+
 }
 
 /* navbar-right: never grow, always fixed */
@@ -38790,10 +38748,7 @@ html, body, #app { height: 100%; }
 
 
 /* Navbar: always on top */
-html body #app .top-navbar {
-  position: relative !important;
-  z-index: 100 !important;
-}
+
 
 /* Hero buttons: above the toggle */
 html body #app .dbh-frame  { position: relative !important; z-index: auto !important; }
@@ -38828,10 +38783,7 @@ html body #app .content-area {
 }
 
 /* navbar: stays on top */
-html body #app .top-navbar {
-  z-index: 100 !important;
-  position: relative !important;
-}
+
 
 /* dbh-actions: hero buttons still above toggle */
 html body #app .dbh-actions {
