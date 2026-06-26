@@ -36558,3 +36558,176 @@ html #app [class*="-avatar"] {
 
 /* Exception: nm-av--xs initials can stay 9px — tiny avatar */
 /* Exception: inno-card-pi-av at 20px → 9px is borderline acceptable */
+
+
+
+/* ================================================================
+   §55  CRITICAL BUG FIXES — from screenshot 26 Jun 2026
+   
+   BUG 1: stats-toggle-btn (position:fixed; right:0; z-index:91)
+           covers the dashboard hero action buttons (On-call,
+           Rotation, Announce) which are near the right edge.
+           Only Add Staff (leftmost) remained clickable.
+           Fix: give dbh-actions padding-right to clear the tab,
+           AND lower stats-toggle-btn z-index so content wins.
+   
+   BUG 2: dbsr-stat:nth-child(3) .dbsr-num was set to
+           rgba(255,255,255,.85) (white) in an old pass (§X)
+           assuming dark background. The dbsr has white background.
+           White text on white = invisible "0" for On-call Today.
+           Fix: restore correct teal colour for the 3rd stat.
+   
+   BUG 3: dbsr-accent--navy had no colour override.
+           The 2nd stat (Active Rotations) uses dbsr-accent--navy
+           which should be clinical blue, not old navy #0f2d54.
+   
+   BUG 4: Search bar width — previous fix had insufficient
+           specificity. Use html body #app prefix to win.
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   BUG 1: stats-toggle-btn blocking dashboard buttons
+════════════════════════════════════════════════════════════════ */
+
+/* Lower z-index so normal content shows above it */
+.stats-toggle-btn,
+#app .stats-toggle-btn {
+  z-index: 50 !important;  /* was calc(z-dropdown - 9) = 91 */
+}
+
+/* Add padding-right to dbh-actions so buttons don't reach the tab */
+html #app .dbh-actions {
+  padding-right: 52px !important;  /* clears the 40px tab + margin */
+}
+
+/* When stats sidebar is OPEN, it's full-width — no longer a small tab */
+html #app .live-stats-sidebar.open ~ * .dbh-actions,
+html #app .live-stats-sidebar.open + .dbh-actions {
+  padding-right: 16px !important;
+}
+
+/* Alternative: ensure dbh-frame content is above the tab */
+html #app .dbh-frame {
+  position: relative !important;
+  z-index: 60 !important;  /* above stats tab z:50 */
+}
+html #app .dbh-top {
+  position: relative !important;
+  z-index: 60 !important;
+}
+html #app .dbh-actions {
+  position: relative !important;
+  z-index: 60 !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   BUG 2: Invisible "0" — On-call Today stat number
+   The 3rd dbsr-stat num was set to rgba(255,255,255,.85) [white]
+   in a previous dark-background assumption. dbsr is WHITE.
+════════════════════════════════════════════════════════════════ */
+
+/* Fix the white-on-white: restore correct colours */
+html #app .dbsr-stat:nth-child(1) .dbsr-num { color: #10b981 !important; }
+html #app .dbsr-stat:nth-child(2) .dbsr-num { color: #1a4f8a !important; }
+html #app .dbsr-stat:nth-child(3) .dbsr-num { color: var(--nm-teal, #00b3b3) !important; }
+html #app .dbsr-stat:nth-child(4) .dbsr-num { color: #7c3aed !important; }
+
+/* dbsr-num--teal: ensure readable on white background */
+html #app .dbsr-num--teal { color: var(--nm-teal, #00b3b3) !important; }
+
+/* Remove the old white override that was causing invisibility */
+/* (Old rule: #app .dbsr-stat:nth-child(3) .dbsr-num { color: rgba(255,255,255,.85) } */
+/* Overridden above with html #app prefix — higher specificity wins ✓ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   BUG 3: dbsr accent colours
+════════════════════════════════════════════════════════════════ */
+
+/* dbsr-accent: the 3px coloured line at bottom of each stat card */
+html #app .dbsr-accent--teal   { background: var(--nm-teal, #00b3b3) !important; }
+html #app .dbsr-accent--navy   { background: #1a4f8a !important; }
+html #app .dbsr-accent--indigo { background: #7c3aed !important; }
+html #app .dbsr-accent--green  { background: #10b981 !important; }
+html #app .dbsr-accent--amber  { background: #d97706 !important; }
+html #app .dbsr-accent--red    { background: #dc2626 !important; }
+
+/* The 4 stat cards should show: teal / clinical blue / teal / indigo */
+html #app .dbsr-stat:nth-child(1) .dbsr-accent { background: #10b981 !important; }
+html #app .dbsr-stat:nth-child(2) .dbsr-accent { background: #1a4f8a !important; }
+html #app .dbsr-stat:nth-child(3) .dbsr-accent { background: var(--nm-teal, #00b3b3) !important; }
+html #app .dbsr-stat:nth-child(4) .dbsr-accent { background: #7c3aed !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   BUG 4: Search bar — final fix with maximum specificity
+════════════════════════════════════════════════════════════════ */
+
+/* The HTML block sets search-input { width:auto !important }
+   which overrides any equal-specificity rule.
+   Use html body #app for extra type selector weight. */
+html body #app .search-container {
+  width: 220px !important;
+  max-width: 220px !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+html body #app .search-box,
+html body #app .search-input {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+html body #app .navbar-right {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+html body #app .navbar-left {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DBSR STAT PILL COLOURS — fix old blue #3b82f6 references
+════════════════════════════════════════════════════════════════ */
+
+html #app .dbsr-pill--ok     { background: rgba(16,185,129,.1) !important; color: #059669 !important; }
+html #app .dbsr-pill--blue   { background: rgba(26,79,138,.1) !important; color: #1a4f8a !important; }
+html #app .dbsr-pill--teal   { background: rgba(0,179,179,.1) !important; color: #007a7a !important; }
+html #app .dbsr-pill--warn   { background: rgba(217,119,6,.1) !important; color: #b45309 !important; }
+html #app .dbsr-pill--danger { background: rgba(220,38,38,.1) !important; color: #dc2626 !important; }
+html #app .dbsr-pill--purple { background: rgba(124,58,237,.1) !important; color: #7c3aed !important; }
+html #app .dbsr-pill--muted  { background: rgba(0,0,0,.06) !important; color: #6b7280 !important; }
+
+/* dbsr-stat hover */
+html #app .dbsr-stat:hover {
+  background: rgba(0,0,0,.02) !important;
+}
+html #app .dbsr-stat:active {
+  background: rgba(0,0,0,.04) !important;
+}
+
+/* dbsr-num: Instrument Serif italic for display numbers */
+html #app .dbsr-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -.04em !important;
+  line-height: 1 !important;
+}
+
+/* dbsr-lbl: DM Sans, uppercase, tracked */
+html #app .dbsr-lbl {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+  color: #6b7280 !important;
+} 
