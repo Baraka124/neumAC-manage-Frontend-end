@@ -22617,15 +22617,11 @@ html #app .absence-kpi-strip {
   width: 100% !important;
 }
 
-/* Filter bar: white, sticky */
+/* Filter bar: styled but let HTML block handle sticky positioning */
 html #app .content-area .filter-bar {
-  background: #ffffff !important;
-  border-bottom: 1px solid rgba(0,0,0,.09) !important;
-  padding: 10px 20px !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 9 !important;
-  margin: 0 !important;
+  background: var(--nm-surface2, #f5f4f0) !important;
+  border-bottom: 1px solid rgba(0,0,0,.07) !important;
+  padding: 8px 20px !important;
   width: 100% !important;
 }
 
@@ -30018,111 +30014,29 @@ html body #app .content-area {
   left: var(--sidebar-sm, 56px) !important;
 }
 
-/* Breadcrumb: sticky below navbar */
-html #app .breadcrumb,
-#app .breadcrumb {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 16 !important;
-  flex-shrink: 0 !important;
-}
+/* [REMOVED — was causing click-blocking due to incorrect sticky top:0] */
 
-/* Module dark card-header: sticky below breadcrumb */
-html #app .content-area .card.mb-6 .card-header {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 14 !important;
-  flex-shrink: 0 !important;
-}
+/* [REMOVED — was causing click-blocking due to incorrect sticky top:0] */
 
-/* TUC card-header: sticky at module level */
-html #app .tuc-card-header {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 14 !important;
-}
+/* [REMOVED — was causing click-blocking due to incorrect sticky top:0] */
 
-/* KPI / stat strips: sticky below card-header */
-html #app .tu-kpi-strip,
-html #app .dept-pulse-bar,
-html #app .absence-kpi-strip,
-html #app .rhub-kpi-strip {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 10 !important;
-  flex-shrink: 0 !important;
-}
+/* [REMOVED — was causing click-blocking due to incorrect sticky top:0] */
 
-/* Research hub topbar + tabs: sticky stack */
-html #app .rhub-topbar {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 12 !important;
-  flex-shrink: 0 !important;
-}
-html #app .rhub-health-strip {
-  position: sticky !important;
-  top: 46px !important;   /* below rhub-topbar (46px) */
-  z-index: 10 !important;
-}
-html #app .rhub-ltab-bar,
-html #app .rhub-line-tabs {
-  position: sticky !important;
-  top: calc(46px + 56px) !important;   /* below topbar + health strip */
-  z-index: 9 !important;
-}
+/* [REMOVED — sticky stack removed] */
 
-/* Line head: sticky in line detail */
-html #app .rhub-line-head {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 11 !important;
-}
+/* [REMOVED — sticky stack removed] */
 
-/* Filter bar: sticky below card-header in each module */
-html #app .content-area .filter-bar {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 8 !important;
-  flex-shrink: 0 !important;
-}
+/* [REMOVED — was causing click-blocking due to incorrect sticky top:0] */
 
-/* News view filter bar */
-#app .news-filter-bar {
-  position: sticky !important;
-  top: 46px !important;   /* below news tab bar (46px) */
-  z-index: 8 !important;
-  flex-shrink: 0 !important;
-}
+/* [REMOVED — sticky stack removed] */
 
-/* News reader progress bar */
-#app .nrd-progress {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 5 !important;
-}
+/* [REMOVED — sticky stack removed] */
 
-/* Profile drawer tabs */
-#app .pd-tabs {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 4 !important;
-  background: #ffffff !important;
-}
+/* [REMOVED — was causing click-blocking due to incorrect sticky top:0] */
 
-/* Table headers: sticky inside scrollable wrapper */
-html #app .table thead {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 6 !important;
-}
+/* [REMOVED — was causing click-blocking due to incorrect sticky top:0] */
 
-/* On-call tab bar */
-html #app .content-area > div > .rhub-tabs {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 12 !important;
-}
+/* [REMOVED — sticky stack removed] */
 
 /* Research hub grid: not sticky, scrollable */
 #app .rhub-grid {
@@ -32997,21 +32911,9 @@ html #app .staff-table-av--resident {
    It should be sticky within the scroll container, not viewport.
 ════════════════════════════════════════════════════════════════ */
 
-html #app .breadcrumb,
-#app .breadcrumb {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 10 !important;  /* below modals/dropdowns but above content */
-  flex-shrink: 0 !important;
-}
+/* [REMOVED — sticky causing click blocks] */
 
-/* Card-header: sticky below breadcrumb */
-html #app .content-area .card.mb-6 .card-header {
-  position: sticky !important;
-  top: 0 !important;  /* breadcrumb is above content-area scroll context */
-  z-index: 8 !important;
-  flex-shrink: 0 !important;
-}
+/* [REMOVED — card-header sticky was causing click-blocking] */
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -35732,4 +35634,407 @@ html #app .rlc-stat-l,
 html #app #app .content-area table th { /* double #app for extra specificity */
   text-transform: uppercase !important;
   font-family: 'DM Mono', monospace !important;
+}
+
+
+
+/* ================================================================
+   §53  MASTER FIX — ALL REMAINING INCONSISTENCIES
+   
+   Found by complete audit:
+   
+   A  ITALIC SOURCES:
+      - style10 sets .card-title { font-family:var(--font-display)!important;
+        font-size:18px!important; font-style:italic!important }
+        --font-display = 'Instrument Serif, Georgia, serif'
+        This makes ALL card titles 18px italic serif — wrong for module headers
+      - HTML block sets .card-title to 14px/500 (no italic) ← overwrites style10
+      - Net result: card titles are 14px/500 non-italic ✓ (HTML block wins)
+      - BUT .modal-title: HTML block sets font-style:italic on some instances
+      
+   B  OLD BLUE #3b82f6 in HTML block (10 elements):
+      - tuc-tl-cell-scheduled, tuc-resident-row--scheduled
+      - mv-rot-bar--scheduled, rot-orb--scheduled
+      - rot-legend-dot--scheduled, rot-compact orb
+      - chart-bar-fill--phase-1, rha-timeline-dot--recruiting
+      - rhtl-dot.active, ops-bc--blue elements
+      
+   C  OLD NAVY #0f2d54 in HTML block (6 elements):
+      - staff-table-av--attending
+      - dbh-frame (dashboard hero background)
+      - dbsr-accent--navy, abs-tl-sec-dot--att, abs-tl-av--att
+      
+   D  MISSING overrides:
+      - modal-container .modal-title: font-style:italic (HTML wins, we lose)
+      - table th: DM Mono uppercase (check specificity)
+      
+   E  91 sub-11px remaining in HTML block
+      
+   STRATEGY: use html #app with full path to beat #app specificity
+================================================================ */
+
+
+/* ════════════════════════════════════════════════════════════════
+   A  ITALIC — systematic removal from operational elements
+════════════════════════════════════════════════════════════════ */
+
+/* card-title: HTML block already sets non-italic at 14px/500 ✓
+   BUT style10 base sets font-family:var(--font-display) italic 18px
+   The HTML block wins for everything inside #app .content-area
+   Extra safety: explicit override */
+html #app .card-title,
+html #app .content-area .card-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.01em !important;
+  color: var(--nm-text1, #111110) !important;
+}
+
+/* Dark card-header card-title: white */
+html #app .content-area .card.mb-6 > .card-header .card-title {
+  color: rgba(255,255,255,.92) !important;
+  font-style: normal !important;
+}
+
+/* modal-title: HTML block sets italic — we need to beat #app .modal-container .modal-title
+   Specificity: html #app .modal-container .modal-title = (0,1,2,1) beats (0,1,2,0) ✓ */
+html #app .modal-container .modal-title {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.01em !important;
+  color: var(--nm-text1, #111110) !important;
+}
+html #app .sm-modal .sm-form-title,
+html #app .sm-modal .modal-title {
+  font-style: normal !important;
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+}
+
+/* absence-kpi-num: HTML sets italic (display number — keep italic) ✓ */
+/* tu-kpi-num: HTML sets italic (KPI display number — keep italic) ✓ */
+/* tuc-cap-current: HTML sets italic (capacity number — keep italic) ✓ */
+/* rlc-num: HTML sets italic (research line count — keep italic) ✓ */
+/* rhub-line-num: HTML sets italic — keep italic ✓ */
+/* absence-duration: HTML sets italic — keep italic ✓ */
+
+/* tuc-resident-row--free .tuc-res-name: italic = correct, shows empty slot */
+/* nm-deg-inactive: italic = correct, shows inactive state */
+/* news-pub-line: italic = correct, publication metadata */
+/* sm-add-backup-hint: italic = correct, contextual hint */
+/* empty-chart: italic = correct, empty state */
+
+/* These should NOT be italic: */
+html #app .modal-title { font-style: normal !important; }
+html #app .card-header .card-title { font-style: normal !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   B  OLD BLUE #3b82f6 → CLINICAL BLUE #1a4f8a
+   HTML block uses !important — we need html #app to beat it
+════════════════════════════════════════════════════════════════ */
+
+/* Scheduled rotation cells in timeline view */
+html #app .tuc-tl-cell-scheduled {
+  background: rgba(26,79,138,.35) !important;
+  border-color: rgba(26,79,138,.5) !important;
+}
+
+/* Scheduled resident avatar in TUC rows */
+html #app .tuc-resident-row--scheduled .tuc-res-avatar {
+  background: #1a4f8a !important;
+}
+
+/* Scheduled resident dates in TUC rows */
+html #app .tuc-resident-row--scheduled .tuc-res-dates {
+  color: #1a4f8a !important;
+}
+
+/* Monthly view scheduled bar */
+html #app .mv-rot-bar--scheduled {
+  background: #1a4f8a !important;
+  color: #ffffff !important;
+}
+
+/* Rotation orb — scheduled state */
+html #app .rot-orb--scheduled {
+  background: transparent !important;
+  border: 2px solid #1a4f8a !important;
+  color: #1a4f8a !important;
+}
+html #app .rot-orb--scheduled:hover {
+  background: rgba(26,79,138,.08) !important;
+  box-shadow: 0 4px 12px rgba(26,79,138,.2) !important;
+}
+
+/* Rotation legend dot */
+html #app .rot-legend-dot--scheduled {
+  background: #1a4f8a !important;
+  border: none !important;
+  box-shadow: 0 0 0 2px rgba(26,79,138,.2) !important;
+}
+
+/* Compact view scheduled orb */
+html #app .rot-compact .rot-orb--scheduled {
+  background: #1a4f8a !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+/* Table row scheduled state */
+html #app .table tr.row-scheduled > td:first-child {
+  border-left: 3px solid #1a4f8a !important;
+}
+html #app .table tr.row-planned_leave > td:first-child {
+  border-left: 3px solid rgba(26,79,138,.5) !important;
+}
+
+/* Research timeline recruiting dot */
+html #app .rha-timeline-dot--recruiting {
+  background: #1a4f8a !important;
+}
+html #app .rhtl-dot.active {
+  background: #1a4f8a !important;
+  border-color: #1a4f8a !important;
+  box-shadow: 0 0 0 3px rgba(26,79,138,.2) !important;
+}
+
+/* Chart phase bar — keep blue for visual distinction but use clinical blue */
+html #app .chart-bar-fill--phase-1 { background: #1a4f8a !important; }
+html #app .chart-bar-fill--phase-2 { background: #009999 !important; }
+html #app .chart-bar-fill--phase-3 { background: #10b981 !important; }
+
+/* Ops broadcast blue type */
+html #app .ops-bc--blue .ops-bc-stripe { background: #1a4f8a !important; }
+html #app .ops-bc--blue .ops-bc-ico    { color: #1a4f8a !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   C  OLD NAVY #0f2d54 → CLINICAL BLUE #1a4f8a
+════════════════════════════════════════════════════════════════ */
+
+/* Staff table avatar — attending */
+html #app .staff-table-av--attending {
+  background: linear-gradient(135deg, #1a4f8a, #009999) !important;
+}
+
+/* Dashboard hero frame */
+html #app .dbh-frame {
+  background: #1a4f8a !important;
+  padding: 10px 20px 0 !important;
+}
+
+/* Dashboard stat accent — navy variant */
+html #app .dbsr-accent--navy {
+  background: #1a4f8a !important;
+}
+
+/* Absence timeline attending dots/avatars */
+html #app .abs-tl-sec-dot--att {
+  background: #1a4f8a !important;
+}
+html #app .abs-tl-av--att {
+  background: linear-gradient(135deg, #1a4f8a, #009999) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   D  TABLE HEADERS — DM Mono uppercase (specificity confirmed)
+   html #app .content-area table th = (0,1,1,3) beats
+   #app .content-area table th     = (0,1,1,2) ✓
+════════════════════════════════════════════════════════════════ */
+
+html #app .content-area table thead th,
+html #app .content-area table th {
+  font-family: 'DM Mono', 'Courier New', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .1em !important;
+  color: #6b7280 !important;
+  background: var(--nm-surface2, #f5f4f0) !important;
+  white-space: nowrap !important;
+  padding: 9px 14px !important;
+}
+
+/* Table body rows */
+html #app .content-area table tbody td {
+  font-size: 13.5px !important;
+  color: var(--nm-text1, #111110) !important;
+  padding: 11px 14px !important;
+  line-height: 1.4 !important;
+}
+
+/* Table hover */
+html #app .content-area table tbody tr:hover td {
+  background: rgba(0,179,179,.04) !important;
+}
+html #app .content-area table tbody tr:hover td:first-child {
+  border-left: 2px solid var(--nm-teal, #00b3b3) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   E  SUB-11px SWEEP — remaining 91 violations in HTML block
+   Our html #app rules beat the HTML block's #app rules
+════════════════════════════════════════════════════════════════ */
+
+html #app .mv-year-label {
+  font-size: 10.5px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: .08em !important;
+}
+html #app .rp-kpi-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+}
+html #app .rp-nav-kw,
+html #app .rp-nav-kw-more {
+  font-size: 10px !important;
+}
+html #app .rp-ds-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+html #app .rgw-gap-pill {
+  font-size: 10px !important;
+}
+html #app .udd-mt-label {
+  font-size: 10.5px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+html #app .tuc-team-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+}
+html #app .abs-unit-impact-hdr {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+html #app .ucm-divider {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+html #app .pd-unit-badge {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+html #app .sidebar .sidebar-section-title,
+html #app .sidebar-section-title {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em !important;
+}
+html #app .tu-kpi--active .tu-kpi-label,
+html #app .tu-kpi-label {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+}
+/* Catch all remaining [style*="font-size:9px"] via attribute selector */
+html #app [style*="font-size:9px"],
+html #app [style*="font-size: 9px"],
+html #app [style*="font-size:8px"] {
+  font-size: 11px !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   F  MISCELLANEOUS REMAINING INCONSISTENCIES
+════════════════════════════════════════════════════════════════ */
+
+/* dbsr-stat 2nd child: HTML block sets color:#3b82f6 → clinical blue */
+html #app .dbsr-stat:nth-child(2) .dbsr-num {
+  color: #1a4f8a !important;
+}
+
+/* News publication line: italic is correct — it's a byline */
+/* Keep: #app .news-pub-line { font-style:italic } ✓ */
+
+/* Staff section title in sidebar */
+html #app .nmsb-section-lbl {
+  font-size: 10px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.3) !important;
+}
+
+/* Consistent button border-radius */
+html #app .content-area .btn,
+html #app .modal-container .btn,
+html #app .sm-modal .btn {
+  border-radius: 9px !important;
+}
+
+/* Consistent form input heights */
+html #app .content-area .form-control,
+html #app .content-area .form-select,
+html #app .modal-container .form-control,
+html #app .modal-container .form-select {
+  min-height: 40px !important;
+  font-size: 13.5px !important;
+  border-radius: 8px !important;
+}
+
+/* Consistent placeholder colour across all inputs */
+html #app input::placeholder,
+html #app textarea::placeholder,
+html #app .form-control::placeholder {
+  color: rgba(0,0,0,.32) !important;
+  opacity: 1 !important;
+}
+
+/* abs-tl-av sizing consistency */
+html #app .abs-tl-av {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Absence timeline section dots */
+html #app .abs-tl-sec-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+/* DB greeting: keep Instrument Serif italic (it IS display text) */
+/* .db-greeting-title { font-style:italic } ✓ — intentional editorial display */
+
+/* Research hub line number: keep italic (large display number) ✓ */
+/* .rlc-num { font-style:italic } ✓ */
+
+/* Empty chart message: keep italic ✓ */
+/* .empty-chart { font-style:italic } ✓ */
+
+/* ── Final: ensure tuc-cap-badge DM Mono beats HTML block ── */
+html #app .tuc-cap-badge-num {
+  font-family: 'DM Mono', 'Courier New', monospace !important;
+  font-style: normal !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.03em !important;
+  line-height: 1 !important;
+}
+html #app .tuc-cap-badge-denom {
+  font-family: 'DM Mono', monospace !important;
+  font-style: normal !important;
+  font-size: 12px !important;
 }
