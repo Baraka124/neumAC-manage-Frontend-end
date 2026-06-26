@@ -1,19 +1,19 @@
 /*
  * neumDesk — style.css  (unified, single source of truth)
+ * Version: 13
  *
- * Sections:
- *   §BASE    Original style.css base (style10)  
- *   §LAYOUT  neumac-layout inline block (was <style id="neumac-layout">)
- *   §FIX     Height chain + layout fix (was bottom <style> block)
- *   §IMPROVE Targeted improvements (typography, WCAG, proportions, mobile)
+ * §BASE    Original style.css base
+ * §LAYOUT  neumac-layout design system (extracted from index.html)
+ * §FIX     Height chain + layout fixes (extracted from index.html)
+ * §IMPROVE Targeted improvements (typography, WCAG, mobile, UX)
  *
- * The HTML <style> blocks have been removed from index.html.
- * All CSS now lives here. No conflicts. Single cascade.
+ * No inline <style> blocks remain in index.html.
+ * Single cascade. No conflicts.
  */
 
 
 /* ================================================================
-   §BASE — Original style.css
+   §BASE
 ================================================================ */
 
 /*- ═══════════════════════════════════════════════════════════════
@@ -11683,8 +11683,7 @@ textarea:focus-visible,
 
 
 /* ================================================================
-   §LAYOUT — neumac-layout design system
-   (extracted from <style id="neumac-layout"> in index.html)
+   §LAYOUT
 ================================================================ */
 
 /* ================================================================
@@ -19786,8 +19785,7 @@ textarea:focus-visible,
 
 
 /* ================================================================
-   §FIX — Height chain + layout fixes
-   (extracted from bottom <style> block in index.html)
+   §FIX
 ================================================================ */
 
 /* ================================================================
@@ -19901,168 +19899,170 @@ html, body, #app { height: 100%; }
 
 
 /* ================================================================
-   §IMPROVE — Targeted improvements
-   Works with the nm-* variable system above.
-   Only adds what the above doesn't cover.
+   §IMPROVE
 ================================================================ */
-
-/*
- * neumDesk — style.css
- * Targeted fixes that WORK WITH the HTML inline design system.
- *
- * The HTML has its own authoritative design system (loaded after this file):
- *   --nm-navy:   #07111f  → sidebar, dark surfaces
- *   --nm-teal:   #00b3b3  → primary accent, CTAs, focus, active
- *   --nm-surface:#fdfcfb  → cards, navbar
- *   --nm-surface2:#f5f4f0 → canvas, filter bars, table headers
- *
- * This file only adds things the HTML system doesn't cover:
- * typography fixes, WCAG contrast, proportionality, mobile layout.
- * We do NOT fight the HTML's colour decisions.
- */
 
 /* ================================================================
-   §01  FONT IMPORTS
-================================================================ */
-/* Fonts already loaded via <link> in HTML — Instrument Serif, DM Sans, DM Mono */
-
-
-/* ================================================================
-   §02  GLOBAL TYPE SCALE — minimum 11px everywhere
+   §IMPROVE — All improvements, aligned with nm-* design system
+   
+   This section adds everything the base + layout blocks don't cover.
+   Uses var(--nm-*) tokens throughout. No colour conflicts.
 ================================================================ */
 
-/* Global floor */
-#app { font-family: 'DM Sans', system-ui, sans-serif; }
 
-/* Sub-11px catches in HTML inline blocks */
-html #app .rtag { font-size: 11px !important; }
-html #app .rtag--ok     { background:rgba(5,150,105,.1); color:#059669; border:1px solid rgba(5,150,105,.2); border-radius:5px; padding:2px 7px; }
-html #app .rtag--obs    { background:rgba(37,99,235,.08); color:#1e40af; border:1px solid rgba(37,99,235,.18); border-radius:5px; padding:2px 7px; }
-html #app .rtag--found  { background:rgba(99,102,241,.08); color:#4338ca; border:1px solid rgba(99,102,241,.18); border-radius:5px; padding:2px 7px; }
+/* ════════════════════════════════════════════════════════════════
+   01  SEARCH BAR — fix exaggerated width
+════════════════════════════════════════════════════════════════ */
 
-/* All remaining sub-11px violations */
-html #app .rp-kpi-label,
-html #app .rp-ds-label,
-html #app .rp-nav-kw,
-html #app .rp-nav-kw-more,
-html #app .tuc-team-label,
-html #app .tuc-occ-label,
-html #app .urm-days-lbl,
-html #app .urm-stat-key,
-html #app .ofi-tag,
-html #app .obf-label,
-html #app .mv-year-label,
-html #app .ocm-dow-hdr,
-html #app .tuc-type-badge,
-html #app .udd-unit-type-badge,
-html #app .udd-mt-label,
-html #app .udd-rot-status,
-html #app .abs-unit-impact-hdr,
-html #app .cov-date-wd,
-html #app .boc-q-meta,
-html #app .pd-unit-badge,
-html #app .ucm-divider,
-html #app .tuo-ring-denom,
-html #app .abs-tl-yr,
-html #app .rgw-year,
-html #app .rgw-gap-pill,
-html #app .db-oc-weekday,
-html #app .db-oc-area-label,
-html #app .db-oc-flag,
-html #app .db-rot-chip,
-html #app .rlc-stat-l,
-html #app .rhub-hl,
-html #app .rhub-kl,
-html #app .rhsc-pct,
-html #app .abs-cal-pill,
-html #app .sm-preview-role,
-html #app .sm-preview-chip,
-html #app .sm-step-hint,
-html #app .sm-req-note,
-html #app .stype-chip-key,
-html #app .tuc-team-count,
-html #app .tuc-sup-empty-label,
-html #app .tuc-supervisor-chip { font-size: 11px !important; }
+#app .navbar-right {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+}
+#app .navbar-left {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+#app .search-container {
+  width: 220px !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+}
+#app .search-box { width: 100% !important; }
+#app .search-input {
+  width: 100% !important;
+  font-size: 13px !important;
+}
+#app .search-input:focus { width: 100% !important; }
 
-/* DM Mono for data labels */
-html #app .rp-kpi-label,
-html #app .rp-ds-label,
-html #app .tuc-team-label,
-html #app .tuc-occ-label,
-html #app .urm-days-lbl,
-html #app .urm-stat-key,
-html #app .ofi-tag,
-html #app .obf-label,
-html #app .mv-year-label,
-html #app .ocm-dow-hdr,
-html #app .abs-unit-impact-hdr,
-html #app .ucm-divider { font-family: 'DM Mono', monospace !important; }
+@media (max-width: 768px) {
+  #app .search-container { width: 100% !important; }
+}
 
-/* sm-modal specific violations */
-html #app .sm-step-num { font-size: 11px !important; font-family: 'DM Mono', monospace !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   02  DARK CARD HEADERS — module level only
+   The §LAYOUT block sets all card-header to nm-surface (white).
+   Module-level card at top of each view should be dark.
+════════════════════════════════════════════════════════════════ */
+
+#app .content-area > .card > .card-header,
+#app .content-area > div > .card > .card-header {
+  background: var(--nm-navy, #07111f) !important;
+  border-bottom: 1px solid rgba(255,255,255,.07) !important;
+  color: rgba(255,255,255,.92) !important;
+}
+#app .content-area > .card > .card-header .card-title {
+  color: rgba(255,255,255,.92) !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+}
+#app .content-area > .card > .card-header .btn-primary {
+  background: rgba(0,179,179,.18) !important;
+  border-color: rgba(0,179,179,.35) !important;
+  color: #00d4d4 !important;
+  font-size: 12.5px !important;
+  padding: 6px 14px !important;
+}
+#app .content-area > .card > .card-header .btn-primary:hover {
+  background: rgba(0,179,179,.28) !important;
+  color: #fff !important;
+}
+#app .content-area > .card > .card-header .btn-icon,
+#app .content-area > .card > .card-header .view-toggle-btn {
+  color: rgba(255,255,255,.45) !important;
+  border-color: rgba(255,255,255,.1) !important;
+  background: transparent !important;
+}
+#app .content-area > .card > .card-header .btn-icon:hover,
+#app .content-area > .card > .card-header .view-toggle-btn:hover {
+  color: rgba(255,255,255,.9) !important;
+  background: rgba(255,255,255,.08) !important;
+}
+#app .content-area > .card > .card-header .btn-icon.active,
+#app .content-area > .card > .card-header [class*="active"] {
+  background: rgba(0,179,179,.18) !important;
+  color: #00d4d4 !important;
+  border-color: rgba(0,179,179,.3) !important;
+}
+#app .content-area > .card > .card-header .badge,
+#app .content-area > .card > .card-header [class*="badge"] {
+  background: rgba(0,179,179,.18) !important;
+  color: #00d4d4 !important;
+  border: 1px solid rgba(0,179,179,.3) !important;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   03  FILTER BAR — fix mobile stacking / exaggerated height
+════════════════════════════════════════════════════════════════ */
+
+/* On mobile, the §LAYOUT block switches filter-bar to column layout.
+   This makes each filter full-height. Fix: cap height + compact padding. */
+@media (max-width: 768px) {
+  #app .content-area .filter-bar {
+    gap: 6px !important;
+    padding: 8px 12px 10px !important;
+  }
+  #app .filter-bar select,
+  #app .filter-bar input[type="text"],
+  #app .filter-bar .form-control,
+  #app .filter-bar .form-select {
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    font-size: 14px !important;
+    padding: 0 10px !important;
+  }
+  #app .filter-bar input[type="search"] {
+    height: 38px !important;
+    font-size: 14px !important;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   04  TYPOGRAPHY — all sub-11px violations
+════════════════════════════════════════════════════════════════ */
+
+html #app .rp-kpi-label, html #app .rp-ds-label, html #app .tuc-team-label,
+html #app .tuc-occ-label, html #app .urm-days-lbl, html #app .urm-stat-key,
+html #app .ofi-tag, html #app .obf-label, html #app .mv-year-label,
+html #app .ocm-dow-hdr, html #app .abs-unit-impact-hdr, html #app .ucm-divider,
+html #app .tuc-type-badge, html #app .udd-unit-type-badge, html #app .udd-mt-label,
+html #app .udd-rot-status, html #app .cov-date-wd, html #app .pd-unit-badge,
+html #app .tuo-ring-denom, html #app .abs-tl-yr, html #app .rgw-year,
+html #app .db-oc-weekday, html #app .db-oc-area-label, html #app .db-oc-flag,
+html #app .db-rot-chip, html #app .rlc-stat-l, html #app .rhub-hl,
+html #app .rhub-kl, html #app .rhsc-pct, html #app .abs-cal-pill,
+html #app .sm-preview-role, html #app .sm-preview-chip, html #app .sm-step-hint,
+html #app .sm-req-note, html #app .tuc-team-count, html #app .tuc-sup-empty-label,
+html #app .tuc-supervisor-chip, html #app .stype-chip-key, html #app .rgw-gap-pill,
+html #app .news-meta-item { font-size: 11px !important; }
+
+html #app .sm-step-num  { font-size: 11px !important; font-family: 'DM Mono', monospace !important; }
 html #app .sm-step-label { font-size: 12.5px !important; }
 html #app .sm-preview-name { font-size: 13.5px !important; }
+html #app .rtag { font-size: 11px !important; padding: 2px 7px !important; border-radius: 5px !important; }
 
+/* DM Mono on data labels */
+html #app .tuc-team-label, html #app .tuc-occ-label, html #app .urm-days-lbl,
+html #app .urm-stat-key, html #app .ofi-tag, html #app .obf-label,
+html #app .mv-year-label, html #app .ocm-dow-hdr, html #app .abs-unit-impact-hdr,
+html #app .ucm-divider, html #app .news-meta-item,
+html #app .abs-tl-dates, html #app .tuc-res-dates,
+html #app .db-oc-time, html #app .dbsr-lbl { font-family: 'DM Mono', monospace !important; }
 
-/* ================================================================
-   §03  WCAG CONTRAST — only fixes that don't conflict with nm-* system
-================================================================ */
-
-/* #9ca3af on white = 2.5:1 FAIL → lift placeholders */
-#app input::placeholder,
-#app textarea::placeholder,
-#app .form-control::placeholder { color: #6b7280 !important; opacity: 1 !important; }
-
-/* #a0a09b (nm-text3) on #f5f4f0 (nm-surface2) = ~3.8:1 FAIL
-   The HTML uses this everywhere for labels. Lift slightly. */
-html #app .tuc-occ-label,
-html #app .tuc-team-label,
-html #app .abs-unit-impact-hdr,
-html #app .rp-kpi-label,
-html #app .rp-ds-label { color: #6b6b67 !important; }
-
-/* Teal text on white: #00b3b3 = 2.59:1 FAIL
-   Use darker teal for actual text content */
-html #app .db-cc-link,
-html #app .nm-svc-detail-link,
-html #app .ofi-noted:hover { color: #007a7a !important; }
-
-
-/* ================================================================
-   §04  TYPOGRAPHY HIERARCHY
-   DM Mono for all data display (times, codes, IDs, dates)
-   Instrument Serif italic ONLY for large display numbers
-================================================================ */
-
-/* Data display → DM Mono */
-html #app .oncall-tl-from,
-html #app .oncall-tl-to,
-html #app .oncall-tl-date,
-html #app .tuc-res-dates,
-html #app .tuc-cap-badge-num,
-html #app .tuc-cap-badge-denom,
-html #app .abs-tl-dates,
-html #app .news-meta-item,
-html #app .pd-history-dates,
-html #app .dbsr-lbl,
-html #app .db-oc-time,
-html #app .mv-rot-label { font-family: 'DM Mono', monospace !important; }
-
-/* Display numbers → Instrument Serif italic */
-html #app .dbsr-num,
-html #app .db-kpi-val,
-html #app .rha-kpi-val,
-html #app .urm-stat-val,
-html #app .stat-main-value,
-html #app .absence-duration,
-html #app .rp-kpi-val,
-html #app .rp-ds-val {
+/* Instrument Serif for display numbers only */
+html #app .dbsr-num, html #app .db-kpi-val, html #app .rha-kpi-val,
+html #app .urm-stat-val, html #app .stat-main-value, html #app .rp-kpi-val {
   font-family: 'Instrument Serif', Georgia, serif !important;
   font-style: italic !important;
   font-weight: 400 !important;
 }
 
-/* tuc-name: unit names are operational, not editorial */
+/* Unit names: operational label not editorial */
 html #app .tuc-name {
   font-family: 'DM Sans', system-ui, sans-serif !important;
   font-style: normal !important;
@@ -20071,28 +20071,7 @@ html #app .tuc-name {
   letter-spacing: -.01em !important;
 }
 
-
-/* ================================================================
-   §05  CARD PROPORTIONALITY
-   stat-card was clamp(44px,4.2vw,64px) — way too large
-================================================================ */
-
-.stat-main-value,
-#app .stat-main-value {
-  font-size: clamp(28px, 2.8vw, 36px) !important;
-  line-height: 1 !important;
-  margin-bottom: 10px !important;
-}
-
-.stat-card,
-#app .stat-card { padding: 16px 18px 14px !important; }
-
-
-/* ================================================================
-   §06  TRAINING UNITS — tuc-* fixes
-================================================================ */
-
-/* Cap badge: Fraunces 26px → DM Mono 18px */
+/* tuc-cap-badge: Fraunces 26px → DM Mono 18px */
 html #app .tuc-cap-badge-num {
   font-family: 'DM Mono', monospace !important;
   font-style: normal !important;
@@ -20104,42 +20083,46 @@ html #app .tuc-cap-badge-num {
 html #app .tuc-cap-badge-denom {
   font-family: 'DM Mono', monospace !important;
   font-size: 12px !important;
-  font-weight: 500 !important;
-}
-
-/* Free chip */
-html #app .tuc-free-chip {
-  font-family: 'DM Mono', monospace !important;
-  font-size: 11px !important;
-}
-
-/* Resident row dates */
-html #app .tuc-res-dates {
-  font-family: 'DM Mono', monospace !important;
-  font-size: 11px !important;
-}
-
-/* 30-day today marker */
-html #app .tuc-30d-bar--today {
-  outline: 2px solid var(--nm-teal) !important;
-  outline-offset: 1px !important;
 }
 
 
-/* ================================================================
-   §07  PEOPLE GRID (pig-*) — proportions and avatar colours
-================================================================ */
+/* ════════════════════════════════════════════════════════════════
+   05  WCAG CONTRAST
+════════════════════════════════════════════════════════════════ */
 
-html #app .pig-name {
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  letter-spacing: -.01em !important;
+#app input::placeholder,
+#app textarea::placeholder,
+#app .form-control::placeholder { color: #6b6b67 !important; opacity: 1 !important; }
+
+/* Teal text on white: #00b3b3 = 2.59:1 FAIL → darker teal */
+html #app .db-cc-link,
+html #app .nm-svc-detail-link { color: #007a7a !important; }
+
+/* Table header text: nm-text3 (#a0a09b) on nm-surface2 (#f5f4f0) = ~3.8:1 → lift */
+html #app .content-area table thead th { color: #6b6b67 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   06  STAT CARDS — proportionality
+════════════════════════════════════════════════════════════════ */
+
+/* stat-main-value was clamp(44px,4.2vw,64px) — huge */
+#app .stat-main-value {
+  font-size: clamp(28px, 2.8vw, 36px) !important;
+  line-height: 1 !important;
 }
+#app .stat-card { padding: 16px 18px 14px !important; }
 
+
+/* ════════════════════════════════════════════════════════════════
+   07  PEOPLE GRID (pig-*) — avatar and card improvements
+════════════════════════════════════════════════════════════════ */
+
+html #app .pig-name { font-size: 14px !important; font-weight: 700 !important; letter-spacing: -.01em !important; }
 html #app .pig-role { font-size: 12px !important; }
-html #app .pig-spec { font-size: 11.5px !important; }
+html #app .pig-divider-label { font-family: 'DM Mono', monospace !important; font-size: 10px !important; letter-spacing: .12em !important; }
+html #app .pig-footer-item { font-size: 11.5px !important; }
 
-/* Avatar: consistent with nm-teal/nm-navy system */
 html #app .pig-avatar.attending {
   background: linear-gradient(135deg, var(--nm-navy,#07111f), var(--nm-teal,#00b3b3)) !important;
 }
@@ -20147,139 +20130,70 @@ html #app .pig-avatar.resident {
   background: linear-gradient(135deg, #1e40af, #0e7490) !important;
 }
 
-/* Footer */
-html #app .pig-footer-item { font-size: 11.5px !important; }
-html #app .pig-divider-label {
-  font-family: 'DM Mono', monospace !important;
-  font-size: 10px !important;
-  letter-spacing: .12em !important;
+
+/* ════════════════════════════════════════════════════════════════
+   08  TABLE ROW INTERACTIONS
+════════════════════════════════════════════════════════════════ */
+
+html #app .content-area table tbody tr { cursor: pointer !important; }
+html #app .content-area table tbody tr:hover {
+  background: rgba(0,179,179,.04) !important;
 }
-
-
-/* ================================================================
-   §08  SM-MODAL (Add Staff form) — left panel dark surface
-================================================================ */
-
-/* The sm-left uses #0f2d54 from style10 base.
-   This is nm-navy2 (#0f2d54) — close to nm-navy.
-   We leave the colour as-is, just fix the typography. */
-
-html #app .sm-preview-avatar--attending {
-  background: linear-gradient(135deg, var(--nm-teal,#00b3b3), #007a7a) !important;
+html #app .content-area table tbody tr:hover td:first-child {
+  border-left: 2px solid var(--nm-teal, #00b3b3) !important;
 }
-html #app .sm-step-item.active {
-  background: rgba(0,179,179,.1) !important;
-}
+html #app .content-area table tbody td:first-child { border-left: 2px solid transparent !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   09  FORMS — complement HTML system
+════════════════════════════════════════════════════════════════ */
+
+html #app .form-control,
+html #app .form-select { min-height: 40px !important; border-radius: 8px !important; }
+html #app textarea.form-control { min-height: 88px !important; resize: vertical !important; }
+html #app .modal-container .modal-title { font-style: normal !important; font-weight: 600 !important; }
+
+/* SM modal: teal active states */
+html #app .sm-step-item.active { background: rgba(0,179,179,.1) !important; }
 html #app .sm-step-item.active .sm-step-num {
   background: rgba(0,179,179,.18) !important;
   border-color: rgba(0,179,179,.45) !important;
   color: var(--nm-teal,#00b3b3) !important;
 }
 html #app .sm-req-dot { background: var(--nm-teal,#00b3b3) !important; }
-
-
-/* ================================================================
-   §09  TABLE IMPROVEMENTS
-   Works with the HTML's table styles, adds readability
-================================================================ */
-
-/* Row hover: use teal tint */
-html #app .content-area table tbody tr:hover {
-  background: rgba(0,179,179,.04) !important;
-}
-html #app .content-area table tbody tr:hover td:first-child {
-  border-left-color: var(--nm-teal,#00b3b3) !important;
-}
-
-/* Action buttons */
-html #app .table-actions .btn-sm {
-  width: 32px !important;
-  height: 32px !important;
-}
-html #app .table-actions .btn-sm:hover {
-  background: rgba(0,179,179,.08) !important;
-  border-color: rgba(0,179,179,.3) !important;
-  color: var(--nm-teal,#00b3b3) !important;
-}
-
-/* NA value */
-html #app .na-value {
-  font-family: 'DM Mono', monospace !important;
-  font-size: 11px !important;
+html #app .sm-preview-avatar--attending {
+  background: linear-gradient(135deg, var(--nm-teal,#00b3b3), #007a7a) !important;
 }
 
 
-/* ================================================================
-   §10  FORMS — complement the HTML system
-================================================================ */
+/* ════════════════════════════════════════════════════════════════
+   10  AVATAR PHOTO CLIPPING
+════════════════════════════════════════════════════════════════ */
 
-/* The HTML sets focus to var(--nm-teal) — we keep that.
-   We only fix proportions and minimum sizes. */
-
-html #app .form-control,
-html #app .form-select {
-  min-height: 40px !important;
-  border-radius: 8px !important;
-}
-
-html #app textarea.form-control {
-  min-height: 88px !important;
-  resize: vertical !important;
-}
-
-/* Modal title: not italic (HTML sets font-style:italic on modal-title) */
-html #app .modal-container .modal-title {
-  font-style: normal !important;
-  font-weight: 600 !important;
-  font-size: 15px !important;
+.nm-av { overflow: hidden !important; position: relative !important; flex-shrink: 0 !important; }
+.nm-av img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: inherit !important;
 }
 
 
-/* ================================================================
-   §11  LOGIN SCREEN — works with existing design
-================================================================ */
+/* ════════════════════════════════════════════════════════════════
+   11  LOADING SCREENS — animations with nm-teal
+════════════════════════════════════════════════════════════════ */
 
-/* Card enter animation */
-.login-card {
-  animation: lcIn .4s cubic-bezier(.22,1,.36,1) !important;
-}
-@keyframes lcIn {
-  from { opacity:0; transform:translateY(14px) scale(.98); }
-  to   { opacity:1; transform:none; }
-}
-
-/* Error shake */
-.login-error {
-  animation: lcShake .35s cubic-bezier(.36,.07,.19,.97) !important;
-}
-@keyframes lcShake {
-  0%,100%{transform:translateX(0)}
-  20%{transform:translateX(-5px)}
-  40%{transform:translateX(4px)}
-  60%{transform:translateX(-3px)}
-  80%{transform:translateX(2px)}
-}
-
-/* Submit arrow hover */
-.lc-submit-arrow { transition: transform .2s !important; }
-.lc-submit:hover:not(:disabled) .lc-submit-arrow {
-  transform: translateX(3px) !important;
-}
-
-/* Field focus lift */
-.lc-field { transition: transform .15s !important; }
-.lc-field:focus-within { transform: translateY(-1px) !important; }
-
-
-/* ================================================================
-   §12  LOADING SCREENS — animation improvements
-================================================================ */
-
-/* als-bar: glowing sweep */
+/* als-bar: glowing teal sweep */
 #app .als-bar {
   background: linear-gradient(90deg,
-    transparent, rgba(0,179,179,.3), var(--nm-teal,#00b3b3),
-    rgba(0,179,179,.3), transparent) !important;
+    transparent,
+    rgba(0,179,179,.3),
+    var(--nm-teal,#00b3b3),
+    rgba(0,179,179,.3),
+    transparent) !important;
   box-shadow: 0 0 14px rgba(0,179,179,.45) !important;
   animation: alsSweep 1.4s cubic-bezier(.4,0,.6,1) infinite !important;
 }
@@ -20288,115 +20202,63 @@ html #app .modal-container .modal-title {
   100% { transform: translateX(450%); }
 }
 
-/* nd-splash breathing */
+/* Splash breathing */
 .nd-splash-inner { animation: ndBreath 3s ease-in-out infinite !important; }
 @keyframes ndBreath {
   0%,100% { transform: translateY(0); }
   50%      { transform: translateY(-4px); }
 }
 
-/* Progress bar: deterministic */
-.nd-splash-bar-fill {
-  animation: ndBar 1.6s cubic-bezier(.25,.46,.45,.94) forwards !important;
-}
+/* Progress bar deterministic */
+.nd-splash-bar-fill { animation: ndBar 1.6s cubic-bezier(.25,.46,.45,.94) forwards !important; }
 @keyframes ndBar {
   0%{width:0%} 30%{width:48%} 60%{width:75%} 80%{width:90%} 100%{width:100%}
 }
 
-/* Transition: smooth exit */
+/* Transition out */
 .splash-fade-leave-active {
   transition: opacity .45s ease, transform .45s cubic-bezier(.4,0,.2,1) !important;
   pointer-events: none !important;
 }
-.splash-fade-leave-to { opacity: 0 !important; transform: scale(1.04) !important; }
+.splash-fade-leave-to { opacity:0 !important; transform:scale(1.04) !important; }
 .splash-fade-enter-active { transition: opacity .2s ease !important; }
-.splash-fade-enter-from   { opacity: 0 !important; }
+.splash-fade-enter-from { opacity:0 !important; }
 
 
-/* ================================================================
-   §13  LAYOUT — critical fixes only
-================================================================ */
+/* ════════════════════════════════════════════════════════════════
+   12  LOGIN MICRO-INTERACTIONS
+════════════════════════════════════════════════════════════════ */
 
-/* Navbar is a flex child — must NOT be position:fixed */
-#app .top-navbar {
-  position: relative !important;
-  flex-shrink: 0 !important;
+.login-card { animation: lcIn .4s cubic-bezier(.22,1,.36,1) !important; }
+@keyframes lcIn {
+  from { opacity:0; transform:translateY(14px) scale(.98); }
+  to   { opacity:1; transform:none; }
 }
-
-/* Avatar photo clipping */
-.nm-av { overflow: hidden !important; position: relative !important; }
-.nm-av img {
-  position: absolute !important; inset: 0 !important;
-  width: 100% !important; height: 100% !important;
-  object-fit: cover !important; border-radius: inherit !important;
+.login-error { animation: lcShake .35s cubic-bezier(.36,.07,.19,.97) !important; }
+@keyframes lcShake {
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)}
+  40%{transform:translateX(4px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(2px)}
 }
-
-/* Sidebar tooltip z-index */
-#app .nmsb--collapsed .nmsb-item::after { z-index: 200 !important; }
-
-/* Touch targets on mobile */
-@media (max-width: 768px) {
-  #app .btn,
-  #app .table-actions .btn-sm { min-height: 44px !important; }
-  html #app input,
-  html #app select,
-  html #app textarea { font-size: 16px !important; }
-}
-
-/* Sidebar overlay on mobile */
-@media (max-width: 768px) {
-  #app .sidebar {
-    position: fixed !important;
-    left: 0 !important; top: 0 !important; bottom: 0 !important;
-    width: 280px !important;
-    z-index: 300 !important;
-    transform: translateX(-100%) !important;
-    transition: transform .25s cubic-bezier(.22,.61,.36,1) !important;
-  }
-  #app .sidebar.mobile-open {
-    transform: translateX(0) !important;
-    box-shadow: 4px 0 32px rgba(0,0,0,.3) !important;
-  }
-  #app .main-content { margin-left: 0 !important; }
-}
-
-/* iOS safe area */
-@supports (padding: max(0px)) {
-  #app .top-navbar {
-    padding-left: max(14px, env(safe-area-inset-left)) !important;
-    padding-right: max(14px, env(safe-area-inset-right)) !important;
-  }
-}
-
-/* Prevent iOS input zoom */
-@media screen and (-webkit-min-device-pixel-ratio:0) and (max-width:768px) {
-  html #app input,
-  html #app select,
-  html #app textarea { font-size: 16px !important; }
-}
+.lc-submit-arrow { transition: transform .2s !important; }
+.lc-submit:hover:not(:disabled) .lc-submit-arrow { transform: translateX(3px) !important; }
+.lc-field { transition: transform .15s !important; }
+.lc-field:focus-within { transform: translateY(-1px) !important; }
 
 
-/* ================================================================
-   §14  NEWS DRAWER — reading experience
-================================================================ */
+/* ════════════════════════════════════════════════════════════════
+   13  NEWS DRAWER — reading experience
+════════════════════════════════════════════════════════════════ */
 
-/* Drawer enter animation */
 #app .nrd-drawer { animation: nrdIn .28s cubic-bezier(.22,.61,.36,1) !important; }
 @keyframes nrdIn {
-  from { transform: translateX(40px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
+  from { transform:translateX(40px); opacity:0; }
+  to   { transform:translateX(0); opacity:1; }
 }
-
-/* Status/vis pills: 9px → 10px */
 #app .nrd-status-pill { font-size: 10px !important; }
 #app .nrd-vis-pill    { font-size: 10px !important; }
-
-/* Body: max-width for reading */
 #app .nrd-content { max-width: 65ch !important; }
 #app .nrd-content p { line-height: 1.85 !important; }
 #app .nrd-content p:first-child { font-size: 1.08rem !important; }
-
-/* Title */
 #app .nrd-title {
   font-family: 'DM Sans', system-ui, sans-serif !important;
   font-style: normal !important;
@@ -20407,23 +20269,93 @@ html #app .modal-container .modal-title {
 }
 
 
-/* ================================================================
-   §15  ROTATION ORBS
-================================================================ */
+/* ════════════════════════════════════════════════════════════════
+   14  ROTATION ORBS — teal hover (not old blue)
+════════════════════════════════════════════════════════════════ */
 
 html #app .rot-orb--add:hover {
   border-color: var(--nm-teal,#00b3b3) !important;
   color: var(--nm-teal,#00b3b3) !important;
   background: rgba(0,179,179,.07) !important;
 }
-html #app .rot-orb--scheduled:hover {
-  background: rgba(0,179,179,.07) !important;
+html #app .rot-orb--scheduled:hover { background: rgba(0,179,179,.07) !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   15  MOBILE LAYOUT — critical fixes
+════════════════════════════════════════════════════════════════ */
+
+/* Navbar must be relative (flex child), never fixed */
+#app .top-navbar { position: relative !important; flex-shrink: 0 !important; }
+
+/* Touch targets */
+@media (max-width: 768px) {
+  #app .btn { min-height: 44px !important; }
+  html #app input, html #app select, html #app textarea { font-size: 16px !important; }
+}
+
+/* iOS safe area */
+@supports (padding: max(0px)) {
+  #app .top-navbar {
+    padding-left: max(14px, env(safe-area-inset-left)) !important;
+    padding-right: max(14px, env(safe-area-inset-right)) !important;
+  }
+}
+
+/* Sidebar overlay on mobile */
+@media (max-width: 768px) {
+  #app .sidebar {
+    position: fixed !important;
+    left:0 !important; top:0 !important; bottom:0 !important;
+    width: 280px !important;
+    z-index: 300 !important;
+    transform: translateX(-100%) !important;
+    transition: transform .25s cubic-bezier(.22,.61,.36,1) !important;
+    box-shadow: none !important;
+  }
+  #app .sidebar.mobile-open {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 32px rgba(0,0,0,.3) !important;
+  }
+  #app .main-content { margin-left: 0 !important; }
+
+  /* News drawer: full width on mobile */
+  #app .nrd-drawer { border-radius: 0 !important; width: 100% !important; }
+
+  /* Modals: bottom sheet */
+  #app .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+  #app .modal-container {
+    border-radius: 20px 20px 0 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh !important;
+  }
+  #app .sm-modal {
+    border-radius: 20px 20px 0 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    flex-direction: column !important;
+  }
+  #app .sm-left { display: none !important; }
+}
+
+/* Prevent iOS zoom on input focus */
+@media screen and (-webkit-min-device-pixel-ratio:0) and (max-width:768px) {
+  html #app input, html #app select, html #app textarea { font-size: 16px !important; }
 }
 
 
-/* ================================================================
-   §16  REDUCED MOTION
-================================================================ */
+/* ════════════════════════════════════════════════════════════════
+   16  SIDEBAR TOOLTIP Z-INDEX
+════════════════════════════════════════════════════════════════ */
+
+#app .nmsb--collapsed .nmsb-item::after { z-index: 200 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   17  REDUCED MOTION
+════════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -20431,106 +20363,6 @@ html #app .rot-orb--scheduled:hover {
     transition-duration: .01ms !important;
   }
   .nd-splash-bar-fill { width: 100% !important; animation: none !important; }
-  .nd-splash-inner    { animation: none !important; }
-  #app .als-bar       { animation: none !important; }
-}
-
-
-
-
-/* ================================================================
-   §FIX2 — TARGETED VISUAL FIXES (from screenshot review)
-   
-   FIX-01: Search bar too wide
-   The neumac-layout block sets .search-input { width:auto !important }
-   which overrides style10's width:210px. Width:auto in a flex 
-   container = stretch. Fix: restore explicit width with higher
-   specificity and constrain navbar-right.
-   
-   FIX-02: Dark card-header pattern
-   The card-header is being set to var(--nm-surface) (white) by
-   the §LAYOUT block. The dark card-header was intentional for 
-   module headers. Restore it for .card-header inside .card.mb-6
-   at the top of each module view.
-   
-   FIX-03: navbar-title uses var(--font-display) = Instrument Serif
-   italic at 20px — correct per the design system.
-================================================================ */
-
-/* FIX-01: Search bar — constrain to fixed width */
-#app .top-navbar .search-container,
-#app .search-container {
-  width: 220px !important;
-  flex-shrink: 0 !important;
-}
-#app .top-navbar .search-input,
-#app .search-input {
-  width: 100% !important;
-}
-#app .search-input:focus {
-  width: 100% !important;
-}
-/* Constrain navbar-right so it doesn't expand */
-#app .navbar-right {
-  flex-shrink: 0 !important;
-  flex-grow: 0 !important;
-  gap: 8px !important;
-}
-/* Ensure navbar-left takes up remaining space */
-#app .navbar-left {
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-}
-
-/* FIX-02: Dark card-header — module level headers */
-/* The main module card (card.mb-6) header should be dark navy */
-#app .content-area > .card > .card-header,
-#app .content-area > div > .card > .card-header {
-  background: var(--nm-navy, #07111f) !important;
-  border-bottom: 1px solid rgba(255,255,255,.07) !important;
-  color: rgba(255,255,255,.9) !important;
-}
-/* Card title inside dark header */
-#app .content-area > .card > .card-header .card-title,
-#app .content-area > div > .card > .card-header .card-title {
-  color: rgba(255,255,255,.9) !important;
-  font-style: normal !important;
-}
-/* Buttons inside dark header */
-#app .content-area > .card > .card-header .btn-primary {
-  background: rgba(0,179,179,.18) !important;
-  border-color: rgba(0,179,179,.35) !important;
-  color: #00d4d4 !important;
-}
-#app .content-area > .card > .card-header .btn-primary:hover {
-  background: rgba(0,179,179,.28) !important;
-  color: #fff !important;
-}
-/* View toggle buttons in dark header */
-#app .content-area > .card > .card-header .btn-icon,
-#app .content-area > .card > .card-header .view-toggle-btn {
-  color: rgba(255,255,255,.5) !important;
-  border-color: rgba(255,255,255,.12) !important;
-  background: transparent !important;
-}
-#app .content-area > .card > .card-header .btn-icon:hover,
-#app .content-area > .card > .card-header .view-toggle-btn:hover {
-  color: rgba(255,255,255,.9) !important;
-  background: rgba(255,255,255,.08) !important;
-}
-#app .content-area > .card > .card-header .btn-icon.active,
-#app .content-area > .card > .card-header .view-toggle-btn.active {
-  background: rgba(0,179,179,.18) !important;
-  color: #00d4d4 !important;
-  border-color: rgba(0,179,179,.3) !important;
-}
-
-/* FIX-03: Navbar title — keep the design system italic serif */
-#app .navbar-title {
-  font-family: var(--font-display, 'Instrument Serif', Georgia, serif) !important;
-  font-style: italic !important;
-  font-size: 20px !important;
-  font-weight: 400 !important;
-  color: var(--nm-text1, #111110) !important;
+  .nd-splash-inner { animation: none !important; }
+  #app .als-bar { animation: none !important; }
 }
