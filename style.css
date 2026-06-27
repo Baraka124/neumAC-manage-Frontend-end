@@ -10,7 +10,7 @@
                   DM Sans (UI/navigation)
                   DM Mono (data/code)
    
-   Clinical blue: #1a4f8a  (primary dark surfaces)  
+   Clinical blue: #1a4f8a  (primary dark surfaces)
    Teal accent:   #009999 / #00d4d4 (active states, CTAs)
    Canvas:        #edecea  (warm background)
    Card surface:  #ffffff  (elevated content)
@@ -32895,7 +32895,7 @@ html body .content-area {
 @media (min-width: 1440px) {
   /* Sidebar: slightly wider */
   #app .sidebar { width: 240px !important; }
-  #app .main-content { margin-left: 240px !important; }
+
 
   /* Research hub: 3-column grid comfortable */
   #app .rhub-grid {
@@ -32932,7 +32932,7 @@ html body .content-area {
 /* ── 1920px+: full HD ── */
 @media (min-width: 1920px) {
   #app .sidebar { width: 260px !important; }
-  #app .main-content { margin-left: 260px !important; }
+
 
   #app .rhub-grid {
     grid-template-columns: repeat(3, 1fr) !important;
@@ -32952,14 +32952,14 @@ html body .content-area {
 /* ── 2560px+: 4K / ultra-wide ── */
 @media (min-width: 2560px) {
   #app .sidebar { width: 280px !important; }
-  #app .main-content { margin-left: 280px !important; }
+
   html #app .sm-modal { max-width: 960px !important; }
 }
 
 /* ── 1100px: small laptop ── */
 @media (max-width: 1100px) {
   #app .sidebar { width: clamp(200px, 16vw, 228px) !important; }
-  #app .main-content { margin-left: clamp(200px, 16vw, 228px) !important; }
+
 
   #app .rhub-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
@@ -32997,7 +32997,7 @@ html body .content-area {
   #app .sidebar .nmsb-section-lbl,
   #app .sidebar .nmsb-wordmark-text { display: none !important; }
   #app .sidebar .nmsb-logo-full .nm-wordmark { display: none !important; }
-  #app .main-content { margin-left: 64px !important; }
+
 
   /* News drawer: narrower */
   #app .nrd-drawer { width: min(640px, 90vw) !important; }
@@ -34159,17 +34159,12 @@ html #app .rot-compact .rot-orb--completed { background: #9ca3af !important; col
     width: 64px !important;
     transition: width .2s cubic-bezier(.22,.61,.36,1) !important;
   }
-  #app .main-content {
-    margin-left: 64px !important;
-    transition: margin-left .2s cubic-bezier(.22,.61,.36,1) !important;
-  }
+
   #app .sidebar:hover {
     width: 228px !important;
   }
   #app .sidebar:hover ~ .main-content,
-  #app .sidebar:hover + .main-content {
-    margin-left: 228px !important;
-  }
+
 }
 
 
