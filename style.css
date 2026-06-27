@@ -26670,10 +26670,6 @@ html #app .settings-form-grid .form-select:focus {
   position: relative !important;
 }
 
-/* Search input */
-#app .top-navbar .search-input,
-
-
 /* Search icon */
 #app .search-icon,
 .search-icon {
@@ -33463,8 +33459,6 @@ html #app .rot-orb--scheduled,
 ════════════════════════════════════════════════════════════════ */
 
 /* Frame background: was #0f2d54 */
-html #app .dbh-frame,
-
 
 /* Hero top row */
 html #app .dbh-top,
@@ -36633,11 +36627,6 @@ html body #app .dbsr-accent--indigo { background: #7c3aed !important; }
 
 /* [z-removed] */
 
-/* ── dbh-frame/actions z-index final win ── */
-html body #app .dbh-frame,
-html body #app .dbh-top,
-/* [z-removed] */
-
 /* ── Search bar final win with html body #app ── */
 html body #app .search-container {
   width: 220px !important;
@@ -36754,12 +36743,6 @@ html #app .navbar-user-btn > svg {
 /* [z-removed] */
 
 /* Ensure dbh-frame doesn't visually layer above navbar */
-/* [z-removed] */
-html body #app .dbh-top,
-/* [z-removed] */
-
-
-/* [z-removed] */
 
 /* navbar-title: explicit colour so it's readable on white navbar */
 html body #app .navbar-title {
@@ -36815,27 +36798,6 @@ html body #app .top-navbar .navbar-left {
 }
 
 
-/* [z-removed] */
-
-html body #app .dbh-frame,
-html body #app .dbh-top,
-/* [z-removed] */
-
-/* [z-removed] */
-
-
-/* Remove stacking context from dbh-frame - it was blocking content below */
-/* [z-removed] */
-/* [z-removed] */
-
-/* Only the ACTION BUTTONS get elevated z-index */
-/* [z-removed] */
-/* [z-removed] */
-
-
-/* [z-removed] */
-
-/* navbar: definitively on top */
 /* [z-removed] */
 
 /* Ensure content-area is NEVER blocked by any of our z-index elements */
@@ -38703,7 +38665,7 @@ html body #app .dbh-top    { position: relative !important; z-index: auto !impor
 /* Closed sidebar: completely non-interactive */
 
 
-/* Mobile: hide toggle when mobile menu open, correct bottom-sheet z */  
+/* Mobile: hide toggle when mobile menu open, correct bottom-sheet z */
 @media (max-width: 768px) {
 
 
