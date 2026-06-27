@@ -38834,3 +38834,36 @@ html #app .db-oc-empty,
 html #app .db-rot-empty {
   color: #64748b !important;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   §63  RESEARCH CARD TITLE OVERLAP FIX
+   Root cause (verified via CDP + real-font render): two later
+   .rlc-title rules set `overflow:visible !important`, defeating the
+   2-line `-webkit-line-clamp`. A 3-line title (e.g. L4/L6) then has a
+   box sized for 2 lines but its 3rd line spills out visibly and lands
+   on top of the coordinator/avatar row below. Fix: re-assert a real
+   2-line clamp (hidden overflow + ellipsis) as the final word, and
+   give the title-block column-flow with a gap so the title and the
+   coordinator row can never occupy the same vertical space.
+════════════════════════════════════════════════════════════════ */
+html body #app .rlc-title {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+html body #app .rlc-title-block {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+html body #app .rlc-coord {
+  margin-top: 0 !important;
+}
