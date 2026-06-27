@@ -23374,7 +23374,11 @@ html #app .content-area .card.mb-6 .card-header .btn.btn-secondary:hover {
   padding: 0 18px !important;
   flex-shrink: 0 !important;
   gap: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
 }
+#app .pd-tabs::-webkit-scrollbar { height: 0 !important; }
 
 /* Tabs */
 .pd-tab,
@@ -37015,7 +37019,9 @@ html #app .pd-tab {
   display: inline-flex !important;
   align-items: center !important;
   cursor: pointer !important;
+  flex-shrink: 0 !important;
 }
+html #app .pd-tab-action-btn { flex-shrink: 0 !important; }
 
 /* ── tuc-horizon-btn (3mo/6mo/12mo) ── */
 html #app .tuc-horizon-btn {
@@ -38713,3 +38719,46 @@ html body #app .dbh-top    { position: relative !important; z-index: auto !impor
 
 
 /* dbh-actions: hero buttons still above toggle */
+
+/* ════════════════════════════════════════════════════════════════
+   §61  TAB-BAR OVERFLOW GUARD — universal anti-overlap
+   Root cause (verified via layout testing): horizontal tab bars are
+   flex containers whose tab items default to flex-shrink:1, so when
+   the bar is narrower than the sum of its tabs the items collapse
+   below their content width and the labels overlap. Fix: tab items
+   never shrink; the bar scrolls horizontally instead of overlapping.
+   Both declarations are non-destructive — flex-shrink:0 cannot break
+   a bar that already fits, and overflow-x:auto only engages on real
+   overflow. Scoped to genuine tab/subtab bars only.
+════════════════════════════════════════════════════════════════ */
+#app .nm-tabs,
+#app .oco-tabs,
+#app .rhub-line-tabs,
+#app .sm-edit-tabs,
+#app .oce-type-tabs,
+#app .rha-subtabs,
+#app .modal-tabs {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+  flex-wrap: nowrap !important;
+}
+#app .nm-tabs::-webkit-scrollbar,
+#app .oco-tabs::-webkit-scrollbar,
+#app .rhub-line-tabs::-webkit-scrollbar,
+#app .sm-edit-tabs::-webkit-scrollbar,
+#app .oce-type-tabs::-webkit-scrollbar,
+#app .rha-subtabs::-webkit-scrollbar,
+#app .modal-tabs::-webkit-scrollbar { height: 0 !important; }  
+
+#app .nm-tab,
+#app .oco-tab,
+#app .rhub-ltab,
+#app .rhub-tab,
+#app .sm-edit-tab,
+#app .oce-type-tab,
+#app .rha-subtab,
+#app .modal-tab,
+#app .comms-tab {
+  flex-shrink: 0 !important;
+}
