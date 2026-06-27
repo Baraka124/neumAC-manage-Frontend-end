@@ -2,7 +2,7 @@
    neumDesk — style.css
    Clinical Operations Platform UI Override Stylesheet
    
-   Architecture: All rules are appended overrides on top of the  
+   Architecture: All rules are appended overrides on top of the
    base styles in index.html <style> blocks and style__10_.css.
    Cascade strategy: html #app .classname for specificity wins.
    
@@ -1130,7 +1130,12 @@ a { color: var(--blue); text-decoration: none; }
 
 /* Search */
 .search-container { position: relative; }
-.search-box { position: relative; }
+.search-box { position: relative; display: flex; align-items: center; }
+.search-box > svg {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; color: var(--text-3);
+  pointer-events: none; opacity: .6; z-index: 1;
+}
 .search-input {
   width: 210px; padding: 7px 12px 7px 34px;
   border: 1px solid var(--border-2); border-radius: var(--r);
@@ -2915,7 +2920,9 @@ textarea.form-control { min-height: 80px; resize: vertical; }
   position: fixed; top: 16px; right: 16px;
   z-index: var(--z-toast); display: flex; flex-direction: column; gap: 6px;
   max-width: 320px; width: calc(100% - 32px);
+  pointer-events: none;
 }
+.toast-container > * { pointer-events: auto; }
 .toast {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-lg); padding: 11px 13px;
@@ -15709,7 +15716,7 @@ body {
   max-width: 220px !important;
   width: 220px !important;
   font-size: 13px !important;
-  padding: 0 12px !important;
+  padding: 0 12px 0 32px !important;
 }
 #app .top-navbar .search-input::placeholder,
 .top-navbar .search-input::placeholder {
@@ -33202,7 +33209,10 @@ html body .content-area {
     padding-bottom: max(0px, env(safe-area-inset-bottom)) !important;
   }
   #app .toast-container {
-    bottom: max(20px, calc(env(safe-area-inset-bottom) + 10px)) !important;
+    bottom: auto !important;
+    height: -moz-fit-content !important;
+    height: fit-content !important;
+    max-height: calc(100vh - 32px) !important;
   }
 }
 
@@ -33475,11 +33485,11 @@ html #app .dbh-top,
 html #app .dbh-date,
 #app .dbh-date {
   font-family: 'DM Sans', system-ui, sans-serif !important;
-  font-size: 22px !important;
-  font-weight: 500 !important;
+  font-size: 23px !important;
+  font-weight: 600 !important;
   font-style: normal !important;
   color: #ffffff !important;
-  letter-spacing: -.3px !important;
+  letter-spacing: -.4px !important;
   line-height: 1.1 !important;
 }
 
@@ -33525,6 +33535,21 @@ html #app .dbh-btn--primary,
 }
 html #app .dbh-btn--primary:hover {
   background: rgba(0,179,179,.28) !important;
+  color: #ffffff !important;
+}
+
+/* Teal accent variant (Announce CTA) — premium filled treatment */
+html #app .dbh-btn--teal,
+#app .dbh-btn--teal {
+  background: linear-gradient(135deg, rgba(0,196,196,.22), rgba(0,179,179,.14)) !important;
+  border-color: rgba(0,196,196,.45) !important;
+  color: #8ff5ea !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 2px 8px rgba(0,179,179,.18) !important;
+}
+html #app .dbh-btn--teal:hover,
+#app .dbh-btn--teal:hover {
+  background: linear-gradient(135deg, rgba(0,210,210,.34), rgba(0,179,179,.22)) !important;
+  border-color: rgba(0,210,210,.6) !important;
   color: #ffffff !important;
 }
 
