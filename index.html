@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=24">
+    <link rel="stylesheet" href="style.css?v=25">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8996,7 +8996,7 @@
                 </nav>
 
                 <!-- ============ DASHBOARD VIEW ============ -->
-                <div v-if="currentView === 'dashboard'" class="view-dashboard">
+                <div v-if="currentView === 'dashboard'" class="view-dashboard" style="display:block!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;">
 
                     <!-- ═══ DASHBOARD ELITE REDESIGN ═══════════════════════
                          1. dbh-frame  — dark navy hero (greeting + alerts)
@@ -9005,7 +9005,7 @@
                     ════════════════════════════════════════════════════════ -->
 
                     <!-- 1. HERO FRAME -->
-                    <div class="dbh-frame">
+                    <div class="dbh-frame" style="display:block!important;width:100%!important;box-sizing:border-box!important;">
                         <div class="dbh-top">
                             <!-- Date block: replaces greeting — hospital monitors don't need "Good afternoon" -->
                             <div class="dbh-date-block">
@@ -19696,10 +19696,14 @@ html, body, #app { height: 100%; }
 #app .content-area--dash {
   display: block !important;
   width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
   flex: 1 1 auto !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   height: calc(100vh - var(--navbar-h)) !important;
+  padding: 0 !important;
 }
 
 /* ── Filter-bar mobile sizing — FINAL, overrides all earlier conflicting
@@ -19726,4 +19730,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html> 
+</html>
