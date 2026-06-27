@@ -38654,6 +38654,8 @@ html, body, #app { height: 100%; }
 
 /* ── Dashboard: normal block ── */
 #app .content-area--dash {
+  display: block !important;
+  width: 100% !important;
   flex: 1 1 auto !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
