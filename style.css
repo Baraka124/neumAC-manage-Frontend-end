@@ -2,7 +2,7 @@
    neumDesk — style.css
    Clinical Operations Platform UI Override Stylesheet
    
-   Architecture: All rules are appended overrides on top of the
+   Architecture: All rules are appended overrides on top of the  
    base styles in index.html <style> blocks and style__10_.css.
    Cascade strategy: html #app .classname for specificity wins.
    
