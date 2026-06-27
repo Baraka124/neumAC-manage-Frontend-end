@@ -38703,7 +38703,7 @@ html body #app .dbh-top    { position: relative !important; z-index: auto !impor
 /* Closed sidebar: completely non-interactive */
 
 
-/* Mobile: hide toggle when mobile menu open, correct bottom-sheet z */
+/* Mobile: hide toggle when mobile menu open, correct bottom-sheet z */  
 @media (max-width: 768px) {
 
 
