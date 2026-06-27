@@ -5257,11 +5257,17 @@ document.addEventListener('DOMContentLoaded', () => {
           start_date:        t.start_date || '',
           co_investigators:  Array.isArray(t.co_investigators)  ? [...t.co_investigators]  : (t.co_investigator_id  ? [t.co_investigator_id]  : []),
           sub_investigators: Array.isArray(t.sub_investigators) ? [...t.sub_investigators] : (t.sub_investigator_id ? [t.sub_investigator_id] : []),
-          additional_line_ids: Array.isArray(t.additional_lines) ? t.additional_lines.map(l => l.id) : []
+          additional_line_ids: Array.isArray(t.additional_lines) ? t.additional_lines.map(l => l.id) : [],
+          // Render-crash fix: the edit modal's v-model reads form._extMemberDraft.name etc.
+          // The spread above does not carry these UI-only scratch fields, so without
+          // re-initialising them the template dereferences undefined and the whole modal
+          // throws on every render. Always provide them in edit mode too.
+          _extMemberDraft: { name: '', institution: '', role: '', email: '' },
+          _diseaseInput: t._diseaseInput || ''
         }
         clinicalTrialModal.show = true
       }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [] }; innovationProjectModal.show = true }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' } }; innovationProjectModal.show = true }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.study = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
@@ -9051,4 +9057,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});  
+});
