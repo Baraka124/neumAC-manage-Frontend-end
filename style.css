@@ -38656,10 +38656,14 @@ html, body, #app { height: 100%; }
 #app .content-area--dash {
   display: block !important;
   width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
   flex: 1 1 auto !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   height: calc(100vh - var(--navbar-h)) !important;
+  padding: 0 !important;
 }
 
 /* ── Filter-bar mobile sizing — FINAL, overrides all earlier conflicting
@@ -38722,5 +38726,3 @@ html body #app .dbh-top    { position: relative !important; z-index: auto !impor
 
 
 /* dbh-actions: hero buttons still above toggle */
-
-html body #app .dbh-frame,
