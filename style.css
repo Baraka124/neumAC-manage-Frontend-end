@@ -39258,3 +39258,109 @@ html body #app .nm-table-wrap {
     padding-right: 44px !important;
   }
 }
+
+
+/* ════════════════════════════════════════════════════════════════
+   §67  PREMIUM TABLE SYSTEM
+   The data tables read as "laying around": column dividers existed but
+   at 4% opacity (invisible), there was no containing frame, header had
+   no weight, and the per-row status spine looked accidental without
+   structure around it. This establishes one coherent, premium table
+   language: a contained card frame, a defined header, visible-but-
+   refined column rules, clean rows, and a deliberate status spine.
+   Scoped to the main data tables.
+════════════════════════════════════════════════════════════════ */
+
+/* Frame: the table lives inside a contained, elevated surface. Wrap the
+   table itself so rounded corners clip cleanly. */
+html body #app .table-staff,
+html body #app .table-rotation,
+html body #app .table-absence,
+html body #app .table-oncall,
+html body #app .data-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 45, 84, .12) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 1px 2px rgba(15, 45, 84, .04),
+    0 6px 20px rgba(15, 45, 84, .05) !important;
+}
+
+/* Header: clear ground, strong navy label, decisive bottom rule */
+html body #app .table-staff thead th,
+html body #app .table-rotation thead th,
+html body #app .table-absence thead th,
+html body #app .table-oncall thead th,
+html body #app .data-table thead th {
+  background: #f6f8fb !important;
+  color: #0f2d54 !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  padding: 12px 16px !important;
+  text-align: left !important;
+  border-bottom: 1px solid rgba(15, 45, 84, .16) !important;
+  border-right: 1px solid rgba(15, 45, 84, .07) !important;
+  white-space: nowrap !important;
+}
+html body #app .table-staff thead th:last-child,
+html body #app .table-rotation thead th:last-child,
+html body #app .table-absence thead th:last-child,
+html body #app .table-oncall thead th:last-child,
+html body #app .data-table thead th:last-child { border-right: none !important; }
+
+/* Body cells: visible column rules (~8%), comfortable rhythm, aligned */
+html body #app .table-staff tbody td,
+html body #app .table-rotation tbody td,
+html body #app .table-absence tbody td,
+html body #app .table-oncall tbody td,
+html body #app .data-table tbody td {
+  padding: 12px 16px !important;
+  font-size: 13px !important;
+  color: #1f2937 !important;
+  border-bottom: 1px solid rgba(15, 45, 84, .07) !important;
+  border-right: 1px solid rgba(15, 45, 84, .055) !important;
+  vertical-align: middle !important;
+  background: transparent !important;
+}
+html body #app .table-staff tbody td:last-child,
+html body #app .table-rotation tbody td:last-child,
+html body #app .table-absence tbody td:last-child,
+html body #app .table-oncall tbody td:last-child,
+html body #app .data-table tbody td:last-child { border-right: none !important; }
+
+/* Last row: no trailing divider (frame handles the edge) */
+html body #app .table-staff tbody tr:last-child td,
+html body #app .table-rotation tbody tr:last-child td,
+html body #app .table-absence tbody tr:last-child td,
+html body #app .table-oncall tbody tr:last-child td,
+html body #app .data-table tbody tr:last-child td { border-bottom: none !important; }
+
+/* Zebra: barely-there warm tint on even rows for scanability */
+html body #app .table-staff tbody tr:nth-child(even),
+html body #app .table-rotation tbody tr:nth-child(even),
+html body #app .table-absence tbody tr:nth-child(even),
+html body #app .table-oncall tbody tr:nth-child(even),
+html body #app .data-table tbody tr:nth-child(even) {
+  background: rgba(15, 45, 84, .018) !important;
+}
+
+/* Hover: clear but calm row highlight */
+html body #app .table-staff tbody tr:hover,
+html body #app .table-rotation tbody tr:hover,
+html body #app .table-absence tbody tr:hover,
+html body #app .table-oncall tbody tr:hover,
+html body #app .data-table tbody tr:hover {
+  background: rgba(0, 122, 122, .055) !important;
+}
+
+/* Status spine: keep it, but make it read as intentional — slightly
+   inset so it sits inside the frame as a clean accent, not a stray bar. */
+html body #app .table tbody tr[class*="row-"] td:first-child {
+  position: relative !important;
+}
