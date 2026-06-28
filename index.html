@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=37">
+    <link rel="stylesheet" href="style.css?v=38">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -14102,6 +14102,15 @@
                         <div class="pd-name">{{ staffProfileModal.staff.full_name }}</div>
                         <div class="pd-role">{{ formatStaffType(staffProfileModal.staff.staff_type) }}</div>
 
+                        <!-- "Currently" line — computed from live on-call / rotation / leave -->
+                        <div class="pd-currently" v-if="isOnCallToday(staffProfileModal.staff.id) || getCurrentRotationForStaff(staffProfileModal.staff.id) || getUpcomingOnCall(staffProfileModal.staff.id).length || getUpcomingLeave(staffProfileModal.staff.id).length">
+                            <span class="pd-currently-pulse"></span>
+                            <span v-if="isOnCallToday(staffProfileModal.staff.id)">On-call today</span>
+                            <span v-else-if="getCurrentRotationForStaff(staffProfileModal.staff.id)">On service · {{ getCurrentRotationForStaff(staffProfileModal.staff.id).unit_name || getCurrentRotationForStaff(staffProfileModal.staff.id).training_unit_name || 'rotation' }}</span>
+                            <span v-else-if="getUpcomingLeave(staffProfileModal.staff.id).length">Leave upcoming · {{ formatDateShort(getUpcomingLeave(staffProfileModal.staff.id)[0].start_date) }}</span>
+                            <span v-else-if="getUpcomingOnCall(staffProfileModal.staff.id).length">Next on-call · {{ formatDateShort(getUpcomingOnCall(staffProfileModal.staff.id)[0].duty_date) }}</span>
+                        </div>
+
                         <!-- Compact meta chips -->
                         <div class="pd-hero-meta">
                             <!-- Specialization — for attendings -->
@@ -14330,6 +14339,9 @@
 
                     <!-- Tab bar -->
                     <div class="pd-tabs">
+                        <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'overview' }" @click="staffProfileModal.activeTab = 'overview'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Overview
+                        </button>
                         <button class="pd-tab" :class="{ active: staffProfileModal.activeTab === 'activity' }" @click="staffProfileModal.activeTab = 'activity'">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 12H7L9 6L13 18L15 12H21"/></svg> Activity
                         </button>
@@ -14373,6 +14385,47 @@
                     </div>
 
                     <!-- ── ACTIVITY TAB ── -->
+                    <!-- OVERVIEW TAB — activity-led at-a-glance -->
+                    <div v-if="staffProfileModal.activeTab === 'overview'" class="pd-tab-body">
+                        <div class="pd-ov-section-label">Right now</div>
+                        <!-- On-call today -->
+                        <div v-if="isOnCallToday(staffProfileModal.staff.id)" class="pd-ov-card">
+                            <div class="pd-ov-ic pd-ov-ic--amber"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+                            <div class="pd-ov-main"><div class="pd-ov-title">On-call today</div><div class="pd-ov-meta">Primary or backup duty</div></div>
+                            <span class="pd-ov-tag pd-ov-tag--live">● LIVE</span>
+                        </div>
+                        <!-- Current rotation/service -->
+                        <div v-if="getCurrentRotationForStaff(staffProfileModal.staff.id)" class="pd-ov-card">
+                            <div class="pd-ov-ic pd-ov-ic--teal"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg></div>
+                            <div class="pd-ov-main"><div class="pd-ov-title">On service · {{ getTrainingUnitName(getCurrentRotationForStaff(staffProfileModal.staff.id).training_unit_id) }}</div><div class="pd-ov-meta">Until {{ formatDateShort(getCurrentRotationForStaff(staffProfileModal.staff.id).end_date) }}</div></div>
+                            <span class="pd-ov-tag pd-ov-tag--live">● LIVE</span>
+                        </div>
+                        <!-- Next on-call -->
+                        <div v-if="getUpcomingOnCall(staffProfileModal.staff.id).length" class="pd-ov-card">
+                            <div class="pd-ov-ic pd-ov-ic--navy"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+                            <div class="pd-ov-main"><div class="pd-ov-title">Next on-call</div><div class="pd-ov-meta">{{ formatDateShort(getUpcomingOnCall(staffProfileModal.staff.id)[0].duty_date) }}</div></div>
+                            <span class="pd-ov-tag pd-ov-tag--soon">SOON</span>
+                        </div>
+                        <!-- Upcoming leave -->
+                        <div v-if="getUpcomingLeave(staffProfileModal.staff.id).length" class="pd-ov-card">
+                            <div class="pd-ov-ic pd-ov-ic--navy"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg></div>
+                            <div class="pd-ov-main"><div class="pd-ov-title">Upcoming leave</div><div class="pd-ov-meta">From {{ formatDateShort(getUpcomingLeave(staffProfileModal.staff.id)[0].start_date) }}</div></div>
+                        </div>
+                        <!-- Empty state -->
+                        <div v-if="!isOnCallToday(staffProfileModal.staff.id) && !getCurrentRotationForStaff(staffProfileModal.staff.id) && !getUpcomingOnCall(staffProfileModal.staff.id).length && !getUpcomingLeave(staffProfileModal.staff.id).length" class="pd-ov-empty">
+                            Nothing scheduled right now.
+                        </div>
+
+                        <!-- Research lead -->
+                        <template v-if="hasPermission('analytics','read') && clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).length">
+                            <div class="pd-ov-section-label" style="margin-top:22px">Research</div>
+                            <div v-for="t in clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).slice(0,4)" :key="t.id" class="pd-ov-card">
+                                <div class="pd-ov-ic pd-ov-ic--navy"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3M8 3h8"/></svg></div>
+                                <div class="pd-ov-main"><div class="pd-ov-title">{{ t.title }}</div><div class="pd-ov-meta">{{ t.principal_investigator_id===staffProfileModal.staff.id ? 'Principal Investigator' : 'Co-investigator' }}<span v-if="t.status"> · {{ t.status }}</span></div></div>
+                            </div>
+                        </template>
+                    </div>
+
                     <div v-if="staffProfileModal.activeTab === 'activity'" class="pd-tab-body">
 
                         <!-- Current Rotation (residents only) -->
@@ -19504,7 +19557,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=30"></script>
+    <script src="app.js?v=31"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
