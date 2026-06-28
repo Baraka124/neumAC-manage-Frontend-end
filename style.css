@@ -38867,3 +38867,394 @@ html body #app .rlc-title-block {
 html body #app .rlc-coord {
   margin-top: 0 !important;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   §64  RESPONSIVE SYSTEM — fluid, jump-free reflow
+   The dashboard stat rail and main grid previously used ~13 scattered
+   fixed-column breakpoints, producing visible jumps (e.g. 2→4 columns
+   between 768px and 860px) and wasted space at tablet widths. Replaced
+   with intrinsic auto-fit/auto-fill grids that flow 1→2→3→4 columns
+   continuously with no jank, plus safe-area and touch refinements.
+   This layer loads last so it is the single source of truth for these
+   containers' column behaviour.
+════════════════════════════════════════════════════════════════ */
+
+/* Stat rail: fluid columns capped at 4 (the KPI count). Flows 4→3→2→1
+   as width shrinks, but never creates empty 5th/6th tracks. The max()
+   keeps each tile ≥ 1/4 of the row so it tops out at exactly 4 columns. */
+html #app .dbsr {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(max(160px, calc(25% - 0.75px)), 1fr)) !important;
+  gap: 0 !important;
+}
+
+/* Dashboard main grid: single column until there's genuinely room for two
+   (≥ 880px of CONTENT width), using a container-aware min so it doesn't
+   force a cramped 2-col on tablets. */
+html #app .db-main-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)) !important;
+  gap: 20px !important;
+  align-items: start !important;
+}
+
+/* Research / staff card grids: fluid auto-fill so cards never overflow
+   and never leave huge gaps. */
+html #app .rhub-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)) !important;
+  gap: 16px !important;
+}
+
+/* Hero action buttons: allow graceful wrap, consistent gap, no squashing */
+html #app .dbh-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+html #app .dbh-btn { flex: 0 0 auto !important; }
+
+/* Touch ergonomics: on coarse pointers, guarantee ≥40px tap targets for
+   the controls people actually hit, without affecting mouse layouts. */
+@media (hover: none) and (pointer: coarse) {
+  html #app .dbh-btn,
+  html #app .db-panel-link,
+  html #app .pd-tab,
+  html #app .pd-tab-action-btn,
+  html #app .rhub-tab,
+  html #app .nmsb-item {
+    min-height: 40px !important;
+  }
+}
+
+/* Safe-area awareness: respect notches / home indicators on phones so
+   fixed chrome never sits under the system UI. */
+@supports (padding: max(0px)) {
+  html #app .bottom-tabbar,
+  html #app .mobile-bottom-nav {
+    padding-bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  }
+  html #app .top-navbar {
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+    padding-right: max(16px, env(safe-area-inset-right)) !important;
+  }
+}
+
+/* STATUS panel (live-stats bottom-sheet): its 2-col availability grid
+   overflowed sub-360px phones. Make it fluid and let content shrink. */
+html #app .availability-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)) !important;
+  gap: 6px !important;
+}
+html #app .availability-card { min-width: 0 !important; }
+html #app .availability-content { min-width: 0 !important; }
+html #app .availability-role,
+html #app .availability-status {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   §65  MOBILE / TABLET FEATURE PARITY
+   Principle: no feature, data, or control may be unreachable on a
+   phone or iPad. Several earlier mobile rules used display:none on
+   *functional* regions (not just decorative chrome), making whole
+   features invisible below 768px. This section restores access while
+   keeping the layout phone-appropriate (stacked, scrollable).
+════════════════════════════════════════════════════════════════ */
+
+/* CRITICAL: the profile drawer body (Activity/Research/Supervision/
+   Certificates/Units tabs) was hidden ≤768px — tapping a staff member
+   on an iPad showed only their photo. Restore it as a scrollable region
+   below the identity header. */
+@media (max-width: 768px) {
+  html body #app .profile-drawer {
+    flex-direction: column !important;
+    width: 100vw !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  html body #app .pd-identity {
+    width: 100% !important;
+    max-height: 38vh !important;
+    flex: 0 0 auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  html body #app .pd-body {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  /* Drawer tabs scroll horizontally so all tabs remain reachable */
+  html body #app .pd-tabs {
+    overflow-x: auto !important;
+    flex-shrink: 0 !important;
+  }
+  /* Restore the profile info sections that were hidden ≤480px */
+  html body #app .pd-section { display: block !important; }
+  html body #app .pd-stats-strip { display: flex !important; }
+}
+
+/* DATA TABLES: hiding <thead> on mobile leaves rows with no column
+   context. Instead of hiding headers, switch tables to a stacked
+   "card" layout where each cell is labelled — all data stays visible. */
+@media (max-width: 768px) {
+  html body #app .table-staff thead,
+  html body #app .table-rotation thead,
+  html body #app .table-absence thead,
+  html body #app .table-oncall thead,
+  html body #app .data-table thead {
+    display: table-header-group !important;
+  }
+  /* Re-show the data columns that were hidden, but let the table scroll
+     horizontally so nothing is clipped and every column is reachable. */
+  html body #app .table-staff th,
+  html body #app .table-staff td,
+  html body #app .table-rotation th,
+  html body #app .table-rotation td,
+  html body #app .table-absence th,
+  html body #app .table-absence td {
+    display: table-cell !important;
+  }
+  html body #app .table-responsive,
+  html body #app .table-wrap,
+  html body #app .data-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* STAFF FORM: the step navigation / left rail was hidden ≤768px,
+   making multi-step forms unnavigable. Restore as a horizontal strip. */
+@media (max-width: 768px) {
+  html body #app .sm-left {
+    display: block !important;
+    width: 100% !important;
+    max-height: none !important;
+  }
+  html body #app .sm-step-nav {
+    display: flex !important;
+    overflow-x: auto !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   §66  DESKTOP DENSITY CALIBRATION
+   The UI read as "zoomed in": components were sized generously so a
+   lot of vertical space was consumed before any real data (hero 135px
+   + stat rail 129px + navbar = 320px above the fold), and KPI tiles
+   were ~70% empty. This tightens the oversized proportions on pointer
+   /large screens only — phones already run their own compact rules —
+   so the dashboard reads as a dense, professional clinical tool rather
+   than an oversized demo. Reductions are modest (~15-20%) to stay
+   comfortable, never cramped.
+   Applies ≥769px so mobile/tablet compact layouts are untouched.
+════════════════════════════════════════════════════════════════ */
+@media (min-width: 769px) {
+  /* KPI tiles: tighter padding, smaller-but-still-prominent number */
+  html #app .dbsr-stat {
+    padding: 13px 18px 12px !important;
+  }
+  html #app .dbsr-num,
+  html #app .db-kpi-val {
+    font-size: 31px !important;
+    line-height: 1.05 !important;
+  }
+
+  /* Hero band: trim vertical bulk */
+  html #app .dbh-frame {
+    padding: 9px 20px 0 !important;
+  }
+  html #app .dbh-alerts,
+  html #app .dbh-alerts--grid {
+    margin-top: 6px !important;
+  }
+
+  /* Panel headers: tighter, crisper */
+  html #app .db-panel-head {
+    padding: 11px 16px 10px !important;
+  }
+
+  /* Panel empty-states: don't reserve a vast void; cap the min height
+     so empty panels are compact instead of cavernous. */
+  html #app .db-oc-empty,
+  html #app .db-rot-empty,
+  html #app .db-panel-empty,
+  html #app .nm-empty {
+    padding: 24px 16px !important;
+    min-height: 0 !important;
+  }
+
+  /* Slightly tighter base rhythm for content density */
+  html #app .content-area .card-header {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   §66  MOBILE DENSITY — native proportions, not zoomed-in desktop
+   The mobile layout reused desktop type/control/padding sizes, so on a
+   phone everything reads oversized ("zoomed-in"). This recalibrates the
+   visual scale for small screens: tighter type, shorter chrome, less
+   padding — while preserving ≥40px touch targets for interactive
+   controls. Verified across the device ladder.
+════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  /* Top chrome: shorter navbar, smaller icons */
+  html body #app .top-navbar {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    padding: 0 12px !important;
+  }
+  html body #app .navbar-title,
+  html body #app .navbar-brand-title { font-size: 17px !important; }
+
+  /* Hero: smaller date, denser meta */
+  html body #app .dbh-date { font-size: 19px !important; }
+  html body #app .dbh-frame { padding: 10px 14px 0 !important; }
+  html body #app .dbh-btn { font-size: 12px !important; padding: 8px 12px !important; }
+
+  /* Stat rail: shorter tiles, smaller numerals — kills the dead space */
+  html body #app .dbsr-stat { padding: 12px 14px !important; }
+  html body #app .dbsr-num { font-size: 24px !important; }
+  html body #app .dbsr-lbl { font-size: 10px !important; letter-spacing: .08em !important; }
+  html body #app .dbsr-pill { font-size: 11px !important; padding: 2px 8px !important; }
+
+  /* Panels: tighter headers + bodies */
+  html body #app .db-panel-head { padding: 12px 14px 10px !important; }
+  html body #app .db-panel-title { font-size: 11px !important; }
+  html body #app .db-panel-link { font-size: 12px !important; }
+
+  /* Section/card titles across views */
+  html body #app .card-title,
+  html body #app .rhub-page-title,
+  html body #app .view-title { font-size: 15px !important; }
+
+  /* Base text a touch smaller for density */
+  html body #app { font-size: 13px !important; }
+
+  /* Modals: full-bleed feel, less chrome */
+  html body #app .modal-container { border-radius: 14px !important; }
+  html body #app .modal-body { padding: 16px !important; }
+
+  /* Keep interactive controls tappable despite the tighter scale */
+  html body #app .dbh-btn,
+  html body #app .db-panel-link,
+  html body #app .bottom-tab,
+  html body #app .mobile-nav-item { min-height: 40px !important; }
+}
+
+/* Large phones / small tablets: a lighter density reduction */
+@media (min-width: 481px) and (max-width: 768px) {
+  html body #app .top-navbar {
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+  }
+  html body #app .dbh-date { font-size: 21px !important; }
+  html body #app .dbsr-num { font-size: 26px !important; }
+  html body #app .dbsr-stat { padding: 14px 16px !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   §67  PREMIUM DATA TABLES
+   The data tables read as unfinished: columns float with no vertical
+   structure, the header is low-contrast, and rows blur together. This
+   gives them a deliberate, premium treatment — structured columns,
+   a confident header, clean row rhythm, and refined hover/zebra — so
+   they look engineered, not improvised. Scoped to the real data
+   tables only.
+════════════════════════════════════════════════════════════════ */
+
+html body #app .table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+}
+
+/* Header: confident, high-contrast, anchored by a strong baseline */
+html body #app .table thead th {
+  background: linear-gradient(180deg, #f7f9fc, #eef2f7) !important;
+  color: #1f3a5f !important;
+  font-weight: 700 !important;
+  font-size: 10.5px !important;
+  letter-spacing: .085em !important;
+  text-transform: uppercase !important;
+  padding: 11px 16px !important;
+  border-bottom: 2px solid rgba(31, 58, 95, .18) !important;
+  white-space: nowrap !important;
+}
+/* Subtle vertical separators in the header so columns read as columns */
+html body #app .table thead th:not(:last-child) {
+  border-right: 1px solid rgba(31, 58, 95, .08) !important;
+}
+
+/* Body cells: consistent rhythm + matching faint column separators */
+html body #app .table tbody td {
+  padding: 11px 16px !important;
+  border-bottom: 1px solid rgba(15, 23, 42, .06) !important;
+  vertical-align: middle !important;
+  color: #2a3645 !important;
+}
+html body #app .table tbody td:not(:last-child) {
+  border-right: 1px solid rgba(15, 23, 42, .045) !important;
+}
+
+/* First column = row anchor: a touch stronger */
+html body #app .table tbody td:first-child {
+  font-weight: 600 !important;
+  color: #16202e !important;
+}
+
+/* Zebra: barely-there warm tint, refined (not muddy) */
+html body #app .table-striped tbody tr:nth-child(even) td {
+  background: rgba(247, 249, 252, .6) !important;
+}
+
+/* Hover: clean lift with a teal left-accent marking the active row */
+html body #app .table tbody tr { transition: background .12s ease !important; }
+html body #app .table tbody tr:hover td {
+  background: rgba(0, 179, 179, .055) !important;
+}
+html body #app .table tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--nm-teal, #00b3b3) !important;
+}
+
+/* Last row: no dangling divider */
+html body #app .table tbody tr:last-child td { border-bottom: none !important; }
+
+/* Status / actions columns read better centered */
+html body #app .table-staff td:last-child,
+html body #app .table-staff th:last-child { text-align: center !important; }
+
+/* The table container: rounded, hairline border, soft elevation.
+   Keep horizontal scroll for wide tables (don't clip it away). */
+html body #app .table-responsive,
+html body #app .table-wrap,
+html body #app .data-table-wrap,
+html body #app .nm-table-wrap {
+  border: 1px solid rgba(15, 23, 42, .09) !important;
+  border-radius: 12px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 4px 14px rgba(15, 23, 42, .05) !important;
+}
+
+/* Reserve a thin right gutter for the fixed STATUS toggle tab so no
+   content (tables, action columns) is ever overlapped by it. Only on
+   ≥769px where the toggle is a right-edge rail; on phones it's a sheet. */
+@media (min-width: 769px) {
+  html body #app .content-area:not(.content-area--dash):not(.content-area--fullheight) {
+    padding-right: 44px !important;
+  }
+}
