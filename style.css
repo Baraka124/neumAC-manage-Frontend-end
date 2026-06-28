@@ -39702,4 +39702,4 @@ html body #app .profile-drawer .pd-tabs {
   scrollbar-width: none !important;
 }
 html body #app .profile-drawer .pd-tabs::-webkit-scrollbar { height: 0 !important; }
-html body #app .profile-drawer .pd-tab { flex-shrink: 0 !important; }  
+html body #app .profile-drawer .pd-tab { flex-shrink: 0 !important; }
