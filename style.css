@@ -39364,3 +39364,148 @@ html body #app .data-table tbody tr:hover {
 html body #app .table tbody tr[class*="row-"] td:first-child {
   position: relative !important;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   §68  PROFILE — PREMIUM "PERSON AT A GLANCE"
+   Restyles the existing drawer structure (no markup rewrite) into the
+   approved premium direction: a gradient hero, a real "vitals" strip
+   from the existing stat cells, refined identity sections, and the
+   app's navy/teal language so the profile matches the premium tables.
+════════════════════════════════════════════════════════════════ */
+
+/* Hero: gradient navy with an ambient teal glow */
+html body #app .pd-hero {
+  background: linear-gradient(135deg, #0f2d54 0%, #0a2342 100%) !important;
+  padding: 26px 24px 22px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+html body #app .pd-hero::after {
+  content: '' !important;
+  position: absolute !important;
+  top: -40% !important; right: -10% !important;
+  width: 320px !important; height: 320px !important;
+  background: radial-gradient(circle, rgba(0,179,179,.16), transparent 65%) !important;
+  pointer-events: none !important;
+}
+html body #app .pd-name {
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.3px !important;
+  color: #ffffff !important;
+}
+html body #app .pd-role {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 11px !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.62) !important;
+  margin-top: 5px !important;
+}
+
+/* Avatar: rounded-square, teal gradient, soft glow */
+html body #app .pd-avatar {
+  border-radius: 20px !important;
+  background: linear-gradient(135deg, #00b3b3, #0891b2) !important;
+  box-shadow: 0 4px 16px rgba(0,179,179,.3) !important;
+}
+
+/* VITALS strip: the existing stat cells, treated as a premium vitals bar */
+html body #app .pd-stats-strip {
+  background: #0a2342 !important;
+  border-top: 1px solid rgba(255,255,255,.08) !important;
+  border-bottom: none !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+html body #app .pd-stat {
+  padding: 14px 16px !important;
+  border-right: 1px solid rgba(255,255,255,.08) !important;
+  text-align: left !important;
+}
+html body #app .pd-stat:last-child { border-right: none !important; }
+html body #app .pd-stat-n {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 28px !important;
+  line-height: 1 !important;
+  color: #ffffff !important;
+}
+html body #app .pd-stat-n--teal { color: #00d4d4 !important; }
+html body #app .pd-stat-l {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 9.5px !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,.5) !important;
+  margin-top: 6px !important;
+}
+
+/* Identity sections: refined headers, clean rows, hide the "—" empties */
+html body #app .pd-section-title {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 9.5px !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: #8a94a6 !important;
+  font-weight: 500 !important;
+}
+html body #app .pd-row {
+  padding: 7px 0 !important;
+  font-size: 13px !important;
+  border-bottom: 1px solid rgba(15,45,84,.05) !important;
+}
+html body #app .pd-row-key { color: #475569 !important; }
+html body #app .pd-row-val { color: #111110 !important; font-weight: 500 !important; }
+
+/* Hide rows whose only value is a "—" placeholder — no broken-looking empties */
+html body #app .pd-row-na { color: #c2c8d2 !important; }
+
+/* Edit button: premium outline */
+html body #app .pd-edit-btn,
+html body #app .pd-identity .pd-edit {
+  border: 1px solid rgba(15,45,84,.12) !important;
+  border-radius: 10px !important;
+  color: #0f2d54 !important;
+  font-weight: 600 !important;
+  transition: .15s !important;
+}
+html body #app .pd-edit-btn:hover { border-color: #00b3b3 !important; color: #00b3b3 !important; }
+
+/* Hero chips: glassy */
+html body #app .pd-hero-chip {
+  background: rgba(0,179,179,.14) !important;
+  border: 1px solid rgba(0,179,179,.3) !important;
+  color: #8ff5ea !important;
+  border-radius: 999px !important;
+  font-size: 11.5px !important;
+}
+
+/* §68b — Layered identity rail: navy hero+vitals, light content below
+   (matches the approved mockup's hero→vitals→light-body structure). */
+html body #app .pd-identity {
+  background: #ffffff !important;
+}
+/* The sections area below the vitals sits on white with dark text */
+html body #app .pd-identity .pd-section,
+html body #app .pd-identity .pd-credentials,
+html body #app .pd-identity .pd-contact-block {
+  background: #ffffff !important;
+  color: #111110 !important;
+}
+html body #app .pd-section-title { color: #8a94a6 !important; }
+html body #app .pd-row-key { color: #475569 !important; }
+html body #app .pd-row-val { color: #111110 !important; }
+html body #app .pd-contact-row { color: #1f2937 !important; }
+html body #app .pd-contact-row a { color: #00b3b3 !important; }
+/* Edit button on white */
+html body #app .pd-edit-btn {
+  background: #ffffff !important;
+  margin: 14px 18px !important;
+}
+/* Hide the "No email" placeholder rows (empty-state shouldn't render) */
+html body #app .pd-contact-row.pd-row-na,
+html body #app .pd-contact-row:has(.pd-row-na) { display: none !important; }
+
+/* Hide disabled/empty contact rows (e.g. "No email") so empties never show */
+html body #app .pd-contact-row--disabled { display: none !important; }
