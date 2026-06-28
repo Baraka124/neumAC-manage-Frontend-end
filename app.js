@@ -1423,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const clearStaffFilters = () => { staffFilters.search = ''; staffFilters.staffType = ''; staffFilters.department = ''; staffFilters.status = ''; staffFilters.residentCategory = ''; staffFilters.hospital = ''; staffFilters.networkType = '' }
       const hasActiveStaffFilters = computed(() => !!(staffFilters.search || staffFilters.staffType || staffFilters.department || staffFilters.status || staffFilters.residentCategory || staffFilters.hospital || staffFilters.networkType))
       const staffProfileModal = reactive({ 
-        show: false, staff: null, activeTab: 'activity',
+        show: false, staff: null, activeTab: 'overview',
         researchProfile: null, supervisionData: null, leaveBalance: null,
         loadingResearch: false, loadingSupervision: false, loadingLeave: false,
         units: [], unitsLoading: false
@@ -6846,7 +6846,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const viewStaffDetails = async (staff) => {
           if (!staff || !staff.id) { console.warn('viewStaffDetails: staff object is undefined or missing id'); return; }
-          staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'activity'; staffOps.staffProfileModal.show = true
+          staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'overview'; staffOps.staffProfileModal.show = true
           // Instant local profile from refs — shown immediately with no loading state
           const quickProfile = researchOps.getStaffResearchQuick(staff.id)
           if (quickProfile) staffOps.staffProfileModal.researchProfile = quickProfile
