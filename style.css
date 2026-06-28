@@ -39509,3 +39509,197 @@ html body #app .pd-contact-row:has(.pd-row-na) { display: none !important; }
 
 /* Hide disabled/empty contact rows (e.g. "No email") so empties never show */
 html body #app .pd-contact-row--disabled { display: none !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   §69  PROFILE AS PREMIUM CENTERED MODAL
+   The side drawer constrained the profile to a narrow column. This
+   converts it into a large, centered modal with generous space so the
+   hero, vitals, and activity-led content can breathe. The backdrop
+   dims+blurs the app behind it. Fully responsive: it becomes a
+   full-screen sheet on phones/tablets so nothing is cramped or hidden.
+════════════════════════════════════════════════════════════════ */
+
+/* Backdrop: dim + blur the app behind the modal */
+html body #app .profile-drawer-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(8, 20, 40, .55) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 9998 !important;
+}
+
+/* The modal itself: centered, large, contained card */
+html body #app .profile-drawer {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(1040px, 94vw) !important;
+  height: min(760px, 92vh) !important;
+  max-height: 92vh !important;
+  flex-direction: row !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 4px 12px rgba(8, 20, 40, .2),
+    0 24px 80px rgba(8, 20, 40, .4) !important;
+  z-index: 9999 !important;
+  animation: pdModalIn .22s cubic-bezier(.22,.61,.36,1) !important;
+}
+@keyframes pdModalIn {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(.97); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Identity rail: wider now that we have room, layered navy→white */
+html body #app .profile-drawer .pd-identity {
+  width: 320px !important;
+  flex-shrink: 0 !important;
+  border-right: 1px solid rgba(15,45,84,.08) !important;
+}
+
+/* Body fills the rest with comfortable padding */
+html body #app .profile-drawer .pd-body {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+/* ── Responsive: full-screen sheet on tablet/phone ── */
+@media (max-width: 900px) {
+  html body #app .profile-drawer {
+    top: 0 !important; left: 0 !important;
+    transform: none !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    flex-direction: column !important;
+    animation: pdSheetIn .24s cubic-bezier(.22,.61,.36,1) !important;
+  }
+  @keyframes pdSheetIn {
+    from { opacity: 0; transform: translateY(2%); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  html body #app .profile-drawer .pd-identity {
+    width: 100% !important;
+    max-height: 40vh !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(15,45,84,.08) !important;
+  }
+}
+
+/* §69b — "Currently" line in the profile hero (live status signal) */
+html body #app .pd-currently {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-top: 14px !important;
+  padding: 7px 13px !important;
+  background: rgba(0,179,179,.14) !important;
+  border: 1px solid rgba(0,179,179,.32) !important;
+  border-radius: 999px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #8ff5ea !important;
+  max-width: 100% !important;
+}
+html body #app .pd-currently-pulse {
+  width: 7px !important; height: 7px !important;
+  border-radius: 50% !important;
+  background: #00d4d4 !important;
+  flex-shrink: 0 !important;
+  animation: pdPulse 2s infinite !important;
+}
+@keyframes pdPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0,212,212,.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(0,212,212,0); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* §69c — Overview tab content (activity-led at-a-glance cards) */
+html body #app .pd-ov-section-label {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 10px !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  color: #8a94a6 !important;
+  margin-bottom: 12px !important;
+  font-weight: 500 !important;
+}
+html body #app .pd-ov-card {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 13px 14px !important;
+  border: 1px solid rgba(15,45,84,.1) !important;
+  border-radius: 12px !important;
+  margin-bottom: 10px !important;
+  background: #fff !important;
+  transition: .15s !important;
+}
+html body #app .pd-ov-card:hover {
+  border-color: rgba(0,179,179,.35) !important;
+  box-shadow: 0 2px 12px rgba(15,45,84,.07) !important;
+}
+html body #app .pd-ov-ic {
+  width: 38px !important; height: 38px !important;
+  border-radius: 10px !important;
+  flex-shrink: 0 !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+}
+html body #app .pd-ov-ic--teal { background: rgba(0,179,179,.1) !important; color: #0891b2 !important; }
+html body #app .pd-ov-ic--amber { background: rgba(217,119,6,.1) !important; color: #d97706 !important; }
+html body #app .pd-ov-ic--navy { background: rgba(15,45,84,.07) !important; color: #0f2d54 !important; }
+html body #app .pd-ov-main { flex: 1 !important; min-width: 0 !important; }
+html body #app .pd-ov-title { font-size: 13.5px !important; font-weight: 600 !important; color: #111110 !important; }
+html body #app .pd-ov-meta { font-size: 12px !important; color: #475569 !important; margin-top: 2px !important; }
+html body #app .pd-ov-tag {
+  font-size: 10px !important; font-weight: 700 !important;
+  font-family: 'DM Mono', monospace !important;
+  padding: 3px 8px !important; border-radius: 6px !important; flex-shrink: 0 !important;
+}
+html body #app .pd-ov-tag--live { background: rgba(16,185,129,.12) !important; color: #059669 !important; }
+html body #app .pd-ov-tag--soon { background: rgba(217,119,6,.12) !important; color: #d97706 !important; }
+html body #app .pd-ov-empty {
+  padding: 24px !important; text-align: center !important;
+  color: #8a94a6 !important; font-size: 13px !important;
+  background: #f6f8fb !important; border-radius: 12px !important;
+}
+html body #app .pd-tab-body { padding: 20px 22px !important; }
+
+/* §69d — Mobile modal refinements: vertical hero, scrollable tabs */
+@media (max-width: 900px) {
+  /* Hero stacks cleanly on mobile (avatar → name → role → currently) */
+  html body #app .profile-drawer .pd-hero {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+  html body #app .profile-drawer .pd-name {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    font-size: 20px !important;
+    margin-top: 12px !important;
+  }
+  /* Identity rail: cap height so the white content + tabs/body show */
+  html body #app .profile-drawer .pd-identity {
+    max-height: none !important;
+    flex: 0 0 auto !important;
+  }
+  /* Vitals: keep as a row of cells on mobile */
+  html body #app .profile-drawer .pd-stats-strip {
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)) !important;
+  }
+}
+
+/* Profile tabs: scroll horizontally so every tab is reachable (no clipping) */
+html body #app .profile-drawer .pd-tabs {
+  overflow-x: auto !important;
+  flex-wrap: nowrap !important;
+  scrollbar-width: none !important;
+}
+html body #app .profile-drawer .pd-tabs::-webkit-scrollbar { height: 0 !important; }
+html body #app .profile-drawer .pd-tab { flex-shrink: 0 !important; }
