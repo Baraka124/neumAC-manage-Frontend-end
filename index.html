@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=39">
+    <link rel="stylesheet" href="style.css?v=40">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -11812,167 +11812,49 @@
                     <!-- ══ TWO-COLUMN LAYOUT ════════════════════════════════════════
                          Left: pulse tiles + feed  |  Right: compose + broadcasts
                     ══════════════════════════════════════════════════════════════ -->
-                    <div class="ops-layout">
+                    <!-- ══ OPS ROOM — 3-ZONE HUB: Pulse · Feed · Briefing ══ -->
 
-                        <!-- ═══ LEFT COLUMN — situational awareness ═══ -->
-                        <div class="ops-left">
-
-                            <!-- Pulse header -->
-                            <div class="ops-left-head">
-                                <div class="ops-live-indicator">
-                                    <span class="ops-live-pulse"></span>
-                                    Situación operativa
-                                </div>
-                                <button class="ops-briefing-btn"
-                                        @click="briefingForm.show = !briefingForm.show"
-                                        v-if="hasPermission('communications','create')">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                                    Daily briefing
-                                </button>
-                            </div>
-
-                            <!-- ── DAILY BRIEFING FORM (expands inline) ── -->
-                            <div v-if="briefingForm.show" class="ops-briefing-form">
-                                <div class="obf-title">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                    Post today's numbers · {{ new Date().toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' }) }}
-                                </div>
-                                <div class="obf-grid">
-                                    <template v-for="(field, key) in briefingForm.fields" :key="key">
-                                        <div class="obf-field">
-                                            <label class="obf-label">{{ field.label }}</label>
-                                            <div class="obf-inputs">
-                                                <input type="number" class="obf-num" v-model="field.value"
-                                                       placeholder="—" min="0" max="999">
-                                                <input type="text" class="obf-sub" v-model="field.sub"
-                                                       :placeholder="field.sub_label">
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                                <div class="obf-footer">
-                                    <span class="obf-note">Auto-clears at midnight · visible to entire team</span>
-                                    <div style="display:flex;gap:6px">
-                                        <button class="btn btn-outline btn-sm" @click="briefingForm.show = false">Cancel</button>
-                                        <button class="btn btn-primary btn-sm" @click="saveDailyBriefing(null)">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                                            Post briefing
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- ── PULSE TILES ── -->
-                            <div class="ops-tiles" v-if="!opsLoading">
-
-                                <!-- Interconsultas -->
-                                <div class="ops-tile ops-tile--lg" :class="metricVal('interconsultas_total') > 0 ? 'ops-tile--urgent' : 'ops-tile--dim'">
-                                    <div class="ot-accent" style="background:#ef4444"></div>
-                                    <div class="ot-body">
-                                        <div class="ot-label">Interconsultas</div>
-                                        <div class="ot-val" v-if="metricVal('interconsultas_total') !== null">
-                                            {{ metricVal('interconsultas_total') }}
-                                        </div>
-                                        <div class="ot-val ot-val--empty" v-else>—</div>
-                                        <div class="ot-sub" v-if="metricSub('interconsultas_total')">
-                                            <span class="ot-sub-urgent">{{ metricSub('interconsultas_total') }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="ot-icon" style="color:rgba(239,68,68,.25)">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.54a16 16 0 0 0 6 6l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16l-.58.92z"/></svg>
-                                    </div>
-                                </div>
-
-                                <!-- ER Patients -->
-                                <div class="ops-tile ops-tile--lg" :class="metricVal('er_patients_waiting') > 8 ? 'ops-tile--warn' : 'ops-tile--dim'">
-                                    <div class="ot-accent" style="background:#f59e0b"></div>
-                                    <div class="ot-body">
-                                        <div class="ot-label">Urgencias neumología</div>
-                                        <div class="ot-val" v-if="metricVal('er_patients_waiting') !== null">
-                                            {{ metricVal('er_patients_waiting') }}
-                                        </div>
-                                        <div class="ot-val ot-val--empty" v-else>—</div>
-                                        <div class="ot-sub" v-if="metricSub('er_patients_waiting')">{{ metricSub('er_patients_waiting') }} min espera</div>
-                                    </div>
-                                    <div class="ot-icon" style="color:rgba(245,158,11,.25)">
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M8 19H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3"/><path d="M16 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3"/><path d="M12 12H4M12 12l-3-3M12 12l-3 3"/><path d="M12 12h8M12 12l3-3M12 12l3 3"/></svg>
-                                    </div>
-                                </div>
-
-                                <!-- Camas libres -->
-                                <div class="ops-tile" :class="metricVal('beds_free_total') !== null && metricVal('beds_free_total') < 3 ? 'ops-tile--urgent' : metricVal('beds_free_total') < 6 ? 'ops-tile--warn' : 'ops-tile--ok'">
-                                    <div class="ot-accent" style="background:#8b5cf6"></div>
-                                    <div class="ot-body">
-                                        <div class="ot-label">Camas libres</div>
-                                        <div class="ot-val" v-if="metricVal('beds_free_total') !== null">
-                                            {{ metricVal('beds_free_total') }}
-                                        </div>
-                                        <div class="ot-val ot-val--empty" v-else>—</div>
-                                        <div class="ot-sub" v-if="metricSub('beds_free_total')">{{ metricSub('beds_free_total') }} UCI</div>
-                                    </div>
-                                </div>
-
-                                <!-- Altas pendientes -->
-                                <div class="ops-tile" :class="metricVal('discharges_pending_total') > 3 ? 'ops-tile--warn' : 'ops-tile--dim'">
-                                    <div class="ot-accent" style="background:#3b82f6"></div>
-                                    <div class="ot-body">
-                                        <div class="ot-label">Altas pendientes</div>
-                                        <div class="ot-val" v-if="metricVal('discharges_pending_total') !== null">
-                                            {{ metricVal('discharges_pending_total') }}
-                                        </div>
-                                        <div class="ot-val ot-val--empty" v-else>—</div>
-                                        <div class="ot-sub" v-if="metricSub('discharges_pending_total')">{{ metricSub('discharges_pending_total') }} sin informe</div>
-                                    </div>
-                                </div>
-
-                                <!-- Broncoscopias urgentes -->
-                                <div class="ops-tile" :class="metricVal('bronchoscopies_urgent') > 0 ? 'ops-tile--urgent' : 'ops-tile--dim'">
-                                    <div class="ot-accent" style="background:#ef4444"></div>
-                                    <div class="ot-body">
-                                        <div class="ot-label">Broncoscopias urg.</div>
-                                        <div class="ot-val" v-if="metricVal('bronchoscopies_urgent') !== null">
-                                            {{ metricVal('bronchoscopies_urgent') }}
-                                        </div>
-                                        <div class="ot-val ot-val--empty" v-else>—</div>
-                                        <div class="ot-sub" v-if="metricSub('bronchoscopies_urgent')">Suite libre {{ metricSub('bronchoscopies_urgent') }}</div>
-                                    </div>
-                                </div>
-
-                                <!-- Rotaciones (from DB) -->
-                                <div class="ops-tile ops-tile--auto">
-                                    <div class="ot-accent" style="background:#00b3b3"></div>
-                                    <div class="ot-body">
-                                        <div class="ot-label">Rotaciones activas</div>
-                                        <div class="ot-val" style="color:var(--nm-teal)">
-                                            {{ rotations?.filter(r => r.rotation_status === 'active').length || 0 }}
-                                        </div>
-                                        <div class="ot-sub" style="color:rgba(0,179,179,.6)">
-                                            {{ rotations?.filter(r => r.rotation_status === 'active' && getDaysRemaining(r.end_date) <= 7 && getDaysRemaining(r.end_date) >= 0).length || 0 }} terminan pronto
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            <!-- Skeleton while loading -->
-                            <div v-if="opsLoading" class="ops-tiles">
-                                <div v-for="i in 6" :key="i" class="ops-tile ops-tile--skeleton">
-                                    <div class="skeleton-row" style="height:14px;width:60%;margin-bottom:8px"></div>
-                                    <div class="skeleton-row" style="height:32px;width:40%"></div>
-                                </div>
-                            </div>
-
-                            <!-- Empty state for tiles -->
-                            <div v-if="!opsLoading && opsMetrics.length === 0" class="ops-tiles-empty">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                <p>No briefing posted yet today</p>
-                                <button v-if="hasPermission('communications','create')"
-                                        class="ops-briefing-btn" style="margin-top:6px"
-                                        @click="briefingForm.show = true">Post morning briefing</button>
-                            </div>
-
+                    <!-- ═══ ZONE 1: PULSE (auto-computed, never empty) ═══ -->
+                    <div class="ops-pulse">
+                        <span class="ops-pulse-auto">● auto-computed</span>
+                        <div class="ops-pulse-head">
+                            <span class="ops-pulse-dot"></span>
+                            <span class="ops-pulse-title">Department Pulse · Live</span>
+                            <span class="ops-pulse-date">{{ formatDate(new Date()) }}</span>
                         </div>
+                        <div class="ops-pulse-grid">
+                            <div class="ops-pv">
+                                <div class="ops-pv-n ops-pv-n--ok">{{ commsPulse.onDuty }}</div>
+                                <div class="ops-pv-l">On duty</div>
+                                <div class="ops-pv-s">active staff</div>
+                            </div>
+                            <div class="ops-pv">
+                                <div class="ops-pv-n">{{ commsPulse.onCall }}</div>
+                                <div class="ops-pv-l">On-call today</div>
+                                <div class="ops-pv-s">primary + backup</div>
+                            </div>
+                            <div class="ops-pv">
+                                <div class="ops-pv-n" :class="{ 'ops-pv-n--warn': commsPulse.absent > 0 }">{{ commsPulse.absent }}</div>
+                                <div class="ops-pv-l">Absent</div>
+                                <div class="ops-pv-s">on leave today</div>
+                            </div>
+                            <div class="ops-pv" :class="{ 'ops-pv--alert': understaffedUnitAlerts.length > 0 }">
+                                <div class="ops-pv-n" :class="{ 'ops-pv-n--bad': understaffedUnitAlerts.length > 0 }">{{ understaffedUnitAlerts.length }}</div>
+                                <div class="ops-pv-l">Coverage gap{{ understaffedUnitAlerts.length === 1 ? '' : 's' }}</div>
+                                <div class="ops-pv-s">{{ understaffedUnitAlerts.length ? (understaffedUnitAlerts[0].unitName || 'unit') + (understaffedUnitAlerts.length > 1 ? ' +' + (understaffedUnitAlerts.length-1) : '') : 'all units covered' }}</div>
+                            </div>
+                            <div class="ops-pv">
+                                <div class="ops-pv-n">{{ commsPulse.onRotation }}</div>
+                                <div class="ops-pv-l">On rotation</div>
+                                <div class="ops-pv-s">residents active</div>
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- ═══ ZONES 2+3: Feed (main) + Briefing (rail) ═══ -->
+                    <div class="ops-hub">
+
+                        <!-- ZONE 2: FEED (right column content reused below) -->
                         <!-- ═══ RIGHT COLUMN — feed + compose ═══ -->
                         <div class="ops-right">
 
@@ -12098,6 +11980,27 @@
                             </div>
 
                         </div>
+
+                        <!-- ZONE 3: BRIEFING RAIL (hybrid: auto-draft + edit) -->
+                        <div class="ops-brief">
+                            <div class="ops-brief-head">
+                                <div class="ops-brief-k">Daily Briefing</div>
+                                <div class="ops-brief-t">{{ formatDate(new Date()) }}</div>
+                            </div>
+                            <div class="ops-brief-body">
+                                <div class="ops-brief-auto">
+                                    <div class="ops-brief-auto-h">✦ Auto-drafted from live data</div>
+                                    <div class="ops-brief-auto-t">
+                                        <b>{{ commsPulse.onDuty }} on duty</b>, {{ commsPulse.onCall }} on-call today.<span v-if="commsPulse.absent"> <b>{{ commsPulse.absent }} absent</b> on leave.</span><span v-if="understaffedUnitAlerts.length"> <b>{{ understaffedUnitAlerts.length }} coverage gap{{ understaffedUnitAlerts.length===1?'':'s' }}</b> flagged ({{ understaffedUnitAlerts[0].unitName }}).</span><span v-if="commsPulse.onRotation"> {{ commsPulse.onRotation }} residents on active rotation.</span><span v-if="!commsPulse.absent && !understaffedUnitAlerts.length"> All units covered, no gaps.</span>
+                                    </div>
+                                    <button class="ops-brief-edit" v-if="hasPermission('communications','create')" @click="briefingForm.show = true">✎ Edit &amp; post briefing</button>
+                                </div>
+                                <div class="ops-brief-line"><span class="ops-brief-bk">On duty</span><span class="ops-brief-bv">{{ commsPulse.onDuty }} active</span></div>
+                                <div class="ops-brief-line" v-if="commsPulse.onCall"><span class="ops-brief-bk">On-call</span><span class="ops-brief-bv">{{ commsPulse.onCall }} scheduled</span></div>
+                                <div class="ops-brief-line" v-if="understaffedUnitAlerts.length"><span class="ops-brief-bk">Watch</span><span class="ops-brief-bv">{{ understaffedUnitAlerts[0].unitName }} coverage</span></div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>            
 
@@ -19605,7 +19508,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=31"></script>
+    <script src="app.js?v=32"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
