@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=42">
+    <link rel="stylesheet" href="style.css?v=43">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -12335,14 +12335,19 @@
                         <div v-if="permMgmt.error" style="padding:12px 24px;color:var(--nm-danger,#ef4444);font-size:13px">{{ permMgmt.error }}</div>
 
                         <div v-if="permMgmt.users.length" style="padding:16px 20px 8px">
-                            <!-- Legend + filter -->
-                            <div style="display:flex;gap:10px;align-items:center;padding:0 0 14px;flex-wrap:wrap">
-                                <span style="font-size:11px;color:var(--nm-text3)">Permission tags:</span>
-                                <span style="font-size:11px;padding:2px 8px;border-radius:100px;background:var(--nm-surface2);color:var(--nm-text3);border:1px solid var(--nm-border)">No access</span>
-                                <span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.3)">Read</span>
-                                <span style="font-size:11px;padding:2px 8px;border-radius:100px;background:rgba(16,185,129,.15);color:#059669;border:1px solid rgba(16,185,129,.4)">Read + Write</span>
-                                <span style="font-size:11px;color:var(--nm-text3);margin-left:4px">Click a tag to cycle through states.</span>
-                                <select v-model="permMgmt.moduleFilter" style="margin-left:auto;font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--nm-border);background:var(--nm-surface,#fff);color:var(--nm-text1)">
+                            <!-- Premium legend + filter -->
+                            <div class="pm-legend">
+                                <div class="pm-legend-left">
+                                    <span class="pm-legend-title">Click any tag to cycle access:</span>
+                                    <div class="pm-legend-chips">
+                                        <span class="pm-legend-chip pm-legend-chip--none">○ No access</span>
+                                        <svg class="pm-legend-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                                        <span class="pm-legend-chip pm-legend-chip--read">◉ Read</span>
+                                        <svg class="pm-legend-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                                        <span class="pm-legend-chip pm-legend-chip--write">✎ Read + Write</span>
+                                    </div>
+                                </div>
+                                <select v-model="permMgmt.moduleFilter" class="pm-filter-select">
                                     <option value="">Who has access to…</option>
                                     <option v-for="mod in ALL_MODULES" :key="mod.key" :value="mod.key">{{ mod.icon }} {{ mod.label }}</option>
                                 </select>
@@ -12384,6 +12389,12 @@
                                             <span class="pm-link-label" style="color:var(--nm-text3)">No linked clinical profile</span>
                                             <button v-if="isAdmin()" class="pm-link-btn" @click="openLinkStaff(user)">+ Link profile</button>
                                         </template>
+                                    </div>
+
+                                    <!-- Permission summary — at-a-glance "what can this person do" -->
+                                    <div class="pm-summary">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/></svg>
+                                        <span>{{ permSummaryText(user) }}</span>
                                     </div>
 
                                     <!-- Permission pills -->
@@ -19546,7 +19557,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=34"></script>
+    <script src="app.js?v=35"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -19771,4 +19782,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html>
+</html>   
