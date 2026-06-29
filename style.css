@@ -39827,3 +39827,85 @@ html body #app .pd-tli { position: relative !important; padding: 8px 0 14px !imp
 html body #app .pd-tli::before { content: '' !important; position: absolute !important; left: -19px !important; top: 11px !important; width: 9px !important; height: 9px !important; border-radius: 50% !important; background: #fff !important; border: 2px solid #00b3b3 !important; }
 html body #app .pd-tli-t { font-size: 13px !important; font-weight: 600 !important; color: #0f1729 !important; }
 html body #app .pd-tli-d { font-size: 11.5px !important; color: #475569 !important; margin-top: 1px !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   §71  OPS ROOM — 3-ZONE HUB (Pulse · Feed · Briefing)
+   Replaces the manual metric tiles + separate STATUS drawer with one
+   operational hub: an auto-computed Pulse strip, a unified feed, and a
+   hybrid auto-drafted briefing rail. Premium navy/teal language.
+════════════════════════════════════════════════════════════════ */
+
+/* ZONE 1: PULSE */
+html body #app .ops-pulse {
+  background: linear-gradient(135deg, #0f2d54, #0a2342) !important;
+  border-radius: 18px !important;
+  padding: 20px 24px !important;
+  color: #fff !important;
+  position: relative !important;
+  overflow: hidden !important;
+  margin-bottom: 18px !important;
+  box-shadow: 0 10px 36px rgba(15,45,84,.18) !important;
+}
+html body #app .ops-pulse::after {
+  content: '' !important; position: absolute !important;
+  top: -50% !important; right: -5% !important; width: 380px !important; height: 380px !important;
+  background: radial-gradient(circle, rgba(0,179,179,.16), transparent 65%) !important; pointer-events: none !important;
+}
+html body #app .ops-pulse-auto {
+  position: absolute !important; top: 16px !important; right: 18px !important;
+  font-family: 'DM Mono', monospace !important; font-size: 8.5px !important; letter-spacing: .1em !important;
+  color: rgba(0,212,212,.75) !important; text-transform: uppercase !important; z-index: 1 !important;
+}
+html body #app .ops-pulse-head { display: flex !important; align-items: center !important; gap: 10px !important; margin-bottom: 18px !important; position: relative !important; z-index: 1 !important; }
+html body #app .ops-pulse-dot { width: 8px !important; height: 8px !important; border-radius: 50% !important; background: #00d4d4 !important; animation: opsPulseDot 2s infinite !important; }
+@keyframes opsPulseDot { 0%{box-shadow:0 0 0 0 rgba(0,212,212,.6)} 70%{box-shadow:0 0 0 8px rgba(0,212,212,0)} 100%{box-shadow:0 0 0 0 transparent} }
+html body #app .ops-pulse-title { font-family: 'DM Mono', monospace !important; font-size: 11px !important; letter-spacing: .14em !important; text-transform: uppercase !important; color: rgba(255,255,255,.7) !important; }
+html body #app .ops-pulse-date { margin-left: auto !important; font-size: 12px !important; color: rgba(255,255,255,.55) !important; }
+html body #app .ops-pulse-grid {
+  display: grid !important; grid-template-columns: repeat(5, 1fr) !important;
+  gap: 1px !important; background: rgba(255,255,255,.08) !important;
+  border-radius: 12px !important; overflow: hidden !important; position: relative !important; z-index: 1 !important;
+}
+html body #app .ops-pv { background: #0a2342 !important; padding: 16px 18px !important; }
+html body #app .ops-pv--alert { background: linear-gradient(135deg, rgba(251,113,133,.16), #0a2342) !important; }
+html body #app .ops-pv-n { font-family: 'Instrument Serif', Georgia, serif !important; font-style: italic !important; font-size: 36px !important; line-height: .85 !important; color: #fff !important; }
+html body #app .ops-pv-n--ok { color: #00d4d4 !important; }
+html body #app .ops-pv-n--warn { color: #fbbf24 !important; }
+html body #app .ops-pv-n--bad { color: #fb7185 !important; }
+html body #app .ops-pv-l { font-family: 'DM Mono', monospace !important; font-size: 9px !important; letter-spacing: .1em !important; text-transform: uppercase !important; color: rgba(255,255,255,.5) !important; margin-top: 9px !important; }
+html body #app .ops-pv-s { font-size: 10.5px !important; color: rgba(255,255,255,.45) !important; margin-top: 2px !important; }
+
+/* ZONES 2+3 layout */
+html body #app .ops-hub { display: grid !important; grid-template-columns: 1fr 340px !important; gap: 18px !important; align-items: start !important; }
+html body #app .ops-hub .ops-right { width: auto !important; }
+
+/* ZONE 3: BRIEFING RAIL */
+html body #app .ops-brief { background: #fff !important; border-radius: 16px !important; border: 1px solid rgba(15,45,84,.1) !important; overflow: hidden !important; box-shadow: 0 4px 16px rgba(15,45,84,.05) !important; }
+html body #app .ops-brief-head { padding: 15px 18px !important; background: linear-gradient(135deg, #0f2d54, #0a2342) !important; color: #fff !important; position: relative !important; overflow: hidden !important; }
+html body #app .ops-brief-head::after { content: '' !important; position: absolute !important; top: -30px !important; right: -30px !important; width: 120px !important; height: 120px !important; background: radial-gradient(circle, rgba(0,179,179,.2), transparent 60%) !important; }
+html body #app .ops-brief-k { font-family: 'DM Mono', monospace !important; font-size: 9.5px !important; letter-spacing: .12em !important; text-transform: uppercase !important; color: rgba(255,255,255,.6) !important; position: relative !important; z-index: 1 !important; }
+html body #app .ops-brief-t { font-size: 16px !important; font-weight: 600 !important; margin-top: 3px !important; position: relative !important; z-index: 1 !important; }
+html body #app .ops-brief-body { padding: 16px 18px !important; }
+html body #app .ops-brief-auto { background: rgba(0,179,179,.07) !important; border: 1px dashed rgba(0,179,179,.3) !important; border-radius: 11px !important; padding: 13px !important; margin-bottom: 14px !important; }
+html body #app .ops-brief-auto-h { display: flex !important; align-items: center !important; gap: 7px !important; font-family: 'DM Mono', monospace !important; font-size: 9px !important; letter-spacing: .1em !important; text-transform: uppercase !important; color: #0891b2 !important; font-weight: 500 !important; margin-bottom: 9px !important; }
+html body #app .ops-brief-auto-t { font-size: 13px !important; color: #0f1729 !important; line-height: 1.55 !important; }
+html body #app .ops-brief-auto-t b { color: #0f2d54 !important; font-weight: 600 !important; }
+html body #app .ops-brief-edit { width: 100% !important; margin-top: 11px !important; padding: 9px !important; border: 1px solid #00b3b3 !important; border-radius: 10px !important; background: #fff !important; color: #0891b2 !important; font-family: 'DM Sans', sans-serif !important; font-size: 12.5px !important; font-weight: 600 !important; cursor: pointer !important; transition: .15s !important; }
+html body #app .ops-brief-edit:hover { background: #00b3b3 !important; color: #fff !important; }
+html body #app .ops-brief-line { display: flex !important; gap: 10px !important; padding: 9px 0 !important; border-bottom: 1px solid rgba(15,45,84,.06) !important; font-size: 12.5px !important; }
+html body #app .ops-brief-line:last-child { border-bottom: none !important; }
+html body #app .ops-brief-bk { color: #475569 !important; min-width: 70px !important; }
+html body #app .ops-brief-bv { color: #0f1729 !important; font-weight: 500 !important; }
+
+/* Responsive: stack on tablet/phone */
+@media (max-width: 900px) {
+  html body #app .ops-hub { grid-template-columns: 1fr !important; }
+  html body #app .ops-pulse-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important; }
+  html body #app .ops-brief { order: -1 !important; }
+}
+
+/* §71b — Remove the STATUS edge-drawer (folded into the Ops Room feed).
+   The unified feed now covers live status posts, so the separate
+   off-canvas STATUS panel and its toggle are retired. */
+html body #app .stats-toggle-btn,
+html body #app .live-stats-sidebar { display: none !important; }
