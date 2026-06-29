@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=38">
+    <link rel="stylesheet" href="style.css?v=39">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -14137,17 +14137,28 @@
                     </div>
 
                     <!-- Edit button -->
-                    <!-- Stats strip -->
+                    <!-- Vitals strip — 4 cells, real data with sublabels -->
                     <div class="pd-stats-strip">
-                        <!-- Attending: active trials + residents supervised -->
                         <template v-if="!isResidentType(staffProfileModal.staff.staff_type)">
                             <div class="pd-stat">
                                 <div class="pd-stat-n pd-stat-n--teal">{{ clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).length }}</div>
                                 <div class="pd-stat-l">Studies</div>
+                                <div class="pd-stat-sub" v-if="clinicalTrials.filter(t=>(t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)) && (t.status==='Recruiting'||t.status==='Activo'||t.recruitment_status==='recruiting')).length">{{ clinicalTrials.filter(t=>(t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)) && (t.status==='Recruiting'||t.status==='Activo'||t.recruitment_status==='recruiting')).length }} recruiting</div>
                             </div>
                             <div class="pd-stat">
-                                <div class="pd-stat-n">{{ trainingUnits.filter(u=>u.supervisor_id===staffProfileModal.staff.id).length }}</div>
+                                <div class="pd-stat-n">{{ rotations.filter(r=>r.supervising_attending_id===staffProfileModal.staff.id && r.rotation_status==='active').length }}</div>
                                 <div class="pd-stat-l">Supervising</div>
+                                <div class="pd-stat-sub" v-if="rotations.filter(r=>r.supervising_attending_id===staffProfileModal.staff.id && r.rotation_status==='active').length">residents</div>
+                            </div>
+                            <div class="pd-stat" v-if="getUpcomingOnCall(staffProfileModal.staff.id).length">
+                                <div class="pd-stat-n">{{ getUpcomingOnCall(staffProfileModal.staff.id).length }}</div>
+                                <div class="pd-stat-l">On-call</div>
+                                <div class="pd-stat-sub">upcoming</div>
+                            </div>
+                            <div class="pd-stat" v-if="staffProfileModal.staff.years_experience">
+                                <div class="pd-stat-n">{{ staffProfileModal.staff.years_experience }}</div>
+                                <div class="pd-stat-l">Years</div>
+                                <div class="pd-stat-sub">experience</div>
                             </div>
                         </template><template v-else>
                             <div class="pd-stat">
@@ -14157,6 +14168,11 @@
                             <div class="pd-stat">
                                 <div class="pd-stat-n">{{ rotations.filter(r=>r.resident_id===staffProfileModal.staff.id && r.rotation_status==='completed').length }}</div>
                                 <div class="pd-stat-l">Completed</div>
+                            </div>
+                            <div class="pd-stat" v-if="getUpcomingOnCall(staffProfileModal.staff.id).length">
+                                <div class="pd-stat-n">{{ getUpcomingOnCall(staffProfileModal.staff.id).length }}</div>
+                                <div class="pd-stat-l">On-call</div>
+                                <div class="pd-stat-sub">upcoming</div>
                             </div>
                         </template>
                     </div>
@@ -14387,7 +14403,8 @@
                     <!-- ── ACTIVITY TAB ── -->
                     <!-- OVERVIEW TAB — activity-led at-a-glance -->
                     <div v-if="staffProfileModal.activeTab === 'overview'" class="pd-tab-body">
-                        <div class="pd-ov-section-label">Right now</div>
+                        <div class="pd-ov-sh"><span class="pd-ov-sh-t">Right now</span><span class="pd-ov-sh-ln"></span></div>
+                        <div class="pd-ov-grid">
                         <!-- On-call today -->
                         <div v-if="isOnCallToday(staffProfileModal.staff.id)" class="pd-ov-card">
                             <div class="pd-ov-ic pd-ov-ic--amber"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
@@ -14415,13 +14432,44 @@
                         <div v-if="!isOnCallToday(staffProfileModal.staff.id) && !getCurrentRotationForStaff(staffProfileModal.staff.id) && !getUpcomingOnCall(staffProfileModal.staff.id).length && !getUpcomingLeave(staffProfileModal.staff.id).length" class="pd-ov-empty">
                             Nothing scheduled right now.
                         </div>
+                        </div>
 
-                        <!-- Research lead -->
+                        <!-- Research lead — rich cards with progress + stats where data exists -->
                         <template v-if="hasPermission('analytics','read') && clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).length">
-                            <div class="pd-ov-section-label" style="margin-top:22px">Research</div>
-                            <div v-for="t in clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).slice(0,4)" :key="t.id" class="pd-ov-card">
-                                <div class="pd-ov-ic pd-ov-ic--navy"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3M8 3h8"/></svg></div>
-                                <div class="pd-ov-main"><div class="pd-ov-title">{{ t.title }}</div><div class="pd-ov-meta">{{ t.principal_investigator_id===staffProfileModal.staff.id ? 'Principal Investigator' : 'Co-investigator' }}<span v-if="t.status"> · {{ t.status }}</span></div></div>
+                            <div class="pd-ov-sh" style="margin-top:24px"><span class="pd-ov-sh-t">Leading research</span><span class="pd-ov-sh-ln"></span><span class="pd-ov-sh-ct">{{ clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).length }} active</span></div>
+                            <div class="pd-rgrid">
+                                <div v-for="(t,ti) in clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).slice(0,5)" :key="t.id"
+                                     class="pd-rcard" :class="{'pd-rcard--feat': t.principal_investigator_id===staffProfileModal.staff.id && t.enrollment_target}">
+                                    <div class="pd-rcard-stripe" :class="t.principal_investigator_id===staffProfileModal.staff.id ? 'violet' : 'navy'"></div>
+                                    <div class="pd-rcard-top">
+                                        <div class="pd-ov-ic" :class="t.principal_investigator_id===staffProfileModal.staff.id ? 'pd-ov-ic--violet' : 'pd-ov-ic--navy'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3M8 3h8"/></svg></div>
+                                        <div class="pd-ov-main">
+                                            <div class="pd-ov-title">{{ t.title }}</div>
+                                            <div class="pd-ov-meta">{{ t.principal_investigator_id===staffProfileModal.staff.id ? 'Principal Investigator' : 'Co-investigator' }}<span v-if="t.phase"> · {{ t.phase }}</span></div>
+                                        </div>
+                                        <span class="pd-ov-tag pd-ov-tag--soon" v-if="t.status==='Recruiting'||t.recruitment_status==='recruiting'">RECRUITING</span>
+                                    </div>
+                                    <!-- progress bar only when both enrollment fields exist -->
+                                    <template v-if="t.enrollment_target && t.actual_enrollment != null">
+                                        <div class="pd-prog"><div class="pd-prog-fill" :style="{width: Math.min(100, Math.round(t.actual_enrollment/t.enrollment_target*100)) + '%'}"></div></div>
+                                        <div class="pd-rcard-foot">
+                                            <div class="pd-rstat"><span class="pd-rstat-n">{{ t.actual_enrollment }}</span><span class="pd-rstat-l">Enrolled</span></div>
+                                            <div class="pd-rstat"><span class="pd-rstat-n">{{ Math.round(t.actual_enrollment/t.enrollment_target*100) }}%</span><span class="pd-rstat-l">of Target</span></div>
+                                            <div class="pd-rstat"><span class="pd-rstat-n">{{ t.enrollment_target }}</span><span class="pd-rstat-l">Target</span></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Supervising — timeline of active residents (real rotations) -->
+                        <template v-if="!isResidentType(staffProfileModal.staff.staff_type) && rotations.filter(r=>r.supervising_attending_id===staffProfileModal.staff.id && r.rotation_status==='active').length">
+                            <div class="pd-ov-sh" style="margin-top:24px"><span class="pd-ov-sh-t">Supervising</span><span class="pd-ov-sh-ln"></span><span class="pd-ov-sh-ct">{{ rotations.filter(r=>r.supervising_attending_id===staffProfileModal.staff.id && r.rotation_status==='active').length }} residents</span></div>
+                            <div class="pd-tl">
+                                <div class="pd-tli" v-for="r in rotations.filter(r=>r.supervising_attending_id===staffProfileModal.staff.id && r.rotation_status==='active').slice(0,6)" :key="r.id">
+                                    <div class="pd-tli-t">{{ r.resident_name || getStaffName(r.resident_id) }}</div>
+                                    <div class="pd-tli-d"><span v-if="r.end_date">Rotation ends {{ formatDateShort(r.end_date) }}</span><span v-if="r.training_unit_name"> · {{ r.training_unit_name }}</span></div>
+                                </div>
                             </div>
                         </template>
                     </div>
@@ -19782,4 +19830,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html> 
+</html>
