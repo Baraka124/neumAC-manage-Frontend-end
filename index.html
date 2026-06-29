@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=40">
+    <link rel="stylesheet" href="style.css?v=41">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -14087,6 +14087,18 @@
                         Edit Profile
                     </button>
 
+                    <!-- Download / share actions -->
+                    <div class="pd-actions">
+                        <button class="pd-action-btn" @click="downloadStaffSchedule && downloadStaffSchedule(staffProfileModal.staff)" title="Download this person's schedule">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                            Schedule
+                        </button>
+                        <button class="pd-action-btn" @click="shareStaffProfile && shareStaffProfile(staffProfileModal.staff)" title="Share this profile">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+                            Share
+                        </button>
+                    </div>
+
                     <div class="pd-body">
                         <!-- Credentials -->
                         <div class="pd-section" :class="{ 'pd-section--collapsed': staffProfileModal.collapsed?.credentials }">
@@ -19508,7 +19520,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=32"></script>
+    <script src="app.js?v=34"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -19733,4 +19745,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html>
+</html>  
