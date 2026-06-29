@@ -4659,7 +4659,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.9 useComms ============
-    function useComms({ showToast, showConfirmation }) {
+    function useComms({ showToast, showConfirmation, medicalStaff, onCallSchedule, absences, rotations }) {
       const announcements  = ref([])
       const opsMetrics     = Vue.ref([])
       const opsLoading     = Vue.ref(false)
@@ -4758,7 +4758,10 @@ document.addEventListener('DOMContentLoaded', () => {
           return todayStr >= s && todayStr <= e && a.current_status === 'currently_absent'
         }).length
         const activeBroadcasts = livebroadcasts.value.length
-        return { onDuty, onCall, absent, activeBroadcasts }
+        // residents currently on active rotation (closure access to rotations)
+        let onRotation = 0
+        try { onRotation = (rotations?.value || []).filter(r => r.rotation_status === 'active').length } catch(e) {}
+        return { onDuty, onCall, absent, activeBroadcasts, onRotation }
       })
 
       const broadcastTypeConfig = {
@@ -6379,7 +6382,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
-        const commsOps = useComms({ showToast, showConfirmation })
+        const commsOps = useComms({ showToast, showConfirmation, medicalStaff, onCallSchedule, absences, rotations })
         const liveOps = useLiveStatus({ showToast, showConfirmation, medicalStaff, currentUser })
         const analyticsOps = useAnalytics({ showToast, hasPermission })
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
