@@ -7724,6 +7724,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Returns inline style string for a permission pill tag.
       // Extracted from the template because Vue's compiler rejects IIFEs with if-statements.
+      const permSummary = (user) => {
+        const perms = Array.isArray(user?.permissions) ? user.permissions : []
+        let write = 0, read = 0
+        for (const p of perms) {
+          if (p.can_write) write++
+          else if (p.can_read) read++
+        }
+        const total = ALL_MODULES.length
+        return { write, read, none: total - write - read, total }
+      }
+
+      const permSummaryText = (user) => {
+        if (user?.admin_level >= 1) return 'Administrator · full access'
+        const s = permSummary(user)
+        if (s.write === 0 && s.read === 0) return 'No permissions granted'
+        const parts = []
+        if (s.write) parts.push(s.write + ' full')
+        if (s.read) parts.push(s.read + ' read-only')
+        return parts.join(' · ') + ' of ' + s.total
+      }
+
       const permPillStyle = (user, moduleKey) => {
         const base = 'padding:4px 10px;border-radius:100px;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid;white-space:nowrap;'
         const saving = permMgmt.saving === user.id + ':' + moduleKey
@@ -8965,7 +8986,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getLineAccent:     getLineAccentGlobal,
 
           systemSettings, saveSystemSettings, loadSystemSettings, confirmMaintenanceModeToggle, activeSvcId,
-          permMgmt, sortedPermUsers, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, permPillStyle, isAdmin,
+          permMgmt, sortedPermUsers, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, permPillStyle, permSummary, permSummaryText, isAdmin,
           linkStaffModal, openLinkStaff, linkStaffCandidates, confirmLinkStaff, unlinkUserStaff,
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
@@ -9183,4 +9204,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});
+});  
