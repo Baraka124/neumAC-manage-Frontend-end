@@ -40002,3 +40002,119 @@ html body #app .profile-drawer .pd-section { padding: 10px 20px !important; }
 html body #app .profile-drawer .pd-row,
 html body #app .profile-drawer .pd-contact-row { padding: 5px 0 !important; }
 html body #app .profile-drawer .pd-currently { margin-top: 12px !important; padding: 6px 12px !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   §73  USER ↔ STAFF LINKING (permission management)
+   Makes the clinical-profile link a first-class action: a Link/Unlink
+   button on each user row + a searchable staff picker modal.
+════════════════════════════════════════════════════════════════ */
+
+html body #app .pm-link-row {
+  display: flex !important; align-items: center !important; gap: 8px !important;
+  padding: 8px 0 !important; border-top: 1px solid rgba(15,45,84,.08) !important;
+  margin-bottom: 10px !important; font-size: 12px !important;
+}
+html body #app .pm-link-label { color: #475569 !important; }
+html body #app .pm-link-label strong { color: #0f1729 !important; font-weight: 600 !important; }
+html body #app .pm-link-btn {
+  margin-left: auto !important;
+  padding: 4px 11px !important;
+  border: 1px solid #00b3b3 !important; border-radius: 8px !important;
+  background: rgba(0,179,179,.07) !important; color: #0891b2 !important;
+  font-family: 'DM Sans', sans-serif !important; font-size: 11.5px !important; font-weight: 600 !important;
+  cursor: pointer !important; transition: .15s !important;
+}
+html body #app .pm-link-btn:hover { background: #00b3b3 !important; color: #fff !important; }
+html body #app .pm-link-btn--unlink {
+  border-color: rgba(15,45,84,.18) !important; background: #fff !important; color: #64748b !important;
+}
+html body #app .pm-link-btn--unlink:hover { border-color: #ef4444 !important; background: rgba(239,68,68,.06) !important; color: #ef4444 !important; }
+
+/* Picker modal */
+html body #app .link-staff-overlay {
+  position: fixed !important; inset: 0 !important; z-index: 10000 !important;
+  background: rgba(8,20,40,.55) !important; backdrop-filter: blur(4px) !important; -webkit-backdrop-filter: blur(4px) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+}
+html body #app .link-staff-modal {
+  width: min(440px, 92vw) !important; max-height: 78vh !important;
+  background: #fff !important; border-radius: 16px !important; overflow: hidden !important;
+  display: flex !important; flex-direction: column !important;
+  box-shadow: 0 24px 80px rgba(8,20,40,.4) !important;
+  animation: linkStaffIn .2s cubic-bezier(.22,.61,.36,1) !important;
+}
+@keyframes linkStaffIn { from { opacity:0; transform: scale(.97) } to { opacity:1; transform: scale(1) } }
+html body #app .link-staff-head {
+  display: flex !important; align-items: flex-start !important; justify-content: space-between !important;
+  padding: 18px 20px 14px !important;
+  background: linear-gradient(135deg, #0f2d54, #0a2342) !important; color: #fff !important;
+}
+html body #app .link-staff-title { font-size: 16px !important; font-weight: 600 !important; }
+html body #app .link-staff-sub { font-size: 12.5px !important; color: rgba(255,255,255,.7) !important; margin-top: 3px !important; }
+html body #app .link-staff-sub strong { color: #00d4d4 !important; }
+html body #app .link-staff-close { background: rgba(255,255,255,.12) !important; border: none !important; color: #fff !important; width: 28px !important; height: 28px !important; border-radius: 50% !important; cursor: pointer !important; flex-shrink: 0 !important; }
+html body #app .link-staff-search {
+  margin: 14px 16px 8px !important; padding: 10px 13px !important;
+  border: 1px solid rgba(15,45,84,.14) !important; border-radius: 10px !important;
+  font-family: 'DM Sans', sans-serif !important; font-size: 13.5px !important; outline: none !important;
+}
+html body #app .link-staff-search:focus { border-color: #00b3b3 !important; }
+html body #app .link-staff-list { overflow-y: auto !important; padding: 4px 10px 12px !important; }
+html body #app .link-staff-item {
+  display: flex !important; align-items: center !important; gap: 11px !important; width: 100% !important;
+  padding: 9px 10px !important; border: none !important; background: none !important;
+  border-radius: 10px !important; cursor: pointer !important; text-align: left !important; transition: background .12s !important;
+}
+html body #app .link-staff-item:hover { background: rgba(0,179,179,.07) !important; }
+html body #app .link-staff-av {
+  width: 34px !important; height: 34px !important; border-radius: 9px !important; flex-shrink: 0 !important;
+  background: linear-gradient(135deg, #00b3b3, #0891b2) !important; color: #fff !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  font-size: 12px !important; font-weight: 600 !important;
+}
+html body #app .link-staff-info { display: flex !important; flex-direction: column !important; min-width: 0 !important; }
+html body #app .link-staff-name { font-size: 13.5px !important; font-weight: 600 !important; color: #0f1729 !important; }
+html body #app .link-staff-role { font-size: 11.5px !important; color: #64748b !important; }
+html body #app .link-staff-empty { padding: 24px !important; text-align: center !important; color: #94a3b8 !important; font-size: 13px !important; }
+
+/* §73 — Permission management: mobile containment
+   Ensure user rows, permission pills, and the link row never overflow
+   their container on small screens (preserves the no-inaccessible-UI rule). */
+@media (max-width: 768px) {
+  html body #app .pm-link-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  html body #app .pm-link-label {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  /* Permission pills already wrap (flex-wrap), just ensure they don't force width */
+  html body #app [class*="permPill"],
+  html body #app .pm-user-card button { max-width: 100% !important; }
+  /* Settings form controls must not overflow their container on phones */
+  html body #app .content-area .form-group,
+  html body #app .content-area .form-control,
+  html body #app .content-area select,
+  html body #app .content-area input[type="text"] {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Multi-column form grids in settings collapse to a single column so
+     fields (e.g. "Rotation duration") never overflow on phones. */
+  html body #app .content-area div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+  html body #app .content-area .form-group[style*="min-width"] {
+    min-width: 0 !important;
+  }
+  /* Degree / staff-type cards and lists fit the viewport */
+  html body #app .content-area .nm-deg-card,
+  html body #app .content-area [class*="-card"] {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+  }
+  html body #app .content-area .nm-deg-actions { flex-shrink: 0 !important; }
+}
