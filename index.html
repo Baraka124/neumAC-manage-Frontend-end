@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=41">
+    <link rel="stylesheet" href="style.css?v=42">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -12372,15 +12372,17 @@
                                         <span v-else style="font-size:11px;color:var(--nm-text3);flex-shrink:0">(you)</span>
                                     </div>
 
-                                    <!-- Linked clinical profile status -->
-                                    <div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-top:1px solid var(--nm-border);margin-bottom:10px;font-size:12px">
+                                    <!-- Linked clinical profile status + action -->
+                                    <div class="pm-link-row">
                                         <template v-if="user.linked_staff">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                                            <span style="color:var(--nm-text2)">Linked: {{ user.linked_staff.full_name }}</span>
+                                            <span class="pm-link-label">Linked: <strong>{{ user.linked_staff.full_name }}</strong></span>
+                                            <button v-if="isAdmin()" class="pm-link-btn pm-link-btn--unlink" @click="unlinkUserStaff(user)">Unlink</button>
                                         </template>
                                         <template v-else>
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--nm-text3)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.5 9.5a2.5 2.5 0 015 0M9 15h6"/></svg>
-                                            <span style="color:var(--nm-text3)">No linked clinical profile</span>
+                                            <span class="pm-link-label" style="color:var(--nm-text3)">No linked clinical profile</span>
+                                            <button v-if="isAdmin()" class="pm-link-btn" @click="openLinkStaff(user)">+ Link profile</button>
                                         </template>
                                     </div>
 
@@ -12403,6 +12405,30 @@
 
                         <div v-if="!permMgmt.users.length && !permMgmt.loading && !permMgmt.error" style="padding:32px;text-align:center;color:var(--nm-text3);font-size:13px">
                             Click "Load Users" to manage permissions
+                        </div>
+                    </div>
+
+                    <!-- Link-staff picker modal -->
+                    <div v-if="linkStaffModal.show" class="link-staff-overlay" @click.self="linkStaffModal.show = false">
+                        <div class="link-staff-modal">
+                            <div class="link-staff-head">
+                                <div>
+                                    <div class="link-staff-title">Link clinical profile</div>
+                                    <div class="link-staff-sub">Connect <strong>{{ linkStaffModal.userName }}</strong> to a staff member</div>
+                                </div>
+                                <button class="link-staff-close" @click="linkStaffModal.show = false">✕</button>
+                            </div>
+                            <input class="link-staff-search" v-model="linkStaffModal.query" placeholder="Search staff by name…" autofocus>
+                            <div class="link-staff-list">
+                                <button v-for="s in linkStaffCandidates" :key="s.id" class="link-staff-item" @click="confirmLinkStaff(s)">
+                                    <span class="link-staff-av">{{ (s.full_name||'?').split(' ').map(w=>w[0]).slice(0,2).join('') }}</span>
+                                    <span class="link-staff-info">
+                                        <span class="link-staff-name">{{ s.full_name }}</span>
+                                        <span class="link-staff-role">{{ formatStaffType(s.staff_type) }}</span>
+                                    </span>
+                                </button>
+                                <div v-if="!linkStaffCandidates.length" class="link-staff-empty">No matching staff found.</div>
+                            </div>
                         </div>
                     </div>
 
