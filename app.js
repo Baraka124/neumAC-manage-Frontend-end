@@ -7665,6 +7665,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      // ── Link user ↔ clinical staff profile ────────────────────────────
+      const linkStaffModal = reactive({ show: false, user: null, userName: '', query: '' })
+
+      const openLinkStaff = (user) => {
+        linkStaffModal.user = user
+        linkStaffModal.userName = user.full_name || 'this user'
+        linkStaffModal.query = ''
+        linkStaffModal.show = true
+      }
+
+      const linkStaffCandidates = Vue.computed(() => {
+        const q = (linkStaffModal.query || '').toLowerCase().trim()
+        // Staff already linked to other users shouldn't double-link
+        const taken = new Set(permMgmt.users.filter(u => u.linked_staff && u.id !== linkStaffModal.user?.id).map(u => u.linked_staff.id))
+        let list = (medicalStaff?.value || []).filter(s => !taken.has(s.id))
+        if (q) list = list.filter(s => (s.full_name || '').toLowerCase().includes(q))
+        return list.slice(0, 30)
+      })
+
+      const confirmLinkStaff = async (staff) => {
+        const user = linkStaffModal.user
+        if (!user || !staff) return
+        try {
+          await API.request(`/api/users/${user.id}/link-staff`, {
+            method: 'PUT',
+            body: { staff_id: staff.id }
+          })
+          // optimistic local update
+          user.linked_staff = { id: staff.id, full_name: staff.full_name }
+          linkStaffModal.show = false
+          showToast('Profile linked', `${user.full_name} is now linked to ${staff.full_name}.`, 'success')
+        } catch (e) {
+          showToast('Link failed', e.message || 'Could not link the clinical profile. The server may not support this yet.', 'error')
+          console.error('[neumDesk] confirmLinkStaff failed:', e)
+        }
+      }
+
+      const unlinkUserStaff = async (user) => {
+        if (!user) return
+        showConfirmation({
+          title: 'Unlink clinical profile',
+          message: `Remove the link between ${user.full_name} and ${user.linked_staff?.full_name || 'their staff profile'}?`,
+          confirmButtonText: 'Unlink',
+          confirmButtonClass: 'btn-danger',
+          onConfirm: async () => {
+            try {
+              await API.request(`/api/users/${user.id}/link-staff`, { method: 'PUT', body: { staff_id: null } })
+              user.linked_staff = null
+              showToast('Profile unlinked', `${user.full_name} is no longer linked to a clinical profile.`, 'success')
+            } catch (e) {
+              showToast('Unlink failed', e.message || 'Could not unlink. The server may not support this yet.', 'error')
+              console.error('[neumDesk] unlinkUserStaff failed:', e)
+            }
+          }
+        })
+      }
+
       // Returns inline style string for a permission pill tag.
       // Extracted from the template because Vue's compiler rejects IIFEs with if-statements.
       const permPillStyle = (user, moduleKey) => {
@@ -8909,6 +8966,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           systemSettings, saveSystemSettings, loadSystemSettings, confirmMaintenanceModeToggle, activeSvcId,
           permMgmt, sortedPermUsers, ALL_MODULES, loadPermissionUsers, getUserPerm, cyclePermission, toggleAdminLevel, permPillStyle, isAdmin,
+          linkStaffModal, openLinkStaff, linkStaffCandidates, confirmLinkStaff, unlinkUserStaff,
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
