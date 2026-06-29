@@ -39908,4 +39908,4 @@ html body #app .ops-brief-bv { color: #0f1729 !important; font-weight: 500 !impo
    The unified feed now covers live status posts, so the separate
    off-canvas STATUS panel and its toggle are retired. */
 html body #app .stats-toggle-btn,
-html body #app .live-stats-sidebar { display: none !important; }
+html body #app .live-stats-sidebar { display: none !important; }  
