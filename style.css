@@ -39908,4 +39908,97 @@ html body #app .ops-brief-bv { color: #0f1729 !important; font-weight: 500 !impo
    The unified feed now covers live status posts, so the separate
    off-canvas STATUS panel and its toggle are retired. */
 html body #app .stats-toggle-btn,
-html body #app .live-stats-sidebar { display: none !important; }  
+html body #app .live-stats-sidebar { display: none !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   §72  PROFILE — FINAL FIXES
+   Addresses: (1) white-on-white text bug (contact rows vanished on
+   hover — leftover navy-era rules), (2) poor typography, (3) modal too
+   small forcing scroll → wider + taller, (4) download/share actions.
+   This layer is authoritative for these concerns.
+════════════════════════════════════════════════════════════════ */
+
+/* (1) KILL white-on-white text. The rail is white now; hover must keep
+   text DARK, not turn it white. Override every navy-era white-hover. */
+html body #app .pd-contact-row:hover,
+html body #app .pd-contact-row:hover * { color: #0f1729 !important; }
+html body #app .pd-contact-row:hover a { color: #0891b2 !important; }
+html body #app .pd-contact-row { color: #1f2937 !important; transition: background .15s !important; }
+html body #app .pd-contact-row:hover { background: rgba(0,179,179,.06) !important; border-radius: 8px !important; }
+/* Ensure all rail text on white is dark regardless of prior rules */
+html body #app .pd-identity .pd-row-key { color: #475569 !important; }
+html body #app .pd-identity .pd-row-val { color: #0f1729 !important; }
+html body #app .pd-identity .pd-section-title { color: #64748b !important; }
+html body #app .pd-identity .pd-contact-row span { color: #1f2937 !important; }
+html body #app .pd-identity .pd-contact-row a { color: #0891b2 !important; }
+
+/* (2) TYPOGRAPHY — tighter, more refined hierarchy */
+html body #app .pd-identity .pd-section-title {
+  font-family: 'DM Mono', monospace !important;
+  font-size: 10px !important; letter-spacing: .13em !important;
+  font-weight: 500 !important; text-transform: uppercase !important;
+  margin: 0 0 10px !important;
+}
+html body #app .pd-identity .pd-row,
+html body #app .pd-identity .pd-contact-row {
+  font-size: 13px !important; letter-spacing: -.01em !important;
+}
+html body #app .pd-identity .pd-row-key { font-size: 12.5px !important; font-weight: 400 !important; }
+html body #app .pd-identity .pd-row-val { font-weight: 600 !important; }
+html body #app .pd-name { font-size: 23px !important; letter-spacing: -.4px !important; line-height: 1.12 !important; }
+
+/* (3) WIDER + TALLER modal so content fits without scrolling */
+html body #app .profile-drawer {
+  width: min(1200px, 96vw) !important;
+  height: min(820px, 94vh) !important;
+  max-height: 94vh !important;
+}
+html body #app .profile-drawer .pd-identity {
+  width: 360px !important;
+}
+/* Let the identity rail breathe — no inner scrollbar unless truly needed */
+html body #app .profile-drawer .pd-identity {
+  display: flex !important; flex-direction: column !important;
+  overflow: visible !important;
+}
+html body #app .profile-drawer .pd-body { overflow-y: auto !important; }
+/* The credentials/contact area scrolls only if it must, scrollbar hidden-slim */
+html body #app .pd-identity-scroll,
+html body #app .pd-identity .pd-section-wrap { overflow-y: auto !important; scrollbar-width: thin !important; }
+
+/* (4) DOWNLOAD / SHARE actions under Edit Profile */
+html body #app .pd-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+  margin: 0 20px 14px !important;
+}
+html body #app .pd-action-btn {
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  gap: 7px !important;
+  padding: 9px 10px !important;
+  border: 1px solid rgba(15,45,84,.12) !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: #0f2d54 !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 12px !important; font-weight: 600 !important;
+  cursor: pointer !important; transition: .15s !important;
+}
+html body #app .pd-action-btn:hover {
+  border-color: #00b3b3 !important; color: #0891b2 !important;
+  background: rgba(0,179,179,.04) !important;
+}
+html body #app .pd-action-btn svg { width: 14px !important; height: 14px !important; }
+
+/* §72b — Tighten identity rail rhythm so it fits without scrolling */
+html body #app .profile-drawer .pd-hero { padding: 22px 24px 18px !important; }
+html body #app .profile-drawer .pd-avatar { width: 76px !important; height: 76px !important; font-size: 27px !important; }
+html body #app .profile-drawer .pd-stat { padding: 12px 18px !important; }
+html body #app .profile-drawer .pd-stat-n { font-size: 28px !important; }
+html body #app .profile-drawer .pd-edit-btn { margin: 12px 20px 8px !important; padding: 9px !important; }
+html body #app .pd-actions { margin: 0 20px 12px !important; }
+html body #app .profile-drawer .pd-section { padding: 10px 20px !important; }
+html body #app .profile-drawer .pd-row,
+html body #app .profile-drawer .pd-contact-row { padding: 5px 0 !important; }
+html body #app .profile-drawer .pd-currently { margin-top: 12px !important; padding: 6px 12px !important; }  
