@@ -7202,7 +7202,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (staff.length) results.staff = staff.map(s => ({
             id: s.id, name: s.full_name,
             meta: rotationOps.formatStaffType ? rotationOps.formatStaffType(s.staff_type) : s.staff_type,
-            icon: 'fa-user-md', action: () => { staffOps.viewStaffDetails(s); close() }
+            icon: 'fa-user-md', action: () => { viewStaffDetails(s); close() }
           }))
 
           // ── Rotations ──────────────────────────────────────────────────
@@ -7952,6 +7952,71 @@ document.addEventListener('DOMContentLoaded', () => {
         document.title = 'Print – ' + title + ' – neumDesk'
         window.print()
         setTimeout(() => { document.title = 'neumDesk' }, 2000)
+      }
+
+      // ── Profile: download schedule (iCal) + share ─────────────────────
+      const downloadStaffSchedule = (staff) => {
+        if (!staff) return
+        try {
+          const name = staff.full_name || 'staff'
+          const shifts = (onCallSchedule?.value || []).filter(s =>
+            s.primary_physician_id === staff.id || s.backup_physician_id === staff.id)
+          const rots = (rotations?.value || []).filter(r =>
+            r.resident_id === staff.id || r.supervising_attending_id === staff.id)
+          const esc = (t) => String(t || '').replace(/[,;\\]/g, ' ').replace(/\n/g, ' ')
+          const dt = (d) => Utils.normalizeDate(d).replace(/-/g, '')
+          let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//neumDesk//Schedule//EN\r\n'
+          shifts.forEach((s, i) => {
+            ics += 'BEGIN:VEVENT\r\nUID:oncall-' + (s.id || i) + '@neumdesk\r\n' +
+              'DTSTART;VALUE=DATE:' + dt(s.duty_date) + '\r\n' +
+              'SUMMARY:' + esc('On-call' + (s.primary_physician_id === staff.id ? ' (primary)' : ' (backup)')) + '\r\n' +
+              'END:VEVENT\r\n'
+          })
+          rots.forEach((r, i) => {
+            if (!r.start_date) return
+            ics += 'BEGIN:VEVENT\r\nUID:rot-' + (r.id || i) + '@neumdesk\r\n' +
+              'DTSTART;VALUE=DATE:' + dt(r.start_date) + '\r\n' +
+              (r.end_date ? 'DTEND;VALUE=DATE:' + dt(r.end_date) + '\r\n' : '') +
+              'SUMMARY:' + esc('Rotation' + (r.training_unit_name ? ' · ' + r.training_unit_name : '')) + '\r\n' +
+              'END:VEVENT\r\n'
+          })
+          ics += 'END:VCALENDAR'
+          if (shifts.length === 0 && rots.length === 0) {
+            showToast('Nothing to download', name + ' has no scheduled shifts or rotations yet.', 'info')
+            return
+          }
+          const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url; a.download = name.replace(/\s+/g, '_') + '_schedule.ics'
+          document.body.appendChild(a); a.click(); document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          showToast('Schedule downloaded', name + "'s schedule saved as .ics", 'success')
+        } catch (e) { showToast('Download failed', e.message || 'Could not generate schedule', 'error') }
+      }
+
+      const shareStaffProfile = async (staff) => {
+        if (!staff) return
+        const name = staff.full_name || 'Staff'
+        const lines = [
+          name,
+          staff.staff_type ? formatStaffType(staff.staff_type) : '',
+          staff.professional_email ? 'Email: ' + staff.professional_email : '',
+          staff.mobile_phone ? 'Mobile: ' + staff.mobile_phone : ''
+        ].filter(Boolean)
+        const text = lines.join('\n')
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: name + ' · neumDesk', text })
+            return
+          }
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(text)
+            showToast('Copied to clipboard', name + "'s details copied — ready to share.", 'success')
+            return
+          }
+          showToast('Share', text, 'info')
+        } catch (e) { /* user cancelled share — no-op */ }
       }
 
 
@@ -8852,7 +8917,7 @@ document.addEventListener('DOMContentLoaded', () => {
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
-          exportCSV, downloadIcal, printView,
+          exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
@@ -8895,7 +8960,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // ── view resident from rotation row (lines 1928, 6365) ──
           openResidentProfile: (residentId) => {
             const s = (allStaffLookup?.value || []).find(x => x.id === residentId) || medicalStaff.value.find(x => x.id === residentId)
-            if (s) staffOps.viewStaffDetails(s)
+            if (s) viewStaffDetails(s)
           },
           // ── toggle PI/CoI investigator role on staff form (line 4913) ──
           toggleInvestigadorRole: () => {
@@ -9060,4 +9125,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});  
+}); 
