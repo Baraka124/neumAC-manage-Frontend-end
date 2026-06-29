@@ -40118,3 +40118,51 @@ html body #app .link-staff-empty { padding: 24px !important; text-align: center 
   }
   html body #app .content-area .nm-deg-actions { flex-shrink: 0 !important; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   §74  PERMISSION MANAGEMENT — premium, legible UI
+   The permission pills cycle No-access → Read → Read+Write, but the
+   affordance was easy to miss. This makes the legend prominent, adds a
+   per-user "what can this person do" summary, and refines the pills.
+════════════════════════════════════════════════════════════════ */
+
+/* Legend bar */
+html body #app .pm-legend {
+  display: flex !important; align-items: center !important; gap: 16px !important;
+  flex-wrap: wrap !important; padding: 12px 14px !important; margin-bottom: 14px !important;
+  background: #f6f8fb !important; border: 1px solid rgba(15,45,84,.08) !important;
+  border-radius: 12px !important;
+}
+html body #app .pm-legend-left { display: flex !important; align-items: center !important; gap: 12px !important; flex-wrap: wrap !important; }
+html body #app .pm-legend-title { font-size: 12px !important; font-weight: 600 !important; color: #0f2d54 !important; }
+html body #app .pm-legend-chips { display: flex !important; align-items: center !important; gap: 7px !important; }
+html body #app .pm-legend-arrow { color: #94a3b8 !important; flex-shrink: 0 !important; }
+html body #app .pm-legend-chip {
+  font-size: 11px !important; font-weight: 600 !important; padding: 3px 10px !important;
+  border-radius: 100px !important; border: 1px solid !important; white-space: nowrap !important;
+}
+html body #app .pm-legend-chip--none { background: #eef1f5 !important; color: #64748b !important; border-color: rgba(15,45,84,.12) !important; }
+html body #app .pm-legend-chip--read { background: rgba(59,130,246,.1) !important; color: #2563eb !important; border-color: rgba(59,130,246,.3) !important; }
+html body #app .pm-legend-chip--write { background: rgba(16,185,129,.13) !important; color: #059669 !important; border-color: rgba(16,185,129,.4) !important; }
+html body #app .pm-filter-select {
+  margin-left: auto !important; font-size: 12.5px !important; font-weight: 500 !important;
+  padding: 7px 12px !important; border-radius: 9px !important;
+  border: 1px solid rgba(15,45,84,.14) !important; background: #fff !important; color: #0f2d54 !important;
+  cursor: pointer !important;
+}
+
+/* Per-user permission summary line */
+html body #app .pm-summary {
+  display: flex !important; align-items: center !important; gap: 7px !important;
+  margin: 4px 0 12px !important; padding: 7px 10px !important;
+  background: rgba(0,179,179,.05) !important; border-radius: 8px !important;
+  font-size: 12px !important; font-weight: 500 !important; color: #0891b2 !important;
+}
+html body #app .pm-summary svg { color: #00b3b3 !important; flex-shrink: 0 !important; }
+
+/* Mobile: legend stacks, filter full-width */
+@media (max-width: 768px) {
+  html body #app .pm-legend { gap: 10px !important; }
+  html body #app .pm-filter-select { margin-left: 0 !important; width: 100% !important; }
+  html body #app .pm-legend-chips { flex-wrap: wrap !important; }
+}      
