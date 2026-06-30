@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=43">
+    <link rel="stylesheet" href="style.css?v=45">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8132,7 +8132,7 @@
                         </defs>
                         <rect x="96" y="96" width="320" height="320" rx="72" fill="rgba(255,255,255,0.08)"/>
                         <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#splashGrad)" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
-                        <path d="M152 318 V228 H192 V252 C204 234 228 220 258 220 C300 220 322 244 322 284 V318 H282 V287 C282 262 268 248 248 248 C226 248 212 264 212 292 V318 Z" fill="url(#splashGrad)"/>
+                        <path d="M172 322 V236 M172 268 C172 244 192 228 220 228 C256 228 276 250 276 288 V322" fill="none" stroke="url(#splashGrad)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <div class="nd-splash-wordmark">neumDesk</div>
@@ -8172,6 +8172,73 @@
         <button @click="isMaintenanceMode = false" style="margin-left:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;">Dismiss</button>
       </div>
     </transition>
+
+    <!-- ============ ASK BAR (floating NLP command bar) ============ -->
+    <!-- Collapsed floating trigger -->
+    <button v-if="!askBar.open" class="askbar-fab" @click="openAskBar()" title="Ask the department — answers from live data">
+        <span class="askbar-fab-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
+        <span class="askbar-fab-tx">Ask</span>
+        <span class="askbar-fab-dot"></span>
+    </button>
+
+    <!-- Expanded panel -->
+    <div v-if="askBar.open" class="askbar-overlay" @click.self="closeAskBar()">
+        <div class="askbar-panel">
+            <div class="askbar-head">
+                <span class="askbar-head-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
+                <div><div class="askbar-head-t">Ask the department</div><div class="askbar-head-s">neumDesk intelligence</div></div>
+                <button class="askbar-close" @click="closeAskBar()">✕</button>
+            </div>
+            <div class="askbar-input-wrap">
+                <div class="askbar-input">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" placeholder="Ask about coverage, trials, rotations…" autofocus>
+                    <button class="askbar-send" @click="askBarResolve()" :disabled="!askBar.query.trim()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div v-if="askBar.loading" class="askbar-loading">
+                <span class="askbar-spinner"></span> Pulling from live data…
+            </div>
+
+            <!-- Answer -->
+            <div v-else-if="askBar.result" class="askbar-answer">
+                <div class="askbar-q"><span class="askbar-q-badge">You</span><span class="askbar-q-tx">{{ askBar.askedText }}</span></div>
+                <div class="askbar-ans-card">
+                    <div class="askbar-ans-h"><span class="askbar-ans-h-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span><span class="askbar-ans-h-t">Answer</span><span class="askbar-ans-h-spark">✦ from live data</span></div>
+                    <div class="askbar-ans-tx">{{ askBar.result.text }}</div>
+                    <div v-if="askBar.result.chips && askBar.result.chips.length" class="askbar-chips">
+                        <button v-for="c in askBar.result.chips" :key="c.id" class="askbar-chip" @click="askBarOpenStaff(c.id)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}
+                        </button>
+                    </div>
+                    <div v-if="askBar.result.actions && askBar.result.actions.length" class="askbar-acts">
+                        <button v-for="(a,i) in askBar.result.actions" :key="i" :class="['askbar-act', a.primary ? 'askbar-act--primary' : 'askbar-act--ghost']" @click="askBarGoTo(a)">{{ a.label }}<span v-if="a.primary"> →</span></button>
+                    </div>
+                </div>
+                <div class="askbar-disc">✦ AI-assisted · always verify against the live schedule</div>
+            </div>
+
+            <!-- Suggestions (default) -->
+            <div v-else>
+                <div class="askbar-sug-label">Try asking</div>
+                <div class="askbar-sug">
+                    <div v-for="s in askBarSuggestions" :key="s.intent" class="askbar-sug-item" @click="runSuggestion(s)">
+                        <span class="askbar-sug-ic" :class="'askbar-sug-ic--' + s.icon">
+                            <svg v-if="s.icon==='oncall'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+                            <svg v-else-if="s.icon==='research'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3"/></svg>
+                            <svg v-else-if="s.icon==='briefing'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21H21M5 21V8L12 4L19 8V21"/></svg>
+                            <svg v-else-if="s.icon==='absence'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+                            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                        </span>
+                        <div class="askbar-sug-tx"><div class="askbar-sug-t">{{ s.t }}</div><div class="askbar-sug-d">{{ s.d }}</div></div>
+                        <svg class="askbar-sug-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ============- TOAST CONTAINER ==-=--=---=======-->
     <div class="toast-container">
@@ -8237,7 +8304,7 @@
                         </defs>
                         <rect x="96" y="96" width="320" height="320" rx="72" fill="#041526"/>
                         <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#lc-logo-grad)" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
-                        <path d="M152 318 V228 H192 V252 C204 234 228 220 258 220 C300 220 322 244 322 284 V318 H282 V287 C282 262 268 248 248 248 C226 248 212 264 212 292 V318 Z" fill="url(#lc-logo-grad)"/>
+                        <path d="M172 322 V236 M172 268 C172 244 192 228 220 228 C256 228 276 250 276 288 V322" fill="none" stroke="url(#lc-logo-grad)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     <div class="lc-product-name">neum<span>Desk</span></div>
                 </div>
@@ -8375,6 +8442,16 @@
                                 <i v-if="item.icon" :class="['fa', item.icon]" style="font-size:13px;"></i>
                                 <svg v-else-if="item.type === 'staff'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                 <svg v-else-if="item.type === 'unit'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                                <!-- per-view distinct icons -->
+                                <svg v-else-if="item.id === 'dashboard'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                                <svg v-else-if="item.id === 'medical_staff'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <svg v-else-if="item.id === 'oncall_schedule'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                                <svg v-else-if="item.id === 'training_units'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg>
+                                <svg v-else-if="item.id === 'resident_rotations'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v4h-4"/></svg>
+                                <svg v-else-if="item.id === 'staff_absence'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4M9 14l6 0"/></svg>
+                                <svg v-else-if="item.id === 'system_settings'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                <svg v-else-if="item.id === 'research_hub'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3M8 3h8M7.5 15h9"/></svg>
+                                <svg v-else-if="item.id === 'news'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9h4M10 6h6M10 10h6M10 14h4"/></svg>
                                 <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>
                             </div>
                             <div class="cmd-item-info">
@@ -8421,7 +8498,7 @@
                             </defs>
                             <rect x="96" y="96" width="320" height="320" rx="72" fill="rgba(255,255,255,0.07)"/>
                             <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#nm-logo-grad)" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
-                            <path d="M152 318 V228 H192 V252 C204 234 228 220 258 220 C300 220 322 244 322 284 V318 H282 V287 C282 262 268 248 248 248 C226 248 212 264 212 292 V318 Z" fill="url(#nm-logo-grad)"/>
+                            <path d="M172 322 V236 M172 268 C172 244 192 228 220 228 C256 228 276 250 276 288 V322" fill="none" stroke="url(#nm-logo-grad)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                         <!-- Wordmark -->
                         <svg viewBox="0 0 148 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="neumDesk" style="height:20px;width:auto">
@@ -8446,7 +8523,7 @@
                         </defs>
                         <rect x="96" y="96" width="320" height="320" rx="72" fill="rgba(255,255,255,0.07)"/>
                         <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#nm-logo-grad-c)" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
-                        <path d="M152 318 V228 H192 V252 C204 234 228 220 258 220 C300 220 322 244 322 284 V318 H282 V287 C282 262 268 248 248 248 C226 248 212 264 212 292 V318 Z" fill="url(#nm-logo-grad-c)"/>
+                        <path d="M172 322 V236 M172 268 C172 244 192 228 220 228 C256 228 276 250 276 288 V322" fill="none" stroke="url(#nm-logo-grad-c)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
                 <button class="nmsb-collapse" @click="sidebarCollapsed = !sidebarCollapsed"
@@ -13888,7 +13965,7 @@
                                     @change="suggestCalloutArea(calloutModal.form.staff_id)">
                             <option value="">Select physician…</option>
                             <optgroup label="Attending / Fellow">
-                                <option v-for="p in availablePhysicians.filter(x => !isResidentType(x.staff_type))" :key="p.id" :value="p.id">{{ p.full_name }}</option>
+                                <option v-for="p in availablePhysicians.filter(x => !isResidentType(x.staff_type) && isOnCallEligible(x.staff_type))" :key="p.id" :value="p.id">{{ p.full_name }}</option>
                             </optgroup>
                             <optgroup label="Residents">
                                 <option v-for="p in availablePhysicians.filter(x => isResidentType(x.staff_type))" :key="p.id" :value="p.id">{{ p.full_name }}</option>
@@ -14421,6 +14498,19 @@
                                 <div class="pd-tli" v-for="r in rotations.filter(r=>r.supervising_attending_id===staffProfileModal.staff.id && r.rotation_status==='active').slice(0,6)" :key="r.id">
                                     <div class="pd-tli-t">{{ r.resident_name || getStaffName(r.resident_id) }}</div>
                                     <div class="pd-tli-d"><span v-if="r.end_date">Rotation ends {{ formatDateShort(r.end_date) }}</span><span v-if="r.training_unit_name"> · {{ r.training_unit_name }}</span></div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- System access — this person's permissions (admin-visible) -->
+                        <template v-if="isAdmin() && staffProfileModal.staff.permissions && staffProfileModal.staff.permissions.length">
+                            <div class="pd-ov-sh" style="margin-top:24px"><span class="pd-ov-sh-t">System access</span><span class="pd-ov-sh-ln"></span><span class="pd-ov-sh-ct">{{ staffProfileModal.staff.admin_level >= 1 ? 'Administrator' : permSummaryText(staffProfileModal.staff) }}</span></div>
+                            <div class="pd-perm-grid">
+                                <div v-for="p in staffProfileModal.staff.permissions.filter(p=>p.can_read||p.can_write)" :key="p.module"
+                                     class="pd-perm-chip" :class="p.can_write ? 'pd-perm-chip--write' : 'pd-perm-chip--read'">
+                                    <span class="pd-perm-dot"></span>
+                                    {{ (ALL_MODULES.find(m=>m.key===p.module)||{}).label || p.module }}
+                                    <span class="pd-perm-lvl">{{ p.can_write ? 'Read + Write' : 'Read' }}</span>
                                 </div>
                             </div>
                         </template>
@@ -15898,7 +15988,7 @@
                             <div class="sm-label">Primary Physician <span class="req">·</span></div>
                             <select class="sm-select" v-model="onCallModal.form.primary_physician_id" :class="{'is-invalid': fieldErrors.oncall?.primary_physician_id}" @change="clearFieldError('oncall','primary_physician_id')">
                                 <option value="">Select physician…</option>
-                                <option v-for="s in medicalStaff.filter(s=>s.employment_status==='active')" :key="s.id" :value="s.id">{{ s.full_name }} — {{ formatStaffType(s.staff_type) }}</option>
+                                <option v-for="s in medicalStaff.filter(s=>s.employment_status==='active' && isOnCallEligible(s.staff_type))" :key="s.id" :value="s.id">{{ s.full_name }} — {{ formatStaffType(s.staff_type) }}</option>
                             </select>
                             <small v-if="fieldErrors.oncall?.primary_physician_id" class="error-text">{{ fieldErrors.oncall.primary_physician_id }}</small>
                             <!-- Moment A: physician on leave on this date -->
@@ -15931,7 +16021,7 @@
                             </div>
                             <select class="sm-select" v-model="onCallModal.form.backup_physician_id">
                                 <option value="">Select backup…</option>
-                                <option v-for="s in medicalStaff.filter(s=>s.employment_status==='active' && s.id!==onCallModal.form.primary_physician_id)" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                <option v-for="s in medicalStaff.filter(s=>s.employment_status==='active' && isOnCallEligible(s.staff_type) && s.id!==onCallModal.form.primary_physician_id)" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                             </select>
                             <small style="font-size:10px;color:var(--nm-text3);margin-top:3px;display:block">
                                 Available if primary is unreachable — can be updated any time
@@ -19557,7 +19647,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=35"></script>
+    <script src="app.js?v=39"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -19782,4 +19872,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html>  
+</html>
