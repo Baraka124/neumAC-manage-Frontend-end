@@ -2,7 +2,7 @@
    neumDesk — style.css
    Clinical Operations Platform UI Override Stylesheet
    
-   Architecture: All rules are appended overrides on top of the   
+   Architecture: All rules are appended overrides on top of the
    base styles in index.html <style> blocks and style__10_.css.
    Cascade strategy: html #app .classname for specificity wins.
    
@@ -40615,7 +40615,7 @@ html body #app .askbar-trace-src { font-family: 'DM Mono', monospace !important;
 html body #app .askbar-trace-mini { display: flex !important; align-items: center !important; gap: 8px !important; padding: 7px 11px !important; background: #f8fafc !important; border: 1px solid rgba(15,45,84,.08) !important; border-radius: 10px !important; cursor: pointer !important; margin-bottom: 2px !important; }
 html body #app .askbar-trace-mini:hover { border-color: rgba(124,58,237,.3) !important; }
 html body #app .askbar-trace-mini-t { font-size: 11px !important; font-weight: 500 !important; color: #475569 !important; }
-html body #app .askbar-trace-mini-x { margin-left: auto !important; font-family: 'DM Mono', monospace !important; font-size: 8.5px !important; color: #94a3b8 !important; text-transform: uppercase !important; letter-spacing: .05em !important; }   
+html body #app .askbar-trace-mini-x { margin-left: auto !important; font-family: 'DM Mono', monospace !important; font-size: 8.5px !important; color: #94a3b8 !important; text-transform: uppercase !important; letter-spacing: .05em !important; }
 html body #app .askbar-trace--expanded { margin-bottom: 6px !important; }
 
 /* Grounded + AI tags */
@@ -40624,4 +40624,4 @@ html body #app .askbar-tag-grnd { display: inline-flex !important; align-items: 
 html body #app .askbar-tag-ai { font-family: 'DM Mono', monospace !important; font-size: 9px !important; text-transform: uppercase !important; letter-spacing: .04em !important; background: rgba(124,58,237,.1) !important; color: #7c3aed !important; padding: 2px 7px !important; border-radius: 5px !important; margin-left: auto !important; }
 
 /* Draft card styling (monospace, document-like) */
-html body #app .askbar-a-card--draft .askbar-a-tx { font-family: 'DM Mono', monospace !important; font-size: 12px !important; white-space: pre-wrap !important; line-height: 1.6 !important; background: #fff !important; border: 1px solid rgba(15,45,84,.1) !important; border-radius: 9px !important; padding: 12px !important; }
+html body #app .askbar-a-card--draft .askbar-a-tx { font-family: 'DM Mono', monospace !important; font-size: 12px !important; white-space: pre-wrap !important; line-height: 1.6 !important; background: #fff !important; border: 1px solid rgba(15,45,84,.1) !important; border-radius: 9px !important; padding: 12px !important; }  
