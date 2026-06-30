@@ -739,8 +739,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.status >= 500) throw new Error('A server error occurred. Please try again in a moment.')
             const errBody = await res.text().catch(() => `HTTP ${res.status}`)
             let errMsg = errBody
-            try { const j = JSON.parse(errBody); errMsg = j.message || j.error || errBody } catch {}
-            throw new Error(errMsg)
+            try {
+              const j = JSON.parse(errBody)
+              // Common shapes: { message }, { error }, { detail }
+              if (j.message) errMsg = j.message
+              else if (j.error) errMsg = j.error
+              else if (j.detail) errMsg = j.detail
+              else {
+                // Field-level validation (Django/DRF style): { field: ["msg"], ... }
+                // Surface the actual fields that failed so the user/dev can SEE the real error.
+                const parts = []
+                for (const [field, val] of Object.entries(j)) {
+                  const msg = Array.isArray(val) ? val.join(', ') : (typeof val === 'string' ? val : JSON.stringify(val))
+                  parts.push(`${field}: ${msg}`)
+                }
+                if (parts.length) errMsg = parts.join(' · ')
+              }
+            } catch {}
+            // Always include the status so backend issues are diagnosable.
+            console.error(`[neumDesk API] ${res.status} on ${endpoint}:`, errBody)
+            throw new Error(errMsg || `Request failed (HTTP ${res.status})`)
             }
             const ct = res.headers.get('content-type')
           const result = ct?.includes('application/json') ? await res.json() : await res.text()
@@ -8526,6 +8544,19 @@ document.addEventListener('DOMContentLoaded', () => {
           if (e.key === 'Enter') { e.preventDefault(); executeCmdItem(cmdItems.value[cmdSelectedIdx.value]) }
         })
 
+        // Ask-bar keyboard: "/" opens it (when not typing), Esc closes it.
+        // Distinct from ⌘K (palette) — "/" to know, ⌘K to go.
+        window.addEventListener('keydown', (e) => {
+          const tag = e.target?.tagName?.toLowerCase()
+          const typing = ['input','textarea','select'].includes(tag) || e.target?.isContentEditable
+          if (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !askBar.open) {
+            e.preventDefault(); openAskBar()
+            Vue.nextTick(() => { const inp = document.querySelector('.askbar-input input'); if (inp) inp.focus() })
+            return
+          }
+          if (e.key === 'Escape' && askBar.open) { closeAskBar(); return }
+        })
+
 
 
       // ═══════════════════════════════════════════════════════════════
@@ -8955,20 +8986,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const pid = shift.primary_physician_id || shift.backup_physician_id
             if (!pid) return
             const clash = absList.find(a => a.staff_member_id === pid && within(shift.duty_date, a))
-            if (clash) alerts.push({ sev: 'high', title: `${getStaffName(pid)} is on-call ${Utils.formatDateShort(shift.duty_date)} but on leave that day`, detail: 'Conflict · on-call schedule × leave records', action: 'Reassign coverage', view: 'oncall_schedule', staffId: pid })
+            if (clash) alerts.push({ sev: 'high', title: `${getStaffName(pid)} is on-call ${Utils.formatDateShort(shift.duty_date)} but on leave that day`, detail: 'Conflict · on-call schedule × leave records', action: 'Reassign coverage', view: 'oncall_schedule', staffId: pid, resolve: 'reassign_oncall' })
           })
           // 2. Coverage gaps (MED)
           ;(understaffedUnitAlerts.value || []).slice(0,3).forEach(g => {
-            alerts.push({ sev: 'med', title: `${g.unitName} has a coverage gap`, detail: 'Understaffed · rotation units', action: 'Open schedule', view: 'oncall_schedule' })
+            alerts.push({ sev: 'med', title: `${g.unitName} has a coverage gap`, detail: 'Understaffed · rotation units', action: 'Open schedule', view: 'oncall_schedule', resolve: 'reassign_oncall' })
           })
           // 3. Slow-recruiting trials (MED)
           ;(researchOps.clinicalTrials.value || []).forEach(t => {
             const e = researchOps.trialEnrollment ? researchOps.trialEnrollment(t) : null
-            if (e && e.health === 'behind') alerts.push({ sev: 'med', title: `"${t.title}" recruiting slowly`, detail: `${e.actual} / ${e.target} enrolled · ${e.pct}% of target`, action: 'Open trial', view: 'research_hub' })
+            if (e && e.health === 'behind') alerts.push({ sev: 'med', title: `"${t.title}" recruiting slowly`, detail: `${e.actual} / ${e.target} enrolled · ${e.pct}% of target`, action: 'Open trial', view: 'research_hub', resolve: 'open_trial', trialId: t.id })
           })
           // 4. Residents with no supervisor on active rotation (MED)
           const unsup = (rotations.value || []).filter(r => r.rotation_status === 'active' && !r.supervising_attending_id)
-          if (unsup.length) alerts.push({ sev: 'med', title: `${unsup.length} resident${unsup.length===1?'':'s'} with no assigned supervisor`, detail: unsup.slice(0,3).map(r => getStaffName(r.resident_id)).join(', ') + ' · active rotation', action: 'Assign supervisor', view: 'resident_rotations' })
+          if (unsup.length) alerts.push({ sev: 'med', title: `${unsup.length} resident${unsup.length===1?'':'s'} with no assigned supervisor`, detail: unsup.slice(0,3).map(r => getStaffName(r.resident_id)).join(', ') + ' · active rotation', action: 'Assign supervisor', view: 'resident_rotations', resolve: 'assign_supervisor' })
           // 5. Double-booked (primary === backup) (HIGH)
           ;(onCallSchedule.value || []).forEach(shift => {
             if (shift.primary_physician_id && shift.primary_physician_id === shift.backup_physician_id) {
@@ -8995,8 +9026,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
       const runSuggestion = (s) => { askBar.query = s.t; askBarResolve(s.intent) }
       const askBarAlertAction = (alert) => {
-        if (alert.staffId) { askBarOpenStaff(alert.staffId); return }
-        if (alert.view) { switchView(alert.view); closeAskBar() }
+        // #15 deep-link + #18 safe act-on: route to the SPECIFIC resolution flow,
+        // not just the view. These open a modal (a safe, confirmable action) rather
+        // than performing a silent write.
+        closeAskBar()
+        Vue.nextTick(() => {
+          try {
+            if (alert.resolve === 'reassign_oncall' && typeof showAddOnCallModal === 'function') {
+              switchView('oncall_schedule'); showAddOnCallModal()
+            } else if (alert.resolve === 'assign_supervisor') {
+              switchView('resident_rotations')
+            } else if (alert.resolve === 'open_trial' && alert.trialId && researchOps.viewTrial) {
+              switchView('research_hub')
+              const t = (researchOps.clinicalTrials.value || []).find(x => x.id === alert.trialId)
+              if (t) researchOps.viewTrial(t)
+            } else if (alert.staffId) {
+              askBarOpenStaff(alert.staffId)
+            } else if (alert.view) {
+              switchView(alert.view)
+            }
+          } catch (e) { if (alert.view) switchView(alert.view) }
+        })
       }
 
       // ── Intent matcher: maps free text → a known intent (keyword RAG) ──
@@ -9009,6 +9059,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (/(trial|study|research|recruit|estudio|ensayo)/.test(q)) return 'trials_recruiting'
         if (/(on-call|on call|oncall|guardia|cover)/.test(q)) return 'oncall_upcoming'
         if (/(rotation|resident|supervis|eval|rota)/.test(q)) return 'rotations_active'
+        // #13 fuzzy fallback — score against intent keyword sets, pick best if confident
+        const buckets = {
+          oncall_upcoming: ['call','duty','cover','guard','weekend','tonight','tomorrow','who'],
+          absent_now: ['away','holiday','sick','out','leave','absence'],
+          trials_recruiting: ['enrol','enroll','patient','participant','protocol','sponsor','study','studies'],
+          coverage_gaps: ['gap','missing','empty','unfilled','hole','understaff'],
+          briefing: ['today','update','status','happening','summary','overview'],
+          issues: ['ok','fine','alright','worry','wrong','check','everything','safe']
+        }
+        let best = null, bestScore = 0
+        for (const [intent, words] of Object.entries(buckets)) {
+          const score = words.reduce((n, w) => n + (q.includes(w) ? 1 : 0), 0)
+          if (score > bestScore) { bestScore = score; best = intent }
+        }
+        if (best && bestScore >= 1) return best
         return 'unknown'
       }
 
