@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=45">
+    <link rel="stylesheet" href="style.css?v=47">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8173,12 +8173,14 @@
       </div>
     </transition>
 
-    <!-- ============ ASK BAR (floating NLP command bar) ============ -->
-    <!-- Collapsed floating trigger -->
-    <button v-if="!askBar.open" class="askbar-fab" @click="openAskBar()" title="Ask the department — answers from live data">
+    <!-- ============ ASK BAR — Intelligence surface (proactive · conversational · sourced) ============ -->
+    <!-- Floating trigger with proactive badge -->
+    <button v-if="!askBar.open" class="askbar-fab" @click="openAskBar()" :title="askBarScanCount ? askBarScanCount + ' things need attention' : 'Ask the department'">
+        <span v-if="askBarScanCount" class="askbar-fab-pulse"></span>
         <span class="askbar-fab-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
         <span class="askbar-fab-tx">Ask</span>
-        <span class="askbar-fab-dot"></span>
+        <span v-if="askBarScanCount" class="askbar-fab-badge">{{ askBarScanCount }}</span>
+        <span v-else class="askbar-fab-dot"></span>
     </button>
 
     <!-- Expanded panel -->
@@ -8186,44 +8188,33 @@
         <div class="askbar-panel">
             <div class="askbar-head">
                 <span class="askbar-head-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
-                <div><div class="askbar-head-t">Ask the department</div><div class="askbar-head-s">neumDesk intelligence</div></div>
+                <div><div class="askbar-head-t">Department intelligence</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'following up' : 'scanned just now' }}</div></div>
+                <span class="askbar-head-live"><span class="askbar-head-dot"></span> live</span>
                 <button class="askbar-close" @click="closeAskBar()">✕</button>
             </div>
-            <div class="askbar-input-wrap">
-                <div class="askbar-input">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" placeholder="Ask about coverage, trials, rotations…" autofocus>
-                    <button class="askbar-send" @click="askBarResolve()" :disabled="!askBar.query.trim()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+
+            <!-- PROACTIVE DIGEST (scan) -->
+            <div v-if="askBar.view === 'digest' && askBarScanCount" class="askbar-digest">
+                <div class="askbar-digest-h">
+                    <span class="askbar-digest-h-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+                    <span class="askbar-digest-h-t">{{ askBarScanCount }} thing{{ askBarScanCount === 1 ? '' : 's' }} need{{ askBarScanCount === 1 ? 's' : '' }} attention</span>
+                    <span class="askbar-digest-h-ct">as of {{ askBarNow() }}</span>
+                </div>
+                <div v-for="(alert, i) in askBarScan" :key="i" class="askbar-alert" @click="askBarAlertAction(alert)">
+                    <span class="askbar-alert-sev" :class="'askbar-alert-sev--' + alert.sev"></span>
+                    <div class="askbar-alert-bd">
+                        <div class="askbar-alert-t">{{ alert.title }}</div>
+                        <div class="askbar-alert-d">{{ alert.detail }}</div>
+                        <div class="askbar-alert-act">{{ alert.action }} →</div>
+                    </div>
+                    <svg class="askbar-alert-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                 </div>
             </div>
 
-            <!-- Loading -->
-            <div v-if="askBar.loading" class="askbar-loading">
-                <span class="askbar-spinner"></span> Pulling from live data…
-            </div>
-
-            <!-- Answer -->
-            <div v-else-if="askBar.result" class="askbar-answer">
-                <div class="askbar-q"><span class="askbar-q-badge">You</span><span class="askbar-q-tx">{{ askBar.askedText }}</span></div>
-                <div class="askbar-ans-card">
-                    <div class="askbar-ans-h"><span class="askbar-ans-h-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></span><span class="askbar-ans-h-t">Answer</span><span class="askbar-ans-h-spark">✦ from live data</span></div>
-                    <div class="askbar-ans-tx">{{ askBar.result.text }}</div>
-                    <div v-if="askBar.result.chips && askBar.result.chips.length" class="askbar-chips">
-                        <button v-for="c in askBar.result.chips" :key="c.id" class="askbar-chip" @click="askBarOpenStaff(c.id)">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}
-                        </button>
-                    </div>
-                    <div v-if="askBar.result.actions && askBar.result.actions.length" class="askbar-acts">
-                        <button v-for="(a,i) in askBar.result.actions" :key="i" :class="['askbar-act', a.primary ? 'askbar-act--primary' : 'askbar-act--ghost']" @click="askBarGoTo(a)">{{ a.label }}<span v-if="a.primary"> →</span></button>
-                    </div>
-                </div>
-                <div class="askbar-disc">✦ AI-assisted · always verify against the live schedule</div>
-            </div>
-
-            <!-- Suggestions (default) -->
-            <div v-else>
-                <div class="askbar-sug-label">Try asking</div>
-                <div class="askbar-sug">
+            <!-- CONVERSATION -->
+            <div v-if="askBar.view === 'conversation'" class="askbar-conv">
+                <div v-if="!askBar.turns.length" class="askbar-sug-label" style="padding-top:4px">Try asking</div>
+                <div v-if="!askBar.turns.length" class="askbar-sug">
                     <div v-for="s in askBarSuggestions" :key="s.intent" class="askbar-sug-item" @click="runSuggestion(s)">
                         <span class="askbar-sug-ic" :class="'askbar-sug-ic--' + s.icon">
                             <svg v-if="s.icon==='oncall'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
@@ -8236,9 +8227,37 @@
                         <svg class="askbar-sug-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                     </div>
                 </div>
+                <template v-for="(turn, ti) in askBar.turns" :key="ti">
+                    <div v-if="turn.q" class="askbar-q-bub">{{ turn.q }}</div>
+                    <div class="askbar-a-bub">
+                        <div class="askbar-a-card">
+                            <div class="askbar-a-tx">{{ turn.text }}</div>
+                            <div v-if="turn.chips && turn.chips.length" class="askbar-chips">
+                                <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click="askBarOpenStaff(c.id)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
+                            </div>
+                            <div v-if="turn.sources && turn.sources.length" class="askbar-src">sources <span v-for="s in turn.sources" :key="s" class="askbar-src-chip">{{ s }}</span></div>
+                        </div>
+                        <div v-if="turn.actions && turn.actions.length || turn.followups && turn.followups.length" class="askbar-followups">
+                            <button v-for="(a,i) in turn.actions" :key="'a'+i" class="askbar-fu askbar-fu--act" @click="askBarGoTo(a)">{{ a.label }} →</button>
+                            <button v-for="(f,i) in turn.followups" :key="'f'+i" class="askbar-fu" @click="askBarRunFollowup(f)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> {{ f.label }}</button>
+                        </div>
+                    </div>
+                </template>
+                <div v-if="askBar.loading" class="askbar-loading"><span class="askbar-spinner"></span> Pulling from live data…</div>
+            </div>
+
+            <!-- INPUT (always at bottom) -->
+            <div class="askbar-input-wrap">
+                <button v-if="askBar.view === 'digest' && askBarScanCount" class="askbar-mode-link" @click="askBar.view = 'conversation'">…or ask anything</button>
+                <div v-else class="askbar-input">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" :placeholder="askBar.turns.length ? 'Ask a follow-up…' : 'Ask about coverage, trials, rotations…'" autofocus>
+                    <button class="askbar-send" @click="askBarResolve()" :disabled="!askBar.query.trim()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+                </div>
             </div>
         </div>
     </div>
+
 
     <!-- ============- TOAST CONTAINER ==-=--=---=======-->
     <div class="toast-container">
@@ -12533,19 +12552,19 @@
                         <!-- Top tabs + action -->
                         <div class="rhub-topbar">
                             <div class="rhub-tabs">
-                                <button :class="['rhub-tab', researchHubPage === 'overview' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'overview'">
+                                <button :class="['rhub-tab', researchHubPage === 'overview' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'overview'" title="Research lines — your department's broad areas of investigation">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                                     Lines <span class="rhub-tab-count">{{ researchLines.length }}</span>
                                 </button>
-                                <button :class="['rhub-tab', researchHubPage === 'allstudies' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'allstudies'">
+                                <button :class="['rhub-tab', researchHubPage === 'allstudies' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'allstudies'" title="Clinical studies & trials — individual protocols with enrollment">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                                     Studies <span class="rhub-tab-count">{{ clinicalTrials.length }}</span>
                                 </button>
-                                <button :class="['rhub-tab', researchHubPage === 'allprojects' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'allprojects'">
+                                <button :class="['rhub-tab', researchHubPage === 'allprojects' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'allprojects'" title="Innovation projects — non-trial initiatives moving through development stages">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
                                     Projects <span class="rhub-tab-count">{{ innovationProjects.length }}</span>
                                 </button>
-                                <button :class="['rhub-tab', researchHubPage === 'analytics' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'analytics'">
+                                <button :class="['rhub-tab', researchHubPage === 'analytics' ? 'rhub-tab--on' : '']" @click="researchHubPage = 'analytics'" title="Portfolio analytics — performance across all research">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
                                     Analytics
                                 </button>
@@ -12567,9 +12586,9 @@
                             </div>
                             <div class="rhub-kdiv"></div>
                             <div class="rhub-kpi">
-                                <div class="rhub-kv rhub-kv--ok">{{ clinicalTrials.filter(t => ['Activo','Reclutando'].includes(t.status)).length }}</div>
+                                <div class="rhub-kv rhub-kv--ok">{{ countTrialsByStatus('recruiting') + countTrialsByStatus('active') }}</div>
                                 <div class="rhub-kl">Active studies</div>
-                                <div class="rhub-ks">{{ clinicalTrials.filter(t => t.status === 'Reclutando').length }} recruiting</div>
+                                <div class="rhub-ks">{{ countTrialsByStatus('recruiting') }} recruiting</div>
                             </div>
                             <div class="rhub-kdiv"></div>
                             <div class="rhub-kpi">
@@ -12580,7 +12599,8 @@
                             <div class="rhub-kdiv"></div>
                             <div class="rhub-kpi">
                                 <div class="rhub-kv">{{ clinicalTrials.reduce((s,t) => s + (t.actual_enrollment || 0), 0) || 0 }}</div>
-                                <div class="rhub-kl">Participants</div>
+                                <div class="rhub-kl">Enrolled</div>
+                                <div class="rhub-ks">across all studies</div>
                             </div>
                             <div class="rhub-ksearch">
                                 <input v-model="researchLineFilters.search" class="rhub-search-input" placeholder="Search lines…" />
@@ -13180,29 +13200,34 @@
                         </div>
                         <div class="rhub-status-strip">
                             <button class="rss-pill" :class="{ 'rss-pill--active': trialFilters.status === '' }" @click="trialFilters.status = ''">All <span class="rss-count">{{ clinicalTrials.length }}</span></button>
-                            <button class="rss-pill rss-pill--recruiting" :class="{ 'rss-pill--active': trialFilters.status === 'Reclutando' }" @click="trialFilters.status = trialFilters.status === 'Reclutando' ? '' : 'Reclutando'"><span class="rss-dot rss-dot--recruiting"></span> Recruiting <span class="rss-count">{{ clinicalTrials.filter(t => t.status === 'Reclutando').length }}</span></button>
-                            <button class="rss-pill" :class="{ 'rss-pill--active-sel': trialFilters.status === 'Activo' }" @click="trialFilters.status = trialFilters.status === 'Activo' ? '' : 'Activo'"><span class="rss-dot rss-dot--active"></span> Active <span class="rss-count">{{ clinicalTrials.filter(t => t.status === 'Activo').length }}</span></button>
-                            <button class="rss-pill" :class="{ 'rss-pill--active': trialFilters.status === 'En preparación' }" @click="trialFilters.status = trialFilters.status === 'En preparación' ? '' : 'En preparación'"><span class="rss-dot rss-dot--prep"></span> In preparation <span class="rss-count">{{ clinicalTrials.filter(t => t.status === 'En preparación').length }}</span></button>
+                            <button class="rss-pill rss-pill--recruiting" :class="{ 'rss-pill--active': trialFilters.status === 'recruiting' }" @click="trialFilters.status = trialFilters.status === 'recruiting' ? '' : 'recruiting'"><span class="rss-dot rss-dot--recruiting"></span> Recruiting <span class="rss-count">{{ countTrialsByStatus('recruiting') }}</span></button>
+                            <button class="rss-pill" :class="{ 'rss-pill--active-sel': trialFilters.status === 'active' }" @click="trialFilters.status = trialFilters.status === 'active' ? '' : 'active'"><span class="rss-dot rss-dot--active"></span> Active <span class="rss-count">{{ countTrialsByStatus('active') }}</span></button>
+                            <button class="rss-pill" :class="{ 'rss-pill--active': trialFilters.status === 'prep' }" @click="trialFilters.status = trialFilters.status === 'prep' ? '' : 'prep'"><span class="rss-dot rss-dot--prep"></span> In preparation <span class="rss-count">{{ countTrialsByStatus('prep') }}</span></button>
                             <span v-if="trialFilters.status" class="rss-result-count">Showing {{ filteredTrialsAll.length }} of {{ clinicalTrials.length }}</span>
                         </div>
                         <div class="rhub-line-body" style="padding:16px">
                             <div class="rhub-study-list">
-                                <div v-for="trial in filteredTrialsAll" :key="trial.id" class="rhub-study-card" @click="selectedLine = researchLines.find(l => l.id === trial.research_line_id); openStudy(trial)">
-                                    <div class="rht-phase-badge" :class="'rht-phase--p' + (trial.phase || '').replace('Phase ','')">{{ (trial.phase || '').replace('Phase ','') }}</div>
+                                <div v-for="trial in filteredTrialsAll" :key="trial.id" class="rhub-study-card rhsc-premium" @click="selectedLine = researchLines.find(l => l.id === trial.research_line_id); openStudy(trial)">
+                                    <div class="rhsc-stripe" :class="'rhsc-stripe--' + trialStatusKey(trial)"></div>
+                                    <div class="rht-phase-badge" :class="'rht-phase--p' + (trial.phase || '').replace('Phase ','')">{{ (trial.phase || '').replace('Phase ','') || '—' }}</div>
                                     <div class="rhsc-body">
                                         <div class="rhsc-title">{{ trial.title }}</div>
                                         <div class="rhsc-meta">
-                                            <span class="rhsc-proto">{{ trial.protocol_id }}</span>
-                                            <span class="rhsc-status" :class="{ 'sp-rec': trial.status === 'Reclutando', 'sp-act': trial.status === 'Activo', 'sp-prep': trial.status === 'En preparación', 'sp-done': trial.status === 'Completado' }">{{ trial.status }}</span>
-                                            <span v-if="trial.research_lines?.name" style="font-size:10px;color:var(--nm-text3)">L{{ trial.research_lines?.line_number }} · {{ trial.research_lines?.name?.split(' ').slice(0,3).join(' ') }}…</span>
+                                            <span v-if="trial.protocol_id" class="rhsc-proto">{{ trial.protocol_id }}</span>
+                                            <span class="rhsc-status" :class="'rhsc-status--' + trialStatusKey(trial)">{{ TRIAL_STATUS_LABEL[trialStatusKey(trial)] }}</span>
+                                            <span v-if="trial.principal_investigator_id" class="rhsc-pi"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ getStaffName(trial.principal_investigator_id) }}</span>
+                                            <span v-if="trial.sponsor" class="rhsc-sponsor">{{ trial.sponsor }}</span>
                                             <span v-if="trial.ethics_status === 'approved'" class="rtag rtag--eth">CEIm ✓</span>
-                                            <span v-if="trial.protocol_finalized" class="rtag rtag--ok">Protocolo ✓</span>
                                             <span v-for="d in (trial.target_diseases || []).slice(0,2)" :key="d" class="rtag rtag--disease">{{ d }}</span>
                                         </div>
                                     </div>
-                                    <div class="rhsc-enroll" v-if="trial.enrollment_target">
-                                        <div class="rhsc-enroll-nums">{{ trial.actual_enrollment || 0 }}/{{ trial.enrollment_target }}</div>
-                                        <div class="rhsc-bar"><div class="rhsc-fill" :style="{ width: Math.min(100, Math.round(((trial.actual_enrollment||0)/trial.enrollment_target)*100)) + '%' }"></div></div>
+                                    <div class="rhsc-enroll" v-if="trialEnrollment(trial)">
+                                        <div class="rhsc-enroll-top">
+                                            <span class="rhsc-enroll-nums">{{ trialEnrollment(trial).actual }}<span class="rhsc-enroll-target">/{{ trialEnrollment(trial).target }}</span></span>
+                                            <span class="rhsc-health" :class="'rhsc-health--' + trialEnrollment(trial).health">{{ trialEnrollment(trial).label }}</span>
+                                        </div>
+                                        <div class="rhsc-bar"><div class="rhsc-fill" :class="'rhsc-fill--' + trialEnrollment(trial).health" :style="{ width: trialEnrollment(trial).pct + '%' }"></div></div>
+                                        <div class="rhsc-enroll-sub">{{ trialEnrollment(trial).pct }}% of target · {{ trialEnrollment(trial).remaining }} to go</div>
                                     </div>
                                     <div class="rhsc-arr"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div>
                                 </div>
@@ -19647,7 +19672,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=39"></script>
+    <script src="app.js?v=41"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
