@@ -40462,3 +40462,93 @@ html body #app .askbar-fu--act:hover { background: #0a2342 !important; color: #f
 /* mode link ("…or ask anything") */
 html body #app .askbar-mode-link { width: 100% !important; text-align: left !important; padding: 11px 14px !important; border: 1.5px dashed rgba(0,179,179,.3) !important; border-radius: 13px !important; background: transparent !important; color: #94a3b8 !important; font-family: 'DM Sans', sans-serif !important; font-size: 13.5px !important; cursor: pointer !important; transition: .13s !important; }
 html body #app .askbar-mode-link:hover { border-color: #00b3b3 !important; color: #0891b2 !important; background: rgba(0,179,179,.03) !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   §79  ASK BAR Batch 1 — feels-alive + trust
+   Streaming cursor, "thinking" orb, confidence signal, timestamps.
+════════════════════════════════════════════════════════════════ */
+
+/* Streaming cursor (the typing caret) */
+html body #app .askbar-cursor {
+  display: inline-block !important; width: 7px !important; height: 14px !important;
+  background: #0891b2 !important; border-radius: 2px !important;
+  margin-left: 2px !important; vertical-align: text-bottom !important;
+  animation: askbarBlinkCursor .8s steps(1) infinite !important;
+}
+@keyframes askbarBlinkCursor { 50% { opacity: 0; } }
+
+/* "Thinking" — ambient orb (a cloud-like presence rather than a spinner) */
+html body #app .askbar-thinking {
+  display: flex !important; align-items: center !important; gap: 10px !important;
+  padding: 12px 4px !important; color: #475569 !important; font-size: 13px !important;
+  font-style: italic !important;
+}
+html body #app .askbar-think-orb {
+  width: 16px !important; height: 16px !important; border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 35%, #00d4d4, #0891b2 60%, transparent 75%) !important;
+  box-shadow: 0 0 12px rgba(0,179,179,.5) !important;
+  animation: askbarOrb 1.6s ease-in-out infinite !important; flex-shrink: 0 !important;
+}
+@keyframes askbarOrb {
+  0%,100% { transform: scale(.8); opacity: .6; box-shadow: 0 0 8px rgba(0,179,179,.4); }
+  50%     { transform: scale(1.15); opacity: 1; box-shadow: 0 0 18px rgba(0,179,179,.7); }
+}
+
+/* Answer footer: sources + confidence + timestamp */
+html body #app .askbar-a-foot {
+  display: flex !important; align-items: center !important; gap: 8px !important;
+  flex-wrap: wrap !important; margin-top: 10px !important; padding-top: 10px !important;
+  border-top: 1px dashed rgba(15,45,84,.1) !important;
+}
+html body #app .askbar-a-foot .askbar-src { margin: 0 !important; padding: 0 !important; border: none !important; }
+html body #app .askbar-trust {
+  display: inline-flex !important; align-items: center !important; gap: 4px !important;
+  font-family: 'DM Mono', monospace !important; font-size: 9px !important;
+  text-transform: uppercase !important; letter-spacing: .04em !important;
+  padding: 2px 7px !important; border-radius: 5px !important;
+}
+html body #app .askbar-trust--high { background: rgba(16,185,129,.12) !important; color: #059669 !important; }
+html body #app .askbar-trust--low  { background: rgba(245,158,11,.14) !important; color: #d97706 !important; }
+html body #app .askbar-asof {
+  margin-left: auto !important; font-family: 'DM Mono', monospace !important;
+  font-size: 9px !important; color: #94a3b8 !important; text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   §80  ASK BAR Batch 2+3 — deeper retrieval + proactive polish
+   Snooze, root-cause grouping, all-clear state.
+════════════════════════════════════════════════════════════════ */
+
+/* Alert body clickable, snooze separate */
+html body #app .askbar-alert-bd { cursor: pointer !important; }
+html body #app .askbar-alert-snooze {
+  width: 24px !important; height: 24px !important; border-radius: 7px !important;
+  border: none !important; background: transparent !important; color: #cbd5e1 !important;
+  cursor: pointer !important; flex-shrink: 0 !important; display: flex !important;
+  align-items: center !important; justify-content: center !important; transition: .13s !important;
+  align-self: flex-start !important; margin-top: 2px !important;
+}
+html body #app .askbar-alert-snooze:hover { background: rgba(15,45,84,.06) !important; color: #64748b !important; }
+html body #app .askbar-alert-root {
+  font-family: 'DM Mono', monospace !important; font-size: 9.5px !important;
+  color: #7c3aed !important; margin-top: 4px !important; letter-spacing: .02em !important;
+}
+html body #app .askbar-allclear {
+  display: flex !important; align-items: center !important; gap: 10px !important;
+  padding: 16px 14px !important; color: #059669 !important; font-size: 13px !important; font-weight: 500 !important;
+  background: rgba(16,185,129,.06) !important; border: 1px solid rgba(16,185,129,.2) !important;
+  border-radius: 11px !important;
+}
+html body #app .askbar-allclear svg { color: #10b981 !important; flex-shrink: 0 !important; }
+
+/* New-conversation button */
+html body #app .askbar-newchat {
+  font-family: 'DM Mono', monospace !important; font-size: 9px !important;
+  text-transform: uppercase !important; letter-spacing: .06em !important;
+  color: rgba(255,255,255,.55) !important; background: rgba(255,255,255,.08) !important;
+  border: none !important; padding: 4px 9px !important; border-radius: 6px !important;
+  cursor: pointer !important; margin-right: 8px !important; position: relative !important; z-index: 1 !important;
+  transition: .13s !important;
+}
+html body #app .askbar-newchat:hover { background: rgba(255,255,255,.16) !important; color: #fff !important; }  
