@@ -40321,10 +40321,144 @@ html body #app .askbar-act--primary { background: #0f2d54 !important; color: #ff
 html body #app .askbar-act--ghost { background: transparent !important; color: #475569 !important; border: 1px solid rgba(15,45,84,.1) !important; }
 html body #app .askbar-disc { font-family: 'DM Mono', monospace !important; font-size: 9px !important; color: #94a3b8 !important; margin-top: 12px !important; text-align: center !important; }
 
-/* Mobile: full-width bottom sheet */   
+/* Mobile: full-width bottom sheet */
 @media (max-width: 640px) {
   html body #app .askbar-overlay { padding: 0 !important; align-items: flex-end !important; }
   html body #app .askbar-panel { width: 100% !important; max-width: 100% !important; border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; max-height: 88vh !important; }
   html body #app .askbar-fab-tx, html body #app .askbar-fab-kbd { display: none !important; }
   html body #app .askbar-fab { padding: 12px !important; bottom: 80px !important; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   §77  RESEARCH HUB — premium study cards + recruitment health
+   Upgrades the trial cards: contained premium frame, status stripe,
+   PI attribution, normalized status chips, and recruitment-health
+   signalling (on-track / behind / target-met) on the enrollment bar.
+════════════════════════════════════════════════════════════════ */
+
+/* Premium card frame */
+html body #app .rhsc-premium {
+  position: relative !important;
+  border: 1px solid rgba(15,45,84,.1) !important;
+  border-radius: 13px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(15,45,84,.04) !important;
+  transition: border-color .15s, box-shadow .15s, transform .15s !important;
+  overflow: hidden !important;
+  margin-bottom: 10px !important;
+}
+html body #app .rhsc-premium:hover {
+  border-color: rgba(0,179,179,.4) !important;
+  box-shadow: 0 6px 22px rgba(15,45,84,.09) !important;
+  transform: translateY(-1px) !important;
+}
+/* Status stripe (left edge) */
+html body #app .rhsc-stripe { position: absolute !important; left: 0 !important; top: 0 !important; bottom: 0 !important; width: 3px !important; }
+html body #app .rhsc-stripe--recruiting { background: #10b981 !important; }
+html body #app .rhsc-stripe--active { background: #00b3b3 !important; }
+html body #app .rhsc-stripe--prep { background: #f59e0b !important; }
+html body #app .rhsc-stripe--done { background: #94a3b8 !important; }
+html body #app .rhsc-stripe--other { background: #cbd5e1 !important; }
+
+/* Status chip (normalized) */
+html body #app .rhsc-status { font-size: 10.5px !important; font-weight: 600 !important; padding: 2px 9px !important; border-radius: 100px !important; }
+html body #app .rhsc-status--recruiting { background: rgba(16,185,129,.12) !important; color: #059669 !important; }
+html body #app .rhsc-status--active { background: rgba(0,179,179,.12) !important; color: #0891b2 !important; }
+html body #app .rhsc-status--prep { background: rgba(245,158,11,.14) !important; color: #d97706 !important; }
+html body #app .rhsc-status--done { background: rgba(148,163,184,.16) !important; color: #64748b !important; }
+html body #app .rhsc-status--other { background: rgba(148,163,184,.12) !important; color: #94a3b8 !important; }
+
+/* PI + sponsor */
+html body #app .rhsc-pi { display: inline-flex !important; align-items: center !important; gap: 5px !important; font-size: 11px !important; color: #475569 !important; font-weight: 500 !important; }
+html body #app .rhsc-pi svg { color: #0891b2 !important; }
+html body #app .rhsc-sponsor { font-size: 10.5px !important; color: #94a3b8 !important; font-family: 'DM Mono', monospace !important; padding: 1px 7px !important; border: 1px solid rgba(15,45,84,.1) !important; border-radius: 5px !important; }
+
+/* Recruitment health enrollment block */
+html body #app .rhsc-enroll { min-width: 150px !important; padding: 0 16px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; gap: 5px !important; }
+html body #app .rhsc-enroll-top { display: flex !important; align-items: baseline !important; justify-content: space-between !important; gap: 8px !important; }
+html body #app .rhsc-enroll-nums { font-family: 'Instrument Serif', Georgia, serif !important; font-style: italic !important; font-size: 19px !important; color: #0f2d54 !important; line-height: 1 !important; }
+html body #app .rhsc-enroll-target { color: #94a3b8 !important; font-size: 14px !important; }
+html body #app .rhsc-health { font-size: 9px !important; font-weight: 700 !important; font-family: 'DM Mono', monospace !important; text-transform: uppercase !important; letter-spacing: .04em !important; padding: 2px 6px !important; border-radius: 5px !important; white-space: nowrap !important; }
+html body #app .rhsc-health--ontrack { background: rgba(16,185,129,.12) !important; color: #059669 !important; }
+html body #app .rhsc-health--complete { background: rgba(0,179,179,.12) !important; color: #0891b2 !important; }
+html body #app .rhsc-health--watch { background: rgba(245,158,11,.14) !important; color: #d97706 !important; }
+html body #app .rhsc-health--behind { background: rgba(239,68,68,.12) !important; color: #dc2626 !important; }
+html body #app .rhsc-bar { height: 5px !important; background: rgba(15,45,84,.08) !important; border-radius: 99px !important; overflow: hidden !important; }
+html body #app .rhsc-fill { height: 100% !important; border-radius: 99px !important; transition: width .3s !important; }
+html body #app .rhsc-fill--ontrack { background: linear-gradient(90deg, #10b981, #34d399) !important; }
+html body #app .rhsc-fill--complete { background: linear-gradient(90deg, #00b3b3, #00d4d4) !important; }
+html body #app .rhsc-fill--watch { background: linear-gradient(90deg, #f59e0b, #fbbf24) !important; }
+html body #app .rhsc-fill--behind { background: linear-gradient(90deg, #ef4444, #f87171) !important; }
+html body #app .rhsc-enroll-sub { font-size: 10px !important; color: #94a3b8 !important; }
+
+/* Mobile: enrollment block stacks below */
+@media (max-width: 700px) {
+  html body #app .rhsc-premium { flex-wrap: wrap !important; }
+  html body #app .rhsc-enroll { min-width: 100% !important; padding: 10px 14px 0 !important; border-top: 1px solid rgba(15,45,84,.06) !important; margin-top: 4px !important; }
+  html body #app .rhsc-arr { display: none !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   §78  ASK BAR v2 — Intelligence surface
+   Proactive badge + scan digest + conversational bubbles with memory,
+   data-source attribution, and follow-up chips. Builds on §76.
+════════════════════════════════════════════════════════════════ */
+
+/* Proactive badge + pulse on the FAB */
+html body #app .askbar-fab-badge {
+  position: absolute !important; top: -6px !important; right: -6px !important;
+  min-width: 20px !important; height: 20px !important; border-radius: 100px !important;
+  background: #f59e0b !important; color: #3a2400 !important;
+  font-size: 11px !important; font-weight: 700 !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  padding: 0 6px !important; border: 2px solid #0a2342 !important;
+  box-shadow: 0 2px 8px rgba(245,158,11,.5) !important;
+}
+html body #app .askbar-fab-pulse {
+  position: absolute !important; inset: -4px !important; border-radius: 100px !important;
+  border: 2px solid #f59e0b !important; opacity: 0 !important; animation: askbarFabPulse 2.5s infinite !important;
+}
+@keyframes askbarFabPulse { 0%{transform:scale(1);opacity:.5} 100%{transform:scale(1.14);opacity:0} }
+
+/* Live indicator in header */
+html body #app .askbar-head-live { margin-left: auto !important; display: flex !important; align-items: center !important; gap: 6px !important; font-family: 'DM Mono', monospace !important; font-size: 9px !important; color: #00d4d4 !important; text-transform: uppercase !important; letter-spacing: .08em !important; position: relative !important; z-index: 1 !important; margin-right: 8px !important; }
+html body #app .askbar-head-dot { width: 6px !important; height: 6px !important; border-radius: 50% !important; background: #00d4d4 !important; animation: askbarBlink 2s infinite !important; }
+@keyframes askbarBlink { 50% { opacity: .3; } }
+
+/* DIGEST (proactive scan) */
+html body #app .askbar-digest { padding: 16px 18px !important; background: linear-gradient(180deg, rgba(245,158,11,.05), transparent) !important; overflow-y: auto !important; }
+html body #app .askbar-digest-h { display: flex !important; align-items: center !important; gap: 8px !important; margin-bottom: 13px !important; }
+html body #app .askbar-digest-h-ic { width: 22px !important; height: 22px !important; border-radius: 7px !important; background: rgba(245,158,11,.14) !important; color: #f59e0b !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+html body #app .askbar-digest-h-t { font-size: 12.5px !important; font-weight: 600 !important; color: #0f2d54 !important; }
+html body #app .askbar-digest-h-ct { margin-left: auto !important; font-family: 'DM Mono', monospace !important; font-size: 9px !important; color: #94a3b8 !important; text-transform: uppercase !important; letter-spacing: .06em !important; }
+html body #app .askbar-alert { display: flex !important; gap: 11px !important; align-items: flex-start !important; padding: 11px 12px !important; border-radius: 11px !important; border: 1px solid rgba(15,45,84,.1) !important; margin-bottom: 8px !important; cursor: pointer !important; transition: .13s !important; background: #fff !important; }
+html body #app .askbar-alert:hover { border-color: rgba(0,179,179,.4) !important; transform: translateX(2px) !important; }
+html body #app .askbar-alert-sev { width: 6px !important; height: 6px !important; border-radius: 50% !important; margin-top: 6px !important; flex-shrink: 0 !important; }
+html body #app .askbar-alert-sev--high { background: #ef4444 !important; }
+html body #app .askbar-alert-sev--med { background: #f59e0b !important; }
+html body #app .askbar-alert-sev--low { background: #00b3b3 !important; }
+html body #app .askbar-alert-bd { flex: 1 !important; min-width: 0 !important; }
+html body #app .askbar-alert-t { font-size: 13px !important; font-weight: 500 !important; color: #0f1729 !important; line-height: 1.4 !important; }
+html body #app .askbar-alert-d { font-size: 11px !important; color: #475569 !important; margin-top: 2px !important; }
+html body #app .askbar-alert-act { font-size: 10.5px !important; font-weight: 600 !important; color: #0891b2 !important; margin-top: 6px !important; }
+html body #app .askbar-alert-arrow { color: #94a3b8 !important; flex-shrink: 0 !important; margin-top: 3px !important; }
+
+/* CONVERSATION bubbles */
+html body #app .askbar-conv { padding: 14px 18px !important; display: flex !important; flex-direction: column !important; gap: 11px !important; overflow-y: auto !important; flex: 1 !important; min-height: 0 !important; }
+html body #app .askbar-q-bub { align-self: flex-end !important; background: #0f2d54 !important; color: #fff !important; font-size: 13px !important; padding: 8px 13px !important; border-radius: 13px 13px 4px 13px !important; max-width: 80% !important; }
+html body #app .askbar-a-bub { align-self: flex-start !important; max-width: 92% !important; display: flex !important; flex-direction: column !important; gap: 8px !important; }
+html body #app .askbar-a-card { background: linear-gradient(135deg, rgba(0,179,179,.06), rgba(124,58,237,.035)) !important; border: 1px solid rgba(0,179,179,.2) !important; border-radius: 13px 13px 13px 4px !important; padding: 13px !important; }
+html body #app .askbar-a-tx { font-size: 13.5px !important; color: #0f1729 !important; line-height: 1.55 !important; }
+html body #app .askbar-a-tx b { color: #0f2d54 !important; font-weight: 600 !important; }
+html body #app .askbar-src { display: flex !important; align-items: center !important; gap: 6px !important; margin-top: 10px !important; padding-top: 10px !important; border-top: 1px dashed rgba(15,45,84,.1) !important; font-family: 'DM Mono', monospace !important; font-size: 9px !important; color: #94a3b8 !important; text-transform: uppercase !important; letter-spacing: .04em !important; flex-wrap: wrap !important; }
+html body #app .askbar-src-chip { background: rgba(15,45,84,.05) !important; padding: 2px 7px !important; border-radius: 5px !important; color: #475569 !important; }
+html body #app .askbar-followups { display: flex !important; gap: 7px !important; flex-wrap: wrap !important; }
+html body #app .askbar-fu { font-size: 12px !important; font-weight: 500 !important; padding: 7px 12px !important; border-radius: 100px !important; background: #fff !important; border: 1px solid rgba(15,45,84,.1) !important; color: #0f2d54 !important; cursor: pointer !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; transition: .13s !important; }
+html body #app .askbar-fu:hover { border-color: #00b3b3 !important; background: rgba(0,179,179,.04) !important; }
+html body #app .askbar-fu svg { color: #0891b2 !important; }
+html body #app .askbar-fu--act { background: #0f2d54 !important; color: #fff !important; border-color: #0f2d54 !important; }
+html body #app .askbar-fu--act:hover { background: #0a2342 !important; color: #fff !important; }
+
+/* mode link ("…or ask anything") */
+html body #app .askbar-mode-link { width: 100% !important; text-align: left !important; padding: 11px 14px !important; border: 1.5px dashed rgba(0,179,179,.3) !important; border-radius: 13px !important; background: transparent !important; color: #94a3b8 !important; font-family: 'DM Sans', sans-serif !important; font-size: 13.5px !important; cursor: pointer !important; transition: .13s !important; }
+html body #app .askbar-mode-link:hover { border-color: #00b3b3 !important; color: #0891b2 !important; background: rgba(0,179,179,.03) !important; }
