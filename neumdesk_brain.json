@@ -1,0 +1,132 @@
+{
+  "_meta": {
+    "name": "neumDesk Agent Brain",
+    "version": 1,
+    "description": "The agent's externalized knowledge. Edit this to teach the agent new vocabulary, intents, reasoning recipes, and phrasings — no code changes needed. The agent loads this and reasons over it. Bilingual (ES/EN).",
+    "updated": "2026-06-30"
+  },
+
+  "concepts": {
+    "_comment": "Vocabulary neurons. Each concept lists the words/phrases that mean it, in any language. The matcher expands a question against these. Grow by adding synonyms.",
+    "oncall":     ["on-call", "on call", "oncall", "guardia", "duty", "cover", "covering", "rota"],
+    "leave":      ["leave", "absent", "absence", "off", "vacation", "holiday", "baja", "ausencia", "ausente"],
+    "trial":      ["trial", "study", "studies", "research", "estudio", "ensayo", "protocol"],
+    "recruiting": ["recruiting", "recruit", "enrolling", "reclutando", "reclutar"],
+    "rotation":   ["rotation", "resident", "supervisor", "supervising", "eval", "rotación", "rota"],
+    "gap":        ["gap", "understaffed", "uncovered", "short", "hueco", "sin cobertura"],
+    "conflict":   ["conflict", "problem", "issue", "wrong", "clash", "overlap", "concern", "risk", "worry", "attention", "double-booked"],
+    "briefing":   ["brief", "briefing", "summary", "standup", "stand-up", "resumen", "overview"],
+    "count":      ["how many", "count", "number of", "cuántos", "cuantos"],
+    "rank":       ["most", "busiest", "overloaded", "least", "fewest", "más", "ranking"],
+    "recommend":  ["best", "who should", "who could", "recommend", "suggest", "ideal"],
+    "draft":      ["draft", "write", "compose", "redactar"],
+    "pi":         ["pi", "investigator", "principal investigator", "investigador"]
+  },
+
+  "entities": {
+    "_comment": "Entity types the agent can resolve from a question + how. 'staff' uses fuzzy name matching against medical_staff.",
+    "staff": { "resolver": "resolveStaff", "strips": ["dr", "dra", "doctor", "doctora"] }
+  },
+
+  "time_phrases": {
+    "_comment": "Temporal neurons → date windows. The engine maps these to {start,end}.",
+    "today": "today", "hoy": "today",
+    "tomorrow": "tomorrow", "mañana": "tomorrow",
+    "this week": "this_week", "esta semana": "this_week",
+    "next week": "next_week", "próxima semana": "next_week",
+    "weekend": "weekend", "fin de semana": "weekend",
+    "this month": "this_month", "este mes": "this_month",
+    "this quarter": "this_quarter", "este trimestre": "this_quarter"
+  },
+
+  "intents": {
+    "_comment": "Intent neurons. Each: trigger concepts (ALL or ANY), the data sources it reads ('tools'), a reasoning recipe (named steps the engine runs), and which phrasing template to use. permission = module the user must be able to read (null = always allowed).",
+
+    "recommend_backup": {
+      "match": { "any_concept": ["recommend"], "with_concept": ["oncall", "leave"] },
+      "also_match_phrases": ["if .* out .* who", "who .* cover .* instead", "best backup"],
+      "tools": ["oncall_schedule", "medical_staff", "leave"],
+      "recipe": "recommend_backup",
+      "permission": null,
+      "trace": [
+        ["Identifying who is out", "on-call"],
+        ["Finding eligible physicians", "staff"],
+        ["Removing anyone on leave", "leave"],
+        ["Ranking by call load", "synthesis"]
+      ]
+    },
+
+    "draft_email": {
+      "match": { "all_concepts": ["draft"], "any_concept": ["oncall", "briefing"] },
+      "also_match_phrases": ["draft .* email", "write .* message", "compose .* note"],
+      "tools": ["oncall_schedule", "medical_staff"],
+      "recipe": "draft_email",
+      "permission": null,
+      "trace": [["Reading the schedule", "on-call"], ["Filling the template", "synthesis"]]
+    },
+
+    "oncall_upcoming": {
+      "match": { "any_concept": ["oncall"] },
+      "tools": ["oncall_schedule", "medical_staff"],
+      "recipe": "oncall_upcoming",
+      "permission": "oncall_schedule",
+      "trace": [["Reading the on-call schedule", "on-call"], ["Resolving physician names", "staff"]]
+    },
+
+    "absent_now": {
+      "match": { "any_concept": ["leave"] },
+      "tools": ["leave"],
+      "recipe": "absent_now",
+      "permission": "staff_absence",
+      "trace": [["Scanning leave records", "leave"], ["Filtering to today", "leave"]]
+    },
+
+    "trials_recruiting": {
+      "match": { "any_concept": ["trial", "recruiting"] },
+      "tools": ["clinical_trials"],
+      "recipe": "trials_recruiting",
+      "permission": "research_hub",
+      "trace": [["Reviewing trials", "research"], ["Computing enrollment health", "research"]]
+    },
+
+    "rank_oncall": {
+      "match": { "all_concepts": ["rank", "oncall"] },
+      "tools": ["oncall_schedule"],
+      "recipe": "rank_oncall",
+      "permission": "oncall_schedule",
+      "trace": [["Reading the schedule", "on-call"], ["Counting shifts per physician", "on-call"], ["Ranking by load", "synthesis"]]
+    },
+
+    "issues": {
+      "match": { "any_concept": ["conflict"] },
+      "tools": ["oncall_schedule", "leave", "rotations", "clinical_trials"],
+      "recipe": "issues",
+      "permission": null,
+      "trace": [["Reading the on-call schedule", "on-call"], ["Cross-referencing leave", "leave"], ["Checking rotations & coverage", "rotations"], ["Looking for conflicts", "synthesis"]]
+    },
+
+    "briefing": {
+      "match": { "any_concept": ["briefing"] },
+      "tools": ["oncall_schedule", "leave", "rotations"],
+      "recipe": "briefing",
+      "permission": null,
+      "trace": [["Reading today's duty", "on-call"], ["Checking leave & coverage", "leave"], ["Composing the briefing", "synthesis"]]
+    }
+  },
+
+  "phrasings": {
+    "_comment": "Natural-language output neurons. The engine fills {slots}. Multiple variants per key → varied, non-stamped answers. Grow by adding variants.",
+    "recommend_lead": ["I'd suggest {name}", "My recommendation: {name}", "Best option looks like {name}"],
+    "recommend_balanced": ["they have the lightest call load, so they'd keep the rota balanced", "they carry the fewest shifts right now"],
+    "none_found": ["Nothing came up there.", "I don't see anything for that.", "No matches in the records."],
+    "oncall_next": ["Next on-call: {list}.", "Coming up on call: {list}.", "On the rota next: {list}."]
+  },
+
+  "rules": {
+    "_comment": "Domain knowledge neurons — your clinical rules, as data. The engine consults these. Edit to change department policy.",
+    "oncall_eligible_types": ["attending_physician", "medical_resident", "fellow"],
+    "trial_behind_threshold_pct": 25,
+    "rotation_ending_soon_days": 30,
+    "min_attendings_per_unit": 1
+  }
+}
