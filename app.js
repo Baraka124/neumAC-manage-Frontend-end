@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue    
 
     // ── DIAGNOSTIC: visible error banner ─────────────────────────────────
     // Built with plain DOM calls (no Vue) so it still works even when the
