@@ -369,16 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         "match": {
                                 "all_concepts": [
                                         "draft"
-                                ],
-                                "any_concept": [
-                                        "oncall",
-                                        "briefing"
                                 ]
-                        },
+                                                        },
                         "also_match_phrases": [
-                                "draft .* email",
-                                "write .* message",
-                                "compose .* note"
+                                "(draft|write|compose) .*"
                         ],
                         "tools": [
                                 "oncall_schedule",
@@ -9525,14 +9519,23 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Batch 2 foundations ───────────────────────────────────────────
       // #8 Entity resolution — fuzzy match a name fragment to a staff member.
       const askBarResolveStaff = (qRaw) => {
-        const q = (qRaw || '').toLowerCase().replace(/\b(dr|dra|doctor|doctora)\.?\b/g, '').trim()
-        if (q.length < 2) return null
+        let q = (qRaw || '').toLowerCase().replace(/\b(dr|dra|doctor|doctora)\.?\b/g, '').trim()
+        if (q.length < 3) return null
+        // Strip common non-name words so "on call today" can't fuzzy-hit a name.
+        const STOP = new Set(['on','call','oncall','today','tomorrow','leave','absent','off','who','is','are','the','of','a','an','for','in','this','week','weekend','month','rotation','shift','schedule','duty','guardia','cover','backup','best','draft','write','note','email','message','and','not','with','their','his','her'])
         const staff = medicalStaff.value || []
-        // exact-ish contains first
-        let hit = staff.find(s => (s.full_name || '').toLowerCase().includes(q))
-        if (hit) return hit
-        // token overlap (handles "antelo del rio" vs "antelo")
-        const qt = q.split(/\s+/).filter(w => w.length > 2)
+        // Build a set of all real name tokens (surnames/first names) for validation
+        const nameTokens = new Set()
+        staff.forEach(s => (s.full_name||'').toLowerCase().split(/\s+/).forEach(w => { if (w.length > 2) nameTokens.add(w) }))
+        // Only keep query words that are NOT stopwords AND actually appear as a name token
+        const qt = q.split(/\s+/).filter(w => w.length > 2 && !STOP.has(w) && nameTokens.has(w))
+        if (!qt.length) {
+          // last resort: whole-query contains (for "anasantalla" → "ana santalla")
+          const compact = q.replace(/\s+/g,'')
+          const hit = staff.find(s => (s.full_name||'').toLowerCase().replace(/\s+/g,'').includes(compact)) 
+          return (compact.length >= 5 && hit) ? hit : null
+        }
+        // score by how many real name tokens overlap
         let best = null, bestScore = 0
         for (const s of staff) {
           const name = (s.full_name || '').toLowerCase()
@@ -9676,10 +9679,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (topicRot)   return { kind: 'staff_rotation', id: person.id, name: person.full_name }
           }
         }
+        // Bare name with no topic/pronoun → summarize that person (works regardless of context).
+        if (!hasPronoun && !topicLeave && !topicCall && !topicRot && askBarDetectConcepts(q).size === 0) {
+          const person = askBarResolveStaff(q)
+          if (person) { askBar.context = { type: 'staff', id: person.id, name: person.full_name }; return { kind: 'staff_summary', id: person.id, name: person.full_name } }
+        }
         // pronoun / short reference → use remembered context
         if (!askBar.context) return null
         const ctx = askBar.context
-        const refersToCtx = hasPronoun || q.length < 22
+        const refersToCtx = hasPronoun  // only true pronoun refs use remembered context
         if (!refersToCtx || ctx.type !== 'staff') return null
         if (topicLeave) return { kind: 'staff_leave', id: ctx.id, name: ctx.name }
         if (topicCall)  return { kind: 'staff_oncall', id: ctx.id, name: ctx.name }
@@ -9816,8 +9824,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const asked = askBar.query.trim()
         if (!asked && !forcedIntent) return
         askBar.view = 'conversation'
-        const followup = forcedIntent ? null : askBarResolveFollowup(asked)
-        const intent = followup ? followup.kind : (forcedIntent || askBarMatchIntent(asked))
+        // Determine intent. Priority:
+        //  1. A forced intent (suggestion/chip click)
+        //  2. A strong brain/legacy intent match (actions like draft, lookups like oncall)
+        //  3. A context/entity follow-up (pronouns, bare names) — only if no strong intent
+        let intent, followup = null
+        if (forcedIntent) {
+          intent = forcedIntent
+        } else {
+          const q = asked.toLowerCase()
+          const hasPronoun = /(she|he|her|him|they|them|that person|same|también|tambien)/.test(q)
+          const hasTopic = /(leave|absent|off|vacation|baja|ausen|on-call|on call|oncall|guardia|rotation|supervis)/.test(q)
+          // 1. Pronoun reference with remembered context → context follow-up
+          if (hasPronoun && askBar.context) {
+            followup = askBarResolveFollowup(asked)
+          }
+          // 2. Named person + a topic ("is antelo on leave?") → entity follow-up,
+          //    but NOT if this is a draft/recommend action (those own the verb).
+          if (!followup && hasTopic && !hasPronoun && !/(draft|write|compose|best|recommend|suggest)/.test(q)) {
+            const maybe = askBarResolveFollowup(asked)
+            if (maybe && maybe.id) followup = maybe
+          }
+          // 3. Otherwise prefer a strong intent match
+          if (!followup) {
+            const matched = askBarMatchIntent(asked)
+            if (matched && matched !== 'unknown') {
+              intent = matched
+            } else {
+              // 4. No intent — try entity follow-up (bare name)
+              followup = askBarResolveFollowup(asked)
+            }
+          }
+          if (followup) intent = followup.kind
+          else if (!intent) intent = 'unknown'
+        }
         askBarLog('ask', { q: asked || `[${intent}]`, intent })
         // #37 permission-aware: if the intent's module is one the user can't read, decline.
         // Permission module: brain's intent.permission wins; else legacy map.
@@ -9859,6 +9899,20 @@ document.addEventListener('DOMContentLoaded', () => {
       // Follow-up answers that use remembered context
       const askBarBuildFollowup = (fu) => {
         const today = Utils.normalizeDate(new Date())
+        if (fu.kind === 'staff_summary') {
+          // Bare-name query → a concise status across on-call, leave, rotation.
+          const onLeave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
+          const nextShift = (onCallSchedule.value || []).filter(s => (s.primary_physician_id === fu.id || s.backup_physician_id === fu.id) && Utils.normalizeDate(s.duty_date) >= today).sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))[0]
+          const rot = (rotations.value || []).find(r => r.resident_id === fu.id && r.rotation_status === 'active')
+          const bits = []
+          if (onLeave) bits.push(`on leave ${Utils.formatDateShort(onLeave.start_date)}–${Utils.formatDateShort(onLeave.end_date)}`)
+          if (nextShift) bits.push(`next on-call ${Utils.formatDateShort(nextShift.duty_date)}`)
+          if (rot) bits.push(`on an active rotation${rot.supervising_attending_id ? ', supervised by ' + getStaffName(rot.supervising_attending_id) : ''}`)
+          let text
+          if (!bits.length) text = `${fu.name} — no current leave, on-call, or active rotation on record. Open their profile for full details.`
+          else text = `${fu.name} is ${bits.join('; ')}.`
+          return { text, chips: [{ label: fu.name, id: fu.id }], actions: [{ label: 'Open profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations'], followups: [{ label: 'On leave?', followupKind: 'staff_leave' }, { label: 'On-call?', followupKind: 'staff_oncall' }], confidence: 'high' }
+        }
         if (fu.kind === 'staff_leave') {
           const leave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
           // Check conflict with remembered date
@@ -9891,14 +9945,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const fmt = (d) => Utils.formatDateShort(d)
         const staffName = (id) => getStaffName(id)
         if (intent === 'briefing') {
-          const p = commsPulse.value
+          const p = commsOps.commsPulse.value
           const gaps = understaffedUnitAlerts.value || []
           let text = `${p.onDuty} staff on duty, ${p.onCall} on-call today.`
           if (p.absent) text += ` ${p.absent} absent on leave.`
           if (gaps.length) text += ` ${gaps.length} coverage gap${gaps.length===1?'':'s'} flagged (${gaps[0].unitName}).`
           if (p.onRotation) text += ` ${p.onRotation} residents on active rotation.`
           if (!p.absent && !gaps.length) text += ' All units covered, no gaps.'
-          return { text, chips: [], actions: [{ label: 'Open Ops Room', view: 'communications', primary: true }] }
+          return { text, chips: [], actions: [{ label: 'Open Ops Room', view: 'communications', primary: true }], sources: ['on-call schedule', 'leave records', 'rotations'], followups: [], confidence: 'high' }
         }
         if (intent === 'coverage_gaps') {
           const gaps = understaffedUnitAlerts.value || []
