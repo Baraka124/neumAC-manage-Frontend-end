@@ -5109,11 +5109,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return applySort(f, 'research_lines')
       })
 
+      // ── Research helpers: normalize mixed ES/EN statuses + recruitment health ──
+      const trialStatusKey = (t) => {
+        const s = String(t?.status || t?.recruitment_status || '').toLowerCase()
+        if (/(reclut|recruit)/.test(s)) return 'recruiting'
+        if (/(activ|ongoing|in progress)/.test(s)) return 'active'
+        if (/(prepar|setup|pending)/.test(s)) return 'prep'
+        if (/(complet|finaliz|closed|done)/.test(s)) return 'done'
+        return 'other'
+      }
+      const TRIAL_STATUS_LABEL = { recruiting: 'Recruiting', active: 'Active', prep: 'In preparation', done: 'Completed', other: 'Other' }
+      const countTrialsByStatus = (key) => clinicalTrials.value.filter(t => trialStatusKey(t) === key).length
+
+      // Recruitment health: where a trial stands vs its target, and whether it's behind pace
+      const trialEnrollment = (t) => {
+        const target = Number(t?.enrollment_target) || 0
+        const actual = Number(t?.actual_enrollment) || 0
+        if (!target) return null
+        const pct = Math.min(100, Math.round((actual / target) * 100))
+        let health = 'ontrack', label = 'On track'
+        if (pct >= 100) { health = 'complete'; label = 'Target met' }
+        else if (pct < 25 && trialStatusKey(t) === 'recruiting') { health = 'behind'; label = 'Slow start' }
+        else if (pct < 50 && trialStatusKey(t) === 'recruiting') { health = 'watch'; label = 'Building' }
+        return { target, actual, pct, health, label, remaining: Math.max(0, target - actual) }
+      }
+
       const filteredTrialsAll = computed(() => {
         let f = clinicalTrials.value
         if (trialFilters.line) f = f.filter(t => t.research_line_id === trialFilters.line)
         if (trialFilters.phase) f = f.filter(t => t.phase === trialFilters.phase)
-        if (trialFilters.status) f = f.filter(t => t.status === trialFilters.status)
+        if (trialFilters.status) f = f.filter(t => trialStatusKey(t) === trialFilters.status)
         if (trialFilters.search) { const q = trialFilters.search.toLowerCase(); f = f.filter(t => t.protocol_id?.toLowerCase().includes(q) || t.title?.toLowerCase().includes(q)) }
         return applySort(f, 'trials')
       })
@@ -5448,7 +5473,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject,
         openLine, openStudy, openProject, goToOverview, goToLine,
@@ -8908,9 +8933,54 @@ document.addEventListener('DOMContentLoaded', () => {
         open: false,
         query: '',
         loading: false,
-        result: null,      // { text, chips:[{label,id}], actions:[{label,view,primary}] }
-        askedText: ''
+        turns: [],         // conversation history: [{ q, text, chips, actions, sources, followups }]
+        context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
+        view: 'digest'     // 'digest' (proactive scan) | 'conversation'
       })
+
+      // ── PROACTIVE SCAN ENGINE ─────────────────────────────────────────
+      // Runs synthesis checks across live data and returns prioritized
+      // alerts. This is what makes the surface "proactive" — it finds
+      // problems before being asked. Pure retrieval, no LLM.
+      const askBarScan = Vue.computed(() => {
+        const alerts = []
+        const within = (date, a) => {
+          const d = Utils.normalizeDate(date), s = Utils.normalizeDate(a.start_date), e = Utils.normalizeDate(a.end_date)
+          return d >= s && d <= e
+        }
+        try {
+          // 1. On-call ↔ absence conflicts (HIGH)
+          const absList = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
+          ;(onCallSchedule.value || []).forEach(shift => {
+            const pid = shift.primary_physician_id || shift.backup_physician_id
+            if (!pid) return
+            const clash = absList.find(a => a.staff_member_id === pid && within(shift.duty_date, a))
+            if (clash) alerts.push({ sev: 'high', title: `${getStaffName(pid)} is on-call ${Utils.formatDateShort(shift.duty_date)} but on leave that day`, detail: 'Conflict · on-call schedule × leave records', action: 'Reassign coverage', view: 'oncall_schedule', staffId: pid })
+          })
+          // 2. Coverage gaps (MED)
+          ;(understaffedUnitAlerts.value || []).slice(0,3).forEach(g => {
+            alerts.push({ sev: 'med', title: `${g.unitName} has a coverage gap`, detail: 'Understaffed · rotation units', action: 'Open schedule', view: 'oncall_schedule' })
+          })
+          // 3. Slow-recruiting trials (MED)
+          ;(researchOps.clinicalTrials.value || []).forEach(t => {
+            const e = researchOps.trialEnrollment ? researchOps.trialEnrollment(t) : null
+            if (e && e.health === 'behind') alerts.push({ sev: 'med', title: `"${t.title}" recruiting slowly`, detail: `${e.actual} / ${e.target} enrolled · ${e.pct}% of target`, action: 'Open trial', view: 'research_hub' })
+          })
+          // 4. Residents with no supervisor on active rotation (MED)
+          const unsup = (rotations.value || []).filter(r => r.rotation_status === 'active' && !r.supervising_attending_id)
+          if (unsup.length) alerts.push({ sev: 'med', title: `${unsup.length} resident${unsup.length===1?'':'s'} with no assigned supervisor`, detail: unsup.slice(0,3).map(r => getStaffName(r.resident_id)).join(', ') + ' · active rotation', action: 'Assign supervisor', view: 'resident_rotations' })
+          // 5. Double-booked (primary === backup) (HIGH)
+          ;(onCallSchedule.value || []).forEach(shift => {
+            if (shift.primary_physician_id && shift.primary_physician_id === shift.backup_physician_id) {
+              alerts.push({ sev: 'high', title: `${getStaffName(shift.primary_physician_id)} is both primary and backup on ${Utils.formatDateShort(shift.duty_date)}`, detail: 'Data issue · on-call schedule', action: 'Open schedule', view: 'oncall_schedule', staffId: shift.primary_physician_id })
+            }
+          })
+        } catch (e) { /* fail safe — empty scan */ }
+        // sort: high severity first
+        return alerts.sort((a,b) => (a.sev==='high'?0:1) - (b.sev==='high'?0:1))
+      })
+      const askBarScanCount = Vue.computed(() => askBarScan.value.length)
+      const askBarNow = () => { const d = new Date(); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
 
       const askBarSuggestions = [
         { t: 'Anything I should worry about?',     d: 'Synthesis · conflicts & gaps', icon: 'gap',     intent: 'issues' },
@@ -8920,9 +8990,14 @@ document.addEventListener('DOMContentLoaded', () => {
         { t: 'Who is absent right now?',           d: 'Coverage · today',          icon: 'absence',   intent: 'absent_now' }
       ]
 
-      const openAskBar  = () => { askBar.open = true }
-      const closeAskBar = () => { askBar.open = false; askBar.result = null; askBar.query = '' }
+      const openAskBar  = () => { askBar.open = true; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
+      const closeAskBar = () => { askBar.open = false; askBar.query = '' }
+      const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
       const runSuggestion = (s) => { askBar.query = s.t; askBarResolve(s.intent) }
+      const askBarAlertAction = (alert) => {
+        if (alert.staffId) { askBarOpenStaff(alert.staffId); return }
+        if (alert.view) { switchView(alert.view); closeAskBar() }
+      }
 
       // ── Intent matcher: maps free text → a known intent (keyword RAG) ──
       const askBarMatchIntent = (qRaw) => {
@@ -8940,23 +9015,76 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Retrieval: build an answer from real data for a given intent ──
       // (This is the "RAG" layer. A future LLM would call into these same
       //  retrievals as tools and phrase the result; not implemented now.)
-      const askBarResolve = (forcedIntent) => {
-        askBar.askedText = askBar.query
-        askBar.loading = true
-        askBar.result = null
-        const intent = forcedIntent || askBarMatchIntent(askBar.query)
-        // Small timeout to feel responsive (and where an async LLM call would go later)
-        setTimeout(() => {
-          try {
-            askBar.result = askBarBuildAnswer(intent)
-          } catch (e) {
-            askBar.result = { text: "Sorry — I couldn't pull that together. Try rephrasing, or check the relevant view directly.", chips: [], actions: [] }
-          }
-          askBar.loading = false
-        }, 220)
+      // Resolve a follow-up: detect pronouns/short refs that depend on
+      // the remembered context (e.g. "is she also on leave?").
+      const askBarResolveFollowup = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        if (!askBar.context) return null
+        const ctx = askBar.context
+        // pronoun / "the same" reference + a topic word
+        const refersToCtx = /(she|he|her|him|they|them|that person|same|también|tambien)/.test(q) || q.length < 22
+        if (!refersToCtx || ctx.type !== 'staff') return null
+        if (/(leave|absent|off|vacation|baja|ausen)/.test(q)) return { kind: 'staff_leave', id: ctx.id, name: ctx.name }
+        if (/(on-call|on call|oncall|guardia|schedule|rota)/.test(q)) return { kind: 'staff_oncall', id: ctx.id, name: ctx.name }
+        if (/(rotation|supervis|resident)/.test(q)) return { kind: 'staff_rotation', id: ctx.id, name: ctx.name }
+        return null
       }
 
-      const askBarBuildAnswer = (intent) => {
+      const askBarResolve = (forcedIntent) => {
+        const asked = askBar.query.trim()
+        if (!asked && !forcedIntent) return
+        askBar.loading = true
+        askBar.view = 'conversation'
+        const followup = forcedIntent ? null : askBarResolveFollowup(asked)
+        setTimeout(() => {
+          let ans
+          try {
+            ans = followup ? askBarBuildFollowup(followup) : askBarBuildAnswer(forcedIntent || askBarMatchIntent(asked))
+          } catch (e) {
+            ans = { text: "Sorry — I couldn't pull that together. Try rephrasing, or check the relevant view directly.", chips: [], actions: [], sources: [], followups: [] }
+          }
+          askBar.turns.push({ q: asked || (forcedIntent ? '' : asked), ...ans })
+          askBar.query = ''
+          askBar.loading = false
+          Vue.nextTick(() => {
+            const c = document.querySelector('.askbar-conv')
+            if (c) c.scrollTop = c.scrollHeight
+          })
+        }, 240)
+      }
+
+      // Follow-up answers that use remembered context
+      const askBarBuildFollowup = (fu) => {
+        const today = Utils.normalizeDate(new Date())
+        if (fu.kind === 'staff_leave') {
+          const leave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
+          // Check conflict with remembered date
+          const ctxDate = askBar.context?.date
+          if (leave) {
+            const range = `${Utils.formatDateShort(leave.start_date)}–${Utils.formatDateShort(leave.end_date)}`
+            let text = `Yes — ${fu.name} is on leave ${range}.`
+            if (ctxDate) {
+              const d = Utils.normalizeDate(ctxDate), s = Utils.normalizeDate(leave.start_date), e = Utils.normalizeDate(leave.end_date)
+              if (d >= s && d <= e) text += ` That overlaps the ${Utils.formatDateShort(ctxDate)} duty — a conflict you'll want to resolve.`
+            }
+            return { text, chips: [{ label: fu.name, id: fu.id }], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['leave records', 'on-call schedule'], followups: [{ label: 'Who could cover instead?', intent: 'oncall_upcoming' }] }
+          }
+          return { text: `No — ${fu.name} has no active or upcoming leave on record.`, chips: [], actions: [], sources: ['leave records'], followups: [] }
+        }
+        if (fu.kind === 'staff_oncall') {
+          const shifts = (onCallSchedule.value || []).filter(s => (s.primary_physician_id === fu.id || s.backup_physician_id === fu.id) && Utils.normalizeDate(s.duty_date) >= today)
+          if (!shifts.length) return { text: `${fu.name} has no upcoming on-call shifts.`, chips: [], actions: [], sources: ['on-call schedule'], followups: [] }
+          return { text: `${fu.name} is next on-call ${Utils.formatDateShort(shifts[0].duty_date)}.`, chips: [{ label: fu.name, id: fu.id }], actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [] }
+        }
+        if (fu.kind === 'staff_rotation') {
+          const rot = (rotations.value || []).find(r => r.resident_id === fu.id && r.rotation_status === 'active')
+          if (rot) return { text: `${fu.name} is on an active rotation${rot.supervising_attending_id ? ', supervised by ' + getStaffName(rot.supervising_attending_id) : ' with no assigned supervisor'}.`, chips: [{ label: fu.name, id: fu.id }], actions: [], sources: ['rotations'], followups: [] }
+          return { text: `${fu.name} is not on an active rotation.`, chips: [], actions: [], sources: ['rotations'], followups: [] }
+        }
+        return { text: 'I lost the thread there — could you rephrase?', chips: [], actions: [], sources: [], followups: [] }
+      }
+
+      const _askBarBuildAnswerRaw = (intent) => {
         const fmt = (d) => Utils.formatDateShort(d)
         const staffName = (id) => getStaffName(id)
         if (intent === 'briefing') {
@@ -8997,9 +9125,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(s => Utils.normalizeDate(s.duty_date) >= today)
             .sort((a,b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
             .slice(0, 4)
-          if (!up.length) return { text: "No upcoming on-call shifts are scheduled. You may want to set the rota.", chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }] }
+          if (!up.length) return { text: "No upcoming on-call shifts are scheduled. You may want to set the rota.", chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [] }
           const text = 'Next on-call: ' + up.map(s => `${staffName(s.primary_physician_id)} (${fmt(s.duty_date)})`).join(', ') + '.'
-          return { text, chips: up.filter(s=>s.primary_physician_id).slice(0,4).map(s => ({ label: staffName(s.primary_physician_id), id: s.primary_physician_id })), actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }] }
+          // Remember the first physician + date so follow-ups ("is she on leave?") resolve.
+          if (up[0]?.primary_physician_id) askBar.context = { type: 'staff', id: up[0].primary_physician_id, name: staffName(up[0].primary_physician_id), date: up[0].duty_date }
+          return { text, chips: up.filter(s=>s.primary_physician_id).slice(0,4).map(s => ({ label: staffName(s.primary_physician_id), id: s.primary_physician_id })), actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'staff_leave' }] }
         }
         if (intent === 'rotations_active') {
           const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
@@ -9037,13 +9167,19 @@ document.addEventListener('DOMContentLoaded', () => {
           })
           if (!problems.length) return { text: 'No conflicts found. On-call coverage, leave, and rotations are all consistent — nothing needs your attention right now.', chips: [], actions: [] }
           const text = `Found ${problems.length} thing${problems.length===1?'':'s'} worth a look: ` + problems.slice(0,5).map(p => '• ' + p).join('  ') + (problems.length>5 ? `  …and ${problems.length-5} more.` : '')
-          return { text, chips: chips.slice(0,4), actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }] }
+          return { text, chips: chips.slice(0,4), actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule', 'leave records', 'rotations'], followups: [] }
         }
         // unknown
         return {
           text: "I can answer questions about on-call coverage, coverage gaps, who's absent, recruiting trials, and active rotations — or draft today's briefing. Try one of the suggestions below.",
-          chips: [], actions: []
+          chips: [], actions: [], sources: [], followups: []
         }
+      }
+
+      // Ensure every answer carries sources/followups arrays (defaults).
+      const askBarBuildAnswer = (intent) => {
+        const a = _askBarBuildAnswerRaw(intent) || {}
+        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [] }
       }
 
       const askBarGoTo = (action) => {
@@ -9052,6 +9188,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarOpenStaff = (id) => {
         const s = (medicalStaff.value || []).find(x => x.id === id)
         if (s) { viewStaffDetails(s); closeAskBar() }
+      }
+      // Run a follow-up chip: either a fresh intent, or a context-based follow-up
+      const askBarRunFollowup = (fu) => {
+        askBar.loading = true
+        askBar.view = 'conversation'
+        setTimeout(() => {
+          let ans
+          try {
+            if (fu.followupKind && askBar.context) ans = askBarBuildFollowup({ kind: fu.followupKind, id: askBar.context.id, name: askBar.context.name })
+            else ans = askBarBuildAnswer(fu.intent || 'unknown')
+          } catch (e) { ans = { text: 'Could not resolve that follow-up.', chips: [], actions: [], sources: [], followups: [] } }
+          askBar.turns.push({ q: fu.label, ...ans })
+          askBar.loading = false
+          Vue.nextTick(() => { const c = document.querySelector('.askbar-conv'); if (c) c.scrollTop = c.scrollHeight })
+        }, 200)
       }
 
 
@@ -9172,8 +9323,8 @@ document.addEventListener('DOMContentLoaded', () => {
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
-          // Ask bar (RAG command bar)
-          askBar, askBarSuggestions, openAskBar, closeAskBar, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff,
+          // Ask bar (RAG intelligence surface)
+          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarAlertAction, askBarRunFollowup,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType, isOnCallEligible,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
@@ -9381,4 +9532,4 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
     throw error;    
   }
-});  
+});
