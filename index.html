@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=47">
+    <link rel="stylesheet" href="style.css?v=49">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8189,6 +8189,7 @@
             <div class="askbar-head">
                 <span class="askbar-head-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
                 <div><div class="askbar-head-t">Department intelligence</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'following up' : 'scanned just now' }}</div></div>
+                <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()">＋ New</button>
                 <span class="askbar-head-live"><span class="askbar-head-dot"></span> live</span>
                 <button class="askbar-close" @click="closeAskBar()">✕</button>
             </div>
@@ -8200,14 +8201,21 @@
                     <span class="askbar-digest-h-t">{{ askBarScanCount }} thing{{ askBarScanCount === 1 ? '' : 's' }} need{{ askBarScanCount === 1 ? 's' : '' }} attention</span>
                     <span class="askbar-digest-h-ct">as of {{ askBarNow() }}</span>
                 </div>
-                <div v-for="(alert, i) in askBarScan" :key="i" class="askbar-alert" @click="askBarAlertAction(alert)">
+                <div v-for="(alert, i) in askBarScan" :key="i" class="askbar-alert">
                     <span class="askbar-alert-sev" :class="'askbar-alert-sev--' + alert.sev"></span>
-                    <div class="askbar-alert-bd">
+                    <div class="askbar-alert-bd" @click="askBarAlertAction(alert)">
                         <div class="askbar-alert-t">{{ alert.title }}</div>
                         <div class="askbar-alert-d">{{ alert.detail }}</div>
+                        <div v-if="alert._rootCause" class="askbar-alert-root">↳ linked to {{ alert._rootCause }}</div>
                         <div class="askbar-alert-act">{{ alert.action }} →</div>
                     </div>
-                    <svg class="askbar-alert-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    <button class="askbar-alert-snooze" @click.stop="askBarSnooze(alert)" title="Dismiss">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div v-if="!askBarScan.length" class="askbar-allclear">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    All clear — nothing needs attention right now.
                 </div>
             </div>
 
@@ -8231,19 +8239,29 @@
                     <div v-if="turn.q" class="askbar-q-bub">{{ turn.q }}</div>
                     <div class="askbar-a-bub">
                         <div class="askbar-a-card">
-                            <div class="askbar-a-tx">{{ turn.text }}</div>
-                            <div v-if="turn.chips && turn.chips.length" class="askbar-chips">
-                                <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click="askBarOpenStaff(c.id)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
-                            </div>
-                            <div v-if="turn.sources && turn.sources.length" class="askbar-src">sources <span v-for="s in turn.sources" :key="s" class="askbar-src-chip">{{ s }}</span></div>
+                            <div class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
+                            <template v-if="!turn.streaming">
+                                <div v-if="turn.chips && turn.chips.length" class="askbar-chips">
+                                    <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click="askBarOpenStaff(c.id)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
+                                </div>
+                                <div class="askbar-a-foot">
+                                    <span v-if="turn.sources && turn.sources.length" class="askbar-src">sources <span v-for="s in turn.sources" :key="s" class="askbar-src-chip">{{ s }}</span></span>
+                                    <span class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
+                                        <svg v-if="turn.confidence==='high'" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
+                                        <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                                        {{ turn.confidence==='high' ? 'verified from records' : 'verify directly' }}
+                                    </span>
+                                    <span class="askbar-asof" v-if="turn.asOf">as of {{ turn.asOf }}</span>
+                                </div>
+                            </template>
                         </div>
-                        <div v-if="turn.actions && turn.actions.length || turn.followups && turn.followups.length" class="askbar-followups">
+                        <div v-if="!turn.streaming && (turn.actions && turn.actions.length || turn.followups && turn.followups.length)" class="askbar-followups">
                             <button v-for="(a,i) in turn.actions" :key="'a'+i" class="askbar-fu askbar-fu--act" @click="askBarGoTo(a)">{{ a.label }} →</button>
                             <button v-for="(f,i) in turn.followups" :key="'f'+i" class="askbar-fu" @click="askBarRunFollowup(f)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> {{ f.label }}</button>
                         </div>
                     </div>
                 </template>
-                <div v-if="askBar.loading" class="askbar-loading"><span class="askbar-spinner"></span> Pulling from live data…</div>
+                <div v-if="askBar.loading" class="askbar-thinking"><span class="askbar-think-orb"></span> {{ askBar.thinking || 'Pulling from live data…' }}</div>
             </div>
 
             <!-- INPUT (always at bottom) -->
@@ -19672,7 +19690,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=42"></script>
+    <script src="app.js?v=44"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -19897,4 +19915,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html>
+</html>   
