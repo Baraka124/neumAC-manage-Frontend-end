@@ -8964,8 +8964,10 @@ document.addEventListener('DOMContentLoaded', () => {
         open: false,
         query: '',
         loading: false,
-        turns: [],         // conversation history: [{ q, text, chips, actions, sources, followups }]
+        thinking: null,    // string shown while it "thinks" (what it's checking)
+        turns: [],         // conversation history: [{ q, text, chips, actions, sources, followups, confidence, asOf, streaming }]
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
+        snoozed: [],       // dismissed alert keys (#16)
         view: 'digest'     // 'digest' (proactive scan) | 'conversation'
       })
 
@@ -8986,29 +8988,57 @@ document.addEventListener('DOMContentLoaded', () => {
             const pid = shift.primary_physician_id || shift.backup_physician_id
             if (!pid) return
             const clash = absList.find(a => a.staff_member_id === pid && within(shift.duty_date, a))
-            if (clash) alerts.push({ sev: 'high', title: `${getStaffName(pid)} is on-call ${Utils.formatDateShort(shift.duty_date)} but on leave that day`, detail: 'Conflict · on-call schedule × leave records', action: 'Reassign coverage', view: 'oncall_schedule', staffId: pid, resolve: 'reassign_oncall' })
+            if (clash) alerts.push({ sev: 'high', title: `${getStaffName(pid)} is on-call ${Utils.formatDateShort(shift.duty_date)} but on leave that day`, detail: 'Conflict · on-call schedule × leave records', action: 'Reassign coverage', view: 'oncall_schedule', staffId: pid, resolve: 'reassign_oncall', _key: 'conflict-'+pid+'-'+Utils.normalizeDate(shift.duty_date) })
           })
           // 2. Coverage gaps (MED)
           ;(understaffedUnitAlerts.value || []).slice(0,3).forEach(g => {
-            alerts.push({ sev: 'med', title: `${g.unitName} has a coverage gap`, detail: 'Understaffed · rotation units', action: 'Open schedule', view: 'oncall_schedule', resolve: 'reassign_oncall' })
+            alerts.push({ sev: 'med', title: `${g.unitName} has a coverage gap`, detail: 'Understaffed · rotation units', action: 'Open schedule', view: 'oncall_schedule', resolve: 'reassign_oncall', _key: 'gap-'+(g.unitName||'u') })
           })
           // 3. Slow-recruiting trials (MED)
           ;(researchOps.clinicalTrials.value || []).forEach(t => {
             const e = researchOps.trialEnrollment ? researchOps.trialEnrollment(t) : null
-            if (e && e.health === 'behind') alerts.push({ sev: 'med', title: `"${t.title}" recruiting slowly`, detail: `${e.actual} / ${e.target} enrolled · ${e.pct}% of target`, action: 'Open trial', view: 'research_hub', resolve: 'open_trial', trialId: t.id })
+            if (e && e.health === 'behind') alerts.push({ sev: 'med', title: `"${t.title}" recruiting slowly`, detail: `${e.actual} / ${e.target} enrolled · ${e.pct}% of target`, action: 'Open trial', view: 'research_hub', resolve: 'open_trial', trialId: t.id, _key: 'slow-'+t.id })
           })
           // 4. Residents with no supervisor on active rotation (MED)
           const unsup = (rotations.value || []).filter(r => r.rotation_status === 'active' && !r.supervising_attending_id)
-          if (unsup.length) alerts.push({ sev: 'med', title: `${unsup.length} resident${unsup.length===1?'':'s'} with no assigned supervisor`, detail: unsup.slice(0,3).map(r => getStaffName(r.resident_id)).join(', ') + ' · active rotation', action: 'Assign supervisor', view: 'resident_rotations', resolve: 'assign_supervisor' })
+          if (unsup.length) alerts.push({ sev: 'med', title: `${unsup.length} resident${unsup.length===1?'':'s'} with no assigned supervisor`, detail: unsup.slice(0,3).map(r => getStaffName(r.resident_id)).join(', ') + ' · active rotation', action: 'Assign supervisor', view: 'resident_rotations', resolve: 'assign_supervisor', _key: 'unsup' })
           // 5. Double-booked (primary === backup) (HIGH)
           ;(onCallSchedule.value || []).forEach(shift => {
             if (shift.primary_physician_id && shift.primary_physician_id === shift.backup_physician_id) {
-              alerts.push({ sev: 'high', title: `${getStaffName(shift.primary_physician_id)} is both primary and backup on ${Utils.formatDateShort(shift.duty_date)}`, detail: 'Data issue · on-call schedule', action: 'Open schedule', view: 'oncall_schedule', staffId: shift.primary_physician_id })
+              alerts.push({ sev: 'high', title: `${getStaffName(shift.primary_physician_id)} is both primary and backup on ${Utils.formatDateShort(shift.duty_date)}`, detail: 'Data issue · on-call schedule', action: 'Open schedule', view: 'oncall_schedule', staffId: shift.primary_physician_id, resolve: 'reassign_oncall', _key: 'dup-'+shift.primary_physician_id })
             }
           })
+          // #11 More checks
+          const todayIso = Utils.normalizeDate(new Date())
+          const in30 = Utils.normalizeDate(new Date(Date.now() + 30*864e5))
+          // 6. Trials past their target date but not complete
+          ;(researchOps.clinicalTrials.value || []).forEach(t => {
+            if (t.target_end_date && Utils.normalizeDate(t.target_end_date) < todayIso && researchOps.trialStatusKey && researchOps.trialStatusKey(t) !== 'done') {
+              alerts.push({ sev: 'med', title: `"${t.title}" is past its target end date`, detail: `Target was ${Utils.formatDateShort(t.target_end_date)} · still open`, action: 'Open trial', view: 'research_hub', resolve: 'open_trial', trialId: t.id, _key: 'trial-late-'+t.id })
+            }
+          })
+          // 7. Rotations ending within 30d with no successor scheduled for that unit
+          ;(rotations.value || []).filter(r => r.rotation_status === 'active' && r.end_date && Utils.normalizeDate(r.end_date) <= in30).forEach(r => {
+            const successor = (rotations.value || []).some(o => o.training_unit_id === r.training_unit_id && o.id !== r.id && o.start_date && Utils.normalizeDate(o.start_date) >= Utils.normalizeDate(r.end_date))
+            if (!successor && r.training_unit_id) alerts.push({ sev: 'med', title: `${getStaffName(r.resident_id)}'s rotation ends soon with no successor`, detail: `Ends ${Utils.formatDateShort(r.end_date)} · no incoming resident`, action: 'Open rotations', view: 'resident_rotations', resolve: 'assign_supervisor', _key: 'rot-end-'+r.id })
+          })
+
         } catch (e) { /* fail safe — empty scan */ }
-        // sort: high severity first
-        return alerts.sort((a,b) => (a.sev==='high'?0:1) - (b.sev==='high'?0:1))
+
+        // #16 filter out snoozed alerts (by stable key)
+        const snoozed = askBar.snoozed || []
+        let live = alerts.filter(a => !snoozed.includes(a._key))
+
+        // #12 severity scoring: high → med, and within tier keep insertion order
+        const sevRank = { high: 0, med: 1, low: 2 }
+        live.sort((a,b) => (sevRank[a.sev] ?? 9) - (sevRank[b.sev] ?? 9))
+
+        // #20 root-cause grouping: if several alerts name the same person, tag them
+        const nameCount = {}
+        live.forEach(a => { if (a.staffId) nameCount[a.staffId] = (nameCount[a.staffId]||0)+1 })
+        live.forEach(a => { if (a.staffId && nameCount[a.staffId] > 1) a._rootCause = getStaffName(a.staffId) })
+
+        return live
       })
       const askBarScanCount = Vue.computed(() => askBarScan.value.length)
       const askBarNow = () => { const d = new Date(); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
@@ -9025,6 +9055,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const closeAskBar = () => { askBar.open = false; askBar.query = '' }
       const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
       const runSuggestion = (s) => { askBar.query = s.t; askBarResolve(s.intent) }
+      const askBarSnooze = (alert) => {
+        if (alert._key && !askBar.snoozed.includes(alert._key)) askBar.snoozed.push(alert._key)
+      }
       const askBarAlertAction = (alert) => {
         // #15 deep-link + #18 safe act-on: route to the SPECIFIC resolution flow,
         // not just the view. These open a modal (a safe, confirmable action) rather
@@ -9050,8 +9083,68 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // ── Intent matcher: maps free text → a known intent (keyword RAG) ──
+      // ── Batch 2 foundations ───────────────────────────────────────────
+      // #8 Entity resolution — fuzzy match a name fragment to a staff member.
+      const askBarResolveStaff = (qRaw) => {
+        const q = (qRaw || '').toLowerCase().replace(/\b(dr|dra|doctor|doctora)\.?\b/g, '').trim()
+        if (q.length < 2) return null
+        const staff = medicalStaff.value || []
+        // exact-ish contains first
+        let hit = staff.find(s => (s.full_name || '').toLowerCase().includes(q))
+        if (hit) return hit
+        // token overlap (handles "antelo del rio" vs "antelo")
+        const qt = q.split(/\s+/).filter(w => w.length > 2)
+        let best = null, bestScore = 0
+        for (const s of staff) {
+          const name = (s.full_name || '').toLowerCase()
+          const score = qt.reduce((n, t) => n + (name.includes(t) ? 1 : 0), 0)
+          if (score > bestScore) { bestScore = score; best = s }
+        }
+        return bestScore >= 1 ? best : null
+      }
+
+      // #2 Temporal parsing — turn phrases into a {start,end} date window.
+      const askBarParseRange = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        const d = new Date(); const iso = (x) => Utils.normalizeDate(x)
+        const addDays = (base, n) => { const x = new Date(base); x.setDate(x.getDate() + n); return x }
+        const today = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+        if (/today|hoy/.test(q)) return { start: iso(today), end: iso(today), label: 'today' }
+        if (/tomorrow|mañana|manana/.test(q)) { const t = addDays(today,1); return { start: iso(t), end: iso(t), label: 'tomorrow' } }
+        if (/this week|esta semana/.test(q)) { const day = today.getDay() || 7; return { start: iso(addDays(today, 1-day)), end: iso(addDays(today, 7-day)), label: 'this week' } }
+        if (/next week|próxima semana|proxima semana/.test(q)) { const day = today.getDay() || 7; return { start: iso(addDays(today, 8-day)), end: iso(addDays(today, 14-day)), label: 'next week' } }
+        if (/weekend|fin de semana/.test(q)) { const day = today.getDay(); const sat = addDays(today, (6-day+7)%7); return { start: iso(sat), end: iso(addDays(sat,1)), label: 'this weekend' } }
+        if (/this month|este mes/.test(q)) { const s = new Date(d.getFullYear(), d.getMonth(), 1), e = new Date(d.getFullYear(), d.getMonth()+1, 0); return { start: iso(s), end: iso(e), label: 'this month' } }
+        if (/this quarter|este trimestre/.test(q)) { const qm = Math.floor(d.getMonth()/3)*3; const s = new Date(d.getFullYear(), qm, 1), e = new Date(d.getFullYear(), qm+3, 0); return { start: iso(s), end: iso(e), label: 'this quarter' } }
+        // named weekday → next occurrence
+        const wd = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
+        for (let i=0;i<7;i++){ if (q.includes(wd[i])) { const delta = (i - today.getDay() + 7) % 7 || 7; const t = addDays(today, delta); return { start: iso(t), end: iso(t), label: wd[i] } } }
+        return null
+      }
+
+      // #3 / #7 retrieval helpers
+      const askBarCountResidentsEndingBy = (endIso) => (rotations.value || []).filter(r => r.rotation_status === 'active' && r.end_date && Utils.normalizeDate(r.end_date) <= endIso).length
+      const askBarOnCallLoad = () => {
+        // #7 ranking: count upcoming shifts per physician
+        const counts = {}
+        ;(onCallSchedule.value || []).forEach(s => { const id = s.primary_physician_id; if (id) counts[id] = (counts[id]||0)+1 })
+        return Object.entries(counts).map(([id,n]) => ({ id: Number(id), name: getStaffName(Number(id)), shifts: n })).sort((a,b) => b.shifts - a.shifts)
+      }
+      // #6 cross-domain join: PIs who are also on-call in a window
+      const askBarPIsOnCall = (range) => {
+        const piIds = new Set((researchOps.clinicalTrials.value || []).map(t => t.principal_investigator_id).filter(Boolean))
+        const inWin = (s) => { const d = Utils.normalizeDate(s.duty_date); return range ? (d >= range.start && d <= range.end) : d >= Utils.normalizeDate(new Date()) }
+        const hits = []
+        ;(onCallSchedule.value || []).forEach(s => { if (s.primary_physician_id && piIds.has(s.primary_physician_id) && inWin(s)) { if (!hits.find(h=>h.id===s.primary_physician_id)) hits.push({ id: s.primary_physician_id, name: getStaffName(s.primary_physician_id), date: s.duty_date }) } })
+        return hits
+      }
+
       const askBarMatchIntent = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
+        // #3 #7 #6 new intents (check before generic ones)
+        if (/(how many|count|cuántos|cuantos|number of).*(resident|rotation)/.test(q) && /(end|finish|before|by|terminan|antes)/.test(q)) return 'count_rotations_ending'
+        if (/(most|busiest|overloaded|más|mas).*(on-call|call|shift|guardia)/.test(q) || /who.*(most|busiest).*call/.test(q)) return 'rank_oncall'
+        if (/(pi|investigator|principal).*(on-call|call|guardia)/.test(q) || /(on-call|call).*(pi|investigator)/.test(q)) return 'pis_oncall'
         if (/(conflict|problem|issue|wrong|double|clash|overlap|anything i should|concern|risk|attention)/.test(q)) return 'issues'
         if (/(brief|resumen|summary|standup|stand-up)/.test(q)) return 'briefing'
         if (/(gap|understaff|uncovered|short|sin cobertura|hueco)/.test(q)) return 'coverage_gaps'
@@ -9084,38 +9177,90 @@ document.addEventListener('DOMContentLoaded', () => {
       // the remembered context (e.g. "is she also on leave?").
       const askBarResolveFollowup = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
+        const topicLeave = /(leave|absent|off|vacation|baja|ausen)/.test(q)
+        const topicCall = /(on-call|on call|oncall|guardia|schedule|rota)/.test(q)
+        const topicRot = /(rotation|supervis|rotación)/.test(q)
+        const hasPronoun = /(she|he|her|him|they|them|that person|same|también|tambien)/.test(q)
+        // #8: try to resolve a NAMED person first (priority over pronoun/context).
+        // Runs regardless of query length — only skipped when a pronoun is present.
+        if ((topicLeave || topicCall || topicRot) && !hasPronoun) {
+          const person = askBarResolveStaff(q)
+          if (person) {
+            askBar.context = { type: 'staff', id: person.id, name: person.full_name }
+            if (topicLeave) return { kind: 'staff_leave', id: person.id, name: person.full_name }
+            if (topicCall)  return { kind: 'staff_oncall', id: person.id, name: person.full_name }
+            if (topicRot)   return { kind: 'staff_rotation', id: person.id, name: person.full_name }
+          }
+        }
+        // pronoun / short reference → use remembered context
         if (!askBar.context) return null
         const ctx = askBar.context
-        // pronoun / "the same" reference + a topic word
-        const refersToCtx = /(she|he|her|him|they|them|that person|same|también|tambien)/.test(q) || q.length < 22
+        const refersToCtx = hasPronoun || q.length < 22
         if (!refersToCtx || ctx.type !== 'staff') return null
-        if (/(leave|absent|off|vacation|baja|ausen)/.test(q)) return { kind: 'staff_leave', id: ctx.id, name: ctx.name }
-        if (/(on-call|on call|oncall|guardia|schedule|rota)/.test(q)) return { kind: 'staff_oncall', id: ctx.id, name: ctx.name }
-        if (/(rotation|supervis|resident)/.test(q)) return { kind: 'staff_rotation', id: ctx.id, name: ctx.name }
+        if (topicLeave) return { kind: 'staff_leave', id: ctx.id, name: ctx.name }
+        if (topicCall)  return { kind: 'staff_oncall', id: ctx.id, name: ctx.name }
+        if (topicRot)   return { kind: 'staff_rotation', id: ctx.id, name: ctx.name }
         return null
+      }
+
+      // ── Batch 1: thinking states per intent (what it's checking) ──
+      const askBarThinkingFor = (intent) => {
+        const map = {
+          issues: 'Cross-referencing schedule, leave & rotations…',
+          briefing: 'Reading today\u2019s duty, leave & coverage…',
+          coverage_gaps: 'Checking unit staffing levels…',
+          absent_now: 'Scanning leave records…',
+          trials_recruiting: 'Reviewing trial enrollment…',
+          oncall_upcoming: 'Reading the on-call schedule…',
+          rotations_active: 'Checking active rotations…',
+          staff_leave: 'Cross-referencing leave records…',
+          staff_oncall: 'Reading the on-call schedule…',
+          staff_rotation: 'Checking rotation assignments…'
+        }
+        return map[intent] || 'Pulling from live data…'
+      }
+
+      // Stream an answer's text into the turn, char-batched, so it feels alive.
+      const askBarStreamTurn = (turn, fullText, done) => {
+        turn.text = ''
+        turn.streaming = true
+        const step = Math.max(1, Math.round(fullText.length / 36)) // ~36 frames
+        let i = 0
+        const tick = () => {
+          i = Math.min(fullText.length, i + step)
+          turn.text = fullText.slice(0, i)
+          Vue.nextTick(() => { const c = document.querySelector('.askbar-conv'); if (c) c.scrollTop = c.scrollHeight })
+          if (i < fullText.length) { setTimeout(tick, 18) }
+          else { turn.streaming = false; if (done) done() }
+        }
+        tick()
       }
 
       const askBarResolve = (forcedIntent) => {
         const asked = askBar.query.trim()
         if (!asked && !forcedIntent) return
-        askBar.loading = true
         askBar.view = 'conversation'
         const followup = forcedIntent ? null : askBarResolveFollowup(asked)
+        const intent = followup ? followup.kind : (forcedIntent || askBarMatchIntent(asked))
+        // Show a "thinking" turn first (what it's checking)
+        askBar.thinking = askBarThinkingFor(intent)
+        askBar.loading = true
+        askBar.query = ''
         setTimeout(() => {
           let ans
           try {
             ans = followup ? askBarBuildFollowup(followup) : askBarBuildAnswer(forcedIntent || askBarMatchIntent(asked))
           } catch (e) {
-            ans = { text: "Sorry — I couldn't pull that together. Try rephrasing, or check the relevant view directly.", chips: [], actions: [], sources: [], followups: [] }
+            ans = { text: "Sorry — I couldn't pull that together. Try rephrasing, or check the relevant view directly.", chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
           }
-          askBar.turns.push({ q: asked || (forcedIntent ? '' : asked), ...ans })
-          askBar.query = ''
           askBar.loading = false
-          Vue.nextTick(() => {
-            const c = document.querySelector('.askbar-conv')
-            if (c) c.scrollTop = c.scrollHeight
-          })
-        }, 240)
+          askBar.thinking = null
+          // Push the turn with a held-back text, then stream it in.
+          const full = ans.text || ''
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', asOf: askBarNow(), streaming: true })
+          askBar.turns.push(turn)
+          askBarStreamTurn(turn, full)
+        }, 480)
       }
 
       // Follow-up answers that use remembered context
@@ -9200,7 +9345,29 @@ document.addEventListener('DOMContentLoaded', () => {
           const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
           if (!active.length) return { text: 'No active rotations right now.', chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }] }
           const text = `${active.length} resident${active.length===1?'':'s'} on active rotation.`
-          return { text, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }] }
+          return { text, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations'], followups: [] }
+        }
+        if (intent === 'count_rotations_ending') {
+          // #3 counting + #2 temporal
+          const range = askBarParseRange(askBar.query) || { end: Utils.normalizeDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0)), label: 'this month' }
+          const n = askBarCountResidentsEndingBy(range.end)
+          return { text: `${n} resident${n===1?'':'s'} finish their rotation on or before ${range.label || Utils.formatDateShort(range.end)}.`, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations'], followups: [], confidence: n ? 'high' : 'high' }
+        }
+        if (intent === 'rank_oncall') {
+          // #7 ranking
+          const ranked = askBarOnCallLoad()
+          if (!ranked.length) return { text: 'No upcoming on-call shifts are scheduled, so there\u2019s no load to compare yet.', chips: [], actions: [{ label: 'Open schedule', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
+          const top = ranked[0]
+          const text = `${top.name} has the most upcoming on-call load — ${top.shifts} shift${top.shifts===1?'':'s'}` + (ranked[1] ? `, ahead of ${ranked[1].name} (${ranked[1].shifts}).` : '.')
+          return { text, chips: ranked.slice(0,3).map(r => ({ label: `${r.name} · ${r.shifts}`, id: r.id })), actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'pis_oncall') {
+          // #6 cross-domain join
+          const range = askBarParseRange(askBar.query)
+          const hits = askBarPIsOnCall(range)
+          if (!hits.length) return { text: `No principal investigators are on-call ${range ? range.label : 'in the upcoming schedule'}.`, chips: [], actions: [], sources: ['research', 'on-call schedule'], followups: [], confidence: 'high' }
+          const text = `${hits.length} PI${hits.length===1?'':'s'} ${hits.length===1?'is':'are'} on-call ${range ? range.label : 'soon'}: ` + hits.slice(0,4).map(h => `${h.name} (${Utils.formatDateShort(h.date)})`).join(', ') + '.'
+          return { text, chips: hits.slice(0,4).map(h => ({ label: h.name, id: h.id })), actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['research', 'on-call schedule'], followups: [], confidence: 'high' }
         }
         if (intent === 'issues') {
           // SYNTHESIS — cross-reference data to surface problems no single view shows.
@@ -9234,17 +9401,17 @@ document.addEventListener('DOMContentLoaded', () => {
           const text = `Found ${problems.length} thing${problems.length===1?'':'s'} worth a look: ` + problems.slice(0,5).map(p => '• ' + p).join('  ') + (problems.length>5 ? `  …and ${problems.length-5} more.` : '')
           return { text, chips: chips.slice(0,4), actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule', 'leave records', 'rotations'], followups: [] }
         }
-        // unknown
+        // unknown — #35 no-fabrication: be explicit rather than guess
         return {
-          text: "I can answer questions about on-call coverage, coverage gaps, who's absent, recruiting trials, and active rotations — or draft today's briefing. Try one of the suggestions below.",
-          chips: [], actions: [], sources: [], followups: []
+          text: "I don't have a direct answer for that. I can answer questions about on-call coverage, coverage gaps, who's absent, recruiting trials, and active rotations — or draft today's briefing. Try one of the suggestions below.",
+          chips: [], actions: [], sources: [], followups: [], confidence: 'low'
         }
       }
 
-      // Ensure every answer carries sources/followups arrays (defaults).
+      // Ensure every answer carries sources/followups arrays (defaults) + confidence.
       const askBarBuildAnswer = (intent) => {
         const a = _askBarBuildAnswerRaw(intent) || {}
-        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [] }
+        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [], confidence: a.confidence || 'high' }
       }
 
       const askBarGoTo = (action) => {
@@ -9256,18 +9423,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       // Run a follow-up chip: either a fresh intent, or a context-based follow-up
       const askBarRunFollowup = (fu) => {
-        askBar.loading = true
         askBar.view = 'conversation'
+        const intent = fu.followupKind || fu.intent || 'unknown'
+        askBar.thinking = askBarThinkingFor(intent)
+        askBar.loading = true
         setTimeout(() => {
           let ans
           try {
             if (fu.followupKind && askBar.context) ans = askBarBuildFollowup({ kind: fu.followupKind, id: askBar.context.id, name: askBar.context.name })
             else ans = askBarBuildAnswer(fu.intent || 'unknown')
-          } catch (e) { ans = { text: 'Could not resolve that follow-up.', chips: [], actions: [], sources: [], followups: [] } }
-          askBar.turns.push({ q: fu.label, ...ans })
+          } catch (e) { ans = { text: 'Could not resolve that follow-up.', chips: [], actions: [], sources: [], followups: [], confidence: 'low' } }
           askBar.loading = false
-          Vue.nextTick(() => { const c = document.querySelector('.askbar-conv'); if (c) c.scrollTop = c.scrollHeight })
-        }, 200)
+          askBar.thinking = null
+          const turn = Vue.reactive({ q: fu.label, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', asOf: askBarNow(), streaming: true })
+          askBar.turns.push(turn)
+          askBarStreamTurn(turn, ans.text || '')
+        }, 420)
       }
 
 
@@ -9389,7 +9560,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarAlertAction, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType, isOnCallEligible,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
@@ -9575,7 +9746,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     app.config.errorHandler = (err, instance, info) => {
       console.error('[neumDesk render error]', err, info)
-      const viewName = instance?.setupState?.currentView?.value
+      const viewName = instance?.setupState?.currentView?.value   
       showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)
     }
 
