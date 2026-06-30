@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {  
+document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
@@ -164,6 +164,443 @@ document.addEventListener('DOMContentLoaded', () => {
       fellow: 'Fellow', nurse_practitioner: 'NP', administrator: 'Admin'
     }
     const _toTitle = (k) => (k == null ? '' : String(k)).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+    // ══════════════════════════════════════════════════════════════
+    //  AGENT BRAIN — externalized knowledge base (the agent's "neurons").
+    //  Concepts (vocabulary), intents (capabilities), reasoning traces,
+    //  phrasings, and clinical rules live here as DATA, not code — so the
+    //  agent's intelligence can grow by editing this, no code changes.
+    //
+    //  getBrain() is the seam: today it returns this embedded default;
+    //  later it can merge a Supabase-stored brain on top (department-
+    //  curated, synced across users) without changing any caller.
+    // ══════════════════════════════════════════════════════════════
+    const NEUMDESK_BRAIN_DEFAULT = {
+        "_meta": {
+                "name": "neumDesk Agent Brain",
+                "version": 1,
+                "description": "The agent's externalized knowledge. Edit this to teach the agent new vocabulary, intents, reasoning recipes, and phrasings — no code changes needed. The agent loads this and reasons over it. Bilingual (ES/EN).",
+                "updated": "2026-06-30"
+        },
+        "concepts": {
+                "oncall": [
+                        "on-call",
+                        "on call",
+                        "oncall",
+                        "guardia",
+                        "duty",
+                        "cover",
+                        "covering",
+                        "rota"
+                ],
+                "leave": [
+                        "leave",
+                        "absent",
+                        "absence",
+                        "off",
+                        "vacation",
+                        "holiday",
+                        "baja",
+                        "ausencia",
+                        "ausente"
+                ],
+                "trial": [
+                        "trial",
+                        "study",
+                        "studies",
+                        "research",
+                        "estudio",
+                        "ensayo",
+                        "protocol"
+                ],
+                "recruiting": [
+                        "recruiting",
+                        "recruit",
+                        "enrolling",
+                        "reclutando",
+                        "reclutar"
+                ],
+                "rotation": [
+                        "rotation",
+                        "resident",
+                        "supervisor",
+                        "supervising",
+                        "eval",
+                        "rotación",
+                        "rota"
+                ],
+                "gap": [
+                        "gap",
+                        "understaffed",
+                        "uncovered",
+                        "short",
+                        "hueco",
+                        "sin cobertura"
+                ],
+                "conflict": [
+                        "conflict",
+                        "problem",
+                        "issue",
+                        "wrong",
+                        "clash",
+                        "overlap",
+                        "concern",
+                        "risk",
+                        "worry",
+                        "attention",
+                        "double-booked"
+                ],
+                "briefing": [
+                        "brief",
+                        "briefing",
+                        "summary",
+                        "standup",
+                        "stand-up",
+                        "resumen",
+                        "overview"
+                ],
+                "count": [
+                        "how many",
+                        "count",
+                        "number of",
+                        "cuántos",
+                        "cuantos"
+                ],
+                "rank": [
+                        "most",
+                        "busiest",
+                        "overloaded",
+                        "least",
+                        "fewest",
+                        "más",
+                        "ranking"
+                ],
+                "recommend": [
+                        "best",
+                        "who should",
+                        "who could",
+                        "recommend",
+                        "suggest",
+                        "ideal"
+                ],
+                "draft": [
+                        "draft",
+                        "write",
+                        "compose",
+                        "redactar"
+                ],
+                "pi": [
+                        "pi",
+                        "investigator",
+                        "principal investigator",
+                        "investigador"
+                ]
+        },
+        "entities": {
+                "staff": {
+                        "resolver": "resolveStaff",
+                        "strips": [
+                                "dr",
+                                "dra",
+                                "doctor",
+                                "doctora"
+                        ]
+                }
+        },
+        "time_phrases": {
+                "today": "today",
+                "hoy": "today",
+                "tomorrow": "tomorrow",
+                "mañana": "tomorrow",
+                "this week": "this_week",
+                "esta semana": "this_week",
+                "next week": "next_week",
+                "próxima semana": "next_week",
+                "weekend": "weekend",
+                "fin de semana": "weekend",
+                "this month": "this_month",
+                "este mes": "this_month",
+                "this quarter": "this_quarter",
+                "este trimestre": "this_quarter"
+        },
+        "intents": {
+                "recommend_backup": {
+                        "match": {
+                                "any_concept": [
+                                        "recommend"
+                                ],
+                                "with_concept": [
+                                        "oncall",
+                                        "leave"
+                                ]
+                        },
+                        "also_match_phrases": [
+                                "if .* out .* who",
+                                "who .* cover .* instead",
+                                "best backup"
+                        ],
+                        "tools": [
+                                "oncall_schedule",
+                                "medical_staff",
+                                "leave"
+                        ],
+                        "recipe": "recommend_backup",
+                        "permission": null,
+                        "trace": [
+                                [
+                                        "Identifying who is out",
+                                        "on-call"
+                                ],
+                                [
+                                        "Finding eligible physicians",
+                                        "staff"
+                                ],
+                                [
+                                        "Removing anyone on leave",
+                                        "leave"
+                                ],
+                                [
+                                        "Ranking by call load",
+                                        "synthesis"
+                                ]
+                        ]
+                },
+                "draft_email": {
+                        "match": {
+                                "all_concepts": [
+                                        "draft"
+                                ],
+                                "any_concept": [
+                                        "oncall",
+                                        "briefing"
+                                ]
+                        },
+                        "also_match_phrases": [
+                                "draft .* email",
+                                "write .* message",
+                                "compose .* note"
+                        ],
+                        "tools": [
+                                "oncall_schedule",
+                                "medical_staff"
+                        ],
+                        "recipe": "draft_email",
+                        "permission": null,
+                        "trace": [
+                                [
+                                        "Reading the schedule",
+                                        "on-call"
+                                ],
+                                [
+                                        "Filling the template",
+                                        "synthesis"
+                                ]
+                        ]
+                },
+                "oncall_upcoming": {
+                        "match": {
+                                "any_concept": [
+                                        "oncall"
+                                ]
+                        },
+                        "tools": [
+                                "oncall_schedule",
+                                "medical_staff"
+                        ],
+                        "recipe": "oncall_upcoming",
+                        "permission": "oncall_schedule",
+                        "trace": [
+                                [
+                                        "Reading the on-call schedule",
+                                        "on-call"
+                                ],
+                                [
+                                        "Resolving physician names",
+                                        "staff"
+                                ]
+                        ]
+                },
+                "absent_now": {
+                        "match": {
+                                "any_concept": [
+                                        "leave"
+                                ]
+                        },
+                        "tools": [
+                                "leave"
+                        ],
+                        "recipe": "absent_now",
+                        "permission": "staff_absence",
+                        "trace": [
+                                [
+                                        "Scanning leave records",
+                                        "leave"
+                                ],
+                                [
+                                        "Filtering to today",
+                                        "leave"
+                                ]
+                        ]
+                },
+                "trials_recruiting": {
+                        "match": {
+                                "any_concept": [
+                                        "trial",
+                                        "recruiting"
+                                ]
+                        },
+                        "tools": [
+                                "clinical_trials"
+                        ],
+                        "recipe": "trials_recruiting",
+                        "permission": "research_hub",
+                        "trace": [
+                                [
+                                        "Reviewing trials",
+                                        "research"
+                                ],
+                                [
+                                        "Computing enrollment health",
+                                        "research"
+                                ]
+                        ]
+                },
+                "rank_oncall": {
+                        "match": {
+                                "all_concepts": [
+                                        "rank",
+                                        "oncall"
+                                ]
+                        },
+                        "tools": [
+                                "oncall_schedule"
+                        ],
+                        "recipe": "rank_oncall",
+                        "permission": "oncall_schedule",
+                        "trace": [
+                                [
+                                        "Reading the schedule",
+                                        "on-call"
+                                ],
+                                [
+                                        "Counting shifts per physician",
+                                        "on-call"
+                                ],
+                                [
+                                        "Ranking by load",
+                                        "synthesis"
+                                ]
+                        ]
+                },
+                "issues": {
+                        "match": {
+                                "any_concept": [
+                                        "conflict"
+                                ]
+                        },
+                        "tools": [
+                                "oncall_schedule",
+                                "leave",
+                                "rotations",
+                                "clinical_trials"
+                        ],
+                        "recipe": "issues",
+                        "permission": null,
+                        "trace": [
+                                [
+                                        "Reading the on-call schedule",
+                                        "on-call"
+                                ],
+                                [
+                                        "Cross-referencing leave",
+                                        "leave"
+                                ],
+                                [
+                                        "Checking rotations & coverage",
+                                        "rotations"
+                                ],
+                                [
+                                        "Looking for conflicts",
+                                        "synthesis"
+                                ]
+                        ]
+                },
+                "briefing": {
+                        "match": {
+                                "any_concept": [
+                                        "briefing"
+                                ]
+                        },
+                        "tools": [
+                                "oncall_schedule",
+                                "leave",
+                                "rotations"
+                        ],
+                        "recipe": "briefing",
+                        "permission": null,
+                        "trace": [
+                                [
+                                        "Reading today's duty",
+                                        "on-call"
+                                ],
+                                [
+                                        "Checking leave & coverage",
+                                        "leave"
+                                ],
+                                [
+                                        "Composing the briefing",
+                                        "synthesis"
+                                ]
+                        ]
+                }
+        },
+        "phrasings": {
+                "recommend_lead": [
+                        "I'd suggest {name}",
+                        "My recommendation: {name}",
+                        "Best option looks like {name}"
+                ],
+                "recommend_balanced": [
+                        "they have the lightest call load, so they'd keep the rota balanced",
+                        "they carry the fewest shifts right now"
+                ],
+                "none_found": [
+                        "Nothing came up there.",
+                        "I don't see anything for that.",
+                        "No matches in the records."
+                ],
+                "oncall_next": [
+                        "Next on-call: {list}.",
+                        "Coming up on call: {list}.",
+                        "On the rota next: {list}."
+                ]
+        },
+        "rules": {
+                "oncall_eligible_types": [
+                        "attending_physician",
+                        "medical_resident",
+                        "fellow"
+                ],
+                "trial_behind_threshold_pct": 25,
+                "rotation_ending_soon_days": 30,
+                "min_attendings_per_unit": 1
+        }
+}
+    const _brainOverride = Vue.ref(null)  // future: loaded from Supabase
+    const getBrain = () => {
+      const base = NEUMDESK_BRAIN_DEFAULT
+      const ov = _brainOverride.value
+      if (!ov) return base
+      // Shallow-merge override sections over the default (department edits win).
+      return {
+        ...base,
+        concepts:  { ...base.concepts,  ...(ov.concepts  || {}) },
+        intents:   { ...base.intents,   ...(ov.intents   || {}) },
+        phrasings: { ...base.phrasings, ...(ov.phrasings || {}) },
+        rules:     { ...base.rules,     ...(ov.rules     || {}) }
+      }
+    }
+
     const formatStaffTypeShort = (key) => SHORT_LABELS[key] || (staffTypeMap.value[key]?.display_name?.split(' ')[0]) || _toTitle(key)
     const getStaffTypeClassGlobal = (key) => staffTypeMap.value[key]?.badge_class  || STAFF_TYPE_CLASSES_FALLBACK[key] || 'badge-secondary'
     const isResidentType          = (key) => staffTypeMap.value[key]?.is_resident_type ?? (key === 'medical_resident')
@@ -9141,7 +9578,49 @@ document.addEventListener('DOMContentLoaded', () => {
         return hits
       }
 
+      // Brain-driven concept detection: which concepts does this question contain?
+      const askBarDetectConcepts = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        const brain = getBrain()
+        const found = new Set()
+        for (const [concept, words] of Object.entries(brain.concepts || {})) {
+          if (Array.isArray(words) && words.some(w => q.includes(w.toLowerCase()))) found.add(concept)
+        }
+        return found
+      }
+
+      // Brain-driven intent match: evaluate each intent's match rules against
+      // the detected concepts + phrase patterns. Returns the intent key or null.
+      const askBarMatchFromBrain = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        const concepts = askBarDetectConcepts(qRaw)
+        const brain = getBrain()
+        for (const [intentKey, def] of Object.entries(brain.intents || {})) {
+          const m = def.match || {}
+          let ok = true
+          // also_match_phrases: regex shortcuts that force a match
+          if (def.also_match_phrases && def.also_match_phrases.some(p => { try { return new RegExp(p).test(q) } catch { return false } })) {
+            return intentKey
+          }
+          if (m.all_concepts && !m.all_concepts.every(c => concepts.has(c))) ok = false
+          if (ok && m.any_concept && !m.any_concept.some(c => concepts.has(c))) ok = false
+          if (ok && m.with_concept && !m.with_concept.some(c => concepts.has(c))) ok = false
+          // require at least one positive condition to have matched
+          const hasCondition = m.all_concepts || m.any_concept
+          if (ok && hasCondition) return intentKey
+        }
+        return null
+      }
+
       const askBarMatchIntent = (qRaw) => {
+        // Brain first — the externalized knowledge takes precedence.
+        const fromBrain = askBarMatchFromBrain(qRaw)
+        if (fromBrain) return fromBrain
+        // Fallback: legacy hardcoded matcher (kept for patterns not yet in the brain)
+        return askBarMatchIntentLegacy(qRaw)
+      }
+
+      const askBarMatchIntentLegacy = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
         // Agent intents (check first — they're specific)
         if (/(best|who should|who could|recommend|suggest).*(backup|cover|replace|fill in)/.test(q) || /(if|when).*(out|away|on leave|absent).*(who|cover|backup)/.test(q)) return 'recommend_backup'
@@ -9271,6 +9750,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Reasoning trace: the real steps the engine takes per intent.
       // Each step names what it checked + which data source (its "tools").
       const askBarTraceFor = (intent) => {
+        // Brain first: if the intent defines a trace, use it.
+        const bDef = (getBrain().intents || {})[intent]
+        if (bDef && Array.isArray(bDef.trace) && bDef.trace.length) return bDef.trace
+        // Fallback: legacy hardcoded traces
         const traces = {
           issues:          [['Reading the on-call schedule','on-call'], ['Cross-referencing leave records','leave'], ['Checking rotations & coverage','rotations'], ['Looking for conflicts','synthesis']],
           oncall_upcoming: [['Reading the on-call schedule','on-call'], ['Resolving physician names','staff']],
@@ -9292,6 +9775,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // #41 varied phrasing — small pools so answers don't feel stamped.
       const _pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
       const askBarLead = (kind) => {
+        // Brain first: phrasing pools live in the brain (editable, growable).
+        const bp = getBrain().phrasings || {}
+        const brainKey = { found: 'found', none: 'none_found', rec: 'recommend_lead' }[kind]
+        if (brainKey && Array.isArray(bp[brainKey]) && bp[brainKey].length) return _pick(bp[brainKey])
         const pools = {
           found:   ['Here’s what I found:', 'Looking at the data:', 'From the records:'],
           none:    ['Nothing came up there.', 'I don’t see anything for that.', 'No matches in the data.'],
@@ -9333,7 +9820,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const intent = followup ? followup.kind : (forcedIntent || askBarMatchIntent(asked))
         askBarLog('ask', { q: asked || `[${intent}]`, intent })
         // #37 permission-aware: if the intent's module is one the user can't read, decline.
-        const mod = askBarIntentModule[intent]
+        // Permission module: brain's intent.permission wins; else legacy map.
+        const bIntent = (getBrain().intents || {})[intent]
+        const mod = (bIntent && 'permission' in bIntent) ? bIntent.permission : askBarIntentModule[intent]
         if (mod && !hasPermission(mod, 'read')) {
           askBar.loading = false; askBar.thinking = null
           const turn = Vue.reactive({ q: asked, text: `You don't have access to that information. Ask an administrator if you need ${mod.replace(/_/g,' ')} access.`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })
