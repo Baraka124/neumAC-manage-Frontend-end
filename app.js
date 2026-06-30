@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue    
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
 
     // ── DIAGNOSTIC: visible error banner ─────────────────────────────────
     // Built with plain DOM calls (no Vue) so it still works even when the
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
       attending_physician: 'Attending', medical_resident: 'Resident',
       fellow: 'Fellow', nurse_practitioner: 'NP', administrator: 'Admin'
     }
-    const _toTitle = (k) => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    const _toTitle = (k) => (k == null ? '' : String(k)).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
     const formatStaffTypeShort = (key) => SHORT_LABELS[key] || (staffTypeMap.value[key]?.display_name?.split(' ')[0]) || _toTitle(key)
     const getStaffTypeClassGlobal = (key) => staffTypeMap.value[key]?.badge_class  || STAFF_TYPE_CLASSES_FALLBACK[key] || 'badge-secondary'
     const isResidentType          = (key) => staffTypeMap.value[key]?.is_resident_type ?? (key === 'medical_resident')
@@ -8965,6 +8965,7 @@ document.addEventListener('DOMContentLoaded', () => {
         query: '',
         loading: false,
         thinking: null,    // string shown while it "thinks" (what it's checking)
+        trace: [],         // live reasoning steps [{label, src, done}] — the agent feel
         turns: [],         // conversation history: [{ q, text, chips, actions, sources, followups, confidence, asOf, streaming }]
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
         snoozed: [],       // dismissed alert keys (#16)
@@ -9062,6 +9063,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // #15 deep-link + #18 safe act-on: route to the SPECIFIC resolution flow,
         // not just the view. These open a modal (a safe, confirmable action) rather
         // than performing a silent write.
+        askBarLog('action', { label: alert.action, resolve: alert.resolve, title: alert.title })
         closeAskBar()
         Vue.nextTick(() => {
           try {
@@ -9141,6 +9143,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarMatchIntent = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
+        // Agent intents (check first — they're specific)
+        if (/(best|who should|who could|recommend|suggest).*(backup|cover|replace|fill in)/.test(q) || /(if|when).*(out|away|on leave|absent).*(who|cover|backup)/.test(q)) return 'recommend_backup'
+        if (/(draft|write|compose).*(email|message|note|announcement)/.test(q)) return 'draft_email'
         // #3 #7 #6 new intents (check before generic ones)
         if (/(how many|count|cuántos|cuantos|number of).*(resident|rotation)/.test(q) && /(end|finish|before|by|terminan|antes)/.test(q)) return 'count_rotations_ending'
         if (/(most|busiest|overloaded|más|mas).*(on-call|call|shift|guardia)/.test(q) || /who.*(most|busiest).*call/.test(q)) return 'rank_oncall'
@@ -9207,7 +9212,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarThinkingFor = (intent) => {
         const map = {
           issues: 'Cross-referencing schedule, leave & rotations…',
-          briefing: 'Reading today\u2019s duty, leave & coverage…',
+          briefing: 'Reading today’s duty, leave & coverage…',
           coverage_gaps: 'Checking unit staffing levels…',
           absent_now: 'Scanning leave records…',
           trials_recruiting: 'Reviewing trial enrollment…',
@@ -9236,16 +9241,114 @@ document.addEventListener('DOMContentLoaded', () => {
         tick()
       }
 
+      // ── Phase 1: permission map + audit (#37, #36) ──
+      // Which module each intent reads from — used to gate answers by access.
+      const askBarIntentModule = {
+        oncall_upcoming: 'oncall_schedule', rank_oncall: 'oncall_schedule', pis_oncall: 'oncall_schedule',
+        absent_now: 'staff_absence', staff_leave: 'staff_absence',
+        staff_oncall: 'oncall_schedule', staff_rotation: 'resident_rotations',
+        coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
+        count_rotations_ending: 'resident_rotations',
+        trials_recruiting: 'research_hub',
+        briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
+        recommend_backup: null, draft_email: null  // agent synthesis — allowed (read multiple)
+      }
+      // Audit trail: every question asked + action taken (clinical accountability).
+      const askBarAudit = Vue.ref([])
+      const askBarLog = (type, detail) => {
+        askBarAudit.value.push({ type, detail, at: new Date().toISOString(), user: currentUser.value?.full_name || 'unknown' })
+        if (askBarAudit.value.length > 200) askBarAudit.value.shift()
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  AGENT LAYER (on RAG) — reasoning trace, recommendations,
+      //  varied phrasing, drafting. Makes the deterministic engine FEEL
+      //  like an agent: it shows real steps over real data, phrases
+      //  naturally, and can recommend/draft — but never invents (every
+      //  fact comes from retrieval; the "AI feel" is presentation).
+      // ══════════════════════════════════════════════════════════════
+
+      // Reasoning trace: the real steps the engine takes per intent.
+      // Each step names what it checked + which data source (its "tools").
+      const askBarTraceFor = (intent) => {
+        const traces = {
+          issues:          [['Reading the on-call schedule','on-call'], ['Cross-referencing leave records','leave'], ['Checking rotations & coverage','rotations'], ['Looking for conflicts','synthesis']],
+          oncall_upcoming: [['Reading the on-call schedule','on-call'], ['Resolving physician names','staff']],
+          absent_now:      [['Scanning leave records','leave'], ['Filtering to today','leave']],
+          trials_recruiting:[['Reviewing trials','research'], ['Computing enrollment health','research']],
+          coverage_gaps:   [['Checking unit staffing','rotations'], ['Comparing to expected levels','synthesis']],
+          rank_oncall:     [['Reading the on-call schedule','on-call'], ['Counting shifts per physician','on-call'], ['Ranking by load','synthesis']],
+          pis_oncall:      [['Pulling principal investigators','research'], ['Cross-referencing on-call','on-call'], ['Joining the two','synthesis']],
+          count_rotations_ending:[['Reading active rotations','rotations'], ['Filtering by end date','rotations'], ['Counting','synthesis']],
+          recommend_backup:[['Identifying who is out','on-call'], ['Finding eligible physicians','staff'], ['Removing anyone on leave','leave'], ['Ranking by call load','synthesis']],
+          briefing:        [['Reading today’s duty','on-call'], ['Checking leave & coverage','leave'], ['Composing the briefing','synthesis']],
+          staff_leave:     [['Looking up the person','staff'], ['Checking their leave','leave']],
+          staff_oncall:    [['Looking up the person','staff'], ['Reading their shifts','on-call']],
+          staff_rotation:  [['Looking up the person','staff'], ['Checking their rotation','rotations']]
+        }
+        return traces[intent] || [['Pulling from live data','data']]
+      }
+
+      // #41 varied phrasing — small pools so answers don't feel stamped.
+      const _pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
+      const askBarLead = (kind) => {
+        const pools = {
+          found:   ['Here’s what I found:', 'Looking at the data:', 'From the records:'],
+          none:    ['Nothing came up there.', 'I don’t see anything for that.', 'No matches in the data.'],
+          rec:     ['I’d suggest', 'My recommendation:', 'Best option looks like']
+        }
+        return _pick(pools[kind] || [''])
+      }
+
+      // Recommendation engine (#46-style reasoning, deterministic):
+      // "if X is out, who's the best backup?" → rank eligible, not-on-leave
+      // physicians by lightest call load.
+      const askBarRecommendBackup = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        const outPerson = askBarResolveStaff(q)
+        // who's out + which date
+        let dutyDate = null, outId = outPerson?.id || null
+        const range = askBarParseRange(q)
+        const today = Utils.normalizeDate(new Date())
+        // find the shift the "out" person holds (or just upcoming)
+        const shifts = (onCallSchedule.value || []).filter(s => Utils.normalizeDate(s.duty_date) >= today)
+        if (outId) { const sh = shifts.find(s => s.primary_physician_id === outId); if (sh) dutyDate = sh.duty_date }
+        if (!dutyDate && range) dutyDate = range.start
+        // eligible = on-call-eligible, active, not the out person, not on leave that day
+        const onLeaveThatDay = (id) => (absences.value || []).some(a => a.staff_member_id === id && !['returned_to_duty','cancelled'].includes(a.current_status) && (!dutyDate || (Utils.normalizeDate(a.start_date) <= Utils.normalizeDate(dutyDate) && Utils.normalizeDate(a.end_date) >= Utils.normalizeDate(dutyDate))))
+        const load = {}
+        ;(onCallSchedule.value || []).forEach(s => { if (s.primary_physician_id) load[s.primary_physician_id] = (load[s.primary_physician_id]||0)+1 })
+        const eligible = (medicalStaff.value || [])
+          .filter(s => s.employment_status === 'active' && isOnCallEligible(s.staff_type) && s.id !== outId && !onLeaveThatDay(s.id))
+          .map(s => ({ id: s.id, name: s.full_name, shifts: load[s.id] || 0 }))
+          .sort((a,b) => a.shifts - b.shifts)
+        return { outName: outPerson?.full_name, dutyDate, eligible }
+      }
+
       const askBarResolve = (forcedIntent) => {
         const asked = askBar.query.trim()
         if (!asked && !forcedIntent) return
         askBar.view = 'conversation'
         const followup = forcedIntent ? null : askBarResolveFollowup(asked)
         const intent = followup ? followup.kind : (forcedIntent || askBarMatchIntent(asked))
-        // Show a "thinking" turn first (what it's checking)
+        askBarLog('ask', { q: asked || `[${intent}]`, intent })
+        // #37 permission-aware: if the intent's module is one the user can't read, decline.
+        const mod = askBarIntentModule[intent]
+        if (mod && !hasPermission(mod, 'read')) {
+          askBar.loading = false; askBar.thinking = null
+          const turn = Vue.reactive({ q: asked, text: `You don't have access to that information. Ask an administrator if you need ${mod.replace(/_/g,' ')} access.`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })
+          askBar.turns.push(turn)
+          askBar.query = ''
+          return
+        }
+        // Show the reasoning trace (real steps over real data) — the "agent" feel.
+        askBar.trace = askBarTraceFor(intent).map(([label, src]) => ({ label, src, done: false }))
         askBar.thinking = askBarThinkingFor(intent)
         askBar.loading = true
         askBar.query = ''
+        // Reveal trace steps one by one for a "working" feel.
+        askBar.trace.forEach((step, i) => { setTimeout(() => { if (askBar.trace[i]) askBar.trace[i].done = true }, 160 + i * 200) })
+        const traceTime = 160 + askBar.trace.length * 200
         setTimeout(() => {
           let ans
           try {
@@ -9255,12 +9358,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           askBar.loading = false
           askBar.thinking = null
-          // Push the turn with a held-back text, then stream it in.
+          // Push the turn with a held-back text, then stream it in. Keep the trace on the turn.
           const full = ans.text || ''
-          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', asOf: askBarNow(), streaming: true })
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, isDraft: ans.isDraft || false, trace: askBar.trace.slice(), traceOpen: false, asOf: askBarNow(), streaming: true })
+          askBar.trace = []
           askBar.turns.push(turn)
           askBarStreamTurn(turn, full)
-        }, 480)
+        }, Math.max(480, traceTime))
       }
 
       // Follow-up answers that use remembered context
@@ -9324,10 +9428,15 @@ document.addEventListener('DOMContentLoaded', () => {
           return { text, chips: out.slice(0,4).map(a => ({ label: staffName(a.staff_member_id), id: a.staff_member_id })), actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }] }
         }
         if (intent === 'trials_recruiting') {
-          const trials = (researchOps.clinicalTrials.value || []).filter(t => t.status === 'Recruiting' || t.recruitment_status === 'recruiting' || t.status === 'Activo')
-          if (!trials.length) return { text: 'No trials are actively recruiting right now.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }] }
-          const text = `${trials.length} trial${trials.length===1?'':'s'} recruiting: ` + trials.slice(0,4).map(t => t.title).join(', ') + '.'
-          return { text, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }] }
+          const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
+          if (!trials.length) return { text: 'No trials are actively recruiting right now.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
+          const text = `${trials.length} trial${trials.length===1?'':'s'} recruiting:`
+          // #25 rich card: per-trial enrollment bars
+          const visual = { type: 'enroll', items: trials.slice(0,5).map(t => {
+            const e = researchOps.trialEnrollment ? researchOps.trialEnrollment(t) : null
+            return { title: t.title, pct: e ? e.pct : 0, label: e ? `${e.actual}/${e.target}` : '—', health: e ? e.health : 'ontrack' }
+          }) }
+          return { text, visual, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
         }
         if (intent === 'oncall_upcoming') {
           const today = Utils.normalizeDate(new Date())
@@ -9356,7 +9465,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'rank_oncall') {
           // #7 ranking
           const ranked = askBarOnCallLoad()
-          if (!ranked.length) return { text: 'No upcoming on-call shifts are scheduled, so there\u2019s no load to compare yet.', chips: [], actions: [{ label: 'Open schedule', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
+          if (!ranked.length) return { text: 'No upcoming on-call shifts are scheduled, so there’s no load to compare yet.', chips: [], actions: [{ label: 'Open schedule', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
           const top = ranked[0]
           const text = `${top.name} has the most upcoming on-call load — ${top.shifts} shift${top.shifts===1?'':'s'}` + (ranked[1] ? `, ahead of ${ranked[1].name} (${ranked[1].shifts}).` : '.')
           return { text, chips: ranked.slice(0,3).map(r => ({ label: `${r.name} · ${r.shifts}`, id: r.id })), actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
@@ -9368,6 +9477,32 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!hits.length) return { text: `No principal investigators are on-call ${range ? range.label : 'in the upcoming schedule'}.`, chips: [], actions: [], sources: ['research', 'on-call schedule'], followups: [], confidence: 'high' }
           const text = `${hits.length} PI${hits.length===1?'':'s'} ${hits.length===1?'is':'are'} on-call ${range ? range.label : 'soon'}: ` + hits.slice(0,4).map(h => `${h.name} (${Utils.formatDateShort(h.date)})`).join(', ') + '.'
           return { text, chips: hits.slice(0,4).map(h => ({ label: h.name, id: h.id })), actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['research', 'on-call schedule'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'recommend_backup') {
+          // Deterministic "reasoning": rank eligible, not-on-leave physicians by lightest load.
+          const r = askBarRecommendBackup(askBar.query)
+          if (!r.eligible.length) return { text: 'I couldn’t find an eligible physician who is free and not on leave for that slot. You may need to look outside the usual on-call pool.', chips: [], actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule', 'leave records', 'staff'], followups: [], confidence: 'high' }
+          const top = r.eligible[0]
+          const dateStr = r.dutyDate ? ` on ${Utils.formatDateShort(r.dutyDate)}` : ''
+          const others = r.eligible.slice(1, 3)
+          let text = `${askBarLead('rec')} ${top.name}`
+          text += top.shifts === 0 ? ` — they have no on-call shifts scheduled${dateStr ? '' : ' yet'}, so they'd keep the rota balanced.` : ` — they carry the lightest call load (${top.shifts} shift${top.shifts===1?'':'s'})${dateStr}.`
+          if (others.length) text += ` ${others.map(o => o.name).join(' and ')} ${others.length===1?'is':'are'} also free, but ${others.length===1?'has':'have'} more shifts.`
+          return { text, chips: r.eligible.slice(0,3).map(e => ({ label: `${e.name} · ${e.shifts}`, id: e.id })), actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule', 'leave records', 'staff'], followups: [{ label: 'See everyone’s load', intent: 'rank_oncall' }], confidence: 'high' }
+        }
+        if (intent === 'draft_email') {
+          // Drafting from a template filled with real data — grounded, not generated.
+          const today = Utils.normalizeDate(new Date())
+          const nextShift = (onCallSchedule.value || []).filter(s => Utils.normalizeDate(s.duty_date) >= today).sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))[0]
+          const primary = nextShift ? getStaffName(nextShift.primary_physician_id) : null
+          const backup = nextShift && nextShift.backup_physician_id ? getStaffName(nextShift.backup_physician_id) : null
+          const dateStr = nextShift ? Utils.formatDateShort(nextShift.duty_date) : 'the upcoming shift'
+          const backupClause = backup ? (', with ' + backup + ' as backup') : ''
+          let body = 'Subject: On-call coverage — ' + dateStr + '\n\nTeam,\n\n'
+          if (primary) body += primary + ' will cover primary on-call on ' + dateStr + backupClause + '. Please direct urgencies accordingly.\n\n'
+          else body += 'Please note the upcoming on-call coverage as set in the schedule.\n\n'
+          body += 'Thanks,\nDepartment coordination'
+          return { text: body, chips: [], actions: [{ label: 'Open Ops Room', view: 'communications', primary: true }], sources: ['on-call schedule', 'staff'], followups: [{ label: 'Make it shorter', intent: 'draft_email' }], confidence: 'high', isDraft: true }
         }
         if (intent === 'issues') {
           // SYNTHESIS — cross-reference data to surface problems no single view shows.
@@ -9411,11 +9546,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Ensure every answer carries sources/followups arrays (defaults) + confidence.
       const askBarBuildAnswer = (intent) => {
         const a = _askBarBuildAnswerRaw(intent) || {}
-        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [], confidence: a.confidence || 'high' }
+        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [], confidence: a.confidence || 'high', visual: a.visual || null, isDraft: a.isDraft || false }
       }
 
       const askBarGoTo = (action) => {
-        if (action.view) { switchView(action.view); closeAskBar() }
+        if (action.view) { askBarLog('action', { label: action.label, view: action.view }); switchView(action.view); closeAskBar() }
       }
       const askBarOpenStaff = (id) => {
         const s = (medicalStaff.value || []).find(x => x.id === id)
@@ -9435,7 +9570,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e) { ans = { text: 'Could not resolve that follow-up.', chips: [], actions: [], sources: [], followups: [], confidence: 'low' } }
           askBar.loading = false
           askBar.thinking = null
-          const turn = Vue.reactive({ q: fu.label, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', asOf: askBarNow(), streaming: true })
+          const turn = Vue.reactive({ q: fu.label, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, asOf: askBarNow(), streaming: true })
           askBar.turns.push(turn)
           askBarStreamTurn(turn, ans.text || '')
         }, 420)
@@ -9560,7 +9695,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType, isOnCallEligible,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
@@ -9746,7 +9881,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     app.config.errorHandler = (err, instance, info) => {
       console.error('[neumDesk render error]', err, info)
-      const viewName = instance?.setupState?.currentView?.value   
+      const viewName = instance?.setupState?.currentView?.value
       showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)
     }
 
