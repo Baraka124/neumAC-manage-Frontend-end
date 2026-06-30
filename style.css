@@ -40551,4 +40551,77 @@ html body #app .askbar-newchat {
   cursor: pointer !important; margin-right: 8px !important; position: relative !important; z-index: 1 !important;
   transition: .13s !important;
 }
-html body #app .askbar-newchat:hover { background: rgba(255,255,255,.16) !important; color: #fff !important; }  
+html body #app .askbar-newchat:hover { background: rgba(255,255,255,.16) !important; color: #fff !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   §81  ASK BAR Phase 1 — rich cards, greeting, editable question
+════════════════════════════════════════════════════════════════ */
+
+/* #25 visual enrollment cards inside answers */
+html body #app .askbar-viz { margin-top: 12px !important; display: flex !important; flex-direction: column !important; gap: 9px !important; }
+html body #app .askbar-viz-row { display: flex !important; flex-direction: column !important; gap: 4px !important; }
+html body #app .askbar-viz-top { display: flex !important; align-items: baseline !important; justify-content: space-between !important; gap: 8px !important; }
+html body #app .askbar-viz-name { font-size: 12px !important; font-weight: 500 !important; color: #0f1729 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+html body #app .askbar-viz-num { font-family: 'Instrument Serif', Georgia, serif !important; font-style: italic !important; font-size: 14px !important; color: #0f2d54 !important; flex-shrink: 0 !important; }
+html body #app .askbar-viz-bar { height: 5px !important; background: rgba(15,45,84,.08) !important; border-radius: 99px !important; overflow: hidden !important; }
+html body #app .askbar-viz-fill { height: 100% !important; border-radius: 99px !important; transition: width .4s !important; }
+html body #app .askbar-viz-fill--ontrack { background: linear-gradient(90deg, #10b981, #34d399) !important; }
+html body #app .askbar-viz-fill--complete { background: linear-gradient(90deg, #00b3b3, #00d4d4) !important; }
+html body #app .askbar-viz-fill--watch { background: linear-gradient(90deg, #f59e0b, #fbbf24) !important; }
+html body #app .askbar-viz-fill--behind { background: linear-gradient(90deg, #ef4444, #f87171) !important; }
+
+/* #30 warmer empty-thread greeting */
+html body #app .askbar-greeting { padding: 8px 6px 4px !important; }
+html body #app .askbar-greeting-t { font-family: 'Instrument Serif', Georgia, serif !important; font-style: italic !important; font-size: 19px !important; color: #0f2d54 !important; }
+html body #app .askbar-greeting-s { font-size: 12.5px !important; color: #475569 !important; line-height: 1.5 !important; margin-top: 4px !important; }
+
+/* #22 editable question bubble */
+html body #app .askbar-q-bub { cursor: pointer !important; transition: opacity .13s !important; }
+html body #app .askbar-q-bub:hover { opacity: .85 !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   §82  AGENT SURFACE — reasoning trace, agent badge, grounded tags
+   Makes the deterministic RAG feel like a reasoning agent.
+════════════════════════════════════════════════════════════════ */
+
+/* Agent badge in header */
+html body #app .askbar-agent-badge {
+  display: inline-flex !important; align-items: center !important; gap: 4px !important;
+  font-family: 'DM Mono', monospace !important; font-size: 8.5px !important;
+  color: #c4b5fd !important; text-transform: uppercase !important; letter-spacing: .08em !important;
+  background: rgba(124,58,237,.25) !important; padding: 3px 8px !important; border-radius: 6px !important;
+  margin-left: auto !important; margin-right: 8px !important; position: relative !important; z-index: 1 !important;
+  border: 1px solid rgba(124,58,237,.4) !important;
+}
+
+/* Live reasoning trace */
+html body #app .askbar-trace {
+  background: #f8fafc !important; border: 1px solid rgba(15,45,84,.1) !important;
+  border-radius: 13px !important; overflow: hidden !important; margin: 4px 0 !important;
+}
+html body #app .askbar-trace-h { display: flex !important; align-items: center !important; gap: 8px !important; padding: 10px 13px !important; border-bottom: 1px solid rgba(15,45,84,.08) !important; background: linear-gradient(90deg, rgba(124,58,237,.05), transparent) !important; }
+html body #app .askbar-trace-orb { width: 14px !important; height: 14px !important; border-radius: 50% !important; background: radial-gradient(circle at 35% 35%, #00d4d4, #7c3aed 70%) !important; box-shadow: 0 0 10px rgba(124,58,237,.5) !important; animation: askbarOrb 1.6s ease-in-out infinite !important; flex-shrink: 0 !important; }
+html body #app .askbar-trace-orb--still { animation: none !important; }
+html body #app .askbar-trace-ht { font-size: 11px !important; font-weight: 600 !important; color: #0f2d54 !important; }
+html body #app .askbar-trace-step { display: flex !important; align-items: center !important; gap: 9px !important; padding: 8px 13px !important; font-size: 12px !important; opacity: .5 !important; transition: opacity .25s !important; }
+html body #app .askbar-trace-step:not(:last-child) { border-bottom: 1px dashed rgba(15,45,84,.08) !important; }
+html body #app .askbar-trace-step--done { opacity: 1 !important; }
+html body #app .askbar-trace-ic { width: 18px !important; height: 18px !important; border-radius: 6px !important; display: flex !important; align-items: center !important; justify-content: center !important; flex-shrink: 0 !important; background: rgba(16,185,129,.14) !important; color: #10b981 !important; }
+html body #app .askbar-trace-spin { width: 11px !important; height: 11px !important; border: 2px solid rgba(124,58,237,.25) !important; border-top-color: #7c3aed !important; border-radius: 50% !important; animation: askbarSpin .7s linear infinite !important; }
+html body #app .askbar-trace-label { flex: 1 !important; color: #0f1729 !important; font-weight: 500 !important; }
+html body #app .askbar-trace-src { font-family: 'DM Mono', monospace !important; font-size: 8.5px !important; background: rgba(15,45,84,.05) !important; color: #475569 !important; padding: 1px 6px !important; border-radius: 4px !important; flex-shrink: 0 !important; }
+
+/* Collapsed per-turn trace */
+html body #app .askbar-trace-mini { display: flex !important; align-items: center !important; gap: 8px !important; padding: 7px 11px !important; background: #f8fafc !important; border: 1px solid rgba(15,45,84,.08) !important; border-radius: 10px !important; cursor: pointer !important; margin-bottom: 2px !important; }
+html body #app .askbar-trace-mini:hover { border-color: rgba(124,58,237,.3) !important; }
+html body #app .askbar-trace-mini-t { font-size: 11px !important; font-weight: 500 !important; color: #475569 !important; }
+html body #app .askbar-trace-mini-x { margin-left: auto !important; font-family: 'DM Mono', monospace !important; font-size: 8.5px !important; color: #94a3b8 !important; text-transform: uppercase !important; letter-spacing: .05em !important; }   
+html body #app .askbar-trace--expanded { margin-bottom: 6px !important; }
+
+/* Grounded + AI tags */
+html body #app .askbar-a-tags { display: flex !important; align-items: center !important; gap: 7px !important; margin-top: 8px !important; }
+html body #app .askbar-tag-grnd { display: inline-flex !important; align-items: center !important; gap: 4px !important; font-family: 'DM Mono', monospace !important; font-size: 9px !important; text-transform: uppercase !important; letter-spacing: .04em !important; background: rgba(16,185,129,.12) !important; color: #059669 !important; padding: 2px 7px !important; border-radius: 5px !important; }
+html body #app .askbar-tag-ai { font-family: 'DM Mono', monospace !important; font-size: 9px !important; text-transform: uppercase !important; letter-spacing: .04em !important; background: rgba(124,58,237,.1) !important; color: #7c3aed !important; padding: 2px 7px !important; border-radius: 5px !important; margin-left: auto !important; }
+
+/* Draft card styling (monospace, document-like) */
+html body #app .askbar-a-card--draft .askbar-a-tx { font-family: 'DM Mono', monospace !important; font-size: 12px !important; white-space: pre-wrap !important; line-height: 1.6 !important; background: #fff !important; border: 1px solid rgba(15,45,84,.1) !important; border-radius: 9px !important; padding: 12px !important; }
