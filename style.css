@@ -40162,7 +40162,7 @@ html body #app .pm-summary svg { color: #00b3b3 !important; flex-shrink: 0 !impo
 
 /* Mobile: legend stacks, filter full-width */
 @media (max-width: 768px) {
-  html body #app .pm-legend { gap: 10px !important; }
+  html body #app .pm-legend { gap: 10px !important; }  
   html body #app .pm-filter-select { margin-left: 0 !important; width: 100% !important; }
   html body #app .pm-legend-chips { flex-wrap: wrap !important; }
-}      
+}
