@@ -1,4 +1,4 @@
-/* ================================================================  
+/* ================================================================
    neumDesk — style.css
    Clinical Operations Platform UI Override Stylesheet
    
@@ -40624,4 +40624,112 @@ html body #app .askbar-tag-grnd { display: inline-flex !important; align-items: 
 html body #app .askbar-tag-ai { font-family: 'DM Mono', monospace !important; font-size: 9px !important; text-transform: uppercase !important; letter-spacing: .04em !important; background: rgba(124,58,237,.1) !important; color: #7c3aed !important; padding: 2px 7px !important; border-radius: 5px !important; margin-left: auto !important; }
 
 /* Draft card styling (monospace, document-like) */
-html body #app .askbar-a-card--draft .askbar-a-tx { font-family: 'DM Mono', monospace !important; font-size: 12px !important; white-space: pre-wrap !important; line-height: 1.6 !important; background: #fff !important; border: 1px solid rgba(15,45,84,.1) !important; border-radius: 9px !important; padding: 12px !important; }  
+html body #app .askbar-a-card--draft .askbar-a-tx { font-family: 'DM Mono', monospace !important; font-size: 12px !important; white-space: pre-wrap !important; line-height: 1.6 !important; background: #fff !important; border: 1px solid rgba(15,45,84,.1) !important; border-radius: 9px !important; padding: 12px !important; }
+
+/* ════════════════════════════════════════════════════════════════
+   §83  GROUNDED — cloud-orb agent presence (ambient, not a chatbot)
+   A floating luminous orb that blooms into a dark glass cloud.
+════════════════════════════════════════════════════════════════ */
+
+/* ── The floating orb (replaces the FAB) ── */
+html body #app .grounded-orb-wrap {
+  position: fixed !important; bottom: 32px !important; right: 32px !important;
+  width: 66px !important; height: 66px !important; border: none !important; background: none !important;
+  cursor: pointer !important; z-index: 4000 !important; padding: 0 !important;
+  animation: groundedFloat 6s ease-in-out infinite !important;
+}
+@keyframes groundedFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+html body #app .grounded-orb {
+  position: absolute !important; inset: 8px !important; border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 30%, #00e5e5 0%, #00b3b3 30%, #0891b2 55%, #7c3aed 100%) !important;
+  box-shadow: 0 0 32px rgba(0,179,179,.5), 0 0 64px rgba(124,58,237,.3), inset 0 0 24px rgba(255,255,255,.25) !important;
+  animation: groundedPulse 4s ease-in-out infinite !important;
+}
+@keyframes groundedPulse {
+  0%,100% { transform: scale(1); box-shadow: 0 0 32px rgba(0,179,179,.5), 0 0 64px rgba(124,58,237,.3), inset 0 0 24px rgba(255,255,255,.25); }
+  50% { transform: scale(1.06); box-shadow: 0 0 46px rgba(0,179,179,.7), 0 0 90px rgba(124,58,237,.42), inset 0 0 30px rgba(255,255,255,.35); }
+}
+html body #app .grounded-orb-cloud1, html body #app .grounded-orb-cloud2 {
+  content: '' !important; position: absolute !important; border-radius: 50% !important; mix-blend-mode: screen !important;
+}
+html body #app .grounded-orb-cloud1 { inset: 8% !important; background: radial-gradient(circle at 60% 65%, rgba(0,229,229,.7), transparent 55%) !important; animation: groundedDrift1 8s ease-in-out infinite !important; }
+html body #app .grounded-orb-cloud2 { inset: 12% !important; background: radial-gradient(circle at 30% 40%, rgba(124,58,237,.6), transparent 50%) !important; animation: groundedDrift2 10s ease-in-out infinite !important; }
+@keyframes groundedDrift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(3px,-2px) scale(1.1); } }
+@keyframes groundedDrift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-2px,3px) scale(1.15); } }
+/* orbiting particles */
+html body #app .grounded-particle { position: absolute !important; width: 4px !important; height: 4px !important; border-radius: 50% !important; top: 50% !important; left: 50% !important; background: #00e5e5 !important; box-shadow: 0 0 6px #00e5e5 !important; }
+html body #app .grounded-p1 { animation: groundedOrbit1 5s linear infinite !important; }
+html body #app .grounded-p2 { animation: groundedOrbit2 7s linear infinite !important; background: #a78bfa !important; box-shadow: 0 0 6px #a78bfa !important; }
+html body #app .grounded-p3 { animation: groundedOrbit3 6s linear infinite !important; }
+@keyframes groundedOrbit1 { from { transform: rotate(0deg) translateX(38px) rotate(0deg); } to { transform: rotate(360deg) translateX(38px) rotate(-360deg); } }
+@keyframes groundedOrbit2 { from { transform: rotate(120deg) translateX(43px) rotate(0deg); } to { transform: rotate(480deg) translateX(43px) rotate(-360deg); } }
+@keyframes groundedOrbit3 { from { transform: rotate(240deg) translateX(35px) rotate(0deg); } to { transform: rotate(600deg) translateX(35px) rotate(-360deg); } }
+/* alert state — quickens + amber badge */
+html body #app .grounded-orb--alert .grounded-orb { animation: groundedPulse 2s ease-in-out infinite !important; }
+html body #app .grounded-orb-badge {
+  position: absolute !important; top: 2px !important; right: 2px !important; min-width: 20px !important; height: 20px !important;
+  border-radius: 100px !important; background: #f59e0b !important; color: #3a2400 !important; font-size: 11px !important; font-weight: 700 !important;
+  display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 6px !important;
+  border: 2px solid #0a1524 !important; box-shadow: 0 2px 8px rgba(245,158,11,.5) !important; z-index: 2 !important;
+}
+
+/* ── The bloom: dark glass cloud (overrides the light panel) ── */
+html body #app .grounded-overlay {
+  position: fixed !important; inset: 0 !important; z-index: 4001 !important;
+  background: rgba(6,13,24,.45) !important; backdrop-filter: blur(3px) !important; -webkit-backdrop-filter: blur(3px) !important;
+  display: flex !important; align-items: flex-end !important; justify-content: flex-end !important;
+  padding: 0 32px 32px 0 !important;
+}
+html body #app .askbar-panel.grounded-cloud {
+  background: linear-gradient(160deg, rgba(18,35,61,.94), rgba(10,21,36,.96)) !important;
+  backdrop-filter: blur(24px) !important; -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(0,179,179,.28) !important; border-radius: 28px !important;
+  box-shadow: 0 0 60px rgba(0,179,179,.18), 0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  overflow: hidden !important; position: relative !important;
+  animation: groundedBloom .5s cubic-bezier(.16,1,.3,1) !important;
+}
+@keyframes groundedBloom { from { opacity: 0; transform: translateY(24px) scale(.82); filter: blur(8px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+html body #app .grounded-mist { position: absolute !important; border-radius: 50% !important; background: radial-gradient(circle, rgba(0,179,179,.15), transparent 70%) !important; pointer-events: none !important; z-index: 0 !important; }
+html body #app .grounded-mist1 { width: 200px !important; height: 200px !important; bottom: -60px !important; left: -40px !important; animation: groundedDrift1 12s ease-in-out infinite !important; }
+html body #app .grounded-mist2 { width: 160px !important; height: 160px !important; top: -40px !important; right: -30px !important; animation: groundedDrift2 14s ease-in-out infinite !important; }
+
+/* Cloud header */
+html body #app .grounded-head { background: transparent !important; position: relative !important; z-index: 1 !important; }
+html body #app .grounded-head::after, html body #app .grounded-head::before { display: none !important; }
+html body #app .grounded-head-orb { width: 32px !important; height: 32px !important; border-radius: 50% !important; flex-shrink: 0 !important; background: radial-gradient(circle at 35% 30%, #00e5e5, #0891b2 55%, #7c3aed) !important; box-shadow: 0 0 18px rgba(0,179,179,.6) !important; animation: groundedPulse 4s ease-in-out infinite !important; }
+html body #app .grounded-head .askbar-head-t { color: #fff !important; }
+html body #app .grounded-head .askbar-head-s { color: rgba(0,212,212,.7) !important; }
+
+/* Recolor inner content for dark cloud */
+html body #app .grounded-cloud .askbar-conv, html body #app .grounded-cloud .askbar-digest { position: relative !important; z-index: 1 !important; }
+html body #app .grounded-cloud .askbar-q-bub { background: rgba(0,179,179,.16) !important; border: 1px solid rgba(0,179,179,.25) !important; color: #e0f7f7 !important; }
+html body #app .grounded-cloud .askbar-a-card { background: rgba(255,255,255,.05) !important; border: 1px solid rgba(0,179,179,.18) !important; }
+html body #app .grounded-cloud .askbar-a-tx { color: rgba(255,255,255,.92) !important; }
+html body #app .grounded-cloud .askbar-a-tx b { color: #00e5e5 !important; }
+html body #app .grounded-cloud .askbar-greeting-t { color: #fff !important; }
+html body #app .grounded-cloud .askbar-greeting-s { color: rgba(255,255,255,.6) !important; }
+html body #app .grounded-cloud .askbar-sug-label { color: rgba(255,255,255,.5) !important; }
+html body #app .grounded-cloud .askbar-sug-item { background: rgba(255,255,255,.04) !important; border: 1px solid rgba(255,255,255,.08) !important; }
+html body #app .grounded-cloud .askbar-sug-t { color: rgba(255,255,255,.9) !important; }
+html body #app .grounded-cloud .askbar-sug-d { color: rgba(255,255,255,.5) !important; }
+html body #app .grounded-cloud .askbar-input { background: rgba(255,255,255,.06) !important; border: 1px solid rgba(0,179,179,.28) !important; }
+html body #app .grounded-cloud .askbar-input input { color: #fff !important; }
+html body #app .grounded-cloud .askbar-input input::placeholder { color: rgba(255,255,255,.4) !important; }
+html body #app .grounded-cloud .askbar-close { color: rgba(255,255,255,.5) !important; }
+html body #app .grounded-cloud .askbar-fu { background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.12) !important; color: #e0f7f7 !important; }
+html body #app .grounded-cloud .askbar-fu--act { background: rgba(0,179,179,.25) !important; border-color: rgba(0,179,179,.4) !important; color: #fff !important; }
+html body #app .grounded-cloud .askbar-trace, html body #app .grounded-cloud .askbar-trace-mini { background: rgba(255,255,255,.04) !important; border-color: rgba(255,255,255,.08) !important; }
+html body #app .grounded-cloud .askbar-trace-ht, html body #app .grounded-cloud .askbar-trace-mini-t { color: rgba(255,255,255,.85) !important; }
+html body #app .grounded-cloud .askbar-trace-label { color: rgba(255,255,255,.9) !important; }
+html body #app .grounded-cloud .askbar-alert { background: rgba(255,255,255,.04) !important; border-color: rgba(255,255,255,.08) !important; }
+html body #app .grounded-cloud .askbar-alert-t { color: rgba(255,255,255,.92) !important; }
+html body #app .grounded-cloud .askbar-alert-d { color: rgba(255,255,255,.55) !important; }
+html body #app .grounded-cloud .askbar-digest-h-t { color: #fff !important; }
+html body #app .grounded-cloud .askbar-mode-link { color: rgba(255,255,255,.5) !important; border-color: rgba(0,179,179,.3) !important; }
+
+/* Mobile: cloud fills bottom */
+@media (max-width: 640px) {
+  html body #app .grounded-overlay { padding: 0 !important; align-items: flex-end !important; }
+  html body #app .askbar-panel.grounded-cloud { border-radius: 24px 24px 0 0 !important; width: 100% !important; max-width: 100% !important; }
+  html body #app .grounded-orb-wrap { bottom: 20px !important; right: 20px !important; }
+}
