@@ -1,0 +1,419 @@
+{
+  "_meta": {
+    "name": "neumDesk Agent Evaluation Set",
+    "purpose": "Objective measurement of agent retrieval quality. Each case: a question, the expected intent, and answer fragments that MUST appear. Run on every change to catch regressions and measure coverage.",
+    "version": 1
+  },
+  "seed": {
+    "medicalStaff": [
+      {
+        "id": 1,
+        "full_name": "Adela Antelo",
+        "staff_type": "attending_physician",
+        "specialization": "Interventional Pulmonology",
+        "has_phd": true,
+        "phd_field": "Respiratory Medicine",
+        "can_be_pi": true,
+        "can_supervise_residents": true,
+        "professional_email": "antelo@chuac.es",
+        "clinical_certificate": "Bronchoscopy",
+        "employment_status": "active"
+      },
+      {
+        "id": 2,
+        "full_name": "Ana Santalla",
+        "staff_type": "medical_resident",
+        "residency_year_override": "R3",
+        "employment_status": "active",
+        "certificate_status": "expiring 2026-08"
+      },
+      {
+        "id": 3,
+        "full_name": "Juan Lopez",
+        "staff_type": "attending_physician",
+        "can_be_pi": true,
+        "employment_status": "active"
+      },
+      {
+        "id": 4,
+        "full_name": "Maria Lopez",
+        "staff_type": "medical_resident",
+        "residency_year_override": "R1",
+        "employment_status": "active"
+      },
+      {
+        "id": 5,
+        "full_name": "Iria Horjales",
+        "staff_type": "attending_physician",
+        "has_phd": true,
+        "phd_field": "Immunology",
+        "employment_status": "active"
+      }
+    ],
+    "onCallSchedule": [
+      {
+        "id": 1,
+        "primary_physician_id": 1,
+        "duty_date": "2026-07-03"
+      },
+      {
+        "id": 2,
+        "primary_physician_id": 1,
+        "duty_date": "2026-07-05"
+      },
+      {
+        "id": 3,
+        "primary_physician_id": 1,
+        "duty_date": "2026-07-08"
+      },
+      {
+        "id": 4,
+        "primary_physician_id": 3,
+        "duty_date": "2026-07-10"
+      }
+    ],
+    "absences": [
+      {
+        "id": 1,
+        "staff_member_id": 2,
+        "start_date": "2026-07-01",
+        "end_date": "2026-07-08",
+        "current_status": "currently_absent"
+      }
+    ],
+    "rotations": [
+      {
+        "id": 1,
+        "resident_id": 2,
+        "rotation_status": "active",
+        "training_unit_id": 10,
+        "supervising_attending_id": 1
+      },
+      {
+        "id": 2,
+        "resident_id": 4,
+        "rotation_status": "active",
+        "training_unit_id": 10,
+        "supervising_attending_id": null
+      }
+    ],
+    "trainingUnits": [
+      {
+        "id": 10,
+        "unit_name": "ICU",
+        "maximum_residents": 2,
+        "unit_status": "active"
+      },
+      {
+        "id": 11,
+        "unit_name": "Sleep Lab",
+        "maximum_residents": 3,
+        "unit_status": "active"
+      }
+    ],
+    "clinicalTrials": [
+      {
+        "id": 1,
+        "title": "NEUMOPROTECT",
+        "principal_investigator_id": 1,
+        "status": "Reclutando",
+        "actual_enrollment": 38,
+        "enrollment_target": 60
+      },
+      {
+        "id": 2,
+        "title": "BIOASMA",
+        "principal_investigator_id": 1,
+        "status": "Activo"
+      }
+    ],
+    "researchLines": [
+      {
+        "id": 1,
+        "research_line_name": "Airway Inflammation",
+        "line_number": 1,
+        "coordinator_id": 1
+      }
+    ],
+    "innovationProjects": [
+      {
+        "id": 1,
+        "title": "AI Spirometry",
+        "current_stage": "Piloto"
+      }
+    ],
+    "departments": [
+      {
+        "id": 1,
+        "name": "Neumologia",
+        "head_of_department_id": 1
+      }
+    ]
+  },
+  "cases": [
+    {
+      "q": "who is on call today?",
+      "intent": "oncall_upcoming",
+      "must": [
+        "Antelo"
+      ]
+    },
+    {
+      "q": "guardia hoy?",
+      "intent": "oncall_upcoming",
+      "must": [
+        "Antelo"
+      ]
+    },
+    {
+      "q": "who is absent?",
+      "intent": "absent_now",
+      "must": [
+        "Santalla"
+      ]
+    },
+    {
+      "q": "quien esta de baja?",
+      "intent": "absent_now",
+      "must": [
+        "Santalla"
+      ]
+    },
+    {
+      "q": "does antelo have a phd?",
+      "intent": "staff_attr",
+      "must": [
+        "Yes",
+        "Respiratory"
+      ]
+    },
+    {
+      "q": "antelo phd?",
+      "intent": "staff_attr",
+      "must": [
+        "Yes"
+      ]
+    },
+    {
+      "q": "what are antelo's certificates?",
+      "intent": "staff_attr",
+      "must": [
+        "Bronchoscopy"
+      ]
+    },
+    {
+      "q": "is antelo certified",
+      "intent": "staff_attr",
+      "must": [
+        "Bronchoscopy"
+      ]
+    },
+    {
+      "q": "can antelo be a PI?",
+      "intent": "staff_attr",
+      "must": [
+        "can serve"
+      ]
+    },
+    {
+      "q": "can antelo lead a trial?",
+      "intent": "staff_attr",
+      "must": [
+        "can serve"
+      ]
+    },
+    {
+      "q": "how do i reach antelo?",
+      "intent": "staff_attr",
+      "must": [
+        "antelo@chuac.es"
+      ]
+    },
+    {
+      "q": "what year is ana santalla?",
+      "intent": "staff_attr",
+      "must": [
+        "R3"
+      ]
+    },
+    {
+      "q": "antello",
+      "intent": "staff_summary",
+      "must": [
+        "Antelo"
+      ]
+    },
+    {
+      "q": "santaya",
+      "intent": "staff_summary",
+      "must": [
+        "Santalla"
+      ]
+    },
+    {
+      "q": "who can be a PI?",
+      "intent": "staff_can_pi",
+      "must": [
+        "Antelo",
+        "Lopez"
+      ]
+    },
+    {
+      "q": "who has a phd?",
+      "intent": "staff_with_phd",
+      "must": [
+        "Antelo",
+        "Horjales"
+      ]
+    },
+    {
+      "q": "how many residents do we have?",
+      "intent": "residents_by_year",
+      "must": [
+        "R3",
+        "R1"
+      ]
+    },
+    {
+      "q": "which trials are recruiting?",
+      "intent": "trials_recruiting",
+      "must": [
+        "NEUMOPROTECT"
+      ]
+    },
+    {
+      "q": "how many trials do we have?",
+      "intent": "trials_overview",
+      "must": [
+        "2 trials"
+      ]
+    },
+    {
+      "q": "which trials is antelo the pi on?",
+      "intent": "trials_by_person",
+      "must": [
+        "NEUMOPROTECT",
+        "BIOASMA"
+      ]
+    },
+    {
+      "q": "what research lines exist?",
+      "intent": "research_lines",
+      "must": [
+        "Airway Inflammation"
+      ]
+    },
+    {
+      "q": "innovation projects?",
+      "intent": "innovation_projects",
+      "must": [
+        "Piloto"
+      ]
+    },
+    {
+      "q": "what units do we have?",
+      "intent": "units_overview",
+      "must": [
+        "ICU",
+        "Sleep Lab"
+      ]
+    },
+    {
+      "q": "which units are at capacity?",
+      "intent": "units_at_capacity",
+      "must": [
+        "ICU"
+      ]
+    },
+    {
+      "q": "any unsupervised residents?",
+      "intent": "unsupervised_residents",
+      "must": [
+        "Maria Lopez"
+      ]
+    },
+    {
+      "q": "whose certificates are expiring?",
+      "intent": "certs_expiring",
+      "must": [
+        "Santalla"
+      ]
+    },
+    {
+      "q": "who is rotating where?",
+      "intent": "rotations_deep",
+      "must": [
+        "ICU"
+      ]
+    },
+    {
+      "q": "what departments do we have?",
+      "intent": "departments_overview",
+      "must": [
+        "Neumologia"
+      ]
+    },
+    {
+      "q": "who is the busiest on call?",
+      "intent": "rank_staff",
+      "must": [
+        "Antelo"
+      ]
+    },
+    {
+      "q": "who has the fewest shifts?",
+      "intent": "rank_staff",
+      "must": [
+        "tied"
+      ]
+    },
+    {
+      "q": "compare Antelo and Lopez on shifts",
+      "intent": "compare_staff",
+      "must": [
+        "Antelo",
+        "difference"
+      ]
+    },
+    {
+      "q": "who has more shifts, Antelo or Lopez?",
+      "intent": "compare_staff",
+      "must": [
+        "more"
+      ]
+    },
+    {
+      "q": "best backup if Antelo is out",
+      "intent": "recommend_backup",
+      "must": [
+        "Lopez"
+      ]
+    },
+    {
+      "q": "draft an email about coverage",
+      "intent": "draft_email",
+      "must": [
+        "Subject"
+      ]
+    },
+    {
+      "q": "give me a briefing",
+      "intent": "briefing",
+      "must": [
+        "on duty"
+      ]
+    },
+    {
+      "q": "any conflicts?",
+      "intent": "issues",
+      "must": []
+    },
+    {
+      "q": "lopez",
+      "intent": "clarify_staff",
+      "must": [
+        "which"
+      ]
+    }
+  ]
+}
