@@ -9543,6 +9543,71 @@ document.addEventListener('DOMContentLoaded', () => {
         return /resident|mir|r[1-4]/.test(t) || !!s?.residency_year_override || !!s?.training_year
       }
 
+      // ── Metric engine (powers ranked + comparison queries) ──
+      // Detect which measurable the question is about.
+      const askBarDetectMetric = (q) => {
+        if (/(trial|study|studies|enrol|recruit|pi\b|investigat)/.test(q)) return { key: 'trials', label: 'trials as PI', unit: '', source: 'research' }
+        if (/(rotation|resident|supervis)/.test(q)) return { key: 'supervising', label: 'residents supervised', unit: '', source: 'rotations' }
+        if (/(leave|absent|vacation|off\b)/.test(q)) return { key: 'leave', label: 'leave records', unit: '', source: 'leave records' }
+        // default: on-call load
+        return { key: 'shifts', label: 'on-call shifts', unit: '', source: 'on-call schedule' }
+      }
+      // Compute a person's value for a metric (null if not applicable).
+      const askBarMetricValue = (s, key) => {
+        if (!s) return null
+        if (key === 'shifts') return (onCallSchedule.value || []).filter(x => x.primary_physician_id === s.id).length
+        if (key === 'trials') return (researchOps.clinicalTrials.value || []).filter(t => t.principal_investigator_id === s.id).length
+        if (key === 'supervising') return (rotations.value || []).filter(r => r.rotation_status === 'active' && r.supervising_attending_id === s.id).length
+        if (key === 'leave') return (absences.value || []).filter(a => a.staff_member_id === s.id).length
+        return null
+      }
+      // Extract up to two named people from a comparison query.
+      const askBarExtractTwoNames = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        // split on connectors, resolve each side
+        const parts = q.split(/\b(?:or|and|vs\.?|versus|,)\b/).map(p => p.trim()).filter(Boolean)
+        const found = []
+        const seen = new Set()
+        for (const part of parts) {
+          const person = askBarResolveStaff(part)
+          if (person && !seen.has(person.id)) { seen.add(person.id); found.push(person) }
+          if (found.length === 2) break
+        }
+        // fallback: scan whole query for any two distinct staff by surname token
+        if (found.length < 2) {
+          const staff = medicalStaff.value || []
+          for (const s of staff) {
+            const toks = (s.full_name||'').toLowerCase().split(/\s+/).filter(w=>w.length>2)
+            if (toks.some(t => q.includes(t)) && !seen.has(s.id)) { seen.add(s.id); found.push(s) }
+            if (found.length === 2) break
+          }
+        }
+        return found
+      }
+
+      // Levenshtein distance for typo tolerance (bounded, cheap for short words).
+      const _lev = (a, b) => {
+        a = a || ''; b = b || ''
+        if (Math.abs(a.length - b.length) > 3) return 99
+        const m = a.length, n = b.length
+        if (!m) return n; if (!n) return m
+        let prev = Array.from({ length: n + 1 }, (_, i) => i)
+        for (let i = 1; i <= m; i++) {
+          const cur = [i]
+          for (let j = 1; j <= n; j++) {
+            cur[j] = a[i-1] === b[j-1] ? prev[j-1] : 1 + Math.min(prev[j-1], prev[j], cur[j-1])
+          }
+          prev = cur
+        }
+        return prev[n]
+      }
+      // Fuzzy token match: does query token approximately equal a name token?
+      const _fuzzyHit = (qt, nameTok) => {
+        if (nameTok.includes(qt) || qt.includes(nameTok)) return true
+        const tol = qt.length <= 4 ? 1 : qt.length <= 7 ? 2 : 3
+        return _lev(qt, nameTok) <= tol
+      }
+
       const askBarResolveStaff = (qRaw) => {
         let q = (qRaw || '').toLowerCase()
           .replace(/[''']s\b/g, '')      // possessive: "antelo's" → "antelo"
@@ -9556,22 +9621,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Build a set of all real name tokens (surnames/first names) for validation
         const nameTokens = new Set()
         staff.forEach(s => (s.full_name||'').toLowerCase().split(/\s+/).forEach(w => { if (w.length > 2) nameTokens.add(w) }))
-        // Only keep query words that are NOT stopwords AND actually appear as a name token
-        const qt = q.split(/\s+/).filter(w => w.length > 2 && !STOP.has(w) && nameTokens.has(w))
+        // Keep query words that fuzzy-match a real name token (typo-tolerant).
+        const candidateWords = q.split(/\s+/).filter(w => w.length > 2 && !STOP.has(w))
+        const qt = candidateWords.filter(w => nameTokens.has(w) || [...nameTokens].some(nt => _fuzzyHit(w, nt)))
         if (!qt.length) {
           // last resort: whole-query contains (for "anasantalla" → "ana santalla")
           const compact = q.replace(/\s+/g,'')
-          const hit = staff.find(s => (s.full_name||'').toLowerCase().replace(/\s+/g,'').includes(compact)) 
+          const hit = staff.find(s => (s.full_name||'').toLowerCase().replace(/\s+/g,'').includes(compact))
           return (compact.length >= 5 && hit) ? hit : null
         }
-        // score by how many real name tokens overlap
+        // score by fuzzy overlap of query tokens against each staff name's tokens
         let best = null, bestScore = 0
         for (const s of staff) {
-          const name = (s.full_name || '').toLowerCase()
-          const score = qt.reduce((n, t) => n + (name.includes(t) ? 1 : 0), 0)
+          const nameToks = (s.full_name || '').toLowerCase().split(/\s+/).filter(w => w.length > 2)
+          let score = 0
+          for (const t of qt) {
+            // exact substring = 1.0, fuzzy = 0.7 (so exact wins ties)
+            if (nameToks.some(nt => nt.includes(t) || t.includes(nt))) score += 1
+            else if (nameToks.some(nt => _fuzzyHit(t, nt))) score += 0.7
+          }
           if (score > bestScore) { bestScore = score; best = s }
         }
-        return bestScore >= 1 ? best : null
+        return bestScore >= 0.7 ? best : null
       }
 
       // #2 Temporal parsing — turn phrases into a {start,end} date window.
@@ -9648,6 +9719,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const q = (qRaw || '').toLowerCase()
         // High-specificity checks FIRST (these are precise; the brain's broad
         // concept matching would otherwise mis-route them to trials/research).
+        // Comparison: two names + more/less, or "compare X and Y"
+        if (/\bcompare\b/.test(q) || /(who has (more|less|fewer)|more than|busier|less busy).*\b(or|and|vs|versus)\b/.test(q) || /\b(or|vs|versus)\b.*(more|less|busier|shifts|trials)/.test(q)) return 'compare_staff'
+        // Ranked/superlative: most/least/busiest without two explicit names
+        if (/(busiest|most|fewest|least|lightest|heaviest|top|overloaded|who has the (most|fewest|least))/.test(q) && !/\bcompare\b/.test(q)) return 'rank_staff'
+        if (/(units? at capacity|capacity|full unit|units? full|occupancy|overcrowded)/.test(q)) return 'units_at_capacity'
+        if (/(unsupervised|without .* supervisor|no supervisor|residents? .* no)/.test(q)) return 'unsupervised_residents'
+        if (/(certificate|cert).*(expir|due|lapse|renew|status)|expiring cert|whose cert/.test(q)) return 'certs_expiring'
+        if (/(who.*rotating|rotations? deep|which residents.*rotat|residents.*where|rotating where|under whom)/.test(q)) return 'rotations_deep'
+        if (/(department|hospital|which dept|list.*department)/.test(q)) return 'departments_overview'
         // trials-by-person must beat the generic PI check
         if (/(which|what|list).*(trials?|studies).*(antelo|\w+).*(pi|investigator|lead)/.test(q) || /(trials?|studies).*(is|are)\s+\w+.*(pi|on|leading)/.test(q) || /(what|which) trials?.*\bon\b/.test(q)) return 'trials_by_person'
         if (/(who|which|how many).*(can be |be a |become )?(pi|principal investigator)\b/.test(q) || /\bpi.eligible\b/.test(q)) return 'staff_can_pi'
@@ -10147,6 +10227,74 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!units.length) return { text: 'No training units are defined.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
           const active = units.filter(u => (u.unit_status||'active')==='active').length
           return { text: `${units.length} unit${units.length===1?'':'s'} (${active} active): ${units.slice(0,5).map(u=>u.unit_name).join(', ')}.`, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'rotations_deep') {
+          // Who's rotating where, under whom
+          const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
+          if (!active.length) return { text: 'No residents are on active rotation right now.', chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], followups: [], confidence: 'high' }
+          const units = trainingUnits.value || []
+          const unitName = (id) => (units.find(u => u.id === id)||{}).unit_name || 'a unit'
+          const lines = active.slice(0,5).map(r => `${getStaffName(r.resident_id)} in ${unitName(r.training_unit_id)}${r.supervising_attending_id ? ' under ' + getStaffName(r.supervising_attending_id) : ' (no supervisor)'}`)
+          return { text: `${active.length} active rotation${active.length===1?'':'s'}: ${lines.join('; ')}.`, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff', 'units'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'departments_overview') {
+          const depts = departments.value || []
+          if (!depts.length) return { text: 'No departments are on record.', chips: [], actions: [], sources: ['departments'], followups: [], confidence: 'high' }
+          return { text: `${depts.length} department${depts.length===1?'':'s'}: ${depts.slice(0,6).map(d=>d.name + (d.head_of_department_id?' (head: '+getStaffName(d.head_of_department_id)+')':'')).join(', ')}.`, chips: [], actions: [], sources: ['departments'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'certs_expiring') {
+          // Staff whose certificate_status flags an issue (expiring/expired)
+          const flagged = (medicalStaff.value || []).filter(s => /(expir|vencid|caduc|pending|due)/i.test(s.certificate_status || ''))
+          if (!flagged.length) return { text: 'No staff have flagged or expiring certificates on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
+          return { text: `${flagged.length} staff have certificate issues: ${flagged.slice(0,5).map(s=>s.full_name + ' (' + s.certificate_status + ')').join(', ')}.`, chips: flagged.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+        }
+        // ── THE EXTRA 10% — proactive cross-cutting intelligence ──
+        if (intent === 'units_at_capacity') {
+          const units = trainingUnits.value || []
+          const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
+          const rows = units.map(u => { const n = active.filter(r => r.training_unit_id === u.id).length; const cap = u.maximum_residents || 5; return { name: u.unit_name, n, cap, full: n >= cap } }).filter(r => r.n > 0)
+          const full = rows.filter(r => r.full)
+          if (!rows.length) return { text: 'No units currently have residents assigned.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units', 'rotations'], followups: [], confidence: 'high' }
+          let text = full.length ? `${full.length} unit${full.length===1?'':'s'} at or over capacity: ${full.map(r=>`${r.name} (${r.n}/${r.cap})`).join(', ')}.` : 'No units are at capacity.'
+          text += ` Occupancy: ${rows.slice(0,4).map(r=>`${r.name} ${r.n}/${r.cap}`).join(', ')}.`
+          return { text, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units', 'rotations'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'unsupervised_residents') {
+          const unsup = (rotations.value || []).filter(r => r.rotation_status === 'active' && !r.supervising_attending_id)
+          if (!unsup.length) return { text: 'Every active rotation has an assigned supervisor. All good.', chips: [], actions: [], sources: ['rotations'], followups: [], confidence: 'high' }
+          return { text: `${unsup.length} resident${unsup.length===1?'':'s'} on active rotation without a supervisor: ${unsup.slice(0,5).map(r=>getStaffName(r.resident_id)).join(', ')}.`, chips: unsup.slice(0,5).map(r=>({label:getStaffName(r.resident_id),id:r.resident_id})), actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'rank_staff') {
+          // Superlative queries: "busiest attending", "who has the most shifts", "least loaded"
+          const q = (askBar.lastAsked || '').toLowerCase()
+          const metric = askBarDetectMetric(q)
+          const wantLeast = /(least|fewest|lightest|less|lowest)/.test(q)
+          const rows = (medicalStaff.value || [])
+            .filter(s => s.employment_status === 'active')
+            .map(s => ({ s, v: askBarMetricValue(s, metric.key) }))
+            .filter(r => r.v !== null)
+          if (!rows.length) return { text: `I don't have enough data to rank by ${metric.label}.`, chips: [], actions: [], sources: [metric.source], followups: [], confidence: 'low' }
+          rows.sort((a,b) => wantLeast ? a.v - b.v : b.v - a.v)
+          const top = rows[0], runner = rows[1]
+          let text = `${top.s.full_name} has the ${wantLeast ? 'fewest' : 'most'} ${metric.label} — ${top.v}${metric.unit}`
+          if (runner) text += `, ${wantLeast ? 'ahead of' : 'compared to'} ${runner.s.full_name}'s ${runner.v}${metric.unit}`
+          text += '.'
+          return { text, chips: rows.slice(0,4).map(r=>({label:`${r.s.full_name} · ${r.v}`,id:r.s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: [metric.source, 'staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'compare_staff') {
+          // "who has more shifts, Antelo or López?"  /  "compare Antelo and López"
+          const q = askBar.lastAsked || ''
+          const names = askBarExtractTwoNames(q)
+          if (names.length < 2) return { text: 'Name two people to compare, e.g. "compare Antelo and López".', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'low' }
+          const metric = askBarDetectMetric(q.toLowerCase())
+          const a = names[0], b = names[1]
+          const va = askBarMetricValue(a, metric.key), vb = askBarMetricValue(b, metric.key)
+          if (va === null && vb === null) return { text: `I don't have ${metric.label} data for either of them.`, chips: [], actions: [], sources: [metric.source], followups: [], confidence: 'low' }
+          const na = va===null?0:va, nb = vb===null?0:vb
+          let text
+          if (na === nb) text = `${a.full_name} and ${b.full_name} are even — both have ${na}${metric.unit} ${metric.label}.`
+          else { const hi = na>nb?a:b, lo = na>nb?b:a, hv = Math.max(na,nb), lv = Math.min(na,nb); text = `${hi.full_name} has more ${metric.label}: ${hv}${metric.unit} versus ${lo.full_name}'s ${lv}${metric.unit} — a difference of ${hv-lv}.` }
+          return { text, chips: [{label:`${a.full_name} · ${na}`,id:a.id},{label:`${b.full_name} · ${nb}`,id:b.id}], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: [metric.source, 'staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'oncall_upcoming') {
           const today = Utils.normalizeDate(new Date())
