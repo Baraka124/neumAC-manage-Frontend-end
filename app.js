@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue    
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
 
     // ── DIAGNOSTIC: visible error banner ─────────────────────────────────
     // Built with plain DOM calls (no Vue) so it still works even when the
@@ -294,7 +294,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         "investigator",
                         "principal investigator",
                         "investigador"
-                ]
+                ],
+                "researchline": ["research line", "línea", "linea", "research area", "lines of research"],
+                "innovation": ["innovation", "project", "proyecto", "patent", "prototype", "prototipo"],
+                "unit": ["training unit", "clinical unit", "unit", "unidad", "ward"],
+                "phd": ["phd", "doctorate", "doctoral"]
         },
         "entities": {
                 "staff": {
@@ -9394,6 +9398,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBar = reactive({
         open: false,
         query: '',
+        lastAsked: '',
         loading: false,
         thinking: null,    // string shown while it "thinks" (what it's checking)
         trace: [],         // live reasoning steps [{label, src, done}] — the agent feel
@@ -9518,11 +9523,35 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Intent matcher: maps free text → a known intent (keyword RAG) ──
       // ── Batch 2 foundations ───────────────────────────────────────────
       // #8 Entity resolution — fuzzy match a name fragment to a staff member.
+      // Detect which staff attribute a question asks about (phrasing-robust).
+      const askBarDetectStaffAttr = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        if (/(phd|doctorate|doctoral)/.test(q)) return 'phd'
+        if (/(\bpi\b|principal investigator|can .* be .* investigator|lead .* trial|lead investigator)/.test(q)) return 'pi'
+        if (/(certificate|certified|certification|cert\b|credential)/.test(q)) return 'certs'
+        if (/(specialty|speciali[sz]ation|subspecialty|area of)/.test(q)) return 'specialty'
+        if (/(email|phone|contact|reach|number)/.test(q)) return 'contact'
+        if (/(residency|which year|what year|r[1-4]\b|training year)/.test(q)) return 'residency'
+        if (/(supervise|supervisor|can .* supervise)/.test(q)) return 'supervise'
+        if (/(license|licence|licensed)/.test(q)) return 'license'
+        if (/(role|position|title|what (is|does) .* (do|role)|job)/.test(q)) return 'role'
+        if (/(status|active|employed|still (here|working))/.test(q)) return 'status'
+        return null
+      }
+      const askBarIsResident = (s) => {
+        const t = (s?.staff_type || '').toLowerCase()
+        return /resident|mir|r[1-4]/.test(t) || !!s?.residency_year_override || !!s?.training_year
+      }
+
       const askBarResolveStaff = (qRaw) => {
-        let q = (qRaw || '').toLowerCase().replace(/\b(dr|dra|doctor|doctora)\.?\b/g, '').trim()
+        let q = (qRaw || '').toLowerCase()
+          .replace(/[''']s\b/g, '')      // possessive: "antelo's" → "antelo"
+          .replace(/[?.,!;:()"']/g, ' ')  // punctuation
+          .replace(/\b(dr|dra|doctor|doctora)\.?\b/g, '')
+          .replace(/\s+/g, ' ').trim()
         if (q.length < 3) return null
         // Strip common non-name words so "on call today" can't fuzzy-hit a name.
-        const STOP = new Set(['on','call','oncall','today','tomorrow','leave','absent','off','who','is','are','the','of','a','an','for','in','this','week','weekend','month','rotation','shift','schedule','duty','guardia','cover','backup','best','draft','write','note','email','message','and','not','with','their','his','her'])
+        const STOP = new Set(['on','call','oncall','today','tomorrow','leave','absent','off','who','is','are','the','of','a','an','for','in','this','week','weekend','month','rotation','shift','schedule','duty','guardia','cover','backup','best','draft','write','note','email','message','and','not','with','their','his','her','trials','trial','studies','study','pi','investigator','lead','which','what','have','has','does','do','phd','certificate','certificates','specialty','can','be','year'])
         const staff = medicalStaff.value || []
         // Build a set of all real name tokens (surnames/first names) for validation
         const nameTokens = new Set()
@@ -9616,6 +9645,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const askBarMatchIntent = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        // High-specificity checks FIRST (these are precise; the brain's broad
+        // concept matching would otherwise mis-route them to trials/research).
+        // trials-by-person must beat the generic PI check
+        if (/(which|what|list).*(trials?|studies).*(antelo|\w+).*(pi|investigator|lead)/.test(q) || /(trials?|studies).*(is|are)\s+\w+.*(pi|on|leading)/.test(q) || /(what|which) trials?.*\bon\b/.test(q)) return 'trials_by_person'
+        if (/(who|which|how many).*(can be |be a |become )?(pi|principal investigator)\b/.test(q) || /\bpi.eligible\b/.test(q)) return 'staff_can_pi'
+        if (/(who|which|how many).*(phd|doctorate)/.test(q)) return 'staff_with_phd'
+        if (/(how many|number of).*resident/.test(q) || /residents.*(do we have|are there|by year)/.test(q)) return 'residents_by_year'
+        if (/(trials?|studies).*(by|led by|pi(ed)? by|of)\s+\w+/.test(q) || /(which|what).*trials?.*\bis\b.*\bpi\b/.test(q)) return 'trials_by_person'
+        if (/(research line|research area|líneas?|lines of research)/.test(q)) return 'research_lines'
+        if (/(innovation|patent|prototype|proyecto)/.test(q)) return 'innovation_projects'
+        if (/(training unit|clinical unit|which unit|what unit|our units|the units|units do we|list.*units)/.test(q)) return 'units_overview'
+        if (/(how many|total).*(trial|study|studies)/.test(q)) return 'trials_overview'
         // Brain first — the externalized knowledge takes precedence.
         const fromBrain = askBarMatchFromBrain(qRaw)
         if (fromBrain) return fromBrain
@@ -9625,6 +9667,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarMatchIntentLegacy = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
+        // ── Cross-cutting joins (specific, check first) ──
+        if (/(who|which|how many).*(can be |be a |become )?(pi|principal investigator)/.test(q) || /pi.eligible|eligible.*pi/.test(q)) return 'staff_can_pi'
+        if (/(who|which|how many).*(phd|doctorate)/.test(q) || /phd.*(staff|have|hold)/.test(q)) return 'staff_with_phd'
+        if (/(how many|number of).*(resident)/.test(q) || /(residents).*(year|r[1-4]|do we have|are there)/.test(q)) return 'residents_by_year'
+        if (/(who is|who's).*(pi|investigator).*(on)|(trials?).*(by|led by|pi)/.test(q)) return 'trials_by_person'
+        // ── Entity overviews ──
+        if (/(research line|línea|research area|what.*research)/.test(q)) return 'research_lines'
+        if (/(innovation|project|proyecto|patent|prototype)/.test(q)) return 'innovation_projects'
+        if (/(training unit|clinical unit|which unit|what unit|units)/.test(q)) return 'units_overview'
+        if (/(how many|all).*(trial|study|studies)/.test(q) || /(trial|study).*(overview|total|status)/.test(q)) return 'trials_overview'
         // Agent intents (check first — they're specific)
         if (/(best|who should|who could|recommend|suggest).*(backup|cover|replace|fill in)/.test(q) || /(if|when).*(out|away|on leave|absent).*(who|cover|backup)/.test(q)) return 'recommend_backup'
         if (/(draft|write|compose).*(email|message|note|announcement)/.test(q)) return 'draft_email'
@@ -9682,7 +9734,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // Bare name with no topic/pronoun → summarize that person (works regardless of context).
         if (!hasPronoun && !topicLeave && !topicCall && !topicRot && askBarDetectConcepts(q).size === 0) {
           const person = askBarResolveStaff(q)
-          if (person) { askBar.context = { type: 'staff', id: person.id, name: person.full_name }; return { kind: 'staff_summary', id: person.id, name: person.full_name } }
+          if (person) {
+            askBar.context = { type: 'staff', id: person.id, name: person.full_name }
+            // Deep attribute detection: does the question ask a SPECIFIC thing about them?
+            const attr = askBarDetectStaffAttr(q)
+            if (attr) return { kind: 'staff_attr', id: person.id, name: person.full_name, attr }
+            return { kind: 'staff_summary', id: person.id, name: person.full_name }
+          }
+        }
+        // Named person + attribute even with other words (e.g. "does antelo have a phd?")
+        {
+          const attr = askBarDetectStaffAttr(q)
+          if (attr && !hasPronoun) {
+            const person = askBarResolveStaff(q)
+            if (person) { askBar.context = { type: 'staff', id: person.id, name: person.full_name }; return { kind: 'staff_attr', id: person.id, name: person.full_name, attr } }
+          }
+          // pronoun + attribute → remembered person
+          if (attr && hasPronoun && askBar.context && askBar.context.type === 'staff') {
+            return { kind: 'staff_attr', id: askBar.context.id, name: askBar.context.name, attr }
+          }
         }
         // pronoun / short reference → use remembered context
         if (!askBar.context) return null
@@ -9839,6 +9909,15 @@ document.addEventListener('DOMContentLoaded', () => {
           if (hasPronoun && askBar.context) {
             followup = askBarResolveFollowup(asked)
           }
+          // 1b. A specific staff attribute question ("does X have a phd?", "X's certificates")
+          //     → resolve as a deep person-attribute query, before generic intents.
+          if (!followup) {
+            const attr = askBarDetectStaffAttr(q)
+            if (attr) {
+              const maybe = askBarResolveFollowup(asked)
+              if (maybe && (maybe.kind === 'staff_attr' || maybe.kind === 'staff_summary')) followup = maybe
+            }
+          }
           // 2. Named person + a topic ("is antelo on leave?") → entity follow-up,
           //    but NOT if this is a draft/recommend action (those own the verb).
           if (!followup && hasTopic && !hasPronoun && !/(draft|write|compose|best|recommend|suggest)/.test(q)) {
@@ -9874,6 +9953,7 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.trace = askBarTraceFor(intent).map(([label, src]) => ({ label, src, done: false }))
         askBar.thinking = askBarThinkingFor(intent)
         askBar.loading = true
+        askBar.lastAsked = asked
         askBar.query = ''
         // Reveal trace steps one by one for a "working" feel.
         askBar.trace.forEach((step, i) => { setTimeout(() => { if (askBar.trace[i]) askBar.trace[i].done = true }, 160 + i * 200) })
@@ -9899,19 +9979,51 @@ document.addEventListener('DOMContentLoaded', () => {
       // Follow-up answers that use remembered context
       const askBarBuildFollowup = (fu) => {
         const today = Utils.normalizeDate(new Date())
-        if (fu.kind === 'staff_summary') {
-          // Bare-name query → a concise status across on-call, leave, rotation.
+        if (fu.kind === 'staff_summary' || fu.kind === 'staff_attr') {
+          const s = (medicalStaff.value || []).find(x => x.id === fu.id)
+          if (!s) return { text: `I couldn't find that person's record.`, chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'low' }
+          const name = s.full_name
+          // Deep attribute answer if a specific attribute was asked
+          if (fu.attr) {
+            const A = fu.attr
+            const yes = (b) => b ? 'Yes' : 'No'
+            const roleFlags = []
+            if (s.is_chief_of_department) roleFlags.push('Chief of Department')
+            if (s.is_research_coordinator) roleFlags.push('Research Coordinator')
+            if (s.is_resident_manager) roleFlags.push('Resident Manager')
+            if (s.is_oncall_manager) roleFlags.push('On-call Manager')
+            const map = {
+              role:      () => `${name} is ${_toTitle(s.staff_type || 'staff')}${s.specialization ? ', ' + s.specialization : ''}${roleFlags.length ? ' (' + roleFlags.join(', ') + ')' : ''}.`,
+              specialty: () => s.specialization || s.specialty ? `${name}'s specialty is ${s.specialization || s.specialty}.` : `No specialty is recorded for ${name}.`,
+              certs:     () => { const c = [s.clinical_certificate, s.clinical_study_certificate, s.other_certificate].filter(Boolean); return c.length ? `${name} holds: ${c.join(', ')}.` : `No certificates are recorded for ${name}.` },
+              phd:       () => s.has_phd ? `Yes — ${name} has a PhD${s.phd_field ? ' in ' + s.phd_field : ''}.` : `No — ${name} does not have a PhD on record.`,
+              pi:        () => `${name} ${s.can_be_pi ? 'can' : 'cannot'} serve as Principal Investigator${s.can_be_coi ? ', and can be a Co-Investigator' : ''}.`,
+              residency: () => { const yr = s.residency_year_override || s.training_year; return yr ? `${name} is a ${yr} resident.` : (askBarIsResident(s) ? `${name} is a resident (year not recorded).` : `${name} is not a resident.`) },
+              contact:   () => { const c = [s.professional_email, s.mobile_phone].filter(Boolean); return c.length ? `${name}: ${c.join(' · ')}.` : `No contact details are recorded for ${name}.` },
+              supervise: () => `${name} ${s.can_supervise_residents ? 'can' : 'cannot'} supervise residents.`,
+              license:   () => `${name} ${(s.has_medical_license || s.medical_license) ? 'has' : 'does not have'} a medical license on record.`,
+              status:    () => `${name} is ${_toTitle(s.employment_status || 'active')}.`
+            }
+            if (map[A]) return { text: map[A](), chips: [{ label: name, id: s.id }], actions: [{ label: 'Open profile', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+          }
+          // Full summary: role + status + on-call/leave/rotation + research flags
+          const today = Utils.normalizeDate(new Date())
           const onLeave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
-          const nextShift = (onCallSchedule.value || []).filter(s => (s.primary_physician_id === fu.id || s.backup_physician_id === fu.id) && Utils.normalizeDate(s.duty_date) >= today).sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))[0]
+          const nextShift = (onCallSchedule.value || []).filter(x => (x.primary_physician_id === fu.id || x.backup_physician_id === fu.id) && Utils.normalizeDate(x.duty_date) >= today).sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))[0]
           const rot = (rotations.value || []).find(r => r.resident_id === fu.id && r.rotation_status === 'active')
-          const bits = []
-          if (onLeave) bits.push(`on leave ${Utils.formatDateShort(onLeave.start_date)}–${Utils.formatDateShort(onLeave.end_date)}`)
-          if (nextShift) bits.push(`next on-call ${Utils.formatDateShort(nextShift.duty_date)}`)
-          if (rot) bits.push(`on an active rotation${rot.supervising_attending_id ? ', supervised by ' + getStaffName(rot.supervising_attending_id) : ''}`)
-          let text
-          if (!bits.length) text = `${fu.name} — no current leave, on-call, or active rotation on record. Open their profile for full details.`
-          else text = `${fu.name} is ${bits.join('; ')}.`
-          return { text, chips: [{ label: fu.name, id: fu.id }], actions: [{ label: 'Open profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations'], followups: [{ label: 'On leave?', followupKind: 'staff_leave' }, { label: 'On-call?', followupKind: 'staff_oncall' }], confidence: 'high' }
+          let text = `${name} — ${_toTitle(s.staff_type || 'staff')}${s.specialization ? ', ' + s.specialization : ''}.`
+          const extras = []
+          if (s.residency_year_override || s.training_year) extras.push(`${s.residency_year_override || s.training_year} resident`)
+          if (s.has_phd) extras.push('PhD')
+          if (s.can_be_pi) extras.push('PI-eligible')
+          if (s.is_research_coordinator) extras.push('research coordinator')
+          if (extras.length) text += ` ${extras.join(' · ')}.`
+          const live = []
+          if (onLeave) live.push(`on leave ${Utils.formatDateShort(onLeave.start_date)}–${Utils.formatDateShort(onLeave.end_date)}`)
+          if (nextShift) live.push(`next on-call ${Utils.formatDateShort(nextShift.duty_date)}`)
+          if (rot) live.push('on an active rotation')
+          if (live.length) text += ` Currently ${live.join('; ')}.`
+          return { text, chips: [{ label: name, id: s.id }], actions: [{ label: 'Open profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high' }
         }
         if (fu.kind === 'staff_leave') {
           const leave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
@@ -9981,6 +10093,61 @@ document.addEventListener('DOMContentLoaded', () => {
           }) }
           return { text, visual, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
         }
+        if (intent === 'trials_overview') {
+          const trials = researchOps.clinicalTrials.value || []
+          if (!trials.length) return { text: 'No clinical trials are on record.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
+          const k = researchOps.trialStatusKey
+          const rec = trials.filter(t => k && k(t)==='recruiting').length, act = trials.filter(t => k && k(t)==='active').length
+          const enrolled = trials.reduce((s,t)=>s+(t.actual_enrollment||0),0)
+          return { text: `${trials.length} trial${trials.length===1?'':'s'} on record — ${rec} recruiting, ${act} active. ${enrolled} participants enrolled across all studies.`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'Which are recruiting?', intent: 'trials_recruiting' }], confidence: 'high' }
+        }
+        if (intent === 'trials_by_person') {
+          const person = askBarResolveStaff(askBar.lastAsked || askBar.query)
+          const trials = (researchOps.clinicalTrials.value || []).filter(t => t.principal_investigator_id === person?.id)
+          if (!person) return { text: 'Which investigator did you mean? Try naming them.', chips: [], actions: [], sources: ['research'], followups: [], confidence: 'low' }
+          if (!trials.length) return { text: `${person.full_name} is not listed as PI on any trial.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
+          return { text: `${person.full_name} is PI on ${trials.length} trial${trials.length===1?'':'s'}: ${trials.slice(0,4).map(t=>t.title).join(', ')}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'research_lines') {
+          const lines = researchOps.researchLines.value || []
+          if (!lines.length) return { text: 'No research lines are defined yet.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
+          const sorted = [...lines].sort((a,b)=>(a.line_number||99)-(b.line_number||99))
+          const text = `${lines.length} research line${lines.length===1?'':'s'}: ` + sorted.slice(0,6).map(l => `${l.line_number?'L'+l.line_number+' ':''}${l.research_line_name || l.name}${l.coordinator_id?' (coord: '+getStaffName(l.coordinator_id)+')':''}`).join('; ') + '.'
+          return { text, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'innovation_projects') {
+          const projs = researchOps.innovationProjects.value || []
+          if (!projs.length) return { text: 'No innovation projects are on record.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
+          const byStage = {}
+          projs.forEach(p => { const s = p.current_stage || 'Unspecified'; byStage[s] = (byStage[s]||0)+1 })
+          const stageStr = Object.entries(byStage).map(([s,n])=>`${n} ${s}`).join(', ')
+          return { text: `${projs.length} innovation project${projs.length===1?'':'s'} in the pipeline (${stageStr}).`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
+        }
+        // ── CROSS-CUTTING JOINS (the intelligence) ──
+        if (intent === 'staff_can_pi') {
+          const pis = (medicalStaff.value || []).filter(s => s.can_be_pi && s.employment_status === 'active')
+          if (!pis.length) return { text: 'No staff are currently flagged as PI-eligible.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
+          return { text: `${pis.length} staff can serve as PI: ${pis.slice(0,6).map(s=>s.full_name).join(', ')}.`, chips: pis.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'staff_with_phd') {
+          const phds = (medicalStaff.value || []).filter(s => s.has_phd)
+          if (!phds.length) return { text: 'No staff have a PhD on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
+          return { text: `${phds.length} staff hold a PhD: ${phds.slice(0,6).map(s=>s.full_name + (s.phd_field?' ('+s.phd_field+')':'')).join(', ')}.`, chips: phds.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'residents_by_year') {
+          const residents = (medicalStaff.value || []).filter(s => askBarIsResident(s))
+          if (!residents.length) return { text: 'No residents are on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
+          const byYear = {}
+          residents.forEach(s => { const y = s.residency_year_override || s.training_year || '?'; byYear[y] = (byYear[y]||0)+1 })
+          const yStr = Object.entries(byYear).sort().map(([y,n])=>`${n} ${y}`).join(', ')
+          return { text: `${residents.length} residents: ${yStr}.`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'units_overview') {
+          const units = (trainingUnits.value) || []
+          if (!units.length) return { text: 'No training units are defined.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
+          const active = units.filter(u => (u.unit_status||'active')==='active').length
+          return { text: `${units.length} unit${units.length===1?'':'s'} (${active} active): ${units.slice(0,5).map(u=>u.unit_name).join(', ')}.`, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+        }
         if (intent === 'oncall_upcoming') {
           const today = Utils.normalizeDate(new Date())
           const up = (onCallSchedule.value || [])
@@ -10001,7 +10168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'count_rotations_ending') {
           // #3 counting + #2 temporal
-          const range = askBarParseRange(askBar.query) || { end: Utils.normalizeDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0)), label: 'this month' }
+          const range = askBarParseRange(askBar.lastAsked || askBar.query) || { end: Utils.normalizeDate(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0)), label: 'this month' }
           const n = askBarCountResidentsEndingBy(range.end)
           return { text: `${n} resident${n===1?'':'s'} finish their rotation on or before ${range.label || Utils.formatDateShort(range.end)}.`, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations'], followups: [], confidence: n ? 'high' : 'high' }
         }
@@ -10015,7 +10182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'pis_oncall') {
           // #6 cross-domain join
-          const range = askBarParseRange(askBar.query)
+          const range = askBarParseRange(askBar.lastAsked || askBar.query)
           const hits = askBarPIsOnCall(range)
           if (!hits.length) return { text: `No principal investigators are on-call ${range ? range.label : 'in the upcoming schedule'}.`, chips: [], actions: [], sources: ['research', 'on-call schedule'], followups: [], confidence: 'high' }
           const text = `${hits.length} PI${hits.length===1?'':'s'} ${hits.length===1?'is':'are'} on-call ${range ? range.label : 'soon'}: ` + hits.slice(0,4).map(h => `${h.name} (${Utils.formatDateShort(h.date)})`).join(', ') + '.'
@@ -10023,7 +10190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'recommend_backup') {
           // Deterministic "reasoning": rank eligible, not-on-leave physicians by lightest load.
-          const r = askBarRecommendBackup(askBar.query)
+          const r = askBarRecommendBackup(askBar.lastAsked || askBar.query)
           if (!r.eligible.length) return { text: 'I couldn’t find an eligible physician who is free and not on leave for that slot. You may need to look outside the usual on-call pool.', chips: [], actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule', 'leave records', 'staff'], followups: [], confidence: 'high' }
           const top = r.eligible[0]
           const dateStr = r.dutyDate ? ` on ${Utils.formatDateShort(r.dutyDate)}` : ''
