@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=51">
+    <link rel="stylesheet" href="style.css?v=52">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8175,22 +8175,26 @@
 
     <!-- ============ ASK BAR — Intelligence surface (proactive · conversational · sourced) ============ -->
     <!-- Floating trigger with proactive badge -->
-    <button v-if="!askBar.open" class="askbar-fab" @click="openAskBar()" :title="askBarScanCount ? askBarScanCount + ' things need attention' : 'Ask the department'">
-        <span v-if="askBarScanCount" class="askbar-fab-pulse"></span>
-        <span class="askbar-fab-ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
-        <span class="askbar-fab-tx">Ask</span>
-        <span v-if="askBarScanCount" class="askbar-fab-badge">{{ askBarScanCount }}</span>
-        <span v-else class="askbar-fab-dot"></span>
+    <button v-if="!askBar.open" class="grounded-orb-wrap" :class="{ 'grounded-orb--alert': askBarScanCount }" @click="openAskBar()" :title="askBarScanCount ? askBarScanCount + ' things need attention' : 'Ask Grounded'">
+        <span class="grounded-orb">
+            <span class="grounded-orb-cloud1"></span>
+            <span class="grounded-orb-cloud2"></span>
+        </span>
+        <span class="grounded-particle grounded-p1"></span>
+        <span class="grounded-particle grounded-p2"></span>
+        <span class="grounded-particle grounded-p3"></span>
+        <span v-if="askBarScanCount" class="grounded-orb-badge">{{ askBarScanCount }}</span>
     </button>
 
-    <!-- Expanded panel -->
-    <div v-if="askBar.open" class="askbar-overlay" @click.self="closeAskBar()">
-        <div class="askbar-panel">
-            <div class="askbar-head">
-                <span class="askbar-head-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span>
-                <div><div class="askbar-head-t">Department intelligence</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'following up' : 'scanned just now' }}</div></div>
+    <!-- Expanded cloud -->
+    <div v-if="askBar.open" class="grounded-overlay" @click.self="closeAskBar()">
+        <div class="askbar-panel grounded-cloud">
+            <span class="grounded-mist grounded-mist1"></span>
+            <span class="grounded-mist grounded-mist2"></span>
+            <div class="askbar-head grounded-head">
+                <span class="grounded-head-orb"></span>
+                <div><div class="askbar-head-t">Grounded</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'following up' : 'scanned just now' }}</div></div>
                 <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()">＋ New</button>
-                <span class="askbar-agent-badge">✦ agent</span>
                 <span class="askbar-head-live"><span class="askbar-head-dot"></span> live</span>
                 <button class="askbar-close" @click="closeAskBar()">✕</button>
             </div>
@@ -19727,7 +19731,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=48"></script>
+    <script src="app.js?v=51"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
