@@ -10,7 +10,7 @@
       "rank_staff",
       "units_at_capacity",
       "unsupervised_residents",
-      "certs_expiring",
+      "certs_expiring", 
       "staff_can_pi",
       "staff_with_phd",
       "residents_by_year",
