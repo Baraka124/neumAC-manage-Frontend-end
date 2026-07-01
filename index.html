@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=52">
+    <link rel="stylesheet" href="style.css?v=55">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8192,7 +8192,7 @@
             <span class="grounded-mist grounded-mist1"></span>
             <span class="grounded-mist grounded-mist2"></span>
             <div class="askbar-head grounded-head">
-                <span class="grounded-head-orb"></span>
+                <span class="grounded-head-orb" :class="{ 'grounded-head-orb--think': askBar.loading }"></span>
                 <div><div class="askbar-head-t">Grounded</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'following up' : 'scanned just now' }}</div></div>
                 <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()">＋ New</button>
                 <span class="askbar-head-live"><span class="askbar-head-dot"></span> live</span>
@@ -8267,18 +8267,32 @@
                                     <div class="askbar-viz-bar"><div class="askbar-viz-fill" :class="'askbar-viz-fill--' + it.health" :style="{ width: it.pct + '%' }"></div></div>
                                 </div>
                             </div>
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'bars'" class="askbar-cmp">
+                                <div v-for="(bar, bi) in turn.visual.bars" :key="bi" class="askbar-cmp-row">
+                                    <div class="askbar-cmp-head"><span class="askbar-cmp-name">{{ bar.name }}</span><span class="askbar-cmp-val" :class="bar.win ? 'askbar-cmp-val--win' : 'askbar-cmp-val--lose'">{{ bar.value }}</span></div>
+                                    <div class="askbar-cmp-track"><div class="askbar-cmp-fill" :class="{ 'askbar-cmp-fill--lose': !bar.win }" :style="{ width: bar.pct + '%' }"></div></div>
+                                </div>
+                                <div v-if="turn.visual.delta" class="askbar-cmp-delta">{{ turn.visual.delta }}</div>
+                            </div>
                             <template v-if="!turn.streaming">
-                                <div v-if="turn.chips && turn.chips.length" class="askbar-chips">
-                                    <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click="askBarOpenStaff(c.id)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
+                                <div v-if="turn.isClarify && turn.chips && turn.chips.length" class="askbar-clarify-opts">
+                                    <button v-for="c in turn.chips" :key="c.id" class="askbar-clarify-opt" @click="askBarResolveClarified(c)">
+                                        <span class="askbar-clarify-av">{{ c.av }}</span>
+                                        <span><span class="askbar-clarify-nm">{{ c.label }}</span><span class="askbar-clarify-meta">{{ c.meta }}</span></span>
+                                        <span class="askbar-clarify-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></span>
+                                    </button>
+                                </div>
+                                <div v-else-if="turn.chips && turn.chips.length" class="askbar-chips">
+                                    <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click="c.clarifyAttr !== undefined ? askBarResolveClarified(c) : askBarOpenStaff(c.id)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
                                 </div>
                                 <div class="askbar-a-foot">
                                     <span v-if="turn.sources && turn.sources.length" class="askbar-src">sources <span v-for="s in turn.sources" :key="s" class="askbar-src-chip">{{ s }}</span></span>
-                                    <span class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
-                                        <svg v-if="turn.confidence==='high'" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg>
-                                        <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-                                        {{ turn.confidence==='high' ? 'verified from records' : 'verify directly' }}
+                                    <span class="askbar-conf" :class="'askbar-conf--' + turn.confidence">
+                                        <span class="askbar-conf-label">{{ turn.confidence==='high' ? 'verified' : turn.confidence==='medium' ? 'partial' : 'unverified' }}</span>
+                                        <span class="askbar-conf-track"><span class="askbar-conf-fill"></span></span>
                                     </span>
                                     <span class="askbar-asof" v-if="turn.asOf">as of {{ turn.asOf }}</span>
+                                    <button class="askbar-copy" @click="askBarCopyAnswer(turn, $event)" title="Copy answer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                                 </div>
                                 <div class="askbar-a-tags">
                                     <span class="askbar-tag-grnd"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> grounded</span>
@@ -19731,7 +19745,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=53"></script>
+    <script src="app.js?v=60"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -19956,4 +19970,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html>  
+</html>
