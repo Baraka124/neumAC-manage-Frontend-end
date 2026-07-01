@@ -1,9 +1,40 @@
 {
   "_meta": {
     "name": "neumDesk Agent Brain",
-    "version": 1,
+    "version": 3,
     "description": "The agent's externalized knowledge. Edit this to teach the agent new vocabulary, intents, reasoning recipes, and phrasings — no code changes needed. The agent loads this and reasons over it. Bilingual (ES/EN).",
-    "updated": "2026-06-30"
+    "updated": "2026-07-01",
+    "routing": "The live routing table (ASKBAR_ROUTES in code) is the scored source of truth for intent matching. This brain provides concepts (vocabulary) + fallback intent matching for phrasings the routing table misses, plus bilingual synonyms. Builders live in code (the spinal cord); matching knowledge is editable here + in the routing table.",
+    "live_intents": [
+      "compare_staff",
+      "rank_staff",
+      "units_at_capacity",
+      "unsupervised_residents",
+      "certs_expiring",
+      "staff_can_pi",
+      "staff_with_phd",
+      "residents_by_year",
+      "trials_by_person",
+      "rotations_deep",
+      "departments_overview",
+      "research_lines",
+      "innovation_projects",
+      "units_overview",
+      "trials_overview",
+      "recommend_backup",
+      "draft_email",
+      "count_rotations_ending",
+      "rank_oncall",
+      "pis_oncall",
+      "issues",
+      "briefing",
+      "coverage_gaps",
+      "absent_now",
+      "trials_recruiting",
+      "oncall_upcoming",
+      "rotations_active"
+    ],
+    "synced_to": "app.js v57"
   },
   "concepts": {
     "_comment": "Vocabulary neurons. Each concept lists the words/phrases that mean it, in any language. The matcher expands a question against these. Grow by adding synonyms.",
