@@ -584,7 +584,69 @@ document.addEventListener('DOMContentLoaded', () => {
                 "min_attendings_per_unit": 1
         }
 }
-    const _brainOverride = Vue.ref(null)  // future: loaded from Supabase
+    const _brainOverride = Vue.ref(null)  // loaded from neumdesk_brain (Supabase-backed)
+    const _brainRows = Vue.ref([])         // raw editable rows for the editor screen
+    const _brainLoading = Vue.ref(false)
+
+    // Load the department-curated brain from the backend and fold it into the
+    // override the agent reads. Rows: { kind, intent, content, meta, enabled }.
+    const loadBrain = async () => {
+      _brainLoading.value = true
+      try {
+        const rows = await API.request('/api/brain', { skipCache: true }).catch(() => null)
+        if (!Array.isArray(rows)) { _brainLoading.value = false; return }
+        _brainRows.value = rows
+        // Fold rows into the override shape getBrain() expects.
+        const ov = { concepts: {}, intents: {}, phrasings: {} }
+        rows.filter(r => r.enabled).forEach(r => {
+          if (r.kind === 'synonym' && r.intent) {
+            ov.concepts[r.intent] = (ov.concepts[r.intent] || []).concat(r.content.toLowerCase())
+          } else if (r.kind === 'pattern' && r.intent) {
+            ov.intents[r.intent] = ov.intents[r.intent] || { match: [] }
+            ov.intents[r.intent].match.push(r.content.toLowerCase())
+          } else if (r.kind === 'phrasing' && r.intent) {
+            ov.phrasings[r.intent] = (ov.phrasings[r.intent] || []).concat(r.content)
+          }
+        })
+        _brainOverride.value = ov
+      } catch (e) { /* keep embedded default on failure */ }
+      _brainLoading.value = false
+    }
+
+    // Add a knowledge row (pattern / synonym / phrasing) and reload.
+    const brainAdd = async (kind, intent, content, meta) => {
+      try {
+        await API.request('/api/brain', { method: 'POST', body: { kind, intent, content, meta: meta || {} } })
+        await loadBrain()
+        return true
+      } catch (e) { return false }
+    }
+    const brainToggle = async (id, enabled) => {
+      try { await API.request(`/api/brain/${id}`, { method: 'PUT', body: { enabled } }); await loadBrain(); return true } catch (e) { return false }
+    }
+    const brainDelete = async (id) => {
+      try { await API.request(`/api/brain/${id}`, { method: 'DELETE' }); await loadBrain(); return true } catch (e) { return false }
+    }
+    // Log a question the agent couldn't answer → becomes a "teach me" worklist item.
+    const brainLogFailed = (q) => {
+      if (!q || q.length < 3) return
+      API.request('/api/brain', { method: 'POST', body: { kind: 'failed_query', content: q, meta: { at: new Date().toISOString() } } }).catch(() => null)
+    }
+    // Editor form state (used by the Teach panel).
+    const teachForm = Vue.reactive({ intent: '', content: '' })
+    const teachMsg = Vue.ref('')
+    const teachSubmit = async () => {
+      if (!teachForm.intent || !teachForm.content.trim()) return
+      teachMsg.value = 'Teaching…'
+      const ok = await brainAdd('synonym', teachForm.intent, teachForm.content.trim())
+      if (ok) { teachMsg.value = `✓ Grounded now understands "${teachForm.content.trim()}"`; teachForm.content = ''; setTimeout(() => teachMsg.value = '', 2600) }
+      else { teachMsg.value = 'Could not save — the /api/brain route may not be deployed yet.' }
+    }
+    const askBarToggleTeach = () => {
+      askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
+      if (askBar.view === 'teach') loadBrain()
+    }
+
     const getBrain = () => {
       const base = NEUMDESK_BRAIN_DEFAULT
       const ov = _brainOverride.value
@@ -8713,6 +8775,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data && data.id) {
                   currentUser.value = { ...parsed, ...data }
                   loadAllData()
+                  loadBrain()  // department-curated agent knowledge (Supabase-backed)
                 } else {
                   window.dispatchEvent(new CustomEvent('neumax:session-expired'))
                 }
@@ -9405,6 +9468,7 @@ document.addEventListener('DOMContentLoaded', () => {
         turns: [],         // conversation history: [{ q, text, chips, actions, sources, followups, confidence, asOf, streaming }]
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
         snoozed: [],       // dismissed alert keys (#16)
+        entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
         view: 'digest'     // 'digest' (proactive scan) | 'conversation'
       })
 
@@ -10012,6 +10076,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const asked = askBar.query.trim()
         if (!asked && !forcedIntent) return
         askBar.view = 'conversation'
+        // #2 MULTI-INTENT: "is Antelo on call AND does she have a phd?" — if the
+        // query splits into two clauses that each route to a DIFFERENT strong intent,
+        // answer both in sequence. Guarded so normal "and" phrases aren't split.
+        if (!forcedIntent && !askBar._multiGuard) {
+          const parts = asked.split(/\s+(?:and|&|;)\s+/i).map(s => s.trim()).filter(s => s.length > 4)
+          if (parts.length === 2) {
+            const i0 = askBarMatchScored(parts[0]), i1 = askBarMatchScored(parts[1])
+            const strong = (r) => r.confidence === 'high' && r.intent !== 'unknown'
+            if (strong(i0) && strong(i1) && i0.intent !== i1.intent) {
+              askBar._multiGuard = true
+              askBar.query = parts[0]; askBarResolve()
+              setTimeout(() => { askBar.query = parts[1]; askBarResolve(); askBar._multiGuard = false }, 900)
+              return
+            }
+          }
+        }
         // Determine intent. Priority:
         //  1. A forced intent (suggestion/chip click)
         //  2. A strong brain/legacy intent match (actions like draft, lookups like oncall)
@@ -10217,7 +10297,7 @@ document.addEventListener('DOMContentLoaded', () => {
           })
           if (!out.length) return { text: 'Nobody is marked absent today — full attendance.', chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence' }] }
           const text = `${out.length} absent today: ` + out.slice(0,5).map(a => staffName(a.staff_member_id)).join(', ') + '.'
-          return { text, chips: out.slice(0,4).map(a => ({ label: staffName(a.staff_member_id), id: a.staff_member_id })), actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }] }
+          return { text, chips: out.slice(0,4).map(a => ({ label: staffName(a.staff_member_id), id: a.staff_member_id })), actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }], followups: [{ label: 'Any coverage gaps?', intent: 'coverage_gaps' }, { label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
         }
         if (intent === 'trials_recruiting') {
           const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
@@ -10315,12 +10395,12 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!rows.length) return { text: 'No units currently have residents assigned.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units', 'rotations'], followups: [], confidence: 'high' }
           let text = full.length ? `${full.length} unit${full.length===1?'':'s'} at or over capacity: ${full.map(r=>`${r.name} (${r.n}/${r.cap})`).join(', ')}.` : 'No units are at capacity.'
           text += ` Occupancy: ${rows.slice(0,4).map(r=>`${r.name} ${r.n}/${r.cap}`).join(', ')}.`
-          return { text, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units', 'rotations'], followups: [], confidence: 'high' }
+          return { text, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units', 'rotations'], followups: [{ label: 'Who has no supervisor?', intent: 'unsupervised_residents' }, { label: 'Who is rotating where?', intent: 'rotations_deep' }], confidence: 'high' }
         }
         if (intent === 'unsupervised_residents') {
           const unsup = (rotations.value || []).filter(r => r.rotation_status === 'active' && !r.supervising_attending_id)
-          if (!unsup.length) return { text: 'Every active rotation has an assigned supervisor. All good.', chips: [], actions: [], sources: ['rotations'], followups: [], confidence: 'high' }
-          return { text: `${unsup.length} resident${unsup.length===1?'':'s'} on active rotation without a supervisor: ${unsup.slice(0,5).map(r=>getStaffName(r.resident_id)).join(', ')}.`, chips: unsup.slice(0,5).map(r=>({label:getStaffName(r.resident_id),id:r.resident_id})), actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [], confidence: 'high' }
+          if (!unsup.length) return { text: 'Every active rotation has an assigned supervisor. All good.', chips: [], actions: [], sources: ['rotations'], followups: [{ label: 'Who is rotating where?', intent: 'rotations_deep' }], confidence: 'high' }
+          return { text: `${unsup.length} resident${unsup.length===1?'':'s'} on active rotation without a supervisor: ${unsup.slice(0,5).map(r=>getStaffName(r.resident_id)).join(', ')}.`, chips: unsup.slice(0,5).map(r=>({label:getStaffName(r.resident_id),id:r.resident_id})), actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [{ label: 'Who could supervise?', intent: 'staff_can_pi' }, { label: 'Units at capacity?', intent: 'units_at_capacity' }], confidence: 'high' }
         }
         if (intent === 'rank_staff') {
           // Superlative queries: "busiest attending", "who has the most shifts", "least loaded"
@@ -10486,6 +10566,8 @@ document.addEventListener('DOMContentLoaded', () => {
             text = "I answer from current records — I don't have historical snapshots to look back through yet."
           } else {
             text = "I couldn't map that to something in the records. I can answer about staff (role, certs, PhD, PI, residency), on-call, leave, rotations, trials, research lines, innovation projects, units, departments — plus cross-cutting questions like who's PI-eligible or which units are at capacity."
+            // #19 Teach-from-usage: record what we couldn't answer so an admin can teach it.
+            try { brainLogFailed(askBar.lastAsked || askBar.query || '') } catch (e) {}
           }
           return { text, chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
         }
@@ -10499,6 +10581,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarGoTo = (action) => {
         if (action.view) { askBarLog('action', { label: action.label, view: action.view }); switchView(action.view); closeAskBar() }
+      }
+      // #3 Inline entity actions — tap a person chip → mini action menu.
+      const askBarEntityMenu = (c, ev) => {
+        const s = (medicalStaff.value || []).find(x => x.id === c.id)
+        if (!s) { askBarOpenStaff(c.id); return }
+        // toggle: same chip closes it
+        if (askBar.entityMenu && askBar.entityMenu.id === c.id) { askBar.entityMenu = null; return }
+        let x = 0, y = 0
+        try { const r = ev.currentTarget.getBoundingClientRect(); x = r.left; y = r.bottom + 6 } catch (e) {}
+        askBar.entityMenu = { id: s.id, name: s.full_name, x, y }
+      }
+      const askBarEntityAction = (action) => {
+        const m = askBar.entityMenu
+        if (!m) return
+        askBar.entityMenu = null
+        if (action === 'profile') { askBarOpenStaff(m.id); return }
+        // 'oncall' / 'phd' / 'summary' → ask a scoped follow-up about this person
+        const qmap = { oncall: m.name + ' on call', summary: m.name, contact: 'how to reach ' + m.name }
+        askBar.query = qmap[action] || m.name
+        askBar.context = { type: 'staff', id: m.id, name: m.name }
+        askBarResolve()
       }
       const askBarCopyAnswer = (turn, ev) => {
         // Build a clean plain-text version of the answer (text + any comparison bars).
@@ -10674,7 +10777,8 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, askBarToggleTeach,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType, isOnCallEligible,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
