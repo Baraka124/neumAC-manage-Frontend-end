@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=57">
+    <link rel="stylesheet" href="style.css?v=61">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8316,6 +8316,140 @@
                         </div>
                         <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
                             <div class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
+
+                            <!-- §3 clarify: pick leave reason -->
+                            <div v-if="turn.leaveClarify" class="askbar-leave-reasons">
+                                <button v-for="r in turn.leaveReasons" :key="r[0]" class="askbar-leave-reason" @click="askBarPickLeaveReason(turn.leaveClarify, r[0])">{{ r[1] }}</button>
+                            </div>
+
+                            <!-- §9 structured PROPOSAL card (propose → confirm → write) -->
+                            <div v-if="turn.proposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                                <div class="askbar-proposal-h">
+                                    <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
+                                    <span>Proposed change · <b>record leave</b></span>
+                                    <span class="askbar-proposal-tag">not saved yet</span>
+                                </div>
+                                <div class="askbar-proposal-body">
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.proposal.subject.name }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Type</span><span class="askbar-proposal-v">{{ turn.proposal.reasonLabel }} <span class="askbar-proposal-sub">({{ turn.proposal.type }})</span></span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">When</span><span class="askbar-proposal-v">{{ turn.proposal.dateLabel }} <span class="askbar-proposal-sub">· {{ turn.proposal.days }} day{{ turn.proposal.days===1?'':'s' }}</span></span></div>
+                                    <div v-if="turn.proposal.covering" class="askbar-proposal-row"><span class="askbar-proposal-k">Cover</span><span class="askbar-proposal-v">{{ turn.proposal.covering.name }}</span></div>
+                                </div>
+                                <div v-if="turn.proposal.conflicts && turn.proposal.conflicts.length && !turn.proposal.covering" class="askbar-proposal-warn">
+                                    ⚠ {{ turn.proposal.subject.name }} is on call during this leave ({{ turn.proposal.conflicts.length }} shift{{ turn.proposal.conflicts.length===1?'':'s' }}) — coverage isn't arranged.
+                                </div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmLeave(turn.proposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & record' }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelLeave(turn)">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
+                            </div>
+
+                            <!-- §9 on-call proposal card, with hard-block on leave conflict -->
+                            <div v-if="turn.oncallProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': turn.oncallProposal.blocked && !turn.committed }">
+                                <div class="askbar-proposal-h">
+                                    <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+                                    <span>Proposed change · <b>schedule on-call</b></span>
+                                    <span class="askbar-proposal-tag">not saved yet</span>
+                                </div>
+                                <div class="askbar-proposal-body">
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.oncallProposal.subject.name }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">When</span><span class="askbar-proposal-v">{{ turn.oncallProposal.dateLabel }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Backup</span><span class="askbar-proposal-v">{{ turn.oncallProposal.backup ? turn.oncallProposal.backup.name : '—' }}</span></div>
+                                </div>
+                                <div v-if="turn.oncallProposal.blocked" class="askbar-proposal-block">
+                                    ⛔ {{ turn.oncallProposal.subject.name }} is on leave that day — they can't be on call.
+                                    <div v-if="turn.oncallProposal.alternatives && turn.oncallProposal.alternatives.length" class="askbar-alts">
+                                        <div class="askbar-alts-h">Free and eligible instead:</div>
+                                        <button v-for="alt in turn.oncallProposal.alternatives" :key="alt.id" class="askbar-alt" @click="askBarPickReplacement(alt, turn.oncallProposal.date, turn)">
+                                            <span class="askbar-alt-nm">{{ alt.name }}</span>
+                                            <span class="askbar-alt-load">{{ alt.shifts }} shift{{ alt.shifts===1?'':'s' }}</span>
+                                            <span class="askbar-alt-go">assign →</span>
+                                        </button>
+                                    </div>
+                                    <div v-else class="askbar-alts-none">No eligible physician is free that day — you may need to look outside the usual pool.</div>
+                                </div>
+                                <div v-else-if="turn.oncallProposal.alreadyOnCall" class="askbar-proposal-warn">
+                                    ⚠ {{ turn.oncallProposal.subject.name }} is already on call that day.
+                                </div>
+                                <div v-else-if="turn.oncallProposal.noBackup" class="askbar-proposal-warn">
+                                    ⚠ No backup assigned — the department will be notified.
+                                </div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.oncallProposal.blocked" @click="askBarConfirmOncall(turn.oncallProposal, turn)">{{ turn.writing ? 'Saving…' : (turn.oncallProposal.blocked ? 'Blocked' : 'Confirm & schedule') }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelOncall(turn)">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
+                            </div>
+
+                            <!-- §6 §9 ROTA DRAFT — reviewable week, commit as batch -->
+                            <div v-if="turn.rotaDraft" class="askbar-proposal askbar-rota" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                                <div class="askbar-proposal-h">
+                                    <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+                                    <span>Draft rota · <b>{{ turn.rotaDraft.rangeLabel }}</b></span>
+                                    <span class="askbar-proposal-tag">not saved yet</span>
+                                </div>
+                                <div class="askbar-rota-grid">
+                                    <div v-for="(d,di) in turn.rotaDraft.days" :key="d.date" class="askbar-rota-day" :class="{ 'askbar-rota-day--gap': !d.assignee }">
+                                        <span class="askbar-rota-date">{{ d.label }}</span>
+                                        <span v-if="d.assignee" class="askbar-rota-who">{{ d.assignee.name }}</span>
+                                        <span v-else class="askbar-rota-who askbar-rota-nogap">— no one available —</span>
+                                        <button v-if="d.assignee && d.options && d.options.length>1 && !turn.committed && !turn.cancelled" class="askbar-rota-swap" @click="askBarRotaSwap(turn.rotaDraft, di)" title="Next option">⇄</button>
+                                    </div>
+                                </div>
+                                <div v-if="turn.rotaDraft.gaps && !turn.committed" class="askbar-proposal-warn">⚠ {{ turn.rotaDraft.gaps }} day{{ turn.rotaDraft.gaps===1?'':'s' }} couldn't be filled — those will be skipped.</div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmRota(turn.rotaDraft, turn)">{{ turn.writing ? 'Publishing…' : 'Confirm & publish rota' }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelRota(turn)">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
+                            </div>
+
+                            <!-- §6 return-from-leave card -->
+                            <div v-if="turn.returnProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                                <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span><span>Proposed change · <b>return from leave</b></span><span class="askbar-proposal-tag">not saved yet</span></div>
+                                <div class="askbar-proposal-body">
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.returnProposal.name }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Was</span><span class="askbar-proposal-v">{{ turn.returnProposal.reason }} · {{ turn.returnProposal.was }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Back</span><span class="askbar-proposal-v">today</span></div>
+                                </div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmReturn(turn.returnProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & mark back' }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelReturn(turn)">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
+                            </div>
+
+                            <!-- §6 rotation-assignment card -->
+                            <div v-if="turn.rotationProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': (turn.rotationProposal.noSup || turn.rotationProposal.supWarn) && !turn.committed }">
+                                <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span>Proposed change · <b>rotation</b></span><span class="askbar-proposal-tag">not saved yet</span></div>
+                                <div class="askbar-proposal-body">
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.rotationProposal.resident.name }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Unit</span><span class="askbar-proposal-v">{{ turn.rotationProposal.unit.name }} <span class="askbar-proposal-sub">· {{ turn.rotationProposal.occ }}</span></span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Under</span><span class="askbar-proposal-v">{{ turn.rotationProposal.supervisor ? turn.rotationProposal.supervisor.name : '— not set —' }}</span></div>
+                                    <div v-if="turn.rotationProposal.startLabel" class="askbar-proposal-row"><span class="askbar-proposal-k">From</span><span class="askbar-proposal-v">{{ turn.rotationProposal.startLabel }}</span></div>
+                                </div>
+                                <div v-if="turn.rotationProposal.noSup" class="askbar-proposal-block">⛔ No supervisor named — a rotation needs a supervising attending. Add one, e.g. "…under Antelo."</div>
+                                <div v-else-if="turn.rotationProposal.supWarn" class="askbar-proposal-block">⛔ That supervisor isn't eligible to supervise residents. Pick an attending.</div>
+                                <div v-else-if="turn.rotationProposal.atCapacity" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.unit.name }} is at capacity ({{ turn.rotationProposal.occ }}) — this exceeds it.</div>
+                                <div v-if="!turn.rotationProposal.startLabel && !turn.committed" class="askbar-proposal-warn">⚠ No start date given — add one, e.g. "from next Monday."</div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.rotationProposal.noSup || turn.rotationProposal.supWarn || !turn.rotationProposal.start" @click="askBarConfirmRotation(turn.rotationProposal, turn)">{{ turn.writing ? 'Saving…' : ((turn.rotationProposal.noSup||turn.rotationProposal.supWarn) ? 'Blocked' : 'Confirm & schedule') }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelRotation(turn)">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
+                            </div>
+
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'enroll'" class="askbar-viz">
                                 <div v-for="(it, vi) in turn.visual.items" :key="vi" class="askbar-viz-row">
                                     <div class="askbar-viz-top"><span class="askbar-viz-name">{{ it.title }}</span><span class="askbar-viz-num">{{ it.label }}</span></div>
@@ -8341,7 +8475,7 @@
                                     <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click.stop="c.clarifyAttr !== undefined ? askBarResolveClarified(c) : askBarEntityMenu(c, $event)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
                                 </div>
                                 <div class="askbar-a-foot">
-                                    <span v-if="turn.sources && turn.sources.length" class="askbar-src">sources <span v-for="s in turn.sources" :key="s" class="askbar-src-chip">{{ s }}</span></span>
+                                    <span v-if="turn.sources && turn.sources.length" class="askbar-src">sources <span v-for="s in turn.sources" :key="s" class="askbar-src-chip" :title="askBarSourceDesc(s)">{{ s }}</span></span>
                                     <span class="askbar-conf" :class="'askbar-conf--' + turn.confidence">
                                         <span class="askbar-conf-label">{{ turn.confidence==='high' ? 'verified' : turn.confidence==='medium' ? 'partial' : 'unverified' }}</span>
                                         <span class="askbar-conf-track"><span class="askbar-conf-fill"></span></span>
@@ -19800,7 +19934,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=65"></script>
+    <script src="app.js?v=74"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
