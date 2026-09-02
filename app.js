@@ -10821,11 +10821,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'absent_now') {
           const today = Utils.normalizeDate(new Date())
-          const out = (absences.value || []).filter(a => {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          // #temporal: "this week", "tomorrow", "friday" etc → filter to that range.
+          const range = askBarParseRange(q)
+          const rangeLabel = range ? range.label : 'today'
+          const overlaps = (a) => {
             const s = Utils.normalizeDate(a.start_date), e = Utils.normalizeDate(a.end_date)
+            if (range) return s <= range.end && e >= range.start   // any overlap with the window
             return today >= s && today <= e && a.current_status === 'currently_absent'
-          })
-          if (!out.length) return { text: 'Nobody is marked absent today — full attendance.', chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence' }] }
+          }
+          const out = (absences.value || []).filter(a => overlaps(a) && !['cancelled'].includes(a.current_status))
+          if (!out.length) return { text: `Nobody is absent ${rangeLabel} — full attendance.`, chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence' }], sources: ['leave records'], confidence: 'high' }
           const _reasonLbl = { vacation: 'vacation', sick_leave: 'sick', conference: 'conference', training: 'training', personal: 'personal', other: 'leave' }
           const rows = out.slice(0,6).map(a => ({
             id: a.staff_member_id, name: staffName(a.staff_member_id),
@@ -10835,7 +10841,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }))
           const uncovered = rows.filter(r => !r.covered).length
           const _names = out.slice(0,3).map(a => staffName(a.staff_member_id)).join(', ')
-          const text = `${out.length} absent today${uncovered ? ` — ${uncovered} without cover` : ''}: ${_names}${out.length>3?'…':''}.`
+          const text = `${out.length} absent ${rangeLabel}${uncovered ? ` — ${uncovered} without cover` : ''}: ${_names}${out.length>3?'…':''}.`
           return { text, visual: { type: 'absence', rows }, chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }], sources: ['leave records'], followups: [{ label: 'Any coverage gaps?', intent: 'coverage_gaps' }, { label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
         }
         if (intent === 'trials_recruiting') {
@@ -10986,14 +10992,20 @@ document.addEventListener('DOMContentLoaded', () => {
           const rows = units.map(u => { const n = active.filter(r => r.training_unit_id === u.id).length; const cap = u.maximum_residents || 5; return { name: u.unit_name, n, cap, full: n >= cap } }).filter(r => r.n > 0)
           const full = rows.filter(r => r.full)
           if (!rows.length) return { text: 'No units currently have residents assigned.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units', 'rotations'], followups: [], confidence: 'high' }
-          let text = full.length ? `${full.length} unit${full.length===1?'':'s'} at or over capacity: ${full.map(r=>`${r.name} (${r.n}/${r.cap})`).join(', ')}.` : 'No units are at capacity.'
-          text += ` Occupancy: ${rows.slice(0,4).map(r=>`${r.name} ${r.n}/${r.cap}`).join(', ')}.`
-          return { text, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units', 'rotations'], followups: [{ label: 'Who has no supervisor?', intent: 'unsupervised_residents' }, { label: 'Who is rotating where?', intent: 'rotations_deep' }], confidence: 'high' }
+          let text = full.length ? `${full.length} unit${full.length===1?'':'s'} at or over capacity: ${full.map(r=>r.name).join(', ')}.` : 'No units are at capacity.'
+          // Occupancy readout — a fill bar per unit, red when full.
+          const occ = rows.sort((a,b) => (b.n/b.cap) - (a.n/a.cap)).slice(0,8).map(r => ({
+            name: r.name, n: r.n, cap: r.cap, pct: Math.min(100, Math.round((r.n/r.cap)*100)), full: r.full
+          }))
+          return { text, visual: { type: 'occupancy', rows: occ }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units', 'rotations'], followups: [{ label: 'Who has no supervisor?', intent: 'unsupervised_residents' }, { label: 'Who is rotating where?', intent: 'rotations_deep' }], confidence: 'high' }
         }
         if (intent === 'unsupervised_residents') {
           const unsup = (rotations.value || []).filter(r => r.rotation_status === 'active' && !r.supervising_attending_id)
           if (!unsup.length) return { text: 'Every active rotation has an assigned supervisor. All good.', chips: [], actions: [], sources: ['rotations'], followups: [{ label: 'Who is rotating where?', intent: 'rotations_deep' }], confidence: 'high' }
-          return { text: `${unsup.length} resident${unsup.length===1?'':'s'} on active rotation without a supervisor: ${unsup.slice(0,5).map(r=>getStaffName(r.resident_id)).join(', ')}.`, chips: unsup.slice(0,5).map(r=>({label:getStaffName(r.resident_id),id:r.resident_id})), actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [{ label: 'Who could supervise?', intent: 'staff_can_pi' }, { label: 'Units at capacity?', intent: 'units_at_capacity' }], confidence: 'high' }
+          const units = trainingUnits.value || []
+          const unitName = (id) => (units.find(u => u.id === id)||{}).unit_name || '—'
+          const rows = unsup.slice(0,8).map(r => ({ id: r.resident_id, name: getStaffName(r.resident_id), unit: unitName(r.training_unit_id) }))
+          return { text: `${unsup.length} resident${unsup.length===1?'':'s'} without a supervisor: ${rows.slice(0,3).map(r=>r.name).join(', ')}${rows.length>3?'…':''}.`, visual: { type: 'risklist', rows }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [{ label: 'Who could supervise?', intent: 'staff_can_pi' }, { label: 'Units at capacity?', intent: 'units_at_capacity' }], confidence: 'high' }
         }
         if (intent === 'rank_staff') {
           // Superlative queries: "busiest attending", "who has the most shifts", "least loaded"
