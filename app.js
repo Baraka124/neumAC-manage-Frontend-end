@@ -10826,8 +10826,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return today >= s && today <= e && a.current_status === 'currently_absent'
           })
           if (!out.length) return { text: 'Nobody is marked absent today — full attendance.', chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence' }] }
-          const text = `${out.length} absent today: ` + out.slice(0,5).map(a => staffName(a.staff_member_id)).join(', ') + '.'
-          return { text, chips: out.slice(0,4).map(a => ({ label: staffName(a.staff_member_id), id: a.staff_member_id })), actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }], followups: [{ label: 'Any coverage gaps?', intent: 'coverage_gaps' }, { label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
+          const _reasonLbl = { vacation: 'vacation', sick_leave: 'sick', conference: 'conference', training: 'training', personal: 'personal', other: 'leave' }
+          const rows = out.slice(0,6).map(a => ({
+            id: a.staff_member_id, name: staffName(a.staff_member_id),
+            reason: _reasonLbl[a.absence_reason] || (a.absence_reason || 'leave').replace(/_/g,' '),
+            until: a.end_date ? fmt(a.end_date) : null,
+            covered: !!a.covering_staff_id, cover: a.covering_staff_id ? staffName(a.covering_staff_id) : null
+          }))
+          const uncovered = rows.filter(r => !r.covered).length
+          const _names = out.slice(0,3).map(a => staffName(a.staff_member_id)).join(', ')
+          const text = `${out.length} absent today${uncovered ? ` — ${uncovered} without cover` : ''}: ${_names}${out.length>3?'…':''}.`
+          return { text, visual: { type: 'absence', rows }, chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }], sources: ['leave records'], followups: [{ label: 'Any coverage gaps?', intent: 'coverage_gaps' }, { label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
         }
         if (intent === 'trials_recruiting') {
           const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
@@ -11035,15 +11044,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'oncall_upcoming') {
           const today = Utils.normalizeDate(new Date())
-          const up = (onCallSchedule.value || [])
-            .filter(s => Utils.normalizeDate(s.duty_date) >= today)
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          const all = (onCallSchedule.value || [])
             .sort((a,b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
-            .slice(0, 4)
-          if (!up.length) return { text: "No upcoming on-call shifts are scheduled. You may want to set the rota.", chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [] }
-          const text = 'Next on-call: ' + up.map(s => `${staffName(s.primary_physician_id)} (${fmt(s.duty_date)})`).join(', ') + '.'
-          // Remember the first physician + date so follow-ups ("is she on leave?") resolve.
+          // #temporal: did they name a specific day? ("tomorrow", "friday", "next monday", a date)
+          const dr = askBarExtractDates(q)
+          const wantsToday = /\btoday\b|\bhoy\b|\bnow\b|right now/.test(q)
+          let up, dayLabel = null
+          if (wantsToday) {
+            up = all.filter(s => Utils.normalizeDate(s.duty_date) === today); dayLabel = 'today'
+          } else if (dr.start) {
+            // specific day (or range) named
+            up = all.filter(s => { const d = Utils.normalizeDate(s.duty_date); return d >= dr.start && d <= (dr.end || dr.start) })
+            dayLabel = (dr.start === dr.end || !dr.end) ? fmt(dr.start) : `${fmt(dr.start)}–${fmt(dr.end)}`
+          } else {
+            up = all.filter(s => Utils.normalizeDate(s.duty_date) >= today).slice(0, 4)
+          }
+          if (!up.length) {
+            const none = dayLabel ? `No one is scheduled on call for ${dayLabel}.` : "No upcoming on-call shifts are scheduled. You may want to set the rota."
+            return { text: none, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [] }
+          }
+          let text
+          if (dayLabel) {
+            text = up.length === 1
+              ? `${staffName(up[0].primary_physician_id)} is on call ${dayLabel === 'today' ? 'today' : ('on ' + dayLabel)}.`
+              : `On call ${dayLabel}: ${up.map(s => staffName(s.primary_physician_id)).join(', ')}.`
+          } else {
+            text = up[0] && Utils.normalizeDate(up[0].duty_date) === today
+              ? `${staffName(up[0].primary_physician_id)} is on call today.`
+              : `Next on call: ${staffName(up[0].primary_physician_id)} on ${fmt(up[0].duty_date)}.`
+          }
+          const roster = up.slice(0,7).map(s => ({
+            id: s.primary_physician_id, name: staffName(s.primary_physician_id),
+            date: fmt(s.duty_date), today: Utils.normalizeDate(s.duty_date) === today,
+            backup: s.backup_physician_id ? staffName(s.backup_physician_id) : null
+          }))
           if (up[0]?.primary_physician_id) askBar.context = { type: 'staff', id: up[0].primary_physician_id, name: staffName(up[0].primary_physician_id), date: up[0].duty_date }
-          return { text, chips: up.filter(s=>s.primary_physician_id).slice(0,4).map(s => ({ label: staffName(s.primary_physician_id), id: s.primary_physician_id })), actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'staff_leave' }] }
+          return { text, visual: { type: 'roster', rows: roster }, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'staff_leave' }] }
         }
         if (intent === 'rotations_active') {
           const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
@@ -11596,6 +11633,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;         
+    throw error;    
   }
 });
