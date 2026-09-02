@@ -10288,8 +10288,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'coverage_gaps', priority: 55, patterns: [/\bgap/, /understaff/, /uncovered/, /\bshort\b/, /sin cobertura/, /hueco/, /coverage gap/] },
         { intent: 'absent_now', priority: 34, patterns: [/absent/, /\bleave\b/, /\boff\b/, /vacation/, /baja/, /ausen/] },
         { intent: 'trials_recruiting', priority: 32, patterns: [/recruit/, /reclut/, /\btrial\b/, /\bstudy\b/, /studies/, /estudio/, /ensayo/] },
-        { intent: 'oncall_upcoming', priority: 30, patterns: [/on-call/, /on call/, /oncall/, /guardia/, /\bduty\b/], anti: [/gap|uncovered|understaff/] },
-        { intent: 'rotations_active', priority: 28, patterns: [/rotation/, /\bresident\b/, /supervis/, /\beval\b/, /\brota\b/] }
+        { intent: 'oncall_upcoming', priority: 30, patterns: [/on-call/, /on call/, /oncall/, /guardia/, /\bduty\b/], anti: [/gap|uncovered|understaff|rotation|rotating/] },
+        { intent: 'rotations_active', priority: 52, patterns: [/rotation/, /rotating/, /\bresident\b/, /supervis/, /\bevaluation\b/, /\brota\b/], anti: [/on-call|on call|guardia|draft|assign|put .* under/] }
       ]
 
       // Scored matcher: returns { intent, confidence } — confidence is 'high'
@@ -10889,7 +10889,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const units = (trainingUnits.value) || []
           if (!units.length) return { text: 'No training units are defined.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
           const active = units.filter(u => (u.unit_status||'active')==='active').length
-          return { text: `${units.length} unit${units.length===1?'':'s'} (${active} active): ${units.slice(0,5).map(u=>u.unit_name).join(', ')}.`, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+          const full = askBarWantsFull(askBar.lastAsked || askBar.query)
+          const names = (full ? units : units.slice(0,5)).map(u => u.unit_name)
+          // When showing the full list, render one-per-line for readability.
+          const body = full && names.length > 6 ? '\n• ' + names.join('\n• ') : names.join(', ')
+          const tail = (!full && units.length > 5) ? ` …and ${units.length-5} more (ask "list all units").` : '.'
+          return { text: `${units.length} unit${units.length===1?'':'s'} (${active} active): ${body}${tail}`, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
         }
         if (intent === 'rotations_deep') {
           // Who's rotating where, under whom
@@ -11163,6 +11168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'ops metrics': 'From posted operational metrics',
         'hospitals': 'From the hospital directory'
       }[s] || ('From ' + s))
+
+      // Detect when the user wants the COMPLETE list, not a truncated summary.
+      const askBarWantsFull = (q) => /\b(full|all|every|complete|entire|whole|list|show me|todos|todas|completa|lista)\b/i.test(q || '')
 
       const askBarBuildAnswer = (intent) => {
         const a = _askBarBuildAnswerRaw(intent) || {}
