@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=63">
+    <link rel="stylesheet" href="style.css?v=64">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8462,6 +8462,26 @@
                                     <div class="askbar-cmp-track"><div class="askbar-cmp-fill" :class="{ 'askbar-cmp-fill--lose': !bar.win }" :style="{ width: bar.pct + '%' }"></div></div>
                                 </div>
                                 <div v-if="turn.visual.delta" class="askbar-cmp-delta">{{ turn.visual.delta }}</div>
+                            </div>
+
+                            <!-- structured on-call roster readout -->
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'roster'" class="askbar-roster">
+                                <div v-for="(r,ri) in turn.visual.rows" :key="ri" class="askbar-roster-row" :class="{ 'askbar-roster-row--today': r.today }">
+                                    <span class="askbar-roster-date">{{ r.today ? 'Today' : r.date }}</span>
+                                    <span class="askbar-roster-name">{{ r.name }}</span>
+                                    <span v-if="r.backup" class="askbar-roster-backup">backup {{ r.backup }}</span>
+                                    <span v-if="r.today" class="askbar-roster-pill">on call</span>
+                                </div>
+                            </div>
+
+                            <!-- structured absence readout -->
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'absence'" class="askbar-absence">
+                                <div v-for="(r,ri) in turn.visual.rows" :key="ri" class="askbar-absence-row">
+                                    <span class="askbar-absence-name">{{ r.name }}</span>
+                                    <span class="askbar-absence-reason">{{ r.reason }}</span>
+                                    <span v-if="r.until" class="askbar-absence-until">until {{ r.until }}</span>
+                                    <span class="askbar-absence-cov" :class="r.covered ? 'askbar-absence-cov--ok' : 'askbar-absence-cov--gap'">{{ r.covered ? 'covered' : 'no cover' }}</span>
+                                </div>
                             </div>
                             <template v-if="!turn.streaming">
                                 <div v-if="turn.isClarify && turn.chips && turn.chips.length" class="askbar-clarify-opts">
@@ -19930,7 +19950,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=80"></script>
+    <script src="app.js?v=82"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
