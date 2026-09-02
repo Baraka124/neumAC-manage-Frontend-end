@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=65">
+    <link rel="stylesheet" href="style.css?v=66">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8512,14 +8512,22 @@
                                 <div v-else-if="turn.chips && turn.chips.length" class="askbar-chips">
                                     <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click.stop="c.clarifyAttr !== undefined ? askBarResolveClarified(c) : askBarEntityMenu(c, $event)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
                                 </div>
-                                <div class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
+                                <div class="askbar-trust" :class="['askbar-trust--' + turn.confidence, { 'askbar-trust--clickable': turn.evidence && turn.evidence.length }]">
                                     <span class="askbar-trust-dot" :title="turn.confidence==='high' ? 'Verified from records' : turn.confidence==='medium' ? 'Partial — some data missing' : 'Unverified'"></span>
                                     <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Verified' : turn.confidence==='medium' ? 'Partial' : 'Unverified' }}</span>
-                                    <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src">·
+                                    <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src" :class="{ 'askbar-trust-src--link': turn.evidence && turn.evidence.length }" @click="turn.evidence && turn.evidence.length ? (turn.evidenceOpen = !turn.evidenceOpen) : null">·
                                         <span v-for="(s,si) in turn.sources" :key="s" :title="askBarSourceDesc(s)">{{ s }}<span v-if="si < turn.sources.length-1">, </span></span>
+                                        <svg v-if="turn.evidence && turn.evidence.length" class="askbar-trust-chev" :class="{ 'askbar-trust-chev--open': turn.evidenceOpen }" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
                                     </span>
                                     <span v-if="turn.asOf" class="askbar-trust-time">{{ turn.asOf }}</span>
                                     <button class="askbar-trust-copy" @click="askBarCopyAnswer(turn, $event)" title="Copy answer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                                </div>
+                                <div v-if="turn.evidenceOpen && turn.evidence && turn.evidence.length" class="askbar-evidence">
+                                    <div class="askbar-evidence-h">Based on these records</div>
+                                    <div v-for="(ev,ei) in turn.evidence" :key="ei" class="askbar-evidence-row">
+                                        <span class="askbar-evidence-dot"></span>
+                                        <div><div class="askbar-evidence-label">{{ ev.label }}</div><div class="askbar-evidence-detail">{{ ev.detail }} <span class="askbar-evidence-src">{{ ev.source }}</span></div></div>
+                                    </div>
                                 </div>
                             </template>
                         </div>
@@ -19968,7 +19976,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=83"></script>
+    <script src="app.js?v=84"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
