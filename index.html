@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=62">
+    <link rel="stylesheet" href="style.css?v=63">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8200,8 +8200,8 @@
             <div class="askbar-head grounded-head">
                 <span class="grounded-head-orb" :class="{ 'grounded-head-orb--think': askBar.loading }"></span>
                 <div><div class="askbar-head-t">Grounded</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'following up' : 'scanned just now' }}</div></div>
-                <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()">＋ New</button>
-                <button class="askbar-teach-btn" @click="askBarToggleTeach()" :class="{ 'askbar-teach-btn--on': askBar.view === 'teach' }" title="Teach Grounded">✦ Teach</button>
+                <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()">New</button>
+                <button class="askbar-teach-btn" @click="askBarToggleTeach()" :class="{ 'askbar-teach-btn--on': askBar.view === 'teach' }" title="Teach Grounded">Teach</button>
                 <span class="askbar-head-live"><span class="askbar-head-dot"></span> live</span>
                 <button class="askbar-close" @click="closeAskBar()">✕</button>
             </div>
@@ -8304,7 +8304,7 @@
                     <div class="askbar-a-bub">
                         <div v-if="turn.trace && turn.trace.length && !turn.streaming" class="askbar-trace-mini" @click="turn.traceOpen = !turn.traceOpen">
                             <span class="askbar-trace-orb askbar-trace-orb--still"></span>
-                            <span class="askbar-trace-mini-t">Reasoned in {{ turn.trace.length }} steps</span>
+                            <span class="askbar-trace-mini-t">{{ turn.trace.length }} step{{ turn.trace.length===1?'':'s' }} of reasoning</span>
                             <span class="askbar-trace-mini-x">{{ turn.traceOpen ? 'hide' : 'tap to expand' }}</span>
                         </div>
                         <div v-if="turn.traceOpen && !turn.streaming" class="askbar-trace askbar-trace--expanded">
@@ -8474,24 +8474,20 @@
                                 <div v-else-if="turn.chips && turn.chips.length" class="askbar-chips">
                                     <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click.stop="c.clarifyAttr !== undefined ? askBarResolveClarified(c) : askBarEntityMenu(c, $event)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
                                 </div>
-                                <div class="askbar-a-foot">
-                                    <span v-if="turn.sources && turn.sources.length" class="askbar-src">sources <span v-for="s in turn.sources" :key="s" class="askbar-src-chip" :title="askBarSourceDesc(s)">{{ s }}</span></span>
-                                    <span class="askbar-conf" :class="'askbar-conf--' + turn.confidence">
-                                        <span class="askbar-conf-label">{{ turn.confidence==='high' ? 'verified' : turn.confidence==='medium' ? 'partial' : 'unverified' }}</span>
-                                        <span class="askbar-conf-track"><span class="askbar-conf-fill"></span></span>
+                                <div class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
+                                    <span class="askbar-trust-dot" :title="turn.confidence==='high' ? 'Verified from records' : turn.confidence==='medium' ? 'Partial — some data missing' : 'Unverified'"></span>
+                                    <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Verified' : turn.confidence==='medium' ? 'Partial' : 'Unverified' }}</span>
+                                    <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src">·
+                                        <span v-for="(s,si) in turn.sources" :key="s" :title="askBarSourceDesc(s)">{{ s }}<span v-if="si < turn.sources.length-1">, </span></span>
                                     </span>
-                                    <span class="askbar-asof" v-if="turn.asOf">as of {{ turn.asOf }}</span>
-                                    <button class="askbar-copy" @click="askBarCopyAnswer(turn, $event)" title="Copy answer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                                </div>
-                                <div class="askbar-a-tags">
-                                    <span class="askbar-tag-grnd"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg> grounded</span>
-                                    <span class="askbar-tag-ai">✦ {{ turn.isDraft ? 'drafted' : 'phrased' }} by agent</span>
+                                    <span v-if="turn.asOf" class="askbar-trust-time">{{ turn.asOf }}</span>
+                                    <button class="askbar-trust-copy" @click="askBarCopyAnswer(turn, $event)" title="Copy answer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                                 </div>
                             </template>
                         </div>
                         <div v-if="!turn.streaming && (turn.actions && turn.actions.length || turn.followups && turn.followups.length)" class="askbar-followups">
-                            <button v-for="(a,i) in turn.actions" :key="'a'+i" class="askbar-fu askbar-fu--act" @click="askBarGoTo(a)">{{ a.label }} →</button>
-                            <button v-for="(f,i) in turn.followups" :key="'f'+i" class="askbar-fu" @click="askBarRunFollowup(f)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> {{ f.label }}</button>
+                            <button v-for="(a,i) in turn.actions" :key="'a'+i" class="askbar-fu askbar-fu--act" @click="askBarGoTo(a)">{{ a.label }}</button>
+                            <button v-for="(f,i) in turn.followups" :key="'f'+i" class="askbar-fu" @click="askBarRunFollowup(f)">{{ f.label }}</button>
                         </div>
                     </div>
                 </template>
@@ -19934,7 +19930,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=79"></script>
+    <script src="app.js?v=80"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
