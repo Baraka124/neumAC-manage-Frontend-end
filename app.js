@@ -10707,7 +10707,7 @@ document.addEventListener('DOMContentLoaded', () => {
           askBar.thinking = null
           // Push the turn with a held-back text, then stream it in. Keep the trace on the turn.
           const full = ans.text || ''
-          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, trace: askBar.trace.slice(), traceOpen: false, asOf: askBarNow(), streaming: true })
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, trace: askBar.trace.slice(), traceOpen: false, asOf: askBarNow(), streaming: true })
           askBar.trace = []
           askBar.turns.push(turn)
           askBarStreamTurn(turn, full)
@@ -10842,7 +10842,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const uncovered = rows.filter(r => !r.covered).length
           const _names = out.slice(0,3).map(a => staffName(a.staff_member_id)).join(', ')
           const text = `${out.length} absent ${rangeLabel}${uncovered ? ` — ${uncovered} without cover` : ''}: ${_names}${out.length>3?'…':''}.`
-          return { text, visual: { type: 'absence', rows }, chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }], sources: ['leave records'], followups: [{ label: 'Any coverage gaps?', intent: 'coverage_gaps' }, { label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
+          const evidence = out.slice(0,8).map(a => ({
+            label: `${staffName(a.staff_member_id)} — ${_reasonLbl[a.absence_reason] || a.absence_reason}`,
+            detail: `${Utils.normalizeDate(a.start_date)} → ${Utils.normalizeDate(a.end_date)}${a.covering_staff_id ? ' · covered by ' + staffName(a.covering_staff_id) : ' · no cover'}`,
+            source: 'staff_absence_records'
+          }))
+          return { text, visual: { type: 'absence', rows }, evidence, chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }], sources: ['leave records'], followups: [{ label: 'Any coverage gaps?', intent: 'coverage_gaps' }, { label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
         }
         if (intent === 'trials_recruiting') {
           const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
@@ -11092,7 +11097,13 @@ document.addEventListener('DOMContentLoaded', () => {
             backup: s.backup_physician_id ? staffName(s.backup_physician_id) : null
           }))
           if (up[0]?.primary_physician_id) askBar.context = { type: 'staff', id: up[0].primary_physician_id, name: staffName(up[0].primary_physician_id), date: up[0].duty_date }
-          return { text, visual: { type: 'roster', rows: roster }, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'staff_leave' }] }
+          // #provenance: the exact records backing this answer
+          const evidence = up.slice(0,8).map(s => ({
+            label: `${staffName(s.primary_physician_id)} — on-call ${fmt(s.duty_date)}`,
+            detail: `duty_date ${Utils.normalizeDate(s.duty_date)}${s.backup_physician_id ? ' · backup ' + staffName(s.backup_physician_id) : ''}`,
+            source: 'oncall_schedule'
+          }))
+          return { text, visual: { type: 'roster', rows: roster }, evidence, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'staff_leave' }] }
         }
         if (intent === 'rotations_active') {
           const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
@@ -11236,7 +11247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasSources = Array.isArray(a.sources) && a.sources.length > 0
         if (emptyish) conf = 'low'
         else if (!hasSources && conf === 'high') conf = 'medium'
-        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [], confidence: conf, visual: a.visual || null, isDraft: a.isDraft || false }
+        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [], confidence: conf, visual: a.visual || null, evidence: a.evidence || null, isDraft: a.isDraft || false }
       }
 
       const askBarGoTo = (action) => {
