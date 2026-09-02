@@ -40923,6 +40923,23 @@ html body #app .askbar-absence-row:last-child { border-bottom: none; }
 html body #app .askbar-absence-name { font-size: 14px; color: #fff; font-weight: 500; }
 html body #app .askbar-absence-reason { font-size: 11px; color: rgba(255,255,255,.5); background: rgba(255,255,255,.06); padding: 2px 8px; border-radius: 6px; }
 html body #app .askbar-absence-until { font-size: 11.5px; color: rgba(255,255,255,.4); }
-html body #app .askbar-absence-cov { margin-left: auto; font-size: 10.5px; padding: 2px 8px; border-radius: 100px; }   
+html body #app .askbar-absence-cov { margin-left: auto; font-size: 10.5px; padding: 2px 8px; border-radius: 100px; }
 html body #app .askbar-absence-cov--ok { color: #6ee7b7; background: rgba(16,185,129,.12); }
 html body #app .askbar-absence-cov--gap { color: #fca5a5; background: rgba(239,68,68,.12); }
+
+/* §93 — occupancy + risk-list readouts */
+html body #app .askbar-occ { margin: 10px 0 4px; display: flex; flex-direction: column; gap: 11px; }
+html body #app .askbar-occ-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+html body #app .askbar-occ-name { font-size: 13px; color: rgba(255,255,255,.9); font-weight: 500; }
+html body #app .askbar-occ-count { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 16px; color: #00d4d4; }
+html body #app .askbar-occ-count--full { color: #f87171; }
+html body #app .askbar-occ-track { height: 7px; border-radius: 100px; background: rgba(255,255,255,.07); overflow: hidden; }
+html body #app .askbar-occ-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #0891b2, #00d4d4); transition: width .8s cubic-bezier(.16,1,.3,1); }
+html body #app .askbar-occ-fill--full { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+html body #app .askbar-risk { margin: 10px 0 4px; display: flex; flex-direction: column; }
+html body #app .askbar-risk-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; background: rgba(239,68,68,.06); margin-bottom: 5px; }
+html body #app .askbar-risk-mark { color: #fca5a5; font-size: 13px; }
+html body #app .askbar-risk-name { font-size: 14px; color: #fff; font-weight: 500; flex: 1; }
+html body #app .askbar-risk-unit { font-size: 11.5px; color: rgba(255,255,255,.45); }
+html body #app .askbar-risk-tag { font-size: 10px; color: #fca5a5; background: rgba(239,68,68,.14); padding: 2px 8px; border-radius: 100px; }
