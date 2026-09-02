@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 "clinical_trials"
                         ],
                         "recipe": "trials_recruiting",
-                        "permission": "research_hub",
+                        "permission": "clinical_trials",
                         "trace": [
                                 [
                                         "Reviewing trials",
@@ -10439,7 +10439,12 @@ document.addEventListener('DOMContentLoaded', () => {
         staff_oncall: 'oncall_schedule', staff_rotation: 'resident_rotations',
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
         count_rotations_ending: 'resident_rotations',
-        trials_recruiting: 'research_hub',
+        trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', trials_by_person: 'clinical_trials',
+        research_lines: 'research_lines', innovation_projects: 'innovation_projects',
+        staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
+        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units',
+        unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
+        compare_staff: 'medical_staff', rank_staff: 'medical_staff',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
@@ -10870,12 +10875,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'staff_can_pi') {
           const pis = (medicalStaff.value || []).filter(s => s.can_be_pi && s.employment_status === 'active')
           if (!pis.length) return { text: 'No staff are currently flagged as PI-eligible.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
-          return { text: `${pis.length} staff can serve as PI: ${pis.slice(0,6).map(s=>s.full_name).join(', ')}.`, chips: pis.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+          const _f=askBarWantsFull(askBar.lastAsked||askBar.query); const _pn=(_f?pis:pis.slice(0,6)).map(s=>s.full_name); return { text: `${pis.length} staff can serve as PI: ${_f&&_pn.length>6?'\n• '+_pn.join('\n• '):_pn.join(', ')}${!_f&&pis.length>6?` …and ${pis.length-6} more (ask "list all").`:'.'}`, chips: pis.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'staff_with_phd') {
           const phds = (medicalStaff.value || []).filter(s => s.has_phd)
           if (!phds.length) return { text: 'No staff have a PhD on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
-          return { text: `${phds.length} staff hold a PhD: ${phds.slice(0,6).map(s=>s.full_name + (s.phd_field?' ('+s.phd_field+')':'')).join(', ')}.`, chips: phds.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+          const _f2=askBarWantsFull(askBar.lastAsked||askBar.query); const _pd=(_f2?phds:phds.slice(0,6)).map(s=>s.full_name+(s.phd_field?' ('+s.phd_field+')':'')); return { text: `${phds.length} staff hold a PhD: ${_f2&&_pd.length>6?'\n• '+_pd.join('\n• '):_pd.join(', ')}${!_f2&&phds.length>6?` …and ${phds.length-6} more (ask "list all").`:'.'}`, chips: phds.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'residents_by_year') {
           const residents = (medicalStaff.value || []).filter(s => askBarIsResident(s))
@@ -10908,7 +10913,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'departments_overview') {
           const depts = departments.value || []
           if (!depts.length) return { text: 'No departments are on record.', chips: [], actions: [], sources: ['departments'], followups: [], confidence: 'high' }
-          return { text: `${depts.length} department${depts.length===1?'':'s'}: ${depts.slice(0,6).map(d=>d.name + (d.head_of_department_id?' (head: '+getStaffName(d.head_of_department_id)+')':'')).join(', ')}.`, chips: [], actions: [], sources: ['departments'], followups: [], confidence: 'high' }
+          const _f3=askBarWantsFull(askBar.lastAsked||askBar.query); const _dn=(_f3?depts:depts.slice(0,6)).map(d=>d.name+(d.head_of_department_id?' (head: '+getStaffName(d.head_of_department_id)+')':'')); return { text: `${depts.length} department${depts.length===1?'':'s'}: ${_f3&&_dn.length>6?'\n• '+_dn.join('\n• '):_dn.join(', ')}${!_f3&&depts.length>6?` …and ${depts.length-6} more.`:'.'}`, chips: [], actions: [], sources: ['departments'], followups: [], confidence: 'high' }
         }
         if (intent === 'hospitals_overview') {
           const hs = (hospitalsList.value || []).filter(h => h.is_active !== false)
