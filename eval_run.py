@@ -9,6 +9,23 @@ from playwright.sync_api import sync_playwright
 
 EVAL = json.load(open('/home/claude/eval_set.json'))
 seed = EVAL['seed']
+
+# ── Keep date-based fixtures valid regardless of when the eval runs ──
+# The seed uses fixed 2026-07 dates; rewrite them relative to "today" so
+# "who is on call today?" and "who is absent?" always have live data.
+import datetime as _dt
+_today = _dt.date.today()
+def _d(offset): return (_today + _dt.timedelta(days=offset)).isoformat()
+# On-call: put one shift TODAY (Antelo=id1), others in the coming days.
+if seed.get('onCallSchedule'):
+    _offsets = [0, 2, 5, 7]
+    for i, o in enumerate(seed['onCallSchedule']):
+        o['duty_date'] = _d(_offsets[i % len(_offsets)])
+# Absence: make Santalla's leave span today (started 2 days ago, ends in 5).
+if seed.get('absences'):
+    for a in seed['absences']:
+        a['start_date'] = _d(-2); a['end_date'] = _d(5)
+
 cases = EVAL['cases']
 
 # Build a seeded, fetch-stubbed test page from the real app.
