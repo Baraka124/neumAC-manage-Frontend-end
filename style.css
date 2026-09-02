@@ -40421,7 +40421,7 @@ html body #app .askbar-fab-pulse {
 @keyframes askbarFabPulse { 0%{transform:scale(1);opacity:.5} 100%{transform:scale(1.14);opacity:0} }
 
 /* Live indicator in header */
-html body #app .askbar-head-live { margin-left: auto !important; display: flex !important; align-items: center !important; gap: 6px !important; font-family: 'DM Mono', monospace !important; font-size: 9px !important; color: #00d4d4 !important; text-transform: uppercase !important; letter-spacing: .08em !important; position: relative !important; z-index: 1 !important; margin-right: 8px !important; }
+html body #app .askbar-head-live { margin-left: auto !important; display: flex !important; align-items: center !important; gap: 5px !important; font-size: 11px !important; color: rgba(0,212,212,.75) !important; letter-spacing: 0 !important; position: relative !important; z-index: 1 !important; margin-right: 8px !important; }
 html body #app .askbar-head-dot { width: 6px !important; height: 6px !important; border-radius: 50% !important; background: #00d4d4 !important; animation: askbarBlink 2s infinite !important; }
 @keyframes askbarBlink { 50% { opacity: .3; } }
 
@@ -40615,7 +40615,7 @@ html body #app .askbar-trace-src { font-family: 'DM Mono', monospace !important;
 html body #app .askbar-trace-mini { display: flex !important; align-items: center !important; gap: 8px !important; padding: 7px 11px !important; background: #f8fafc !important; border: 1px solid rgba(15,45,84,.08) !important; border-radius: 10px !important; cursor: pointer !important; margin-bottom: 2px !important; }
 html body #app .askbar-trace-mini:hover { border-color: rgba(124,58,237,.3) !important; }
 html body #app .askbar-trace-mini-t { font-size: 11px !important; font-weight: 500 !important; color: #475569 !important; }
-html body #app .askbar-trace-mini-x { margin-left: auto !important; font-family: 'DM Mono', monospace !important; font-size: 8.5px !important; color: #94a3b8 !important; text-transform: uppercase !important; letter-spacing: .05em !important; }
+html body #app .askbar-trace-mini-x { margin-left: auto !important; font-size: 11px !important; color: rgba(255,255,255,.35) !important; letter-spacing: 0 !important; }
 html body #app .askbar-trace--expanded { margin-bottom: 6px !important; }
 
 /* Grounded + AI tags */
@@ -40807,7 +40807,7 @@ html body #app .askbar-entmenu-it:hover { background: rgba(0,212,212,.12); color
 html body #app .askbar-entmenu-it svg { color: #0891b2; flex-shrink: 0; }
 
 /* §87 — Teach Grounded (Brain editor) */
-html body #app .askbar-teach-btn { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: 7px; border: 1px solid rgba(124,58,237,.35); background: rgba(124,58,237,.14); color: #a78bfa; cursor: pointer; transition: .18s; margin-right: 4px; }
+html body #app .askbar-teach-btn { font-size: 12px; font-weight: 500; letter-spacing: 0; padding: 5px 11px; border-radius: 8px; border: 1px solid rgba(124,58,237,.3); background: rgba(124,58,237,.12); color: #c4b5fd; cursor: pointer; transition: .18s; margin-right: 4px; }
 html body #app .askbar-teach-btn:hover { background: rgba(124,58,237,.24); color: #c4b5fd; }
 html body #app .askbar-teach-btn--on { background: #7c3aed; color: #fff; border-color: #7c3aed; }
 html body #app .askbar-teach { padding: 4px 4px 8px; max-height: 62vh; overflow-y: auto; position: relative; z-index: 1; }
@@ -40880,3 +40880,29 @@ html body #app .askbar-rota-who { flex: 1; font-size: 13px; color: #fff; font-we
 html body #app .askbar-rota-nogap { color: #fcd34d; font-weight: 400; font-style: italic; }
 html body #app .askbar-rota-swap { background: rgba(0,212,212,.12); border: 1px solid rgba(0,212,212,.3); color: #00e5e5; border-radius: 6px; width: 26px; height: 24px; cursor: pointer; font-size: 13px; transition: .15s; }
 html body #app .askbar-rota-swap:hover { background: rgba(0,212,212,.25); }
+
+/* §90 — disciplined trust line (replaces the 8-element footer clutter) */
+html body #app .askbar-trust { display: flex; align-items: center; gap: 7px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.07); font-size: 11.5px; color: rgba(255,255,255,.4); }
+html body #app .askbar-trust-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+html body #app .askbar-trust--high .askbar-trust-dot { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,.6); }
+html body #app .askbar-trust--medium .askbar-trust-dot { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,.5); }
+html body #app .askbar-trust--low .askbar-trust-dot { background: #f87171; }
+html body #app .askbar-trust-state { color: rgba(255,255,255,.6); font-weight: 500; }
+html body #app .askbar-trust--high .askbar-trust-state { color: #6ee7b7; }
+html body #app .askbar-trust-src { color: rgba(255,255,255,.38); }
+html body #app .askbar-trust-src span[title] { cursor: help; border-bottom: 1px dotted rgba(255,255,255,.15); }
+html body #app .askbar-trust-time { margin-left: auto; font-variant-numeric: tabular-nums; color: rgba(255,255,255,.32); }
+html body #app .askbar-trust-copy { background: none; border: none; padding: 3px; color: rgba(255,255,255,.3); cursor: pointer; border-radius: 5px; display: inline-flex; transition: .15s; }
+html body #app .askbar-trust-copy:hover { color: #00e5e5; background: rgba(0,212,212,.1); }
+html body #app .askbar-trust-copy.askbar-copy--ok { color: #6ee7b7; }
+html body #app .askbar-trust-copy.askbar-copy--ok svg { display: none; }
+html body #app .askbar-trust-copy.askbar-copy--ok::after { content: 'copied'; font-size: 10px; }
+
+
+/* §91 — dark entity chips (was white, clashed with instrument) */
+html body #app .grounded-cloud .askbar-chip { background: rgba(255,255,255,.05) !important; border: 1px solid rgba(0,212,212,.2) !important; color: rgba(255,255,255,.9) !important; }
+html body #app .grounded-cloud .askbar-chip:hover { background: rgba(0,212,212,.12) !important; border-color: rgba(0,212,212,.4) !important; }
+html body #app .grounded-cloud .askbar-chip svg { color: #00d4d4 !important; }
+/* trust line: ensure sentence case, no inherited uppercase */
+html body #app .askbar-trust, html body #app .askbar-trust * { text-transform: none !important; font-family: 'DM Sans', system-ui, sans-serif !important; letter-spacing: 0 !important; }
+html body #app .askbar-trust-time { font-variant-numeric: tabular-nums !important; }
