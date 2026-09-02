@@ -11596,6 +11596,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;    
+    throw error;         
   }
 });
