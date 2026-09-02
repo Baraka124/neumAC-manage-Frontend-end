@@ -10050,6 +10050,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // explicit ISO dates first
         const isos = (q.match(/\d{4}-\d{2}-\d{2}/g) || [])
         if (isos.length) return { start: isos[0], end: isos[isos.length - 1] }
+        // explicit day-month: "20 sept", "sept 20", "20 de septiembre", "20 september"
+        const MO = { jan:0,ene:0,feb:1,mar:2,apr:3,abr:3,may:4,jun:5,jul:6,aug:7,ago:7,sep:8,sept:8,oct:9,nov:10,dec:11,dic:11 }
+        const dm = q.match(/\b(\d{1,2})\s*(?:de\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|ene|abr|ago|dic)[a-z]*\b/) ||
+                   q.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|ene|abr|ago|dic)[a-z]*\s+(\d{1,2})\b/)
+        if (dm) {
+          let day, moKey
+          if (/^\d/.test(dm[1])) { day = parseInt(dm[1],10); moKey = dm[2] } else { moKey = dm[1]; day = parseInt(dm[2],10) }
+          const mo = MO[moKey.slice(0,4)] ?? MO[moKey.slice(0,3)]
+          if (mo !== undefined && day >= 1 && day <= 31) {
+            let yr = today.getFullYear()
+            const cand = new Date(yr, mo, day)
+            if (cand < today && (today - cand) > 86400000*180) yr++   // if well past, assume next year
+            const d = new Date(yr, mo, day)
+            return { start: iso(d), end: iso(d) }
+          }
+        }
         // collect weekday mentions in order
         const found = []
         const re = /\b(next|this)?\s*(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)[a-z]*\b/g
@@ -10251,7 +10267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'record_oncall', priority: 121, patterns: [/(put|assign|schedule|book|set|add|give|make)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|week|rota/] },
         { intent: 'draft_rota', priority: 123, patterns: [/(draft|prepare|generate|build|make|plan|propose)\b.*(rota|on.?call schedule|call schedule|week.*call|weekly.*call)/, /(rota|on.?call).*(for )?(next|this|the) week/], anti: [/who|which|is\b/] },
         { intent: 'return_leave', priority: 122, patterns: [/\b(is )?back\b/, /returned?\b/, /back (to|on) (duty|work)/, /no longer (on leave|absent|off)/, /end.*leave early/], require: [/back|return|no longer|end/], anti: [/who|which|list|when.*back/] },
-        { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule)\b.*(rotation|rotat|in (the )?(icu|ward|unit|sleep|clinic))/, /(rotation|rotate).*(under|with|supervis)/], anti: [/who|which|list|how many|rotating where/] },
+        { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule)\b.*\b(in|into|to|on)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma)/, /(put|assign|place|move|rotate)\b.*(rotation|rotat)/, /(rotation|rotate).*(under|with|supervis|from|next)/], anti: [/who|which|list|how many|rotating where|is on|profile/] },
         // — Comparison & ranking (very specific) —
         { intent: 'compare_staff', priority: 100, patterns: [/\bcompare\b/, /(who has (more|less|fewer)|more than|busier|less busy).*\b(or|and|vs|versus)\b/, /\b(or|vs|versus)\b.*(more|less|busier|shifts|trials)/] },
         { intent: 'rank_staff', priority: 95, patterns: [/(busiest|fewest|least|lightest|heaviest|overloaded)/, /who has the (most|fewest|least)/, /\bmost\b.*(shift|call|trial|resident|load)/], anti: [/\bcompare\b/] },
