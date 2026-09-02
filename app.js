@@ -642,10 +642,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (ok) { teachMsg.value = `✓ Grounded now understands "${teachForm.content.trim()}"`; teachForm.content = ''; setTimeout(() => teachMsg.value = '', 2600) }
       else { teachMsg.value = 'Could not save — the /api/brain route may not be deployed yet.' }
     }
-    const askBarToggleTeach = () => {
-      askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
-      if (askBar.view === 'teach') loadBrain()
-    }
 
     const getBrain = () => {
       const base = NEUMDESK_BRAIN_DEFAULT
@@ -1773,6 +1769,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasPermission = (module, action = 'read') => {
         const user = currentUser.value
         if (!user) return false
+        // Admins (admin_level >= 1) pass all permission checks — matches the intent
+        // that an administrator can operate every module.
+        if ((user.admin_level ?? 0) >= 1) return true
         const perms = user.permissions
         if (!Array.isArray(perms)) return false
         const p = perms.find(x => x.module === module)
@@ -9558,6 +9557,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const openAskBar  = () => { askBar.open = true; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
       const closeAskBar = () => { askBar.open = false; askBar.query = '' }
+      const askBarToggleTeach = () => {
+        askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
+        if (askBar.view === 'teach') loadBrain()
+      }
       const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
       const runSuggestion = (s) => { askBar.query = s.t; askBarResolve(s.intent) }
       const askBarSnooze = (alert) => {
@@ -9934,10 +9937,27 @@ document.addEventListener('DOMContentLoaded', () => {
         let supervisor = null
         const sM = q.match(/(?:under|supervised by|with)\s+([a-zñáéíóú]+)/i)
         if (sM) supervisor = askBarResolveStaff(sM[1])
-        // unit: match a training-unit name mentioned
-        const units = trainingUnits.value || []
-        let unit = units.find(u => q.includes((u.unit_name||'').toLowerCase())) || null
-        if (!unit) { const uM = q.match(/\b(icu|ward|sleep lab|sleep|clinic|bronch\w*)\b/); if (uM) unit = units.find(u => (u.unit_name||'').toLowerCase().includes(uM[1])) }
+        // unit: match a training-unit name mentioned — handle Spanish names + aliases
+        const units = (trainingUnits.value || []).filter(u => (u.unit_status || 'active') !== 'inactive')
+        const _norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        // common English→department aliases mapping to real unit-name fragments
+        const UNIT_ALIASES = [
+          [/\b(icu|intensive care)\b/, 'uci'], [/\b(sleep|sleep lab)\b/, 'sueño'],
+          [/\b(ward|hospitali[sz]ation|inpatient)\b/, 'hospitaliz'], [/\bpft|lung function|respiratory function\b/, 'pfr'],
+          [/\bthoracic surgery\b/, 'torácica'], [/\btransplant\b/, 'trasplante'],
+          [/\bcardiology\b/, 'cardiolog'], [/\bradiology\b/, 'radiolog'],
+          [/\binternal medicine\b/, 'interna'], [/\bbronch\w*\b/, 'broncopleural'],
+          [/\bexternal\b/, 'externa'], [/\bsevere asthma\b/, 'asma']
+        ]
+        let unit = units.find(u => _norm(q).includes(_norm(u.unit_name)))  // direct name match
+        if (!unit) {  // alias match
+          for (const [rx, frag] of UNIT_ALIASES) {
+            if (rx.test(q)) { unit = units.find(u => _norm(u.unit_name).includes(frag)); if (unit) break }
+          }
+        }
+        if (!unit) {  // loose: any significant unit word appears in the query
+          unit = units.find(u => _norm(u.unit_name).split(/\s+/).some(w => w.length > 3 && _norm(q).includes(w)))
+        }
         // resident: strip supervisor PHRASE first, then unit, then filler words
         let rq = q
           .replace(/(?:under|supervised by|with)\s+[a-zñáéíóú]+/gi, ' ')
