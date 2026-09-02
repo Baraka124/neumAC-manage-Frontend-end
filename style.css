@@ -40448,7 +40448,7 @@ html body #app .askbar-conv { padding: 14px 18px !important; display: flex !impo
 html body #app .askbar-q-bub { align-self: flex-end !important; background: #0f2d54 !important; color: #fff !important; font-size: 13px !important; padding: 8px 13px !important; border-radius: 13px 13px 4px 13px !important; max-width: 80% !important; }
 html body #app .askbar-a-bub { align-self: flex-start !important; max-width: 92% !important; display: flex !important; flex-direction: column !important; gap: 8px !important; }
 html body #app .askbar-a-card { background: linear-gradient(135deg, rgba(0,179,179,.06), rgba(124,58,237,.035)) !important; border: 1px solid rgba(0,179,179,.2) !important; border-radius: 13px 13px 13px 4px !important; padding: 13px !important; }
-html body #app .askbar-a-tx { font-size: 13.5px !important; color: #0f1729 !important; line-height: 1.55 !important; }
+html body #app .askbar-a-tx { font-size: 13.5px !important; color: #0f1729 !important; line-height: 1.55 !important; white-space: pre-wrap !important; }
 html body #app .askbar-a-tx b { color: #0f2d54 !important; font-weight: 600 !important; }
 html body #app .askbar-src { display: flex !important; align-items: center !important; gap: 6px !important; margin-top: 10px !important; padding-top: 10px !important; border-top: 1px dashed rgba(15,45,84,.1) !important; font-family: 'DM Mono', monospace !important; font-size: 9px !important; color: #94a3b8 !important; text-transform: uppercase !important; letter-spacing: .04em !important; flex-wrap: wrap !important; }
 html body #app .askbar-src-chip { background: rgba(15,45,84,.05) !important; padding: 2px 7px !important; border-radius: 5px !important; color: #475569 !important; }
