@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=64">
+    <link rel="stylesheet" href="style.css?v=65">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8462,6 +8462,24 @@
                                     <div class="askbar-cmp-track"><div class="askbar-cmp-fill" :class="{ 'askbar-cmp-fill--lose': !bar.win }" :style="{ width: bar.pct + '%' }"></div></div>
                                 </div>
                                 <div v-if="turn.visual.delta" class="askbar-cmp-delta">{{ turn.visual.delta }}</div>
+                            </div>
+
+                            <!-- unit occupancy readout -->
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'occupancy'" class="askbar-occ">
+                                <div v-for="(r,ri) in turn.visual.rows" :key="ri" class="askbar-occ-row">
+                                    <div class="askbar-occ-head"><span class="askbar-occ-name">{{ r.name }}</span><span class="askbar-occ-count" :class="{ 'askbar-occ-count--full': r.full }">{{ r.n }}/{{ r.cap }}</span></div>
+                                    <div class="askbar-occ-track"><div class="askbar-occ-fill" :class="{ 'askbar-occ-fill--full': r.full }" :style="{ width: r.pct + '%' }"></div></div>
+                                </div>
+                            </div>
+
+                            <!-- risk list (unsupervised residents) -->
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'risklist'" class="askbar-risk">
+                                <div v-for="(r,ri) in turn.visual.rows" :key="ri" class="askbar-risk-row">
+                                    <span class="askbar-risk-mark">⚠</span>
+                                    <span class="askbar-risk-name">{{ r.name }}</span>
+                                    <span v-if="r.unit" class="askbar-risk-unit">{{ r.unit }}</span>
+                                    <span class="askbar-risk-tag">no supervisor</span>
+                                </div>
                             </div>
 
                             <!-- structured on-call roster readout -->
@@ -19950,7 +19968,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=82"></script>
+    <script src="app.js?v=83"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
