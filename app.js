@@ -10396,6 +10396,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'clear_rota', priority: 124, patterns: [/(clear|wipe|remove|delete|reset)\b.*(rota|whole.*rota|week.*call|all.*on.?call|all.*shifts)/, /(rota|schedule).*(clear|wipe|reset)/], anti: [/who|which|list/] },
         { intent: 'remove_oncall', priority: 124, patterns: [/(cancel|remove|delete|undo|clear|drop)\b.*(on.?call|oncall|shift|duty|guardia)/, /(on.?call|shift|duty).*(cancel|remove|delete|clear)/, /(take|pull)\b.*(off (call|duty|the rota))/], anti: [/who|which|list/] },
         // — Comparison & ranking (very specific) —
+        { intent: 'workload_analysis', priority: 102, patterns: [/(overload|stretched|too much|spread thin|burn.?out|overwork|imbalanc|unbalanc|balanced\??$|take on more|take more|absorb|who can (take|absorb|handle)|has capacity|capacity to|capacity for|free capacity|workload|work load|who.?s (busy|stretched|overloaded)|distribute.*(fairly|evenly)|load.*(balanced|distributed|even|fair)|lightest load|most load)/i], anti: [/on call|oncall|leave|rotation.*where/] },
+        { intent: 'staff_roster', priority: 103, patterns: [/(how many|number of|count of|total)\s+(staff|people|physicians?|doctors?|attendings?|fellows?|nurses?|employees?|do we have)/i, /(list|show( me)?|who are|give me)\s+(the\s+)?(all\s+)?(staff|people|team|everyone|physicians?|doctors?|attendings?|residents?|fellows?|nurses?|secretar|coordinators?|engineers?)/i, /^(staff|team|everyone|all staff)$/i, /who works here/i], anti: [/on call|oncall|leave|absent|phd|certif|pi\b|rotat|trial|how many residents|number of residents/] },
+        { intent: 'staff_contact', priority: 104, patterns: [/(email|e-?mail|phone|number|contact|reach|call|mobile|extension|office)\s+(for|of|de)?\s*[a-zñáéíóú]/i, /[a-zñáéíóú]+.?s?\s+(email|e-?mail|phone|number|contact|mobile|extension)/i, /how (do i |can i |to )?(reach|contact|call|email)\s+[a-zñáéíóú]/i], anti: [/on call|oncall|who is on|draft|write|compose|send|about/] },
         { intent: 'compare_staff', priority: 100, patterns: [/\bcompare\b/, /(who has (more|less|fewer)|more than|busier|less busy).*\b(or|and|vs|versus)\b/, /\b(or|vs|versus)\b.*(more|less|busier|shifts|trials)/] },
         { intent: 'rank_staff', priority: 95, patterns: [/(busiest|fewest|least|lightest|heaviest|overloaded)/, /who has the (most|fewest|least)/, /\bmost\b.*(shift|call|trial|resident|load)/], anti: [/\bcompare\b/] },
         // — Newly-reachable entities (close the agent coverage gap) —
@@ -10587,7 +10590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
-        compare_staff: 'medical_staff', rank_staff: 'medical_staff',
+        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
@@ -10657,6 +10660,48 @@ document.addEventListener('DOMContentLoaded', () => {
       // "if X is out, who's the best backup?" → rank eligible, not-on-leave
       // physicians by lightest call load.
       // ══ §5 WORKFORCE AGENT — reusable availability reasoning ══
+      // ══ §5 WORKLOAD INTELLIGENCE — composite load reasoning across dimensions ══
+      // Not a single-field lookup: scores every active attending across on-call load,
+      // residents supervised, active trials as PI, and current leave — then normalizes
+      // to a 0-100 load index and flags who is genuinely overloaded and WHY. This is
+      // the primitive that answers questions no single builder covers ("who's stretched
+      // thin", "is the load balanced", "who can absorb more").
+      const askBarWorkloadProfile = () => {
+        const today = Utils.normalizeDate(new Date())
+        const staff = (medicalStaff.value || []).filter(s => s.employment_status === 'active' && !s.deleted_at && isOnCallEligible(s.staff_type))
+        const shifts = onCallSchedule.value || []
+        const rots = rotations.value || []
+        const trials = (researchOps.clinicalTrials.value) || []
+        const absList = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
+        const onLeaveNow = (id) => absList.some(a => a.staff_member_id === id && Utils.normalizeDate(a.start_date) <= today && Utils.normalizeDate(a.end_date) >= today)
+        const rows = staff.map(s => {
+          const callCount = shifts.filter(x => x.primary_physician_id === s.id || x.backup_physician_id === s.id).length
+          const supervising = rots.filter(r => r.rotation_status === 'active' && r.supervising_attending_id === s.id).length
+          const pTrials = trials.filter(t => t.principal_investigator_id === s.id && /reclut|activ|recruit/i.test(t.status || '')).length
+          const onLeave = onLeaveNow(s.id)
+          // weighted raw load: on-call is the heaviest operational burden, then supervision, then trials
+          const raw = callCount * 3 + supervising * 2 + pTrials * 1.5
+          return { id: s.id, name: s.full_name, callCount, supervising, pTrials, onLeave, raw }
+        })
+        const maxRaw = Math.max(1, ...rows.map(r => r.raw))
+        rows.forEach(r => { r.index = Math.round((r.raw / maxRaw) * 100) })
+        rows.sort((a, b) => b.index - a.index)
+        // department-level signals
+        const active = rows.filter(r => !r.onLeave)
+        const avg = active.length ? Math.round(active.reduce((s, r) => s + r.index, 0) / active.length) : 0
+        const overloaded = active.filter(r => r.index >= 70 && r.index > avg + 20)
+        const light = active.filter(r => r.index <= Math.max(15, avg - 25))
+        // reason string per person
+        const reason = (r) => {
+          const parts = []
+          if (r.callCount) parts.push(`${r.callCount} on-call`)
+          if (r.supervising) parts.push(`${r.supervising} resident${r.supervising===1?'':'s'}`)
+          if (r.pTrials) parts.push(`${r.pTrials} trial${r.pTrials===1?'':'s'} as PI`)
+          return parts.join(' · ') || 'no active load'
+        }
+        return { rows, avg, overloaded, light, reason }
+      }
+
       // "Who can be on call on <dutyDate>?" → eligible ∩ active ∩ not-excluded ∩
       // not-on-leave-that-day ∩ not-already-on-call, ranked by call load (fairness).
       // One core, reused by recommend_backup, the on-call block, and rota drafting.
@@ -11117,6 +11162,46 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!pis.length) return { text: 'No staff are currently flagged as PI-eligible.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
           const _f=askBarWantsFull(askBar.lastAsked||askBar.query); const _pn=(_f?pis:pis.slice(0,6)).map(s=>s.full_name); return { text: `${pis.length} staff can serve as PI: ${_f&&_pn.length>6?'\n• '+_pn.join('\n• '):_pn.join(', ')}${!_f&&pis.length>6?` …and ${pis.length-6} more (ask "list all").`:'.'}`, chips: pis.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
+        if (intent === 'staff_roster') {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          const all = (medicalStaff.value || []).filter(s => s.employment_status === 'active' && !s.deleted_at)
+          // detect a role filter
+          const roleMap = [
+            [/attending/, 'attending_physician', 'attending'], [/resident/, 'medical_resident', 'resident'],
+            [/fellow/, 'fellow', 'fellow'], [/nurse/, 'nurse_practitioner', 'nurse practitioner'],
+            [/secretar/, 'neumo_secretary', 'secretary'], [/coordinator/, 'studies_coordinator', 'studies coordinator'],
+            [/engineer/, 'biomedical_engineer', 'biomedical engineer']
+          ]
+          let filtered = all, roleLabel = 'staff'
+          for (const [rx, type, label] of roleMap) { if (rx.test(q)) { filtered = all.filter(s => s.staff_type === type); roleLabel = label; break } }
+          const isCount = /(how many|number of|count|total)/.test(q)
+          if (!filtered.length) return { text: `No active ${roleLabel}${roleLabel==='staff'?'':'s'} on record.`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff' }], sources: ['staff'], followups: [], confidence: 'high' }
+          const full = askBarWantsFull(q) || filtered.length <= 12
+          const names = (full ? filtered : filtered.slice(0,10)).map(s => s.full_name)
+          if (isCount && !/list|show|who are/.test(q)) {
+            // count-first answer, with a role breakdown if asking about all staff
+            if (roleLabel === 'staff') {
+              const by = {}; all.forEach(s => { const t=(s.staff_type||'other').replace(/_/g,' '); by[t]=(by[t]||0)+1 })
+              const brk = Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${n} ${t}`).join(', ')
+              return { text: `${all.length} active staff: ${brk}.`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [{ label: 'List them all', intent: 'staff_roster', q: 'list all staff' }], confidence: 'high' }
+            }
+            return { text: `${filtered.length} ${roleLabel}${filtered.length===1?'':'s'}.`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [{ label: `List the ${roleLabel}s`, intent: 'staff_roster', q: 'list '+roleLabel+'s' }], confidence: 'high' }
+          }
+          const body = full && names.length > 6 ? '\n• ' + names.join('\n• ') : names.join(', ')
+          const tail = (!full && filtered.length > 10) ? ` …and ${filtered.length-10} more (ask "list all").` : '.'
+          return { text: `${filtered.length} ${roleLabel}${filtered.length===1?'':'s'}: ${body}${tail}`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'staff_contact') {
+          const person = askBarResolveStaff(askBar.lastAsked || askBar.query)
+          if (!person) return { text: 'Who do you need to reach? Name the person.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'low' }
+          const bits = []
+          if (person.professional_email) bits.push(`email ${person.professional_email}`)
+          if (person.office_phone) bits.push(`office ${person.office_phone}`)
+          if (person.mobile_phone) bits.push(`mobile ${person.mobile_phone}`)
+          if (person.work_phone && !person.office_phone) bits.push(`phone ${person.work_phone}`)
+          if (!bits.length) return { text: `No contact details on record for ${person.full_name}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open profile', view: 'medical_staff' }], sources: ['staff'], followups: [], confidence: 'high' }
+          return { text: `${person.full_name}: ${bits.join(' · ')}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open profile', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+        }
         if (intent === 'staff_with_phd') {
           const phds = (medicalStaff.value || []).filter(s => s.has_phd)
           if (!phds.length) return { text: 'No staff have a PhD on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
@@ -11231,6 +11316,36 @@ document.addEventListener('DOMContentLoaded', () => {
           const unitName = (id) => (units.find(u => u.id === id)||{}).unit_name || '—'
           const rows = unsup.slice(0,8).map(r => ({ id: r.resident_id, name: getStaffName(r.resident_id), unit: unitName(r.training_unit_id) }))
           return { text: `${unsup.length} resident${unsup.length===1?'':'s'} without a supervisor: ${rows.slice(0,3).map(r=>r.name).join(', ')}${rows.length>3?'…':''}.`, visual: { type: 'risklist', rows }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [{ label: 'Who could supervise?', intent: 'staff_can_pi' }, { label: 'Units at capacity?', intent: 'units_at_capacity' }], confidence: 'high' }
+        }
+        if (intent === 'workload_analysis') {
+          const wl = askBarWorkloadProfile()
+          if (!wl.rows.length) return { text: 'No active attendings to analyze.', chips: [], actions: [], sources: ['staff', 'on-call schedule', 'rotations', 'research'], followups: [], confidence: 'high' }
+          const q = (askBar.lastAsked || '').toLowerCase()
+          // interpret what they're really asking
+          const wantsCapacity = /(take|absorb|handle) (more|extra)|capacity|who can/i.test(q)
+          const wantsBalance = /(balanc|even|fair|distribut|imbalanc|unbalanc)/i.test(q)
+          let text, headline
+          if (wantsCapacity) {
+            const free = wl.light.length ? wl.light : wl.rows.slice(-3).filter(r => !r.onLeave)
+            headline = free.length
+              ? `Most capacity to take on more: ${free.slice(0,3).map(r => `${r.name} (load ${r.index})`).join(', ')}.`
+              : 'Everyone is carrying a similar, non-trivial load — no one is clearly free.'
+            text = headline
+          } else if (wantsBalance) {
+            const spread = wl.rows[0].index - (wl.rows.filter(r=>!r.onLeave).slice(-1)[0]?.index || 0)
+            text = wl.overloaded.length
+              ? `Load is uneven — average is ${wl.avg}, but ${wl.overloaded.map(r=>`${r.name} (${r.index})`).join(', ')} ${wl.overloaded.length===1?'sits':'sit'} well above it. Spread of ${spread} points across the team.`
+              : `Load looks reasonably balanced — average ${wl.avg}, spread of ${spread} points, no one far above the rest.`
+          } else {
+            // default: who's overloaded
+            text = wl.overloaded.length
+              ? `${wl.overloaded.length} attending${wl.overloaded.length===1?'':'s'} carrying heavy load (dept avg ${wl.avg}): ${wl.overloaded.map(r=>`${r.name} — ${wl.reason(r)}`).join('; ')}.`
+              : `No one is clearly overloaded — the department average load index is ${wl.avg}, and the busiest is ${wl.rows[0].name} (${wl.rows[0].index}).`
+          }
+          // structured readout: top load rows as bars
+          const top = wl.rows.filter(r => !r.onLeave).slice(0, 6)
+          const rows = top.map(r => ({ name: r.name, n: r.index, cap: 100, pct: r.index, full: r.index >= 70, detail: wl.reason(r) }))
+          return { text, visual: { type: 'workload', rows }, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'rotations', 'research'], followups: [{ label: 'Who can take more?', intent: 'workload_analysis', q: 'who can take on more' }, { label: 'Is the load balanced?', intent: 'workload_analysis', q: 'is the load balanced' }], confidence: 'high' }
         }
         if (intent === 'rank_staff') {
           // Superlative queries: "busiest attending", "who has the most shifts", "least loaded"
