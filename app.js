@@ -8157,7 +8157,6 @@ document.addEventListener('DOMContentLoaded', () => {
         { key: 'oncall_schedule',       label: 'On-call Schedule',   icon: '📞' },
         { key: 'resident_rotations',    label: 'Rotations',          icon: '🔄' },
         { key: 'training_units',        label: 'Training Units',     icon: '🏥' },
-        { key: 'staff_absence',         label: 'Absences',           icon: '📅' },
         { key: 'communications',        label: 'Communications',     icon: '📢' },
         { key: 'research_lines',        label: 'Research Lines',     icon: '🔬' },
         { key: 'clinical_trials',       label: 'Clinical Trials',    icon: '⚗️' },
@@ -8166,6 +8165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { key: 'news_posts',            label: 'Publications',       icon: '📰' },
         { key: 'system_settings',       label: 'Settings',           icon: '⚙️' },
         { key: 'user_management',       label: 'User Management',    icon: '🔐' },
+        // Note: Absences/Leave are governed by the Medical Staff permission —
+        // no separate 'staff_absence' module exists in user_permissions.
       ]
 
       const loadPermissionUsers = async () => {
@@ -8196,6 +8197,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const aboutToRevoke = current && current.can_read && current.can_write
         if (aboutToRevoke && user.id === currentUser.value?.id) {
           showToast('Not allowed', `You can't revoke your own access to ${moduleKey}. Ask another admin if you need this changed.`, 'error')
+          return
+        }
+        // Keys-to-the-kingdom: never let someone reduce their OWN settings/user-management
+        // below write — that self-locks them out of administration.
+        if (user.id === currentUser.value?.id && ['system_settings','user_management'].includes(moduleKey) && current && current.can_write) {
+          showToast('Not allowed', `You can't reduce your own ${moduleKey} access — it would lock you out of administration.`, 'error')
           return
         }
         permMgmt.saving = key
@@ -9493,6 +9500,12 @@ document.addEventListener('DOMContentLoaded', () => {
       // problems before being asked. Pure retrieval, no LLM.
       const askBarScan = Vue.computed(() => {
         const alerts = []
+        // Only surface conflicts about ACTIVE, non-deleted staff. Inactive or
+        // soft-deleted people (and their orphaned records) must not raise alerts.
+        const _activeIds = new Set((medicalStaff.value || [])
+          .filter(s => s.employment_status === 'active' && !s.deleted_at)
+          .map(s => s.id))
+        const isActiveStaff = (id) => _activeIds.has(id)
         const within = (date, a) => {
           const d = Utils.normalizeDate(date), s = Utils.normalizeDate(a.start_date), e = Utils.normalizeDate(a.end_date)
           return d >= s && d <= e
@@ -9502,7 +9515,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const absList = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
           ;(onCallSchedule.value || []).forEach(shift => {
             const pid = shift.primary_physician_id || shift.backup_physician_id
-            if (!pid) return
+            if (!pid || !isActiveStaff(pid)) return
             const clash = absList.find(a => a.staff_member_id === pid && within(shift.duty_date, a))
             if (clash) alerts.push({ sev: 'high', title: `${getStaffName(pid)} is on-call ${Utils.formatDateShort(shift.duty_date)} but on leave that day`, detail: 'Conflict · on-call schedule × leave records', action: 'Reassign coverage', view: 'oncall_schedule', staffId: pid, resolve: 'reassign_oncall', _key: 'conflict-'+pid+'-'+Utils.normalizeDate(shift.duty_date) })
           })
@@ -9516,11 +9529,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e && e.health === 'behind') alerts.push({ sev: 'med', title: `"${t.title}" recruiting slowly`, detail: `${e.actual} / ${e.target} enrolled · ${e.pct}% of target`, action: 'Open trial', view: 'research_hub', resolve: 'open_trial', trialId: t.id, _key: 'slow-'+t.id })
           })
           // 4. Residents with no supervisor on active rotation (MED)
-          const unsup = (rotations.value || []).filter(r => r.rotation_status === 'active' && !r.supervising_attending_id)
+          const unsup = (rotations.value || []).filter(r => r.rotation_status === 'active' && !r.supervising_attending_id && isActiveStaff(r.resident_id))
           if (unsup.length) alerts.push({ sev: 'med', title: `${unsup.length} resident${unsup.length===1?'':'s'} with no assigned supervisor`, detail: unsup.slice(0,3).map(r => getStaffName(r.resident_id)).join(', ') + ' · active rotation', action: 'Assign supervisor', view: 'resident_rotations', resolve: 'assign_supervisor', _key: 'unsup' })
           // 5. Double-booked (primary === backup) (HIGH)
           ;(onCallSchedule.value || []).forEach(shift => {
-            if (shift.primary_physician_id && shift.primary_physician_id === shift.backup_physician_id) {
+            if (shift.primary_physician_id && shift.primary_physician_id === shift.backup_physician_id && isActiveStaff(shift.primary_physician_id)) {
               alerts.push({ sev: 'high', title: `${getStaffName(shift.primary_physician_id)} is both primary and backup on ${Utils.formatDateShort(shift.duty_date)}`, detail: 'Data issue · on-call schedule', action: 'Open schedule', view: 'oncall_schedule', staffId: shift.primary_physician_id, resolve: 'reassign_oncall', _key: 'dup-'+shift.primary_physician_id })
             }
           })
@@ -9534,7 +9547,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           })
           // 7. Rotations ending within 30d with no successor scheduled for that unit
-          ;(rotations.value || []).filter(r => r.rotation_status === 'active' && r.end_date && Utils.normalizeDate(r.end_date) <= in30).forEach(r => {
+          ;(rotations.value || []).filter(r => r.rotation_status === 'active' && r.end_date && Utils.normalizeDate(r.end_date) <= in30 && isActiveStaff(r.resident_id)).forEach(r => {
             const successor = (rotations.value || []).some(o => o.training_unit_id === r.training_unit_id && o.id !== r.id && o.start_date && Utils.normalizeDate(o.start_date) >= Utils.normalizeDate(r.end_date))
             if (!successor && r.training_unit_id) alerts.push({ sev: 'med', title: `${getStaffName(r.resident_id)}'s rotation ends soon with no successor`, detail: `Ends ${Utils.formatDateShort(r.end_date)} · no incoming resident`, action: 'Open rotations', view: 'resident_rotations', resolve: 'assign_supervisor', _key: 'rot-end-'+r.id })
           })
