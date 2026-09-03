@@ -40965,3 +40965,4 @@ html body #app .askbar-proposal-ic--danger { color: #f87171; }
 html body #app .askbar-proposal-tag--danger { color: #fca5a5; background: rgba(239,68,68,.14); }
 html body #app .askbar-proposal-confirm--danger { background: linear-gradient(135deg, #dc2626, #ef4444); }
 html body #app .askbar-proposal-confirm--danger:not(:disabled):hover { filter: brightness(1.1); }
+html body #app .askbar-occ-detail { font-size: 10.5px; color: rgba(255,255,255,.4); margin-top: 3px; }
