@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {  
+document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
@@ -1769,9 +1769,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasPermission = (module, action = 'read') => {
         const user = currentUser.value
         if (!user) return false
-        // Admins (admin_level >= 1) pass all permission checks — matches the intent
-        // that an administrator can operate every module.
-        if ((user.admin_level ?? 0) >= 1) return true
+        // Unified admin authority: a system_admin OR admin_level>=1 passes every check.
+        // This reconciles the three signals (user_role, admin_level, user_permissions)
+        // so "admin" means admin everywhere — no more "admin but not permitted".
+        if (user.user_role === 'system_admin' || (user.admin_level ?? 0) >= 1) return true
+        // staff_absence has no permission module of its own — it's staff management.
+        if (module === 'staff_absence') module = 'medical_staff'
         const perms = user.permissions
         if (!Array.isArray(perms)) return false
         const p = perms.find(x => x.module === module)
@@ -1779,10 +1782,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return action === 'read' ? p.can_read : p.can_write
       }
 
-      // isAdmin — true if the user has admin_level > 0 (can manage permissions)
-      const isAdmin = () => (currentUser.value?.admin_level ?? 0) >= 1
+      // isAdmin — system_admin role or any admin_level. Used for admin-only UI.
+      const isAdmin = () => {
+        const u = currentUser.value
+        return !!u && (u.user_role === 'system_admin' || (u.admin_level ?? 0) >= 1)
+      }
+      // canManageSettings — who may see/edit the Settings area (admins + dept heads).
+      const canManageSettings = () => {
+        const u = currentUser.value
+        return !!u && (['system_admin','department_head'].includes(u.user_role) || (u.admin_level ?? 0) >= 1)
+      }
+      const _isAdminHelpersDefined = true
 
-      return { currentUser, loginForm, loginLoading, hasPermission, isAdmin }
+      return { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings }
     }
 
     // ============ 6.2 useUI ============
@@ -6662,7 +6674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const handleForgotPassword = () => { showToast('Info', 'Password reset link sent', 'info') }
 
         const auth = useAuth()
-        const { currentUser, loginForm, loginLoading, hasPermission, isAdmin } = auth
+        const { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings } = auth
         const ui = useUI()
         const { showToast, showConfirmation, currentView, userMenuOpen, userProfileModal } = ui
 
@@ -9644,10 +9656,14 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = 'conversation'
         // Missing subject or dates → can't propose; ask plainly.
         if (!ex.subject) {
+          // remember we're mid-leave-request, waiting for a name
+          askBar.pendingLeave = { subject: null, reason: ex.reason, covering: ex.covering, start: ex.start, end: ex.end, type: ex.type, awaiting: 'subject' }
           askBar.turns.push(Vue.reactive({ q: asked, text: "I couldn't tell who this is for. Try naming the person, e.g. \u201cput Marcos on leave next Thursday.\u201d", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
           return
         }
         if (!ex.start) {
+          // remember the subject + reason; we're waiting for a date
+          askBar.pendingLeave = { subject: ex.subject, reason: ex.reason, covering: ex.covering, start: null, end: null, type: ex.type, awaiting: 'date' }
           askBar.turns.push(Vue.reactive({ q: asked, text: `When is ${ex.subject.full_name} away? Give a day or range, e.g. \u201cnext Thursday and Friday.\u201d`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
           return
         }
@@ -9673,7 +9689,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Build the structured PROPOSAL (§9) with inline on-call conflict check (§7).
-      const askBarProposeLeave = (ex) => {
+      const askBarProposeLeave = (ex) => { askBar.pendingLeave = null;
         // Days
         const s = new Date(ex.start), e = new Date(ex.end)
         const days = Math.max(1, Math.round((e - s) / 86400000) + 1)
@@ -9930,6 +9946,99 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarCancelReturn = (turn) => { turn.cancelled = true }
 
       // ══ §6 ROTATION ASSIGNMENT — put a resident in a unit under a supervisor ══
+      // ══ §6 REMOVE flows — destructive, always propose→confirm→delete ══
+      const askBarStartCancelLeaveFlow = (asked) => {
+        askBar.view = 'conversation'
+        const person = askBarResolveStaff(asked.replace(/\b(cancel|remove|delete|undo|scrap|leave|absence|vacation|holiday|off|the|for)\b/gi,' ')) || askBarResolveStaff(asked)
+        if (!person) { askBar.turns.push(Vue.reactive({ q: asked, text: "Whose leave should I cancel? Name the person.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
+        const open = (absences.value || []).filter(a => a.staff_member_id === person.id && !['cancelled'].includes(a.current_status))
+        if (!open.length) { askBar.turns.push(Vue.reactive({ q: asked, text: `${person.full_name} has no leave record to cancel.`, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], confidence: 'high', asOf: askBarNow(), streaming: false })); return }
+        const rec = open.sort((a,b)=>Utils.normalizeDate(b.start_date).localeCompare(Utils.normalizeDate(a.start_date)))[0]
+        const fmt2 = (d)=>{try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}catch(e){return d}}
+        askBar.turns.push(Vue.reactive({ q:'', text:'', removeProposal: {
+          kind:'leave', id: rec.id, name: person.full_name,
+          what: `${(rec.absence_reason||'leave').replace(/_/g,' ')} · ${fmt2(rec.start_date)}–${fmt2(rec.end_date)}`,
+          endpoint: `/api/absence-records/${rec.id}`
+        }, chips:[], actions:[], sources:['leave records'], followups:[], confidence:'high', asOf: askBarNow(), streaming:false }))
+      }
+      const askBarStartRemoveOncallFlow = (asked) => {
+        askBar.view = 'conversation'
+        const q = asked.toLowerCase()
+        const person = askBarResolveStaff(asked.replace(/\b(cancel|remove|delete|undo|clear|drop|on.?call|oncall|shift|duty|guardia|off|the|rota|from|take|pull)\b/gi,' ')) || askBarResolveStaff(asked)
+        const dr = askBarExtractDates(q)
+        let shifts = (onCallSchedule.value || [])
+        if (person) shifts = shifts.filter(s => s.primary_physician_id === person.id)
+        if (dr.start) shifts = shifts.filter(s => { const d=Utils.normalizeDate(s.duty_date); return d>=dr.start && d<=(dr.end||dr.start) })
+        else shifts = shifts.filter(s => Utils.normalizeDate(s.duty_date) >= Utils.normalizeDate(new Date()))
+        if (!shifts.length) { askBar.turns.push(Vue.reactive({ q: asked, text: person ? `No on-call shift found for ${person.full_name}${dr.start?' on that day':''}.` : "Which shift? Name the person and/or day, e.g. \u201ccancel Antelo's Friday shift.\u201d", chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule'], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
+        const rec = shifts.sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))[0]
+        const fmt2 = (d)=>{try{return new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}catch(e){return d}}
+        askBar.turns.push(Vue.reactive({ q:'', text:'', removeProposal: {
+          kind:'oncall', id: rec.id, name: getStaffName(rec.primary_physician_id),
+          what: `on-call ${fmt2(rec.duty_date)}`,
+          endpoint: `/api/oncall/${rec.id}`
+        }, chips:[], actions:[], sources:['on-call schedule'], followups:[], confidence:'high', asOf: askBarNow(), streaming:false }))
+      }
+      const askBarConfirmRemove = async (p, turn) => {
+        turn.writing = true
+        try {
+          if (p.kind === 'rota_batch') {
+            let ok = 0
+            for (const ep of p.endpoints) { try { await API.request(ep, { method: 'DELETE' }); ok++ } catch (e) {} }
+            turn.writing = false; turn.committed = true
+            try { onCallOps.loadOnCallSchedule() } catch(e) {}
+            turn.commitText = `\u2713 Cleared ${ok} shift${ok===1?'':'s'} — ${p.what}.`
+            return
+          }
+          await API.request(p.endpoint, { method: 'DELETE' })
+          turn.writing = false; turn.committed = true
+          try {
+            if (p.kind==='leave') absenceOps.loadAbsences()
+            else if (p.kind==='rotation') { if (rotationOps && rotationOps.loadRotations) rotationOps.loadRotations() }
+            else onCallOps.loadOnCallSchedule()
+          } catch(e) {}
+          turn.commitText = `\u2713 Removed: ${p.name} — ${p.what}.`
+        } catch (err) {
+          turn.writing = false
+          turn.commitError = (err && err.message) ? err.message : 'Could not remove.'
+        }
+      }
+      const askBarCancelRemove = (turn) => { turn.cancelled = true }
+
+      // Cancel a resident's rotation (single delete)
+      const askBarStartCancelRotationFlow = (asked) => {
+        askBar.view = 'conversation'
+        const person = askBarResolveStaff(asked.replace(/\b(cancel|remove|delete|undo|end|pull|out of|off|rotation|rotat|the|from)\b/gi,' ')) || askBarResolveStaff(asked)
+        if (!person) { askBar.turns.push(Vue.reactive({ q: asked, text: "Whose rotation should I cancel? Name the resident.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
+        const active = (rotations.value || []).filter(r => r.resident_id === person.id && r.rotation_status === 'active')
+        if (!active.length) { askBar.turns.push(Vue.reactive({ q: asked, text: `${person.full_name} has no active rotation to cancel.`, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], confidence: 'high', asOf: askBarNow(), streaming: false })); return }
+        const rec = active[0]
+        const units = trainingUnits.value || []
+        const uName = (units.find(u => u.id === rec.training_unit_id)||{}).unit_name || 'a unit'
+        askBar.turns.push(Vue.reactive({ q:'', text:'', removeProposal: {
+          kind:'rotation', id: rec.id, name: person.full_name,
+          what: `rotation in ${uName}`, endpoint: `/api/rotations/${rec.id}`
+        }, chips:[], actions:[], sources:['rotations'], followups:[], confidence:'high', asOf: askBarNow(), streaming:false }))
+      }
+
+      // Clear a whole rota — batch delete of on-call shifts in a range
+      const askBarStartClearRotaFlow = (asked) => {
+        askBar.view = 'conversation'
+        const q = asked.toLowerCase()
+        const range = askBarParseRange(q)
+        const today = Utils.normalizeDate(new Date())
+        let shifts = (onCallSchedule.value || [])
+        let scope
+        if (range) { shifts = shifts.filter(s => { const d=Utils.normalizeDate(s.duty_date); return d>=range.start && d<=range.end }); scope = range.label }
+        else { shifts = shifts.filter(s => Utils.normalizeDate(s.duty_date) >= today); scope = 'all upcoming' }
+        if (!shifts.length) { askBar.turns.push(Vue.reactive({ q: asked, text: `No on-call shifts to clear (${scope}).`, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule'], confidence: 'high', asOf: askBarNow(), streaming: false })); return }
+        askBar.turns.push(Vue.reactive({ q:'', text:'', removeProposal: {
+          kind:'rota_batch', ids: shifts.map(s=>s.id), name: `${shifts.length} shift${shifts.length===1?'':'s'}`,
+          what: `the ${scope} rota (${shifts.length} shift${shifts.length===1?'':'s'})`,
+          endpoints: shifts.map(s=>`/api/oncall/${s.id}`)
+        }, chips:[], actions:[], sources:['on-call schedule'], followups:[], confidence:'high', asOf: askBarNow(), streaming:false }))
+      }
+
       const askBarStartRotationFlow = (asked) => {
         askBar.view = 'conversation'
         const q = asked.toLowerCase()
@@ -10267,7 +10376,12 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'record_oncall', priority: 121, patterns: [/(put|assign|schedule|book|set|add|give|make)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|week|rota/] },
         { intent: 'draft_rota', priority: 123, patterns: [/(draft|prepare|generate|build|make|plan|propose)\b.*(rota|on.?call schedule|call schedule|week.*call|weekly.*call)/, /(rota|on.?call).*(for )?(next|this|the) week/], anti: [/who|which|is\b/] },
         { intent: 'return_leave', priority: 122, patterns: [/\b(is )?back\b/, /returned?\b/, /back (to|on) (duty|work)/, /no longer (on leave|absent|off)/, /end.*leave early/], require: [/back|return|no longer|end/], anti: [/who|which|list|when.*back/] },
-        { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule)\b.*\b(in|into|to|on)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma)/, /(put|assign|place|move|rotate)\b.*(rotation|rotat)/, /(rotation|rotate).*(under|with|supervis|from|next)/], anti: [/who|which|list|how many|rotating where|is on|profile/] },
+        { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule)\b.*\b(in|into|to|on)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma)/, /(put|assign|place|move|rotate)\b.*(rotation|rotat)/, /(rotation|rotate).*(under|with|supervis|from|next)/], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete/] },
+        { intent: 'cancel_leave', priority: 124, patterns: [/(cancel|remove|delete|undo|scrap)\b.*(leave|absence|vacation|holiday|baja|off|time off)/, /(leave|absence).*(cancel|remove|delete)/], anti: [/who|which|list/] },
+        { intent: 'delete_staff_blocked', priority: 130, patterns: [/(delete|remove|fire|terminate|erase)\b.*(staff|physician|doctor|resident|attending|nurse|person|employee)/, /(delete|remove|fire|erase)\s+(dr\.?\s+)?[a-zñáéíóú]+\s+[a-zñáéíóú]+/], anti: [/leave|absence|on.?call|oncall|shift|rotation|rota|vacation/] },
+        { intent: 'cancel_rotation', priority: 124, patterns: [/(cancel|remove|delete|undo|end|pull)\b.*(rotation|rotat)/, /(rotation).*(cancel|remove|delete|end)/, /(take|pull)\b.*(out of|off).*(rotation|uci|unit)/], anti: [/who|which|list|rotating where/] },
+        { intent: 'clear_rota', priority: 124, patterns: [/(clear|wipe|remove|delete|reset)\b.*(rota|whole.*rota|week.*call|all.*on.?call|all.*shifts)/, /(rota|schedule).*(clear|wipe|reset)/], anti: [/who|which|list/] },
+        { intent: 'remove_oncall', priority: 124, patterns: [/(cancel|remove|delete|undo|clear|drop)\b.*(on.?call|oncall|shift|duty|guardia)/, /(on.?call|shift|duty).*(cancel|remove|delete|clear)/, /(take|pull)\b.*(off (call|duty|the rota))/], anti: [/who|which|list/] },
         // — Comparison & ranking (very specific) —
         { intent: 'compare_staff', priority: 100, patterns: [/\bcompare\b/, /(who has (more|less|fewer)|more than|busier|less busy).*\b(or|and|vs|versus)\b/, /\b(or|vs|versus)\b.*(more|less|busier|shifts|trials)/] },
         { intent: 'rank_staff', priority: 95, patterns: [/(busiest|fewest|least|lightest|heaviest|overloaded)/, /who has the (most|fewest|least)/, /\bmost\b.*(shift|call|trial|resident|load)/], anti: [/\bcompare\b/] },
@@ -10571,6 +10685,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const asked = askBar.query.trim()
         if (!asked && !forcedIntent) return
         askBar.view = 'conversation'
+        // Multi-turn: if we're mid leave-request waiting for a detail, try to complete it.
+        // Only when the pending was set on the immediately-preceding turn (not stale state).
+        if (!forcedIntent && askBar.pendingLeave && askBar.pendingLeave.awaiting) {
+          const pend = askBar.pendingLeave
+          const q = asked.toLowerCase()
+          // if the new message is itself a clear command/question, it's a topic change
+          const changedTopic = /(who|which|list|how many|on call|oncall|rotation|trial|cancel|remove|delete|draft|show|put|mark|record|does|can|is |phd|absent|briefing)/.test(q)
+          if (!changedTopic) {
+            let filled = false
+            if (pend.awaiting === 'date') {
+              const dr = askBarExtractDates(q)
+              if (dr.start) { pend.start = dr.start; pend.end = dr.end || dr.start; filled = true }
+            } else if (pend.awaiting === 'subject') {
+              const person = askBarResolveStaff(asked)
+              if (person) { pend.subject = person; filled = true }
+            }
+            if (filled) {
+              askBar.query = ''
+              askBar.pendingLeave = null
+              // resume: if still missing something, re-run the flow; else propose
+              if (!pend.subject) { askBarStartLeaveFlow(asked); return }
+              if (!pend.start) { askBar.pendingLeave = pend; askBar.turns.push(Vue.reactive({ q: asked, text: `When is ${pend.subject.full_name} away?`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
+              if (!pend.reason) { askBar.turns.push(Vue.reactive({ q: asked, text: `What type of leave is this for ${pend.subject.full_name}?`, chips: [], actions: [], sources: [], followups: [], confidence: 'high', leaveClarify: { subject: pend.subject, covering: pend.covering, start: pend.start, end: pend.end, type: pend.type }, leaveReasons: [['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']], asOf: askBarNow(), streaming: false })); return }
+              askBarProposeLeave({ subject: pend.subject, covering: pend.covering, start: pend.start, end: pend.end, type: pend.type, reason: pend.reason }); return
+            }
+          }
+          // topic changed or couldn't fill → drop the pending, fall through to normal handling
+          askBar.pendingLeave = null
+        }
         // #2 MULTI-INTENT: "is Antelo on call AND does she have a phd?" — if the
         // query splits into two clauses that each route to a DIFFERENT strong intent,
         // answer both in sequence. Guarded so normal "and" phrases aren't split.
@@ -10690,6 +10833,54 @@ document.addEventListener('DOMContentLoaded', () => {
             return
           }
           askBarStartRotationFlow(asked)
+          return
+        }
+        if (intent === 'cancel_leave') {
+          askBar.query = ''
+          if (!hasPermission('staff_absence', 'write')) {
+            askBar.loading = false; askBar.thinking = null
+            askBar.turns.push(Vue.reactive({ q: asked, text: "You don't have permission to change leave records.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+            return
+          }
+          askBarStartCancelLeaveFlow(asked)
+          return
+        }
+        if (intent === 'remove_oncall') {
+          askBar.query = ''
+          if (!hasPermission('oncall_schedule', 'write')) {
+            askBar.loading = false; askBar.thinking = null
+            askBar.turns.push(Vue.reactive({ q: asked, text: "You don't have permission to change the on-call schedule.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+            return
+          }
+          askBarStartRemoveOncallFlow(asked)
+          return
+        }
+        if (intent === 'cancel_rotation') {
+          askBar.query = ''
+          if (!hasPermission('resident_rotations', 'write')) {
+            askBar.loading = false; askBar.thinking = null
+            askBar.turns.push(Vue.reactive({ q: asked, text: "You don't have permission to change rotations.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+            return
+          }
+          askBarStartCancelRotationFlow(asked)
+          return
+        }
+        if (intent === 'clear_rota') {
+          askBar.query = ''
+          if (!hasPermission('oncall_schedule', 'write')) {
+            askBar.loading = false; askBar.thinking = null
+            askBar.turns.push(Vue.reactive({ q: asked, text: "You don't have permission to change the on-call schedule.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+            return
+          }
+          askBarStartClearRotaFlow(asked)
+          return
+        }
+        if (intent === 'delete_staff_blocked') {
+          askBar.query = ''
+          askBar.loading = false; askBar.thinking = null
+          const person = askBarResolveStaff(asked)
+          const who = person ? person.full_name : 'a staff member'
+          askBar.turns.push(Vue.reactive({ q: asked, text: `I won't delete ${who} from here — removing a staff member is a permanent HR action that must be done in the staff management view, with the right authorization. I can help with leave, on-call, or rotations instead.`, chips: [], actions: person ? [{ label: 'Open staff management', view: 'medical_staff', primary: true }] : [], sources: [], followups: [], confidence: 'high', asOf: askBarNow(), streaming: false }))
           return
         }
         // #37 permission-aware: if the intent's module is one the user can't read, decline.
@@ -11348,7 +11539,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return {
           // Existing returns
-          loading, saving, currentUser, loginForm, loginLoading, hasPermission,
+          loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, isAdmin,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
           ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
@@ -11466,7 +11657,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Ask bar (RAG intelligence surface)
           askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, askBarToggleTeach,
-          askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarCancelRotation, askBarSourceDesc,
+          askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarCancelRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType, isOnCallEligible,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
