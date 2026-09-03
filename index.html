@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=66">
+    <link rel="stylesheet" href="style.css?v=67">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8462,6 +8462,26 @@
                                     <div class="askbar-cmp-track"><div class="askbar-cmp-fill" :class="{ 'askbar-cmp-fill--lose': !bar.win }" :style="{ width: bar.pct + '%' }"></div></div>
                                 </div>
                                 <div v-if="turn.visual.delta" class="askbar-cmp-delta">{{ turn.visual.delta }}</div>
+                            </div>
+
+                            <!-- §6 REMOVE (destructive) proposal card -->
+                            <div v-if="turn.removeProposal" class="askbar-proposal askbar-proposal--remove" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                                <div class="askbar-proposal-h">
+                                    <span class="askbar-proposal-ic askbar-proposal-ic--danger"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span>
+                                    <span>Confirm removal · <b>{{ {leave:'cancel leave', oncall:'remove on-call', rotation:'cancel rotation', rota_batch:'clear rota'}[turn.removeProposal.kind] || 'remove' }}</b></span>
+                                    <span class="askbar-proposal-tag askbar-proposal-tag--danger">will delete</span>
+                                </div>
+                                <div class="askbar-proposal-body">
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.removeProposal.name }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Remove</span><span class="askbar-proposal-v">{{ turn.removeProposal.what }}</span></div>
+                                </div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm askbar-proposal-confirm--danger" :disabled="turn.writing" @click="askBarConfirmRemove(turn.removeProposal, turn)">{{ turn.writing ? 'Removing…' : 'Confirm & remove' }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelRemove(turn)">Keep it</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't remove: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Kept — nothing was removed.</div>
                             </div>
 
                             <!-- unit occupancy readout -->
@@ -19976,7 +19996,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=85"></script>
+    <script src="app.js?v=87"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
