@@ -10396,6 +10396,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'clear_rota', priority: 124, patterns: [/(clear|wipe|remove|delete|reset)\b.*(rota|whole.*rota|week.*call|all.*on.?call|all.*shifts)/, /(rota|schedule).*(clear|wipe|reset)/], anti: [/who|which|list/] },
         { intent: 'remove_oncall', priority: 124, patterns: [/(cancel|remove|delete|undo|clear|drop)\b.*(on.?call|oncall|shift|duty|guardia)/, /(on.?call|shift|duty).*(cancel|remove|delete|clear)/, /(take|pull)\b.*(off (call|duty|the rota))/], anti: [/who|which|list/] },
         // — Comparison & ranking (very specific) —
+        { intent: 'rotations_ending', priority: 101, patterns: [/(residents?|rotations?|who).*(finish|end|complet|wrap|done|leaving).*(month|week|soon|when)/i, /(finish|end|complet|ending).*(rotation|this month|this week|soon)/i, /which residents (finish|end|are finishing|are ending|complete)/i, /rotations? (ending|finishing)/i], anti: [/cancel|remove/] },
+        { intent: 'find_replacement', priority: 123, patterns: [/(find|need|get|suggest|who can|who could).*(replacement|cover|substitute|backup|fill in|stand in)/i, /(replace|cover for|substitute for|backup for)\s+[a-zñáéíóú]/i, /who can (cover|replace|stand in for|fill in for)\s+[a-zñáéíóú]/i], anti: [/put|assign .* on call/] },
         { intent: 'workload_analysis', priority: 102, patterns: [/(overload|stretched|too much|spread thin|burn.?out|overwork|imbalanc|unbalanc|balanced\??$|take on more|take more|absorb|who can (take|absorb|handle)|has capacity|capacity to|capacity for|free capacity|workload|work load|who.?s (busy|stretched|overloaded)|distribute.*(fairly|evenly)|load.*(balanced|distributed|even|fair)|lightest load|most load)/i], anti: [/on call|oncall|leave|rotation.*where/] },
         { intent: 'staff_roster', priority: 103, patterns: [/(how many|number of|count of|total)\s+(staff|people|physicians?|doctors?|attendings?|fellows?|nurses?|employees?|do we have)/i, /(list|show( me)?|who are|give me)\s+(the\s+)?(all\s+)?(staff|people|team|everyone|physicians?|doctors?|attendings?|residents?|fellows?|nurses?|secretar|coordinators?|engineers?)/i, /^(staff|team|everyone|all staff)$/i, /who works here/i], anti: [/on call|oncall|leave|absent|phd|certif|pi\b|rotat|trial|how many residents|number of residents/] },
         { intent: 'staff_contact', priority: 104, patterns: [/(email|e-?mail|phone|number|contact|reach|call|mobile|extension|office)\s+(for|of|de)?\s*[a-zñáéíóú]/i, /[a-zñáéíóú]+.?s?\s+(email|e-?mail|phone|number|contact|mobile|extension)/i, /how (do i |can i |to )?(reach|contact|call|email)\s+[a-zñáéíóú]/i], anti: [/on call|oncall|who is on|draft|write|compose|send|about/] },
@@ -10591,7 +10593,7 @@ document.addEventListener('DOMContentLoaded', () => {
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
-        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff',
+        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
@@ -11320,6 +11322,36 @@ document.addEventListener('DOMContentLoaded', () => {
           const unitName = (id) => (units.find(u => u.id === id)||{}).unit_name || '—'
           const rows = unsup.slice(0,8).map(r => ({ id: r.resident_id, name: getStaffName(r.resident_id), unit: unitName(r.training_unit_id) }))
           return { text: `${unsup.length} resident${unsup.length===1?'':'s'} without a supervisor: ${rows.slice(0,3).map(r=>r.name).join(', ')}${rows.length>3?'…':''}.`, visual: { type: 'risklist', rows }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [{ label: 'Who could supervise?', intent: 'staff_can_pi' }, { label: 'Units at capacity?', intent: 'units_at_capacity' }], confidence: 'high' }
+        }
+        if (intent === 'rotations_ending') {
+          const q = (askBar.lastAsked || '').toLowerCase()
+          const today = Utils.normalizeDate(new Date())
+          const range = askBarParseRange(q)
+          // default window: next 30 days if no explicit range
+          const end = range ? range.end : Utils.normalizeDate(new Date(Date.now() + 30*864e5))
+          const start = range ? range.start : today
+          const ending = (rotations.value || []).filter(r => r.rotation_status === 'active' && r.end_date &&
+            Utils.normalizeDate(r.end_date) >= start && Utils.normalizeDate(r.end_date) <= end)
+          const label = range ? range.label : 'the next 30 days'
+          if (!ending.length) return { text: `No resident rotations are ending in ${label}.`, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], followups: [], confidence: 'high' }
+          const units = trainingUnits.value || []
+          const rows = ending.sort((a,b)=>Utils.normalizeDate(a.end_date).localeCompare(Utils.normalizeDate(b.end_date))).slice(0,8).map(r => ({
+            name: getStaffName(r.resident_id), date: Utils.formatDateShort(r.end_date), today: false,
+            backup: (units.find(u=>u.id===r.training_unit_id)||{}).unit_name || null
+          }))
+          return { text: `${ending.length} rotation${ending.length===1?'':'s'} ending in ${label}: ${ending.slice(0,3).map(r=>getStaffName(r.resident_id)).join(', ')}${ending.length>3?'…':''}.`, visual: { type: 'roster', rows }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'find_replacement') {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          // who needs replacing
+          const outPerson = askBarResolveStaff(q.replace(/\b(find|need|get|suggest|who can|could|a|replacement|cover|for|substitute|backup|fill in|stand in|replace|instead|on)\b/gi,' '))
+          const dr = askBarExtractDates(q)
+          const dutyDate = dr.start || null
+          const available = askBarWorkforceAvailable(dutyDate, { excludeId: outPerson ? outPerson.id : null }).slice(0, 5)
+          if (!available.length) return { text: `No eligible staff are free${dutyDate?' on '+Utils.formatDateShort(dutyDate):''} to cover${outPerson?' for '+outPerson.full_name:''}.`, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['staff','on-call schedule','leave records'], followups: [], confidence: 'high' }
+          const whoFor = outPerson ? ` for ${outPerson.full_name}` : ''
+          const whenFor = dutyDate ? ` on ${Utils.formatDateShort(dutyDate)}` : ''
+          return { text: `Best cover${whoFor}${whenFor} (fewest shifts first): ${available.slice(0,3).map(a=>`${a.name} (${a.shifts} shift${a.shifts===1?'':'s'})`).join(', ')}.`, chips: available.slice(0,4).map(a=>({label:a.name,id:a.id})), actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['staff','on-call schedule','leave records'], followups: [], confidence: 'high' }
         }
         if (intent === 'workload_analysis') {
           const wl = askBarWorkloadProfile()
