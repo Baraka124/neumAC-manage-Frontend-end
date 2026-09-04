@@ -11012,7 +11012,7 @@ document.addEventListener('DOMContentLoaded', () => {
               phd:       () => s.has_phd ? `Yes — ${name} has a PhD${s.phd_field ? ' in ' + s.phd_field : ''}.` : `No — ${name} does not have a PhD on record.`,
               pi:        () => `${name} ${s.can_be_pi ? 'can' : 'cannot'} serve as Principal Investigator${s.can_be_coi ? ', and can be a Co-Investigator' : ''}.`,
               residency: () => { const yr = s.residency_year_override || s.training_year; return yr ? `${name} is a ${yr} resident.` : (askBarIsResident(s) ? `${name} is a resident (year not recorded).` : `${name} is not a resident.`) },
-              contact:   () => { const c = [s.professional_email, s.mobile_phone].filter(Boolean); return c.length ? `${name}: ${c.join(' · ')}.` : `No contact details are recorded for ${name}.` },
+              contact:   () => { const _vp=(p)=>p&&!/[#x_?]/i.test(p)&&p.replace(/\D/g,'').length>=7; const _ve=(e)=>e&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); const c = [_ve(s.professional_email)?s.professional_email:null, _vp(s.mobile_phone)?s.mobile_phone:null].filter(Boolean); return c.length ? `${name}: ${c.join(' · ')}.` : `No usable contact details are recorded for ${name}.` },
               supervise: () => `${name} ${s.can_supervise_residents ? 'can' : 'cannot'} supervise residents.`,
               license:   () => `${name} ${(s.has_medical_license || s.medical_license) ? 'has' : 'does not have'} a medical license on record.`,
               status:    () => `${name} is ${_toTitle(s.employment_status || 'active')}.`
@@ -11195,12 +11195,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'staff_contact') {
           const person = askBarResolveStaff(askBar.lastAsked || askBar.query)
           if (!person) return { text: 'Who do you need to reach? Name the person.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'low' }
+          // a phone is only usable if it has enough real digits and no placeholder junk
+          const validPhone = (p) => { if (!p) return false; if (/[#x_?]/i.test(p)) return false; return (p.replace(/\D/g,'').length >= 7) }
+          const validEmail = (e) => e && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)
           const bits = []
-          if (person.professional_email) bits.push(`email ${person.professional_email}`)
-          if (person.office_phone) bits.push(`office ${person.office_phone}`)
-          if (person.mobile_phone) bits.push(`mobile ${person.mobile_phone}`)
-          if (person.work_phone && !person.office_phone) bits.push(`phone ${person.work_phone}`)
-          if (!bits.length) return { text: `No contact details on record for ${person.full_name}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open profile', view: 'medical_staff' }], sources: ['staff'], followups: [], confidence: 'high' }
+          if (validEmail(person.professional_email)) bits.push(`email ${person.professional_email}`)
+          if (validPhone(person.office_phone)) bits.push(`office ${person.office_phone}`)
+          if (validPhone(person.mobile_phone)) bits.push(`mobile ${person.mobile_phone}`)
+          if (validPhone(person.work_phone) && !validPhone(person.office_phone)) bits.push(`phone ${person.work_phone}`)
+          if (!bits.length) return { text: `No usable contact details on record for ${person.full_name}${(person.mobile_phone||person.professional_email)?' (what\u2019s on file looks incomplete)':''}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open profile', view: 'medical_staff' }], sources: ['staff'], followups: [], confidence: 'high' }
           return { text: `${person.full_name}: ${bits.join(' · ')}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open profile', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'staff_with_phd') {
