@@ -1,5 +1,5 @@
 <!DOCTYPE html>       
-<html lang="en">     
+<html lang="en">   
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
@@ -9082,7 +9082,7 @@
                         <div class="nmsb-user-role">{{ currentUser && currentUser.user_role ? getUserRoleDisplay(currentUser.user_role) : '' }}</div>
                     </div>
                     <button v-if="!sidebarCollapsed" class="nmsb-logout"
-                            @click="logout" title="Sign out">
+                            @click="handleLogout" title="Sign out">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                     </button>
                 </div>
@@ -20005,7 +20005,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=91"></script>
+    <script src="app.js?v=93"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -20230,4 +20230,4 @@ html, body, #app { height: 100%; }
 </style>
 
 </body>
-</html>
+</html>  
