@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => { 
+document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
@@ -10392,7 +10392,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule)\b.*\b(in|into|to|on)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma)/, /(put|assign|place|move|rotate)\b.*(rotation|rotat)/, /(rotation|rotate).*(under|with|supervis|from|next)/], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete/] },
         { intent: 'cancel_leave', priority: 124, patterns: [/(cancel|remove|delete|undo|scrap)\b.*(leave|absence|vacation|holiday|baja|off|time off)/, /(leave|absence).*(cancel|remove|delete)/], anti: [/who|which|list/] },
         { intent: 'delete_staff_blocked', priority: 130, patterns: [/(delete|remove|fire|terminate|erase)\b.*(staff|physician|doctor|resident|attending|nurse|person|employee)/, /(delete|remove|fire|erase)\s+(dr\.?\s+)?[a-zñáéíóú]+\s+[a-zñáéíóú]+/], anti: [/leave|absence|on.?call|oncall|shift|rotation|rota|vacation/] },
-        { intent: 'cancel_rotation', priority: 124, patterns: [/(cancel|remove|delete|undo|end|pull)\b.*(rotation|rotat)/, /(rotation).*(cancel|remove|delete|end)/, /(take|pull)\b.*(out of|off).*(rotation|uci|unit)/], anti: [/who|which|list|rotating where/] },
+        { intent: 'cancel_rotation', priority: 124, patterns: [/(cancel|remove|delete|undo|pull)\b.*(rotation|rotat)/, /(rotation)\b.*(cancel|remove|delete)/, /(take|pull)\b.*(out of|off)\b.*(rotation|uci|unit)/], anti: [/who|which|list|rotating where|ending|soon|finishing|upcoming|starting/] },
         { intent: 'clear_rota', priority: 124, patterns: [/(clear|wipe|remove|delete|reset)\b.*(rota|whole.*rota|week.*call|all.*on.?call|all.*shifts)/, /(rota|schedule).*(clear|wipe|reset)/], anti: [/who|which|list/] },
         { intent: 'remove_oncall', priority: 124, patterns: [/(cancel|remove|delete|undo|clear|drop)\b.*(on.?call|oncall|shift|duty|guardia)/, /(on.?call|shift|duty).*(cancel|remove|delete|clear)/, /(take|pull)\b.*(off (call|duty|the rota))/], anti: [/who|which|list/] },
         // — Comparison & ranking (very specific) —
@@ -10417,10 +10417,11 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'trials_by_person', priority: 84, patterns: [/(which|what|list).*(trials?|studies).*(pi|investigator|lead)/, /(trials?|studies).*(is|are)\s+\w+.*(pi|on|leading)/, /(trials?|studies).*(by|led by|of)\s+\w+/, /(what|which) trials?.*\bon\b/] },
         // — Entity overviews —
         { intent: 'rotations_deep', priority: 80, patterns: [/who.*rotating/, /which residents.*rotat/, /residents.*where/, /rotating where/, /under whom/] },
-        { intent: 'departments_overview', priority: 78, patterns: [/\bdepartment/, /which dept/, /list.*department/] },
+        { intent: 'departments_overview', priority: 78, patterns: [/\bdepartment/, /which dept/, /list.*department/, /who (heads|leads|runs|is (the )?head of)/, /head of (the )?[a-zñáéíóú]/, /(jefe|responsable) de/] },
         { intent: 'research_lines', priority: 78, patterns: [/research line/, /research area/, /líneas?/, /lines of research/] },
         { intent: 'innovation_projects', priority: 78, patterns: [/innovation/, /\bpatent/, /prototype/, /proyecto/] },
-        { intent: 'units_overview', priority: 76, patterns: [/training unit/, /clinical unit/, /which unit/, /what unit/, /our units/, /the units/, /units do we/, /list.*units/] },
+        { intent: 'units_at_capacity', priority: 77, patterns: [/(units?|which).*(at |over )?capacity/, /full units?/, /units? (with|have).*(space|room|availab|capacity)/, /(space|room|availab).*(units?|rotation)/, /which units.*(open|free|available)/] },
+        { intent: 'units_overview', priority: 76, patterns: [/training unit/, /clinical unit/, /which unit/, /what unit/, /our units/, /the units/, /units do we/, /list.*units/, /how many units/, /number of units/, /units? (are )?(active|open|running)/] },
         { intent: 'trials_overview', priority: 76, patterns: [/(how many|total|all).*(trial|study|studies)/, /(trial|study).*(overview|total|status)/] },
         // — Agent actions —
         { intent: 'recommend_backup', priority: 74, patterns: [/(best|who should|who could|recommend|suggest).*(backup|cover|replace|fill in)/, /(if|when).*(out|away|on leave|absent).*(who|cover|backup)/] },
