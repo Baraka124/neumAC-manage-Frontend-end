@@ -40982,3 +40982,40 @@ html body #app .askbar-profile-flag { font-size: 10px; color: #c4b5fd; backgroun
 html body #app .askbar-profile-grid { padding: 11px 13px; display: flex; flex-direction: column; gap: 7px; }
 html body #app .askbar-profile-row { display: flex; gap: 12px; font-size: 12.5px; color: rgba(255,255,255,.85); }
 html body #app .askbar-profile-k { color: rgba(255,255,255,.4); width: 92px; flex-shrink: 0; }
+
+/* §97 — profile: static/active sections + completeness */
+html body #app .askbar-profile-id { min-width: 0; flex: 1; }
+html body #app .askbar-profile-sec { border-top: 1px solid rgba(255,255,255,.06); padding: 10px 13px 4px; }
+html body #app .askbar-profile-sechead { font-size: 9.5px; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.35); margin-bottom: 8px; }
+html body #app .askbar-profile-quiet { color: rgba(255,255,255,.4); font-style: italic; }
+html body #app .askbar-profile-complete { border-top: 1px solid rgba(255,255,255,.06); padding: 11px 13px; }
+html body #app .askbar-profile-cbar { height: 5px; border-radius: 100px; background: rgba(255,255,255,.08); overflow: hidden; margin-bottom: 8px; }
+html body #app .askbar-profile-cfill { height: 100%; border-radius: 100px; background: linear-gradient(90deg,#f59e0b,#fbbf24); transition: width .6s ease; }
+html body #app .askbar-profile-cmiss { font-size: 11px; color: rgba(255,255,255,.5); margin-bottom: 9px; }
+html body #app .askbar-profile-cbtn { font-size: 12px; font-weight: 500; padding: 7px 13px; border-radius: 8px; border: 1px solid rgba(0,212,212,.3); background: rgba(0,212,212,.1); color: #00e5e5; cursor: pointer; transition: .16s; }
+html body #app .askbar-profile-cbtn:hover { background: rgba(0,212,212,.2); border-color: rgba(0,212,212,.5); }
+
+/* §98 — status board: unit/resident tiles at a glance */
+html body #app .askbar-board { margin: 12px 0 4px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 9px; }
+html body #app .askbar-tile { padding: 11px; border-radius: 11px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); position: relative; }
+html body #app .askbar-tile--free { border-color: rgba(52,211,153,.25); background: rgba(16,185,129,.05); }
+html body #app .askbar-tile--partial { border-color: rgba(0,212,212,.22); }
+html body #app .askbar-tile--full { border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.05); }
+html body #app .askbar-tile--rotating { border-color: rgba(56,189,248,.28); background: rgba(56,189,248,.05); }
+html body #app .askbar-tile--leave { border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.05); }
+html body #app .askbar-tile-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; }
+html body #app .askbar-tile-title { font-size: 12.5px; color: #fff; font-weight: 600; line-height: 1.25; }
+html body #app .askbar-tile-code { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(255,255,255,.4); margin-left: auto; }
+html body #app .askbar-tile-ring { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 2px 0 7px; border: 3px solid rgba(255,255,255,.12); }
+html body #app .askbar-tile-ring--free { border-color: #34d399; }
+html body #app .askbar-tile-ring--partial { border-color: #00d4d4; }
+html body #app .askbar-tile-ring--full { border-color: #f87171; }
+html body #app .askbar-tile-num { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 20px; color: #fff; }
+html body #app .askbar-tile-cap { font-size: 12px; color: rgba(255,255,255,.4); }
+html body #app .askbar-tile-dot { width: 10px; height: 10px; border-radius: 50%; margin: 2px 0 8px; }
+html body #app .askbar-tile-dot--rotating { background: #38bdf8; box-shadow: 0 0 8px rgba(56,189,248,.6); }
+html body #app .askbar-tile-dot--leave { background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,.5); }
+html body #app .askbar-tile-dot--free { background: rgba(255,255,255,.3); }
+html body #app .askbar-tile-sub { font-size: 11px; color: rgba(255,255,255,.7); }
+html body #app .askbar-tile-sup { font-size: 10px; color: rgba(255,255,255,.42); margin-top: 2px; }
+html body #app .askbar-tile-sched { font-size: 9.5px; color: #00d4d4; margin-top: 4px; }
