@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=68">
+    <link rel="stylesheet" href="style.css?v=69">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8429,6 +8429,36 @@
                             </div>
 
                             <!-- §6 rotation-assignment card -->
+                            <!-- §6 multi-unit rotation proposal -->
+                            <div v-if="turn.multiRotation" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                                <div class="askbar-proposal-h">
+                                    <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span>
+                                    <span>Proposed change · <b>{{ turn.multiRotation.rows.length }} rotations</b></span>
+                                    <span class="askbar-proposal-tag">not saved yet</span>
+                                </div>
+                                <div class="askbar-proposal-body">
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.multiRotation.resident.name }}</span></div>
+                                    <div v-if="turn.multiRotation.startLabel" class="askbar-proposal-row"><span class="askbar-proposal-k">From</span><span class="askbar-proposal-v">{{ turn.multiRotation.startLabel }}</span></div>
+                                </div>
+                                <div class="askbar-roster">
+                                    <div v-for="(r,ri) in turn.multiRotation.rows" :key="ri" class="askbar-roster-row">
+                                        <span class="askbar-roster-name">{{ r.unit }} <span class="askbar-proposal-sub">· {{ r.occ }}</span></span>
+                                        <span class="askbar-roster-backup">{{ r.supervisor ? 'under ' + r.supervisor : '⛔ no supervisor' }}</span>
+                                        <span v-if="r.atCapacity" class="askbar-roster-pill" style="color:#fca5a5;background:rgba(239,68,68,.14)">over capacity</span>
+                                    </div>
+                                </div>
+                                <div v-if="turn.multiRotation.concurrent && turn.multiRotation.rows.length>1 && !turn.committed" class="askbar-proposal-warn">⚠ These rotations run concurrently (same dates) — {{ turn.multiRotation.resident.name }} will be in {{ turn.multiRotation.rows.length }} units at once. Confirm this is intended.</div>
+                                <div v-if="turn.multiRotation.rows.some(r=>r.noSup||r.supWarn) && !turn.committed" class="askbar-proposal-block">⛔ Every rotation needs an eligible supervisor. Add one per unit, e.g. "…under Antelo and …under Marcos."</div>
+                                <div v-if="!turn.multiRotation.start && !turn.committed" class="askbar-proposal-warn">⚠ No start date — add one, e.g. "from next Monday."</div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.multiRotation.rows.some(r=>r.noSup||r.supWarn) || !turn.multiRotation.start" @click="askBarConfirmMultiRotation(turn.multiRotation, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & schedule all' }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelMultiRotation(turn)">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
+                            </div>
+
                             <div v-if="turn.rotationProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': (turn.rotationProposal.noSup || turn.rotationProposal.supWarn) && !turn.committed }">
                                 <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span>Proposed change · <b>rotation</b></span><span class="askbar-proposal-tag">not saved yet</span></div>
                                 <div class="askbar-proposal-body">
@@ -8486,6 +8516,27 @@
 
                             <!-- unit occupancy readout -->
                             <!-- workload intelligence readout -->
+                            <!-- staff profile card -->
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'profile'" class="askbar-profile">
+                                <div class="askbar-profile-top">
+                                    <div class="askbar-profile-av">{{ turn.visual.profile.name.split(' ').map(w=>w[0]).slice(0,2).join('') }}</div>
+                                    <div>
+                                        <div class="askbar-profile-name">{{ turn.visual.profile.name }}</div>
+                                        <div class="askbar-profile-role">{{ turn.visual.profile.role }}<span v-if="turn.visual.profile.specialty"> · {{ turn.visual.profile.specialty }}</span><span v-if="turn.visual.profile.residency"> · {{ turn.visual.profile.residency }}</span></div>
+                                    </div>
+                                    <span class="askbar-profile-status" :class="'askbar-profile-status--'+turn.visual.profile.statusKind">{{ turn.visual.profile.status }}</span>
+                                </div>
+                                <div v-if="turn.visual.profile.roleFlags.length" class="askbar-profile-flags">
+                                    <span v-for="f in turn.visual.profile.roleFlags" :key="f" class="askbar-profile-flag">{{ f }}</span>
+                                </div>
+                                <div class="askbar-profile-grid">
+                                    <div v-if="turn.visual.profile.email" class="askbar-profile-row"><span class="askbar-profile-k">Email</span><span>{{ turn.visual.profile.email }}</span></div>
+                                    <div v-if="turn.visual.profile.phone" class="askbar-profile-row"><span class="askbar-profile-k">Phone</span><span>{{ turn.visual.profile.phone }}</span></div>
+                                    <div v-if="turn.visual.profile.credentials.length" class="askbar-profile-row"><span class="askbar-profile-k">Credentials</span><span>{{ turn.visual.profile.credentials.join(' · ') }}</span></div>
+                                    <div v-if="turn.visual.profile.nextOnCall" class="askbar-profile-row"><span class="askbar-profile-k">Next on-call</span><span>{{ turn.visual.profile.nextOnCall }}</span></div>
+                                </div>
+                            </div>
+
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'workload'" class="askbar-occ">
                                 <div v-for="(r,ri) in turn.visual.rows" :key="ri" class="askbar-occ-row">
                                     <div class="askbar-occ-head"><span class="askbar-occ-name">{{ r.name }}</span><span class="askbar-occ-count" :class="{ 'askbar-occ-count--full': r.full }">load {{ r.n }}</span></div>
@@ -20005,7 +20056,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=95"></script>
+    <script src="app.js?v=96"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
