@@ -9570,6 +9570,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return live
       })
       const askBarScanCount = Vue.computed(() => askBarScan.value.length)
+
+      // ══ §8 EVENT-DRIVEN — proactive alerts surfaced in the notification bell ══
+      // The scan engine detects consequential state (conflicts, gaps, expiries) from
+      // LIVE data. Instead of only showing them inside the agent, feed them to the bell
+      // so the department is "watched" even when the agent is closed. These are
+      // detected-now events (not stored server notifications) — merged, dedup'd, and
+      // dismissible for the session.
+      const dismissedAlerts = Vue.ref(new Set())
+      const liveAlerts = Vue.computed(() => {
+        return (askBarScan.value || [])
+          .filter(a => !dismissedAlerts.value.has(a._key || a.title))
+          .map(a => ({
+            id: 'live:' + (a._key || a.title),
+            title: a.title,
+            message: a.detail || '',
+            sev: a.sev || 'med',
+            action_view: a.view || null,
+            resolve: a.resolve || null,
+            staffId: a.staffId || null,
+            live: true, read: false,
+            created_at: new Date().toISOString(),
+          }))
+      })
+      const dismissLiveAlert = (a) => { const s = new Set(dismissedAlerts.value); s.add((a.id||'').replace('live:','')); dismissedAlerts.value = s }
+      // merged count = unread server notifications + undismissed live alerts
+      const alertCount = Vue.computed(() => (notifications.unread || 0) + liveAlerts.value.length)
+      // clicking a live alert: jump to the fixing view (and open the agent's resolve if it has one)
+      const clickLiveAlert = (a) => {
+        if (a.action_view) { switchView(a.action_view); notifications.open = false }
+      }
       const askBarNow = () => { const d = new Date(); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
 
       const askBarSuggestions = [
@@ -12099,7 +12129,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
-          toggleNotifBell, clickNotifItem, maybeLoadPermUsers,
+          toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
