@@ -9580,7 +9580,16 @@ document.addEventListener('DOMContentLoaded', () => {
         { t: 'Who is absent right now?',           d: 'Coverage · today',          icon: 'absence',   intent: 'absent_now' }
       ]
 
-      const openAskBar  = () => { askBar.open = true; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
+      const openAskBar  = () => {
+        askBar.open = true
+        askBar.view = askBarScanCount.value ? 'digest' : 'conversation'
+        // Pull fresh data so the agent never answers from a stale local snapshot.
+        // Best-effort and silent — if a loader is missing or fails, we just use what we have.
+        try { staffOps.loadMedicalStaff && staffOps.loadMedicalStaff() } catch (e) {}
+        try { onCallOps.loadOnCallSchedule && onCallOps.loadOnCallSchedule() } catch (e) {}
+        try { absenceOps.loadAbsences && absenceOps.loadAbsences() } catch (e) {}
+        try { rotationOps.loadRotations && rotationOps.loadRotations() } catch (e) {}
+      }
       const closeAskBar = () => { askBar.open = false; askBar.query = '' }
       const askBarToggleTeach = () => {
         askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
@@ -10840,8 +10849,51 @@ document.addEventListener('DOMContentLoaded', () => {
         return { outName: outPerson?.full_name, dutyDate, eligible }
       }
 
+      // Split a pasted multi-question input into separate questions.
+      // Handles: numbered ("1. .. 2. .."), newline-separated, and "?"-terminated runs.
+      const askBarSplitQuestions = (text) => {
+        let t = (text || '').trim()
+        if (!t) return [t]
+        // numbered list: "1. x 2. y 3. z"  or  "1) x 2) y"
+        if (/\b\d+[.)]\s/.test(t) && (t.match(/\b\d+[.)]\s/g) || []).length >= 2) {
+          return t.split(/\s*\b\d+[.)]\s+/).map(s => s.trim()).filter(Boolean)
+        }
+        // newline-separated (2+ non-empty lines)
+        const lines = t.split(/\n+/).map(s => s.trim()).filter(Boolean)
+        if (lines.length >= 2) return lines
+        // multiple "?"-terminated questions in one line
+        if ((t.match(/\?/g) || []).length >= 2) {
+          return t.split(/\?\s*/).map(s => s.trim()).filter(Boolean).map(s => s + '?')
+        }
+        return [t]
+      }
+
       const askBarResolve = (forcedIntent) => {
-        const asked = askBar.query.trim()
+        const asked0 = askBar.query.trim()
+        // Multi-question: if the input holds several questions, answer each in turn.
+        if (!forcedIntent && !askBar.pendingLeave) {
+          const parts = askBarSplitQuestions(asked0)
+          if (parts.length >= 2) {
+            askBar.view = 'conversation'
+            // Resolve sequentially with spacing so each answer builds against its own
+            // question (the answer path is async + reads askBar.lastAsked).
+            let i = 0
+            const runNext = () => {
+              if (i >= parts.length) { askBar.query = ''; return }
+              const p = parts[i]; i++
+              askBar.query = p
+              askBarResolveOne(p)
+              setTimeout(runNext, 900)
+            }
+            runNext()
+            return
+          }
+        }
+        return askBarResolveOne(asked0, forcedIntent)
+      }
+
+      const askBarResolveOne = (asked0Arg, forcedIntent) => {
+        const asked = (asked0Arg !== undefined ? asked0Arg : askBar.query).trim()
         if (!asked && !forcedIntent) return
         askBar.view = 'conversation'
         // Multi-turn: if we're mid leave-request waiting for a detail, try to complete it.
