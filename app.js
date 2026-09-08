@@ -10505,6 +10505,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'coverage_areas_overview', priority: 77, patterns: [/coverage area/, /which areas/, /areas.*(cover|coverage)/, /cover(age)? zones?/] },
         { intent: 'ops_metrics_overview', priority: 76, patterns: [/ops metric/, /operational metric/, /\bkpi/, /department metric/, /how are we doing/, /metrics? (today|now)/] },
         // — Cross-cutting joins —
+        { intent: 'units_board', priority: 93, patterns: [/(units?|clinical units?|rotations?) (board|wall|status board|dashboard|overview board|map|grid|at a glance|status)/i, /(show|display|give me).*(units?|clinical).*(board|status|dashboard|visual|overview)/i, /units? status board/i, /clinical status/i], anti: [/put|assign|cancel/] },
+        { intent: 'residents_board', priority: 93, patterns: [/(residents?) (board|wall|status board|dashboard|overview|map|grid|at a glance|status|visual)/i, /(show|display|give me).*(residents?).*(board|status|dashboard|visual|overview|where)/i, /resident status board/i, /where is everyone rotating/i, /rotation board/i], anti: [/put|assign|cancel|finish|ending/] },
+        { intent: 'unit_status', priority: 91, patterns: [/(which|what|any) units? (are )?(free|open|available|empty|unassigned|scheduled|booked|occupied|in use|taken)/i, /units? (with|without) (a )?(resident|supervisor|space|room)/i, /(free|available|open|empty|scheduled|occupied) (clinical |training )?units?/i, /units? (in|on) (building|floor|the)/i, /who (runs|supervises|is in charge of|leads) (the )?[a-zñáéíóú]+ unit/i, /unit (overview|status|breakdown|occupancy|map)/i, /where can .* rotate/i, /rotation (slots|openings|availability|capacity)/i], anti: [/put|assign|cancel/] },
         { intent: 'units_at_capacity', priority: 90, patterns: [/units? at capacity/, /\bcapacity\b/, /full unit/, /units? full/, /occupancy/, /overcrowded/] },
         { intent: 'unsupervised_residents', priority: 90, patterns: [/unsupervised/, /without .* supervisor/, /no supervisor/, /residents? .* no supervisor/] },
         { intent: 'certs_expiring', priority: 88, patterns: [/(certificate|cert)s?.*(expir|due|lapse|renew)/, /expiring cert/, /whose cert/, /cert.*status/] },
@@ -10686,7 +10689,7 @@ document.addEventListener('DOMContentLoaded', () => {
         trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', trials_by_person: 'clinical_trials',
         research_lines: 'research_lines', innovation_projects: 'innovation_projects',
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
-        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units',
+        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
         compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
@@ -11133,28 +11136,65 @@ document.addEventListener('DOMContentLoaded', () => {
           if (nextShift) live.push(`next on-call ${Utils.formatDateShort(nextShift.duty_date)}`)
           if (rot) live.push('on an active rotation')
           if (live.length) text += ` Currently ${live.join('; ')}.`
-          // Structured profile card — the "display staff profile" ask.
+          // ── Redesigned profile: STATIC identity vs ACTIVE state, + completeness ──
           const _vp = (p) => p && !/[#x_?]/i.test(p) && p.replace(/\D/g,'').length >= 7
           const _ve = (e) => e && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)
+          const isResidentRole = askBarIsResident(s)
+          // what a complete profile SHOULD have (grounded in the DB schema), role-aware
+          const expected = [
+            { key: 'professional_email', label: 'Email', has: _ve(s.professional_email) },
+            { key: 'phone', label: 'Phone', has: _vp(s.office_phone) || _vp(s.mobile_phone) || _vp(s.work_phone) },
+            { key: 'specialization', label: 'Specialty', has: !!(s.specialization || s.specialty) },
+            { key: 'medical_license', label: 'Medical license', has: !!(s.has_medical_license || s.medical_license) },
+            { key: 'academic_degree', label: 'Academic degree', has: !!(s.academic_degree || s.academic_degree_id) },
+            { key: 'department', label: 'Department', has: !!(s.department_id || s.primary_dept_name || s.home_department) },
+          ]
+          if (isResidentRole) {
+            expected.push({ key: 'training_year', label: 'Training year', has: !!(s.residency_year_override || s.training_year || s.residency_year_calc) })
+            expected.push({ key: 'residency_start_date', label: 'Residency start', has: !!s.residency_start_date })
+          } else {
+            expected.push({ key: 'years_experience', label: 'Years of experience', has: s.years_experience != null })
+          }
+          const missing = expected.filter(f => !f.has)
+          const completeness = Math.round(((expected.length - missing.length) / expected.length) * 100)
+
           const credentials = []
           if (s.has_phd) credentials.push('PhD' + (s.phd_field ? ' (' + s.phd_field + ')' : ''))
+          if (s.academic_degree) credentials.push(s.academic_degree)
           if (s.can_be_pi) credentials.push('PI-eligible')
           if (s.can_supervise_residents) credentials.push('can supervise')
+          if (s.has_medical_license || s.medical_license) credentials.push('licensed')
           const roleFlags2 = []
           if (s.is_chief_of_department) roleFlags2.push('Chief of Dept')
           if (s.is_research_coordinator) roleFlags2.push('Research Coordinator')
+          if (s.is_resident_manager) roleFlags2.push('Resident Manager')
           if (s.is_oncall_manager) roleFlags2.push('On-call Manager')
+
           const profile = {
-            name, role: _toTitle(s.staff_type || 'staff'),
-            specialty: s.specialization || s.specialty || null,
-            residency: s.residency_year_override || s.training_year || null,
-            email: _ve(s.professional_email) ? s.professional_email : null,
-            phone: _vp(s.office_phone) ? s.office_phone : (_vp(s.mobile_phone) ? s.mobile_phone : null),
-            credentials, roleFlags: roleFlags2,
-            status: onLeave ? ('On leave until ' + Utils.formatDateShort(onLeave.end_date))
-                    : (rot ? 'On active rotation' : 'Available'),
-            statusKind: onLeave ? 'leave' : (rot ? 'rotation' : 'ok'),
-            nextOnCall: nextShift ? Utils.formatDateShort(nextShift.duty_date) : null,
+            id: s.id, name,
+            // STATIC identity
+            static: {
+              role: _toTitle(s.staff_type || 'staff'),
+              specialty: s.specialization || s.specialty || null,
+              residency: s.residency_year_override || s.training_year || null,
+              email: _ve(s.professional_email) ? s.professional_email : null,
+              phone: _vp(s.office_phone) ? s.office_phone : (_vp(s.mobile_phone) ? s.mobile_phone : (_vp(s.work_phone) ? s.work_phone : null)),
+              department: s.primary_dept_name || s.home_department || null,
+              experience: s.years_experience != null ? s.years_experience + ' yrs' : null,
+              credentials, roleFlags: roleFlags2,
+            },
+            // ACTIVE state (what's happening now/soon)
+            active: {
+              status: onLeave ? ('On leave until ' + Utils.formatDateShort(onLeave.end_date))
+                      : (rot ? 'On active rotation' : 'Available'),
+              statusKind: onLeave ? 'leave' : (rot ? 'rotation' : 'ok'),
+              onLeave: onLeave ? `${Utils.formatDateShort(onLeave.start_date)}–${Utils.formatDateShort(onLeave.end_date)}` : null,
+              nextOnCall: nextShift ? Utils.formatDateShort(nextShift.duty_date) : null,
+              rotation: rot ? ((trainingUnits.value||[]).find(u=>u.id===rot.training_unit_id)?.unit_name || 'a unit') : null,
+              supervises: (rotations.value || []).filter(r => r.supervising_attending_id === s.id && r.rotation_status === 'active').length,
+            },
+            // COMPLETENESS
+            completeness, missing: missing.map(m => m.label),
           }
           return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open full profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high' }
         }
@@ -11420,6 +11460,77 @@ document.addEventListener('DOMContentLoaded', () => {
           return { text: `${flagged.length} staff have certificate issues: ${flagged.slice(0,5).map(s=>s.full_name + ' (' + s.certificate_status + ')').join(', ')}.`, chips: flagged.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         // ── THE EXTRA 10% — proactive cross-cutting intelligence ──
+        if (intent === 'units_board') {
+          const units = (trainingUnits.value || []).filter(u => (u.unit_status || 'active') !== 'inactive')
+          if (!units.length) return { text: 'No training units defined.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
+          const rots = rotations.value || []
+          const nm = (id) => (medicalStaff.value || []).find(s => s.id === id)?.full_name || null
+          const tiles = units.map(u => {
+            const active = rots.filter(r => r.rotation_status === 'active' && r.training_unit_id === u.id)
+            const sched = rots.filter(r => r.rotation_status === 'scheduled' && r.training_unit_id === u.id).length
+            const cap = u.maximum_residents || 5
+            const n = active.length
+            const state = n === 0 ? 'free' : (n >= cap ? 'full' : 'partial')
+            return { title: u.unit_name, code: u.unit_code || null, n, cap, pct: Math.min(100, Math.round(n/cap*100)),
+                     state, sub: nm(u.default_supervisor_id || u.supervisor_id) || 'no supervisor',
+                     residents: active.map(r => nm(r.resident_id)).filter(Boolean), sched }
+          })
+          const free = tiles.filter(t=>t.state==='free').length, full = tiles.filter(t=>t.state==='full').length
+          return { text: `${units.length} clinical units — ${free} free, ${units.length-free-full} partly filled, ${full} full.`, visual: { type: 'board', mode: 'units', tiles }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [{ label: 'Resident board', intent: 'residents_board' }, { label: 'Which are free?', intent: 'unit_status', q: 'which units are free' }], confidence: 'high' }
+        }
+        if (intent === 'residents_board') {
+          const residents = (medicalStaff.value || []).filter(s => askBarIsResident(s) && s.employment_status === 'active' && !s.deleted_at)
+          if (!residents.length) return { text: 'No active residents on record.', chips: [], actions: [{ label: 'Open staff', view: 'medical_staff' }], sources: ['staff'], followups: [], confidence: 'high' }
+          const rots = rotations.value || []
+          const units = trainingUnits.value || []
+          const absList = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
+          const today = Utils.normalizeDate(new Date())
+          const nm = (id) => (medicalStaff.value || []).find(s => s.id === id)?.full_name || null
+          const uname = (id) => units.find(u => u.id === id)?.unit_name || null
+          const tiles = residents.map(r => {
+            const rot = rots.find(x => x.resident_id === r.id && x.rotation_status === 'active')
+            const onLeave = absList.find(a => a.staff_member_id === r.id && Utils.normalizeDate(a.start_date) <= today && Utils.normalizeDate(a.end_date) >= today)
+            const state = onLeave ? 'leave' : (rot ? 'rotating' : 'free')
+            return { title: r.full_name, code: r.residency_year_override || r.training_year || null,
+                     state, sub: onLeave ? 'on leave' : (rot ? (uname(rot.training_unit_id) || 'a unit') : 'unassigned'),
+                     supervisor: rot ? nm(rot.supervising_attending_id) : null,
+                     n: 0, cap: 0, pct: 0 }
+          })
+          const rotating = tiles.filter(t=>t.state==='rotating').length, onleave = tiles.filter(t=>t.state==='leave').length, free = tiles.filter(t=>t.state==='free').length
+          return { text: `${residents.length} residents — ${rotating} on rotation, ${onleave} on leave, ${free} unassigned.`, visual: { type: 'board', mode: 'residents', tiles }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['staff','rotations','leave records'], followups: [{ label: 'Units board', intent: 'units_board' }, { label: 'Unsupervised residents?', intent: 'unsupervised_residents' }], confidence: 'high' }
+        }
+        if (intent === 'unit_status') {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          const units = (trainingUnits.value || []).filter(u => (u.unit_status || 'active') !== 'inactive')
+          if (!units.length) return { text: 'No training units are defined.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
+          const rots = rotations.value || []
+          const staffName2 = (id) => (medicalStaff.value || []).find(s => s.id === id)?.full_name || null
+          // compute per-unit state
+          const rows = units.map(u => {
+            const active = rots.filter(r => r.rotation_status === 'active' && r.training_unit_id === u.id).length
+            const scheduled = rots.filter(r => r.rotation_status === 'scheduled' && r.training_unit_id === u.id).length
+            const cap = u.maximum_residents || 5
+            const sup = staffName2(u.default_supervisor_id || u.supervisor_id)
+            return { id: u.id, name: u.unit_name, code: u.unit_code || null, n: active, sched: scheduled, cap,
+                     free: active === 0, hasSpace: active < cap, full: active >= cap,
+                     supervisor: sup, location: [u.location_building, u.location_floor].filter(Boolean).join(' · ') || null,
+                     specialty: u.specialty || null, pct: Math.min(100, Math.round((active / cap) * 100)) }
+          })
+          // interpret intent
+          let filtered = rows, lead
+          if (/\b(free|empty|unassigned|no resident)\b/.test(q)) { filtered = rows.filter(r => r.free); lead = `${filtered.length} of ${rows.length} units are free (no residents assigned)` }
+          else if (/\b(space|room|available|open)\b/.test(q)) { filtered = rows.filter(r => r.hasSpace); lead = `${filtered.length} units have space` }
+          else if (/\b(scheduled|booked|upcoming)\b/.test(q)) { filtered = rows.filter(r => r.sched > 0); lead = filtered.length ? `${filtered.length} units have scheduled rotations` : 'No units have scheduled rotations yet' }
+          else if (/\b(occupied|in use|taken|full)\b/.test(q)) { filtered = rows.filter(r => !r.free); lead = filtered.length ? `${filtered.length} units currently have residents` : 'No units currently have residents assigned' }
+          else if (/\b(supervisor|runs|leads|in charge)\b/.test(q)) { filtered = rows.filter(r => r.supervisor); lead = `Unit supervisors` }
+          else { lead = `${rows.length} units — ${rows.filter(r=>r.free).length} free, ${rows.filter(r=>!r.free&&r.hasSpace).length} with space, ${rows.filter(r=>r.full).length} full` }
+          if (!filtered.length) return { text: `${lead}.`, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units', 'rotations'], followups: [], confidence: 'high' }
+          const viz = filtered.slice(0, 10).map(r => ({
+            name: r.name + (r.code ? ` (${r.code})` : ''), n: r.n, cap: r.cap, pct: r.pct, full: r.full,
+            detail: [r.supervisor ? 'supervisor ' + r.supervisor : 'no supervisor', r.location, r.sched ? r.sched + ' scheduled' : null].filter(Boolean).join(' · ')
+          }))
+          return { text: `${lead}: ${filtered.slice(0,6).map(r => r.name + ` (${r.n}/${r.cap})`).join(', ')}${filtered.length>6?'…':''}.`, visual: { type: 'occupancy', rows: viz }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units', 'rotations', 'staff'], followups: [{ label: 'Which are at capacity?', intent: 'units_at_capacity' }, { label: 'Who is rotating where?', intent: 'rotations_deep' }], confidence: 'high' }
+        }
         if (intent === 'units_at_capacity') {
           const units = trainingUnits.value || []
           const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
@@ -11742,6 +11853,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarGoTo = (action) => {
         if (action.view) { askBarLog('action', { label: action.label, view: action.view }); switchView(action.view); closeAskBar() }
       }
+      // Complete-profile: open the staff record so missing fields can be filled.
+      const askBarCompleteProfile = (personId) => {
+        askBarLog('action', { label: 'complete profile', staffId: personId })
+        try { if (typeof askBarOpenStaff === 'function') { askBarOpenStaff(personId); return } } catch (e) {}
+        switchView('medical_staff'); closeAskBar()
+      }
       // #3 Inline entity actions — tap a person chip → mini action menu.
       const askBarEntityMenu = (c, ev) => {
         const s = (medicalStaff.value || []).find(x => x.id === c.id)
@@ -11937,7 +12054,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, askBarToggleTeach,
           askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
