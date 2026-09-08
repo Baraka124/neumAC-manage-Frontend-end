@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=69">
+    <link rel="stylesheet" href="style.css?v=71">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8516,24 +8516,66 @@
 
                             <!-- unit occupancy readout -->
                             <!-- workload intelligence readout -->
-                            <!-- staff profile card -->
+                            <!-- staff profile card — static identity vs active state -->
+                            <!-- status board — units or residents at a glance -->
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'board'" class="askbar-board">
+                                <div v-for="(t,ti) in turn.visual.tiles" :key="ti" class="askbar-tile" :class="'askbar-tile--'+t.state">
+                                    <div class="askbar-tile-head">
+                                        <span class="askbar-tile-title">{{ t.title }}</span>
+                                        <span v-if="t.code" class="askbar-tile-code">{{ t.code }}</span>
+                                    </div>
+                                    <div v-if="turn.visual.mode==='units'" class="askbar-tile-ring" :class="'askbar-tile-ring--'+t.state">
+                                        <span class="askbar-tile-num">{{ t.n }}<span class="askbar-tile-cap">/{{ t.cap }}</span></span>
+                                    </div>
+                                    <div v-else class="askbar-tile-dot" :class="'askbar-tile-dot--'+t.state"></div>
+                                    <div class="askbar-tile-sub">{{ t.sub }}</div>
+                                    <div v-if="t.supervisor" class="askbar-tile-sup">under {{ t.supervisor }}</div>
+                                    <div v-if="t.sched" class="askbar-tile-sched">{{ t.sched }} scheduled</div>
+                                </div>
+                            </div>
+
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'profile'" class="askbar-profile">
                                 <div class="askbar-profile-top">
                                     <div class="askbar-profile-av">{{ turn.visual.profile.name.split(' ').map(w=>w[0]).slice(0,2).join('') }}</div>
-                                    <div>
+                                    <div class="askbar-profile-id">
                                         <div class="askbar-profile-name">{{ turn.visual.profile.name }}</div>
-                                        <div class="askbar-profile-role">{{ turn.visual.profile.role }}<span v-if="turn.visual.profile.specialty"> · {{ turn.visual.profile.specialty }}</span><span v-if="turn.visual.profile.residency"> · {{ turn.visual.profile.residency }}</span></div>
+                                        <div class="askbar-profile-role">{{ turn.visual.profile.static.role }}<span v-if="turn.visual.profile.static.specialty"> · {{ turn.visual.profile.static.specialty }}</span><span v-if="turn.visual.profile.static.residency"> · {{ turn.visual.profile.static.residency }}</span></div>
                                     </div>
-                                    <span class="askbar-profile-status" :class="'askbar-profile-status--'+turn.visual.profile.statusKind">{{ turn.visual.profile.status }}</span>
+                                    <span class="askbar-profile-status" :class="'askbar-profile-status--'+turn.visual.profile.active.statusKind">{{ turn.visual.profile.active.status }}</span>
                                 </div>
-                                <div v-if="turn.visual.profile.roleFlags.length" class="askbar-profile-flags">
-                                    <span v-for="f in turn.visual.profile.roleFlags" :key="f" class="askbar-profile-flag">{{ f }}</span>
+                                <div v-if="turn.visual.profile.static.roleFlags.length" class="askbar-profile-flags">
+                                    <span v-for="f in turn.visual.profile.static.roleFlags" :key="f" class="askbar-profile-flag">{{ f }}</span>
                                 </div>
-                                <div class="askbar-profile-grid">
-                                    <div v-if="turn.visual.profile.email" class="askbar-profile-row"><span class="askbar-profile-k">Email</span><span>{{ turn.visual.profile.email }}</span></div>
-                                    <div v-if="turn.visual.profile.phone" class="askbar-profile-row"><span class="askbar-profile-k">Phone</span><span>{{ turn.visual.profile.phone }}</span></div>
-                                    <div v-if="turn.visual.profile.credentials.length" class="askbar-profile-row"><span class="askbar-profile-k">Credentials</span><span>{{ turn.visual.profile.credentials.join(' · ') }}</span></div>
-                                    <div v-if="turn.visual.profile.nextOnCall" class="askbar-profile-row"><span class="askbar-profile-k">Next on-call</span><span>{{ turn.visual.profile.nextOnCall }}</span></div>
+
+                                <!-- STATIC identity -->
+                                <div class="askbar-profile-sec">
+                                    <div class="askbar-profile-sechead">Identity</div>
+                                    <div class="askbar-profile-grid">
+                                        <div v-if="turn.visual.profile.static.email" class="askbar-profile-row"><span class="askbar-profile-k">Email</span><span>{{ turn.visual.profile.static.email }}</span></div>
+                                        <div v-if="turn.visual.profile.static.phone" class="askbar-profile-row"><span class="askbar-profile-k">Phone</span><span>{{ turn.visual.profile.static.phone }}</span></div>
+                                        <div v-if="turn.visual.profile.static.department" class="askbar-profile-row"><span class="askbar-profile-k">Department</span><span>{{ turn.visual.profile.static.department }}</span></div>
+                                        <div v-if="turn.visual.profile.static.experience" class="askbar-profile-row"><span class="askbar-profile-k">Experience</span><span>{{ turn.visual.profile.static.experience }}</span></div>
+                                        <div v-if="turn.visual.profile.static.credentials.length" class="askbar-profile-row"><span class="askbar-profile-k">Credentials</span><span>{{ turn.visual.profile.static.credentials.join(' · ') }}</span></div>
+                                    </div>
+                                </div>
+
+                                <!-- ACTIVE state -->
+                                <div class="askbar-profile-sec">
+                                    <div class="askbar-profile-sechead">Right now</div>
+                                    <div class="askbar-profile-grid">
+                                        <div v-if="turn.visual.profile.active.onLeave" class="askbar-profile-row"><span class="askbar-profile-k">On leave</span><span>{{ turn.visual.profile.active.onLeave }}</span></div>
+                                        <div v-if="turn.visual.profile.active.rotation" class="askbar-profile-row"><span class="askbar-profile-k">Rotation</span><span>{{ turn.visual.profile.active.rotation }}</span></div>
+                                        <div v-if="turn.visual.profile.active.nextOnCall" class="askbar-profile-row"><span class="askbar-profile-k">Next on-call</span><span>{{ turn.visual.profile.active.nextOnCall }}</span></div>
+                                        <div v-if="turn.visual.profile.active.supervises" class="askbar-profile-row"><span class="askbar-profile-k">Supervising</span><span>{{ turn.visual.profile.active.supervises }} resident{{ turn.visual.profile.active.supervises===1?'':'s' }}</span></div>
+                                        <div v-if="!turn.visual.profile.active.onLeave && !turn.visual.profile.active.rotation && !turn.visual.profile.active.nextOnCall && !turn.visual.profile.active.supervises" class="askbar-profile-row askbar-profile-quiet">No active assignments.</div>
+                                    </div>
+                                </div>
+
+                                <!-- COMPLETENESS + add-info button -->
+                                <div v-if="turn.visual.profile.missing.length" class="askbar-profile-complete">
+                                    <div class="askbar-profile-cbar"><div class="askbar-profile-cfill" :style="{ width: turn.visual.profile.completeness + '%' }"></div></div>
+                                    <div class="askbar-profile-cmiss">Profile {{ turn.visual.profile.completeness }}% complete — missing: {{ turn.visual.profile.missing.join(', ') }}.</div>
+                                    <button class="askbar-profile-cbtn" @click="askBarCompleteProfile(turn.visual.profile.id)">+ Add missing details</button>
                                 </div>
                             </div>
 
@@ -20056,7 +20098,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=96"></script>
+    <script src="app.js?v=99"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
