@@ -9987,9 +9987,18 @@ document.addEventListener('DOMContentLoaded', () => {
         turn.writing = true
         try {
           await API.request(`/api/absence-records/${proposal.id}/return`, { method: 'PUT', body: { return_date: proposal.today } })
-          turn.writing = false; turn.committed = true
-          try { absenceOps.loadAbsences() } catch (e) {}
-          turn.commitText = `\u2713 ${proposal.name} marked back on duty as of today.`
+          // Verify it actually persisted — a 200 doesn't guarantee the row changed
+          // (triggers/RLS can silently no-op). Reload and check the record's status.
+          try { await absenceOps.loadAbsences() } catch (e) {}
+          const rec = (absences.value || []).find(a => a.id === proposal.id)
+          const stillAbsent = rec && !['returned_to_duty', 'cancelled'].includes(rec.current_status)
+          turn.writing = false
+          if (stillAbsent) {
+            turn.commitError = `The update didn't take effect — ${proposal.name} is still marked absent. This may need attention in the leave view.`
+          } else {
+            turn.committed = true
+            turn.commitText = `\u2713 ${proposal.name} marked back on duty.`
+          }
         } catch (err) {
           turn.writing = false
           turn.commitError = (err && err.message) ? err.message : 'Could not update.'
@@ -12323,7 +12332,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     app.config.errorHandler = (err, instance, info) => {
-      console.error('[neumDesk render error]', err, info)   
+      console.error('[neumDesk render error]', err, info)
       const viewName = instance?.setupState?.currentView?.value
       showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)
     }
