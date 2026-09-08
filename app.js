@@ -10052,7 +10052,102 @@ document.addEventListener('DOMContentLoaded', () => {
         }, chips:[], actions:[], sources:['on-call schedule'], followups:[], confidence:'high', asOf: askBarNow(), streaming:false }))
       }
 
+      // Parse a possibly-MULTI-unit rotation assignment: "put Ana in ICU under X
+      // and asma grave under Y from Monday". Returns {resident, dates, segments:[{unit,supervisor}]}
+      const askBarParseRotationSegments = (asked) => {
+        const q = asked.toLowerCase()
+        const units = (trainingUnits.value || []).filter(u => (u.unit_status || 'active') !== 'inactive')
+        const _norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const UNIT_ALIASES = [
+          [/\b(icu|intensive care|uci)\b/, 'uci'], [/\bucri\b/, 'ucri'], [/\b(sleep|sleep lab|sueño|sueno)\b/, 'sueño'],
+          [/\b(ward|hospitali[sz]ation|inpatient|hospitaliz)\b/, 'hospitaliz'], [/\b(pft|lung function|pfr)\b/, 'pfr'],
+          [/\b(thoracic|torácica|toracica)\b/, 'torácica'], [/\btrasplante|transplant\b/, 'trasplante'],
+          [/\b(cardiolog)\b/, 'cardiolog'], [/\b(internal medicine|interna)\b/, 'interna'],
+          [/\b(bronch\w*|broncopleural)\b/, 'broncopleural'], [/\b(external|externa)\b/, 'externa'],
+          [/\b(severe asthma|asma)\b/, 'asma']
+        ]
+        const findUnit = (text) => {
+          let u = units.find(x => _norm(text).includes(_norm(x.unit_name)))
+          if (!u) for (const [rx, frag] of UNIT_ALIASES) { if (rx.test(text)) { u = units.find(x => _norm(x.unit_name).includes(frag)); if (u) break } }
+          if (!u) u = units.find(x => _norm(x.unit_name).split(/\s+/).some(w => w.length > 3 && _norm(text).includes(w)))
+          return u || null
+        }
+        // split on " and " — but only when both sides look like unit/supervisor clauses
+        const parts = q.split(/\s+and\s+/)
+        const segments = []
+        for (const part of parts) {
+          const unit = findUnit(part)
+          if (!unit) continue
+          const sM = part.match(/(?:under|supervised by|with)\s+([a-zñáéíóú]+)/i)
+          const supervisor = sM ? askBarResolveStaff(sM[1]) : null
+          if (!segments.some(s => s.unit.id === unit.id)) segments.push({ unit, supervisor })
+        }
+        // resident: strip all unit/supervisor/filler
+        let rq = q
+          .replace(/(?:under|supervised by|with)\s+[a-zñáéíóú]+/gi, ' ')
+          .replace(/\b(icu|uci|ucri|ward|sleep lab|sleep|sueño|clinic|bronch\w*|asma|hospitaliz\w*|interna|torácica|toracica|trasplante|cardiolog\w*|externa|pfr)\b/gi, ' ')
+          .replace(/\b(put|assign|place|move|rotate|schedule|in|into|the|rotation|to|for|next|this|from|on|and|grave)\b/g, ' ')
+          .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g, ' ')
+          .replace(/\s+/g, ' ').trim()
+        const supIds = new Set(segments.map(s => s.supervisor && s.supervisor.id).filter(Boolean))
+        let resident = askBarResolveStaff(rq)
+        if (!resident) { const r = askBarResolveStaff(q); if (r && !supIds.has(r.id)) resident = r }
+        return { resident, dates: askBarExtractDates(q), segments }
+      }
+
       const askBarStartRotationFlow = (asked) => {
+        // Multi-unit path: if the query names 2+ units, propose them as a set.
+        const parsed = askBarParseRotationSegments(asked)
+        if (parsed.segments.length >= 2) { askBarProposeMultiRotation(asked, parsed); return }
+        return askBarStartSingleRotationFlow(asked)
+      }
+
+      const askBarProposeMultiRotation = (asked, parsed) => {
+        askBar.view = 'conversation'
+        const { resident, dates, segments } = parsed
+        if (!resident) { askBar.turns.push(Vue.reactive({ q: asked, text: "Which resident is this for? Name them.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
+        const units2 = trainingUnits.value || []
+        const rows = segments.map(seg => {
+          const supOk = seg.supervisor && (seg.supervisor.can_supervise_residents !== false) && isOnCallEligible(seg.supervisor.staff_type)
+          const activeInUnit = (rotations.value || []).filter(r => r.rotation_status === 'active' && r.training_unit_id === seg.unit.id).length
+          const cap = seg.unit.maximum_residents || 5
+          return { unitId: seg.unit.id, unit: seg.unit.unit_name, supervisor: seg.supervisor ? seg.supervisor.full_name : null,
+                   supervisorId: seg.supervisor ? seg.supervisor.id : null, noSup: !seg.supervisor, supWarn: seg.supervisor && !supOk,
+                   atCapacity: activeInUnit >= cap, occ: `${activeInUnit}/${cap}` }
+        })
+        const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) } catch(e){ return d } }
+        askBar.turns.push(Vue.reactive({
+          q: '', text: '', multiRotation: {
+            resident: { id: resident.id, name: resident.full_name },
+            start: dates.start, end: dates.end, startLabel: dates.start ? fmt(dates.start) : null,
+            rows, concurrent: !!dates.start  // same dates across units = concurrent
+          },
+          chips: [], actions: [], sources: ['staff','units','rotations'], followups: [],
+          confidence: (rows.some(r => r.noSup || r.supWarn) || !dates.start) ? 'medium' : 'high', asOf: askBarNow(), streaming: false
+        }))
+      }
+      const askBarConfirmMultiRotation = async (p, turn) => {
+        if (p.rows.some(r => r.noSup || r.supWarn) || !p.start) return
+        turn.writing = true
+        let ok = 0, errs = []
+        for (const r of p.rows) {
+          try {
+            await API.request('/api/rotations', { method: 'POST', body: {
+              resident_id: p.resident.id, training_unit_id: r.unitId, supervising_attending_id: r.supervisorId,
+              start_date: p.start, end_date: p.end || p.start, rotation_status: 'scheduled', rotation_category: 'clinical_rotation'
+            } })
+            ok++
+          } catch (e) { errs.push(r.unit) }
+        }
+        turn.writing = false; turn.committed = true
+        try { if (rotationOps && rotationOps.loadRotations) rotationOps.loadRotations() } catch(e) {}
+        turn.commitText = errs.length
+          ? `\u2713 Scheduled ${ok} of ${p.rows.length} rotations for ${p.resident.name}. Failed: ${errs.join(', ')}.`
+          : `\u2713 ${p.resident.name} scheduled in ${p.rows.length} units: ${p.rows.map(r=>r.unit).join(', ')}.`
+      }
+      const askBarCancelMultiRotation = (turn) => { turn.cancelled = true }
+
+      const askBarStartSingleRotationFlow = (asked) => {
         askBar.view = 'conversation'
         const q = asked.toLowerCase()
         // supervisor: "under X", "supervised by X", "with X"
@@ -11038,7 +11133,30 @@ document.addEventListener('DOMContentLoaded', () => {
           if (nextShift) live.push(`next on-call ${Utils.formatDateShort(nextShift.duty_date)}`)
           if (rot) live.push('on an active rotation')
           if (live.length) text += ` Currently ${live.join('; ')}.`
-          return { text, chips: [{ label: name, id: s.id }], actions: [{ label: 'Open profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high' }
+          // Structured profile card — the "display staff profile" ask.
+          const _vp = (p) => p && !/[#x_?]/i.test(p) && p.replace(/\D/g,'').length >= 7
+          const _ve = (e) => e && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)
+          const credentials = []
+          if (s.has_phd) credentials.push('PhD' + (s.phd_field ? ' (' + s.phd_field + ')' : ''))
+          if (s.can_be_pi) credentials.push('PI-eligible')
+          if (s.can_supervise_residents) credentials.push('can supervise')
+          const roleFlags2 = []
+          if (s.is_chief_of_department) roleFlags2.push('Chief of Dept')
+          if (s.is_research_coordinator) roleFlags2.push('Research Coordinator')
+          if (s.is_oncall_manager) roleFlags2.push('On-call Manager')
+          const profile = {
+            name, role: _toTitle(s.staff_type || 'staff'),
+            specialty: s.specialization || s.specialty || null,
+            residency: s.residency_year_override || s.training_year || null,
+            email: _ve(s.professional_email) ? s.professional_email : null,
+            phone: _vp(s.office_phone) ? s.office_phone : (_vp(s.mobile_phone) ? s.mobile_phone : null),
+            credentials, roleFlags: roleFlags2,
+            status: onLeave ? ('On leave until ' + Utils.formatDateShort(onLeave.end_date))
+                    : (rot ? 'On active rotation' : 'Available'),
+            statusKind: onLeave ? 'leave' : (rot ? 'rotation' : 'ok'),
+            nextOnCall: nextShift ? Utils.formatDateShort(nextShift.duty_date) : null,
+          }
+          return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open full profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high' }
         }
         if (fu.kind === 'staff_leave') {
           const leave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
@@ -11821,7 +11939,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Ask bar (RAG intelligence surface)
           askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, askBarToggleTeach,
-          askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarCancelRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
+          askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType, isOnCallEligible,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
