@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {  
+document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
@@ -9484,6 +9484,7 @@ document.addEventListener('DOMContentLoaded', () => {
         open: false,
         query: '',
         lastAsked: '',
+        subject: null,   // {type:'staff'|'unit'|'rotation', id, name} — set when a record is opened
         loading: false,
         thinking: null,    // string shown while it "thinks" (what it's checking)
         trace: [],         // live reasoning steps [{label, src, done}] — the agent feel
@@ -9492,6 +9493,15 @@ document.addEventListener('DOMContentLoaded', () => {
         snoozed: [],       // dismissed alert keys (#16)
         entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
         view: 'digest'     // 'digest' (proactive scan) | 'conversation'
+      })
+
+      // Subject-aware anticipation: when a staff profile opens, tell the agent so it
+      // offers actions for THAT person; clear the subject when it closes.
+      watch(() => staffOps.staffProfileModal.show, (open) => {
+        if (open && staffOps.staffProfileModal.staff) {
+          const s = staffOps.staffProfileModal.staff
+          setAgentSubject('staff', s.id, s.full_name)
+        } else { setAgentSubject(null) }
       })
 
       // ── PROACTIVE SCAN ENGINE ─────────────────────────────────────────
@@ -9602,16 +9612,111 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const askBarNow = () => { const d = new Date(); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
 
-      const askBarSuggestions = [
+      // Anticipatory suggestions: react to the module/subject in view so the agent
+      // offers the RELEVANT next actions (chat-executable first), not a fixed list.
+      const _SUGGEST_BY_VIEW = {
+        resident_rotations: [
+          { t: 'Who is rotating where?',            d: 'Rotations · live board',      icon: 'staff',    intent: 'residents_board' },
+          { t: 'Which residents finish this month?', d: 'Rotations · ending soon',    icon: 'gap',      intent: 'rotations_ending' },
+          { t: 'Any unsupervised residents?',        d: 'Rotations · risk',           icon: 'gap',      intent: 'unsupervised_residents' },
+          { t: 'Which clinical units are free?',     d: 'Units · availability',       icon: 'oncall',   intent: 'unit_status', q: 'which units are free' },
+          { t: 'Any rotation gaps?',                 d: 'Rotations · unassigned',     icon: 'gap',      intent: 'rotation_gaps' },
+        ],
+        training_units: [
+          { t: 'Units board',                        d: 'Units · at a glance',        icon: 'oncall',   intent: 'units_board' },
+          { t: 'Which units are at capacity?',       d: 'Units · occupancy',          icon: 'gap',      intent: 'units_at_capacity' },
+          { t: 'Which units are free?',              d: 'Units · availability',       icon: 'oncall',   intent: 'unit_status', q: 'which units are free' },
+          { t: 'Who is rotating where?',             d: 'Rotations · live',           icon: 'staff',    intent: 'residents_board' },
+        ],
+        oncall_schedule: [
+          { t: "Who's on call today?",               d: 'Coverage · live',            icon: 'oncall',   intent: 'oncall_upcoming' },
+          { t: 'Coverage board',                     d: 'On-call · the week',         icon: 'oncall',   intent: 'coverage_board' },
+          { t: "Draft next week's rota",             d: 'On-call · prepare',          icon: 'briefing', intent: 'draft_rota' },
+          { t: 'Any coverage gaps?',                 d: 'Coverage · conflicts',       icon: 'gap',      intent: 'coverage_gaps' },
+        ],
+        staff_absence: [
+          { t: 'Who is absent this week?',           d: 'Leave · live',               icon: 'absence',  intent: 'absent_now', q: 'who is absent this week' },
+          { t: 'Any coverage gaps?',                 d: 'Leave · conflicts',          icon: 'gap',      intent: 'coverage_gaps' },
+          { t: "Who's on call today?",               d: 'Coverage · live',            icon: 'oncall',   intent: 'oncall_upcoming' },
+        ],
+        medical_staff: [
+          { t: 'How many staff do we have?',         d: 'Directory · count',          icon: 'staff',    intent: 'staff_roster', q: 'how many staff' },
+          { t: 'Who can be PI?',                     d: 'Staff · eligibility',        icon: 'research', intent: 'staff_can_pi' },
+          { t: 'Who has a PhD?',                     d: 'Staff · credentials',        icon: 'research', intent: 'staff_with_phd' },
+          { t: 'Who is absent right now?',           d: 'Coverage · today',           icon: 'absence',  intent: 'absent_now' },
+        ],
+        research_hub: [
+          { t: 'Which trials are recruiting?',       d: 'Research · active',          icon: 'research', intent: 'trials_recruiting' },
+          { t: 'How many research lines?',           d: 'Research · overview',        icon: 'research', intent: 'research_lines' },
+          { t: 'Who is PI on the most trials?',      d: 'Research · leaders',         icon: 'staff',    intent: 'rank_staff', q: 'who is PI on most trials' },
+        ],
+      }
+      const _SUGGEST_DEFAULT = [
         { t: 'Anything I should worry about?',     d: 'Synthesis · conflicts & gaps', icon: 'gap',     intent: 'issues' },
-        { t: "Who's on-call this weekend?",        d: 'Coverage · live schedule', icon: 'oncall',     intent: 'oncall_upcoming' },
-        { t: 'Which trials are recruiting?',       d: 'Research · active studies', icon: 'research',  intent: 'trials_recruiting' },
-        { t: "Draft today's briefing",             d: 'Ops · auto-compose',        icon: 'briefing',  intent: 'briefing' },
-        { t: 'Who is absent right now?',           d: 'Coverage · today',          icon: 'absence',   intent: 'absent_now' }
+        { t: "Who's on-call today?",               d: 'Coverage · live schedule',    icon: 'oncall',   intent: 'oncall_upcoming' },
+        { t: 'Who is absent right now?',           d: 'Coverage · today',            icon: 'absence',  intent: 'absent_now' },
+        { t: "Draft today's briefing",             d: 'Ops · auto-compose',          icon: 'briefing', intent: 'briefing' },
+        { t: 'Which trials are recruiting?',       d: 'Research · active studies',   icon: 'research', intent: 'trials_recruiting' },
       ]
+      const _SUGGEST_LABELS = { resident_rotations:'For rotations, you might', training_units:'For clinical units, you might', oncall_schedule:'For on-call, you might', staff_absence:'For leave & coverage, you might', medical_staff:'For staff, you might', research_hub:'For research, you might' }
+      const askBarSuggestLabel = Vue.computed(() => {
+        if (askBar.subject && askBar.subject.name) return 'For ' + askBar.subject.name + ', you might'
+        const v = currentView.value
+        const key = /research|trial|innovation|analytics/.test(v) ? 'research_hub' : v
+        return _SUGGEST_LABELS[key] || 'Try asking'
+      })
+      const askBarSuggestions = Vue.computed(() => {
+        // Subject-scoped first: if a specific record is open, offer actions for THAT entity.
+        const subj = askBar.subject
+        if (subj && subj.id) {
+          const nm = subj.name || 'this'
+          if (subj.type === 'staff') {
+            const s = (medicalStaff.value || []).find(x => x.id === subj.id)
+            const isRes = s && askBarIsResident(s)
+            if (isRes) return [
+              { t: `Where has ${nm} rotated?`,        d: 'This resident · history',   icon: 'staff',    intent: 'rotation_history', q: `where has ${nm} rotated` },
+              { t: `Put ${nm} in a rotation`,         d: 'This resident · assign',    icon: 'briefing', intent: 'assign_rotation',  q: `put ${nm} in ` },
+              { t: `Is ${nm} on leave?`,              d: 'This resident · status',    icon: 'absence',  intent: 'staff_leave',      q: `is ${nm} on leave`, followupKind: 'staff_leave', subjectId: subj.id },
+              { t: `${nm}'s profile`,                 d: 'This resident · overview',  icon: 'staff',    intent: 'staff_summary',    q: `${nm} profile`, followupKind: 'staff_summary', subjectId: subj.id },
+            ]
+            return [
+              { t: `Put ${nm} on call`,               d: 'This attending · schedule', icon: 'oncall',   intent: 'record_oncall',    q: `put ${nm} on call ` },
+              { t: `Put ${nm} on leave`,              d: 'This attending · leave',    icon: 'absence',  intent: 'record_leave',     q: `put ${nm} on leave ` },
+              { t: `Who does ${nm} supervise?`,       d: 'This attending · residents',icon: 'staff',    intent: 'staff_summary',    q: `${nm} profile`, followupKind: 'staff_summary', subjectId: subj.id },
+              { t: `${nm}'s trials`,                  d: 'This attending · research', icon: 'research', intent: 'trials_by_person', q: `${nm} trials` },
+            ]
+          }
+          if (subj.type === 'unit') return [
+            { t: `Who is in ${nm}?`,                  d: 'This unit · residents',     icon: 'staff',    intent: 'unit_status',      q: `who is in ${nm}` },
+            { t: `Assign a resident to ${nm}`,        d: 'This unit · rotation',      icon: 'briefing', intent: 'assign_rotation',  q: `put ` },
+            { t: `Is ${nm} at capacity?`,             d: 'This unit · occupancy',     icon: 'gap',      intent: 'units_at_capacity' },
+          ]
+          if (subj.type === 'rotation') return [
+            { t: 'Cancel this rotation',              d: 'This rotation · remove',    icon: 'gap',      intent: 'cancel_rotation',  q: `cancel ${nm} rotation` },
+            { t: `Where else has ${nm} rotated?`,     d: 'This resident · history',   icon: 'staff',    intent: 'rotation_history',  q: `where has ${nm} rotated` },
+          ]
+        }
+        // else module-scoped
+        const v = currentView.value
+        const key = /research|trial|innovation|analytics/.test(v) ? 'research_hub' : v
+        const list = _SUGGEST_BY_VIEW[key]
+        return (list && list.length) ? list : _SUGGEST_DEFAULT
+      })
+      // Called by the app when a record is opened, so the agent can anticipate for it.
+      const setAgentSubject = (type, id, name) => { askBar.subject = (id ? { type, id, name } : null) }
 
       const openAskBar  = () => {
+        if (!currentUser.value) return
         askBar.open = true
+        // Subject-aware: sync to whatever record is open right now (or clear).
+        try {
+          if (staffOps.staffProfileModal && staffOps.staffProfileModal.show && staffOps.staffProfileModal.staff) {
+            const s = staffOps.staffProfileModal.staff
+            askBar.subject = { type: 'staff', id: s.id, name: s.full_name }
+          } else {
+            askBar.subject = null
+          }
+        } catch (e) { askBar.subject = null }
         askBar.view = askBarScanCount.value ? 'digest' : 'conversation'
         // Pull fresh data so the agent never answers from a stale local snapshot.
         // Best-effort and silent — if a loader is missing or fails, we just use what we have.
@@ -9625,7 +9730,7 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
         if (askBar.view === 'teach') loadBrain()
       }
-      const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
+      const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.subject = null; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
       const runSuggestion = (s) => { askBar.query = s.t; askBarResolve(s.intent) }
       const askBarSnooze = (alert) => {
         if (alert._key && !askBar.snoozed.includes(alert._key)) askBar.snoozed.push(alert._key)
@@ -10127,8 +10232,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const unit = findUnit(part)
           if (!unit) continue
           const sM = part.match(/(?:under|supervised by|with)\s+([a-zñáéíóú]+)/i)
-          const supervisor = sM ? askBarResolveStaff(sM[1]) : null
-          if (!segments.some(s => s.unit.id === unit.id)) segments.push({ unit, supervisor })
+          const supervisor = sM ? (askBarResolveStaffRole(sM[1],'supervisor') || askBarResolveStaff(sM[1])) : null
+          // per-clause dates → sequential rotations (each unit its own window)
+          const segDates = askBarExtractDates(part)
+          if (!segments.some(s => s.unit.id === unit.id)) segments.push({ unit, supervisor, dates: segDates })
         }
         // resident: strip all unit/supervisor/filler
         let rq = q
@@ -10138,8 +10245,8 @@ document.addEventListener('DOMContentLoaded', () => {
           .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g, ' ')
           .replace(/\s+/g, ' ').trim()
         const supIds = new Set(segments.map(s => s.supervisor && s.supervisor.id).filter(Boolean))
-        let resident = askBarResolveStaff(rq)
-        if (!resident) { const r = askBarResolveStaff(q); if (r && !supIds.has(r.id)) resident = r }
+        let resident = askBarResolveStaffRole(rq,'resident') || askBarResolveStaff(rq)
+        if (!resident) { const r = askBarResolveStaffRole(q,'resident') || askBarResolveStaff(q); if (r && !supIds.has(r.id)) resident = r }
         return { resident, dates: askBarExtractDates(q), segments }
       }
 
@@ -10154,35 +10261,42 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = 'conversation'
         const { resident, dates, segments } = parsed
         if (!resident) { askBar.turns.push(Vue.reactive({ q: asked, text: "Which resident is this for? Name them.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
-        const units2 = trainingUnits.value || []
+        const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) } catch(e){ return d } }
         const rows = segments.map(seg => {
           const supOk = seg.supervisor && (seg.supervisor.can_supervise_residents !== false) && isOnCallEligible(seg.supervisor.staff_type)
           const activeInUnit = (rotations.value || []).filter(r => r.rotation_status === 'active' && r.training_unit_id === seg.unit.id).length
           const cap = seg.unit.maximum_residents || 5
+          // per-segment dates; fall back to the global date only if the clause had none
+          const s = (seg.dates && seg.dates.start) || dates.start || null
+          const e = (seg.dates && seg.dates.end) || (seg.dates && seg.dates.start) || dates.end || dates.start || null
           return { unitId: seg.unit.id, unit: seg.unit.unit_name, supervisor: seg.supervisor ? seg.supervisor.full_name : null,
                    supervisorId: seg.supervisor ? seg.supervisor.id : null, noSup: !seg.supervisor, supWarn: seg.supervisor && !supOk,
-                   atCapacity: activeInUnit >= cap, occ: `${activeInUnit}/${cap}` }
+                   atCapacity: activeInUnit >= cap, occ: `${activeInUnit}/${cap}`,
+                   start: s, end: e, dateLabel: s ? fmt(s) : null }
         })
-        const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) } catch(e){ return d } }
+        // concurrent = all rows share the same start; sequential = different starts
+        const starts = rows.map(r => r.start).filter(Boolean)
+        const allSame = starts.length > 1 && starts.every(x => x === starts[0])
+        const concurrent = allSame
+        const anyMissingDate = rows.some(r => !r.start)
         askBar.turns.push(Vue.reactive({
           q: '', text: '', multiRotation: {
             resident: { id: resident.id, name: resident.full_name },
-            start: dates.start, end: dates.end, startLabel: dates.start ? fmt(dates.start) : null,
-            rows, concurrent: !!dates.start  // same dates across units = concurrent
+            rows, concurrent, sequential: starts.length > 1 && !allSame, anyMissingDate,
           },
           chips: [], actions: [], sources: ['staff','units','rotations'], followups: [],
-          confidence: (rows.some(r => r.noSup || r.supWarn) || !dates.start) ? 'medium' : 'high', asOf: askBarNow(), streaming: false
+          confidence: (rows.some(r => r.noSup || r.supWarn) || anyMissingDate) ? 'medium' : 'high', asOf: askBarNow(), streaming: false
         }))
       }
       const askBarConfirmMultiRotation = async (p, turn) => {
-        if (p.rows.some(r => r.noSup || r.supWarn) || !p.start) return
+        if (p.rows.some(r => r.noSup || r.supWarn || !r.start)) return
         turn.writing = true
         let ok = 0, errs = []
         for (const r of p.rows) {
           try {
             await API.request('/api/rotations', { method: 'POST', body: {
               resident_id: p.resident.id, training_unit_id: r.unitId, supervising_attending_id: r.supervisorId,
-              start_date: p.start, end_date: p.end || p.start, rotation_status: 'scheduled', rotation_category: 'clinical_rotation'
+              start_date: r.start, end_date: r.end || r.start, rotation_status: 'scheduled', rotation_category: 'clinical_rotation'
             } })
             ok++
           } catch (e) { errs.push(r.unit) }
@@ -10201,7 +10315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // supervisor: "under X", "supervised by X", "with X"
         let supervisor = null
         const sM = q.match(/(?:under|supervised by|with)\s+([a-zñáéíóú]+)/i)
-        if (sM) supervisor = askBarResolveStaff(sM[1])
+        if (sM) supervisor = askBarResolveStaffRole(sM[1], 'supervisor') || askBarResolveStaff(sM[1])
         // unit: match a training-unit name mentioned — handle Spanish names + aliases
         const units = (trainingUnits.value || []).filter(u => (u.unit_status || 'active') !== 'inactive')
         const _norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -10226,14 +10340,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // resident: strip supervisor PHRASE first, then unit, then filler words
         let rq = q
           .replace(/(?:under|supervised by|with)\s+[a-zñáéíóú]+/gi, ' ')
-          .replace(/\b(icu|ward|sleep lab|sleep|clinic|bronch\w*)\b/g, ' ')
-          .replace(/\b(put|assign|place|move|rotate|schedule|in|the|rotation|to|for|next|this|from|on|and)\b/g, ' ')
+          .replace(/\b(uci|ucri|icu|ward|sleep lab|sleep|sueño|clinic|bronch\w*|asma|hospitaliz\w*|interna|torácica|toracica|trasplante|cardiolog\w*|externa|pfr|grave)\b/gi, ' ')
+          .replace(/\b(put|assign|place|move|rotate|schedule|in|into|the|rotation|to|for|next|this|from|on|and|today|tomorrow|yesterday)\b/g, ' ')
           .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g, ' ')
+          .replace(/\b\d{1,2}\b/g, ' ')
           .replace(/\s+/g,' ').trim()
-        const resident = askBarResolveStaff(rq) || (function(){
-          const r = askBarResolveStaff(q)
-          return (r && supervisor && r.id === supervisor.id) ? null : r
-        })()
+        // prefer a resident-role match; fall back to any-role only if nothing found
+        let resident = askBarResolveStaffRole(rq, 'resident')
+        if (!resident) resident = askBarResolveStaffRole(q, 'resident')
+        if (!resident) resident = askBarResolveStaff(rq)
+        if (!resident) { const r = askBarResolveStaff(q); if (r && (!supervisor || r.id !== supervisor.id)) resident = r }
         const dates = askBarExtractDates(q)
         if (!resident) { askBar.turns.push(Vue.reactive({ q: asked, text: "Which resident? Name them, e.g. \u201cput Santalla in the ICU rotation under Antelo.\u201d", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
         if (!unit) { askBar.turns.push(Vue.reactive({ q: asked, text: `Which unit should ${resident.full_name} rotate into? (e.g. ICU, Sleep Lab)`, chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
@@ -10243,6 +10359,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeInUnit = (rotations.value || []).filter(r => r.rotation_status === 'active' && r.training_unit_id === unit.id).length
         const cap = unit.maximum_residents || 5
         const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) } catch(e){ return d } }
+        // #10 cross-record validation: does this rotation overlap the resident's leave?
+        let leaveOverlap = null
+        if (dates.start) {
+          const rs = dates.start, re = dates.end || dates.start
+          const clash = (absences.value || []).find(a => a.staff_member_id === resident.id
+            && !['returned_to_duty','cancelled'].includes(a.current_status)
+            && Utils.normalizeDate(a.start_date) <= re && Utils.normalizeDate(a.end_date) >= rs)
+          if (clash) leaveOverlap = `${fmt(clash.start_date)}–${fmt(clash.end_date)}`
+        }
         askBar.turns.push(Vue.reactive({
           q: '', text: '', rotationProposal: {
             resident: { id: resident.id, name: resident.full_name },
@@ -10252,10 +10377,11 @@ document.addEventListener('DOMContentLoaded', () => {
             noSup: !supervisor,
             start: dates.start, end: dates.end,
             startLabel: dates.start ? fmt(dates.start) : null,
-            atCapacity: activeInUnit >= cap, occ: `${activeInUnit}/${cap}`
+            atCapacity: activeInUnit >= cap, occ: `${activeInUnit}/${cap}`,
+            leaveOverlap
           },
-          chips: [], actions: [], sources: ['staff','units','rotations'], followups: [],
-          confidence: (!supervisor || activeInUnit >= cap) ? 'medium' : 'high', asOf: askBarNow(), streaming: false
+          chips: [], actions: [], sources: ['staff','units','rotations','leave records'], followups: [],
+          confidence: (!supervisor || activeInUnit >= cap || leaveOverlap) ? 'medium' : 'high', asOf: askBarNow(), streaming: false
         }))
       }
       const askBarConfirmRotation = async (p, turn) => {
@@ -10328,6 +10454,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const cand = new Date(yr, mo, day)
             if (cand < today && (today - cand) > 86400000*180) yr++   // if well past, assume next year
             const d = new Date(yr, mo, day)
+            return { start: iso(d), end: iso(d) }
+          }
+        }
+        // bare month name, no day ("in december", "next october") → 1st of that month
+        const bm = q.match(/\b(?:in|from|during|next)?\s*(january|february|march|april|may|june|july|august|september|october|november|december|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/)
+        if (bm) {
+          const MOFULL = { january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11,
+                           enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11 }
+          const mo = MOFULL[bm[1]]
+          if (mo !== undefined) {
+            let yr = today.getFullYear()
+            let d = new Date(yr, mo, 1)
+            if (d < today && (today - d) > 86400000*20) { yr++; d = new Date(yr, mo, 1) }
             return { start: iso(d), end: iso(d) }
           }
         }
@@ -10435,6 +10574,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const ranked = askBarRankStaffMatches(qRaw)
         return ranked.length ? ranked[0].s : null
       }
+      // Role-scoped resolver: restrict matches to residents or supervisors so a
+      // rotation subject can't resolve to a non-clinical staff member, and a
+      // short name doesn't clash across roles.
+      const askBarResolveStaffRole = (qRaw, role) => {
+        const ranked = askBarRankStaffMatches(qRaw)
+        const filt = ranked.filter(x => {
+          const t = x.s.staff_type
+          if (role === 'resident') return t === 'medical_resident' || t === 'fellow'
+          if (role === 'supervisor') return t === 'attending_physician' || t === 'fellow'
+          return true
+        })
+        return filt.length ? filt[0].s : null
+      }
 
       // #7 Ambiguity: returns {person} if clear, or {ambiguous:[...]} if a tie.
       const askBarResolveStaffClarified = (qRaw) => {
@@ -10532,18 +10684,21 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'record_oncall', priority: 121, patterns: [/(put|assign|schedule|book|set|add|give|make)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|week|rota/] },
         { intent: 'draft_rota', priority: 123, patterns: [/(draft|prepare|generate|build|make|plan|propose)\b.*(rota|on.?call schedule|call schedule|week.*call|weekly.*call)/, /(rota|on.?call).*(for )?(next|this|the) week/], anti: [/who|which|is\b/] },
         { intent: 'return_leave', priority: 122, patterns: [/\b(is )?back\b/, /returned?\b/, /back (to|on) (duty|work)/, /no longer (on leave|absent|off)/, /end.*leave early/], require: [/back|return|no longer|end/], anti: [/who|which|list|when.*back/] },
-        { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule)\b.*\b(in|into|to|on)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma)/, /(put|assign|place|move|rotate)\b.*(rotation|rotat)/, /(rotation|rotate).*(under|with|supervis|from|next)/], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete/] },
+        { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule|add|set|book|enroll|send|rota)\b.*\b(in|into|to|on|at)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma)/, /(put|assign|place|move|rotate)\b.*(rotation|rotat)/, /(rotation|rotate).*(under|with|supervis|from|next)/], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete/] },
         { intent: 'cancel_leave', priority: 124, patterns: [/(cancel|remove|delete|undo|scrap)\b.*(leave|absence|vacation|holiday|baja|off|time off)/, /(leave|absence).*(cancel|remove|delete)/], anti: [/who|which|list/] },
         { intent: 'delete_staff_blocked', priority: 130, patterns: [/(delete|remove|fire|terminate|erase)\b.*(staff|physician|doctor|resident|attending|nurse|person|employee)/, /(delete|remove|fire|erase)\s+(dr\.?\s+)?[a-zñáéíóú]+\s+[a-zñáéíóú]+/], anti: [/leave|absence|on.?call|oncall|shift|rotation|rota|vacation/] },
         { intent: 'cancel_rotation', priority: 124, patterns: [/(cancel|remove|delete|undo|pull)\b.*(rotation|rotat)/, /(rotation)\b.*(cancel|remove|delete)/, /(take|pull)\b.*(out of|off)\b.*(rotation|uci|unit)/], anti: [/who|which|list|rotating where|ending|soon|finishing|upcoming|starting/] },
         { intent: 'clear_rota', priority: 124, patterns: [/(clear|wipe|remove|delete|reset)\b.*(rota|whole.*rota|week.*call|all.*on.?call|all.*shifts)/, /(rota|schedule).*(clear|wipe|reset)/], anti: [/who|which|list/] },
         { intent: 'remove_oncall', priority: 124, patterns: [/(cancel|remove|delete|undo|clear|drop)\b.*(on.?call|oncall|shift|duty|guardia)/, /(on.?call|shift|duty).*(cancel|remove|delete|clear)/, /(take|pull)\b.*(off (call|duty|the rota))/], anti: [/who|which|list/] },
         // — Comparison & ranking (very specific) —
+        { intent: 'rotation_history', priority: 100, patterns: [/(where|which units?) (has|have|did)\s+[a-zñáéíóú]+.*(rotat|been|trained|worked)/i, /rotation history (of|for)/i, /[a-zñáéíóú]+.?s?\s+(rotation|training) (history|record|path|journey)/i, /where (has|did)\s+[a-zñáéíóú]+\s+rotat/i], anti: [/put|assign|cancel|which residents/] },
+        { intent: 'rotation_gaps', priority: 100, patterns: [/rotation gaps?/i, /(residents?|who).*(gap|unassigned|not (in|on) (a )?rotation|between rotations)/i, /(unfilled|empty|vacant) (unit|rotation|month)/i, /gaps? in (the )?(rotation|schedule|coverage)/i], anti: [/put|assign|cancel/] },
+        { intent: 'coverage_board', priority: 93, patterns: [/(on.?call|coverage|rota) (board|wall|grid|calendar|week|visual)/i, /(show|display).*(on.?call|coverage|rota).*(board|week|visual|grid)/i, /week.?s? (on.?call|rota|coverage)/i, /coverage (this|next) week/i], anti: [/put|assign|cancel/] },
         { intent: 'rotations_ending', priority: 101, patterns: [/(residents?|rotations?|who).*(finish|end|complet|wrap|done|leaving).*(month|week|soon|when)/i, /(finish|end|complet|ending).*(rotation|this month|this week|soon)/i, /which residents (finish|end|are finishing|are ending|complete)/i, /rotations? (ending|finishing)/i], anti: [/cancel|remove/] },
         { intent: 'find_replacement', priority: 123, patterns: [/(find|need|get|suggest|who can|who could).*(replacement|cover|substitute|backup|fill in|stand in)/i, /(replace|cover for|substitute for|backup for)\s+[a-zñáéíóú]/i, /who can (cover|replace|stand in for|fill in for)\s+[a-zñáéíóú]/i], anti: [/put|assign .* on call/] },
         { intent: 'workload_analysis', priority: 102, patterns: [/(overload|stretched|too much|spread thin|burn.?out|overwork|imbalanc|unbalanc|balanced\??$|take on more|take more|absorb|who can (take|absorb|handle)|has capacity|capacity to|capacity for|free capacity|workload|work load|who.?s (busy|stretched|overloaded)|distribute.*(fairly|evenly)|load.*(balanced|distributed|even|fair)|lightest load|most load)/i], anti: [/on call|oncall|leave|rotation.*where/] },
         { intent: 'staff_roster', priority: 103, patterns: [/(how many|number of|count of|total)\s+(staff|people|physicians?|doctors?|attendings?|fellows?|nurses?|employees?|do we have)/i, /(list|show( me)?|who are|give me)\s+(the\s+)?(all\s+)?(staff|people|team|everyone|physicians?|doctors?|attendings?|residents?|fellows?|nurses?|secretar|coordinators?|engineers?)/i, /^(staff|team|everyone|all staff)$/i, /who works here/i], anti: [/on call|oncall|leave|absent|phd|certif|pi\b|rotat|trial|how many residents|number of residents/] },
-        { intent: 'staff_contact', priority: 104, patterns: [/(email|e-?mail|phone|number|contact|reach|call|mobile|extension|office)\s+(for|of|de)?\s*[a-zñáéíóú]/i, /[a-zñáéíóú]+.?s?\s+(email|e-?mail|phone|number|contact|mobile|extension)/i, /how (do i |can i |to )?(reach|contact|call|email)\s+[a-zñáéíóú]/i], anti: [/on call|oncall|who is on|draft|write|compose|send|about/] },
+        { intent: 'staff_contact', priority: 104, patterns: [/(email|e-?mail|phone|number|contact|reach|mobile|extension)\s+(for|of|de)?\s*[a-zñáéíóú]{3,}/i, /[a-zñáéíóú]{3,}.?s?\s+(email|e-?mail|phone|number|contact|mobile|extension)\b/i, /how (do i |can i |to )?(reach|contact|email)\s+[a-zñáéíóú]/i], anti: [/on call|oncall|on-call|who is on|draft|write|compose|send|about|\bno\b|without|\bwhich\b|have no|attending|residents?\b|how many|list/] },
         { intent: 'compare_staff', priority: 100, patterns: [/\bcompare\b/, /(who has (more|less|fewer)|more than|busier|less busy).*\b(or|and|vs|versus)\b/, /\b(or|vs|versus)\b.*(more|less|busier|shifts|trials)/] },
         { intent: 'rank_staff', priority: 95, patterns: [/(busiest|fewest|least|lightest|heaviest|overloaded)/, /who has the (most|fewest|least)/, /\bmost\b.*(shift|call|trial|resident|load)/], anti: [/\bcompare\b/] },
         // — Newly-reachable entities (close the agent coverage gap) —
@@ -10739,7 +10894,7 @@ document.addEventListener('DOMContentLoaded', () => {
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
-        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', find_replacement: 'oncall_schedule',
+        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
@@ -10932,6 +11087,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const askBarResolveOne = (asked0Arg, forcedIntent) => {
+        if (!currentUser.value) return   // never resolve/fire requests unauthenticated
         const asked = (asked0Arg !== undefined ? asked0Arg : askBar.query).trim()
         if (!asked && !forcedIntent) return
         askBar.view = 'conversation'
@@ -10964,19 +11120,32 @@ document.addEventListener('DOMContentLoaded', () => {
           // topic changed or couldn't fill → drop the pending, fall through to normal handling
           askBar.pendingLeave = null
         }
-        // #2 MULTI-INTENT: "is Antelo on call AND does she have a phd?" — if the
-        // query splits into two clauses that each route to a DIFFERENT strong intent,
-        // answer both in sequence. Guarded so normal "and" phrases aren't split.
+        // #2 MULTI-ACTION / MULTI-INTENT: "put X on leave AND put X on call", or
+        // "is Antelo on call AND does she have a phd". Split on " and " when the two
+        // sides route to DIFFERENT intents, and run them in sequence. Guarded so normal
+        // "and" phrases (and single multi-unit rotations) aren't split.
         if (!forcedIntent && !askBar._multiGuard) {
-          const parts = asked.split(/\s+(?:and|&|;)\s+/i).map(s => s.trim()).filter(s => s.length > 4)
-          if (parts.length === 2) {
-            const i0 = askBarMatchScored(parts[0]), i1 = askBarMatchScored(parts[1])
-            const strong = (r) => r.confidence === 'high' && r.intent !== 'unknown'
-            if (strong(i0) && strong(i1) && i0.intent !== i1.intent) {
-              askBar._multiGuard = true
-              askBar.query = parts[0]; askBarResolve()
-              setTimeout(() => { askBar.query = parts[1]; askBarResolve(); askBar._multiGuard = false }, 900)
-              return
+          // don't split a single multi-unit rotation ("in ICU under X and asma grave under Y")
+          const looksMultiUnit = /(put|assign|place|move|rotate)\b/i.test(asked) && /\bunder\b/i.test(asked) && (asked.match(/\bunder\b/gi) || []).length >= 2
+          if (!looksMultiUnit) {
+            const parts = asked.split(/\s+(?:and then|and also|and|&|;)\s+/i).map(s => s.trim()).filter(s => s.length > 4)
+            if (parts.length >= 2) {
+              const routed = parts.map(p => ({ p, r: askBarMatchScored(p) }))
+              const usable = routed.filter(x => x.r.intent && x.r.intent !== 'unknown')
+              // if at least two clauses route to real (and differing) intents, run in sequence
+              const distinct = new Set(usable.map(x => x.r.intent))
+              if (usable.length >= 2 && (distinct.size >= 2 || usable.some(x => /record_leave|record_oncall|assign_rotation|cancel_|remove_|return_/.test(x.r.intent)))) {
+                askBar._multiGuard = true
+                let i = 0
+                const runSeq = () => {
+                  if (i >= usable.length) { askBar._multiGuard = false; askBar.query = ''; return }
+                  askBar.query = usable[i].p; i++
+                  askBarResolveOne(usable[i-1].p)
+                  setTimeout(runSeq, 1000)
+                }
+                runSeq()
+                return
+              }
             }
           }
         }
@@ -11643,6 +11812,41 @@ document.addEventListener('DOMContentLoaded', () => {
           const rows = unsup.slice(0,8).map(r => ({ id: r.resident_id, name: getStaffName(r.resident_id), unit: unitName(r.training_unit_id) }))
           return { text: `${unsup.length} resident${unsup.length===1?'':'s'} without a supervisor: ${rows.slice(0,3).map(r=>r.name).join(', ')}${rows.length>3?'…':''}.`, visual: { type: 'risklist', rows }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [{ label: 'Who could supervise?', intent: 'staff_can_pi' }, { label: 'Units at capacity?', intent: 'units_at_capacity' }], confidence: 'high' }
         }
+        if (intent === 'rotation_history') {
+          const person = askBarResolveStaffRole(askBar.lastAsked || askBar.query, 'resident') || askBarResolveStaff(askBar.lastAsked || askBar.query)
+          if (!person) return { text: 'Whose rotation history? Name the resident.', chips: [], actions: [], sources: ['rotations'], followups: [], confidence: 'low' }
+          const units = trainingUnits.value || []
+          const uname = (id) => units.find(u => u.id === id)?.unit_name || 'a unit'
+          const hist = (rotations.value || []).filter(r => r.resident_id === person.id)
+            .sort((a,b) => (Utils.normalizeDate(b.start_date||'')).localeCompare(Utils.normalizeDate(a.start_date||'')))
+          if (!hist.length) return { text: `${person.full_name} has no rotation records.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], followups: [], confidence: 'high' }
+          const fmt = (d) => d ? Utils.formatDateShort(d) : '?'
+          const rows = hist.slice(0,10).map(r => ({ name: uname(r.training_unit_id), date: `${fmt(r.start_date)}–${fmt(r.end_date)}`, today: r.rotation_status==='active', backup: r.rotation_status }))
+          return { text: `${person.full_name} — ${hist.length} rotation${hist.length===1?'':'s'}: ${hist.slice(0,4).map(r=>uname(r.training_unit_id)).join(', ')}${hist.length>4?'…':''}.`, visual: { type: 'roster', rows }, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'rotation_gaps') {
+          const residents = (medicalStaff.value || []).filter(s => askBarIsResident(s) && s.employment_status === 'active' && !s.deleted_at)
+          const rots = rotations.value || []
+          const noActive = residents.filter(r => !rots.some(x => x.resident_id === r.id && x.rotation_status === 'active'))
+          if (!noActive.length) return { text: 'Every active resident is currently in a rotation — no gaps.', chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations','staff'], followups: [], confidence: 'high' }
+          return { text: `${noActive.length} resident${noActive.length===1?'':'s'} not currently in a rotation: ${noActive.slice(0,5).map(r=>r.full_name).join(', ')}${noActive.length>5?'…':''}.`, visual: { type: 'risklist', rows: noActive.slice(0,8).map(r=>({name:r.full_name, unit:null})) }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations','staff'], followups: [{ label: 'Which units are free?', intent: 'unit_status', q:'which units are free' }], confidence: 'high' }
+        }
+        if (intent === 'coverage_board') {
+          const today = Utils.normalizeDate(new Date())
+          const upcoming = (onCallSchedule.value || [])
+            .filter(o => Utils.normalizeDate(o.duty_date) >= today)
+            .sort((a,b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date))).slice(0, 14)
+          const nm = (id) => (medicalStaff.value || []).find(s => s.id === id)?.full_name || null
+          if (!upcoming.length) return { text: 'No upcoming on-call shifts scheduled.', chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [{ label: 'Draft next week rota', intent: 'draft_rota' }], confidence: 'high' }
+          const tiles = upcoming.map(o => {
+            const primary = nm(o.primary_physician_id)
+            const gap = !o.primary_physician_id
+            return { title: Utils.formatDateShort(o.duty_date), code: null, state: gap ? 'leave' : 'rotating',
+                     sub: primary || 'UNFILLED', supervisor: o.backup_physician_id ? nm(o.backup_physician_id) : null, n:0, cap:0, pct:0 }
+          })
+          const gaps = tiles.filter(t => t.sub === 'UNFILLED').length
+          return { text: `Next ${upcoming.length} on-call shift${upcoming.length===1?'':'s'}${gaps?` — ${gaps} unfilled`:''}.`, visual: { type: 'board', mode: 'coverage', tiles }, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule','staff'], followups: [{ label: 'Draft next week rota', intent: 'draft_rota' }], confidence: 'high' }
+        }
         if (intent === 'rotations_ending') {
           const q = (askBar.lastAsked || '').toLowerCase()
           const today = Utils.normalizeDate(new Date())
@@ -12145,7 +12349,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarSuggestLabel, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, askBarToggleTeach,
           askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
