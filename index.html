@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=73">
+    <link rel="stylesheet" href="style.css?v=75">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8247,32 +8247,32 @@
                     </div>
                 </div>
 
-                <!-- Add knowledge — guided, trilingual -->
+                <!-- Add knowledge — simple: topic + word -->
                 <div class="askbar-teach-sec">
-                    <div class="askbar-teach-h">Teach a word or phrase</div>
-                    <div class="askbar-teach-help">Tell the assistant a word your team uses, and which topic it means. It will understand that word from now on.</div>
-                    <label class="askbar-teach-lbl">1 · What topic does it mean?</label>
-                    <select v-model="teachForm.intent" class="askbar-teach-inp">
-                        <option value="">Choose a topic…</option>
-                        <option value="oncall_upcoming">On-call / duty</option>
-                        <option value="absent_now">Leave / absence</option>
-                        <option value="rotations_deep">Rotations</option>
-                        <option value="units_overview">Clinical units</option>
-                        <option value="trials_recruiting">Trials</option>
-                        <option value="research_lines">Research lines</option>
-                        <option value="staff_with_phd">PhD holders</option>
-                        <option value="staff_can_pi">PI-eligible</option>
-                        <option value="departments_overview">Departments</option>
-                        <option value="briefing">Daily briefing</option>
-                        <option value="issues">Issues / conflicts</option>
-                    </select>
-                    <label class="askbar-teach-lbl">2 · Which language is the word?</label>
-                    <div class="askbar-teach-langs">
-                        <button v-for="lg in ['English','Galician','Spanish']" :key="lg" class="askbar-teach-lang" :class="{ 'askbar-teach-lang--on': teachForm.lang === lg }" @click="teachForm.lang = lg">{{ lg }}</button>
+                    <div class="askbar-teach-h">Teach a word</div>
+                    <div class="askbar-teach-help">Pick a topic, type the word your team uses. e.g. On-call, guardia</div>
+                    <div class="askbar-teach-simple">
+                        <select v-model="teachForm.intent" class="askbar-teach-inp askbar-teach-inp--topic">
+                            <option value="">Topic…</option>
+                            <option value="oncall_upcoming">On-call / duty</option>
+                            <option value="absent_now">Leave / absence</option>
+                            <option value="rotations_deep">Rotations</option>
+                            <option value="units_overview">Clinical units</option>
+                            <option value="trials_recruiting">Trials</option>
+                            <option value="research_lines">Research lines</option>
+                            <option value="staff_with_phd">PhD holders</option>
+                            <option value="staff_can_pi">PI-eligible</option>
+                            <option value="departments_overview">Departments</option>
+                            <option value="briefing">Daily briefing</option>
+                            <option value="issues">Issues / conflicts</option>
+                        </select>
+                        <input v-model="teachForm.content" class="askbar-teach-inp askbar-teach-inp--word" placeholder="the word — e.g. guardia" @keyup.enter="teachSubmit()" />
+                        <button class="askbar-teach-go" :disabled="!teachForm.intent || !teachForm.content.trim()" @click="teachSubmit()" title="Teach it">→</button>
                     </div>
-                    <label class="askbar-teach-lbl">3 · The word or phrase</label>
-                    <input v-model="teachForm.content" class="askbar-teach-inp" :placeholder="teachForm.lang === 'Galician' ? 'e.g. \u201cde garda\u201d' : teachForm.lang === 'Spanish' ? 'e.g. \u201cde guardia\u201d' : 'e.g. \u201con duty\u201d'" @keyup.enter="teachSubmit()" />
-                    <button class="askbar-teach-add" :disabled="!teachForm.intent || !teachForm.content.trim()" @click="teachSubmit()">Teach it</button>
+                    <div class="askbar-teach-langrow">
+                        <span class="askbar-teach-langlbl">Language:</span>
+                        <button v-for="lg in ['English','Galician','Spanish']" :key="lg" class="askbar-teach-langmini" :class="{ 'askbar-teach-langmini--on': teachForm.lang === lg }" @click="teachForm.lang = lg">{{ lg }}</button>
+                    </div>
                     <div v-if="teachMsg" class="askbar-teach-msg">{{ teachMsg }}</div>
                 </div>
 
@@ -8597,6 +8597,17 @@
                                         <div v-if="turn.visual.profile.active.nextOnCall" class="askbar-profile-row"><span class="askbar-profile-k">Next on-call</span><span>{{ turn.visual.profile.active.nextOnCall }}</span></div>
                                         <div v-if="turn.visual.profile.active.supervises" class="askbar-profile-row"><span class="askbar-profile-k">Supervising</span><span>{{ turn.visual.profile.active.supervises }} resident{{ turn.visual.profile.active.supervises===1?'':'s' }}</span></div>
                                         <div v-if="!turn.visual.profile.active.onLeave && !turn.visual.profile.active.rotation && !turn.visual.profile.active.nextOnCall && !turn.visual.profile.active.supervises" class="askbar-profile-row askbar-profile-quiet">No active assignments.</div>
+                                    </div>
+                                </div>
+
+                                <!-- LINKS: research, projects, supervision (the graph view) -->
+                                <div v-if="turn.visual.profile.links && turn.visual.profile.links.length" class="askbar-profile-sec">
+                                    <div class="askbar-profile-sechead">Involvement</div>
+                                    <div class="askbar-profile-links">
+                                        <div v-for="(lk,li) in turn.visual.profile.links" :key="li" class="askbar-profile-link" :class="'askbar-profile-link--'+lk.kind">
+                                            <div class="askbar-profile-link-l">{{ lk.label }}</div>
+                                            <div v-if="lk.detail" class="askbar-profile-link-d">{{ lk.detail }}</div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -20139,7 +20150,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=109"></script>
+    <script src="app.js?v=113"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
