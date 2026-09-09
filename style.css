@@ -41066,3 +41066,158 @@ html body #app .askbar-teach-langrow { display: flex; align-items: center; gap: 
 html body #app .askbar-teach-langlbl { font-size: 10.5px; color: rgba(255,255,255,.4); margin-right: 2px; }
 html body #app .askbar-teach-langmini { font-size: 10.5px; padding: 3px 9px; border-radius: 6px; border: 1px solid rgba(255,255,255,.12); background: transparent; color: rgba(255,255,255,.55); cursor: pointer; }
 html body #app .askbar-teach-langmini--on { border-color: rgba(0,212,212,.5); background: rgba(0,212,212,.12); color: #00e5e5; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   §103 — GROUNDED PREMIUM RESTYLE (cohesive, no double-edges, refined)
+   Appended last = highest precedence. Scoped to the dark cloud panel.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* — Rhythm: consistent vertical spacing between turns — */
+html body #app .grounded-cloud .askbar-conv { display: flex !important; flex-direction: column !important; gap: 18px !important; padding: 4px 2px 8px !important; }
+html body #app .grounded-cloud .askbar-a-bub { gap: 10px !important; max-width: 100% !important; }
+
+/* — User query: premium persistent pill, right-aligned — */
+html body #app .grounded-cloud .askbar-q-bub {
+  align-self: flex-end !important;
+  background: linear-gradient(135deg, rgba(0,212,212,.18), rgba(0,212,212,.10)) !important;
+  border: 1px solid rgba(0,212,212,.28) !important;
+  color: #e8fbfb !important; font-size: 13px !important; font-weight: 500 !important;
+  padding: 9px 15px !important; border-radius: 16px 16px 5px 16px !important;
+  max-width: 82% !important; box-shadow: 0 2px 12px rgba(0,212,212,.10) !important;
+  letter-spacing: .005em !important;
+}
+
+/* — Answer card: ONE clean surface, NO inner borders (kills double-edge) — */
+html body #app .grounded-cloud .askbar-a-card {
+  background: rgba(255,255,255,.045) !important;
+  border: 1px solid rgba(255,255,255,.09) !important;
+  border-radius: 16px !important;
+  padding: 15px 16px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.18) !important;
+  backdrop-filter: blur(8px) !important;
+}
+html body #app .grounded-cloud .askbar-a-tx {
+  font-size: 14px !important; color: rgba(255,255,255,.94) !important;
+  line-height: 1.6 !important; letter-spacing: .004em !important;
+}
+html body #app .grounded-cloud .askbar-a-tx b { color: #4de8e8 !important; font-weight: 600 !important; }
+
+/* — Trust line: QUIET caption, no box, no border (was double-edged) — */
+html body #app .grounded-cloud .askbar-src,
+html body #app .grounded-cloud .askbar-a-foot .askbar-src {
+  margin-top: 12px !important; padding-top: 11px !important;
+  border: none !important; border-top: 1px solid rgba(255,255,255,.06) !important;
+  background: transparent !important;
+  font-size: 9.5px !important; color: rgba(255,255,255,.38) !important;
+  letter-spacing: .05em !important;
+}
+html body #app .grounded-cloud .askbar-src-chip {
+  background: transparent !important; padding: 0 !important; color: rgba(255,255,255,.5) !important;
+}
+/* the verified dot */
+html body #app .grounded-cloud .askbar-verified-dot,
+html body #app .grounded-cloud .askbar-src .dot { box-shadow: 0 0 6px currentColor !important; }
+
+/* — Reasoning trace: demoted to a whisper, not a demo banner — */
+html body #app .grounded-cloud .askbar-trace-mini {
+  background: transparent !important; border: none !important;
+  padding: 2px 4px !important; opacity: .5 !important; margin-bottom: 0 !important;
+}
+html body #app .grounded-cloud .askbar-trace-mini:hover { opacity: .8 !important; border: none !important; }
+html body #app .grounded-cloud .askbar-trace-mini-t { font-size: 10px !important; color: rgba(255,255,255,.45) !important; }
+html body #app .grounded-cloud .askbar-trace-mini-x { font-size: 10px !important; color: rgba(255,255,255,.3) !important; }
+
+/* — Action buttons under answers: premium, connected, tactile — */
+html body #app .grounded-cloud .askbar-a-actions { gap: 8px !important; margin-top: 12px !important; }
+html body #app .grounded-cloud .askbar-act {
+  border-radius: 11px !important; padding: 9px 15px !important; font-size: 12.5px !important;
+  font-weight: 500 !important; transition: transform .12s ease, background .15s, border-color .15s !important;
+}
+html body #app .grounded-cloud .askbar-act:hover { transform: translateY(-1px) !important; }
+html body #app .grounded-cloud .askbar-act--primary {
+  background: linear-gradient(135deg, #0891b2, #00d4d4) !important; color: #06121f !important;
+  border: none !important; box-shadow: 0 3px 14px rgba(0,212,212,.25) !important;
+}
+html body #app .grounded-cloud .askbar-act--secondary {
+  background: rgba(255,255,255,.05) !important; border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.85) !important;
+}
+html body #app .grounded-cloud .askbar-act--secondary:hover { background: rgba(255,255,255,.09) !important; border-color: rgba(0,212,212,.35) !important; }
+
+/* — Followup chips: quieter, connected to the answer — */
+html body #app .grounded-cloud .askbar-followups { gap: 7px !important; margin-top: 10px !important; }
+html body #app .grounded-cloud .askbar-followup {
+  background: rgba(255,255,255,.04) !important; border: 1px solid rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.7) !important; border-radius: 9px !important; padding: 6px 12px !important;
+  font-size: 11.5px !important; transition: .14s !important;
+}
+html body #app .grounded-cloud .askbar-followup:hover { background: rgba(0,212,212,.1) !important; border-color: rgba(0,212,212,.3) !important; color: #4de8e8 !important; }
+
+/* — Input area: premium, tactile, focused — */
+html body #app .grounded-cloud .askbar-input {
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 15px !important; padding: 4px 4px 4px 14px !important;
+  transition: border-color .18s, box-shadow .18s !important;
+}
+html body #app .grounded-cloud .askbar-input:focus-within {
+  border-color: rgba(0,212,212,.45) !important;
+  box-shadow: 0 0 0 3px rgba(0,212,212,.1) !important;
+}
+html body #app .grounded-cloud .askbar-input input {
+  font-size: 14px !important; color: #fff !important;
+}
+html body #app .grounded-cloud .askbar-input input::placeholder { color: rgba(255,255,255,.4) !important; }
+html body #app .grounded-cloud .askbar-send {
+  width: 40px !important; height: 40px !important; border-radius: 12px !important;
+  background: linear-gradient(135deg, #0891b2, #00d4d4) !important;
+  box-shadow: 0 3px 14px rgba(0,212,212,.28) !important;
+  transition: transform .12s ease !important;
+}
+html body #app .grounded-cloud .askbar-send:hover { transform: scale(1.05) !important; }
+html body #app .grounded-cloud .askbar-send:active { transform: scale(.96) !important; }
+
+/* — Header: clear hierarchy, calmer — */
+html body #app .grounded-cloud .askbar-head { padding-bottom: 4px !important; }
+html body #app .grounded-cloud .grounded-title { font-size: 17px !important; font-weight: 650 !important; letter-spacing: -.01em !important; }
+html body #app .grounded-cloud .grounded-sub { font-size: 11.5px !important; color: #4de8e8 !important; opacity: .8 !important; }
+
+/* — Open/close: smooth premium entrance — */
+html body #app .grounded-overlay { animation: grounded-fade .28s cubic-bezier(.22,1,.36,1) !important; }
+html body #app .grounded-cloud { animation: grounded-rise .38s cubic-bezier(.22,1,.36,1) !important; }
+@keyframes grounded-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes grounded-rise { from { opacity: 0; transform: translateY(24px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* — Answer entrance: confident fade+rise (replaces typewriter feel) — */
+html body #app .grounded-cloud .askbar-a-bub { animation: ans-in .32s cubic-bezier(.22,1,.36,1) !important; }
+html body #app .grounded-cloud .askbar-q-bub { animation: q-in .22s ease !important; }
+@keyframes ans-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes q-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* §104 — FIX the double-edge: trust line as a flat caption, not a boxed chip */
+html body #app .grounded-cloud .askbar-trust {
+  display: flex !important; align-items: center !important; gap: 7px !important;
+  margin-top: 13px !important; padding: 11px 0 0 0 !important;
+  border-top: 1px solid rgba(255,255,255,.07) !important;
+  background: transparent !important; border-radius: 0 !important;
+  font-family: 'DM Mono', monospace !important; font-size: 9.5px !important;
+  text-transform: uppercase !important; letter-spacing: .05em !important;
+  color: rgba(255,255,255,.4) !important;
+}
+html body #app .grounded-cloud .askbar-trust--high,
+html body #app .grounded-cloud .askbar-trust--medium,
+html body #app .grounded-cloud .askbar-trust--low { background: transparent !important; padding: 11px 0 0 0 !important; }
+html body #app .grounded-cloud .askbar-trust--high .askbar-trust-state { color: #34d399 !important; }
+html body #app .grounded-cloud .askbar-trust--medium .askbar-trust-state { color: #fbbf24 !important; }
+html body #app .grounded-cloud .askbar-trust--low .askbar-trust-state { color: rgba(255,255,255,.45) !important; }
+html body #app .grounded-cloud .askbar-trust-dot { width: 6px !important; height: 6px !important; border-radius: 50% !important; box-shadow: 0 0 6px currentColor !important; }
+html body #app .grounded-cloud .askbar-trust--high .askbar-trust-dot { background: #34d399 !important; color: #34d399 !important; }
+html body #app .grounded-cloud .askbar-trust--medium .askbar-trust-dot { background: #fbbf24 !important; color: #fbbf24 !important; }
+html body #app .grounded-cloud .askbar-trust--low .askbar-trust-dot { background: rgba(255,255,255,.4) !important; color: rgba(255,255,255,.4) !important; }
+html body #app .grounded-cloud .askbar-trust-src, html body #app .grounded-cloud .askbar-trust-time { color: rgba(255,255,255,.35) !important; }
+html body #app .grounded-cloud .askbar-trust-copy { margin-left: auto !important; color: rgba(255,255,255,.3) !important; background: transparent !important; border: none !important; }
+html body #app .grounded-cloud .askbar-trust-copy:hover { color: #4de8e8 !important; }
+
+/* Ensure the PLAIN answer (no card) also gets consistent card treatment */
+html body #app .grounded-cloud .askbar-a-bub > .askbar-a-card:only-child,
+html body #app .grounded-cloud .askbar-a-card { background: rgba(255,255,255,.045) !important; }
