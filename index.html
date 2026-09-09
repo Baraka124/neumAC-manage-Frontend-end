@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=72">
+    <link rel="stylesheet" href="style.css?v=73">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8247,33 +8247,60 @@
                     </div>
                 </div>
 
-                <!-- Add knowledge -->
+                <!-- Add knowledge — guided, trilingual -->
                 <div class="askbar-teach-sec">
                     <div class="askbar-teach-h">Teach a word or phrase</div>
+                    <div class="askbar-teach-help">Tell the assistant a word your team uses, and which topic it means. It will understand that word from now on.</div>
+                    <label class="askbar-teach-lbl">1 · What topic does it mean?</label>
                     <select v-model="teachForm.intent" class="askbar-teach-inp">
-                        <option value="">Which topic?</option>
-                        <option value="oncall_upcoming">On-call</option>
+                        <option value="">Choose a topic…</option>
+                        <option value="oncall_upcoming">On-call / duty</option>
                         <option value="absent_now">Leave / absence</option>
-                        <option value="trials_recruiting">Trials</option>
                         <option value="rotations_deep">Rotations</option>
-                        <option value="units_overview">Units</option>
+                        <option value="units_overview">Clinical units</option>
+                        <option value="trials_recruiting">Trials</option>
+                        <option value="research_lines">Research lines</option>
                         <option value="staff_with_phd">PhD holders</option>
                         <option value="staff_can_pi">PI-eligible</option>
-                        <option value="briefing">Briefing</option>
+                        <option value="departments_overview">Departments</option>
+                        <option value="briefing">Daily briefing</option>
                         <option value="issues">Issues / conflicts</option>
                     </select>
-                    <input v-model="teachForm.content" class="askbar-teach-inp" placeholder="e.g. 'de guardia' or 'consultant'" @keyup.enter="teachSubmit()" />
-                    <button class="askbar-teach-add" :disabled="!teachForm.intent || !teachForm.content.trim()" @click="teachSubmit()">Teach it →</button>
+                    <label class="askbar-teach-lbl">2 · Which language is the word?</label>
+                    <div class="askbar-teach-langs">
+                        <button v-for="lg in ['English','Galician','Spanish']" :key="lg" class="askbar-teach-lang" :class="{ 'askbar-teach-lang--on': teachForm.lang === lg }" @click="teachForm.lang = lg">{{ lg }}</button>
+                    </div>
+                    <label class="askbar-teach-lbl">3 · The word or phrase</label>
+                    <input v-model="teachForm.content" class="askbar-teach-inp" :placeholder="teachForm.lang === 'Galician' ? 'e.g. \u201cde garda\u201d' : teachForm.lang === 'Spanish' ? 'e.g. \u201cde guardia\u201d' : 'e.g. \u201con duty\u201d'" @keyup.enter="teachSubmit()" />
+                    <button class="askbar-teach-add" :disabled="!teachForm.intent || !teachForm.content.trim()" @click="teachSubmit()">Teach it</button>
                     <div v-if="teachMsg" class="askbar-teach-msg">{{ teachMsg }}</div>
                 </div>
 
-                <!-- What's been taught -->
+                <!-- Admin curator — review, toggle (reverse), remove taught vocabulary -->
                 <div class="askbar-teach-sec" v-if="brainRows.filter(r => r.kind !== 'failed_query').length">
-                    <div class="askbar-teach-h">Taught knowledge ({{ brainRows.filter(r => r.kind !== 'failed_query' && r.enabled).length }})</div>
-                    <div v-for="r in brainRows.filter(r => r.kind !== 'failed_query').slice(0,12)" :key="r.id" class="askbar-teach-row" :class="{ 'askbar-teach-row--off': !r.enabled }">
-                        <span class="askbar-teach-kind">{{ r.intent }}</span>
-                        <span class="askbar-teach-content">"{{ r.content }}"</span>
-                        <button class="askbar-teach-x" @click="brainDelete(r.id)" title="Remove">✕</button>
+                    <div class="askbar-teach-h">Taught vocabulary
+                        <span class="askbar-curator-count">{{ brainRows.filter(r => r.kind !== 'failed_query' && r.enabled).length }} active · {{ brainRows.filter(r => r.kind !== 'failed_query' && !r.enabled).length }} off</span>
+                    </div>
+                    <div class="askbar-curator-help">Toggle a word off to reverse it (kept but inactive), or remove it entirely.</div>
+                    <div v-for="r in brainRows.filter(r => r.kind !== 'failed_query').slice(0,40)" :key="r.id" class="askbar-curator-row" :class="{ 'askbar-curator-row--off': !r.enabled }">
+                        <button class="askbar-curator-toggle" :class="{ 'askbar-curator-toggle--on': r.enabled }" @click="brainToggle(r.id, !r.enabled)" :title="r.enabled ? 'Turn off (reverse)' : 'Turn on'">
+                            <span class="askbar-curator-knob"></span>
+                        </button>
+                        <div class="askbar-curator-body">
+                            <div class="askbar-curator-word">"{{ r.content }}"<span v-if="r.meta && r.meta.lang" class="askbar-curator-lang">{{ r.meta.lang }}</span></div>
+                            <div class="askbar-curator-topic">→ {{ (teachTopicLabels[r.intent] || r.intent || '').replace(/_/g,' ') }}</div>
+                        </div>
+                        <button class="askbar-curator-del" @click="brainDelete(r.id)" title="Remove permanently">✕</button>
+                    </div>
+                </div>
+
+                <!-- Failed queries worklist — things to teach -->
+                <div class="askbar-teach-sec" v-if="brainRows.filter(r => r.kind === 'failed_query').length">
+                    <div class="askbar-teach-h">Needs teaching <span class="askbar-curator-count">{{ brainRows.filter(r => r.kind === 'failed_query').length }}</span></div>
+                    <div class="askbar-curator-help">Questions the assistant couldn't answer — teach the word above to fix.</div>
+                    <div v-for="r in brainRows.filter(r => r.kind === 'failed_query').slice(0,8)" :key="r.id" class="askbar-curator-fail" @click="teachForm.content = r.content">
+                        <span>"{{ r.content }}"</span>
+                        <button class="askbar-curator-del" @click.stop="brainDelete(r.id)" title="Dismiss">✕</button>
                     </div>
                 </div>
                 <div v-if="brainLoading" class="askbar-teach-loading">Loading knowledge…</div>
@@ -20112,7 +20139,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=108"></script>
+    <script src="app.js?v=109"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
