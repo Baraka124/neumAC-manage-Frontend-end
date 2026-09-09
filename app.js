@@ -633,12 +633,13 @@ document.addEventListener('DOMContentLoaded', () => {
       API.request('/api/brain', { method: 'POST', body: { kind: 'failed_query', content: q, meta: { at: new Date().toISOString() } } }).catch(() => null)
     }
     // Editor form state (used by the Teach panel).
-    const teachForm = Vue.reactive({ intent: '', content: '' })
+    const teachTopicLabels = { oncall_upcoming:'On-call / duty', absent_now:'Leave / absence', rotations_deep:'Rotations', units_overview:'Clinical units', trials_recruiting:'Trials', research_lines:'Research lines', staff_with_phd:'PhD holders', staff_can_pi:'PI-eligible', departments_overview:'Departments', briefing:'Daily briefing', issues:'Issues / conflicts' }
+    const teachForm = Vue.reactive({ intent: '', content: '', lang: 'Spanish' })
     const teachMsg = Vue.ref('')
     const teachSubmit = async () => {
       if (!teachForm.intent || !teachForm.content.trim()) return
       teachMsg.value = 'Teaching…'
-      const ok = await brainAdd('synonym', teachForm.intent, teachForm.content.trim())
+      const ok = await brainAdd('synonym', teachForm.intent, teachForm.content.trim(), { lang: teachForm.lang || 'Spanish', taught_via: 'ui' })
       if (ok) { teachMsg.value = `✓ Grounded now understands "${teachForm.content.trim()}"`; teachForm.content = ''; setTimeout(() => teachMsg.value = '', 2600) }
       else { teachMsg.value = 'Could not save — the /api/brain route may not be deployed yet.' }
     }
@@ -12350,7 +12351,7 @@ document.addEventListener('DOMContentLoaded', () => {
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
           askBar, askBarSuggestions, askBarSuggestLabel, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
-          brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, askBarToggleTeach,
+          brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, teachTopicLabels, askBarToggleTeach,
           askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType, isOnCallEligible,
