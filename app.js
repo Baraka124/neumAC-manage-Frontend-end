@@ -639,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const teachSubmit = async () => {
       if (!teachForm.intent || !teachForm.content.trim()) return
       teachMsg.value = 'Teaching…'
-      const ok = await brainAdd('synonym', teachForm.intent, teachForm.content.trim(), { lang: teachForm.lang || 'Spanish', taught_via: 'ui' })
+      const _clean = teachForm.content.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g,'').trim(); const ok = await brainAdd('synonym', teachForm.intent, _clean, { lang: teachForm.lang || 'Spanish', taught_via: 'ui' })
       if (ok) { teachMsg.value = `✓ Grounded now understands "${teachForm.content.trim()}"`; teachForm.content = ''; setTimeout(() => teachMsg.value = '', 2600) }
       else { teachMsg.value = 'Could not save — the /api/brain route may not be deployed yet.' }
     }
@@ -10692,6 +10692,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'clear_rota', priority: 124, patterns: [/(clear|wipe|remove|delete|reset)\b.*(rota|whole.*rota|week.*call|all.*on.?call|all.*shifts)/, /(rota|schedule).*(clear|wipe|reset)/], anti: [/who|which|list/] },
         { intent: 'remove_oncall', priority: 124, patterns: [/(cancel|remove|delete|undo|clear|drop)\b.*(on.?call|oncall|shift|duty|guardia)/, /(on.?call|shift|duty).*(cancel|remove|delete|clear)/, /(take|pull)\b.*(off (call|duty|the rota))/], anti: [/who|which|list/] },
         // — Comparison & ranking (very specific) —
+        { intent: 'who_supervises', priority: 101, patterns: [/who (is|does)\s+[a-zñáéíóú]+\s+(supervis|oversee|mentor)/i, /which residents? (does|is)\s+[a-zñáéíóú]+\s+(supervis|oversee|responsible)/i, /(residents?) (under|supervised by)\s+[a-zñáéíóú]+/i, /\b[a-zñáéíóú]{3,}(['´]s|s')\s+residents?\b/i], anti: [/put|assign|cancel|how many|number of|total/] },
         { intent: 'rotation_history', priority: 100, patterns: [/(where|which units?) (has|have|did)\s+[a-zñáéíóú]+.*(rotat|been|trained|worked)/i, /rotation history (of|for)/i, /[a-zñáéíóú]+.?s?\s+(rotation|training) (history|record|path|journey)/i, /where (has|did)\s+[a-zñáéíóú]+\s+rotat/i], anti: [/put|assign|cancel|which residents/] },
         { intent: 'rotation_gaps', priority: 100, patterns: [/rotation gaps?/i, /(residents?|who).*(gap|unassigned|not (in|on) (a )?rotation|between rotations)/i, /(unfilled|empty|vacant) (unit|rotation|month)/i, /gaps? in (the )?(rotation|schedule|coverage)/i], anti: [/put|assign|cancel/] },
         { intent: 'coverage_board', priority: 93, patterns: [/(on.?call|coverage|rota) (board|wall|grid|calendar|week|visual)/i, /(show|display).*(on.?call|coverage|rota).*(board|week|visual|grid)/i, /week.?s? (on.?call|rota|coverage)/i, /coverage (this|next) week/i], anti: [/put|assign|cancel/] },
@@ -10895,7 +10896,7 @@ document.addEventListener('DOMContentLoaded', () => {
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
-        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
+        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', who_supervises: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
@@ -11457,7 +11458,24 @@ document.addEventListener('DOMContentLoaded', () => {
             // COMPLETENESS
             completeness, missing: missing.map(m => m.label),
           }
-          return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open full profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high' }
+          // ── RICH LINKS (A + B): the person as a graph node — research, supervision ──
+          const _trials = (researchOps.clinicalTrials && researchOps.clinicalTrials.value) || []
+          const _lines  = (researchOps.researchLines && researchOps.researchLines.value) || []
+          const _projs  = (researchOps.innovationProjects && researchOps.innovationProjects.value) || []
+          const asPI  = _trials.filter(t => t.principal_investigator_id === s.id)
+          const asCo  = _trials.filter(t => (t.co_investigators || []).includes(s.id) || (t.sub_investigators || []).includes(s.id))
+          const coordLines = _lines.filter(l => l.coordinator_id === s.id)
+          const leadProjs  = _projs.filter(pr => pr.lead_investigator_id === s.id)
+          const supervisees = (rotations.value || []).filter(r => r.supervising_attending_id === s.id && r.rotation_status === 'active')
+            .map(r => getStaffName(r.resident_id)).filter(Boolean)
+          const links = []
+          if (asPI.length)      links.push({ label: `PI on ${asPI.length} trial${asPI.length===1?'':'s'}`, detail: asPI.slice(0,3).map(t=>t.title||t.protocol_id).join(', '), kind: 'research' })
+          if (asCo.length)      links.push({ label: `Co/Sub-I on ${asCo.length} trial${asCo.length===1?'':'s'}`, detail: asCo.slice(0,2).map(t=>t.title||t.protocol_id).join(', '), kind: 'research' })
+          if (coordLines.length)links.push({ label: `Coordinates ${coordLines.length} research line${coordLines.length===1?'':'s'}`, detail: coordLines.map(l=>l.name||l.title).slice(0,2).join(', '), kind: 'research' })
+          if (leadProjs.length) links.push({ label: `Leads ${leadProjs.length} project${leadProjs.length===1?'':'s'}`, detail: leadProjs.map(p=>p.name||p.title).slice(0,2).join(', '), kind: 'project' })
+          if (supervisees.length) links.push({ label: `Supervising ${supervisees.length} resident${supervisees.length===1?'':'s'}`, detail: supervisees.slice(0,4).join(', '), kind: 'people' })
+          profile.links = links
+          return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open full profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations', 'research'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high' }
         }
         if (fu.kind === 'staff_leave') {
           const leave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
@@ -11635,10 +11653,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'residents_by_year') {
           const residents = (medicalStaff.value || []).filter(s => askBarIsResident(s))
           if (!residents.length) return { text: 'No residents are on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
+          // Normalise the year: prefer a real R-year (R1..R5); ignore bare calendar years
+          // (e.g. "2005") which are start-years, not training levels.
+          const rYear = (s) => {
+            let y = s.residency_year_override || s.residency_year_calc || s.training_year || ''
+            y = String(y).trim()
+            const m = y.match(/r\s?([1-5])/i)
+            if (m) return 'R' + m[1]
+            if (/^[1-5]$/.test(y)) return 'R' + y
+            return null   // unknown / bare-year → don't bucket as a category
+          }
           const byYear = {}
-          residents.forEach(s => { const y = s.residency_year_override || s.training_year || '?'; byYear[y] = (byYear[y]||0)+1 })
+          let known = 0
+          residents.forEach(s => { const y = rYear(s); if (y) { byYear[y] = (byYear[y]||0)+1; known++ } })
+          if (!known) {
+            // no reliable R-years → just give the honest count + names, no fake buckets
+            const names = residents.slice(0,10).map(s => s.full_name)
+            return { text: `${residents.length} resident${residents.length===1?'':'s'}: ${names.join(', ')}${residents.length>10?`, +${residents.length-10} more`:''}.`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+          }
           const yStr = Object.entries(byYear).sort().map(([y,n])=>`${n} ${y}`).join(', ')
-          return { text: `${residents.length} residents: ${yStr}.`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+          const unknown = residents.length - known
+          return { text: `${residents.length} residents${known<residents.length?` (${known} with a training year)`:''}: ${yStr}${unknown?`, ${unknown} unspecified`:''}.`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'units_overview') {
           const units = (trainingUnits.value) || []
@@ -11812,6 +11847,16 @@ document.addEventListener('DOMContentLoaded', () => {
           const unitName = (id) => (units.find(u => u.id === id)||{}).unit_name || '—'
           const rows = unsup.slice(0,8).map(r => ({ id: r.resident_id, name: getStaffName(r.resident_id), unit: unitName(r.training_unit_id) }))
           return { text: `${unsup.length} resident${unsup.length===1?'':'s'} without a supervisor: ${rows.slice(0,3).map(r=>r.name).join(', ')}${rows.length>3?'…':''}.`, visual: { type: 'risklist', rows }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff'], followups: [{ label: 'Who could supervise?', intent: 'staff_can_pi' }, { label: 'Units at capacity?', intent: 'units_at_capacity' }], confidence: 'high' }
+        }
+        if (intent === 'who_supervises') {
+          const person = askBarResolveStaffRole(askBar.lastAsked || askBar.query, 'supervisor') || askBarResolveStaff(askBar.lastAsked || askBar.query)
+          if (!person) return { text: 'Whose residents? Name the attending.', chips: [], actions: [], sources: ['rotations'], followups: [], confidence: 'low' }
+          const sup = (rotations.value || []).filter(r => r.supervising_attending_id === person.id && r.rotation_status === 'active')
+          const units = trainingUnits.value || []
+          const uname = (id) => units.find(u => u.id === id)?.unit_name || null
+          if (!sup.length) return { text: `${person.full_name} is not currently supervising any residents.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations','staff'], followups: [], confidence: 'high' }
+          const rows = sup.map(r => ({ name: getStaffName(r.resident_id), unit: uname(r.training_unit_id) }))
+          return { text: `${person.full_name} supervises ${sup.length} resident${sup.length===1?'':'s'}: ${sup.map(r=>getStaffName(r.resident_id)).join(', ')}.`, visual: { type: 'risklist', rows }, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations','staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'rotation_history') {
           const person = askBarResolveStaffRole(askBar.lastAsked || askBar.query, 'resident') || askBarResolveStaff(askBar.lastAsked || askBar.query)
@@ -12091,6 +12136,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // rather than a generic capability dump. Detect what they reached for.
         {
           const uq = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          // Bare unit name? ("asma grave", "UCI") → answer about that unit directly.
+          const _nu = (s) => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          const unitHit = (trainingUnits.value || []).find(u => u.unit_name && (_nu(uq) === _nu(u.unit_name) || (_nu(uq).length > 3 && _nu(u.unit_name).includes(_nu(uq))) || (u.unit_code && _nu(uq) === _nu(u.unit_code))))
+          if (unitHit) {
+            const rots = (rotations.value || []).filter(r => r.rotation_status === 'active' && r.training_unit_id === unitHit.id)
+            const cap = unitHit.maximum_residents || 5
+            const sup = (medicalStaff.value||[]).find(s => s.id === (unitHit.default_supervisor_id||unitHit.supervisor_id))
+            const residents = rots.map(r => getStaffName(r.resident_id)).filter(Boolean)
+            let t = `${unitHit.unit_name}${unitHit.unit_code?` (${unitHit.unit_code})`:''} — ${rots.length}/${cap} residents${rots.length>=cap?' · full':(rots.length===0?' · free':' · has space')}.`
+            if (sup) t += ` Supervisor: ${sup.full_name}.`
+            if (residents.length) t += ` Currently: ${residents.join(', ')}.`
+            if (unitHit.specialty) t += ` Specialty: ${unitHit.specialty}.`
+            return { text: t, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [{ label: 'Which units are free?', intent: 'unit_status', q: 'which units are free' }], confidence: 'high' }
+          }
           const staffTried = askBarResolveStaff(uq)
           let text, tip = null
           if (staffTried) {
