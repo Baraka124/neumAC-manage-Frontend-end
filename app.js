@@ -10712,6 +10712,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // — Cross-cutting joins —
         { intent: 'units_board', priority: 93, patterns: [/(units?|clinical units?|rotations?) (board|wall|status board|dashboard|overview board|map|grid|at a glance|status)/i, /(show|display|give me).*(units?|clinical).*(board|status|dashboard|visual|overview)/i, /units? status board/i, /clinical status/i], anti: [/put|assign|cancel/] },
         { intent: 'residents_board', priority: 93, patterns: [/(residents?) (board|wall|status board|dashboard|overview|map|grid|at a glance|status|visual)/i, /(show|display|give me).*(residents?).*(board|status|dashboard|visual|overview|where)/i, /resident status board/i, /where is everyone rotating/i, /rotation board/i], anti: [/put|assign|cancel|finish|ending/] },
+        { intent: 'place_resident', priority: 118, patterns: [/where (should|can|could|to)\s+(i )?(place|put|assign|send)\s+[a-zñáéíóú]/i, /(best|which) unit for\s+[a-zñáéíóú]/i, /where (should|can|could)\s+[a-zñáéíóú]+\s+(go|rotate|be placed)/i, /place\s+[a-zñáéíóú]+\s+where/i], anti: [/on call|leave/] },
+        { intent: 'unit_forecast', priority: 94, patterns: [/(which )?units? (will be|are going to be|become)\s+(empty|free|covered|full|vacant|uncovered)/i, /units? (empty|free|covered|uncovered|vacant)\s+(next|this|in)\s+(month|week|\w+)/i, /(coverage|unit) forecast/i, /(empty|uncovered|vacant) units? (next|this|in)/i, /which units.*(next month|next week|coming)/i], anti: [/put|assign|cancel/] },
         { intent: 'unit_profile', priority: 92, patterns: [/(tell me about|about the|about|details? (of|for|on)|profile of|show me the?)\s+(the\s+)?(uci|ucri|asma\s?grave|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|radiolog\w*|externa)\b/i, /(tell me about|details? (of|for|on)|profile of|show me the?)\s+[a-zñáéíóú]+.*unit/i, /(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*) (unit )?(details?|profile|status|info)/i], anti: [/put|assign|cancel|which|how many|free|all units|who is on/] },
         { intent: 'unit_status', priority: 91, patterns: [/(which|what|any) units? (are )?(free|open|available|empty|unassigned|scheduled|booked|occupied|in use|taken)/i, /units? (with|without) (a )?(resident|supervisor|space|room)/i, /(free|available|open|empty|scheduled|occupied) (clinical |training )?units?/i, /units? (in|on) (building|floor|the)/i, /who (runs|supervises|is in charge of|leads) (the )?[a-zñáéíóú]+ unit/i, /unit (overview|status|breakdown|occupancy|map)/i, /where can .* rotate/i, /rotation (slots|openings|availability|capacity)/i], anti: [/put|assign|cancel/] },
         { intent: 'units_at_capacity', priority: 90, patterns: [/units? at capacity/, /\bcapacity\b/, /full unit/, /units? full/, /occupancy/, /overcrowded/] },
@@ -10895,7 +10897,7 @@ document.addEventListener('DOMContentLoaded', () => {
         trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', trials_by_person: 'clinical_trials',
         research_lines: 'research_lines', innovation_projects: 'innovation_projects',
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
-        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
+        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
         compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', who_supervises: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
@@ -11814,6 +11816,48 @@ document.addEventListener('DOMContentLoaded', () => {
           })
           const rotating = tiles.filter(t=>t.state==='rotating').length, onleave = tiles.filter(t=>t.state==='leave').length, free = tiles.filter(t=>t.state==='free').length
           return { text: `${residents.length} residents — ${rotating} on rotation, ${onleave} on leave, ${free} unassigned.`, visual: { type: 'board', mode: 'residents', tiles }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['staff','rotations','leave records'], followups: [{ label: 'Units board', intent: 'units_board' }, { label: 'Unsupervised residents?', intent: 'unsupervised_residents' }], confidence: 'high' }
+        }
+        if (intent === 'place_resident') {
+          const person = askBarResolveStaffRole(askBar.lastAsked || askBar.query, 'resident') || askBarResolveStaff(askBar.lastAsked || askBar.query)
+          const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
+          const rots = rotations.value || []
+          const nm = (id) => (medicalStaff.value||[]).find(s=>s.id===id)?.full_name || null
+          // rank units: has space, has a supervisor, resident hasn't been there yet
+          const beenTo = person ? new Set(rots.filter(r=>r.resident_id===person.id).map(r=>r.training_unit_id)) : new Set()
+          const ranked = units.map(u => {
+            const active = rots.filter(r=>r.rotation_status==='active' && r.training_unit_id===u.id).length
+            const cap = u.maximum_residents || 5
+            const sup = nm(u.default_supervisor_id||u.supervisor_id)
+            let score = 0
+            if (active < cap) score += 3            // has space
+            if (sup) score += 2                     // has a supervisor
+            if (!beenTo.has(u.id)) score += 2       // new experience for this resident
+            if (active === 0) score += 1            // completely free
+            return { name: u.unit_name, active, cap, sup, hasSpace: active<cap, isNew: !beenTo.has(u.id), score }
+          }).filter(u => u.hasSpace).sort((a,b)=>b.score-a.score)
+          if (!ranked.length) return { text: `No units have space right now${person?` for ${person.full_name}`:''}. All are at capacity.`, chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units','rotations'], followups: [], confidence: 'high' }
+          const who = person ? person.full_name : 'a resident'
+          const top = ranked.slice(0,4)
+          const rows = top.map(u => ({ name: u.name + (u.isNew?' · new for them':''), n: u.active, cap: u.cap, pct: Math.round(u.active/u.cap*100), full: false, detail: u.sup ? 'supervisor '+u.sup : 'no supervisor yet' }))
+          return { text: `Best placement for ${who} (space + supervisor + new experience): ${top.slice(0,3).map(u=>`${u.name} (${u.active}/${u.cap})`).join(', ')}.`, visual: { type: 'occupancy', rows }, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['units','rotations','staff'], followups: person?[{ label: `Put ${person.full_name.split(' ')[0]} in ${top[0].name}`, intent: 'assign_rotation', q: `put ${person.full_name} in ${top[0].name} under ${top[0].sup||''}` }]:[], confidence: 'high' }
+        }
+        if (intent === 'unit_forecast') {
+          const q = (askBar.lastAsked || '').toLowerCase()
+          const range = askBarParseRange(q) || { start: Utils.normalizeDate(new Date()), end: Utils.normalizeDate(new Date(Date.now()+30*864e5)), label: 'the next 30 days' }
+          const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
+          const rots = rotations.value || []
+          const overlaps = (r) => r.start_date && Utils.normalizeDate(r.start_date) <= range.end && (!r.end_date || Utils.normalizeDate(r.end_date) >= range.start)
+          const rows = units.map(u => {
+            const covering = rots.filter(r => r.training_unit_id===u.id && ['active','scheduled'].includes(r.rotation_status) && overlaps(r))
+            return { name: u.unit_name, n: covering.length, cap: u.maximum_residents||5, pct: Math.min(100,Math.round(covering.length/(u.maximum_residents||5)*100)), full: false, covered: covering.length>0, detail: covering.length ? covering.map(r=>getStaffName(r.resident_id)).filter(Boolean).join(', ') : 'no coverage' }
+          })
+          const empty = rows.filter(r => !r.covered)
+          const wantEmpty = /(empty|free|uncovered|vacant)/.test(q)
+          if (wantEmpty) {
+            if (!empty.length) return { text: `Every unit has coverage in ${range.label}.`, chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units','rotations'], followups: [], confidence: 'high' }
+            return { text: `${empty.length} unit${empty.length===1?'':'s'} with no coverage in ${range.label}: ${empty.slice(0,6).map(r=>r.name).join(', ')}${empty.length>6?'…':''}.`, visual: { type: 'occupancy', rows: empty.slice(0,8) }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [{ label: 'Where to place a resident?', intent: 'place_resident', q: 'where should i place a resident' }], confidence: 'high' }
+          }
+          return { text: `Coverage for ${range.label}: ${rows.filter(r=>r.covered).length}/${rows.length} units covered, ${empty.length} empty.`, visual: { type: 'occupancy', rows: rows.slice(0,10) }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'unit_profile') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
