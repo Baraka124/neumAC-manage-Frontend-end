@@ -20,7 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!box) {
           box = document.createElement('div')
           box.id = 'neumax-diag-box'
-          box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;max-height:45vh;overflow:auto;z-index:999999;background:#1c1917;color:#fecaca;font:11px/1.5 ui-monospace,monospace;border:1px solid #ef4444;border-radius:8px;padding:10px 12px;box-shadow:0 4px 24px rgba(0,0,0,.4);'
+          box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;max-height:45vh;overflow:auto;z-index:999999;background:#1c1917;color:#fecaca;font:11px/1.5 ui-monospace,monospace;border:1px solid #ef4444;border-radius:8px;padding:10px 30px 10px 12px;box-shadow:0 4px 24px rgba(0,0,0,.4);'
+          // dismiss button so a non-fatal error never blocks the app
+          const close = document.createElement('button')
+          close.textContent = '\u2715'
+          close.setAttribute('aria-label', 'Dismiss')
+          close.style.cssText = 'position:absolute;top:6px;right:8px;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);color:#fecaca;width:20px;height:20px;border-radius:5px;cursor:pointer;font:12px/1 monospace;padding:0;'
+          close.onclick = () => { try { box.remove() } catch(_) {} }
+          box.appendChild(close)
           document.body.appendChild(box)
         }
         const entry = document.createElement('div')
@@ -10760,7 +10767,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'residents_board', priority: 93, patterns: [/(residents?) (board|wall|status board|dashboard|overview|map|grid|at a glance|status|visual)/i, /(show|display|give me).*(residents?).*(board|status|dashboard|visual|overview|where)/i, /resident status board/i, /where is everyone rotating/i, /rotation board/i], anti: [/put|assign|cancel|finish|ending/] },
         { intent: 'place_resident', priority: 118, patterns: [/where (should|can|could|to)\s+(i )?(place|put|assign|send)\s+[a-zñáéíóú]/i, /(best|which) unit for\s+[a-zñáéíóú]/i, /where (should|can|could)\s+[a-zñáéíóú]+\s+(go|rotate|be placed)/i, /place\s+[a-zñáéíóú]+\s+where/i], anti: [/on call|leave/] },
         { intent: 'unit_forecast', priority: 94, patterns: [/(which )?units? (will be|are going to be|become)\s+(empty|free|covered|full|vacant|uncovered)/i, /units? (empty|free|covered|uncovered|vacant)\s+(next|this|in)\s+(month|week|\w+)/i, /(coverage|unit) forecast/i, /(empty|uncovered|vacant) units? (next|this|in)/i, /which units.*(next month|next week|coming)/i], anti: [/put|assign|cancel/] },
-        { intent: 'unit_profile', priority: 95, patterns: [/(tell me about|about the|about|details? (of|for|on)|profile of|show me the?)\s+(the\s+)?(uci|ucri|asma\s?grave|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|radiolog\w*|externa)\b/i, /(tell me about|details? (of|for|on)|profile of|show me the?)\s+[a-zñáéíóú]+.*unit/i, /(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*) (unit )?(details?|profile|status|info)/i, /how (full|busy|occupied) is\s+(the\s+)?(uci|ucri|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa|[a-zñáéíóú]+ unit)/i, /is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+(full|at capacity|free|empty|available)/i, /does\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+have\s+(space|room|capacity|a resident)/i, /(who is|whos|who's|residents?) (in|at|assigned to|rotating in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa)/i, /how many residents? (in|at|are in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /list residents? (in|at)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /what (specialty|department|type|floor|building) is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i], anti: [/put|assign|cancel|move|transfer|which units|all units|free units/i] },
+        { intent: 'unit_profile', priority: 95, patterns: [/(tell me about|about the|about|details? (of|for|on)|profile of|show me the?)\s+(the\s+)?(uci|ucri|asma\s?grave|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|radiolog\w*|externa)\b/i, /(tell me about|details? (of|for|on)|profile of|show me the?)\s+[a-zñáéíóú]+.*unit/i, /(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*) (unit )?(details?|profile|status|info)/i, /how (full|busy|occupied) is\s+(the\s+)?(uci|ucri|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa|[a-zñáéíóú]+ unit)/i, /is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+(full|at capacity|free|empty|available)/i, /does\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+have\s+(space|room|capacity|a resident)/i, /(who is|whos|who's|residents?) (in|at|assigned to|rotating in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa)/i, /how many residents? (in|at|are in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /list residents? (in|at)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /what (specialty|department|type|floor|building) is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i], anti: [/put|assign|cancel|move|transfer|which units|all units|free units|trial|study|ensayo|project|proyecto/i] },
         { intent: 'unit_status', priority: 91, patterns: [/(which|what|any) units? (are )?(free|open|available|empty|unassigned|scheduled|booked|occupied|in use|taken)/i, /units? (with|without) (a )?(resident|supervisor|space|room)/i, /(free|available|open|empty|scheduled|occupied) (clinical |training )?units?/i, /units? (in|on) (building|floor|the)/i, /who (runs|supervises|is in charge of|leads) (the )?[a-zñáéíóú]+ unit/i, /unit (overview|status|breakdown|occupancy|map)/i, /where can .* rotate/i, /rotation (slots|openings|availability|capacity)/i], anti: [/put|assign|cancel/] },
         { intent: 'units_at_capacity', priority: 90, patterns: [/units? at capacity/, /\bcapacity\b/, /full unit/, /units? full/, /occupancy/, /overcrowded/] },
         { intent: 'unsupervised_residents', priority: 90, patterns: [/unsupervised/, /without .* supervisor/, /no supervisor/, /residents? .* no supervisor/] },
@@ -10773,6 +10780,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'rotations_deep', priority: 80, patterns: [/who.*rotating/, /which residents.*rotat/, /residents.*where/, /rotating where/, /under whom/] },
         { intent: 'departments_overview', priority: 78, patterns: [/\bdepartment/, /which dept/, /list.*department/, /who (heads|leads|runs|is (the )?head of)/, /head of (the )?[a-zñáéíóú]/, /(jefe|responsable) de/] },
         { intent: 'publications', priority: 79, patterns: [/publications?/i, /papers?/i, /published/i, /what have we published/i, /recent (papers|articles|publications)/i, /(articles?|abstracts?) (published|in)/i, /publicaci[óo]n/i, /journal/i], anti: [/put|assign|cancel/] },
+        { intent: 'trial_profile', priority: 98, patterns: [/(tell me about|about|details? (of|for|on)|profile of|show me|status of|info on)\s+.*\b(trial|study|ensayo)\b/i, /\b(trial|study|ensayo)\b.*(status|enrollment|details?|about|phase)/i, /(nct|eudract)[-\s]?\d/i], anti: [/put|assign|cancel|how many|list.*trial|recruiting|which trials|clinical trials\?/] },
+        { intent: 'project_profile', priority: 98, patterns: [/(tell me about|about|details? (of|for|on)|profile of|show me|status of)\s+.*\b(project|proyecto)\b/i, /\b(project|proyecto|innovation)\b.*(status|trl|stage|details?|about)/i], anti: [/put|assign|cancel|how many|list.*project|which projects/] },
+        { intent: 'research_line_profile', priority: 96, patterns: [/(tell me about|about|details? (of|for|on)|profile of|show me|what.?s in|inside)\s+(the\s+)?(research )?line\b/i, /(research )?line\s+\d+/i, /(line|área|area)\s+(on|of|about)\s+[a-zñáéíóú]/i, /what.?s? (happening|going on) (in|with)\s+[a-zñáéíóú]+\s+(research|line)/i], anti: [/put|assign|cancel|how many lines|list.*lines/] },
         { intent: 'research_lines', priority: 78, patterns: [/research line/, /research area/, /líneas?/, /lines of research/] },
         { intent: 'innovation_projects', priority: 78, patterns: [/innovation/, /\bpatent/, /prototype/, /proyecto/] },
         { intent: 'units_at_capacity', priority: 77, patterns: [/(units?|which).*(at |over )?capacity/, /full units?/, /units? (with|have).*(space|room|availab|capacity)/, /(space|room|availab).*(units?|rotation)/, /which units.*(open|free|available)/] },
@@ -10952,7 +10962,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
         count_rotations_ending: 'resident_rotations',
         trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', trials_by_person: 'clinical_trials',
-        research_lines: 'research_lines', publications: 'news_posts', innovation_projects: 'innovation_projects',
+        research_lines: 'research_lines', research_line_profile: 'research_lines', trial_profile: 'clinical_trials', project_profile: 'innovation_projects', publications: 'news_posts', innovation_projects: 'innovation_projects',
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
@@ -11674,6 +11684,96 @@ document.addEventListener('DOMContentLoaded', () => {
           const top = pubs.slice(0, 6)
           const body = top.map(p => `• ${p.title}${p.journal_name?` — ${p.journal_name}`:''}`).join('\n')
           return { text: `${pubs.length} publication${pubs.length===1?'':'s'}${person?` by ${person.full_name}`:''}:\n${body}${pubs.length>6?`\n…and ${pubs.length-6} more.`:''}`, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'trial_profile') {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          const trials = researchOps.clinicalTrials.value || []
+          const _nu = (x) => (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          const clean = q.replace(/\b(tell me about|about|the|details?|of|for|on|profile|show me|status|info|trial|study|ensayo)\b/gi,' ').trim()
+          let trial = trials.find(t => t.nct_number && _nu(q).includes(_nu(t.nct_number))) ||
+                      trials.find(t => t.title && clean.length>3 && _nu(t.title).includes(_nu(clean))) ||
+                      trials.find(t => t.title && _nu(t.title).split(/\s+/).some(w=>w.length>4 && _nu(q).includes(w)))
+          if (!trial) return { text: `Which trial? Name it or its NCT number. We have ${trials.length}.`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }], confidence: 'low' }
+          const line = (researchOps.researchLines.value||[]).find(l => l.id === trial.research_line_id)
+          const pi = trial.principal_investigator_id ? getStaffName(trial.principal_investigator_id) : null
+          const coInv = (trial.co_investigators||[]).concat(trial.sub_investigators||[]).map(id=>getStaffName(id)).filter(Boolean)
+          const enroll = trial.enrollment_target ? `${trial.actual_enrollment||0}/${trial.enrollment_target}` : (trial.actual_enrollment!=null?`${trial.actual_enrollment}`:null)
+          const profile = {
+            id: trial.id, name: trial.title,
+            static: { role: [trial.phase?('Phase '+trial.phase):null, trial.study_type].filter(Boolean).join(' · ')||'Clinical trial', specialty: (trial.target_diseases||[]).slice(0,2).join(', ')||null, residency: trial.nct_number||trial.protocol_id||null,
+                      email: null, phone: null, department: line?(line.name||line.short_name):null, experience: trial.sponsor_name||null,
+                      credentials: [trial.funding_status, trial.ethics_status].filter(Boolean), roleFlags: [] },
+            active: { status: trial.status||'—', statusKind: /reclut|recruit|activ/i.test(trial.status||'')?'ok':'rotation', onLeave: null, nextOnCall: null, rotation: enroll?`Enrolled ${enroll}`:null, supervises: 0 },
+            links: [], completeness: 100, missing: []
+          }
+          const L = profile.links
+          if (pi) L.push({ label: 'Principal Investigator', detail: pi, kind: 'people' })
+          if (coInv.length) L.push({ label: `${coInv.length} co/sub-investigator${coInv.length===1?'':'s'}`, detail: coInv.slice(0,3).join(', '), kind: 'people' })
+          if (line) L.push({ label: 'Research line', detail: (line.line_number?'L'+line.line_number+' · ':'')+(line.name||line.short_name), kind: 'research' })
+          if (trial.sponsor_name) L.push({ label: 'Sponsor', detail: trial.sponsor_name + (trial.funding_amount?` (${trial.funding_amount} ${trial.funding_currency||''})`:''), kind: 'project' })
+          const text = `${trial.title} — ${trial.status||'status unknown'}${trial.phase?`, Phase ${trial.phase}`:''}${enroll?`, enrolled ${enroll}`:''}${pi?`. PI: ${pi}`:''}.`
+          return { text, visual: { type: 'profile', profile }, chips: pi&&trial.principal_investigator_id?[{label:pi,id:trial.principal_investigator_id}]:[], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research','staff'], followups: line?[{ label: 'About this research line', intent: 'research_line_profile', q: 'line '+(line.line_number||line.name) }]:[], confidence: 'high' }
+        }
+        if (intent === 'project_profile') {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          const projs = researchOps.innovationProjects.value || []
+          const _nu = (x) => (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          const clean = q.replace(/\b(tell me about|about|the|details?|of|for|on|profile|show me|status|project|proyecto|innovation)\b/gi,' ').trim()
+          let pr = projs.find(p => p.title && clean.length>3 && _nu(p.title).includes(_nu(clean))) ||
+                   projs.find(p => p.title && _nu(p.title).split(/\s+/).some(w=>w.length>4 && _nu(q).includes(w)))
+          if (!pr) return { text: `Which project? Name it. We have ${projs.length} innovation projects.`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'low' }
+          const line = (researchOps.researchLines.value||[]).find(l => l.id === pr.research_line_id)
+          const lead = pr.lead_investigator_id ? getStaffName(pr.lead_investigator_id) : null
+          const profile = {
+            id: pr.id, name: pr.title,
+            static: { role: [pr.category, pr.project_nature].filter(Boolean).join(' · ')||'Innovation project', specialty: (pr.target_diseases||[]).slice(0,2).join(', ')||null, residency: pr.trl_level?('TRL '+pr.trl_level):null,
+                      email: null, phone: null, department: line?(line.name||line.short_name):null, experience: pr.development_stage||pr.current_stage||null,
+                      credentials: [pr.ip_status, pr.funding_status].filter(Boolean), roleFlags: pr.is_featured?['Featured']:[] },
+            active: { status: pr.current_stage||pr.development_stage||'—', statusKind: 'ok', onLeave: null, nextOnCall: null, rotation: pr.partner_name?`Partner: ${pr.partner_name}`:(pr.partner_found?'Partner found':(pr.partner_needs?'Seeking partner':null)), supervises: 0 },
+            links: [], completeness: 100, missing: []
+          }
+          const L = profile.links
+          if (lead) L.push({ label: 'Lead investigator', detail: lead, kind: 'people' })
+          if (line) L.push({ label: 'Research line', detail: (line.line_number?'L'+line.line_number+' · ':'')+(line.name||line.short_name), kind: 'research' })
+          if (pr.partner_name || pr.partner_needs) L.push({ label: pr.partner_name?'Partner':'Partner needs', detail: pr.partner_name||pr.partner_needs, kind: 'project' })
+          if (pr.budget) L.push({ label: 'Budget', detail: `${pr.budget} ${pr.budget_currency||''}`.trim(), kind: 'project' })
+          const text = `${pr.title} — ${pr.current_stage||pr.development_stage||'in progress'}${pr.trl_level?`, TRL ${pr.trl_level}`:''}${lead?`. Lead: ${lead}`:''}.`
+          return { text, visual: { type: 'profile', profile }, chips: lead&&pr.lead_investigator_id?[{label:lead,id:pr.lead_investigator_id}]:[], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research','staff'], followups: line?[{ label: 'About this research line', intent: 'research_line_profile', q: 'line '+(line.line_number||line.name) }]:[], confidence: 'high' }
+        }
+        if (intent === 'research_line_profile') {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          const lines = researchOps.researchLines.value || []
+          const _nu = (x) => (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          // resolve line: by number ("line 3") or by name/keyword
+          let line = null
+          const numM = q.match(/line\s*(\d+)/) || q.match(/\bl(\d+)\b/)
+          if (numM) line = lines.find(l => String(l.line_number) === numM[1])
+          if (!line) line = lines.find(l => (l.name||l.short_name) && _nu(q).includes(_nu(l.short_name||'')) && (l.short_name||'').length>3)
+          if (!line) line = lines.find(l => l.name && _nu(l.name).split(/\s+/).some(w => w.length>4 && _nu(q).includes(w)))
+          if (!line) return { text: `Which research line? We have ${lines.length}. Name it or its number, e.g. "line 3" or "about the asthma line".`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [{ label: 'List research lines', intent: 'research_lines' }], confidence: 'low' }
+          const trials = (researchOps.clinicalTrials.value || []).filter(t => t.research_line_id === line.id)
+          const projs = (researchOps.innovationProjects.value || []).filter(p => p.research_line_id === line.id)
+          const pubs = (newsPosts.value || []).filter(p => p.research_line_id === line.id && (p.post_type==='publication' || p.doi))
+          const coord = line.coordinator_id ? getStaffName(line.coordinator_id) : null
+          const recruiting = trials.filter(t => /reclut|recruit|activ/i.test(t.status||'')).length
+          // build a profile-style card
+          const profile = {
+            id: line.id, name: (line.line_number?'L'+line.line_number+' · ':'') + (line.name || line.short_name),
+            static: { role: 'Research line', specialty: line.short_name && line.short_name!==line.name ? line.short_name : null, residency: null,
+                      email: null, phone: null, department: null, experience: line.active===false?'inactive':'active',
+                      credentials: (line.keywords ? String(line.keywords).split(/[,;]/).slice(0,4).map(k=>k.trim()).filter(Boolean) : []), roleFlags: [] },
+            active: { status: line.active===false?'Inactive':'Active', statusKind: line.active===false?'leave':'ok',
+                      onLeave: null, nextOnCall: null, rotation: `${trials.length} trials, ${projs.length} projects, ${pubs.length} papers`, supervises: 0 },
+            links: [], completeness: 100, missing: []
+          }
+          const L = profile.links
+          if (coord) L.push({ label: 'Coordinator', detail: coord, kind: 'people' })
+          if (trials.length) L.push({ label: `${trials.length} clinical trial${trials.length===1?'':'s'}${recruiting?` (${recruiting} recruiting)`:''}`, detail: trials.slice(0,3).map(t=>t.title).join(', '), kind: 'research' })
+          if (projs.length) L.push({ label: `${projs.length} innovation project${projs.length===1?'':'s'}`, detail: projs.slice(0,3).map(p=>p.title).join(', '), kind: 'project' })
+          if (pubs.length) L.push({ label: `${pubs.length} publication${pubs.length===1?'':'s'}`, detail: pubs.slice(0,3).map(p=>p.title).join(', '), kind: 'research' })
+          if (!trials.length && !projs.length && !pubs.length) L.push({ label: 'No linked activity yet', detail: 'No trials, projects, or publications on this line', kind: 'people' })
+          let text = `${profile.name} — ${trials.length} trial${trials.length===1?'':'s'}, ${projs.length} project${projs.length===1?'':'s'}, ${pubs.length} publication${pubs.length===1?'':'s'}${coord?`. Coordinated by ${coord}`:''}.`
+          return { text, visual: { type: 'profile', profile }, chips: coord && line.coordinator_id?[{label:coord,id:line.coordinator_id}]:[], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research','publications','staff'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }], confidence: 'high' }
         }
         if (intent === 'research_lines') {
           const lines = researchOps.researchLines.value || []
