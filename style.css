@@ -41336,3 +41336,25 @@ html body #app .grounded-orb::after {
   background: radial-gradient(circle, rgba(255,255,255,.85), transparent 70%) !important;
   filter: blur(1px) !important;
 }
+
+/* §106 — final polish: NEW pill lighter, visual-type consistency */
+html body #app .grounded-cloud .askbar-newchat {
+  font-size: 10.5px !important; padding: 5px 11px !important;
+  background: rgba(255,255,255,.045) !important; border: 1px solid rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.6) !important; text-transform: uppercase !important; letter-spacing: .06em !important;
+}
+/* Unify ALL structured visuals to the same card surface + spacing */
+html body #app .grounded-cloud .askbar-roster,
+html body #app .grounded-cloud .askbar-occ,
+html body #app .grounded-cloud .askbar-board,
+html body #app .grounded-cloud .askbar-risklist { margin-top: 12px !important; }
+/* roster rows: consistent dividers, no heavy borders */
+html body #app .grounded-cloud .askbar-roster-row {
+  border-bottom: 1px solid rgba(255,255,255,.05) !important; padding: 11px 0 !important;
+}
+html body #app .grounded-cloud .askbar-roster-row:last-child { border-bottom: none !important; }
+/* the "Today"/highlighted roster cell — cohesive teal */
+html body #app .grounded-cloud .askbar-roster-date { color: rgba(255,255,255,.45) !important; font-size: 11.5px !important; }
+html body #app .grounded-cloud .askbar-roster-name { color: #fff !important; font-size: 13.5px !important; }
+html body #app .grounded-cloud .askbar-roster-pill,
+html body #app .grounded-cloud .askbar-occ-count--full { border-radius: 100px !important; font-size: 10px !important; letter-spacing: .03em !important; }
