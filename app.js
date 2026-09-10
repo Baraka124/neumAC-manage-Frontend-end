@@ -1257,6 +1257,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const ct = res.headers.get('content-type')
           const result = ct?.includes('application/json') ? await res.json() : await res.text()
           if (isGet && !options.skipCache) this.setCached(cacheKey, result)
+          // After any write, invalidate cached GETs for this resource so the next
+          // read returns fresh data — fixes "have to refresh to see my change".
+          if (!isGet) {
+            try {
+              const base = endpoint.split('?')[0]                 // e.g. /api/absence-records/123 → /api/absence-records
+              const resource = base.replace(/\/[0-9a-f-]{6,}.*$/i, '').replace(/\/(return|batch|\d+)$/i, '')
+              this.invalidate(resource)
+              this.invalidate(base)
+            } catch (e) { this.clearCache() }   // fallback: nuke the whole cache on any doubt
+          }
           return result
         } catch (e) {
           if (e.message.includes('fetch') || e.message.includes('NetworkError'))
@@ -3909,7 +3919,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         rotations, rotationFilters, rotationModal,
         filteredRotations, filteredRotationsAll, rotationTotalPages,
-        loadRotations, showAddRotationModal, editRotation, saveRotation, deleteRotation, selectedUnitCapacity,
+        loadRotations, rotationConflicts, showAddRotationModal, editRotation, saveRotation, deleteRotation, selectedUnitCapacity,
         checkRotationAvailability,
         pendingActivations, activationModal, checkAndUpdateRotations, updateRotationStatus,
         confirmPendingActivation, skipPendingActivation, postponeAllActivations, initAutoCheck,
@@ -10390,7 +10400,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // supervisor eligibility check (must be able to supervise)
         const supOk = supervisor && (supervisor.can_supervise_residents !== false) && isOnCallEligible(supervisor.staff_type)
         // unit capacity + resident overlap — SHARED date-aware logic (same as the GUI form)
-        const conflicts = rotationConflicts(resident.id, unit.id, dates.start, dates.end || dates.start, null)
+        const conflicts = (rotationOps.rotationConflicts ? rotationOps.rotationConflicts(resident.id, unit.id, dates.start, dates.end || dates.start, null) : { capacityCount: 0, cap: unit.maximum_residents||5, overlap: null })
         const activeInUnit = conflicts.capacityCount
         const cap = conflicts.cap || unit.maximum_residents || 5
         const rotationOverlap = conflicts.overlap ? (getTrainingUnitName ? (getTrainingUnitName(conflicts.overlap.training_unit_id) || 'another unit') : 'another unit') : null
@@ -10762,6 +10772,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // — Entity overviews —
         { intent: 'rotations_deep', priority: 80, patterns: [/who.*rotating/, /which residents.*rotat/, /residents.*where/, /rotating where/, /under whom/] },
         { intent: 'departments_overview', priority: 78, patterns: [/\bdepartment/, /which dept/, /list.*department/, /who (heads|leads|runs|is (the )?head of)/, /head of (the )?[a-zñáéíóú]/, /(jefe|responsable) de/] },
+        { intent: 'publications', priority: 79, patterns: [/publications?/i, /papers?/i, /published/i, /what have we published/i, /recent (papers|articles|publications)/i, /(articles?|abstracts?) (published|in)/i, /publicaci[óo]n/i, /journal/i], anti: [/put|assign|cancel/] },
         { intent: 'research_lines', priority: 78, patterns: [/research line/, /research area/, /líneas?/, /lines of research/] },
         { intent: 'innovation_projects', priority: 78, patterns: [/innovation/, /\bpatent/, /prototype/, /proyecto/] },
         { intent: 'units_at_capacity', priority: 77, patterns: [/(units?|which).*(at |over )?capacity/, /full units?/, /units? (with|have).*(space|room|availab|capacity)/, /(space|room|availab).*(units?|rotation)/, /which units.*(open|free|available)/] },
@@ -10941,7 +10952,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
         count_rotations_ending: 'resident_rotations',
         trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', trials_by_person: 'clinical_trials',
-        research_lines: 'research_lines', innovation_projects: 'innovation_projects',
+        research_lines: 'research_lines', publications: 'news_posts', innovation_projects: 'innovation_projects',
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
@@ -11648,6 +11659,21 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!person) return { text: 'Which investigator did you mean? Try naming them.', chips: [], actions: [], sources: ['research'], followups: [], confidence: 'low' }
           if (!trials.length) return { text: `${person.full_name} is not listed as PI on any trial.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
           return { text: `${person.full_name} is PI on ${trials.length} trial${trials.length===1?'':'s'}: ${trials.slice(0,4).map(t=>t.title).join(', ')}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'publications') {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          let pubs = (newsPosts.value || []).filter(p => !p.post_type || /public|paper|article|journal/i.test(p.post_type) || true)
+          // filter by person if named
+          const person = askBarResolveStaff(q.replace(/\b(publications?|papers?|published|by|of|recent|what|have|we|show|list)\b/gi,' '))
+          if (person && /\bby\b|\bof\b/.test(q)) {
+            pubs = pubs.filter(p => p.author_id === person.id || (p.authors_text||'').toLowerCase().includes((person.full_name||'').toLowerCase().split(' ')[0]))
+          }
+          if (!pubs.length) return { text: person ? `No publications on record for ${person.full_name}.` : 'No publications on record yet.', chips: [], actions: [{ label: 'Open publications', view: 'news' }], sources: ['publications'], followups: [], confidence: 'high' }
+          const isCount = /(how many|number of|count)/.test(q)
+          if (isCount) return { text: `${pubs.length} publication${pubs.length===1?'':'s'} on record${person?` for ${person.full_name}`:''}.`, chips: [], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [{ label: 'List them', intent: 'publications', q: 'list publications' }], confidence: 'high' }
+          const top = pubs.slice(0, 6)
+          const body = top.map(p => `• ${p.title}${p.journal_name?` — ${p.journal_name}`:''}`).join('\n')
+          return { text: `${pubs.length} publication${pubs.length===1?'':'s'}${person?` by ${person.full_name}`:''}:\n${body}${pubs.length>6?`\n…and ${pubs.length-6} more.`:''}`, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [], confidence: 'high' }
         }
         if (intent === 'research_lines') {
           const lines = researchOps.researchLines.value || []
