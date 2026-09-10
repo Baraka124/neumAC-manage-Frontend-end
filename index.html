@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=78">
+    <link rel="stylesheet" href="style.css?v=79">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -8646,6 +8646,17 @@
                             </div>
 
                             <!-- structured on-call roster readout -->
+                            <!-- research list: trials / projects / lines / publications, one per row -->
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'reslist'" class="askbar-reslist">
+                                <div v-for="(it,ii) in turn.visual.items" :key="ii" class="askbar-reslist-row" :class="'askbar-reslist-row--'+(it.tone||'default')">
+                                    <div class="askbar-reslist-main">
+                                        <span class="askbar-reslist-title">{{ it.title }}</span>
+                                        <span v-if="it.badge" class="askbar-reslist-badge" :class="'askbar-reslist-badge--'+(it.tone||'default')">{{ it.badge }}</span>
+                                    </div>
+                                    <div v-if="it.meta" class="askbar-reslist-meta">{{ it.meta }}</div>
+                                </div>
+                            </div>
+
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'roster'" class="askbar-roster">
                                 <div v-for="(r,ri) in turn.visual.rows" :key="ri" class="askbar-roster-row" :class="{ 'askbar-roster-row--today': r.today }">
                                     <span class="askbar-roster-date">{{ r.today ? 'Today' : r.date }}</span>
@@ -20151,7 +20162,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=123"></script>
+    <script src="app.js?v=126"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
