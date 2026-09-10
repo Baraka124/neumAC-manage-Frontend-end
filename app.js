@@ -11646,6 +11646,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'trials_recruiting') {
           const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
           if (!trials.length) return { text: 'No trials are actively recruiting right now.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
+          const lines = researchOps.researchLines.value || []
+          const lname = (id) => { const l = lines.find(x=>x.id===id); return l ? (l.short_name||l.name) : null }
+          const items = trials.slice(0, 8).map(t => {
+            const e = researchOps.trialEnrollment ? researchOps.trialEnrollment(t) : null
+            const meta = [t.phase?('Phase '+t.phase):null, lname(t.research_line_id), e?`enrolled ${e.actual}/${e.target}`:null].filter(Boolean).join(' · ')
+            return { title: t.title, badge: 'recruiting', tone: 'recruiting', meta }
+          })
+          const text = `${trials.length} trial${trials.length===1?'':'s'} recruiting${trials.length>8?' (showing 8)':''}:`
+          return { text, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'All trials', intent: 'trials_overview' }], confidence: 'high' }
+        }
+        if (intent === '__trials_recruiting_old__') {
+          const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
+          if (!trials.length) return { text: 'No trials are actively recruiting right now.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
           const names = trials.slice(0,5).map(t => t.title).join(', ')
           const text = `${trials.length} trial${trials.length===1?'':'s'} recruiting: ${names}.`
           // #25 rich card: per-trial enrollment bars
@@ -11681,9 +11694,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!pubs.length) return { text: person ? `No publications on record for ${person.full_name}.` : 'No publications on record yet.', chips: [], actions: [{ label: 'Open publications', view: 'news' }], sources: ['publications'], followups: [], confidence: 'high' }
           const isCount = /(how many|number of|count)/.test(q)
           if (isCount) return { text: `${pubs.length} publication${pubs.length===1?'':'s'} on record${person?` for ${person.full_name}`:''}.`, chips: [], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [{ label: 'List them', intent: 'publications', q: 'list publications' }], confidence: 'high' }
-          const top = pubs.slice(0, 6)
-          const body = top.map(p => `• ${p.title}${p.journal_name?` — ${p.journal_name}`:''}`).join('\n')
-          return { text: `${pubs.length} publication${pubs.length===1?'':'s'}${person?` by ${person.full_name}`:''}:\n${body}${pubs.length>6?`\n…and ${pubs.length-6} more.`:''}`, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [], confidence: 'high' }
+          const top = pubs.slice(0, 8)
+          const items = top.map(p => ({ title: p.title, badge: p.journal_name || null, tone: 'research', meta: [p.authors_text, p.doi?('DOI '+p.doi):null].filter(Boolean).join(' · ') }))
+          return { text: `${pubs.length} publication${pubs.length===1?'':'s'}${person?` by ${person.full_name}`:''}${pubs.length>8?' (showing 8)':''}:`, visual: { type: 'reslist', items }, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [], confidence: 'high' }
         }
         if (intent === 'trial_profile') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
@@ -11779,16 +11792,26 @@ document.addEventListener('DOMContentLoaded', () => {
           const lines = researchOps.researchLines.value || []
           if (!lines.length) return { text: 'No research lines are defined yet.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
           const sorted = [...lines].sort((a,b)=>(a.line_number||99)-(b.line_number||99))
-          const text = `${lines.length} research line${lines.length===1?'':'s'}: ` + sorted.slice(0,6).map(l => `${l.line_number?'L'+l.line_number+' ':''}${l.research_line_name || l.name}${l.coordinator_id?' (coord: '+getStaffName(l.coordinator_id)+')':''}`).join('; ') + '.'
-          return { text, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
+          const trialsAll = researchOps.clinicalTrials.value || []
+          const items = sorted.slice(0,10).map(l => {
+            const nt = trialsAll.filter(t=>t.research_line_id===l.id).length
+            const meta = [l.coordinator_id?('coord: '+getStaffName(l.coordinator_id)):null, nt?(nt+' trial'+(nt===1?'':'s')):null].filter(Boolean).join(' · ')
+            return { title: (l.line_number?'L'+l.line_number+' · ':'')+(l.research_line_name||l.name), tone:'research', meta }
+          })
+          const text = `${lines.length} research line${lines.length===1?'':'s'}:`
+          return { text, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
         }
         if (intent === 'innovation_projects') {
           const projs = researchOps.innovationProjects.value || []
           if (!projs.length) return { text: 'No innovation projects are on record.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
-          const byStage = {}
-          projs.forEach(p => { const s = p.current_stage || 'Unspecified'; byStage[s] = (byStage[s]||0)+1 })
-          const stageStr = Object.entries(byStage).map(([s,n])=>`${n} ${s}`).join(', ')
-          return { text: `${projs.length} innovation project${projs.length===1?'':'s'} in the pipeline (${stageStr}).`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
+          const lines = researchOps.researchLines.value || []
+          const lname = (id) => { const l = lines.find(x=>x.id===id); return l ? (l.short_name||l.name) : null }
+          const items = projs.slice(0, 10).map(p => {
+            const meta = [p.trl_level?('TRL '+p.trl_level):null, p.category, lname(p.research_line_id), p.partner_name?('partner: '+p.partner_name):null].filter(Boolean).join(' · ')
+            return { title: p.title, badge: p.current_stage || p.development_stage || null, tone: 'project', meta }
+          })
+          const text = `${projs.length} innovation project${projs.length===1?'':'s'}${projs.length>10?' (showing 10)':''}:`
+          return { text, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
         }
         // ── CROSS-CUTTING JOINS (the intelligence) ──
         if (intent === 'staff_can_pi') {
@@ -11886,8 +11909,13 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!active.length) return { text: 'No residents are on active rotation right now.', chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], followups: [], confidence: 'high' }
           const units = trainingUnits.value || []
           const unitName = (id) => (units.find(u => u.id === id)||{}).unit_name || 'a unit'
-          const lines = active.slice(0,5).map(r => `${getStaffName(r.resident_id)} in ${unitName(r.training_unit_id)}${r.supervising_attending_id ? ' under ' + getStaffName(r.supervising_attending_id) : ' (no supervisor)'}`)
-          return { text: `${active.length} active rotation${active.length===1?'':'s'}: ${lines.join('; ')}.`, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff', 'units'], followups: [], confidence: 'high' }
+          const items = active.slice(0,10).map(r => ({
+            title: getStaffName(r.resident_id),
+            badge: unitName(r.training_unit_id),
+            tone: r.supervising_attending_id ? 'active' : 'default',
+            meta: r.supervising_attending_id ? ('under ' + getStaffName(r.supervising_attending_id)) : '⚠ no supervisor'
+          }))
+          return { text: `${active.length} active rotation${active.length===1?'':'s'}${active.length>10?' (showing 10)':''}:`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations', 'staff', 'units'], followups: [], confidence: 'high' }
         }
         if (intent === 'departments_overview') {
           const depts = departments.value || []
