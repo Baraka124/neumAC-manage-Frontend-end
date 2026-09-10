@@ -41358,3 +41358,19 @@ html body #app .grounded-cloud .askbar-roster-date { color: rgba(255,255,255,.45
 html body #app .grounded-cloud .askbar-roster-name { color: #fff !important; font-size: 13.5px !important; }
 html body #app .grounded-cloud .askbar-roster-pill,
 html body #app .grounded-cloud .askbar-occ-count--full { border-radius: 100px !important; font-size: 10px !important; letter-spacing: .03em !important; }
+
+/* §107 — research list (scannable, one item per row) */
+html body #app .grounded-cloud .askbar-reslist { margin-top: 12px !important; display: flex !important; flex-direction: column !important; gap: 1px !important; }
+html body #app .askbar-reslist-row { padding: 11px 12px !important; border-radius: 10px !important; background: rgba(255,255,255,.03) !important; border-left: 2px solid rgba(255,255,255,.12) !important; transition: background .14s; }
+html body #app .askbar-reslist-row:hover { background: rgba(255,255,255,.055) !important; }
+html body #app .askbar-reslist-row--recruiting { border-left-color: #34d399 !important; }
+html body #app .askbar-reslist-row--active { border-left-color: #38bdf8 !important; }
+html body #app .askbar-reslist-row--research { border-left-color: #a78bfa !important; }
+html body #app .askbar-reslist-row--project { border-left-color: #fbbf24 !important; }
+html body #app .askbar-reslist-main { display: flex !important; align-items: baseline !important; gap: 8px !important; }
+html body #app .askbar-reslist-title { font-size: 13px !important; color: #fff !important; font-weight: 500 !important; line-height: 1.35 !important; flex: 1 !important; }
+html body #app .askbar-reslist-badge { font-size: 9px !important; text-transform: uppercase !important; letter-spacing: .04em !important; padding: 2px 7px !important; border-radius: 100px !important; white-space: nowrap !important; flex-shrink: 0 !important; background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.6) !important; }
+html body #app .askbar-reslist-badge--recruiting { background: rgba(16,185,129,.16) !important; color: #6ee7b7 !important; }
+html body #app .askbar-reslist-badge--active { background: rgba(56,189,248,.16) !important; color: #7dd3fc !important; }
+html body #app .askbar-reslist-badge--project { background: rgba(251,191,36,.16) !important; color: #fcd34d !important; }
+html body #app .askbar-reslist-meta { font-size: 10.5px !important; color: rgba(255,255,255,.42) !important; margin-top: 3px !important; }
