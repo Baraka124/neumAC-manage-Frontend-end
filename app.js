@@ -3385,6 +3385,37 @@ document.addEventListener('DOMContentLoaded', () => {
         return interval
       }
 
+      // Shared, date-aware rotation conflict logic — used by BOTH the GUI form
+      // (validateRotation) and the agent, so the two paths can never diverge.
+      // Returns { overlap, atCapacity, capacityCount, cap, unitName }.
+      const rotationConflicts = (residentId, unitId, startDate, endDate, excludeId) => {
+        const out = { overlap: null, atCapacity: false, capacityCount: 0, cap: null, unitName: null }
+        if (!startDate || !endDate) return out
+        const s = new Date(Utils.normalizeDate(startDate) + 'T00:00:00')
+        const e = new Date(Utils.normalizeDate(endDate) + 'T23:59:59')
+        const within = (r) => new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00') <= e &&
+                              new Date(Utils.normalizeDate(r.end_date) + 'T23:59:59') >= s
+        // resident overlap: same resident, overlapping dates, active/scheduled
+        if (residentId) {
+          out.overlap = (rotations.value || []).find(r =>
+            r.resident_id === residentId && r.id !== excludeId &&
+            ['active','scheduled'].includes(r.rotation_status) && r.start_date && r.end_date && within(r)) || null
+        }
+        // unit capacity: count rotations overlapping the proposed window (not just "active now")
+        if (unitId) {
+          const unit = (trainingUnits.value || []).find(u => u.id === unitId)
+          if (unit) {
+            out.unitName = unit.unit_name
+            out.cap = unit.maximum_residents || null
+            out.capacityCount = (rotations.value || []).filter(r =>
+              r.training_unit_id === unitId && r.id !== excludeId &&
+              ['active','scheduled'].includes(r.rotation_status) && r.start_date && r.end_date && within(r)).length
+            if (out.cap && out.capacityCount >= out.cap) out.atCapacity = true
+          }
+        }
+        return out
+      }
+
       const validateRotation = (form) => {
         clearAll('rotation'); let ok = true
         if (!form.resident_id) { setErr('rotation', 'resident_id', 'Please select a resident'); ok = false }
@@ -10356,9 +10387,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!unit) { askBar.turns.push(Vue.reactive({ q: asked, text: `Which unit should ${resident.full_name} rotate into? (e.g. ICU, Sleep Lab)`, chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
         // supervisor eligibility check (must be able to supervise)
         const supOk = supervisor && (supervisor.can_supervise_residents !== false) && isOnCallEligible(supervisor.staff_type)
-        // unit capacity check
-        const activeInUnit = (rotations.value || []).filter(r => r.rotation_status === 'active' && r.training_unit_id === unit.id).length
-        const cap = unit.maximum_residents || 5
+        // unit capacity + resident overlap — SHARED date-aware logic (same as the GUI form)
+        const conflicts = rotationConflicts(resident.id, unit.id, dates.start, dates.end || dates.start, null)
+        const activeInUnit = conflicts.capacityCount
+        const cap = conflicts.cap || unit.maximum_residents || 5
+        const rotationOverlap = conflicts.overlap ? (getTrainingUnitName ? (getTrainingUnitName(conflicts.overlap.training_unit_id) || 'another unit') : 'another unit') : null
         const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) } catch(e){ return d } }
         // #10 cross-record validation: does this rotation overlap the resident's leave?
         let leaveOverlap = null
@@ -10379,6 +10412,7 @@ document.addEventListener('DOMContentLoaded', () => {
             start: dates.start, end: dates.end,
             startLabel: dates.start ? fmt(dates.start) : null,
             atCapacity: activeInUnit >= cap, occ: `${activeInUnit}/${cap}`,
+            rotationOverlap,
             leaveOverlap
           },
           chips: [], actions: [], sources: ['staff','units','rotations','leave records'], followups: [],
