@@ -9529,6 +9529,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Subject-aware anticipation: when a staff profile opens, tell the agent so it
       // offers actions for THAT person; clear the subject when it closes.
+      // Auto-scroll the conversation to the newest turn whenever one is added.
+      watch(() => askBar.turns.length, () => { if (askBar.view === 'conversation') askBarScrollToBottom(true) })
       watch(() => staffOps.staffProfileModal.show, (open) => {
         if (open && staffOps.staffProfileModal.staff) {
           const s = staffOps.staffProfileModal.staff
@@ -10719,7 +10721,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'record_oncall', priority: 121, patterns: [/(put|assign|schedule|book|set|add|give|make)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|week|rota/] },
         { intent: 'draft_rota', priority: 123, patterns: [/(draft|prepare|generate|build|make|plan|propose)\b.*(rota|on.?call schedule|call schedule|week.*call|weekly.*call)/, /(rota|on.?call).*(for )?(next|this|the) week/], anti: [/who|which|is\b/] },
         { intent: 'return_leave', priority: 122, patterns: [/\b(is )?back\b/, /returned?\b/, /back (to|on) (duty|work)/, /no longer (on leave|absent|off)/, /end.*leave early/], require: [/back|return|no longer|end/], anti: [/who|which|list|when.*back/] },
-        { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule|add|set|book|enroll|send|rota)\b.*\b(in|into|to|on|at)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma)/, /(put|assign|place|move|rotate)\b.*(rotation|rotat)/, /(rotation|rotate).*(under|with|supervis|from|next)/], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete/] },
+        { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule|add|set|book|enroll|send|rota|transfer|swap|switch)\b.*\b(in|into|to|on|at|through|thru)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|sueno|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma|cardiolog|interna|radiolog)/i, /(put|assign|place|move|rotate|transfer|swap)\b.*(rotation|rotat)/i, /(rotation|rotate)\b.*(under|with|supervis|from|next)/i, /rotate\s+[a-zñáéíóú]+\s+(through|thru|in|to)/i], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete|how long|when does/] },
         { intent: 'cancel_leave', priority: 124, patterns: [/(cancel|remove|delete|undo|scrap)\b.*(leave|absence|vacation|holiday|baja|off|time off)/, /(leave|absence).*(cancel|remove|delete)/], anti: [/who|which|list/] },
         { intent: 'delete_staff_blocked', priority: 130, patterns: [/(delete|remove|fire|terminate|erase)\b.*(staff|physician|doctor|resident|attending|nurse|person|employee)/, /(delete|remove|fire|erase)\s+(dr\.?\s+)?[a-zñáéíóú]+\s+[a-zñáéíóú]+/], anti: [/leave|absence|on.?call|oncall|shift|rotation|rota|vacation/] },
         { intent: 'cancel_rotation', priority: 124, patterns: [/(cancel|remove|delete|undo|pull)\b.*(rotation|rotat)/, /(rotation)\b.*(cancel|remove|delete)/, /(take|pull)\b.*(out of|off)\b.*(rotation|uci|unit)/], anti: [/who|which|list|rotating where|ending|soon|finishing|upcoming|starting/] },
@@ -10733,7 +10735,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'rotations_ending', priority: 101, patterns: [/(residents?|rotations?|who).*(finish|end|complet|wrap|done|leaving).*(month|week|soon|when)/i, /(finish|end|complet|ending).*(rotation|this month|this week|soon)/i, /which residents (finish|end|are finishing|are ending|complete)/i, /rotations? (ending|finishing)/i], anti: [/cancel|remove/] },
         { intent: 'find_replacement', priority: 123, patterns: [/(find|need|get|suggest|who can|who could).*(replacement|cover|substitute|backup|fill in|stand in)/i, /(replace|cover for|substitute for|backup for)\s+[a-zñáéíóú]/i, /who can (cover|replace|stand in for|fill in for)\s+[a-zñáéíóú]/i], anti: [/put|assign .* on call/] },
         { intent: 'workload_analysis', priority: 102, patterns: [/(overload|stretched|too much|spread thin|burn.?out|overwork|imbalanc|unbalanc|balanced\??$|take on more|take more|absorb|who can (take|absorb|handle)|has capacity|capacity to|capacity for|free capacity|workload|work load|who.?s (busy|stretched|overloaded)|distribute.*(fairly|evenly)|load.*(balanced|distributed|even|fair)|lightest load|most load)/i], anti: [/on call|oncall|leave|rotation.*where/] },
-        { intent: 'staff_roster', priority: 103, patterns: [/(how many|number of|count of|total)\s+(staff|people|physicians?|doctors?|attendings?|fellows?|nurses?|employees?|do we have)/i, /(list|show( me)?|who are|give me)\s+(the\s+)?(all\s+)?(staff|people|team|everyone|physicians?|doctors?|attendings?|residents?|fellows?|nurses?|secretar|coordinators?|engineers?)/i, /^(staff|team|everyone|all staff)$/i, /who works here/i], anti: [/on call|oncall|leave|absent|phd|certif|pi\b|rotat|trial|how many residents|number of residents/] },
+        { intent: 'staff_roster', priority: 103, patterns: [/(how many|number of|count of|total)\s+(staff|people|physicians?|doctors?|attendings?|fellows?|nurses?|employees?|do we have)/i, /(list|show( me)?|who are|give me)\s+(the\s+)?(all\s+)?(staff|people|team|everyone|physicians?|doctors?|attendings?|residents?|fellows?|nurses?|secretar|coordinators?|engineers?)/i, /^(staff|team|everyone|all staff)$/i, /who works here/i], anti: [/on call|oncall|leave|absent|phd|certif|pi\b|rotat|trial|how many residents|number of residents|in (the )?(uci|ucri|asma|sue|hospitaliz|unit)/] },
         { intent: 'staff_contact', priority: 104, patterns: [/(email|e-?mail|phone|number|contact|reach|mobile|extension)\s+(for|of|de)?\s*[a-zñáéíóú]{3,}/i, /[a-zñáéíóú]{3,}.?s?\s+(email|e-?mail|phone|number|contact|mobile|extension)\b/i, /how (do i |can i |to )?(reach|contact|email)\s+[a-zñáéíóú]/i], anti: [/on call|oncall|on-call|who is on|draft|write|compose|send|about|\bno\b|without|\bwhich\b|have no|attending|residents?\b|how many|list/] },
         { intent: 'compare_staff', priority: 100, patterns: [/\bcompare\b/, /(who has (more|less|fewer)|more than|busier|less busy).*\b(or|and|vs|versus)\b/, /\b(or|vs|versus)\b.*(more|less|busier|shifts|trials)/] },
         { intent: 'rank_staff', priority: 95, patterns: [/(busiest|fewest|least|lightest|heaviest|overloaded)/, /who has the (most|fewest|least)/, /\bmost\b.*(shift|call|trial|resident|load)/], anti: [/\bcompare\b/] },
@@ -10748,7 +10750,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'residents_board', priority: 93, patterns: [/(residents?) (board|wall|status board|dashboard|overview|map|grid|at a glance|status|visual)/i, /(show|display|give me).*(residents?).*(board|status|dashboard|visual|overview|where)/i, /resident status board/i, /where is everyone rotating/i, /rotation board/i], anti: [/put|assign|cancel|finish|ending/] },
         { intent: 'place_resident', priority: 118, patterns: [/where (should|can|could|to)\s+(i )?(place|put|assign|send)\s+[a-zñáéíóú]/i, /(best|which) unit for\s+[a-zñáéíóú]/i, /where (should|can|could)\s+[a-zñáéíóú]+\s+(go|rotate|be placed)/i, /place\s+[a-zñáéíóú]+\s+where/i], anti: [/on call|leave/] },
         { intent: 'unit_forecast', priority: 94, patterns: [/(which )?units? (will be|are going to be|become)\s+(empty|free|covered|full|vacant|uncovered)/i, /units? (empty|free|covered|uncovered|vacant)\s+(next|this|in)\s+(month|week|\w+)/i, /(coverage|unit) forecast/i, /(empty|uncovered|vacant) units? (next|this|in)/i, /which units.*(next month|next week|coming)/i], anti: [/put|assign|cancel/] },
-        { intent: 'unit_profile', priority: 92, patterns: [/(tell me about|about the|about|details? (of|for|on)|profile of|show me the?)\s+(the\s+)?(uci|ucri|asma\s?grave|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|radiolog\w*|externa)\b/i, /(tell me about|details? (of|for|on)|profile of|show me the?)\s+[a-zñáéíóú]+.*unit/i, /(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*) (unit )?(details?|profile|status|info)/i], anti: [/put|assign|cancel|which|how many|free|all units|who is on/] },
+        { intent: 'unit_profile', priority: 95, patterns: [/(tell me about|about the|about|details? (of|for|on)|profile of|show me the?)\s+(the\s+)?(uci|ucri|asma\s?grave|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|radiolog\w*|externa)\b/i, /(tell me about|details? (of|for|on)|profile of|show me the?)\s+[a-zñáéíóú]+.*unit/i, /(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*) (unit )?(details?|profile|status|info)/i, /how (full|busy|occupied) is\s+(the\s+)?(uci|ucri|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa|[a-zñáéíóú]+ unit)/i, /is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+(full|at capacity|free|empty|available)/i, /does\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+have\s+(space|room|capacity|a resident)/i, /(who is|whos|who's|residents?) (in|at|assigned to|rotating in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa)/i, /how many residents? (in|at|are in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /list residents? (in|at)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /what (specialty|department|type|floor|building) is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i], anti: [/put|assign|cancel|move|transfer|which units|all units|free units/i] },
         { intent: 'unit_status', priority: 91, patterns: [/(which|what|any) units? (are )?(free|open|available|empty|unassigned|scheduled|booked|occupied|in use|taken)/i, /units? (with|without) (a )?(resident|supervisor|space|room)/i, /(free|available|open|empty|scheduled|occupied) (clinical |training )?units?/i, /units? (in|on) (building|floor|the)/i, /who (runs|supervises|is in charge of|leads) (the )?[a-zñáéíóú]+ unit/i, /unit (overview|status|breakdown|occupancy|map)/i, /where can .* rotate/i, /rotation (slots|openings|availability|capacity)/i], anti: [/put|assign|cancel/] },
         { intent: 'units_at_capacity', priority: 90, patterns: [/units? at capacity/, /\bcapacity\b/, /full unit/, /units? full/, /occupancy/, /overcrowded/] },
         { intent: 'unsupervised_residents', priority: 90, patterns: [/unsupervised/, /without .* supervisor/, /no supervisor/, /residents? .* no supervisor/] },
@@ -10905,6 +10907,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Stream an answer's text into the turn, char-batched, so it feels alive.
+      const askBarScrollToBottom = (smooth) => {
+        Vue.nextTick(() => {
+          const c = document.querySelector('.askbar-conv')
+          if (!c) return
+          try { c.scrollTo({ top: c.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }) } catch (e) { c.scrollTop = c.scrollHeight }
+          // second pass after async answer/visual renders
+          setTimeout(() => { const c2 = document.querySelector('.askbar-conv'); if (c2) c2.scrollTop = c2.scrollHeight }, 120)
+          setTimeout(() => { const c3 = document.querySelector('.askbar-conv'); if (c3) c3.scrollTop = c3.scrollHeight }, 400)
+        })
+      }
       const askBarStreamTurn = (turn, fullText, done) => {
         turn.text = ''
         turn.streaming = true
@@ -12295,9 +12307,12 @@ document.addEventListener('DOMContentLoaded', () => {
           } else if (/(history|last (week|month|year)|previous|past|used to|before)/.test(uq)) {
             text = "I answer from current records — I don't have historical snapshots to look back through yet."
           } else {
-            text = "I couldn't map that to something in the records. I can answer about staff (role, certs, PhD, PI, residency), on-call, leave, rotations, trials, research lines, innovation projects, units, departments — plus cross-cutting questions like who's PI-eligible or which units are at capacity."
+            text = "I'm not sure how to answer that yet. Try one of these — or rephrase:"
             // #19 Teach-from-usage: record what we couldn't answer so an admin can teach it.
             try { brainLogFailed(askBar.lastAsked || askBar.query || '') } catch (e) {}
+            // Offer tappable, relevant starting points instead of a wall of text.
+            const fu = (askBarSuggestions.value || []).slice(0, 4).map(s => ({ label: s.t, intent: s.intent, q: s.q }))
+            return { text, chips: [], actions: [], sources: [], followups: fu, confidence: 'low' }
           }
           return { text, chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
         }
