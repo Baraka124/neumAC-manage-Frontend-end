@@ -8499,6 +8499,7 @@
                                 <div v-else-if="turn.rotationProposal.supWarn" class="askbar-proposal-block">⛔ That supervisor isn't eligible to supervise residents. Pick an attending.</div>
                                 <div v-else-if="turn.rotationProposal.atCapacity" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.unit.name }} is at capacity ({{ turn.rotationProposal.occ }}) — this exceeds it.</div>
                                 <div v-if="turn.rotationProposal.leaveOverlap && !turn.committed" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.resident.name }} is on leave {{ turn.rotationProposal.leaveOverlap }} — this rotation overlaps their absence.</div>
+                                <div v-if="turn.rotationProposal.rotationOverlap && !turn.committed" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.resident.name }} already has a rotation in this period ({{ turn.rotationProposal.rotationOverlap }}) — they can't be in two places at once.</div>
                                 <div v-if="!turn.rotationProposal.startLabel && !turn.committed" class="askbar-proposal-warn">⚠ No start date given — add one, e.g. "from next Monday."</div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
                                     <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.rotationProposal.noSup || turn.rotationProposal.supWarn || !turn.rotationProposal.start" @click="askBarConfirmRotation(turn.rotationProposal, turn)">{{ turn.writing ? 'Saving…' : ((turn.rotationProposal.noSup||turn.rotationProposal.supWarn) ? 'Blocked' : 'Confirm & schedule') }}</button>
@@ -20150,7 +20151,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=115"></script>
+    <script src="app.js?v=116"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
