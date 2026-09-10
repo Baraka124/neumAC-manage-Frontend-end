@@ -41221,3 +41221,118 @@ html body #app .grounded-cloud .askbar-trust-copy:hover { color: #4de8e8 !import
 /* Ensure the PLAIN answer (no card) also gets consistent card treatment */
 html body #app .grounded-cloud .askbar-a-bub > .askbar-a-card:only-child,
 html body #app .grounded-cloud .askbar-a-card { background: rgba(255,255,255,.045) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   §105 — GROUNDED HEADER + INPUT + ORB — premium, final
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── HEADER: clean hierarchy, cohesive, properly-sized pills ── */
+html body #app .grounded-cloud .grounded-head,
+html body #app .grounded-cloud .askbar-head {
+  display: flex !important; align-items: center !important; gap: 12px !important;
+  padding: 4px 2px 16px !important; border: none !important;
+}
+html body #app .grounded-cloud .askbar-head-t {
+  font-size: 17px !important; font-weight: 650 !important; color: #fff !important;
+  letter-spacing: -.01em !important; line-height: 1.1 !important;
+}
+html body #app .grounded-cloud .askbar-head-s {
+  font-size: 11px !important; color: rgba(0,229,229,.7) !important;
+  margin-top: 1px !important; letter-spacing: .01em !important;
+}
+/* the small head orb dot */
+html body #app .grounded-cloud .grounded-head-orb {
+  width: 34px !important; height: 34px !important; border-radius: 50% !important; flex-shrink: 0 !important;
+  background: radial-gradient(circle at 32% 30%, #6ff0f0, #00b8b8 55%, #0a7a8f) !important;
+  box-shadow: 0 0 16px rgba(0,212,212,.5), inset 0 -3px 8px rgba(0,0,0,.25), inset 0 2px 6px rgba(255,255,255,.35) !important;
+}
+
+/* NEW + Teach pills: sized to text, unified language, no ugly boxes */
+html body #app .grounded-cloud .askbar-newchat,
+html body #app .grounded-cloud .askbar-teach-btn {
+  margin-left: 0 !important;
+  font-size: 11.5px !important; font-weight: 600 !important; letter-spacing: .02em !important;
+  padding: 6px 13px !important; border-radius: 9px !important; line-height: 1 !important;
+  cursor: pointer !important; transition: all .15s ease !important; white-space: nowrap !important;
+}
+/* NEW = quiet ghost pill */
+html body #app .grounded-cloud .askbar-newchat {
+  background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.75) !important;
+}
+html body #app .grounded-cloud .askbar-newchat:hover { background: rgba(255,255,255,.11) !important; color: #fff !important; }
+/* Teach = the one accent action (teal, matches the system) */
+html body #app .grounded-cloud .askbar-teach-btn {
+  background: rgba(0,212,212,.14) !important; border: 1px solid rgba(0,212,212,.35) !important;
+  color: #4de8e8 !important; margin-left: auto !important;
+}
+html body #app .grounded-cloud .askbar-teach-btn:hover { background: rgba(0,212,212,.22) !important; border-color: rgba(0,212,212,.55) !important; }
+html body #app .grounded-cloud .askbar-teach-btn--on {
+  background: linear-gradient(135deg,#0891b2,#00d4d4) !important; color: #06121f !important; border-color: transparent !important;
+}
+/* live indicator: quiet, no box */
+html body #app .grounded-cloud .askbar-head-live {
+  display: inline-flex !important; align-items: center !important; gap: 5px !important;
+  font-size: 11px !important; color: rgba(255,255,255,.5) !important; letter-spacing: .02em !important;
+}
+html body #app .grounded-cloud .askbar-head-dot {
+  width: 6px !important; height: 6px !important; border-radius: 50% !important;
+  background: #34d399 !important; box-shadow: 0 0 7px #34d399 !important;
+  animation: livepulse 2.4s ease-in-out infinite !important;
+}
+@keyframes livepulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+/* close: clean circular, subtle */
+html body #app .grounded-cloud .askbar-close {
+  width: 32px !important; height: 32px !important; border-radius: 50% !important;
+  background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.1) !important;
+  color: rgba(255,255,255,.6) !important; font-size: 15px !important; cursor: pointer !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  transition: .15s !important; flex-shrink: 0 !important;
+}
+html body #app .grounded-cloud .askbar-close:hover { background: rgba(239,68,68,.15) !important; color: #fca5a5 !important; border-color: rgba(239,68,68,.3) !important; }
+
+/* ── INPUT: single clean field, NOT doubled ── */
+html body #app .grounded-cloud .askbar-input-wrap {
+  padding: 14px 2px 4px !important; border: none !important; border-top: 1px solid rgba(255,255,255,.07) !important;
+}
+html body #app .grounded-cloud .askbar-input {
+  display: flex !important; align-items: center !important; gap: 10px !important;
+  background: rgba(255,255,255,.05) !important;
+  border: 1.5px solid rgba(255,255,255,.12) !important;
+  border-radius: 15px !important; padding: 5px 5px 5px 15px !important;
+  transition: border-color .18s, box-shadow .18s !important;
+}
+html body #app .grounded-cloud .askbar-input:focus-within {
+  border-color: rgba(0,212,212,.5) !important; box-shadow: 0 0 0 3px rgba(0,212,212,.12) !important;
+  background: rgba(255,255,255,.07) !important;
+}
+html body #app .grounded-cloud .askbar-input > svg { color: rgba(0,212,212,.65) !important; flex-shrink: 0 !important; }
+html body #app .grounded-cloud .askbar-input input {
+  flex: 1 !important; background: transparent !important; border: none !important; outline: none !important;
+  font-size: 14px !important; color: #fff !important; padding: 9px 0 !important;
+}
+html body #app .grounded-cloud .askbar-input input::placeholder { color: rgba(255,255,255,.38) !important; }
+html body #app .grounded-cloud .askbar-send {
+  width: 42px !important; height: 42px !important; border-radius: 12px !important; flex-shrink: 0 !important;
+  background: linear-gradient(135deg,#0891b2,#00d4d4) !important; border: none !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  cursor: pointer !important; box-shadow: 0 3px 14px rgba(0,212,212,.3) !important;
+  transition: transform .12s ease, box-shadow .15s !important;
+}
+html body #app .grounded-cloud .askbar-send:hover:not(:disabled) { transform: scale(1.05) !important; box-shadow: 0 4px 18px rgba(0,212,212,.45) !important; }
+html body #app .grounded-cloud .askbar-send:active:not(:disabled) { transform: scale(.95) !important; }
+html body #app .grounded-cloud .askbar-send:disabled { opacity: .35 !important; cursor: not-allowed !important; box-shadow: none !important; }
+
+/* ── FLOATING ORB: premium, dimensional, alive ── */
+html body #app .grounded-orb, html body #app .grounded-orb-wrap .grounded-orb {
+  background: radial-gradient(circle at 30% 28%, #7df5f5 0%, #14d4d4 42%, #0a8fa8 72%, #075e78 100%) !important;
+  box-shadow: 0 8px 28px rgba(0,212,212,.4), 0 2px 8px rgba(0,0,0,.3),
+              inset 0 -6px 14px rgba(0,40,60,.4), inset 0 4px 12px rgba(255,255,255,.4) !important;
+  position: relative !important; overflow: hidden !important;
+}
+html body #app .grounded-orb::after {
+  content: '' !important; position: absolute !important; top: 14% !important; left: 22% !important;
+  width: 34% !important; height: 26% !important; border-radius: 50% !important;
+  background: radial-gradient(circle, rgba(255,255,255,.85), transparent 70%) !important;
+  filter: blur(1px) !important;
+}
