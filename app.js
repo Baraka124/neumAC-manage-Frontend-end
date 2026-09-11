@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {  
+document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
@@ -3982,6 +3982,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return s?.full_name || 'Not assigned'
       }
 
+
       const validateAbsence = (form) => {
         clearAll('absence'); let ok = true
         if (!form.staff_member_id) { setErr('absence', 'staff_member_id', 'Please select a staff member'); ok = false }
@@ -7005,6 +7006,59 @@ document.addEventListener('DOMContentLoaded', () => {
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
 
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
+
+        // ══════════════════════════════════════════════════════════════════
+        // §1 CANONICAL KNOWLEDGE MODEL — adopted (inlined, reads live arrays)
+        // Turns flat table rows into KnowledgeObjects: a Person/Activity/Event
+        // with typed relationships + evidence. Consumers (agent, future LLM,
+        // vector layer) read THIS instead of raw tables. Adopted incrementally
+        // behind USE_KNOWLEDGE_LAYER — builders migrate one at a time, verified.
+        // ══════════════════════════════════════════════════════════════════
+        const USE_KNOWLEDGE_LAYER = true   // flag: flip to false to fall back to table reads
+        const CLINICAL_TYPES = new Set(['attending_physician', 'fellow', 'medical_resident'])
+        const knowledge = {
+          // PERSON — a staff member as a graph node
+          person: {
+            get(id) {
+              const s = (medicalStaff.value || []).find(x => x.id === id)
+              if (!s) return null
+              return knowledge.person._toObject(s)
+            },
+            list(filter = {}) {
+              let rows = medicalStaff.value || []
+              if (filter.activeOnly) rows = rows.filter(s => s.employment_status === 'active' && !s.deleted_at)
+              if (filter.role) rows = rows.filter(s => s.staff_type === filter.role)
+              if (filter.clinical) rows = rows.filter(s => CLINICAL_TYPES.has(s.staff_type))
+              return rows.map(knowledge.person._toObject)
+            },
+            _toObject(s) {
+              const rots = rotations.value || []
+              const relationships = []
+              rots.filter(r => r.supervising_attending_id === s.id && r.rotation_status === 'active')
+                .forEach(r => relationships.push({ rel: 'supervises', targetType: 'Person', targetId: r.resident_id }))
+              rots.filter(r => r.resident_id === s.id && r.rotation_status === 'active' && r.supervising_attending_id)
+                .forEach(r => relationships.push({ rel: 'supervised_by', targetType: 'Person', targetId: r.supervising_attending_id, unitId: r.training_unit_id }))
+              return {
+                id: s.id, type: 'Person',
+                attributes: {
+                  full_name: s.full_name, role: s.staff_type,
+                  clinical: CLINICAL_TYPES.has(s.staff_type),
+                  active: s.employment_status === 'active' && !s.deleted_at,
+                  email: s.professional_email || null,
+                  has_phd: !!s.has_phd, specialty: s.specialization || s.specialty || null,
+                  residency_year: s.residency_year_override || s.training_year || null,
+                },
+                relationships,
+                evidence: [{ source: 'medical_staff', recordId: s.id }],
+                status: s.deleted_at ? 'archived' : (s.employment_status === 'active' ? 'active' : 'inactive'),
+                _raw: s,   // escape hatch during migration
+              }
+            },
+          },
+        }
+        // introspection helper (for verification/debug)
+        const knowledgeCoverage = () => ({ Person: true, Activity: false, Event: false })
+
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
 
@@ -11851,7 +11905,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'staff_roster') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
-          const all = (medicalStaff.value || []).filter(s => s.employment_status === 'active' && !s.deleted_at)
+          // §1 ADOPTION: read active staff via the knowledge layer (falls back to raw table).
+          const all = USE_KNOWLEDGE_LAYER
+            ? knowledge.person.list({ activeOnly: true }).map(o => o._raw)
+            : (medicalStaff.value || []).filter(s => s.employment_status === 'active' && !s.deleted_at)
           // detect a role filter
           const roleMap = [
             [/attending/, 'attending_physician', 'attending'], [/resident/, 'medical_resident', 'resident'],
