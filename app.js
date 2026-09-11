@@ -10806,8 +10806,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Scored matcher: returns { intent, confidence } — confidence is 'high'
       // when a route matches strongly, 'low' when nothing does (→ unknown/clarify).
+      // Direct taught-vocabulary match: if the query contains a taught synonym or
+      // phrasing, route straight to its intent. This makes the Teach feature actually
+      // work (bilingual/Galician words), and runs BEFORE name-resolution so "de garda"
+      // isn't mistaken for a person's name.
+      const askBarMatchTaught = (qRaw) => {
+        const q = ' ' + (qRaw || '').toLowerCase().normalize('NFC').trim() + ' '
+        const rows = (_brainRows.value || []).filter(r => r.enabled && r.intent && (r.kind === 'synonym' || r.kind === 'phrasing' || r.kind === 'pattern'))
+        // longest taught phrase first, so "de garda" beats "garda"
+        rows.sort((a, b) => (b.content || '').length - (a.content || '').length)
+        for (const r of rows) {
+          const c = (r.content || '').toLowerCase().normalize('NFC').trim()
+          if (c.length < 2) continue
+          // whole-phrase containment (word-ish boundaries via surrounding spaces/punct)
+          if (q.includes(' ' + c + ' ') || q.includes(' ' + c) || q.includes(c + ' ') || q.trim() === c) {
+            return r.intent
+          }
+        }
+        return null
+      }
+
       const askBarMatchScored = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
+        // 0. Taught vocabulary wins first (department-curated, bilingual).
+        const taught = askBarMatchTaught(qRaw)
+        if (taught) return { intent: taught, priority: 999, viaTaught: true }
         // 1. Score the routing table (authoritative — specific, ordered, editable).
         let best = null
         for (const r of ASKBAR_ROUTES) {
@@ -11236,9 +11259,16 @@ document.addEventListener('DOMContentLoaded', () => {
           if (hasPronoun && askBar.context) {
             followup = askBarResolveFollowup(asked)
           }
+          // 0. TAUGHT VOCABULARY WINS FIRST — a department-taught synonym/phrase
+          //    (bilingual/Galician) routes straight to its intent, before the name
+          //    resolver can mistake a taught word ("de garda") for a person.
+          if (!followup && !intent) {
+            const taughtIntent = askBarMatchTaught(asked)
+            if (taughtIntent) intent = taughtIntent
+          }
           // 1b. A specific staff attribute question ("does X have a phd?", "X's certificates")
           //     → resolve as a deep person-attribute query, before generic intents.
-          if (!followup) {
+          if (!followup && !intent) {
             const attr = askBarDetectStaffAttr(q)
             if (attr) {
               const maybe = askBarResolveFollowup(asked)
