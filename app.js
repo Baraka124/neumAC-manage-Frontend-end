@@ -7055,9 +7055,55 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             },
           },
+          // ACTIVITY — on-call shifts + rotations as one canonical type
+          activity: {
+            list(filter = {}) {
+              let out = []
+              if (!filter.kind || filter.kind === 'on_call') {
+                out = out.concat((onCallSchedule.value || []).map(o => ({
+                  id: 'oncall:' + o.id, type: 'Activity',
+                  attributes: { kind: 'on_call', date: o.duty_date, shift_type: o.shift_type || 'primary_call',
+                    primary: o.primary_physician_id, backup: o.backup_physician_id },
+                  relationships: [o.primary_physician_id && { rel: 'assigned_to', targetType: 'Person', targetId: o.primary_physician_id }].filter(Boolean),
+                  evidence: [{ source: 'oncall_schedule', recordId: o.id }], status: 'active', _raw: o,
+                })))
+              }
+              if (!filter.kind || filter.kind === 'rotation') {
+                out = out.concat((rotations.value || []).map(r => ({
+                  id: 'rotation:' + r.id, type: 'Activity',
+                  attributes: { kind: 'rotation', status: r.rotation_status, start: r.start_date, end: r.end_date,
+                    resident: r.resident_id, supervisor: r.supervising_attending_id, unit: r.training_unit_id },
+                  relationships: [r.resident_id && { rel: 'assigned_to', targetType: 'Person', targetId: r.resident_id },
+                    r.supervising_attending_id && { rel: 'supervised_by', targetType: 'Person', targetId: r.supervising_attending_id },
+                    r.training_unit_id && { rel: 'located_in', targetType: 'Resource', targetId: r.training_unit_id }].filter(Boolean),
+                  evidence: [{ source: 'resident_rotations', recordId: r.id }],
+                  status: r.rotation_status === 'active' ? 'active' : 'archived', _raw: r,
+                })))
+              }
+              if (filter.personId) out = out.filter(a => a.relationships.some(rel => rel.targetId === filter.personId))
+              return out
+            },
+          },
+          // EVENT — leave/absence records as canonical Events
+          event: {
+            list(filter = {}) {
+              let out = (absences.value || []).map(a => ({
+                id: 'absence:' + a.id, type: 'Event',
+                attributes: { kind: 'leave', reason: a.absence_reason, start: a.start_date, end: a.end_date,
+                  current_status: a.current_status, person: a.staff_member_id, covered_by: a.covering_staff_id },
+                relationships: [a.staff_member_id && { rel: 'concerns', targetType: 'Person', targetId: a.staff_member_id },
+                  a.covering_staff_id && { rel: 'covered_by', targetType: 'Person', targetId: a.covering_staff_id }].filter(Boolean),
+                evidence: [{ source: 'staff_absence_records', recordId: a.id }],
+                status: ['returned_to_duty', 'cancelled'].includes(a.current_status) ? 'archived' : 'active', _raw: a,
+              }))
+              if (filter.personId) out = out.filter(e => e.relationships.some(rel => rel.targetId === filter.personId))
+              if (filter.activeOnly) out = out.filter(e => e.status === 'active')
+              return out
+            },
+          },
         }
         // introspection helper (for verification/debug)
-        const knowledgeCoverage = () => ({ Person: true, Activity: false, Event: false })
+        const knowledgeCoverage = () => ({ Person: true, Activity: true, Event: true })
 
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
@@ -11950,12 +11996,16 @@ document.addEventListener('DOMContentLoaded', () => {
           return { text: `${person.full_name}: ${bits.join(' · ')}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open profile', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'staff_with_phd') {
-          const phds = (medicalStaff.value || []).filter(s => s.has_phd)
+          const phds = USE_KNOWLEDGE_LAYER
+            ? knowledge.person.list({ activeOnly: false }).filter(o => o.attributes.has_phd).map(o => o._raw)
+            : (medicalStaff.value || []).filter(s => s.has_phd)
           if (!phds.length) return { text: 'No staff have a PhD on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
           const _f2=askBarWantsFull(askBar.lastAsked||askBar.query); const _pd=(_f2?phds:phds.slice(0,6)).map(s=>s.full_name+(s.phd_field?' ('+s.phd_field+')':'')); return { text: `${phds.length} staff hold a PhD: ${_f2&&_pd.length>6?'\n• '+_pd.join('\n• '):_pd.join(', ')}${!_f2&&phds.length>6?` …and ${phds.length-6} more (ask "list all").`:'.'}`, chips: phds.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'residents_by_year') {
-          const residents = (medicalStaff.value || []).filter(s => askBarIsResident(s))
+          const residents = USE_KNOWLEDGE_LAYER
+            ? knowledge.person.list({ role: 'medical_resident' }).map(o => o._raw).concat((medicalStaff.value||[]).filter(s => askBarIsResident(s) && s.staff_type !== 'medical_resident'))
+            : (medicalStaff.value || []).filter(s => askBarIsResident(s))
           if (!residents.length) return { text: 'No residents are on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
           // Normalise the year: prefer a real R-year (R1..R5); ignore bare calendar years
           // (e.g. "2005") which are start-years, not training levels.
