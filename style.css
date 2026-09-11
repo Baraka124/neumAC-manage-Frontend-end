@@ -41374,3 +41374,303 @@ html body #app .askbar-reslist-badge--recruiting { background: rgba(16,185,129,.
 html body #app .askbar-reslist-badge--active { background: rgba(56,189,248,.16) !important; color: #7dd3fc !important; }
 html body #app .askbar-reslist-badge--project { background: rgba(251,191,36,.16) !important; color: #fcd34d !important; }
 html body #app .askbar-reslist-meta { font-size: 10.5px !important; color: rgba(255,255,255,.42) !important; margin-top: 3px !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §200 — TIER 1 CONSISTENCY LAYER (canonical buttons/tables/type/spacing)
+   Appended last = wins everywhere. Unifies the button/table "zoo" built over
+   months into ONE language, without touching 41k lines above. Reversible.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── BUTTONS: one language ── */
+/* canonical base — all button variants share shape, transition, feel */
+html body #app .btn,
+html body #app .btn-pill,
+html body #app .sm-btn-save,
+html body #app .sm-btn-back,
+html body #app .nm-btn,
+html body #app .tbl-btn,
+html body #app .rhub-back-btn,
+html body #app .vmt-btn {
+  font-family: var(--font-ui) !important;
+  font-weight: 550 !important;
+  font-size: var(--fs-md, 15px) !important;
+  border-radius: 10px !important;
+  padding: 9px 16px !important;
+  line-height: 1.1 !important;
+  display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 7px !important;
+  cursor: pointer !important;
+  transition: transform .12s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease !important;
+  border: 1px solid transparent !important;
+  white-space: nowrap !important;
+}
+html body #app .btn:hover, html body #app .btn-pill:hover, html body #app .nm-btn:hover,
+html body #app .tbl-btn:hover, html body #app .sm-btn-save:hover, html body #app .rhub-back-btn:hover {
+  transform: translateY(-1px) !important;
+}
+html body #app .btn:active, html body #app .btn-pill:active, html body #app .nm-btn:active,
+html body #app .tbl-btn:active { transform: translateY(0) scale(.98) !important; }
+
+/* PRIMARY — the one main action */
+html body #app .btn.btn-primary, html body #app .sm-btn-save {
+  background: linear-gradient(135deg, var(--blue, #2563eb), #1d4ed8) !important;
+  color: #fff !important; border-color: transparent !important;
+  box-shadow: 0 2px 8px var(--blue-glow, rgba(37,99,235,.28)) !important;
+}
+html body #app .btn.btn-primary:hover, html body #app .sm-btn-save:hover {
+  box-shadow: 0 4px 14px var(--blue-glow, rgba(37,99,235,.4)) !important;
+}
+/* SECONDARY — outline */
+html body #app .btn.btn-secondary, html body #app .nm-btn-outline, html body #app .sm-btn-back, html body #app .rhub-back-btn {
+  background: var(--surface, #fff) !important; color: var(--text-2, #344154) !important;
+  border-color: var(--border-2, #cac5ba) !important;
+}
+html body #app .btn.btn-secondary:hover, html body #app .sm-btn-back:hover, html body #app .rhub-back-btn:hover {
+  border-color: var(--blue, #2563eb) !important; color: var(--blue, #2563eb) !important; background: var(--blue-lt, #eff6ff) !important;
+}
+/* DANGER */
+html body #app .btn.btn-danger, html body #app .tbl-btn--danger {
+  background: var(--danger, #dc2626) !important; color: #fff !important; border-color: transparent !important;
+}
+html body #app .tbl-btn--danger { background: transparent !important; color: var(--danger, #dc2626) !important; border-color: var(--danger-mid, #fca5a5) !important; }
+html body #app .tbl-btn--danger:hover { background: var(--danger, #dc2626) !important; color: #fff !important; }
+/* SMALL modifier */
+html body #app .btn.btn-sm, html body #app .nm-btn-sm, html body #app .tbl-btn {
+  font-size: var(--fs-sm, 14px) !important; padding: 6px 12px !important; border-radius: 8px !important;
+}
+/* pill keeps rounded */
+html body #app .btn-pill { border-radius: 100px !important; }
+/* ghost / table buttons quieter */
+html body #app .tbl-btn { background: var(--surface-2, #f5f4f0) !important; color: var(--text-2) !important; border-color: var(--border, #e3dfd6) !important; }
+html body #app .tbl-btn:hover { background: var(--surface-3, #edebe5) !important; }
+
+/* ── TABLES: one language ── */
+html body #app table.table, html body #app .rsm-table, html body #app .staff-table {
+  width: 100% !important; border-collapse: collapse !important; font-size: var(--fs-sm, 14px) !important;
+}
+html body #app table.table thead th, html body #app .rsm-table thead th {
+  position: sticky !important; top: 0 !important; z-index: 2 !important;
+  background: var(--surface-2, #f5f4f0) !important;
+  font-family: var(--font-ui) !important; font-size: var(--fs-xs, 13px) !important; font-weight: 650 !important;
+  text-transform: uppercase !important; letter-spacing: .03em !important; color: var(--text-3, #5a6472) !important;
+  text-align: left !important; padding: 11px 14px !important; border-bottom: 1.5px solid var(--border-2, #cac5ba) !important;
+}
+html body #app table.table tbody td, html body #app .rsm-table tbody td {
+  padding: 11px 14px !important; border-bottom: 1px solid var(--border, #e3dfd6) !important; color: var(--text-1, #07111f) !important;
+}
+html body #app table.table tbody tr:hover, html body #app .rsm-table tbody tr:hover { background: var(--blue-lt, #eff6ff) !important; }
+/* numbers right-aligned */
+html body #app table.table td.num, html body #app table.table th.num { text-align: right !important; font-family: var(--font-data) !important; }
+
+/* ── TYPE HIERARCHY: widen the contrast so headings lead ── */
+html body #app .navbar-title, html body #app .view-title, html body #app h1.page-title {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif) !important;
+  font-size: 26px !important; font-weight: 400 !important; letter-spacing: -.01em !important; color: var(--text-1) !important; line-height: 1.15 !important;
+}
+html body #app .section-title, html body #app .card-title, html body #app h2, html body #app h3 {
+  font-family: var(--font-ui) !important; font-weight: 650 !important; font-size: 16px !important; letter-spacing: -.005em !important; color: var(--text-1) !important;
+}
+
+/* ── SPACING RHYTHM: consistent card padding ── */
+html body #app .card, html body #app .stat-card, html body #app .panel {
+  border-radius: 14px !important; border: 1px solid var(--border, #e3dfd6) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §201 — LOGIN PAGE ELEVATION (first impression / Tier 2)
+   ═══════════════════════════════════════════════════════════════════════ */
+html body #app .login-container {
+  min-height: 100vh !important;
+  background:
+    radial-gradient(1200px 800px at 15% -10%, rgba(37,99,235,.28), transparent 55%),
+    radial-gradient(900px 700px at 100% 110%, rgba(8,145,178,.22), transparent 50%),
+    linear-gradient(135deg, #07111f 0%, #0d1b30 50%, #0a1728 100%) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  position: relative !important; overflow: hidden !important;
+}
+/* the bronchial tree canvas — make it visible, subtle */
+html body #app .login-container .lc-bg { position: absolute !important; inset: 0 !important; opacity: .13 !important; pointer-events: none !important; }
+html body #app .login-container #loginTreeCanvas { width: 100% !important; height: 100% !important; }
+
+/* ambient brand wordmark behind, top-left — signature presence */
+html body #app .login-container::before {
+  content: 'neumDesk' !important;
+  position: absolute !important; top: 6% !important; left: 6% !important;
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif) !important;
+  font-size: clamp(40px, 7vw, 96px) !important; font-style: italic !important;
+  color: rgba(255,255,255,.05) !important; letter-spacing: -.02em !important;
+  pointer-events: none !important; user-select: none !important;
+}
+/* tagline bottom-left */
+html body #app .login-container::after {
+  content: 'Clinical operations, grounded.' !important;
+  position: absolute !important; bottom: 7% !important; left: 6% !important;
+  font-family: var(--font-ui) !important; font-size: 14px !important;
+  color: rgba(255,255,255,.35) !important; letter-spacing: .02em !important;
+  pointer-events: none !important; max-width: 300px !important;
+}
+@media (max-width: 640px) {
+  html body #app .login-container::before { font-size: 44px !important; top: 4% !important; }
+  html body #app .login-container::after { display: none !important; }
+}
+
+/* the card — premium glass, floating with depth */
+html body #app .login-card {
+  position: relative !important; z-index: 2 !important;
+  background: rgba(255,255,255,.98) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,.4), 0 2px 0 rgba(255,255,255,.5) inset !important;
+  border: 1px solid rgba(255,255,255,.4) !important;
+  padding: 36px 40px 32px !important; width: 100% !important; max-width: 430px !important;
+}
+
+/* input rows: icon INSIDE the field, left-aligned, no stray marks */
+html body #app .lc-input-wrap { position: relative !important; display: flex !important; align-items: center !important; }
+html body #app .lc-input-wrap > svg {
+  position: absolute !important; left: 13px !important; top: 50% !important; transform: translateY(-50%) !important;
+  color: var(--text-4, #909399) !important; pointer-events: none !important;
+}
+html body #app .lc-input {
+  width: 100% !important; padding: 12px 14px 12px 40px !important;
+  border: 1.5px solid var(--border-2, #cac5ba) !important; border-radius: 11px !important;
+  font-size: 15px !important; color: var(--text-1) !important; background: var(--surface, #fff) !important;
+  transition: border-color .16s, box-shadow .16s !important;
+}
+html body #app .lc-input:focus {
+  outline: none !important; border-color: var(--blue, #2563eb) !important;
+  box-shadow: 0 0 0 3px var(--blue-dim, rgba(37,99,235,.12)) !important;
+}
+html body #app .lc-field label, html body #app .lc-field > span:first-child {
+  font-size: var(--fs-xs, 13px) !important; font-weight: 600 !important; letter-spacing: .03em !important;
+  text-transform: uppercase !important; color: var(--text-3, #5a6472) !important; margin-bottom: 6px !important; display: block !important;
+}
+
+/* submit — premium primary */
+html body #app .lc-submit {
+  width: 100% !important; margin-top: 20px !important; padding: 13px !important;
+  background: linear-gradient(135deg, var(--blue, #2563eb), #1d4ed8) !important;
+  color: #fff !important; border: none !important; border-radius: 12px !important;
+  font-family: var(--font-ui) !important; font-weight: 600 !important; font-size: 15px !important; cursor: pointer !important;
+  box-shadow: 0 4px 16px rgba(37,99,235,.35) !important; transition: transform .12s, box-shadow .15s !important;
+}
+html body #app .lc-submit:hover:not(:disabled) { transform: translateY(-1px) !important; box-shadow: 0 6px 22px rgba(37,99,235,.5) !important; }
+html body #app .lc-submit:active:not(:disabled) { transform: translateY(0) scale(.99) !important; }
+html body #app .lc-submit:disabled { opacity: .6 !important; cursor: wait !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §202 — MODULE HEADER REFINEMENT (Tier 2) — starting with Overview hero
+   ═══════════════════════════════════════════════════════════════════════ */
+/* The dashboard hero (dbh-frame): premium depth, not a flat blue slab */
+html body #app .dbh-frame {
+  background:
+    radial-gradient(600px 300px at 88% -30%, rgba(8,145,178,.35), transparent 60%),
+    linear-gradient(135deg, #0d2848 0%, #16406e 55%, #0e2c50 100%) !important;
+  border-radius: 0 0 18px 18px !important;
+  box-shadow: 0 6px 24px rgba(7,17,31,.22) !important;
+  padding: 22px 28px !important;
+  position: relative !important; overflow: hidden !important;
+}
+/* the date/title — let the display serif lead */
+html body #app .dbh-frame .dbh-date, html body #app .dbh-date-main {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif) !important;
+  font-weight: 400 !important; letter-spacing: -.01em !important; color: #fff !important;
+}
+html body #app .dbh-frame .dbh-meta, html body #app .dbh-sub {
+  font-family: var(--font-data, 'DM Mono', monospace) !important;
+  font-size: 11px !important; letter-spacing: .08em !important; text-transform: uppercase !important;
+  color: rgba(255,255,255,.5) !important;
+}
+/* action row: consistent ghost-on-dark buttons, evenly spaced */
+html body #app .dbh-frame .dbh-actions { display: flex !important; gap: 8px !important; flex-wrap: wrap !important; }
+html body #app .dbh-frame .dbh-actions button, html body #app .dbh-actions .btn {
+  background: rgba(255,255,255,.09) !important; border: 1px solid rgba(255,255,255,.16) !important;
+  color: rgba(255,255,255,.92) !important; border-radius: 10px !important;
+  font-size: 13px !important; font-weight: 500 !important; padding: 8px 14px !important;
+  transition: background .15s, transform .12s !important;
+}
+html body #app .dbh-frame .dbh-actions button:hover { background: rgba(255,255,255,.16) !important; transform: translateY(-1px) !important; }
+/* the primary action (Announce) stands out subtly with teal */
+html body #app .dbh-frame .dbh-actions button:last-child, html body #app .dbh-actions .btn-primary {
+  background: linear-gradient(135deg, var(--teal,#0891b2), #0aa5c9) !important; border-color: transparent !important; color: #fff !important;
+}
+/* health pill — quieter, refined */
+html body #app .dbh-frame .dbh-health, html body #app .dbh-status-pill {
+  border-radius: 100px !important; font-size: 11px !important; font-weight: 600 !important;
+  padding: 4px 11px !important; letter-spacing: .02em !important;
+}
+/* alert strip under hero — softer, integrated */
+html body #app .dbh-alert {
+  background: rgba(251,191,36,.1) !important; border: 1px solid rgba(251,191,36,.25) !important;
+  border-radius: 10px !important; padding: 9px 14px !important; margin-top: 12px !important;
+}
+html body #app .dbh-alert-text { font-size: 12.5px !important; color: var(--text-1,#07111f) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §203 — TEXT SIZING CALIBRATION (readability + hierarchy)
+   Objective fixes: breadcrumb & table too small; title/stat inversion; flat 13px.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* breadcrumb: 10.5 → 12px, more legible */
+html body #app .breadcrumb, html body #app [class*="breadcrumb"] {
+  font-size: 12px !important; letter-spacing: .01em !important;
+}
+
+/* page title: keep as the clear top of hierarchy (serif 26 is fine, but ensure it reads big) */
+html body #app .navbar-title, html body #app .view-title { font-size: 27px !important; }
+
+/* stat numbers: slightly SMALLER than the page title so title leads (was 30 > 26 = inversion) */
+html body #app .rhub-kpi, html body #app .metric-value, html body #app .availability-count,
+html body #app .stat-value, html body #app .dbh-stat-num, html body #app .askbar-occ-count {
+  font-size: 24px !important;
+}
+
+/* table cells: 13 → 14px for the primary data surface clinicians read all day */
+html body #app table.table tbody td, html body #app .rsm-table tbody td,
+html body #app .staff-table-row, html body #app table.table td {
+  font-size: 14px !important;
+}
+/* table headers stay 13 uppercase (correct — labels) */
+
+/* body/labels: nudge sub-13 items and give a clearer small/meta step */
+html body #app .stat-label, html body #app .rhub-kl, html body #app .metric-title,
+html body #app .detail-label { font-size: 12px !important; letter-spacing: .04em !important; }
+
+/* stat sub-detail text a touch bigger for readability */
+html body #app .metric-details .detail-value, html body #app .availability-status { font-size: 12.5px !important; }
+
+/* section headings — ensure a real step above body */
+html body #app .card-header, html body #app .card-title, html body #app .section-title {
+  font-size: 15.5px !important; font-weight: 650 !important;
+}
+
+/* empty-state text — readable, not tiny */
+html body #app .empty-state, html body #app [class*="empty"] p, html body #app .no-data { font-size: 14px !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §204 — MODULE HEADERS (extend Overview's premium treatment to all modules)
+   ═══════════════════════════════════════════════════════════════════════ */
+/* module tab bars (on-call, research) — consistent, premium */
+html body #app .rhub-tabs, html body #app .rhub-topbar {
+  border-bottom: 1px solid var(--border, #e3dfd6) !important;
+}
+html body #app .rhub-tab {
+  font-family: var(--font-ui) !important; font-size: 14px !important; font-weight: 550 !important;
+  color: var(--text-3, #5a6472) !important; padding: 12px 4px !important; transition: color .15s !important;
+}
+html body #app .rhub-tab.active, html body #app .rhub-tab--active {
+  color: var(--blue, #2563eb) !important; font-weight: 650 !important;
+}
+html body #app .rhub-tab-count {
+  font-size: 11px !important; font-weight: 600 !important; padding: 1px 7px !important; border-radius: 100px !important;
+  background: var(--surface-3, #edebe5) !important; color: var(--text-3) !important; margin-left: 5px !important;
+}
+/* module hero titles — serif, consistent with Overview */
+html body #app .rhub-page > h1, html body #app .view-hero-title, html body #app .module-title {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif) !important;
+  font-size: 27px !important; font-weight: 400 !important; color: var(--text-1) !important;
+}
+/* unit-detail + profile identity headers — premium depth like Overview hero */
+html body #app .udd-header, html body #app .pd-identity {
+  background:
+    radial-gradient(500px 260px at 90% -30%, rgba(8,145,178,.3), transparent 60%),
+    linear-gradient(135deg, #0d2848 0%, #16406e 55%, #0e2c50 100%) !important;
+}
