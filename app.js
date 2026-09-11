@@ -10858,6 +10858,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'rank_staff', priority: 95, patterns: [/(busiest|fewest|least|lightest|heaviest|overloaded)/, /who has the (most|fewest|least)/, /\bmost\b.*(shift|call|trial|resident|load)/], anti: [/\bcompare\b/] },
         // — Newly-reachable entities (close the agent coverage gap) —
         { intent: 'hospitals_overview', priority: 77, patterns: [/\bhospitals?\b/, /which sites?/, /our sites?/, /hospital complex/, /where.*(located|sites)/] },
+        { intent: 'callout_fairness', priority: 100, patterns: [/who (is|gets|has been|was) (called|calling) (out|in) (the )?most/i, /callout.*(most|fair|often|frequently|distribution|balance)/i, /who.?s (called out|been called) most/i, /(most|frequently) called (out|in)/i, /callout (fairness|balance|load)/i], anti: [/put|assign|log/] },
+        { intent: 'callouts_recent', priority: 98, patterns: [/(recent|latest|last) callouts?/i, /callouts? (this|last) (month|week|night|weekend)/i, /callouts? (in|during|for)\s+\w+/i, /(night|weekend|holiday) callouts?/i], anti: [/put|assign|log|who.*most/] },
+        { intent: 'callout_by_person', priority: 99, patterns: [/(how many|number of) (times )?(was|has)\s+[a-zñáéíóú]+\s+(called|been called)/i, /callouts? (for|by|of)\s+[a-zñáéíóú]{3,}/i], anti: [/put|assign|log|most|recent|night|weekend|holiday|daytime|this month|last month|this week/] },
         { intent: 'callouts_overview', priority: 77, patterns: [/emergency callout/, /\bcallout/, /called in/, /emergency cover/, /urgent cover/] },
         { intent: 'announcements_overview', priority: 77, patterns: [/announcement/, /\bnotice/, /\bmemo\b/, /what.*(posted|announced)/, /department news/, /any news/] },
         { intent: 'coverage_areas_overview', priority: 77, patterns: [/coverage area/, /which areas/, /areas.*(cover|coverage)/, /cover(age)? zones?/] },
@@ -11090,7 +11093,7 @@ document.addEventListener('DOMContentLoaded', () => {
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
         compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', who_supervises: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
-        coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
+        coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', callout_fairness: 'oncall_schedule', callouts_recent: 'oncall_schedule', callout_by_person: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
         recommend_backup: null, draft_email: null  // agent synthesis — allowed (read multiple)
@@ -12080,6 +12083,44 @@ document.addEventListener('DOMContentLoaded', () => {
           let text = `${areas.length} coverage area${areas.length===1?'':'s'}: ${areas.slice(0,8).map(a=>a.name).join(', ')}.`
           if (req.length) text += ` ${req.length} require${req.length===1?'s':''} coverage${req.some(a=>a.applies_weekends)?' (some include weekends)':''}.`
           return { text, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['coverage areas'], followups: [{ label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
+        }
+        if (intent === 'callout_fairness') {
+          const cos = callouts.value || []
+          if (!cos.length) return { text: 'No emergency callouts on record yet — nothing to compare.', chips: [], actions: [{ label: 'Open callouts', view: 'oncall_schedule' }], sources: ['emergency callouts'], followups: [], confidence: 'high' }
+          const byStaff = {}
+          cos.forEach(c => { if (c.staff_id) byStaff[c.staff_id] = (byStaff[c.staff_id]||0)+1 })
+          const ranked = Object.entries(byStaff).map(([id,n]) => ({ id, n, name: getStaffName(id) })).sort((a,b)=>b.n-a.n)
+          const total = cos.length, people = ranked.length
+          const avg = people ? (total/people) : 0
+          const items = ranked.slice(0,8).map(r => ({ title: r.name, badge: r.n+'×', tone: r.n > avg*1.5 ? 'project' : 'default', meta: r.n > avg*1.5 ? 'above average — watch for over-calling' : '' }))
+          const topName = ranked[0] ? `${ranked[0].name} (${ranked[0].n}×)` : '—'
+          return { text: `Callout load across ${people} staff (avg ${avg.toFixed(1)} each). Most called out: ${topName}.`, visual: { type: 'reslist', items }, chips: ranked.slice(0,4).map(r=>({label:r.name,id:r.id})), actions: [{ label: 'Open callouts', view: 'oncall_schedule', primary: true }], sources: ['emergency callouts','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'callouts_recent') {
+          const q = (askBar.lastAsked || '').toLowerCase()
+          let cos = (callouts.value || []).slice()
+          // time-type filter
+          const tt = /night/.test(q)?'night' : /weekend/.test(q)?'weekend' : /holiday/.test(q)?'holiday' : /daytime|day/.test(q)?'daytime' : null
+          if (tt) cos = cos.filter(c => (c.time_type||'') === tt)
+          // range filter
+          const range = askBarParseRange(q)
+          if (range) cos = cos.filter(c => c.called_at && Utils.normalizeDate(c.called_at) >= range.start && Utils.normalizeDate(c.called_at) <= range.end)
+          cos.sort((a,b) => (b.called_at||'').localeCompare(a.called_at||''))
+          if (!cos.length) return { text: `No callouts${tt?` (${tt})`:''}${range?` in ${range.label}`:''} on record.`, chips: [], actions: [{ label: 'Open callouts', view: 'oncall_schedule' }], sources: ['emergency callouts'], followups: [], confidence: 'high' }
+          const areas = onCallOps.coverageAreas?.value || []
+          const aname = (id) => (areas.find(a=>a.id===id)||{}).name || null
+          const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) } catch(e){ return '' } }
+          const items = cos.slice(0,8).map(c => ({ title: getStaffName(c.staff_id), badge: c.time_type||null, tone: 'default', meta: [fmt(c.called_at), c.reason_category, aname(c.coverage_area_id)].filter(Boolean).join(' · ') }))
+          return { text: `${cos.length} callout${cos.length===1?'':'s'}${tt?` (${tt})`:''}${range?` in ${range.label}`:''}:`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open callouts', view: 'oncall_schedule', primary: true }], sources: ['emergency callouts','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'callout_by_person') {
+          const person = askBarResolveStaff(askBar.lastAsked || askBar.query)
+          if (!person) return { text: 'Whose callouts? Name the person.', chips: [], actions: [], sources: ['emergency callouts'], followups: [], confidence: 'low' }
+          const mine = (callouts.value || []).filter(c => c.staff_id === person.id)
+          if (!mine.length) return { text: `${person.full_name} has not been called out.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open callouts', view: 'oncall_schedule' }], sources: ['emergency callouts'], followups: [], confidence: 'high' }
+          const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) } catch(e){ return '' } }
+          const items = mine.slice(0,8).map(c => ({ title: fmt(c.called_at), badge: c.time_type||null, tone:'default', meta: [c.reason_category, c.notes].filter(Boolean).join(' · ') }))
+          return { text: `${person.full_name} has been called out ${mine.length} time${mine.length===1?'':'s'}:`, visual: { type: 'reslist', items }, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open callouts', view: 'oncall_schedule', primary: true }], sources: ['emergency callouts','staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'callouts_overview') {
           const cos = callouts.value || []
