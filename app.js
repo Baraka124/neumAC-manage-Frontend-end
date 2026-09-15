@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue   
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
 
     // ── DIAGNOSTIC: visible error banner ─────────────────────────────────
     // Built with plain DOM calls (no Vue) so it still works even when the
@@ -2750,6 +2750,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isToday: dutyDate === today,
             isPast:  dutyDate < today,
             dayLabel:  new Date(dutyDate + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' }),
+            dayNum:    new Date(dutyDate + 'T12:00:00').getDate(),
             dateLabel: new Date(dutyDate + 'T12:00:00').toLocaleDateString('en', { day: 'numeric', month: 'short' }),
             areaName:  areaObj?.name  || null,
             areaColor: areaObj?.color || null,
@@ -11757,7 +11758,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (range) return s <= range.end && e >= range.start   // any overlap with the window
             return today >= s && today <= e && a.current_status === 'currently_absent'
           }
-          const out = (absences.value || []).filter(a => overlaps(a) && !['cancelled'].includes(a.current_status))
+          // §1: read leave Events via the knowledge layer (falls back to raw table)
+          const out = USE_KNOWLEDGE_LAYER
+            ? knowledge.event.list({ kind: 'leave' }).map(e => e._raw).filter(a => overlaps(a) && !['cancelled'].includes(a.current_status))
+            : (absences.value || []).filter(a => overlaps(a) && !['cancelled'].includes(a.current_status))
           if (!out.length) return { text: `Nobody is absent ${rangeLabel} — full attendance.`, chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence' }], sources: ['leave records'], confidence: 'high' }
           const _reasonLbl = { vacation: 'vacation', sick_leave: 'sick', conference: 'conference', training: 'training', personal: 'personal', other: 'leave' }
           const rows = out.slice(0,6).map(a => ({
@@ -12478,7 +12482,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'oncall_upcoming') {
           const today = Utils.normalizeDate(new Date())
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
-          const all = (onCallSchedule.value || [])
+          const all = USE_KNOWLEDGE_LAYER
+            ? knowledge.activity.list({ kind: 'on_call' }).map(a => a._raw)
+            : (onCallSchedule.value || [])
             .sort((a,b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
           // #temporal: did they name a specific day? ("tomorrow", "friday", "next monday", a date)
           const dr = askBarExtractDates(q)
