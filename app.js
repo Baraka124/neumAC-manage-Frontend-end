@@ -10451,12 +10451,13 @@ document.addEventListener('DOMContentLoaded', () => {
               start_date: r.start, end_date: r.end || r.start, rotation_status: 'scheduled', rotation_category: 'clinical_rotation'
             } })
             ok++
-          } catch (e) { errs.push(r.unit) }
+          } catch (e) { errs.push({ unit: r.unit, overlap: /overlap|conflict|two units|two places/i.test((e&&e.message)||'') }) }
         }
         turn.writing = false; turn.committed = true
         try { if (rotationOps && rotationOps.loadRotations) rotationOps.loadRotations() } catch(e) {}
+        const anyOverlap = errs.some(x => x.overlap)
         turn.commitText = errs.length
-          ? `\u2713 Scheduled ${ok} of ${p.rows.length} rotations for ${p.resident.name}. Failed: ${errs.join(', ')}.`
+          ? `\u2713 Scheduled ${ok} of ${p.rows.length} for ${p.resident.name}. Couldn't do: ${errs.map(x=>x.unit).join(', ')}${anyOverlap?' \u2014 overlaps an existing rotation.':'.'}`
           : `\u2713 ${p.resident.name} scheduled in ${p.rows.length} units: ${p.rows.map(r=>r.unit).join(', ')}.`
       }
       const askBarCancelMultiRotation = (turn) => { turn.cancelled = true }
@@ -13287,7 +13288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 style="padding:12px 24px;background:#007bff;color:white;border:none;border-radius:6px;cursor:pointer;">
           🔄 Refresh Page
         </button>
-      </div>`;  
+      </div>`;
     throw error;    
   }
 });
