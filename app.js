@@ -10850,13 +10850,23 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'rotation_history', priority: 100, patterns: [/(where|which units?) (has|have|did)\s+[a-zñáéíóú]+.*(rotat|been|trained|worked)/i, /rotation history (of|for)/i, /[a-zñáéíóú]+.?s?\s+(rotation|training) (history|record|path|journey)/i, /where (has|did)\s+[a-zñáéíóú]+\s+rotat/i], anti: [/put|assign|cancel|which residents/] },
         { intent: 'rotation_gaps', priority: 100, patterns: [/rotation gaps?/i, /(residents?|who).*(gap|unassigned|not (in|on) (a )?rotation|between rotations)/i, /(unfilled|empty|vacant) (unit|rotation|month)/i, /gaps? in (the )?(rotation|schedule|coverage)/i], anti: [/put|assign|cancel/] },
         { intent: 'coverage_board', priority: 93, patterns: [/(on.?call|coverage|rota) (board|wall|grid|calendar|week|visual)/i, /(show|display).*(on.?call|coverage|rota).*(board|week|visual|grid)/i, /week.?s? (on.?call|rota|coverage)/i, /coverage (this|next) week/i], anti: [/put|assign|cancel/] },
-        { intent: 'rotations_ending', priority: 101, patterns: [/(residents?|rotations?|who).*(finish|end|complet|wrap|done|leaving).*(month|week|soon|when)/i, /(finish|end|complet|ending).*(rotation|this month|this week|soon)/i, /which residents (finish|end|are finishing|are ending|complete)/i, /rotations? (ending|finishing)/i], anti: [/cancel|remove/] },
+        { intent: 'rotations_upcoming', priority: 101, patterns: [/rotations? (starting|beginning|upcoming)/i, /(which )?residents? (start|begin|are starting)/i, /(who|what) (starts|begins) (a )?rotation/i, /upcoming rotations?/i], anti: [/cancel|remove|ending|finish/] },
+        { intent: 'rotation_overdue', priority: 101, patterns: [/rotations? (overdue|past|expired|not closed|need closing|should have ended)/i, /overdue rotations?/i, /rotations? past (their|the) end/i], anti: [/cancel|remove/] },
+        { intent: 'supervisor_load', priority: 100, patterns: [/(which|who) attend\w* supervis\w* (the )?most/i, /supervisor (load|fairness|balance|distribution)/i, /who supervises (the )?most residents?/i, /most residents supervised/i], anti: [/put|assign/] },
+        { intent: 'resident_progress', priority: 100, patterns: [/(rotation |training )?progress (of|for)\s+[a-zñáéíóú]/i, /how (many|far).*(rotations?|units?).*(has|done|completed)\s+[a-zñáéíóú]/i, /[a-zñáéíóú]+.?s? (rotation |training )?progress/i, /what has\s+[a-zñáéíóú]+\s+completed/i], anti: [/put|assign|cancel/] },
+        { intent: 'residents_free', priority: 100, patterns: [/residents? (with no|without) (a )?(active |scheduled )?rotation/i, /(which )?residents? (are )?(free|available|unassigned|not rotating)/i, /(who|which residents?) can be placed/i, /available residents?/i], anti: [/put|assign/] },
+        { intent: 'oncall_by_person', priority: 100, patterns: [/when is\s+[a-zñáéíóú]+\s+(on call|on-call|de guardia)/i, /[a-zñáéíóú]+.?s?\s+(on.?call|call) (shifts?|schedule|days?)/i, /(on.?call|call) (shifts?|schedule) (for|of)\s+[a-zñáéíóú]/i], anti: [/put|assign|who is on call today|most|fewest/] },
+        { intent: 'oncall_fairness', priority: 100, patterns: [/(on.?call|call) (fairness|balance|load|distribution)/i, /who (does|has) (the )?most (on.?call|call|shifts)/i, /(most|least|fewest) (on.?call|call|shifts)/i, /who.?s? (over|under)worked (on.?call|call)/i], anti: [/put|assign/] },
+        { intent: 'oncall_no_backup', priority: 100, patterns: [/(shifts?|on.?call|call).*(no|without|missing) backup/i, /no backup/i, /(unbacked|uncovered) (shifts?|call)/i, /which shifts.*backup/i], anti: [/put|assign/] },
+        { intent: 'oncall_week', priority: 99, patterns: [/(on.?call|call|rota) (this|next) week/i, /(this|next) week.?s? (on.?call|call|rota|schedule)/i, /week.?s? (roster|rota|call)/i], anti: [/put|assign/] },
+        { intent: 'oncall_swap', priority: 100, patterns: [/who (could|can) swap (with )?[a-zñáéíóú]/i, /swap.*[a-zñáéíóú]+.*(on|for|shift)/i, /(cover|replace|swap for)\s+[a-zñáéíóú]+.*(on |shift|call)/i, /who can take\s+[a-zñáéíóú]+.?s? (shift|call)/i], anti: [/put|assign|rotation/] },
+        { intent: 'rotations_ending', priority: 101, patterns: [/(residents?|rotations?|who).*(finish|end|complet|wrap|done|leaving).*(month|week|soon|when)/i, /(finish|end|complet).*(rotation|this month|this week|soon)/i, /which residents (finish|end|are finishing|are ending|complete)/i, /rotations? (ending|finishing)/i], anti: [/cancel|remove|starting|beginning|overdue/] },
         { intent: 'find_replacement', priority: 123, patterns: [/(find|need|get|suggest|who can|who could).*(replacement|cover|substitute|backup|fill in|stand in)/i, /(replace|cover for|substitute for|backup for)\s+[a-zñáéíóú]/i, /who can (cover|replace|stand in for|fill in for)\s+[a-zñáéíóú]/i], anti: [/put|assign .* on call/] },
         { intent: 'workload_analysis', priority: 102, patterns: [/(overload|stretched|too much|spread thin|burn.?out|overwork|imbalanc|unbalanc|balanced\??$|take on more|take more|absorb|who can (take|absorb|handle)|has capacity|capacity to|capacity for|free capacity|workload|work load|who.?s (busy|stretched|overloaded)|distribute.*(fairly|evenly)|load.*(balanced|distributed|even|fair)|lightest load|most load)/i], anti: [/on call|oncall|leave|rotation.*where/] },
         { intent: 'staff_roster', priority: 103, patterns: [/(how many|number of|count of|total)\s+(staff|people|physicians?|doctors?|attendings?|fellows?|nurses?|employees?|do we have)/i, /(list|show( me)?|who are|give me)\s+(the\s+)?(all\s+)?(staff|people|team|everyone|physicians?|doctors?|attendings?|residents?|fellows?|nurses?|secretar|coordinators?|engineers?)/i, /^(staff|team|everyone|all staff)$/i, /who works here/i], anti: [/on call|oncall|leave|absent|phd|certif|pi\b|rotat|trial|how many residents|number of residents|in (the )?(uci|ucri|asma|sue|hospitaliz|unit)/] },
         { intent: 'staff_contact', priority: 104, patterns: [/(email|e-?mail|phone|number|contact|reach|mobile|extension)\s+(for|of|de)?\s*[a-zñáéíóú]{3,}/i, /[a-zñáéíóú]{3,}.?s?\s+(email|e-?mail|phone|number|contact|mobile|extension)\b/i, /how (do i |can i |to )?(reach|contact|email)\s+[a-zñáéíóú]/i], anti: [/on call|oncall|on-call|who is on|draft|write|compose|send|about|\bno\b|without|\bwhich\b|have no|attending|residents?\b|how many|list/] },
         { intent: 'compare_staff', priority: 100, patterns: [/\bcompare\b/, /(who has (more|less|fewer)|more than|busier|less busy).*\b(or|and|vs|versus)\b/, /\b(or|vs|versus)\b.*(more|less|busier|shifts|trials)/] },
-        { intent: 'rank_staff', priority: 95, patterns: [/(busiest|fewest|least|lightest|heaviest|overloaded)/, /who has the (most|fewest|least)/, /\bmost\b.*(shift|call|trial|resident|load)/], anti: [/\bcompare\b/] },
+        { intent: 'rank_staff', priority: 95, patterns: [/(busiest|fewest|least|lightest|heaviest|overloaded)/, /who has the (most|fewest|least)/, /\bmost\b.*(shift|call|trial|resident|load)/], anti: [/\bcompare\b|unit/] },
         // — Newly-reachable entities (close the agent coverage gap) —
         { intent: 'hospitals_overview', priority: 77, patterns: [/\bhospitals?\b/, /which sites?/, /our sites?/, /hospital complex/, /where.*(located|sites)/] },
         { intent: 'callout_fairness', priority: 100, patterns: [/who (is|gets|has been|was) (called|calling) (out|in) (the )?most/i, /callout.*(most|fair|often|frequently|distribution|balance)/i, /who.?s (called out|been called) most/i, /(most|frequently) called (out|in)/i, /callout (fairness|balance|load)/i], anti: [/put|assign|log/] },
@@ -10870,6 +10880,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'units_board', priority: 93, patterns: [/(units?|clinical units?|rotations?) (board|wall|status board|dashboard|overview board|map|grid|at a glance|status)/i, /(show|display|give me).*(units?|clinical).*(board|status|dashboard|visual|overview)/i, /units? status board/i, /clinical status/i], anti: [/put|assign|cancel/] },
         { intent: 'residents_board', priority: 93, patterns: [/(residents?) (board|wall|status board|dashboard|overview|map|grid|at a glance|status|visual)/i, /(show|display|give me).*(residents?).*(board|status|dashboard|visual|overview|where)/i, /resident status board/i, /where is everyone rotating/i, /rotation board/i], anti: [/put|assign|cancel|finish|ending/] },
         { intent: 'place_resident', priority: 118, patterns: [/where (should|can|could|to)\s+(i )?(place|put|assign|send)\s+[a-zñáéíóú]/i, /(best|which) unit for\s+[a-zñáéíóú]/i, /where (should|can|could)\s+[a-zñáéíóú]+\s+(go|rotate|be placed)/i, /place\s+[a-zñáéíóú]+\s+where/i], anti: [/on call|leave/] },
+        { intent: 'unit_load', priority: 97, patterns: [/(which )?units? (are )?(most|least|under|over) (used|utilis|utiliz|busy|full|occupied|staffed)/i, /unit (load|utilis|utiliz|occupancy) (ranking|by|most|least)/i, /(busiest|emptiest|most used) units?/i, /units? (needing|need) (more )?(residents?|staff)/i], anti: [/put|assign|cancel/] },
+        { intent: 'unit_supervisor_gap', priority: 93, patterns: [/units? (with |without )?(no |missing )?(a )?supervisor/i, /units? (that )?(need|lack|missing) (a )?supervisor/i, /which units.*no supervisor/i, /unsupervised units?/i], anti: [/put|assign|resident/] },
+        { intent: 'unit_by_specialty', priority: 92, patterns: [/units? (for|covering|in|by)\s+(the )?(asthma|copd|epoc|transplant|trasplante|sleep|sueño|critical|intensive|cardio|thoracic|toracica|bronch|respiratory|[a-zñáéíóú]+ specialty)/i, /(which|what) units? cover/i, /units? by specialty/i], anti: [/put|assign|free|full|how many/] },
         { intent: 'unit_forecast', priority: 94, patterns: [/(which )?units? (will be|are going to be|become)\s+(empty|free|covered|full|vacant|uncovered)/i, /units? (empty|free|covered|uncovered|vacant)\s+(next|this|in)\s+(month|week|\w+)/i, /(coverage|unit) forecast/i, /(empty|uncovered|vacant) units? (next|this|in)/i, /which units.*(next month|next week|coming)/i], anti: [/put|assign|cancel/] },
         { intent: 'unit_profile', priority: 95, patterns: [/(tell me about|about the|about|details? (of|for|on)|profile of|show me the?)\s+(the\s+)?(uci|ucri|asma\s?grave|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|radiolog\w*|externa)\b/i, /(tell me about|details? (of|for|on)|profile of|show me the?)\s+[a-zñáéíóú]+.*unit/i, /(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*) (unit )?(details?|profile|status|info)/i, /how (full|busy|occupied) is\s+(the\s+)?(uci|ucri|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa|[a-zñáéíóú]+ unit)/i, /is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+(full|at capacity|free|empty|available)/i, /does\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+have\s+(space|room|capacity|a resident)/i, /(who is|whos|who's|residents?) (in|at|assigned to|rotating in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa)/i, /how many residents? (in|at|are in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /list residents? (in|at)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /what (specialty|department|type|floor|building) is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i], anti: [/put|assign|cancel|move|transfer|which units|all units|free units|trial|study|ensayo|project|proyecto/i] },
         { intent: 'unit_status', priority: 91, patterns: [/(which|what|any) units? (are )?(free|open|available|empty|unassigned|scheduled|booked|occupied|in use|taken)/i, /units? (with|without) (a )?(resident|supervisor|space|room)/i, /(free|available|open|empty|scheduled|occupied) (clinical |training )?units?/i, /units? (in|on) (building|floor|the)/i, /who (runs|supervises|is in charge of|leads) (the )?[a-zñáéíóú]+ unit/i, /unit (overview|status|breakdown|occupancy|map)/i, /where can .* rotate/i, /rotation (slots|openings|availability|capacity)/i], anti: [/put|assign|cancel/] },
@@ -11089,11 +11102,11 @@ document.addEventListener('DOMContentLoaded', () => {
         absent_now: 'staff_absence', staff_leave: 'staff_absence',
         staff_oncall: 'oncall_schedule', staff_rotation: 'resident_rotations',
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
-        count_rotations_ending: 'resident_rotations',
+        count_rotations_ending: 'resident_rotations', rotations_upcoming: 'resident_rotations', rotation_overdue: 'resident_rotations', supervisor_load: 'resident_rotations', resident_progress: 'resident_rotations', residents_free: 'resident_rotations', oncall_by_person: 'oncall_schedule', oncall_fairness: 'oncall_schedule', oncall_no_backup: 'oncall_schedule', oncall_week: 'oncall_schedule', oncall_swap: 'oncall_schedule',
         trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', trials_by_person: 'clinical_trials',
         research_lines: 'research_lines', research_line_profile: 'research_lines', trial_profile: 'clinical_trials', project_profile: 'innovation_projects', publications: 'news_posts', research_summary: 'research_lines', research_activity: 'research_lines', innovation_projects: 'innovation_projects',
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
-        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
+        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', unit_load: 'training_units', unit_supervisor_gap: 'training_units', unit_by_specialty: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
         compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', who_supervises: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', callout_fairness: 'oncall_schedule', callouts_recent: 'oncall_schedule', callout_by_person: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
@@ -12255,6 +12268,45 @@ document.addEventListener('DOMContentLoaded', () => {
           const rows = top.map(u => ({ name: u.name + (u.isNew?' · new for them':''), n: u.active, cap: u.cap, pct: Math.round(u.active/u.cap*100), full: false, detail: u.sup ? 'supervisor '+u.sup : 'no supervisor yet' }))
           return { text: `Best placement for ${who} (space + supervisor + new experience): ${top.slice(0,3).map(u=>`${u.name} (${u.active}/${u.cap})`).join(', ')}.`, visual: { type: 'occupancy', rows }, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['units','rotations','staff'], followups: person?[{ label: `Put ${person.full_name.split(' ')[0]} in ${top[0].name}`, intent: 'assign_rotation', q: `put ${person.full_name} in ${top[0].name} under ${top[0].sup||''}` }]:[], confidence: 'high' }
         }
+        if (intent === 'unit_load') {
+          const q = (askBar.lastAsked || '').toLowerCase()
+          const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
+          const rots = rotations.value || []
+          const rows = units.map(u => {
+            const n = rots.filter(r => r.rotation_status==='active' && r.training_unit_id===u.id).length
+            const cap = u.maximum_residents || 5
+            return { name: u.unit_name, n, cap, pct: Math.round(n/cap*100), full: n>=cap, detail: n===0?'empty':(n>=cap?'full':`${cap-n} free`) }
+          })
+          const wantLeast = /(least|under|empty|need)/.test(q)
+          rows.sort((a,b) => wantLeast ? a.pct-b.pct : b.pct-a.pct)
+          const top = rows.slice(0,8)
+          const lead = wantLeast ? `Least utilised units (most capacity free)` : `Most utilised units`
+          return { text: `${lead}: ${top.slice(0,3).map(r=>`${r.name} (${r.n}/${r.cap})`).join(', ')}.`, visual: { type: 'occupancy', rows: top }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations'], followups: [{ label: 'Where to place a resident?', intent: 'place_resident', q:'where should i place a resident' }], confidence: 'high' }
+        }
+        if (intent === 'unit_supervisor_gap') {
+          const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
+          const noSup = units.filter(u => !(u.default_supervisor_id || u.supervisor_id))
+          if (!noSup.length) return { text: 'Every active unit has a default supervisor assigned.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
+          const items = noSup.slice(0,10).map(u => ({ title: u.unit_name, badge: u.unit_code||null, tone:'project', meta: 'no supervisor assigned' }))
+          return { text: `${noSup.length} unit${noSup.length===1?'':'s'} without a supervisor: ${noSup.slice(0,5).map(u=>u.unit_name).join(', ')}${noSup.length>5?'…':''}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'unit_by_specialty') {
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          const _nu = (x) => (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
+          // extract a specialty keyword from the query
+          const kw = (q.match(/\b(asthma|asma|copd|epoc|transplant|trasplante|sleep|sue[ñn]o|critical|intensive|cardio\w*|thoracic|tor[áa]cica|bronch\w*|respiratory|interna|internal)\b/)||[])[0]
+          let matched = units
+          if (kw) matched = units.filter(u => _nu((u.specialty||'')+' '+(u.unit_name||'')).includes(_nu(kw)))
+          if (!matched.length) {
+            // group all by specialty instead
+            const byspec = {}; units.forEach(u => { const s=u.specialty||'General'; (byspec[s]=byspec[s]||[]).push(u.unit_name) })
+            const items = Object.entries(byspec).slice(0,10).map(([s,us])=>({ title: s, badge: us.length+'', tone:'research', meta: us.slice(0,3).join(', ') }))
+            return { text: `Units grouped by specialty:`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+          }
+          const items = matched.slice(0,10).map(u => ({ title: u.unit_name, badge: u.specialty||null, tone:'research', meta: u.maximum_residents?`cap ${u.maximum_residents}`:'' }))
+          return { text: `${matched.length} unit${matched.length===1?'':'s'} for ${kw}: ${matched.slice(0,4).map(u=>u.unit_name).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+        }
         if (intent === 'unit_forecast') {
           const q = (askBar.lastAsked || '').toLowerCase()
           const range = askBarParseRange(q) || { start: Utils.normalizeDate(new Date()), end: Utils.normalizeDate(new Date(Date.now()+30*864e5)), label: 'the next 30 days' }
@@ -12403,6 +12455,109 @@ document.addEventListener('DOMContentLoaded', () => {
           })
           const gaps = tiles.filter(t => t.sub === 'UNFILLED').length
           return { text: `Next ${upcoming.length} on-call shift${upcoming.length===1?'':'s'}${gaps?` — ${gaps} unfilled`:''}.`, visual: { type: 'board', mode: 'coverage', tiles }, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule','staff'], followups: [{ label: 'Draft next week rota', intent: 'draft_rota' }], confidence: 'high' }
+        }
+        if (intent === 'rotations_upcoming') {
+          const today = Utils.normalizeDate(new Date())
+          const end = Utils.normalizeDate(new Date(Date.now()+30*864e5))
+          const units = trainingUnits.value || []
+          const un = (id) => (units.find(u=>u.id===id)||{}).unit_name || 'a unit'
+          const up = (rotations.value||[]).filter(r => r.rotation_status==='scheduled' && r.start_date && Utils.normalizeDate(r.start_date)>=today && Utils.normalizeDate(r.start_date)<=end)
+            .sort((a,b)=>Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
+          if (!up.length) return { text: 'No rotations are starting in the next 30 days.', chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], followups: [], confidence: 'high' }
+          const items = up.slice(0,10).map(r => ({ title: getStaffName(r.resident_id), badge: un(r.training_unit_id), tone:'active', meta: `starts ${Utils.formatDateShort(r.start_date)}${r.supervising_attending_id?' · under '+getStaffName(r.supervising_attending_id):''}` }))
+          return { text: `${up.length} rotation${up.length===1?'':'s'} starting soon:`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations','staff','units'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'rotation_overdue') {
+          const today = Utils.normalizeDate(new Date())
+          const units = trainingUnits.value || []
+          const un = (id) => (units.find(u=>u.id===id)||{}).unit_name || 'a unit'
+          const over = (rotations.value||[]).filter(r => r.rotation_status==='active' && r.end_date && Utils.normalizeDate(r.end_date) < today)
+          if (!over.length) return { text: 'No active rotations are past their end date. All current.', chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], followups: [], confidence: 'high' }
+          const items = over.slice(0,10).map(r => ({ title: getStaffName(r.resident_id), badge: 'overdue', tone:'project', meta: `${un(r.training_unit_id)} · ended ${Utils.formatDateShort(r.end_date)}` }))
+          return { text: `${over.length} rotation${over.length===1?'':'s'} past end date (need closing): ${over.slice(0,4).map(r=>getStaffName(r.resident_id)).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'supervisor_load') {
+          const active = (rotations.value||[]).filter(r => r.rotation_status==='active' && r.supervising_attending_id)
+          const by = {}; active.forEach(r => by[r.supervising_attending_id]=(by[r.supervising_attending_id]||0)+1)
+          const ranked = Object.entries(by).map(([id,n])=>({id,n,name:getStaffName(id)})).sort((a,b)=>b.n-a.n)
+          if (!ranked.length) return { text: 'No active rotations have supervisors assigned.', chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], followups: [], confidence: 'high' }
+          const items = ranked.slice(0,8).map(r => ({ title: r.name, badge: r.n+' resident'+(r.n===1?'':'s'), tone: r.n>=3?'project':'default', meta: r.n>=3?'heavy supervision load':'' }))
+          return { text: `Supervision load: ${ranked.slice(0,3).map(r=>`${r.name} (${r.n})`).join(', ')}.`, visual: { type: 'reslist', items }, chips: ranked.slice(0,4).map(r=>({label:r.name,id:r.id})), actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'resident_progress') {
+          const person = askBarResolveStaffRole(askBar.lastAsked||askBar.query,'resident') || askBarResolveStaff(askBar.lastAsked||askBar.query)
+          if (!person) return { text: 'Whose progress? Name the resident.', chips: [], actions: [], sources: ['rotations'], followups: [], confidence: 'low' }
+          const units = trainingUnits.value || []
+          const un = (id) => (units.find(u=>u.id===id)||{}).unit_name || 'a unit'
+          const mine = (rotations.value||[]).filter(r => r.resident_id===person.id)
+          const done = mine.filter(r => !['active','scheduled'].includes(r.rotation_status))
+          const active = mine.filter(r => r.rotation_status==='active')
+          const sched = mine.filter(r => r.rotation_status==='scheduled')
+          if (!mine.length) return { text: `${person.full_name} has no rotation record yet.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], followups: [], confidence: 'high' }
+          const items = []
+          if (active.length) items.push({ title: 'Now', badge: 'active', tone:'active', meta: active.map(r=>un(r.training_unit_id)).join(', ') })
+          if (done.length) items.push({ title: `${done.length} completed`, badge: null, tone:'research', meta: done.map(r=>un(r.training_unit_id)).slice(0,5).join(', ') })
+          if (sched.length) items.push({ title: `${sched.length} scheduled`, badge: null, tone:'project', meta: sched.map(r=>un(r.training_unit_id)).slice(0,4).join(', ') })
+          return { text: `${person.full_name}: ${done.length} completed, ${active.length} active, ${sched.length} scheduled rotation${mine.length===1?'':'s'}.`, visual: { type: 'reslist', items }, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations','staff','units'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'residents_free') {
+          const residents = (medicalStaff.value||[]).filter(s => askBarIsResident(s) && s.employment_status==='active' && !s.deleted_at)
+          const rots = rotations.value || []
+          const free = residents.filter(r => !rots.some(x => x.resident_id===r.id && ['active','scheduled'].includes(x.rotation_status)))
+          if (!free.length) return { text: 'Every active resident has an active or scheduled rotation.', chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations','staff'], followups: [], confidence: 'high' }
+          const items = free.slice(0,10).map(r => ({ title: r.full_name, badge: r.residency_year_override||r.training_year||null, tone:'default', meta: 'available to place' }))
+          return { text: `${free.length} resident${free.length===1?'':'s'} free to place: ${free.slice(0,5).map(r=>r.full_name).join(', ')}${free.length>5?'…':''}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['rotations','staff'], followups: [{ label: 'Where to place them?', intent: 'place_resident', q:'where should i place a resident' }], confidence: 'high' }
+        }
+        if (intent === 'oncall_by_person') {
+          const person = askBarResolveStaff(askBar.lastAsked||askBar.query)
+          if (!person) return { text: 'Whose on-call? Name the person.', chips: [], actions: [], sources: ['on-call schedule'], followups: [], confidence: 'low' }
+          const today = Utils.normalizeDate(new Date())
+          const mine = (onCallSchedule.value||[]).filter(o => (o.primary_physician_id===person.id||o.backup_physician_id===person.id) && Utils.normalizeDate(o.duty_date)>=today)
+            .sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
+          if (!mine.length) return { text: `${person.full_name} has no upcoming on-call shifts.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
+          const items = mine.slice(0,10).map(o => ({ title: Utils.formatDateShort(o.duty_date), badge: o.primary_physician_id===person.id?'primary':'backup', tone: o.primary_physician_id===person.id?'active':'default', meta: '' }))
+          return { text: `${person.full_name} — ${mine.length} upcoming shift${mine.length===1?'':'s'}, next ${Utils.formatDateShort(mine[0].duty_date)}:`, visual: { type: 'reslist', items }, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'oncall_fairness') {
+          const q = (askBar.lastAsked||'').toLowerCase()
+          const by = {}; (onCallSchedule.value||[]).forEach(o => { if (o.primary_physician_id) by[o.primary_physician_id]=(by[o.primary_physician_id]||0)+1 })
+          const ranked = Object.entries(by).map(([id,n])=>({id,n,name:getStaffName(id)})).filter(r=>r.name!=='Not assigned')
+          if (!ranked.length) return { text: 'No on-call shifts are assigned yet.', chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
+          const wantLeast = /(least|fewest|under)/.test(q)
+          ranked.sort((a,b)=> wantLeast ? a.n-b.n : b.n-a.n)
+          const total = ranked.reduce((s,r)=>s+r.n,0), avg = total/ranked.length
+          const items = ranked.slice(0,8).map(r => ({ title: r.name, badge: r.n+' shift'+(r.n===1?'':'s'), tone: r.n>avg*1.4?'project':'default', meta: r.n>avg*1.4?'above average':'' }))
+          return { text: `On-call load (${wantLeast?'fewest first':'most first'}, avg ${avg.toFixed(1)}): ${ranked.slice(0,3).map(r=>`${r.name} (${r.n})`).join(', ')}.`, visual: { type: 'reslist', items }, chips: ranked.slice(0,4).map(r=>({label:r.name,id:r.id})), actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'oncall_no_backup') {
+          const today = Utils.normalizeDate(new Date())
+          const nobackup = (onCallSchedule.value||[]).filter(o => o.primary_physician_id && !o.backup_physician_id && Utils.normalizeDate(o.duty_date)>=today)
+            .sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
+          if (!nobackup.length) return { text: 'Every upcoming shift has a backup assigned.', chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
+          const items = nobackup.slice(0,10).map(o => ({ title: Utils.formatDateShort(o.duty_date), badge: 'no backup', tone:'project', meta: getStaffName(o.primary_physician_id)+' on primary' }))
+          return { text: `${nobackup.length} upcoming shift${nobackup.length===1?'':'s'} with no backup: ${nobackup.slice(0,4).map(o=>Utils.formatDateShort(o.duty_date)).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'oncall_week') {
+          const q = (askBar.lastAsked||'').toLowerCase()
+          const base = /next/.test(q) ? new Date(Date.now()+7*864e5) : new Date()
+          const dow = base.getDay(), monday = new Date(base); monday.setDate(base.getDate() - ((dow+6)%7))
+          const start = Utils.normalizeDate(monday), endD = new Date(monday); endD.setDate(monday.getDate()+6)
+          const end = Utils.normalizeDate(endD)
+          const wk = (onCallSchedule.value||[]).filter(o => Utils.normalizeDate(o.duty_date)>=start && Utils.normalizeDate(o.duty_date)<=end)
+            .sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
+          const label = /next/.test(q)?'next week':'this week'
+          if (!wk.length) return { text: `No on-call shifts scheduled for ${label}.`, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [{ label: 'Draft the rota', intent: 'draft_rota' }], confidence: 'high' }
+          const items = wk.map(o => ({ title: Utils.formatDateShort(o.duty_date), badge: o.primary_physician_id?null:'UNFILLED', tone: o.primary_physician_id?'active':'project', meta: o.primary_physician_id?getStaffName(o.primary_physician_id):'no coverage' }))
+          return { text: `On-call ${label} (${wk.length} shift${wk.length===1?'':'s'}):`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'oncall_swap') {
+          const q = (askBar.lastAsked||askBar.query||'').toLowerCase()
+          const person = askBarResolveStaff(q.replace(/\b(who|could|can|swap|with|cover|replace|for|take|shift|call|on)\b/gi,' '))
+          const dr = askBarExtractDates(q)
+          const available = askBarWorkforceAvailable(dr.start||null, { excludeId: person?person.id:null }).slice(0,5)
+          if (!available.length) return { text: `No eligible staff are free${dr.start?' on '+Utils.formatDateShort(dr.start):''} to swap${person?' with '+person.full_name:''}.`, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule','staff'], followups: [], confidence: 'high' }
+          const items = available.slice(0,5).map(a => ({ title: a.name, badge: a.shifts+' shift'+(a.shifts===1?'':'s'), tone:'active', meta: 'available' }))
+          return { text: `Could swap${person?' with '+person.full_name:''}${dr.start?' on '+Utils.formatDateShort(dr.start):''} (fewest shifts first): ${available.slice(0,3).map(a=>a.name).join(', ')}.`, visual: { type: 'reslist', items }, chips: available.slice(0,4).map(a=>({label:a.name,id:a.id})), actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule','staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'rotations_ending') {
           const q = (askBar.lastAsked || '').toLowerCase()
