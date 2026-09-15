@@ -13287,7 +13287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 style="padding:12px 24px;background:#007bff;color:white;border:none;border-radius:6px;cursor:pointer;">
           🔄 Refresh Page
         </button>
-      </div>`;
+      </div>`;  
     throw error;    
   }
 });
