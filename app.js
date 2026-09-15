@@ -10903,7 +10903,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'briefing', priority: 38, patterns: [/\bbrief/, /resumen/, /\bsummary\b/, /standup/, /stand-up/] },
         { intent: 'coverage_gaps', priority: 55, patterns: [/\bgap/, /understaff/, /uncovered/, /\bshort\b/, /sin cobertura/, /hueco/, /coverage gap/] },
         { intent: 'absent_now', priority: 34, patterns: [/absent/, /\bleave\b/, /\boff\b/, /vacation/, /baja/, /ausen/] },
-        { intent: 'trials_recruiting', priority: 32, patterns: [/recruit/, /reclut/, /\btrial\b/, /\bstudy\b/, /studies/, /estudio/, /ensayo/] },
+        { intent: 'research_summary', priority: 90, patterns: [/(how|what).*(research|studies|trials).*(doing|going|status|overview|portfolio|summary)/i, /research (overview|summary|portfolio|snapshot|dashboard|health)/i, /(state|status) of (our )?research/i, /how.?s (our )?research/i], anti: [/put|assign|which line|line \d/] },
+        { intent: 'research_activity', priority: 105, patterns: [/research active/i, /most.*(active|productive).*(research|academ)/i, /(who|which).*(research|academically).*(active|productive)/i, /most (published|active).*(researcher|investigator|staff|person)/i, /who (publishes|researches).*(most)/i, /research (leaders|productivity)/i], anti: [/put|assign/] },
+        { intent: 'trials_recruiting', priority: 32, patterns: [/recruit/, /reclut/, /\btrial\b/, /\bstudy\b/, /studies/, /estudio/, /ensayo/], anti: [/research active|most active|productive|publishes most|research (leaders|productivity)/] },
         { intent: 'oncall_upcoming', priority: 30, patterns: [/on-call/, /on call/, /oncall/, /guardia/, /\bduty\b/], anti: [/gap|uncovered|understaff|rotation|rotating/] },
         { intent: 'rotations_active', priority: 52, patterns: [/rotation/, /rotating/, /\bresident\b/, /supervis/, /\bevaluation\b/, /\brota\b/], anti: [/on-call|on call|guardia|draft|assign|put .* under/] }
       ]
@@ -11089,7 +11091,7 @@ document.addEventListener('DOMContentLoaded', () => {
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
         count_rotations_ending: 'resident_rotations',
         trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', trials_by_person: 'clinical_trials',
-        research_lines: 'research_lines', research_line_profile: 'research_lines', trial_profile: 'clinical_trials', project_profile: 'innovation_projects', publications: 'news_posts', innovation_projects: 'innovation_projects',
+        research_lines: 'research_lines', research_line_profile: 'research_lines', trial_profile: 'clinical_trials', project_profile: 'innovation_projects', publications: 'news_posts', research_summary: 'research_lines', research_activity: 'research_lines', innovation_projects: 'innovation_projects',
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
@@ -11779,6 +11781,36 @@ document.addEventListener('DOMContentLoaded', () => {
             source: 'staff_absence_records'
           }))
           return { text, visual: { type: 'absence', rows }, evidence, chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }], sources: ['leave records'], followups: [{ label: 'Any coverage gaps?', intent: 'coverage_gaps' }, { label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
+        }
+        if (intent === 'research_summary') {
+          const trials = researchOps.clinicalTrials.value || []
+          const lines = researchOps.researchLines.value || []
+          const projs = researchOps.innovationProjects.value || []
+          const pubs = (newsPosts.value || []).filter(p => p.post_type === 'publication' || p.doi)
+          const recruiting = trials.filter(t => /reclut|recruit|activ/i.test(t.status||'')).length
+          const items = [
+            { title: 'Clinical trials', badge: recruiting+' recruiting', tone: recruiting?'recruiting':'default', meta: `${trials.length} total` },
+            { title: 'Research lines', badge: lines.length+'', tone:'research', meta: `${lines.filter(l=>l.coordinator_id).length} with a coordinator` },
+            { title: 'Innovation projects', badge: projs.length+'', tone:'project', meta: `${projs.filter(p=>p.trl_level>=6).length} at TRL 6+` },
+            { title: 'Publications', badge: pubs.length+'', tone:'research', meta: `${pubs.filter(p=>p.journal_name).length} in journals` },
+          ]
+          return { text: `Research portfolio: ${trials.length} trials (${recruiting} recruiting), ${lines.length} lines, ${projs.length} projects, ${pubs.length} publications.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research','publications'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }, { label: 'Who is most research-active?', intent: 'research_activity' }], confidence: 'high' }
+        }
+        if (intent === 'research_activity') {
+          const trials = researchOps.clinicalTrials.value || []
+          const lines = researchOps.researchLines.value || []
+          const projs = researchOps.innovationProjects.value || []
+          const pubs = (newsPosts.value || []).filter(p => p.post_type === 'publication' || p.doi)
+          const score = {}
+          const add = (id, n) => { if (id) score[id] = (score[id]||0)+n }
+          trials.forEach(t => { add(t.principal_investigator_id, 3); (t.co_investigators||[]).forEach(id=>add(id,1)); (t.sub_investigators||[]).forEach(id=>add(id,1)) })
+          lines.forEach(l => add(l.coordinator_id, 2))
+          projs.forEach(p => add(p.lead_investigator_id, 2))
+          pubs.forEach(p => add(p.author_id, 2))
+          const ranked = Object.entries(score).map(([id,n])=>({id,n,name:getStaffName(id)})).filter(r=>r.name!=='Not assigned').sort((a,b)=>b.n-a.n)
+          if (!ranked.length) return { text: 'No research activity is attributed to specific people yet.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
+          const items = ranked.slice(0,8).map(r => ({ title: r.name, badge: r.n+' pts', tone:'research', meta: '' }))
+          return { text: `Most research-active (PI, coordinator, lead, author weighted): ${ranked.slice(0,3).map(r=>r.name).join(', ')}.`, visual: { type: 'reslist', items }, chips: ranked.slice(0,4).map(r=>({label:r.name,id:r.id})), actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research','staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'trials_recruiting') {
           const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
