@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=84">
+    <link rel="stylesheet" href="style.css?v=85">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -10440,13 +10440,7 @@
                                              'rot-orb--done':       shift.isPast && !shift.isToday,
                                          }"
                                          @click.stop="editOnCallSchedule(shift)">
-                                        <span class="rot-orb-label">
-                                            {{ shift.dayLabel }} {{ shift.dateLabel }}
-                                            <span v-if="shift.areaName" class="rot-orb-area"
-                                                  :style="shift.areaColor ? { color: shift.isPast ? 'inherit' : shift.areaColor } : {}">
-                                                · {{ shift.areaName }}
-                                            </span>
-                                        </span>
+                                        <span class="rot-orb-label">{{ shift.dayNum || (shift.dateLabel || '').replace(/[^0-9]/g,'') || shift.dayLabel }}</span>
                                         <div class="rot-orb-tooltip">
                                             <div class="rot-tt-unit">{{ shift.shift_type === 'float_physician' ? 'Float Physician' : shift.shift_type === 'primary_call' ? 'Primary Call' : 'Backup Call' }}</div>
                                             <div v-if="shift.coverage_area_id || shift.coverage_area"
@@ -20162,7 +20156,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=130"></script>
+    <script src="app.js?v=131"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
