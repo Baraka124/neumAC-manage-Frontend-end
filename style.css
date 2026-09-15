@@ -41674,3 +41674,49 @@ html body #app .udd-header, html body #app .pd-identity {
     radial-gradient(500px 260px at 90% -30%, rgba(8,145,178,.3), transparent 60%),
     linear-gradient(135deg, #0d2848 0%, #16406e 55%, #0e2c50 100%) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §205 — FIX disconnected Medical Staff header/toolbar
+   The .card.mb-6 .card-header was a floating dark slab (#0a1e32, sq corners)
+   orphaned between title and stats. Make it an integrated, light toolbar.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body #app .content-area .card.mb-6 {
+  background: var(--surface, #fff) !important;
+  border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.06) !important;
+  overflow: hidden !important;
+  margin-bottom: 20px !important;
+}
+html body #app .content-area .card.mb-6 .card-header {
+  background: var(--surface-2, #f7f6f2) !important;
+  border-bottom: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 14px 14px 0 0 !important;
+  padding: 14px 18px !important;
+  display: flex !important; align-items: center !important; gap: 12px !important;
+  position: static !important; top: auto !important; min-height: 0 !important;
+}
+/* the view-toggle pills — clean segmented control, not floating buttons */
+html body #app .card.mb-6 .view-toggle {
+  display: inline-flex !important; background: var(--surface-3, #edebe5) !important;
+  border-radius: 10px !important; padding: 3px !important; gap: 2px !important;
+}
+html body #app .card.mb-6 .view-toggle .btn-pill {
+  background: transparent !important; border: none !important; color: var(--text-3, #5a6472) !important;
+  padding: 6px 14px !important; border-radius: 8px !important; font-size: 13px !important; font-weight: 550 !important;
+  box-shadow: none !important;
+}
+html body #app .card.mb-6 .view-toggle .btn-pill.active {
+  background: var(--surface, #fff) !important; color: var(--blue, #2563eb) !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.12) !important;
+}
+/* toolbar action buttons (CSV, print, Add Staff) align right, consistent */
+html body #app .card.mb-6 .card-header .header-actions { margin-left: auto !important; align-items: center !important; gap: 8px !important; }
+
+/* §205b — toolbar control contrast (inactive items were too faint) */
+html body #app .card.mb-6 .card-header .header-actions .btn,
+html body #app .card.mb-6 .card-header .header-actions button {
+  color: var(--text-2, #344154) !important; opacity: 1 !important;
+}
+html body #app .card.mb-6 .view-toggle .btn-pill { color: var(--text-2, #344154) !important; }
+html body #app .card.mb-6 .view-toggle .btn-pill:hover:not(.active) { color: var(--text-1, #07111f) !important; background: rgba(255,255,255,.5) !important; }
