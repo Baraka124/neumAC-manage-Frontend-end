@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=90">
+    <link rel="stylesheet" href="style.css?v=91">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -12656,7 +12656,7 @@
                                             <option v-for="s in medicalStaff.filter(x=>x.employment_status==='active')" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                                         </select>
                                     </div>
-                                    <div style="font-size:11px;color:var(--nm-text3);margin-top:7px">Mappings apply immediately to the diff above. New staff? Add them in Medical Staff first, then re-upload.</div>
+                                    <div style="font-size:11px;color:var(--nm-text3);margin-top:7px">Mappings are saved — you only need to map each name once. <a href="#" @click.prevent="Object.keys(oncallSync.mappings).length && (oncallSync.mappings={}, localStorage.removeItem('neumdesk_oncall_sync_mappings'))" style="color:var(--nm-text3);text-decoration:underline">Clear saved mappings</a></div>
                                 </div>
                                 <!-- sample of changes -->
                                 <div v-if="oncallSync.toAdd.length" style="margin-bottom:10px">
@@ -20246,7 +20246,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=140"></script>
+    <script src="app.js?v=143"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -20464,7 +20464,7 @@ html, body, #app { height: 100%; }
     flex: 0 0 auto !important;
     width: 100% !important;
     max-width: 100% !important;
-    min-width: 0 !important;
+    min-width: 0 !important;  
     height: 40px !important;
   }
 }
