@@ -41864,3 +41864,32 @@ html body #app .view-dashboard .db-panel, html body #app .view-dashboard [class*
   border-radius: 16px !important; border: 1px solid var(--border, #e3dfd6) !important;
   box-shadow: 0 1px 3px rgba(10,22,40,.05) !important;
 }
+
+/* §210 — Dashboard "Needs attention" panel + sync indicator */
+html body #app .db-attn-panel {
+  background: var(--surface, #fff) !important; border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 16px !important; padding: 16px 18px !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.05) !important;
+}
+html body #app .db-attn-hdr {
+  display: flex !important; align-items: center !important;
+  padding-bottom: 8px !important; border-bottom: 1px solid var(--border, #e3dfd6) !important;
+}
+html body #app .db-attn-item {
+  display: flex !important; align-items: center !important; gap: 10px !important;
+  padding: 8px 10px !important; border-radius: 10px !important;
+  background: rgba(251,191,36,.06) !important; border: 1px solid rgba(251,191,36,.15) !important;
+}
+html body #app .db-attn-icon { flex-shrink: 0 !important; font-size: 13px !important; }
+html body #app .db-attn-text { font-size: 13px !important; font-weight: 550 !important; color: var(--text-1, #07111f) !important; }
+html body #app .db-attn-meta { font-size: 11.5px !important; color: var(--text-3, #5a6472) !important; margin-left: auto !important; }
+
+/* sync indicator — subtle, bottom-aligned */
+html body #app .db-sync-indicator {
+  display: inline-flex !important; align-items: center !important; gap: 6px !important;
+  margin-top: 18px !important; padding: 6px 12px !important;
+  font-size: 11px !important; font-weight: 500 !important; color: var(--text-4, #909399) !important;
+  background: var(--surface-2, #f7f6f2) !important; border-radius: 100px !important;
+  border: 1px solid var(--border, #e3dfd6) !important;
+}
+html body #app .db-sync-indicator svg { opacity: .5 !important; }
