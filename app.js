@@ -9913,50 +9913,67 @@ document.addEventListener('DOMContentLoaded', () => {
       // Anticipatory suggestions: react to the module/subject in view so the agent
       // offers the RELEVANT next actions (chat-executable first), not a fixed list.
       const _SUGGEST_BY_VIEW = {
+        dashboard: [
+          { t: "What's happening today?",            d: 'Snapshot · right now',       icon: 'briefing', intent: 'today_snapshot' },
+          { t: 'Any risks I should know about?',     d: 'Risk · scan all',            icon: 'gap',      intent: 'risk_scan' },
+          { t: "This week ahead",                    d: 'Synthesis · the week',       icon: 'briefing', intent: 'this_week_ahead' },
+          { t: 'How is the department doing?',       d: 'Health · overall',           icon: 'oncall',   intent: 'dept_health' },
+        ],
         resident_rotations: [
-          { t: 'Who is rotating where?',            d: 'Rotations · live board',      icon: 'staff',    intent: 'residents_board' },
-          { t: 'Which residents finish this month?', d: 'Rotations · ending soon',    icon: 'gap',      intent: 'rotations_ending' },
-          { t: 'Any unsupervised residents?',        d: 'Rotations · risk',           icon: 'gap',      intent: 'unsupervised_residents' },
-          { t: 'Which clinical units are free?',     d: 'Units · availability',       icon: 'oncall',   intent: 'unit_status', q: 'which units are free' },
-          { t: 'Any rotation gaps?',                 d: 'Rotations · unassigned',     icon: 'gap',      intent: 'rotation_gaps' },
+          { t: 'Who is rotating where?',             d: 'Rotations · live board',     icon: 'staff',    intent: 'residents_board' },
+          { t: 'Rotations starting soon',            d: 'Rotations · upcoming',       icon: 'oncall',   intent: 'rotations_upcoming' },
+          { t: 'Any overdue rotations?',             d: 'Rotations · hygiene',        icon: 'gap',      intent: 'rotation_overdue' },
+          { t: 'Supervisor load balance',            d: 'Rotations · fairness',       icon: 'staff',    intent: 'supervisor_load' },
+          { t: 'Which residents are free?',          d: 'Rotations · available',      icon: 'staff',    intent: 'residents_free' },
         ],
         training_units: [
           { t: 'Units board',                        d: 'Units · at a glance',        icon: 'oncall',   intent: 'units_board' },
-          { t: 'Which units are at capacity?',       d: 'Units · occupancy',          icon: 'gap',      intent: 'units_at_capacity' },
-          { t: 'Which units are free?',              d: 'Units · availability',       icon: 'oncall',   intent: 'unit_status', q: 'which units are free' },
-          { t: 'Who is rotating where?',             d: 'Rotations · live',           icon: 'staff',    intent: 'residents_board' },
+          { t: 'Which units are least used?',        d: 'Units · capacity',           icon: 'gap',      intent: 'unit_load', q: 'which units are least used' },
+          { t: 'Units without a supervisor',         d: 'Units · risk',               icon: 'gap',      intent: 'unit_supervisor_gap' },
+          { t: 'Units by specialty',                 d: 'Units · grouped',            icon: 'oncall',   intent: 'unit_by_specialty', q: 'units by specialty' },
         ],
         oncall_schedule: [
           { t: "Who's on call today?",               d: 'Coverage · live',            icon: 'oncall',   intent: 'oncall_upcoming' },
-          { t: 'Coverage board',                     d: 'On-call · the week',         icon: 'oncall',   intent: 'coverage_board' },
+          { t: 'On-call fairness',                   d: 'Coverage · balance',         icon: 'staff',    intent: 'oncall_fairness' },
+          { t: 'Shifts with no backup',              d: 'Coverage · risk',            icon: 'gap',      intent: 'oncall_no_backup' },
           { t: "Draft next week's rota",             d: 'On-call · prepare',          icon: 'briefing', intent: 'draft_rota' },
-          { t: 'Any coverage gaps?',                 d: 'Coverage · conflicts',       icon: 'gap',      intent: 'coverage_gaps' },
+          { t: 'This week roster',                   d: 'On-call · week view',        icon: 'oncall',   intent: 'oncall_week' },
         ],
         staff_absence: [
-          { t: 'Who is absent this week?',           d: 'Leave · live',               icon: 'absence',  intent: 'absent_now', q: 'who is absent this week' },
-          { t: 'Any coverage gaps?',                 d: 'Leave · conflicts',          icon: 'gap',      intent: 'coverage_gaps' },
-          { t: "Who's on call today?",               d: 'Coverage · live',            icon: 'oncall',   intent: 'oncall_upcoming' },
+          { t: 'Who is absent now?',                 d: 'Leave · today',              icon: 'absence',  intent: 'absent_now' },
+          { t: 'Leave fairness',                     d: 'Leave · who took most',      icon: 'staff',    intent: 'absence_fairness' },
+          { t: 'Leave coverage risk',                d: 'Leave · duty collisions',    icon: 'gap',      intent: 'absence_coverage_risk' },
+          { t: 'Who is returning soon?',             d: 'Leave · coming back',        icon: 'staff',    intent: 'absence_returning' },
+          { t: 'Thin cover days ahead',              d: 'Leave · overlap',            icon: 'gap',      intent: 'absence_overlap' },
         ],
         medical_staff: [
           { t: 'How many staff do we have?',         d: 'Directory · count',          icon: 'staff',    intent: 'staff_roster', q: 'how many staff' },
           { t: 'Who can be PI?',                     d: 'Staff · eligibility',        icon: 'research', intent: 'staff_can_pi' },
-          { t: 'Who has a PhD?',                     d: 'Staff · credentials',        icon: 'research', intent: 'staff_with_phd' },
           { t: 'Who is absent right now?',           d: 'Coverage · today',           icon: 'absence',  intent: 'absent_now' },
+          { t: 'Who does the most on-call?',         d: 'Staff · fairness',           icon: 'oncall',   intent: 'oncall_fairness' },
         ],
         research_hub: [
+          { t: 'How is our research doing?',         d: 'Research · portfolio',       icon: 'research', intent: 'research_summary' },
           { t: 'Which trials are recruiting?',       d: 'Research · active',          icon: 'research', intent: 'trials_recruiting' },
-          { t: 'How many research lines?',           d: 'Research · overview',        icon: 'research', intent: 'research_lines' },
-          { t: 'Who is PI on the most trials?',      d: 'Research · leaders',         icon: 'staff',    intent: 'rank_staff', q: 'who is PI on most trials' },
+          { t: 'Who is most research active?',       d: 'Research · leaders',         icon: 'staff',    intent: 'research_activity' },
+        ],
+        news: [
+          { t: 'Recent publications',                d: 'Publications · list',        icon: 'research', intent: 'publications' },
+          { t: 'How is our research doing?',         d: 'Research · overview',        icon: 'research', intent: 'research_summary' },
+        ],
+        system_settings: [
+          { t: "What's happening today?",            d: 'Snapshot · now',             icon: 'briefing', intent: 'today_snapshot' },
+          { t: 'What can you do?',                   d: 'Help · capabilities',        icon: 'briefing', intent: 'help' },
         ],
       }
       const _SUGGEST_DEFAULT = [
-        { t: 'Anything I should worry about?',     d: 'Synthesis · conflicts & gaps', icon: 'gap',     intent: 'issues' },
-        { t: "Who's on-call today?",               d: 'Coverage · live schedule',    icon: 'oncall',   intent: 'oncall_upcoming' },
-        { t: 'Who is absent right now?',           d: 'Coverage · today',            icon: 'absence',  intent: 'absent_now' },
-        { t: "Draft today's briefing",             d: 'Ops · auto-compose',          icon: 'briefing', intent: 'briefing' },
-        { t: 'Which trials are recruiting?',       d: 'Research · active studies',   icon: 'research', intent: 'trials_recruiting' },
+        { t: "What's happening today?",              d: 'Snapshot · right now',       icon: 'briefing', intent: 'today_snapshot' },
+        { t: 'Any risks I should know about?',       d: 'Risk · scan all',            icon: 'gap',      intent: 'risk_scan' },
+        { t: "Who's on-call today?",                 d: 'Coverage · live schedule',   icon: 'oncall',   intent: 'oncall_upcoming' },
+        { t: 'Who is absent right now?',             d: 'Coverage · today',           icon: 'absence',  intent: 'absent_now' },
+        { t: 'What can you do?',                     d: 'Help · all capabilities',    icon: 'briefing', intent: 'help' },
       ]
-      const _SUGGEST_LABELS = { resident_rotations:'For rotations, you might', training_units:'For clinical units, you might', oncall_schedule:'For on-call, you might', staff_absence:'For leave & coverage, you might', medical_staff:'For staff, you might', research_hub:'For research, you might' }
+      const _SUGGEST_LABELS = { dashboard:'For today, you might', resident_rotations:'For rotations, you might', training_units:'For clinical units, you might', oncall_schedule:'For on-call, you might', staff_absence:'For leave & coverage, you might', medical_staff:'For staff, you might', research_hub:'For research, you might', news:'For publications, you might', system_settings:'Try asking' }
       const askBarSuggestLabel = Vue.computed(() => {
         if (askBar.subject && askBar.subject.name) return 'For ' + askBar.subject.name + ', you might'
         const v = currentView.value
@@ -10648,7 +10665,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let rq = q
           .replace(/(?:under|supervised by|with)\s+[a-zñáéíóú]+/gi, ' ')
           .replace(/\b(uci|ucri|icu|ward|sleep lab|sleep|sueño|clinic|bronch\w*|asma|hospitaliz\w*|interna|torácica|toracica|trasplante|cardiolog\w*|externa|pfr|grave)\b/gi, ' ')
-          .replace(/\b(put|assign|place|move|rotate|schedule|in|into|the|rotation|to|for|next|this|from|on|and|today|tomorrow|yesterday)\b/g, ' ')
+          .replace(/\b(put|place|assign|move|rotate|schedule|set|book|send|in|into|the|rotation|to|for|next|this|from|on|and|today|tomorrow|yesterday)\b/g, ' ')
           .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g, ' ')
           .replace(/\b\d{1,2}\b/g, ' ')
           .replace(/\s+/g,' ').trim()
@@ -10700,6 +10717,43 @@ document.addEventListener('DOMContentLoaded', () => {
           confidence: (!supervisor || activeInUnit >= cap || leaveOverlap) ? 'medium' : 'high', asOf: askBarNow(), streaming: false
         }))
       }
+      const askBarConfirmRotationEdit = async (p, turn) => {
+        turn.writing = true
+        try {
+          await API.request(p.endpoint, { method: 'PUT', body: p.changes })
+          turn.committed = true; turn.commitText = `✓ ${p.name}'s rotation updated.`
+          try { await rotationOps.loadRotations() } catch {}
+        } catch (e) { turn.commitError = e?.message || 'Failed to update rotation.' }
+        finally { turn.writing = false }
+      }
+      const askBarConfirmOncallEdit = async (p, turn) => {
+        turn.writing = true
+        try {
+          await API.request(`/api/oncall/${p.id}`, { method: 'PUT', body: p.changes })
+          turn.committed = true; turn.commitText = `✓ On-call shift on ${p.dateLabel} updated.`
+          try { await onCallOps.loadOnCallSchedule() } catch {}
+        } catch (e) { turn.commitError = e?.message || 'Failed to update shift.' }
+        finally { turn.writing = false }
+      }
+      const askBarConfirmLeaveEdit = async (p, turn) => {
+        turn.writing = true
+        try {
+          await API.request(`/api/absences/${p.id}`, { method: 'PUT', body: p.changes })
+          turn.committed = true; turn.commitText = `✓ ${p.name}'s leave updated.`
+          try { await absenceOps.loadAbsences() } catch {}
+        } catch (e) { turn.commitError = e?.message || 'Failed to update leave.' }
+        finally { turn.writing = false }
+      }
+      const askBarConfirmExtendRotation = async (p, turn) => {
+        turn.writing = true
+        try {
+          await API.request(`/api/rotations/${p.id}`, { method: 'PUT', body: { end_date: p.newEnd } })
+          turn.committed = true; turn.commitText = `✓ ${p.name}'s rotation in ${p.unit} extended to ${p.newEndLabel}.`
+          try { await rotationOps.loadRotations() } catch {}
+        } catch (e) { turn.commitError = e?.message || 'Failed to extend rotation.' }
+        finally { turn.writing = false }
+      }
+
       const askBarConfirmRotation = async (p, turn) => {
         if (p.noSup || p.supWarn || !p.start) return  // guardrails: need valid supervisor + dates
         turn.writing = true
@@ -11006,14 +11060,19 @@ document.addEventListener('DOMContentLoaded', () => {
       // ══════════════════════════════════════════════════════════════
       const ASKBAR_ROUTES = [
         // — WRITE intents (Level 2/3) — imperative verbs, very high priority —
-        { intent: 'record_leave', priority: 120, patterns: [/(put|mark|record|register|set|book|schedule|add|log)\b.*(on leave|off|absent|leave|vacation|holiday|sick|conference|congress|training|course|out)\b/, /(on leave|off sick|absent|going on leave)\b.*(from|on|next|this|until|till)\b/], anti: [/who|which|list|how many|is\b.*\bon leave|\bback\b|return/] },
-        { intent: 'record_oncall', priority: 121, patterns: [/(put|assign|schedule|book|set|add|give|make)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|week|rota/] },
+        { intent: 'edit_leave', priority: 123, patterns: [/(change|modify|edit|update|move|adjust|shorten|extend)\b.*(leave|absence|vacation|holiday)/, /(leave|absence)\b.*(change|modify|edit|update|move|adjust|shorten|extend)/, /(change|move) .*(dates?|start|end|reason) .*(leave|absence)/i], anti: [/who|which|list|cancel|delete|remove|record|put|place|back|return/] },
+        { intent: 'record_callout', priority: 121, patterns: [/(log|record|register|report|add)\b.*(call.?out|callout|emergency call|llamada)/, /(call.?out|callout|emergency call)\b.*(log|record|register|report|add|happened|occurred)/, /there was (a |an )?(call.?out|emergency)/i], anti: [/who|which|list|how many|fairness|most|recent/] },
+        { intent: 'record_leave', priority: 120, patterns: [/(put|place|mark|record|register|set|book|schedule|add|log|give)\b.*(on leave|off|absent|leave|vacation|holiday|sick|conference|congress|training|course|out)\b/, /(on leave|off sick|absent|going on leave)\b.*(from|on|next|this|until|till)\b/], anti: [/who|which|list|how many|is\b.*\bon leave|\bback\b|return|change|modify|edit|update|shorten|extend/] },
+        { intent: 'record_oncall', priority: 121, patterns: [/(put|place|assign|schedule|book|set|add|give|make|move)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|week|rota/] },
         { intent: 'draft_rota', priority: 123, patterns: [/(draft|prepare|generate|build|make|plan|propose)\b.*(rota|on.?call schedule|call schedule|week.*call|weekly.*call)/, /(rota|on.?call).*(for )?(next|this|the) week/], anti: [/who|which|is\b/] },
-        { intent: 'return_leave', priority: 122, patterns: [/\b(is )?back\b/, /returned?\b/, /back (to|on) (duty|work)/, /no longer (on leave|absent|off)/, /end.*leave early/], require: [/back|return|no longer|end/], anti: [/who|which|list|when.*back/] },
+        { intent: 'return_leave', priority: 122, patterns: [/\b(is )?back\b/, /returned?\b/, /back (to|on) (duty|work)/, /no longer (on leave|absent|off)/, /end.*leave early/, /(put|mark|set)\b.*\bback\b/], require: [/back|return|no longer|end/], anti: [/who|which|list|when.*back/] },
         { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule|add|set|book|enroll|send|rota|transfer|swap|switch)\b.*\b(in|into|to|on|at|through|thru)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|sueno|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma|cardiolog|interna|radiolog)/i, /(put|assign|place|move|rotate|transfer|swap)\b.*(rotation|rotat)/i, /(rotation|rotate)\b.*(under|with|supervis|from|next)/i, /rotate\s+[a-zñáéíóú]+\s+(through|thru|in|to)/i], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete|how long|when does/] },
         { intent: 'cancel_leave', priority: 124, patterns: [/(cancel|remove|delete|undo|scrap)\b.*(leave|absence|vacation|holiday|baja|off|time off)/, /(leave|absence).*(cancel|remove|delete)/], anti: [/who|which|list/] },
         { intent: 'delete_staff_blocked', priority: 130, patterns: [/(delete|remove|fire|terminate|erase)\b.*(staff|physician|doctor|resident|attending|nurse|person|employee)/, /(delete|remove|fire|erase)\s+(dr\.?\s+)?[a-zñáéíóú]{3,}/], anti: [/leave|absence|on.?call|oncall|shift|rotation|rota|vacation/] },
-        { intent: 'cancel_rotation', priority: 124, patterns: [/(cancel|remove|delete|undo|pull)\b.*(rotation|rotat)/, /(rotation)\b.*(cancel|remove|delete)/, /(take|pull)\b.*(out of|off)\b.*(rotation|uci|unit)/], anti: [/who|which|list|rotating where|ending|soon|finishing|upcoming|starting/] },
+        { intent: 'edit_rotation', priority: 125, patterns: [/(change|move|switch|update|modify|edit)\b.*(rotation|supervisor|supervising|unit)\b/, /(rotation)\b.*(change|move|switch|update|modify)\b/, /(new|different) (supervisor|unit|attending) for\b/i, /change\s+[a-zñáéíóú]+.?s?\s+(rotation|supervisor|unit)/i], anti: [/who|which|list|cancel|delete|remove|assign|put|schedule/] },
+        { intent: 'extend_rotation', priority: 125, patterns: [/(extend|prolong|lengthen|push back)\b.*(rotation)/, /(rotation)\b.*(extend|prolong|longer|extra|more time)/, /keep\s+[a-zñáéíóú]+\s+(in|at|on)\b.*(longer|extra|more)/i], anti: [/who|which|list|cancel|delete/] },
+        { intent: 'swap_oncall', priority: 125, patterns: [/(swap|switch|exchange|trade)\b.*(on.?call|shift|duty|call)/, /(on.?call|shift)\b.*(swap|switch|exchange|trade)/, /[a-zñáéíóú]+\s+(takes?|covers?|replaces?)\s+[a-zñáéíóú]+.?s?\s+(shift|call|duty)/i], anti: [/who|which|list|can swap|could swap/] },
+        { intent: 'cancel_rotation', priority: 124, patterns: [/(cancel|remove|delete|undo|pull|end|stop|terminate)\b.*(rotation|rotat)/, /(rotation)\b.*(cancel|remove|delete)/, /(take|pull)\b.*(out of|off)\b.*(rotation|uci|unit)/], anti: [/who|which|list|rotating where|ending|soon|finishing|upcoming|starting|change|modify|edit|extend|put|place|assign|send|schedule|move|book|in\b.*\b(uci|icu|unit|ward)/] },
         { intent: 'clear_rota', priority: 124, patterns: [/(clear|wipe|remove|delete|reset)\b.*(rota|whole.*rota|week.*call|all.*on.?call|all.*shifts)/, /(rota|schedule).*(clear|wipe|reset)/], anti: [/who|which|list/] },
         { intent: 'remove_oncall', priority: 124, patterns: [/(cancel|remove|delete|undo|clear|drop)\b.*(on.?call|oncall|shift|duty|guardia)/, /(on.?call|shift|duty).*(cancel|remove|delete|clear)/, /(take|pull)\b.*(off (call|duty|the rota))/], anti: [/who|which|list/] },
         // — Comparison & ranking (very specific) —
@@ -11659,6 +11718,38 @@ document.addEventListener('DOMContentLoaded', () => {
           askBarStartRotationFlow(asked)
           return
         }
+        if (intent === 'edit_leave') {
+          askBar.query = ''; askBar.view = 'conversation'
+          const q = asked.toLowerCase()
+          const person = askBarResolveStaffForWrite(asked.replace(/\b(change|modify|edit|update|move|adjust|shorten|extend|leave|absence|vacation|holiday|dates?|start|end|reason|the|for|of)\b/gi,' '), asked)
+          if (!person) { if (!askBar.turns.length || !askBar.turns[askBar.turns.length-1].chips?.length) askBar.turns.push(Vue.reactive({q:asked,text:"Whose leave should be changed?",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          const open = (absences.value||[]).filter(a => a.staff_member_id===person.id && !['returned_to_duty','cancelled'].includes(a.current_status))
+          if (!open.length) { askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} has no open leave to edit.`,chips:[],actions:[{label:'Open leave',view:'staff_absence'}],sources:['leave records'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false})); return }
+          const a = open[0]; const fmt=(d)=>Utils.formatDateShort(d)
+          const dr = askBarExtractDates(q)
+          const changes = {}; const rows = []
+          rows.push({ k:'Who', v: person.full_name })
+          rows.push({ k:'Type', v: a.absence_reason||'—' })
+          if (dr.start && dr.start !== Utils.normalizeDate(a.start_date)) { changes.start_date = dr.start; rows.push({ k:'Start', v:`${fmt(a.start_date)} → ${fmt(dr.start)}`, highlight:true }) }
+          if (dr.end && dr.end !== Utils.normalizeDate(a.end_date)) { changes.end_date = dr.end; rows.push({ k:'End', v:`${fmt(a.end_date)} → ${fmt(dr.end)}`, highlight:true }) }
+          if (!Object.keys(changes).length) {
+            askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} has leave: ${a.absence_reason||'—'}, ${fmt(a.start_date)} – ${fmt(a.end_date)}. What do you want to change? (e.g. "move end to 20 Oct" or "change start to next Monday")`,chips:[{label:person.full_name,id:person.id}],actions:[],sources:['leave records'],followups:[{label:'Cancel this leave',intent:'cancel_leave',q:`cancel ${person.full_name} leave`}],confidence:'low',asOf:askBarNow(),streaming:false}))
+            return
+          }
+          askBar.turns.push(Vue.reactive({q:'',text:'',leaveEditProposal:{ id:a.id, name:person.full_name, changes, rows },chips:[],actions:[],sources:['leave records'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false}))
+          return
+        }
+        if (intent === 'record_callout') {
+          askBar.query = ''; askBar.view = 'conversation'
+          if (!hasPermission('emergency_callouts', 'write')) { askBar.loading=false; askBar.thinking=null; askBar.turns.push(Vue.reactive({q:asked,text:"You don't have permission to log callouts.",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          const q = asked.toLowerCase()
+          const person = askBarResolveStaffForWrite(q.replace(/\b(log|record|register|report|add|there was|callout|call.out|emergency|call|a|an|the|happened|occurred)\b/gi,' '), asked)
+          const dr = askBarExtractDates(q)
+          if (!person) { askBar.turns.push(Vue.reactive({q:asked,text:"Who was called out? Name the person, e.g. \"log a callout for Marina last night.\"",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          // build the callout — direct to the callout logging view
+          askBar.turns.push(Vue.reactive({q:asked,text:`Logging a callout for ${person.full_name}${dr.start?' on '+Utils.formatDateShort(dr.start):''}. Use the emergency callout panel to fill in the details (time, area, reason) — the chat starts the record but the full log needs the form.`,chips:[{label:person.full_name,id:person.id}],actions:[{label:'Open callout log',view:'oncall_schedule',primary:true}],sources:['emergency callouts','staff'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false}))
+          return
+        }
         if (intent === 'cancel_leave') {
           askBar.query = ''
           if (!hasPermission('staff_absence', 'write')) {
@@ -11677,6 +11768,85 @@ document.addEventListener('DOMContentLoaded', () => {
             return
           }
           askBarStartRemoveOncallFlow(asked)
+          return
+        }
+        if (intent === 'edit_rotation') {
+          askBar.query = ''
+          if (!hasPermission('resident_rotations', 'write')) { askBar.loading=false; askBar.thinking=null; askBar.turns.push(Vue.reactive({q:asked,text:"You don't have permission to change rotations.",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          askBar.view = 'conversation'
+          const q = asked.toLowerCase()
+          const person = askBarResolveStaffForWrite(asked.replace(/\b(change|move|switch|update|modify|edit|rotation|supervisor|supervising|unit|new|different|attending|for|the|to|a)\b/gi,' '), asked)
+          if (!person) { if (!askBar.turns.length || !askBar.turns[askBar.turns.length-1].chips?.length) askBar.turns.push(Vue.reactive({q:asked,text:"Whose rotation? Name the person.",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          const active = (rotations.value||[]).filter(r => r.resident_id===person.id && r.rotation_status==='active')
+          if (!active.length) { askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} has no active rotation to edit.`,chips:[{label:person.full_name,id:person.id}],actions:[{label:'Open rotations',view:'resident_rotations'}],sources:['rotations'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false})); return }
+          const r = active[0]; const units=trainingUnits.value||[]; const un=(id)=>(units.find(u=>u.id===id)||{}).unit_name||'a unit'
+          const fmt=(d)=>Utils.formatDateShort(d)
+          // detect WHAT to change: supervisor, unit, or dates
+          const supMatch = q.match(/(?:to|under|with|supervisor)\s+([a-zñáéíóú]+)/i)
+          const newSup = supMatch ? (askBarResolveStaffRole(supMatch[1],'supervisor') || askBarResolveStaff(supMatch[1])) : null
+          const dr = askBarExtractDates(q)
+          const changes = {}; const rows = []
+          rows.push({ k:'Who', v: person.full_name })
+          rows.push({ k:'Unit', v: un(r.training_unit_id) })
+          if (newSup && newSup.id !== r.supervising_attending_id) {
+            changes.supervising_attending_id = newSup.id
+            rows.push({ k:'Supervisor', v: `${getStaffName(r.supervising_attending_id)||'none'} → ${newSup.full_name}`, highlight: true })
+          }
+          if (dr.end && dr.end !== Utils.normalizeDate(r.end_date)) {
+            changes.end_date = dr.end
+            rows.push({ k:'End date', v: `${r.end_date?fmt(r.end_date):'none'} → ${fmt(dr.end)}`, highlight: true })
+          }
+          if (dr.start && dr.start !== Utils.normalizeDate(r.start_date)) {
+            changes.start_date = dr.start
+            rows.push({ k:'Start date', v: `${r.start_date?fmt(r.start_date):'none'} → ${fmt(dr.start)}`, highlight: true })
+          }
+          if (!Object.keys(changes).length) {
+            askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} is in ${un(r.training_unit_id)}${r.supervising_attending_id?' under '+getStaffName(r.supervising_attending_id):''}${r.end_date?' until '+fmt(r.end_date):''}. What do you want to change? (e.g. "change supervisor to Marina" or "move end date to 31 Oct")`,chips:[{label:person.full_name,id:person.id}],actions:[],sources:['rotations'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}))
+            return
+          }
+          askBar.turns.push(Vue.reactive({q:'',text:'',rotationEditProposal:{ id:r.id, name:person.full_name, unit:un(r.training_unit_id), changes, rows, endpoint:`/api/rotations/${r.id}` },chips:[],actions:[],sources:['rotations','staff'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false}))
+          return
+        }
+        if (intent === 'extend_rotation') {
+          askBar.query = ''
+          if (!hasPermission('resident_rotations', 'write')) { askBar.loading=false; askBar.thinking=null; askBar.turns.push(Vue.reactive({q:asked,text:"You don't have permission to change rotations.",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          askBar.view = 'conversation'
+          const person = askBarResolveStaffForWrite(asked.replace(/\b(extend|prolong|lengthen|push back|keep|rotation|in|at|on|longer|extra|more|time|the|a)\b/gi,' '), asked)
+          if (!person) { if (!askBar.turns.length || !askBar.turns[askBar.turns.length-1].chips?.length) askBar.turns.push(Vue.reactive({q:asked,text:"Whose rotation should be extended? Name the resident.",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          const active = (rotations.value||[]).filter(r => r.resident_id===person.id && r.rotation_status==='active')
+          if (!active.length) { askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} has no active rotation to extend.`,chips:[],actions:[{label:'Open rotations',view:'resident_rotations'}],sources:['rotations'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false})); return }
+          const r = active[0]; const units=trainingUnits.value||[]; const un=(id)=>(units.find(u=>u.id===id)||{}).unit_name||'a unit'
+          const dr = askBarExtractDates(asked.toLowerCase())
+          if (!dr.end && !dr.start) { askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} is in ${un(r.training_unit_id)} until ${r.end_date?Utils.formatDateShort(r.end_date):'no end date set'}. Extend until when? (e.g. "until 31 October")`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          const newEnd = dr.end || dr.start
+          const fmt=(d)=>{try{return new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}catch(e){return d}}
+          askBar.turns.push(Vue.reactive({q:'',text:'',rotationExtendProposal:{
+            id:r.id, name:person.full_name, unit:un(r.training_unit_id),
+            was: r.end_date?fmt(r.end_date):'(no end set)', newEnd, newEndLabel:fmt(newEnd),
+            endpoint:`/api/rotations/${r.id}`
+          },chips:[],actions:[],sources:['rotations'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false}))
+          return
+        }
+        if (intent === 'swap_oncall') {
+          askBar.query = ''
+          if (!hasPermission('oncall_schedule', 'write')) { askBar.loading=false; askBar.thinking=null; askBar.turns.push(Vue.reactive({q:asked,text:"You don't have permission to change the on-call schedule.",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          askBar.view = 'conversation'
+          const q = asked.toLowerCase()
+          // extract two people from the query
+          const people = askBarRankStaffMatches(asked.replace(/\b(swap|switch|exchange|trade|on.?call|shift|duty|call|takes?|covers?|replaces?|with|and|the|for)\b/gi,' '))
+          if (people.length < 2) { askBar.turns.push(Vue.reactive({q:asked,text:"Name both people for the swap, e.g. \"swap Antelo and Souto's shifts.\"",chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
+          const [p1,p2] = [people[0].s, people[1].s]
+          const today = Utils.normalizeDate(new Date())
+          const s1 = (onCallSchedule.value||[]).filter(o=>o.primary_physician_id===p1.id && Utils.normalizeDate(o.duty_date)>=today)
+          const s2 = (onCallSchedule.value||[]).filter(o=>o.primary_physician_id===p2.id && Utils.normalizeDate(o.duty_date)>=today)
+          if (!s1.length && !s2.length) { askBar.turns.push(Vue.reactive({q:asked,text:`Neither ${p1.full_name} nor ${p2.full_name} has upcoming on-call shifts to swap.`,chips:[],actions:[{label:'Open on-call',view:'oncall_schedule'}],sources:['on-call schedule'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false})); return }
+          // show what each has
+          const fmt=(d)=>Utils.formatDateShort(d)
+          const items = [
+            { title:p1.full_name, badge:s1.length+' shift'+(s1.length===1?'':'s'), tone:'active', meta: s1.slice(0,3).map(o=>fmt(o.duty_date)).join(', ') },
+            { title:p2.full_name, badge:s2.length+' shift'+(s2.length===1?'':'s'), tone:'active', meta: s2.slice(0,3).map(o=>fmt(o.duty_date)).join(', ') },
+          ]
+          askBar.turns.push(Vue.reactive({q:asked,text:`To swap shifts between ${p1.full_name} and ${p2.full_name}, use the on-call schedule view — each shift can be reassigned individually. Here's what each has:`,visual:{type:'reslist',items},chips:[{label:p1.full_name,id:p1.id},{label:p2.full_name,id:p2.id}],actions:[{label:'Open on-call',view:'oncall_schedule',primary:true}],sources:['on-call schedule','staff'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false}))
           return
         }
         if (intent === 'cancel_rotation') {
@@ -13433,7 +13603,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Ask bar (RAG intelligence surface)
           askBar, askBarSuggestions, askBarSuggestLabel, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, teachTopicLabels, askBarToggleTeach,
-          askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
+          askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarConfirmExtendRotation, askBarConfirmRotationEdit, askBarConfirmOncallEdit, askBarConfirmLeaveEdit, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
           staffTypesList, staffTypeMap, academicDegrees, loadAcademicDegrees, formatStaffTypeGlobal, getStaffTypeClassGlobal, isResidentType, isOnCallEligible,
           staffTypesLoading, staffTypeModal, openAddStaffType, openEditStaffType, saveStaffType, deleteStaffType, toggleStaffTypeActive, loadStaffTypes,
@@ -13620,7 +13790,7 @@ document.addEventListener('DOMContentLoaded', () => {
     app.config.errorHandler = (err, instance, info) => {
       console.error('[neumDesk render error]', err, info)
       const viewName = instance?.setupState?.currentView?.value
-      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info) 
+      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)
     }
 
     app.mount('#app')
