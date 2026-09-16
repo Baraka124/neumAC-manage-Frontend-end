@@ -41720,3 +41720,147 @@ html body #app .card.mb-6 .card-header .header-actions button {
 }
 html body #app .card.mb-6 .view-toggle .btn-pill { color: var(--text-2, #344154) !important; }
 html body #app .card.mb-6 .view-toggle .btn-pill:hover:not(.active) { color: var(--text-1, #07111f) !important; background: rgba(255,255,255,.5) !important; }
+
+/* §206 — On-call compact orbs: readable day number, not clipped text */
+html body #app .rot-compact .rot-orb-label {
+  font-size: 14px !important; font-weight: 650 !important; font-family: var(--font-ui) !important;
+  line-height: 1 !important; overflow: visible !important; text-overflow: clip !important; white-space: nowrap !important;
+  color: inherit !important; text-align: center !important;
+}
+html body #app .rot-compact .rot-orb {
+  width: 42px !important; height: 42px !important; border-radius: 50% !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+/* ensure tooltip (full date/area) shows the detail the orb no longer crams */
+html body #app .rot-compact .rot-orb-tooltip { font-size: 12px !important; }
+
+/* §207 — FIX faint compact orbs (scheduled were transparent = near-invisible) */
+html body #app .rot-compact .rot-orb--scheduled,
+html body #app .rot-compact .rot-orb {
+  background: var(--blue-lt, #dbeafe) !important;
+  border: 1.5px solid var(--blue-mid, #93c5fd) !important;
+  color: var(--blue-ink, #1e3a8a) !important;
+}
+html body #app .rot-compact .rot-orb-label { color: inherit !important; font-weight: 700 !important; }
+/* today / active / backup keep their strong fills (override the generic above) */
+html body #app .rot-compact .rot-orb--active,
+html body #app .rot-compact .rot-orb--today {
+  background: #10b981 !important; border-color: #10b981 !important; color: #fff !important;
+}
+html body #app .rot-compact .rot-orb--backup-oc {
+  background: #0891b2 !important; border-color: #0891b2 !important; color: #fff !important;
+}
+html body #app .rot-compact .rot-orb--past {
+  background: var(--surface-3, #edebe5) !important; border-color: var(--border, #e3dfd6) !important; color: var(--text-3, #5a6472) !important;
+}
+html body #app .rot-compact .rot-orb--add {
+  background: transparent !important; border: 1.5px dashed var(--border-2, #cac5ba) !important; color: var(--text-4, #909399) !important;
+}
+
+/* §208 — FIX Publications (news) card layout — was floating actions + dead space */
+html body #app .news-view .news-card {
+  display: flex !important; align-items: stretch !important; gap: 0 !important;
+  border: 1px solid var(--border, #e3dfd6) !important; border-radius: 12px !important;
+  margin-bottom: 10px !important; min-height: 0 !important; overflow: hidden !important;
+  background: var(--surface, #fff) !important;
+}
+html body #app .news-view .news-card-left {
+  width: 4px !important; padding: 0 !important; flex-shrink: 0 !important; align-self: stretch !important;
+}
+html body #app .news-view .news-card-body {
+  flex: 1 1 auto !important; min-width: 0 !important; padding: 14px 16px !important;
+  display: flex !important; flex-direction: column !important; gap: 5px !important; justify-content: center !important;
+}
+html body #app .news-view .news-card-right {
+  display: flex !important; flex-direction: row !important; align-items: center !important; gap: 6px !important;
+  padding: 10px 14px !important; flex-shrink: 0 !important; min-width: 0 !important;
+  border-left: 1px solid var(--border, #e3dfd6) !important; align-self: stretch !important;
+}
+/* the visibility pill + edit + menu inline, compact */
+html body #app .news-view .news-card-right .news-vis-pill,
+html body #app .news-view .news-card-right [class*="pill"] {
+  font-size: 11px !important; padding: 3px 9px !important; border-radius: 100px !important;
+  background: var(--surface-3, #edebe5) !important; color: var(--text-3, #5a6472) !important; white-space: nowrap !important;
+}
+html body #app .news-view .news-card-right .btn,
+html body #app .news-view .news-card-right button {
+  font-size: 12px !important; padding: 5px 10px !important;
+}
+/* kill the broken empty image box on highlight cards with no image */
+html body #app .news-view .news-card-img:empty,
+html body #app .news-view [class*="news-card-image"]:empty { display: none !important; }
+/* the floating green dot — align it into the right cluster */
+html body #app .news-view .news-card-right .news-status-dot,
+html body #app .news-view .news-card [class*="status-dot"] {
+  width: 8px !important; height: 8px !important; flex-shrink: 0 !important;
+}
+
+/* §208b — tighten Publications card density + kill empty image box */
+html body #app .news-view .news-card-body { gap: 3px !important; padding: 12px 16px !important; }
+html body #app .news-view .news-card-body > * { margin: 0 !important; }
+html body #app .news-view .news-card-title { font-size: 15px !important; font-weight: 650 !important; line-height: 1.3 !important; margin: 1px 0 2px !important; }
+html body #app .news-view .news-card-tag { align-self: flex-start !important; font-size: 10px !important; padding: 2px 8px !important; }
+html body #app .news-view .news-card-meta { margin-top: 4px !important; font-size: 11.5px !important; color: var(--text-3,#5a6472) !important; }
+/* the highlight/photo image box — hide when empty or no src */
+html body #app .news-view .news-card-photo,
+html body #app .news-view .news-card-thumb,
+html body #app .news-view img.news-card-img:not([src]),
+html body #app .news-view [class*="news-card-img"] { display: none !important; }
+html body #app .news-view .news-card--highlight .news-card-body { display: flex !important; flex-direction: column !important; }
+/* right column tighter */
+html body #app .news-view .news-card-right { min-width: 0 !important; gap: 8px !important; padding: 10px 12px !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §209 — ELITE DASHBOARD: premium stat cards + balanced grid
+   ═══════════════════════════════════════════════════════════════════════ */
+/* stat row — even 4-up grid */
+html body #app .view-dashboard .dbsr {
+  display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 14px !important;
+  margin: 0 0 16px 0 !important;
+}
+@media (max-width: 900px){ html body #app .view-dashboard .dbsr { grid-template-columns: repeat(2,1fr) !important; } }
+@media (max-width: 520px){ html body #app .view-dashboard .dbsr { grid-template-columns: 1fr !important; } }
+/* each stat card — premium, with depth, accent top-border, hover lift */
+html body #app .view-dashboard .dbsr-stat {
+  position: relative !important; background: var(--surface, #fff) !important;
+  border: 1px solid var(--border, #e3dfd6) !important; border-radius: 16px !important;
+  padding: 18px 18px 16px !important; cursor: pointer !important; overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.05) !important;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s !important;
+}
+html body #app .view-dashboard .dbsr-stat:hover {
+  transform: translateY(-2px) !important; box-shadow: 0 8px 24px rgba(10,22,40,.1) !important;
+}
+/* accent bar per card (nth-child) */
+html body #app .view-dashboard .dbsr-stat::before {
+  content: '' !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; height: 3px !important;
+}
+html body #app .view-dashboard .dbsr-stat:nth-child(1)::before { background: linear-gradient(90deg,#2563eb,#38bdf8) !important; }
+html body #app .view-dashboard .dbsr-stat:nth-child(2)::before { background: linear-gradient(90deg,#0891b2,#22d3ee) !important; }
+html body #app .view-dashboard .dbsr-stat:nth-child(3)::before { background: linear-gradient(90deg,#059669,#34d399) !important; }
+html body #app .view-dashboard .dbsr-stat:nth-child(4)::before { background: linear-gradient(90deg,#7c3aed,#a78bfa) !important; }
+/* the big number — display serif, bold */
+html body #app .view-dashboard .dbsr-num {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif) !important;
+  font-size: 40px !important; font-weight: 400 !important; line-height: 1 !important; color: var(--text-1, #07111f) !important;
+  margin-bottom: 4px !important;
+}
+html body #app .view-dashboard .dbsr-lbl {
+  font-size: 11px !important; text-transform: uppercase !important; letter-spacing: .06em !important;
+  color: var(--text-3, #5a6472) !important; font-weight: 650 !important; margin-bottom: 10px !important;
+}
+html body #app .view-dashboard .dbsr-pills { display: flex !important; gap: 6px !important; flex-wrap: wrap !important; }
+html body #app .view-dashboard .dbsr-pill {
+  font-size: 11px !important; padding: 3px 9px !important; border-radius: 100px !important; font-weight: 550 !important;
+  background: var(--surface-3, #edebe5) !important; color: var(--text-2, #344154) !important;
+}
+html body #app .view-dashboard .dbsr-pill--ok { background: rgba(16,185,129,.12) !important; color: #059669 !important; }
+html body #app .view-dashboard .dbsr-pill--warn { background: rgba(251,191,36,.14) !important; color: #b45309 !important; }
+html body #app .view-dashboard .dbsr-pill--danger { background: rgba(239,68,68,.12) !important; color: #dc2626 !important; }
+
+/* panel cards — consistent premium surface */
+html body #app .view-dashboard .db-panel, html body #app .view-dashboard [class*="db-card"] {
+  border-radius: 16px !important; border: 1px solid var(--border, #e3dfd6) !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.05) !important;
+}
