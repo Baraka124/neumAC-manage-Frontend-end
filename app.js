@@ -7106,6 +7106,119 @@ document.addEventListener('DOMContentLoaded', () => {
         // introspection helper (for verification/debug)
         const knowledgeCoverage = () => ({ Person: true, Activity: true, Event: true })
 
+        // ══ EXCEL → PLATFORM SYNC (on-call, Phase 1: PREVIEW ONLY, non-destructive) ══
+        // Parses Guardias sheet, resolves surnames → staff, computes a diff.
+        // NOTHING is written — this only shows what a sync WOULD do.
+        const oncallSync = reactive({ fileName:'', parsing:false, done:false, error:'', rows:[], toAdd:[], toUpdate:[], unmatched:[], stats:null, mappings:{}, committing:false, committed:false, commitResult:null })
+        const _syncNorm = (s) => (s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()
+        const _buildStaffIndex = () => {
+          const idx = {}
+          ;(medicalStaff.value || []).filter(s => s.employment_status==='active' && !s.deleted_at).forEach(s => {
+            _syncNorm(s.full_name).split(/\s+/).forEach(w => { if (w.length>2) (idx[w] = idx[w] || []).push(s) })
+          })
+          return idx
+        }
+        const _resolveSurname = (surname, idx) => {
+          const hits = idx[_syncNorm(surname)] || []
+          if (hits.length === 1) return { status:'matched', staff: hits[0] }
+          if (hits.length > 1)  return { status:'ambiguous', options: hits }
+          return { status:'unmatched' }
+        }
+        const _shiftTypeMap = (t) => {
+          const n = _syncNorm(t)
+          if (n.includes('localizada')) return 'on_call_home'
+          if (n.includes('mixta')) return 'on_call_mixed'
+          if (n.includes('presencial')) return 'on_call_present'
+          return 'primary_call'
+        }
+        const oncallSyncParse = async (file) => {
+          oncallSync.fileName = file.name; oncallSync.parsing = true; oncallSync.done = false
+          oncallSync.error=''; oncallSync.rows=[]; oncallSync.toAdd=[]; oncallSync.toUpdate=[]; oncallSync.unmatched=[]
+          try {
+            if (typeof XLSX === 'undefined') throw new Error('Spreadsheet library not loaded — refresh and try again.')
+            const buf = await file.arrayBuffer()
+            const wb = XLSX.read(buf, { type:'array', cellDates:true })
+            let sheetName = wb.SheetNames.find(n => /^\d{4}\+?$/.test(n)) || wb.SheetNames[0]
+            const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, raw:false, dateNF:'yyyy-mm-dd' })
+            let hr = aoa.findIndex(r => r && r.some(c => _syncNorm(c)==='fecha'))
+            if (hr < 0) throw new Error('Could not find a "Fecha" header — is this the on-call sheet?')
+            const header = aoa[hr].map(_syncNorm)
+            const cF = header.indexOf('fecha'), cS = header.findIndex(h=>h.includes('staff')), cT = header.findIndex(h=>h.includes('tipo')), cM = header.findIndex(h=>h.includes('mir'))
+            const idx = _buildStaffIndex(); const rows=[]; const um={}
+            for (let i=hr+1; i<aoa.length; i++) {
+              const r = aoa[i]; if (!r) continue
+              const rd = r[cF]; const rs = cS>=0 ? r[cS] : null
+              if (!rd || !rs) continue
+              let d = rd; if (d instanceof Date) d = d.toISOString().slice(0,10)
+              else { const pp = new Date(d); if (!isNaN(pp)) d = pp.toISOString().slice(0,10); else continue }
+              const res = _resolveSurname(rs, idx)
+              rows.push({ date:d, surname:String(rs).trim(), shiftType:_shiftTypeMap(r[cT]), mir: cM>=0?r[cM]:null, resolution:res, staffId: res.status==='matched'?res.staff.id:null, staffName: res.status==='matched'?res.staff.full_name:null })
+              if (res.status!=='matched') um[String(rs).trim()] = (um[String(rs).trim()]||0)+1
+            }
+            const existing = onCallSchedule.value || []; const byDate={}; existing.forEach(o=>{byDate[Utils.normalizeDate(o.duty_date)]=o})
+            const toAdd=[], toUpdate=[]
+            rows.forEach(row=>{ if(!row.staffId) return; const ex=byDate[row.date]; if(!ex) toAdd.push(row); else if(ex.primary_physician_id!==row.staffId) toUpdate.push({...row, wasName:getStaffName(ex.primary_physician_id)}) })
+            oncallSync.rows=rows; oncallSync.toAdd=toAdd; oncallSync.toUpdate=toUpdate
+            oncallSync.unmatched=Object.entries(um).map(([surname,count])=>({surname,count}))
+            const umRows=Object.values(um).reduce((a,b)=>a+b,0)
+            oncallSync.stats={ total:rows.length, sheet:sheetName, add:toAdd.length, update:toUpdate.length, unchanged: rows.length-toAdd.length-toUpdate.length-umRows, unmatchedRows:umRows }
+            oncallSync.done=true
+          } catch(e){ oncallSync.error = e.message || 'Could not parse the file.' } finally { oncallSync.parsing=false }
+        }
+        const oncallSyncReset = () => Object.assign(oncallSync, {fileName:'',parsing:false,done:false,error:'',rows:[],toAdd:[],toUpdate:[],unmatched:[],stats:null,mappings:{},committing:false,committed:false,commitResult:null})
+        const oncallSyncFile = (ev) => { const f = ev.target.files && ev.target.files[0]; if (f) oncallSyncParse(f) }
+
+        // Phase 1b: map an unmatched surname → a staff id (or 'skip'), then recompute the diff
+        const oncallSyncMap = (surname, staffId) => {
+          oncallSync.mappings = { ...oncallSync.mappings, [surname]: staffId }
+          // re-resolve rows using the manual mappings, then rebuild the diff
+          oncallSync.rows.forEach(row => {
+            if (row.resolution.status !== 'matched' && oncallSync.mappings[row.surname] && oncallSync.mappings[row.surname] !== 'skip') {
+              row.staffId = oncallSync.mappings[row.surname]
+              row.staffName = getStaffName(row.staffId)
+              row.resolution = { status: 'mapped', staff: { id: row.staffId } }
+            }
+          })
+          const existing = onCallSchedule.value || []; const byDate = {}; existing.forEach(o=>{byDate[Utils.normalizeDate(o.duty_date)]=o})
+          const toAdd=[], toUpdate=[]; const um={}
+          oncallSync.rows.forEach(row=>{
+            if (!row.staffId) { if (oncallSync.mappings[row.surname] !== 'skip') um[row.surname]=(um[row.surname]||0)+1; return }
+            const ex=byDate[row.date]; if(!ex) toAdd.push(row); else if(ex.primary_physician_id!==row.staffId) toUpdate.push({...row, wasName:getStaffName(ex.primary_physician_id)})
+          })
+          oncallSync.toAdd=toAdd; oncallSync.toUpdate=toUpdate
+          oncallSync.unmatched=Object.entries(um).map(([surname,count])=>({surname,count}))
+          const umRows=Object.values(um).reduce((a,b)=>a+b,0)
+          oncallSync.stats={ ...oncallSync.stats, add:toAdd.length, update:toUpdate.length, unchanged: oncallSync.rows.length-toAdd.length-toUpdate.length-umRows, unmatchedRows:umRows }
+        }
+        // Commit: send the matched/mapped shifts to the batch endpoint (after user confirms)
+        const oncallSyncConfirmCommit = () => {
+          const n = oncallSync.toAdd.length + oncallSync.toUpdate.length
+          if (n === 0) return
+          if (window.confirm('Sync ' + n + ' on-call shifts into the platform? This writes to the schedule.')) oncallSyncCommit()
+        }
+        const oncallSyncCommit = async () => {
+          const shifts = [...oncallSync.toAdd, ...oncallSync.toUpdate]
+            .filter(r => r.staffId)
+            .map(r => ({ duty_date: r.date, primary_physician_id: r.staffId, shift_type: r.shiftType }))
+          if (!shifts.length) { oncallSync.commitResult = { ok:false, msg:'Nothing matched to commit.' }; return }
+          oncallSync.committing = true; oncallSync.commitResult = null
+          try {
+            // batch endpoint caps at 200 — chunk if needed
+            let saved = 0
+            for (let i=0; i<shifts.length; i+=180) {
+              const chunk = shifts.slice(i, i+180)
+              await API.request('/api/oncall/batch', { method:'POST', body:{ shifts: chunk } })
+              saved += chunk.length
+            }
+            try { await onCallOps.loadOnCallSchedule() } catch(e){}
+            oncallSync.committed = true
+            oncallSync.commitResult = { ok:true, msg:`\u2713 Synced ${saved} on-call shift${saved===1?'':'s'} from ${oncallSync.fileName}.` }
+          } catch (e) {
+            oncallSync.commitResult = { ok:false, msg: (e && e.message) ? e.message : 'Sync failed — nothing partial was rolled back; check the on-call view.' }
+          } finally { oncallSync.committing = false }
+        }
+
+
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
 
@@ -10913,10 +11026,23 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'rank_oncall', priority: 70, patterns: [/(most|busiest|overloaded|más).*(on-call|call|shift|guardia)/, /who.*(most|busiest).*call/] },
         { intent: 'pis_oncall', priority: 70, patterns: [/(pi|investigator|principal).*(on-call|call|guardia)/, /(on-call|call).*(pi|investigator)/] },
         // — Broad concept intents (lowest priority; catch-alls) —
-        { intent: 'issues', priority: 40, patterns: [/conflict/, /problem/, /\bissue/, /wrong/, /double.book/, /clash/, /overlap/, /anything i should/, /concern/, /\brisk\b/, /attention/] },
+        { intent: 'help', priority: 130, patterns: [/^(help|what can you (do|help)|how (do|can) (i|you) use|capabilities|what do you know|commands?)\b/i, /what can (grounded|you) (do|answer)/i, /how does this work/i], anti: [] },
+        { intent: 'today_snapshot', priority: 108, patterns: [/(what.?s? (happening|going on|up)|snapshot|overview) (today|right now|now)/i, /today.?s? (snapshot|summary|overview|situation)/i, /what.?s? (today|the situation)/i, /^today$/i], anti: [/put|assign|on call today|absent today/] },
+        { intent: 'this_week_ahead', priority: 107, patterns: [/(this|the) week (ahead|overview|summary)/i, /what.?s? (happening|coming|ahead) (this|next) week/i, /week (ahead|at a glance)/i, /(brief|summary) (for|of) (this|the) week/i], anti: [/put|assign|on call this week|rota this week/] },
+        { intent: 'risk_scan', priority: 108, patterns: [/(risk|conflict|problem|gap) (scan|check|report|summary)/i, /(scan|check) for (risks?|problems?|conflicts?|gaps?)/i, /what.?s? (at )?risk/i, /(everything|all) (that.?s? )?(wrong|needs attention|at risk)/i, /anything (i should worry|wrong|urgent)/i], anti: [/put|assign/] },
+        { intent: 'dept_health', priority: 106, patterns: [/(department|dept|how are we|overall) (health|status|doing|standing)/i, /how(.?s| is) (the )?(department|dept|everything|it all)/i, /(state|snapshot) of (the )?(department|dept)/i, /are we (ok|good|covered)/i], anti: [/put|assign|which department|who heads/] },
+        { intent: 'issues', priority: 40, patterns: [/conflict/, /problem/, /\bissue/, /wrong/, /double.book/, /clash/, /overlap/, /concern/], anti: [/scan|risk report|this week|today/] },
         { intent: 'briefing', priority: 38, patterns: [/\bbrief/, /resumen/, /\bsummary\b/, /standup/, /stand-up/] },
         { intent: 'coverage_gaps', priority: 55, patterns: [/\bgap/, /understaff/, /uncovered/, /\bshort\b/, /sin cobertura/, /hueco/, /coverage gap/] },
-        { intent: 'absent_now', priority: 34, patterns: [/absent/, /\bleave\b/, /\boff\b/, /vacation/, /baja/, /ausen/] },
+        { intent: 'absence_upcoming', priority: 100, patterns: [/who.?s? (out|away|off|on leave) (next|in|coming|soon|this)/i, /upcoming (leave|absences?|holidays?)/i, /(leave|absences?) (next|coming|ahead|upcoming)/i, /who (is|will be) (out|away|off) (next|soon)/i], anti: [/put|assign|record|right now|today/] },
+        { intent: 'absence_by_person', priority: 100, patterns: [/how (much|many) (leave|days|absence|holiday|vacation) (has|did)\s+[a-zñáéíóú]/i, /[a-zñáéíóú]{3,}.?s?\s+(leave|absence|holiday|vacation) (record|history|days|total)/i, /(leave|absence) (for|of)\s+[a-zñáéíóú]{3,}/i], anti: [/put|assign|record|who|most|by type|by category|by reason/] },
+        { intent: 'absence_fairness', priority: 100, patterns: [/who (has|took|takes) (the )?most (leave|days|holiday|vacation|absence)/i, /(leave|absence|holiday) (fairness|balance|distribution)/i, /(most|least) (leave|days off|holiday)/i], anti: [/put|assign|record/] },
+        { intent: 'absence_by_type', priority: 99, patterns: [/(leave|absences?) by (type|category|reason)/i, /(vacation|sick|conference|sick leave) (vs|versus|breakdown|count)/i, /breakdown of (leave|absences?)/i, /types? of (leave|absence)/i], anti: [/put|assign/] },
+        { intent: 'absence_coverage_risk', priority: 101, patterns: [/(leave|absence).*(collide|conflict|overlap).*(call|rotation|shift)/i, /(coverage )?risk.*(leave|absence)/i, /who.?s? (out|on leave).*(while|during).*(call|rotation|on duty)/i, /leave.*(coverage )?(gap|risk|problem)/i], anti: [/put|assign/] },
+        { intent: 'absence_this_month', priority: 99, patterns: [/(leave|absences?|holidays?) this month/i, /this month.?s? (leave|absences?)/i, /(leave|absence) (calendar|count) (for )?(this )?month/i], anti: [/put|assign/] },
+        { intent: 'absence_returning', priority: 100, patterns: [/who (is |'s )?(coming back|returning|back) (soon|this week|next week|from leave)/i, /returning (to duty|soon|this week)/i, /back (from leave|to work) (soon|this week)/i], anti: [/put|assign/] },
+        { intent: 'absence_overlap', priority: 100, patterns: [/(when|which days?).*(many|multiple|several).*(out|away|on leave|absent)/i, /(thin|low) (cover|coverage|staffing) days?/i, /days? (when|where) (most|many) (are )?(out|away|absent)/i, /(overlap|clash).*(leave|absence)/i], anti: [/put|assign/] },
+        { intent: 'absent_now', priority: 34, patterns: [/absent/, /\bleave\b/, /\boff\b/, /vacation/, /baja/, /ausen/], anti: [/put|assign|record|upcoming|next|coming|most|by type|returning|coverage risk|this month/] },
         { intent: 'research_summary', priority: 90, patterns: [/(how|what).*(research|studies|trials).*(doing|going|status|overview|portfolio|summary)/i, /research (overview|summary|portfolio|snapshot|dashboard|health)/i, /(state|status) of (our )?research/i, /how.?s (our )?research/i], anti: [/put|assign|which line|line \d/] },
         { intent: 'research_activity', priority: 105, patterns: [/research active/i, /most.*(active|productive).*(research|academ)/i, /(who|which).*(research|academically).*(active|productive)/i, /most (published|active).*(researcher|investigator|staff|person)/i, /who (publishes|researches).*(most)/i, /research (leaders|productivity)/i], anti: [/put|assign/] },
         { intent: 'trials_recruiting', priority: 32, patterns: [/recruit/, /reclut/, /\btrial\b/, /\bstudy\b/, /studies/, /estudio/, /ensayo/], anti: [/research active|most active|productive|publishes most|research (leaders|productivity)/] },
@@ -11100,7 +11226,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Which module each intent reads from — used to gate answers by access.
       const askBarIntentModule = {
         oncall_upcoming: 'oncall_schedule', rank_oncall: 'oncall_schedule', pis_oncall: 'oncall_schedule',
-        absent_now: 'staff_absence', staff_leave: 'staff_absence',
+        absent_now: 'staff_absence', absence_upcoming: 'staff_absence', absence_by_person: 'staff_absence', absence_fairness: 'staff_absence', absence_by_type: 'staff_absence', absence_coverage_risk: 'staff_absence', absence_this_month: 'staff_absence', absence_returning: 'staff_absence', absence_overlap: 'staff_absence', staff_leave: 'staff_absence',
         staff_oncall: 'oncall_schedule', staff_rotation: 'resident_rotations',
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
         count_rotations_ending: 'resident_rotations', rotations_upcoming: 'resident_rotations', rotation_overdue: 'resident_rotations', supervisor_load: 'resident_rotations', resident_progress: 'resident_rotations', residents_free: 'resident_rotations', oncall_by_person: 'oncall_schedule', oncall_fairness: 'oncall_schedule', oncall_no_backup: 'oncall_schedule', oncall_week: 'oncall_schedule', oncall_swap: 'oncall_schedule',
@@ -11109,7 +11235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', unit_load: 'training_units', unit_supervisor_gap: 'training_units', unit_by_specialty: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
-        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', who_supervises: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
+        compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', help: 'medical_staff', today_snapshot: 'medical_staff', this_week_ahead: 'medical_staff', risk_scan: 'medical_staff', dept_health: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', who_supervises: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', callout_fairness: 'oncall_schedule', callouts_recent: 'oncall_schedule', callout_by_person: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
@@ -11762,6 +11888,85 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!gaps.length) return { text: 'No coverage gaps right now — every unit has the expected staffing.', chips: [], actions: [{ label: 'Open Ops Room', view: 'communications' }] }
           const text = `${gaps.length} coverage gap${gaps.length===1?'':'s'} flagged: ` + gaps.slice(0,4).map(g => g.unitName).join(', ') + '. You may want to assign cover.'
           return { text, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }] }
+        }
+        if (intent === 'absence_upcoming') {
+          const today = Utils.normalizeDate(new Date())
+          const end = Utils.normalizeDate(new Date(Date.now()+30*864e5))
+          const up = (absences.value||[]).filter(a => !['cancelled'].includes(a.current_status) && a.start_date && Utils.normalizeDate(a.start_date)>today && Utils.normalizeDate(a.start_date)<=end)
+            .sort((a,b)=>Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
+          if (!up.length) return { text: 'No planned leave in the next 30 days.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
+          const fmt=(d)=>Utils.formatDateShort(d)
+          const items = up.slice(0,10).map(a => ({ title: getStaffName(a.staff_member_id), badge: a.absence_reason||null, tone:'default', meta: `${fmt(a.start_date)}–${fmt(a.end_date)}` }))
+          return { text: `${up.length} upcoming leave period${up.length===1?'':'s'} (next 30 days):`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'absence_by_person') {
+          const person = askBarResolveStaff(askBar.lastAsked||askBar.query)
+          if (!person) return { text: 'Whose leave? Name the person.', chips: [], actions: [], sources: ['leave records'], followups: [], confidence: 'low' }
+          const mine = (absences.value||[]).filter(a => a.staff_member_id===person.id && a.current_status!=='cancelled')
+          if (!mine.length) return { text: `${person.full_name} has no leave on record.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
+          const days = mine.reduce((s,a)=> s + (a.total_days || (a.start_date&&a.end_date? (Math.round((new Date(a.end_date)-new Date(a.start_date))/864e5)+1):1)), 0)
+          const fmt=(d)=>Utils.formatDateShort(d)
+          const items = mine.slice(0,8).map(a => ({ title: `${fmt(a.start_date)}–${fmt(a.end_date)}`, badge: a.absence_reason||null, tone:'default', meta: a.current_status||'' }))
+          return { text: `${person.full_name}: ${days} day${days===1?'':'s'} of leave across ${mine.length} period${mine.length===1?'':'s'}.`, visual: { type: 'reslist', items }, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'absence_fairness') {
+          const q=(askBar.lastAsked||'').toLowerCase()
+          const by={}; (absences.value||[]).filter(a=>a.current_status!=='cancelled').forEach(a=>{ const d=a.total_days||1; by[a.staff_member_id]=(by[a.staff_member_id]||0)+d })
+          const ranked=Object.entries(by).map(([id,n])=>({id,n,name:getStaffName(id)})).filter(r=>r.name!=='Not assigned')
+          if (!ranked.length) return { text: 'No leave records to compare.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
+          const wantLeast=/(least|fewest)/.test(q); ranked.sort((a,b)=>wantLeast?a.n-b.n:b.n-a.n)
+          const avg=ranked.reduce((s,r)=>s+r.n,0)/ranked.length
+          const items=ranked.slice(0,8).map(r=>({title:r.name,badge:r.n+' day'+(r.n===1?'':'s'),tone:r.n>avg*1.4?'project':'default',meta:r.n>avg*1.4?'above average':''}))
+          return { text: `Leave taken (${wantLeast?'least first':'most first'}, avg ${avg.toFixed(1)} days): ${ranked.slice(0,3).map(r=>`${r.name} (${r.n})`).join(', ')}.`, visual: { type: 'reslist', items }, chips: ranked.slice(0,4).map(r=>({label:r.name,id:r.id})), actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'absence_by_type') {
+          const by={}; (absences.value||[]).filter(a=>a.current_status!=='cancelled').forEach(a=>{ const t=a.absence_reason||'unspecified'; by[t]=(by[t]||0)+1 })
+          const ent=Object.entries(by).sort((a,b)=>b[1]-a[1])
+          if (!ent.length) return { text: 'No leave records on file.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
+          const items=ent.map(([t,n])=>({title:t,badge:n+'',tone:'default',meta:''}))
+          return { text: `Leave by type: ${ent.slice(0,4).map(([t,n])=>`${n} ${t}`).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'absence_coverage_risk') {
+          const abs=(absences.value||[]).filter(a=>!['cancelled','returned_to_duty'].includes(a.current_status))
+          const oncall=onCallSchedule.value||[]; const rots=rotations.value||[]
+          const risks=[]
+          abs.forEach(a=>{
+            const s=Utils.normalizeDate(a.start_date), e=Utils.normalizeDate(a.end_date)
+            const oc=oncall.find(o=>o.primary_physician_id===a.staff_member_id && Utils.normalizeDate(o.duty_date)>=s && Utils.normalizeDate(o.duty_date)<=e)
+            const rt=rots.find(r=>r.supervising_attending_id===a.staff_member_id && r.rotation_status==='active' && r.start_date && Utils.normalizeDate(r.start_date)<=e && (!r.end_date||Utils.normalizeDate(r.end_date)>=s))
+            if (oc) risks.push({name:getStaffName(a.staff_member_id),issue:`on call ${Utils.formatDateShort(oc.duty_date)} during leave`})
+            else if (rt) risks.push({name:getStaffName(a.staff_member_id),issue:'supervising a rotation during leave'})
+          })
+          if (!risks.length) return { text: 'No leave collides with on-call or supervision duties. All clear.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records','on-call schedule','rotations'], followups: [], confidence: 'high' }
+          const items=risks.slice(0,8).map(r=>({title:r.name,badge:'⚠ risk',tone:'project',meta:r.issue}))
+          return { text: `${risks.length} coverage risk${risks.length===1?'':'s'} — leave overlapping duties: ${risks.slice(0,3).map(r=>r.name).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records','on-call schedule','rotations','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'absence_this_month') {
+          const now=new Date(); const ms=Utils.normalizeDate(new Date(now.getFullYear(),now.getMonth(),1)), me=Utils.normalizeDate(new Date(now.getFullYear(),now.getMonth()+1,0))
+          const mon=(absences.value||[]).filter(a=>a.current_status!=='cancelled' && a.start_date && Utils.normalizeDate(a.start_date)<=me && a.end_date && Utils.normalizeDate(a.end_date)>=ms)
+            .sort((a,b)=>Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
+          if (!mon.length) return { text: 'No leave recorded for this month.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
+          const fmt=(d)=>Utils.formatDateShort(d)
+          const items=mon.slice(0,10).map(a=>({title:getStaffName(a.staff_member_id),badge:a.absence_reason||null,tone:'default',meta:`${fmt(a.start_date)}–${fmt(a.end_date)}`}))
+          return { text: `${mon.length} leave period${mon.length===1?'':'s'} this month:`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'absence_returning') {
+          const today=Utils.normalizeDate(new Date()); const wk=Utils.normalizeDate(new Date(Date.now()+7*864e5))
+          const ret=(absences.value||[]).filter(a=>!['cancelled','returned_to_duty'].includes(a.current_status) && a.end_date && Utils.normalizeDate(a.end_date)>=today && Utils.normalizeDate(a.end_date)<=wk)
+            .sort((a,b)=>Utils.normalizeDate(a.end_date).localeCompare(Utils.normalizeDate(b.end_date)))
+          if (!ret.length) return { text: 'No one is due back from leave in the next 7 days.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
+          const items=ret.slice(0,8).map(a=>({title:getStaffName(a.staff_member_id),badge:'returns',tone:'active',meta:`back ${Utils.formatDateShort(a.end_date)}`}))
+          return { text: `${ret.length} returning to duty this week: ${ret.slice(0,3).map(a=>getStaffName(a.staff_member_id)).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records','staff'], followups: [], confidence: 'high' }
+        }
+        if (intent === 'absence_overlap') {
+          const abs=(absences.value||[]).filter(a=>!['cancelled'].includes(a.current_status) && a.start_date && a.end_date)
+          // count concurrent absences per day over next 60 days
+          const today=new Date(); const dayCount={}
+          for (let i=0;i<60;i++){ const d=Utils.normalizeDate(new Date(today.getTime()+i*864e5)); const n=abs.filter(a=>Utils.normalizeDate(a.start_date)<=d && Utils.normalizeDate(a.end_date)>=d); if(n.length>=2) dayCount[d]=n.map(a=>getStaffName(a.staff_member_id)) }
+          const days=Object.entries(dayCount).sort((a,b)=>b[1].length-a[1].length)
+          if (!days.length) return { text: 'No days in the next 60 with 2+ staff out at once — coverage looks safe.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
+          const items=days.slice(0,8).map(([d,names])=>({title:Utils.formatDateShort(d),badge:names.length+' out',tone:names.length>=3?'project':'default',meta:names.slice(0,3).join(', ')}))
+          return { text: `${days.length} thin-cover day${days.length===1?'':'s'} ahead (2+ staff out): worst is ${Utils.formatDateShort(days[0][0])} (${days[0][1].length} out).`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records','staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'absent_now') {
           const today = Utils.normalizeDate(new Date())
@@ -12769,6 +12974,86 @@ document.addEventListener('DOMContentLoaded', () => {
           body += 'Thanks,\nDepartment coordination'
           return { text: body, chips: [], actions: [{ label: 'Open Ops Room', view: 'communications', primary: true }], sources: ['on-call schedule', 'staff'], followups: [{ label: 'Make it shorter', intent: 'draft_email' }], confidence: 'high', isDraft: true }
         }
+        if (intent === 'help') {
+          const items = [
+            { title: 'Coverage & schedule', badge: 'ask', tone:'active', meta: 'who is on call today · coverage this week · who is absent · draft next week rota' },
+            { title: 'Staff & rotations', badge: 'ask', tone:'default', meta: 'how many staff · who is rotating where · progress of [name] · unsupervised residents' },
+            { title: 'Fairness & load', badge: 'ask', tone:'research', meta: 'who does the most on call · supervisor load · who has the most leave' },
+            { title: 'Units', badge: 'ask', tone:'default', meta: 'which units are free · how full is UCI · units without a supervisor · where to place a resident' },
+            { title: 'Research', badge: 'ask', tone:'research', meta: 'how is our research doing · which trials are recruiting · about line 3' },
+            { title: 'Actions', badge: 'do', tone:'project', meta: 'put [name] on call [date] · put [name] on leave · put [name] in [unit] under [attending]' },
+            { title: 'The big picture', badge: 'new', tone:'active', meta: "what's happening today · this week ahead · risk scan · how is the department doing" },
+          ]
+          return { text: `I'm Grounded — I answer questions and take actions across on-call, leave, rotations, units, staff and research. Some things you can ask:`, visual: { type: 'reslist', items }, chips: [], actions: [], sources: [], followups: [{ label: "What's happening today?", intent: 'today_snapshot' }, { label: 'Risk scan', intent: 'risk_scan' }], confidence: 'high' }
+        }
+        if (intent === 'today_snapshot') {
+          const today = Utils.normalizeDate(new Date())
+          const oc = (onCallSchedule.value||[]).filter(o => Utils.normalizeDate(o.duty_date)===today)
+          const absent = (absences.value||[]).filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && a.start_date && Utils.normalizeDate(a.start_date)<=today && a.end_date && Utils.normalizeDate(a.end_date)>=today)
+          const startingToday = (rotations.value||[]).filter(r => r.start_date && Utils.normalizeDate(r.start_date)===today)
+          const items = []
+          items.push({ title: 'On call today', badge: oc.length?null:'⚠ none', tone: oc.length?'active':'project', meta: oc.length ? oc.map(o=>getStaffName(o.primary_physician_id)).join(', ') : 'no coverage today' })
+          items.push({ title: 'Absent today', badge: absent.length+'', tone: absent.length?'default':'active', meta: absent.length ? absent.map(a=>getStaffName(a.staff_member_id)).join(', ') : 'full attendance' })
+          if (startingToday.length) items.push({ title: 'Rotations starting', badge: startingToday.length+'', tone:'active', meta: startingToday.map(r=>getStaffName(r.resident_id)).join(', ') })
+          const cos = (callouts.value||[]).filter(c => c.called_at && Utils.normalizeDate(c.called_at)===today)
+          if (cos.length) items.push({ title: 'Callouts today', badge: cos.length+'', tone:'project', meta: cos.map(c=>getStaffName(c.staff_id)).join(', ') })
+          return { text: `Today, ${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}:`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard', primary: true }], sources: ['on-call schedule','leave records','rotations'], followups: [{ label: 'This week ahead', intent: 'this_week_ahead' }, { label: 'Any risks?', intent: 'risk_scan' }], confidence: 'high' }
+        }
+        if (intent === 'this_week_ahead') {
+          const today = new Date(); const dow=today.getDay(); const mon=new Date(today); mon.setDate(today.getDate()-((dow+6)%7))
+          const s=Utils.normalizeDate(mon); const ed=new Date(mon); ed.setDate(mon.getDate()+6); const e=Utils.normalizeDate(ed)
+          const inWk=(d)=>{const n=Utils.normalizeDate(d);return n>=s&&n<=e}
+          const oc=(onCallSchedule.value||[]).filter(o=>inWk(o.duty_date))
+          const starting=(rotations.value||[]).filter(r=>r.start_date&&inWk(r.start_date))
+          const ending=(rotations.value||[]).filter(r=>r.end_date&&inWk(r.end_date)&&r.rotation_status==='active')
+          const leave=(absences.value||[]).filter(a=>a.current_status!=='cancelled'&&a.start_date&&Utils.normalizeDate(a.start_date)<=e&&a.end_date&&Utils.normalizeDate(a.end_date)>=s)
+          const items=[
+            { title:'On-call shifts', badge:oc.length+'', tone:oc.length?'active':'project', meta: oc.length?`${oc.filter(o=>o.primary_physician_id).length} filled`:'none scheduled' },
+            { title:'Rotations starting', badge:starting.length+'', tone:'active', meta: starting.slice(0,3).map(r=>getStaffName(r.resident_id)).join(', ')||'none' },
+            { title:'Rotations ending', badge:ending.length+'', tone: ending.length?'project':'default', meta: ending.slice(0,3).map(r=>getStaffName(r.resident_id)).join(', ')||'none' },
+            { title:'On leave', badge:leave.length+'', tone:'default', meta: leave.slice(0,3).map(a=>getStaffName(a.staff_member_id)).join(', ')||'none' },
+          ]
+          return { text: `This week (${Utils.formatDateShort(s)}–${Utils.formatDateShort(e)}):`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard', primary: true }], sources: ['on-call schedule','rotations','leave records'], followups: [{ label: "Today's snapshot", intent: 'today_snapshot' }], confidence: 'high' }
+        }
+        if (intent === 'risk_scan' || intent === 'dept_health') {
+          const today=Utils.normalizeDate(new Date())
+          const risks=[]
+          // coverage gaps (upcoming dates with no on-call) — reuse scan if present
+          const futureOc=(onCallSchedule.value||[]).filter(o=>Utils.normalizeDate(o.duty_date)>=today)
+          // unsupervised active rotations
+          const unsup=(rotations.value||[]).filter(r=>r.rotation_status==='active'&&!r.supervising_attending_id)
+          if (unsup.length) risks.push({ title:`${unsup.length} unsupervised rotation${unsup.length===1?'':'s'}`, tone:'project', meta: unsup.slice(0,3).map(r=>getStaffName(r.resident_id)).join(', ') })
+          // overdue rotations
+          const overdue=(rotations.value||[]).filter(r=>r.rotation_status==='active'&&r.end_date&&Utils.normalizeDate(r.end_date)<today)
+          if (overdue.length) risks.push({ title:`${overdue.length} overdue rotation${overdue.length===1?'':'s'}`, tone:'project', meta: 'past end date — need closing' })
+          // shifts with no backup (future)
+          const nobackup=futureOc.filter(o=>o.primary_physician_id&&!o.backup_physician_id)
+          if (nobackup.length) risks.push({ title:`${nobackup.length} shift${nobackup.length===1?'':'s'} with no backup`, tone:'default', meta: 'upcoming on-call' })
+          // leave colliding with duty
+          const abs=(absences.value||[]).filter(a=>!['cancelled','returned_to_duty'].includes(a.current_status))
+          let collisions=0
+          abs.forEach(a=>{const as=Utils.normalizeDate(a.start_date),ae=Utils.normalizeDate(a.end_date); if(futureOc.some(o=>o.primary_physician_id===a.staff_member_id&&Utils.normalizeDate(o.duty_date)>=as&&Utils.normalizeDate(o.duty_date)<=ae)) collisions++})
+          if (collisions) risks.push({ title:`${collisions} leave/duty collision${collisions===1?'':'s'}`, tone:'project', meta: 'someone on call during their leave' })
+          // units at/over capacity
+          const units=trainingUnits.value||[]; const overcap=units.filter(u=>{const n=(rotations.value||[]).filter(r=>r.rotation_status==='active'&&r.training_unit_id===u.id).length; return n>(u.maximum_residents||5)})
+          if (overcap.length) risks.push({ title:`${overcap.length} unit${overcap.length===1?'':'s'} over capacity`, tone:'project', meta: overcap.slice(0,3).map(u=>u.unit_name).join(', ') })
+
+          if (intent==='dept_health') {
+            // health = staff + coverage + risk snapshot
+            const active=(medicalStaff.value||[]).filter(s=>s.employment_status==='active'&&!s.deleted_at)
+            const onCallToday=(onCallSchedule.value||[]).some(o=>Utils.normalizeDate(o.duty_date)===today)
+            const items=[
+              { title:'Staff', badge:active.length+'', tone:'active', meta:`${active.filter(s=>s.staff_type==='attending_physician').length} attending · ${active.filter(s=>askBarIsResident(s)).length} residents` },
+              { title:'On-call today', badge: onCallToday?'covered':'⚠ gap', tone: onCallToday?'active':'project', meta: onCallToday?'coverage in place':'no coverage today' },
+              { title:'Open risks', badge: risks.length+'', tone: risks.length?'project':'active', meta: risks.length? risks.map(r=>r.title).slice(0,2).join('; ') : 'none — all clear' },
+            ]
+            const score = risks.length===0 && onCallToday ? 'Good' : risks.length<=2 ? 'Watch' : 'Needs attention'
+            return { text: `Department health: ${score}. ${active.length} active staff, ${risks.length} open risk${risks.length===1?'':'s'}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard', primary: true }], sources: ['staff','on-call schedule','rotations','leave records'], followups: risks.length?[{ label: 'See all risks', intent: 'risk_scan' }]:[], confidence: 'high' }
+          }
+          // risk_scan
+          if (!risks.length) return { text: '✓ No open risks detected — coverage, supervision, rotations and leave all look clean.', chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard' }], sources: ['on-call schedule','rotations','leave records','units'], followups: [], confidence: 'high' }
+          return { text: `${risks.length} thing${risks.length===1?'':'s'} need attention:`, visual: { type: 'reslist', items: risks.map(r=>({...r, badge:'⚠'})) }, chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard', primary: true }], sources: ['on-call schedule','rotations','leave records','units','staff'], followups: [], confidence: 'high' }
+        }
         if (intent === 'issues') {
           // SYNTHESIS — cross-reference data to surface problems no single view shows.
           const problems = []
@@ -13074,7 +13359,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
-          toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert,
+          toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
@@ -13289,6 +13574,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;    
+    throw error;       
   }
 });
