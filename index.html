@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=89">
+    <link rel="stylesheet" href="style.css?v=90">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -9918,6 +9918,30 @@
                     </div>
 
                 
+                    <!-- ═══ NEEDS ATTENTION — intelligence panel (risk-scan on the dashboard) ═══ -->
+                    <div class="db-attn-panel" v-if="dashRisks.length || dashRisks === null" style="margin-top:14px;">
+                        <div class="db-attn-hdr">
+                            <span style="font-size:13px;font-weight:650;color:var(--nm-text1);letter-spacing:.02em">⚡ Needs attention</span>
+                            <span v-if="dashRisks.length" style="font-size:11px;color:var(--nm-text3);margin-left:8px">{{ dashRisks.length }} item{{ dashRisks.length===1?'':'s' }}</span>
+                            <span v-else style="font-size:11px;color:#059669;margin-left:8px">All clear</span>
+                        </div>
+                        <div v-if="dashRisks.length" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+                            <div v-for="(r,i) in dashRisks.slice(0,6)" :key="i" class="db-attn-item">
+                                <span class="db-attn-icon">⚠</span>
+                                <span class="db-attn-text">{{ r.title }}</span>
+                                <span v-if="r.meta" class="db-attn-meta">{{ r.meta }}</span>
+                            </div>
+                        </div>
+                        <div v-else style="font-size:12px;color:var(--nm-text3);margin-top:8px;padding:8px 0;">Coverage, supervision, rotations and leave look clean.</div>
+                    </div>
+
+                    <!-- ═══ SYNC INDICATOR — subtle, bottom of dashboard ═══ -->
+                    <div v-if="oncallSync.committed || oncallSync.done" class="db-sync-indicator">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        <span v-if="oncallSync.committed">Synced {{ oncallSync.stats?.add || 0 }} shifts from {{ oncallSync.fileName }}</span>
+                        <span v-else>Preview ready — {{ oncallSync.stats?.add || 0 }} shifts to sync</span>
+                    </div>
+
                 </div>
 
 
@@ -20222,7 +20246,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=139"></script>
+    <script src="app.js?v=140"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
