@@ -7185,6 +7185,11 @@ document.addEventListener('DOMContentLoaded', () => {
             oncallSync.unmatched=Object.entries(um).map(([surname,count])=>({surname,count}))
             const umRows=Object.values(um).reduce((a,b)=>a+b,0)
             oncallSync.stats={ total:rows.length, sheet:sheetName, add:toAdd.length, update:toUpdate.length, unchanged: rows.length-toAdd.length-toUpdate.length-umRows, unmatchedRows:umRows }
+            // Auto-apply any saved mappings from previous sessions
+            const saved = _loadMappings()
+            oncallSync.mappings = { ...saved }
+            const hasSaved = Object.keys(saved).some(k => um[k])
+            if (hasSaved) { Object.entries(saved).forEach(([sn, sid]) => { if (um[sn] && sid) oncallSyncMap(sn, sid) }) }
             oncallSync.done=true
           } catch(e){ oncallSync.error = e.message || 'Could not parse the file.' } finally { oncallSync.parsing=false }
         }
@@ -7192,8 +7197,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallSyncFile = (ev) => { const f = ev.target.files && ev.target.files[0]; if (f) oncallSyncParse(f) }
 
         // Phase 1b: map an unmatched surname → a staff id (or 'skip'), then recompute the diff
+        // Mappings persist in localStorage so you only map once
+        const SYNC_MAP_KEY = 'neumdesk_oncall_sync_mappings'
+        const _loadMappings = () => { try { return JSON.parse(localStorage.getItem(SYNC_MAP_KEY)||'{}') } catch { return {} } }
+        const _saveMappings = (m) => { try { localStorage.setItem(SYNC_MAP_KEY, JSON.stringify(m)) } catch {} }
         const oncallSyncMap = (surname, staffId) => {
           oncallSync.mappings = { ...oncallSync.mappings, [surname]: staffId }
+          _saveMappings(oncallSync.mappings)
           // re-resolve rows using the manual mappings, then rebuild the diff
           oncallSync.rows.forEach(row => {
             if (row.resolution.status !== 'matched' && oncallSync.mappings[row.surname] && oncallSync.mappings[row.surname] !== 'skip') {
@@ -7235,7 +7245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             try { await onCallOps.loadOnCallSchedule() } catch(e){}
             oncallSync.committed = true
-            oncallSync.commitResult = { ok:true, msg:`\u2713 Synced ${saved} on-call shift${saved===1?'':'s'} from ${oncallSync.fileName}.` }
+            oncallSync.commitResult = { ok:true, msg:`✓ Synced ${saved} shift${saved===1?'':'s'} from ${oncallSync.fileName} (new + updated).` }
           } catch (e) {
             oncallSync.commitResult = { ok:false, msg: (e && e.message) ? e.message : 'Sync failed — nothing partial was rolled back; check the on-call view.' }
           } finally { oncallSync.committing = false }
@@ -10353,7 +10363,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // ══ §6 RETURN FROM LEAVE — close an open absence ══
       const askBarStartReturnFlow = (asked) => {
         askBar.view = 'conversation'
-        const person = askBarResolveStaff(asked.replace(/\b(is |back|returned?|to|duty|work|no longer|on leave|absent|off|the)\b/gi, ' '))
+        const person = askBarResolveStaffForWrite(asked.replace(/\b(is |back|returned?|to|duty|work|no longer|on leave|absent|off|the|put)\b/gi, ' '), asked)
                     || askBarResolveStaff(asked)
         if (!person) {
           askBar.turns.push(Vue.reactive({ q: asked, text: "Who's back? Name the person, e.g. \u201cMarcos is back.\u201d", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
@@ -10403,7 +10413,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // ══ §6 REMOVE flows — destructive, always propose→confirm→delete ══
       const askBarStartCancelLeaveFlow = (asked) => {
         askBar.view = 'conversation'
-        const person = askBarResolveStaff(asked.replace(/\b(cancel|remove|delete|undo|scrap|leave|absence|vacation|holiday|off|the|for)\b/gi,' ')) || askBarResolveStaff(asked)
+        const person = askBarResolveStaffForWrite(asked.replace(/\b(cancel|remove|delete|undo|scrap|leave|absence|vacation|holiday|off|the|for)\b/gi,' '), asked)
+                    || askBarResolveStaff(asked)
         if (!person) { askBar.turns.push(Vue.reactive({ q: asked, text: "Whose leave should I cancel? Name the person.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
         const open = (absences.value || []).filter(a => a.staff_member_id === person.id && !['cancelled'].includes(a.current_status))
         if (!open.length) { askBar.turns.push(Vue.reactive({ q: asked, text: `${person.full_name} has no leave record to cancel.`, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], confidence: 'high', asOf: askBarNow(), streaming: false })); return }
@@ -10418,7 +10429,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarStartRemoveOncallFlow = (asked) => {
         askBar.view = 'conversation'
         const q = asked.toLowerCase()
-        const person = askBarResolveStaff(asked.replace(/\b(cancel|remove|delete|undo|clear|drop|on.?call|oncall|shift|duty|guardia|off|the|rota|from|take|pull)\b/gi,' ')) || askBarResolveStaff(asked)
+        const cleaned = asked.replace(/\b(cancel|remove|delete|undo|clear|drop|on.?call|oncall|shift|duty|guardia|off|the|rota|from|take|pull)\b/gi,' ')
+        const resolved = askBarResolveStaffClarified(cleaned)
+        if (resolved.ambiguous) {
+          askBar.turns.push(Vue.reactive({ q: asked, text: `Which one? I see ${resolved.ambiguous.length} people matching:`, chips: resolved.ambiguous.map(s=>({label:s.full_name,id:s.id})), actions: [], sources: ['staff'], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+          return
+        }
+        const person = resolved.person || askBarResolveStaff(asked)
         const dr = askBarExtractDates(q)
         let shifts = (onCallSchedule.value || [])
         if (person) shifts = shifts.filter(s => s.primary_physician_id === person.id)
@@ -10462,7 +10479,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Cancel a resident's rotation (single delete)
       const askBarStartCancelRotationFlow = (asked) => {
         askBar.view = 'conversation'
-        const person = askBarResolveStaff(asked.replace(/\b(cancel|remove|delete|undo|end|pull|out of|off|rotation|rotat|the|from)\b/gi,' ')) || askBarResolveStaff(asked)
+        const person = askBarResolveStaffForWrite(asked.replace(/\b(cancel|remove|delete|undo|end|pull|out of|off|rotation|rotat|the|from)\b/gi,' '), asked)
+                    || askBarResolveStaff(asked)
         if (!person) { askBar.turns.push(Vue.reactive({ q: asked, text: "Whose rotation should I cancel? Name the resident.", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
         const active = (rotations.value || []).filter(r => r.resident_id === person.id && r.rotation_status === 'active')
         if (!active.length) { askBar.turns.push(Vue.reactive({ q: asked, text: `${person.full_name} has no active rotation to cancel.`, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations' }], sources: ['rotations'], confidence: 'high', asOf: askBarNow(), streaming: false })); return }
@@ -10642,6 +10660,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const dates = askBarExtractDates(q)
         if (!resident) { askBar.turns.push(Vue.reactive({ q: asked, text: "Which resident? Name them, e.g. \u201cput Santalla in the ICU rotation under Antelo.\u201d", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
         if (!unit) { askBar.turns.push(Vue.reactive({ q: asked, text: `Which unit should ${resident.full_name} rotate into? (e.g. ICU, Sleep Lab)`, chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
+        if (!dates.start) {
+          // remember what we have so far — ask only for the missing date
+          askBar.pendingRotation = { resident, unit, supervisor, asked }
+          askBar.turns.push(Vue.reactive({ q: asked, text: `When does ${resident.full_name}'s rotation in ${unit.unit_name} start and end? (e.g. "from 1 Oct to 31 Oct")`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+          return
+        }
         // supervisor eligibility check (must be able to supervise)
         const supOk = supervisor && (supervisor.can_supervise_residents !== false) && isOnCallEligible(supervisor.staff_type)
         // unit capacity + resident overlap — SHARED date-aware logic (same as the GUI form)
@@ -10837,7 +10861,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .replace(/\b(dr|dra|doctor|doctora)\.?\b/g, '')
           .replace(/\s+/g, ' ').trim()
         if (q.length < 3) return []
-        const STOP = new Set(['on','call','oncall','today','tomorrow','leave','absent','off','who','is','are','the','of','a','an','for','in','this','week','weekend','month','rotation','shift','schedule','duty','guardia','cover','backup','best','draft','write','note','email','message','and','not','with','their','his','her','trials','trial','studies','study','pi','investigator','lead','which','what','have','has','does','do','phd','certificate','certificates','specialty','can','be','year'])
+        const STOP = new Set(['on','call','oncall','today','tomorrow','leave','absent','off','who','is','are','the','of','a','an','for','in','this','week','weekend','month','rotation','shift','schedule','duty','guardia','cover','backup','best','draft','write','note','email','message','and','not','with','their','his','her','trials','trial','studies','study','pi','investigator','lead','which','what','have','has','does','do','phd','certificate','certificates','specialty','can','be','year','from','back'])
         const staff = medicalStaff.value || []
         const nameTokens = new Set()
         staff.forEach(s => (s.full_name||'').toLowerCase().split(/\s+/).forEach(w => { if (w.length > 2) nameTokens.add(w) }))
@@ -10890,6 +10914,16 @@ document.addEventListener('DOMContentLoaded', () => {
           if (tied.length >= 2) return { ambiguous: tied.map(r => r.s) }
         }
         return { person: ranked[0].s }
+      }
+
+      // Write-safe resolver: for write flows, ask "which one?" on ambiguity instead of guessing
+      const askBarResolveStaffForWrite = (qRaw, asked) => {
+        const result = askBarResolveStaffClarified(qRaw)
+        if (result.ambiguous) {
+          askBar.turns.push(Vue.reactive({ q: asked||qRaw, text: `I see ${result.ambiguous.length} people matching — which one?`, chips: result.ambiguous.map(s=>({label:s.full_name,id:s.id})), actions: [], sources: ['staff'], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+          return null  // caller should return early
+        }
+        return result.person
       }
 
       // #2 Temporal parsing — turn phrases into a {start,end} date window.
@@ -10972,13 +11006,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // ══════════════════════════════════════════════════════════════
       const ASKBAR_ROUTES = [
         // — WRITE intents (Level 2/3) — imperative verbs, very high priority —
-        { intent: 'record_leave', priority: 120, patterns: [/(put|mark|record|register|set|book|schedule|add|log)\b.*(on leave|off|absent|leave|vacation|holiday|sick|conference|congress|training|course|out)\b/, /(on leave|off sick|absent|going on leave)\b.*(from|on|next|this|until|till)\b/], anti: [/who|which|list|how many|is\b.*\bon leave/] },
+        { intent: 'record_leave', priority: 120, patterns: [/(put|mark|record|register|set|book|schedule|add|log)\b.*(on leave|off|absent|leave|vacation|holiday|sick|conference|congress|training|course|out)\b/, /(on leave|off sick|absent|going on leave)\b.*(from|on|next|this|until|till)\b/], anti: [/who|which|list|how many|is\b.*\bon leave|\bback\b|return/] },
         { intent: 'record_oncall', priority: 121, patterns: [/(put|assign|schedule|book|set|add|give|make)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|week|rota/] },
         { intent: 'draft_rota', priority: 123, patterns: [/(draft|prepare|generate|build|make|plan|propose)\b.*(rota|on.?call schedule|call schedule|week.*call|weekly.*call)/, /(rota|on.?call).*(for )?(next|this|the) week/], anti: [/who|which|is\b/] },
         { intent: 'return_leave', priority: 122, patterns: [/\b(is )?back\b/, /returned?\b/, /back (to|on) (duty|work)/, /no longer (on leave|absent|off)/, /end.*leave early/], require: [/back|return|no longer|end/], anti: [/who|which|list|when.*back/] },
         { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule|add|set|book|enroll|send|rota|transfer|swap|switch)\b.*\b(in|into|to|on|at|through|thru)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|sueno|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma|cardiolog|interna|radiolog)/i, /(put|assign|place|move|rotate|transfer|swap)\b.*(rotation|rotat)/i, /(rotation|rotate)\b.*(under|with|supervis|from|next)/i, /rotate\s+[a-zñáéíóú]+\s+(through|thru|in|to)/i], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete|how long|when does/] },
         { intent: 'cancel_leave', priority: 124, patterns: [/(cancel|remove|delete|undo|scrap)\b.*(leave|absence|vacation|holiday|baja|off|time off)/, /(leave|absence).*(cancel|remove|delete)/], anti: [/who|which|list/] },
-        { intent: 'delete_staff_blocked', priority: 130, patterns: [/(delete|remove|fire|terminate|erase)\b.*(staff|physician|doctor|resident|attending|nurse|person|employee)/, /(delete|remove|fire|erase)\s+(dr\.?\s+)?[a-zñáéíóú]+\s+[a-zñáéíóú]+/], anti: [/leave|absence|on.?call|oncall|shift|rotation|rota|vacation/] },
+        { intent: 'delete_staff_blocked', priority: 130, patterns: [/(delete|remove|fire|terminate|erase)\b.*(staff|physician|doctor|resident|attending|nurse|person|employee)/, /(delete|remove|fire|erase)\s+(dr\.?\s+)?[a-zñáéíóú]{3,}/], anti: [/leave|absence|on.?call|oncall|shift|rotation|rota|vacation/] },
         { intent: 'cancel_rotation', priority: 124, patterns: [/(cancel|remove|delete|undo|pull)\b.*(rotation|rotat)/, /(rotation)\b.*(cancel|remove|delete)/, /(take|pull)\b.*(out of|off)\b.*(rotation|uci|unit)/], anti: [/who|which|list|rotating where|ending|soon|finishing|upcoming|starting/] },
         { intent: 'clear_rota', priority: 124, patterns: [/(clear|wipe|remove|delete|reset)\b.*(rota|whole.*rota|week.*call|all.*on.?call|all.*shifts)/, /(rota|schedule).*(clear|wipe|reset)/], anti: [/who|which|list/] },
         { intent: 'remove_oncall', priority: 124, patterns: [/(cancel|remove|delete|undo|clear|drop)\b.*(on.?call|oncall|shift|duty|guardia)/, /(on.?call|shift|duty).*(cancel|remove|delete|clear)/, /(take|pull)\b.*(off (call|duty|the rota))/], anti: [/who|which|list/] },
@@ -11670,7 +11704,15 @@ document.addEventListener('DOMContentLoaded', () => {
           askBar.loading = false; askBar.thinking = null
           const person = askBarResolveStaff(asked)
           const who = person ? person.full_name : 'a staff member'
-          askBar.turns.push(Vue.reactive({ q: asked, text: `I won't delete ${who} from here — removing a staff member is a permanent HR action that must be done in the staff management view, with the right authorization. I can help with leave, on-call, or rotations instead.`, chips: [], actions: person ? [{ label: 'Open staff management', view: 'medical_staff', primary: true }] : [], sources: [], followups: [], confidence: 'high', asOf: askBarNow(), streaming: false }))
+          // check if the person has open absence or on-call → offer those instead
+          const followups = []
+          if (person) {
+            const hasLeave = (absences.value||[]).some(a => a.staff_member_id===person.id && !['returned_to_duty','cancelled'].includes(a.current_status))
+            const hasOncall = (onCallSchedule.value||[]).some(o => o.primary_physician_id===person.id && Utils.normalizeDate(o.duty_date) >= Utils.normalizeDate(new Date()))
+            if (hasLeave) followups.push({ label: `Cancel ${person.full_name.split(' ')[0]}'s leave?`, intent: 'cancel_leave', q: `cancel ${person.full_name} leave` })
+            if (hasOncall) followups.push({ label: `Remove from on-call?`, intent: 'remove_oncall', q: `remove ${person.full_name} from on-call` })
+          }
+          askBar.turns.push(Vue.reactive({ q: asked, text: `I can't delete ${who} — that's a permanent HR action. Did you mean to cancel their leave, remove them from on-call, or end a rotation?`, chips: [], actions: person ? [{ label: 'Open staff management', view: 'medical_staff', primary: true }] : [], sources: [], followups, confidence: 'high', asOf: askBarNow(), streaming: false }))
           return
         }
         // #37 permission-aware: if the intent's module is one the user can't read, decline.
@@ -13578,7 +13620,7 @@ document.addEventListener('DOMContentLoaded', () => {
     app.config.errorHandler = (err, instance, info) => {
       console.error('[neumDesk render error]', err, info)
       const viewName = instance?.setupState?.currentView?.value
-      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)
+      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info) 
     }
 
     app.mount('#app')
