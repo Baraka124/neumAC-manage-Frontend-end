@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
-    <link rel="stylesheet" href="style.css?v=85">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=89">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -12595,6 +12596,71 @@
                         </div>
                     </div>
 
+                    <!-- ═══ EXCEL SYNC (on-call, preview-only) ═══ -->
+                    <div class="card mb-6">
+                        <div class="card-header"><span class="section-title">📊 Sync on-call from Excel <span style="font-size:11px;font-weight:400;color:var(--nm-text3);margin-left:6px">preview only — nothing is saved</span></span></div>
+                        <div style="padding:18px">
+                            <div style="font-size:13px;color:var(--nm-text2);margin-bottom:14px;line-height:1.5">
+                                Upload your <b>Guardias</b> Excel file. The system reads the schedule, matches the surnames to staff, and shows exactly what a sync <i>would</i> change — without saving anything. You review first.
+                            </div>
+                            <div v-if="!oncallSync.done && !oncallSync.parsing">
+                                <label class="btn btn-primary" style="cursor:pointer;display:inline-flex">
+                                    <input type="file" accept=".xlsx,.xls" @change="oncallSyncFile" style="display:none">
+                                    Choose Excel file
+                                </label>
+                            </div>
+                            <div v-if="oncallSync.parsing" style="font-size:13px;color:var(--nm-text3)">Parsing {{ oncallSync.fileName }}…</div>
+                            <div v-if="oncallSync.error" style="margin-top:10px;padding:11px 14px;border-radius:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:var(--nm-danger,#b91c1c);font-size:13px">⚠ {{ oncallSync.error }}</div>
+
+                            <div v-if="oncallSync.done" style="margin-top:6px">
+                                <div style="font-size:12px;color:var(--nm-text3);margin-bottom:12px">{{ oncallSync.fileName }} · sheet "{{ oncallSync.stats.sheet }}" · {{ oncallSync.stats.total }} shifts read</div>
+                                <!-- diff summary -->
+                                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+                                    <div style="padding:12px;border-radius:10px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2)"><div style="font-size:22px;font-weight:700;color:#059669;font-family:var(--font-display)">{{ oncallSync.stats.add }}</div><div style="font-size:11px;color:var(--nm-text3);text-transform:uppercase;letter-spacing:.04em">to add</div></div>
+                                    <div style="padding:12px;border-radius:10px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2)"><div style="font-size:22px;font-weight:700;color:#0284c7;font-family:var(--font-display)">{{ oncallSync.stats.update }}</div><div style="font-size:11px;color:var(--nm-text3);text-transform:uppercase;letter-spacing:.04em">to update</div></div>
+                                    <div style="padding:12px;border-radius:10px;background:var(--nm-surface2,#f5f4f0);border:1px solid var(--nm-border)"><div style="font-size:22px;font-weight:700;color:var(--nm-text3);font-family:var(--font-display)">{{ oncallSync.stats.unchanged }}</div><div style="font-size:11px;color:var(--nm-text3);text-transform:uppercase;letter-spacing:.04em">unchanged</div></div>
+                                    <div style="padding:12px;border-radius:10px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25)"><div style="font-size:22px;font-weight:700;color:#d97706;font-family:var(--font-display)">{{ oncallSync.stats.unmatchedRows }}</div><div style="font-size:11px;color:var(--nm-text3);text-transform:uppercase;letter-spacing:.04em">unmatched</div></div>
+                                </div>
+                                <!-- unmatched names — now mappable -->
+                                <div v-if="oncallSync.unmatched.length" style="margin-bottom:14px;padding:12px 14px;border-radius:10px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2)">
+                                    <div style="font-size:12px;font-weight:600;color:var(--nm-text2);margin-bottom:8px">Map unmatched names to staff ({{ oncallSync.unmatched.length }}) — or skip:</div>
+                                    <div v-for="u in oncallSync.unmatched" :key="u.surname" style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                                        <span style="font-size:12.5px;font-weight:600;min-width:100px">{{ u.surname }} <span style="color:var(--nm-text3);font-weight:400">({{ u.count }})</span></span>
+                                        <select :value="oncallSync.mappings[u.surname]||''" @change="oncallSyncMap(u.surname, $event.target.value)" style="font-size:12.5px;padding:5px 8px;border-radius:8px;border:1px solid var(--nm-border);flex:1;max-width:280px">
+                                            <option value="">— choose —</option>
+                                            <option value="skip">Skip these shifts</option>
+                                            <option v-for="s in medicalStaff.filter(x=>x.employment_status==='active')" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                        </select>
+                                    </div>
+                                    <div style="font-size:11px;color:var(--nm-text3);margin-top:7px">Mappings apply immediately to the diff above. New staff? Add them in Medical Staff first, then re-upload.</div>
+                                </div>
+                                <!-- sample of changes -->
+                                <div v-if="oncallSync.toAdd.length" style="margin-bottom:10px">
+                                    <div style="font-size:12px;font-weight:600;color:var(--nm-text2);margin-bottom:6px">Sample of shifts to add:</div>
+                                    <div v-for="(r,i) in oncallSync.toAdd.slice(0,8)" :key="i" style="display:flex;gap:12px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--nm-border)">
+                                        <span style="font-family:var(--font-data);color:var(--nm-text3);min-width:90px">{{ r.date }}</span>
+                                        <span style="color:var(--nm-text1);font-weight:500">{{ r.staffName }}</span>
+                                        <span style="color:var(--nm-text3);margin-left:auto">{{ r.shiftType }}</span>
+                                    </div>
+                                    <div v-if="oncallSync.toAdd.length>8" style="font-size:11px;color:var(--nm-text3);margin-top:6px">…and {{ oncallSync.toAdd.length - 8 }} more</div>
+                                </div>
+                                <!-- COMMIT -->
+                                <div v-if="!oncallSync.committed" style="display:flex;gap:8px;margin-top:16px;align-items:center">
+                                    <button class="btn btn-secondary" @click="oncallSyncReset">Upload another</button>
+                                    <button class="btn btn-primary" :disabled="oncallSync.committing || (oncallSync.toAdd.length + oncallSync.toUpdate.length === 0)"
+                                            @click="oncallSyncConfirmCommit()">
+                                        {{ oncallSync.committing ? 'Syncing…' : ('Commit ' + (oncallSync.toAdd.length + oncallSync.toUpdate.length) + ' shifts') }}
+                                    </button>
+                                </div>
+                                <div v-if="oncallSync.commitResult" :style="'margin-top:12px;padding:11px 14px;border-radius:10px;font-size:13px;border:1px solid ' + (oncallSync.commitResult.ok ? 'rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#059669' : 'rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#b91c1c')">
+                                    {{ oncallSync.commitResult.msg }}
+                                </div>
+                                <div v-if="oncallSync.committed" style="margin-top:10px"><button class="btn btn-secondary" @click="oncallSyncReset">Sync another file</button></div>
+                                <div v-if="!oncallSync.committed && !oncallSync.commitResult" style="font-size:11px;color:var(--nm-text3);margin-top:8px">Review the diff above before committing. Only matched/mapped shifts are written.</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- STAFF TYPES ══════════════════════════════════════════ -->
                     <div class="card mb-6">
                         <div class="card-header">
@@ -20156,7 +20222,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=136"></script>
+    <script src="app.js?v=139"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
