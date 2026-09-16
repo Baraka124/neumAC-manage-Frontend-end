@@ -8457,6 +8457,61 @@
                             </div>
 
                             <!-- §6 rotation-assignment card -->
+
+                            <!-- §6 rotation-edit proposal -->
+                            <div v-if="turn.rotationEditProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                                <div class="askbar-proposal-label">Proposed change · edit rotation</div>
+                                <div class="askbar-proposal-rows">
+                                    <div v-for="r in turn.rotationEditProposal.rows" :key="r.k" class="askbar-proposal-row">
+                                        <span class="askbar-proposal-k">{{ r.k }}</span>
+                                        <span class="askbar-proposal-v" :style="r.highlight ? 'font-weight:600;color:var(--nm-teal,#0891b2)' : ''">{{ r.v }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmRotationEdit(turn.rotationEditProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & update' }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="turn.cancelled = true">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was changed.</div>
+                            </div>
+
+                            <!-- §6 leave-edit proposal -->
+                            <div v-if="turn.leaveEditProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                                <div class="askbar-proposal-label">Proposed change · edit leave</div>
+                                <div class="askbar-proposal-rows">
+                                    <div v-for="r in turn.leaveEditProposal.rows" :key="r.k" class="askbar-proposal-row">
+                                        <span class="askbar-proposal-k">{{ r.k }}</span>
+                                        <span class="askbar-proposal-v" :style="r.highlight ? 'font-weight:600;color:var(--nm-teal,#0891b2)' : ''">{{ r.v }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmLeaveEdit(turn.leaveEditProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & update' }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="turn.cancelled = true">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was changed.</div>
+                            </div>
+
+                            <!-- §6 extend-rotation proposal -->
+                            <div v-if="turn.rotationExtendProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                                <div class="askbar-proposal-label">Proposed change · extend rotation</div>
+                                <div class="askbar-proposal-rows">
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.rotationExtendProposal.name }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Unit</span><span class="askbar-proposal-v">{{ turn.rotationExtendProposal.unit }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Was until</span><span class="askbar-proposal-v">{{ turn.rotationExtendProposal.was }}</span></div>
+                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Now until</span><span class="askbar-proposal-v" style="font-weight:600;color:var(--nm-teal,#0891b2)">{{ turn.rotationExtendProposal.newEndLabel }}</span></div>
+                                </div>
+                                <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmExtendRotation(turn.rotationExtendProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & extend' }}</button>
+                                    <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="turn.cancelled = true">Cancel</button>
+                                </div>
+                                <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
+                                <div v-if="turn.commitError" class="askbar-proposal-err">Couldn't save: {{ turn.commitError }}</div>
+                                <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
+                            </div>
+
                             <!-- §6 multi-unit rotation proposal -->
                             <div v-if="turn.multiRotation" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
@@ -20246,7 +20301,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=143"></script>
+    <script src="app.js?v=146"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -20464,7 +20519,7 @@ html, body, #app { height: 100%; }
     flex: 0 0 auto !important;
     width: 100% !important;
     max-width: 100% !important;
-    min-width: 0 !important;  
+    min-width: 0 !important;
     height: 40px !important;
   }
 }
