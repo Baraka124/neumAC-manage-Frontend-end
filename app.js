@@ -6464,6 +6464,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function useDashboard({ medicalStaff, allStaffLookup, rotations, absences, onCallSchedule, trainingUnits = ref([]) }) {
+      // ── Dashboard "Needs Attention" intelligence (reuses risk-scan logic) ──
+      const dashRisks = computed(() => {
+        const today = Utils.normalizeDate(new Date())
+        const _name = (id) => { const s = (allStaffLookup.value||[]).find(x=>x.id===id); return s?s.full_name:'—' }
+        const risks = []
+        const rots = rotations.value || []
+        const unsup = rots.filter(r => r.rotation_status==='active' && !r.supervising_attending_id)
+        if (unsup.length) risks.push({ title: `${unsup.length} unsupervised rotation${unsup.length===1?'':'s'}`, meta: unsup.slice(0,2).map(r=>_name(r.resident_id)).join(', ') })
+        const overdue = rots.filter(r => r.rotation_status==='active' && r.end_date && Utils.normalizeDate(r.end_date) < today)
+        if (overdue.length) risks.push({ title: `${overdue.length} overdue rotation${overdue.length===1?'':'s'}`, meta: 'past end date' })
+        const futureOc = (onCallSchedule.value||[]).filter(o => Utils.normalizeDate(o.duty_date)>=today)
+        const nobackup = futureOc.filter(o => o.primary_physician_id && !o.backup_physician_id)
+        if (nobackup.length) risks.push({ title: `${nobackup.length} shift${nobackup.length===1?'':'s'} with no backup`, meta: 'upcoming on-call' })
+        const abs = (absences.value||[]).filter(a => !['cancelled','returned_to_duty'].includes(a.current_status))
+        let collisions = 0
+        abs.forEach(a => { const as=Utils.normalizeDate(a.start_date), ae=Utils.normalizeDate(a.end_date); if (futureOc.some(o=>o.primary_physician_id===a.staff_member_id && Utils.normalizeDate(o.duty_date)>=as && Utils.normalizeDate(o.duty_date)<=ae)) collisions++ })
+        if (collisions) risks.push({ title: `${collisions} leave/duty collision${collisions===1?'':'s'}`, meta: 'on call during leave' })
+        const units = trainingUnits.value || []
+        const overcap = units.filter(u => { const n=rots.filter(r=>r.rotation_status==='active'&&r.training_unit_id===u.id).length; return n>(u.maximum_residents||5) })
+        if (overcap.length) risks.push({ title: `${overcap.length} unit${overcap.length===1?'':'s'} over capacity`, meta: overcap.slice(0,2).map(u=>u.unit_name).join(', ') })
+        return risks
+      })
+
       const systemStats = ref({
         totalStaff: 0, activeAttending: 0, activeResidents: 0, onCallNow: 0, inSurgery: 0,
         activeRotations: 0, endingThisWeek: 0, startingNextWeek: 0, onLeaveStaff: 0,
@@ -6709,7 +6732,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       const currentTimeFormatted = computed(() => Utils.formatTime(currentTime.value))
-      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems, dailyBriefing, systemSummary }
+      return { systemStats, currentTime, currentTimeFormatted, loadSystemStats, updateDashboardStats, situationItems, dailyBriefing, systemSummary, dashRisks }
     }
 
     // ============ 7. ROOT APP ============
@@ -7527,7 +7550,7 @@ document.addEventListener('DOMContentLoaded', () => {
           rotationOps.showAddRotationModal(null, unit)
           if (startDate) rotationOps.rotationModal.form.start_date = startDate
         }
-        const { systemStats, updateDashboardStats, loadSystemStats, situationItems, dailyBriefing, systemSummary } = dashOps
+        const { systemStats, updateDashboardStats, loadSystemStats, situationItems, dailyBriefing, systemSummary, dashRisks } = dashOps
 
         // ============ NEW COMPACT VIEW STATE ============
         const rotationView = ref('detailed') // 'compact', 'detailed', 'month'
@@ -13331,7 +13354,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loadResearchDashboard, // override with wired wrapper that passes research data refs
           ...dashOps,
           handleLogin, handleLogout,
-          switchView, situationItems, dailyBriefing, systemSummary, toggleStatsSidebar,
+          switchView, situationItems, dailyBriefing, systemSummary, dashRisks, toggleStatsSidebar,
           popover, showPopover, hidePopover,
           absenceCalendarOffset, absenceCalendarCells, absenceCalendarTitle, absenceMoveMonth,
           hoverPopover, showIntelPopover, hideIntelPopover,
@@ -13574,6 +13597,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;       
+    throw error;    
   }
 });
