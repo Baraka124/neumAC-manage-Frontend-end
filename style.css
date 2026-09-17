@@ -1,11 +1,3 @@
-/* ==========================================================================
-   neumDesk UI UNIFICATION BUILD — 2026-09-18
-   Complete drop-in stylesheet.
-   Existing selector coverage is retained for behavioral/markup safety.
-   The final section is the canonical neumDesk visual system and intentionally
-   overrides historical module-level visual drift. No JS/backend contract is changed.
-   ========================================================================== */
-
 /* ================================================================
    neumDesk — style.css
    Clinical Operations Platform UI Override Stylesheet
@@ -42961,74 +42953,319 @@ html body #app .news-view .news-card-right {
   gap: 10px !important; padding: 8px 14px !important;
 }
 
+
 /* ======================================================================
-   neumDesk — SAFE UI UNIFICATION PASS v2
-   Presentation-only. Deliberately does NOT change app geometry, inherited
-   text colour, visibility, opacity, positioning, or Vue-dependent layout.
+   neumDesk UI UNIFICATION — V3 / 2026-09
+   Presentation-only compatibility layer.
+   Built against the existing DOM + app.js contract.
+   RULE: no global descendant colour/opacity/display overrides.
    ====================================================================== */
+
 :root {
-  --nd2-radius: 12px;
-  --nd2-radius-sm: 8px;
-  --nd2-border: #e3e5e8;
-  --nd2-shadow: 0 1px 2px rgba(15,23,42,.025), 0 8px 24px rgba(15,23,42,.045);
-  --nd2-shadow-hover: 0 2px 4px rgba(15,23,42,.035), 0 12px 30px rgba(15,23,42,.065);
-  --nd2-teal: #009999;
+  --nd-canvas:#f3f2ef;
+  --nd-surface:#ffffff;
+  --nd-surface-soft:#f8f7f4;
+  --nd-surface-muted:#efede8;
+  --nd-ink:#142033;
+  --nd-ink-2:#445064;
+  --nd-ink-3:#6f7886;
+  --nd-line:#e4e1da;
+  --nd-line-strong:#d6d2ca;
+  --nd-navy:#173f70;
+  --nd-navy-deep:#112f55;
+  --nd-teal:#009999;
+  --nd-teal-dark:#007f80;
+  --nd-focus:#0b7f9c;
+  --nd-radius-sm:7px;
+  --nd-radius:10px;
+  --nd-radius-lg:14px;
+  --nd-shadow-1:0 1px 2px rgba(15,31,52,.04),0 6px 18px rgba(15,31,52,.035);
+  --nd-shadow-2:0 12px 32px rgba(15,31,52,.10);
 }
 
-/* Shared surface language — geometry and text inheritance untouched */
-html body #app :is(.db-panel,.dashboard-panel,.card,.tuc,.news-card,.research-line-card,.staff-card,.absence-card,.settings-card) {
-  border-radius: var(--nd2-radius) !important;
-  border-color: var(--nd2-border) !important;
-  box-shadow: var(--nd2-shadow) !important;
+/* 1. CANVAS + APP CHROME ------------------------------------------------ */
+html body #app .content-area { background:var(--nd-canvas)!important; }
+html body #app .top-navbar {
+  background:var(--nd-navy)!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.08),0 4px 18px rgba(10,35,65,.08)!important;
 }
-html body #app :is(.db-panel,.dashboard-panel,.card,.tuc,.news-card,.research-line-card,.staff-card,.absence-card,.settings-card):hover {
-  box-shadow: var(--nd2-shadow-hover) !important;
+html body #app .breadcrumb {
+  background:#fff!important;
+  border-bottom:1px solid var(--nd-line)!important;
+  box-shadow:none!important;
+}
+html body #app .breadcrumb,
+html body #app .breadcrumb a,
+html body #app .breadcrumb span { color:var(--nd-ink-2)!important; }
+html body #app .breadcrumb a:hover { color:var(--nd-teal-dark)!important; }
+
+/* Sidebar stays the visual spine, but loses decorative noise. */
+html body #app .sidebar,
+html body #app aside.nmsb {
+  background:linear-gradient(180deg,var(--nd-navy-deep) 0%,#143961 58%,#102d50 100%)!important;
+  box-shadow:3px 0 18px rgba(9,31,55,.16)!important;
+}
+html body #app .sidebar::before { opacity:.42!important; }
+html body #app .sidebar::after { opacity:.35!important; }
+html body #app .sidebar-header { background:transparent!important; }
+html body #app .nmsb-item,
+html body #app .sidebar-menu-link { border-radius:8px!important; }
+html body #app .nmsb-item.active,
+html body #app .nmsb-item--active,
+html body #app .sidebar-menu-link.active {
+  background:rgba(255,255,255,.09)!important;
+  box-shadow:inset 2px 0 0 #33c4c4!important;
 }
 
-/* One control geometry; intentionally no forced text/background colour */
-html body #app :is(button,.btn,.dbh-btn,.tbl-btn,.mv-nav-btn,.mv-hz-btn,.filter-btn,.view-btn) {
-  border-radius: var(--nd2-radius-sm) !important;
+/* 2. TYPOGRAPHIC RHYTHM ------------------------------------------------ */
+html body #app .navbar-title,
+html body #app .navbar-brand-title,
+html body #app .card-title,
+html body #app .section-title,
+html body #app .db-panel-title,
+html body #app .tuc-card-title {
+  font-family:'DM Sans',system-ui,sans-serif!important;
+  letter-spacing:-.012em!important;
 }
-html body #app :is(input,select,textarea,.form-control,.form-select,.lc-input,.sm-input) {
-  border-radius: var(--nd2-radius-sm) !important;
-}
-html body #app :is(input,select,textarea,.form-control,.form-select,.lc-input,.sm-input):focus {
-  border-color: rgba(0,153,153,.72) !important;
-  box-shadow: 0 0 0 3px rgba(0,153,153,.10) !important;
-  outline: none !important;
-}
-
-/* Tables: shared frame only; existing cell colours and typography preserved */
-html body #app :is(.table-responsive,.table-wrapper,.nm-table-wrap) {
-  border-radius: var(--nd2-radius) !important;
-  border-color: var(--nd2-border) !important;
-}
-html body #app :is(table,.nm-table) tbody tr {
-  transition: background-color .14s ease !important;
+html body #app .db-kpi-val,
+html body #app .dbsr-num,
+html body #app .rha-kpi-val,
+html body #app .rlc-num,
+html body #app .rhub-page>h1,
+html body #app .module-title,
+html body #app .view-hero-title {
+  font-family:'Instrument Serif',Georgia,serif!important;
 }
 
-/* Modal/drawer geometry without touching visibility/positioning */
-html body #app :is(.modal-container,.sm-modal) {
-  border-radius: 14px !important;
+/* 3. ONE SURFACE LANGUAGE ---------------------------------------------- */
+html body #app .card,
+html body #app .db-panel,
+html body #app .db-kpi,
+html body #app .tuc-card,
+html body #app .rlc-card,
+html body #app .news-card,
+html body #app .research-card,
+html body #app .tu-card {
+  border-color:var(--nd-line)!important;
+  border-radius:var(--nd-radius-lg)!important;
+  box-shadow:var(--nd-shadow-1)!important;
+}
+html body #app .db-panel,
+html body #app .db-kpi,
+html body #app .tuc-card,
+html body #app .rlc-card,
+html body #app .news-card,
+html body #app .research-card,
+html body #app .tu-card { background:var(--nd-surface)!important; }
+
+html body #app .card:hover,
+html body #app .db-panel:hover,
+html body #app .tuc-card:hover,
+html body #app .rlc-card:hover,
+html body #app .news-card:hover {
+  border-color:var(--nd-line-strong)!important;
 }
 
-/* Status/chip geometry only — semantic colours remain owned by existing CSS */
-html body #app :is(.badge,.status-badge,.status-pill,.chip,.pill,.dbsr-pill,.rline-status,.tuc-status) {
-  border-radius: 999px !important;
+/* Panel headers are light by default. Dark is reserved for true identity/hero areas. */
+html body #app .db-panel-head,
+html body #app .tuc-card-header,
+html body #app .content-area .card.mb-6>.card-header {
+  background:var(--nd-surface-soft)!important;
+  border-bottom:1px solid var(--nd-line)!important;
+  box-shadow:none!important;
+}
+html body #app .db-panel-head *,
+html body #app .tuc-card-header *,
+html body #app .content-area .card.mb-6>.card-header .card-title {
+  color:var(--nd-ink)!important;
+}
+html body #app .content-area .card.mb-6>.card-header span:not(.badge):not(.btn-pill) {
+  color:var(--nd-ink-2)!important;
 }
 
-/* Consistent interaction focus */
-html body #app :focus-visible {
-  outline: 2px solid var(--nd2-teal) !important;
-  outline-offset: 2px !important;
+/* 4. KPI SYSTEM --------------------------------------------------------- */
+html body #app .dbsr {
+  background:transparent!important;
+  border:0!important;
+  gap:12px!important;
+  padding:0!important;
+}
+html body #app .dbsr-stat,
+html body #app .db-kpi {
+  background:#fff!important;
+  border:1px solid var(--nd-line)!important;
+  border-radius:var(--nd-radius-lg)!important;
+  box-shadow:var(--nd-shadow-1)!important;
+}
+html body #app .dbsr-stat { border-right:1px solid var(--nd-line)!important; }
+html body #app .dbsr-num,
+html body #app .db-kpi-val { color:var(--nd-ink)!important; }
+html body #app .dbsr-label,
+html body #app .db-kpi-label { color:var(--nd-ink-3)!important; }
+/* Accent belongs to a hairline, not an entire card. */
+html body #app .db-kpi::before { height:3px!important; border-radius:14px 14px 0 0!important; }
+
+/* 5. DASHBOARD: HERO = CONTEXT, NOT A GIANT DARK BLOCK ----------------- */
+html body #app .dbh-frame {
+  background:linear-gradient(125deg,#163f70 0%,#1a4f8a 68%,#17627a 100%)!important;
+  border-radius:0 0 18px 18px!important;
+  box-shadow:0 8px 24px rgba(18,57,98,.10)!important;
+}
+html body #app .dbh-alerts,
+html body #app .dbh-alerts--grid { border-radius:10px!important; }
+
+/* 6. BUTTONS + SEGMENTED CONTROLS -------------------------------------- */
+html body #app .btn,
+html body #app .btn-primary,
+html body #app .btn-secondary,
+html body #app .btn-save,
+html body #app .btn-pill,
+html body #app .dbh-btn,
+html body #app .tuc-horizon-btn {
+  font-family:'DM Sans',system-ui,sans-serif!important;
+  border-radius:8px!important;
+  transition:background-color .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .12s ease!important;
+}
+html body #app .btn-primary,
+html body #app .btn-save {
+  background:var(--nd-navy)!important;
+  border-color:var(--nd-navy)!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+html body #app .btn-primary:hover,
+html body #app .btn-save:hover { background:#12365f!important; border-color:#12365f!important; }
+html body #app .btn-secondary {
+  background:#fff!important;
+  border-color:var(--nd-line-strong)!important;
+  color:var(--nd-ink-2)!important;
+  box-shadow:none!important;
+}
+html body #app .btn-secondary:hover { background:var(--nd-surface-soft)!important; color:var(--nd-ink)!important; }
+html body #app .view-toggle {
+  background:var(--nd-surface-muted)!important;
+  border:1px solid var(--nd-line)!important;
+  border-radius:10px!important;
+  padding:3px!important;
+}
+html body #app .view-toggle .btn-pill { border:0!important; box-shadow:none!important; }
+html body #app .view-toggle .btn-pill.active {
+  background:#fff!important;color:var(--nd-ink)!important;
+  box-shadow:0 1px 3px rgba(15,31,52,.10)!important;
 }
 
-/* Respect motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  html body #app *, html body #app *::before, html body #app *::after {
-    scroll-behavior: auto !important;
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
+/* 7. FORMS -------------------------------------------------------------- */
+html body #app input:not([type=checkbox]):not([type=radio]),
+html body #app select,
+html body #app textarea,
+html body #app .form-control {
+  border-radius:8px!important;
+  border-color:var(--nd-line-strong)!important;
+  box-shadow:none!important;
+}
+html body #app input:not([type=checkbox]):not([type=radio]):focus,
+html body #app select:focus,
+html body #app textarea:focus,
+html body #app .form-control:focus {
+  border-color:#4a9fa7!important;
+  box-shadow:0 0 0 3px rgba(0,153,153,.10)!important;
+  outline:none!important;
+}
+
+/* 8. TABLES: SAME DATA LANGUAGE EVERYWHERE ----------------------------- */
+html body #app .table {
+  background:#fff!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+}
+html body #app .table thead th {
+  background:#f7f7f5!important;
+  color:#536074!important;
+  font-size:10.5px!important;
+  font-weight:700!important;
+  letter-spacing:.07em!important;
+  border-bottom:1px solid var(--nd-line-strong)!important;
+  border-right:0!important;
+}
+html body #app .table tbody td {
+  color:#263244!important;
+  border-bottom:1px solid #ece9e3!important;
+  border-right:0!important;
+}
+html body #app .table tbody tr:nth-child(even) td { background:#fcfbf9!important; }
+html body #app .table tbody tr:hover td { background:#f5faf9!important; }
+html body #app .table tbody tr:hover td:first-child { box-shadow:inset 3px 0 0 var(--nd-teal)!important; }
+
+/* 9. CHIPS / STATUS ----------------------------------------------------- */
+html body #app .badge,
+html body #app .nm-status-chip,
+html body #app .rtag,
+html body #app [class*='-pill']:not(.btn-pill) {
+  border-radius:999px!important;
+  box-shadow:none!important;
+}
+
+/* 10. RESEARCH: preserve master/detail structure, normalize chrome ----- */
+html body #app .rhub-topbar,
+html body #app .news-view>.rhub-tabs,
+html body #app .content-area>div>.rhub-tabs {
+  background:#fff!important;
+  border-bottom:1px solid var(--nd-line)!important;
+  box-shadow:none!important;
+}
+html body #app .rhub-tab { color:var(--nd-ink-3)!important; }
+html body #app .rhub-tab.active,
+html body #app .rhub-tab--active { color:var(--nd-navy)!important; }
+html body #app .rp-nav { background:var(--nd-navy-deep)!important; }
+html body #app .rp-detail-head {
+  background:linear-gradient(120deg,var(--nd-navy) 0%,#205789 100%)!important;
+  border-left:0!important;
+}
+
+/* 11. DRAWERS + MODALS -------------------------------------------------- */
+html body #app .modal-container,
+html body #app .sm-modal,
+html body #app [class*='drawer-panel'],
+html body #app [class*='-drawer'] {
+  border-radius:var(--nd-radius-lg)!important;
+}
+html body #app .modal-container,
+html body #app .sm-modal { box-shadow:0 24px 70px rgba(9,31,55,.22)!important; }
+html body #app .udd-header,
+html body #app .pd-identity,
+html body #app .nm-header {
+  background:linear-gradient(125deg,var(--nd-navy-deep),var(--nd-navy))!important;
+}
+
+/* 12. EMPTY STATES ------------------------------------------------------ */
+html body #app .db-oc-empty,
+html body #app .db-rot-empty,
+html body #app .db-panel-empty,
+html body #app .nm-empty,
+html body #app .empty-state {
+  background:transparent!important;
+  color:var(--nd-ink-3)!important;
+}
+
+/* 13. ACCESSIBILITY ----------------------------------------------------- */
+html body #app :where(button,a,input,select,textarea,[tabindex]):focus-visible {
+  outline:2px solid var(--nd-focus)!important;
+  outline-offset:2px!important;
+}
+@media (prefers-reduced-motion:reduce){
+  html body #app *,html body #app *::before,html body #app *::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;
   }
 }
+
+/* 14. RESPONSIVE: preserve specialized horizontal workspaces ----------- */
+@media (max-width:768px){
+  html body #app .dbh-frame{border-radius:0 0 14px 14px!important;}
+  html body #app .dbsr{gap:8px!important;}
+  html body #app .dbsr-stat{border-radius:10px!important;}
+}
+
+/* IMPORTANT SAFETY GUARD
+   Do not add selectors such as #app .foo * { color:... } to this layer.
+   The application contains intentional dark/light islands and icon-only
+   controls; text colour must remain component-scoped. */
