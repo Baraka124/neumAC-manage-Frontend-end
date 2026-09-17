@@ -42361,3 +42361,75 @@ html body #app .db-gap-year {
 html body #app .db-gap-card .db-gap-avatar, html body #app .db-gap-card [class*="avatar"] {
   width: 32px !important; height: 32px !important; flex-shrink: 0 !important; font-size: 12px !important;
 }
+
+/* §227 — NUCLEAR FIX: force dark text in the light chat panel
+   The old .grounded-cloud rules (lines 40728-40735) force white text.
+   These overrides must be MORE specific to win. */
+html body #app .grounded-cloud .askbar-a-tx,
+html body #app .grounded-cloud .askbar-a-card .askbar-a-tx { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-greeting-t { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-greeting-s { color: #5a6472 !important; }
+html body #app .grounded-cloud .askbar-sug-label { color: #5a6472 !important; }
+html body #app .grounded-cloud .askbar-sug-t { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-sug-d { color: #5a6472 !important; }
+html body #app .grounded-cloud .askbar-sug-item * { color: inherit !important; }
+html body #app .grounded-cloud .askbar-sug-item .askbar-sug-t { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-sug-item .askbar-sug-d { color: #5a6472 !important; }
+/* the chevron arrows */
+html body #app .grounded-cloud .askbar-sug-item .askbar-sug-arrow { color: #909399 !important; }
+/* input text */
+html body #app .grounded-cloud .askbar-input input,
+html body #app .askbar-cloud .askbar-input input,
+html body #app .askbar-panel .askbar-input input,
+html body #app [class*="askbar"] input[type="text"],
+html body #app [class*="askbar"] input:not([type]) {
+  color: #07111f !important; -webkit-text-fill-color: #07111f !important;
+}
+html body #app .grounded-cloud .askbar-input input::placeholder,
+html body #app .askbar-panel .askbar-input input::placeholder {
+  color: #909399 !important; -webkit-text-fill-color: #909399 !important; opacity: 1 !important;
+}
+/* the search icon */
+html body #app .grounded-cloud .askbar-input-wrap svg,
+html body #app .askbar-panel .askbar-input-wrap > svg { color: #909399 !important; }
+/* header text — keep readable on light header */
+html body #app .grounded-head .askbar-head-t { color: #07111f !important; }
+html body #app .grounded-head .askbar-head-s { color: #5a6472 !important; }
+/* close button */
+html body #app .grounded-head .askbar-close { color: #5a6472 !important; background: #edebe5 !important; }
+/* teach button */
+html body #app .grounded-head .askbar-teach { color: #5a6472 !important; background: #edebe5 !important; border-color: #e3dfd6 !important; }
+/* new chat button */
+html body #app .grounded-cloud .askbar-newchat { color: #5a6472 !important; background: transparent !important; }
+html body #app .grounded-cloud .askbar-newchat:hover { background: #edebe5 !important; color: #07111f !important; }
+/* trace/footer text */
+html body #app .grounded-cloud .askbar-trace-mini-x { color: #909399 !important; }
+/* followup buttons */
+html body #app .grounded-cloud .askbar-fu { color: #344154 !important; background: #fff !important; border-color: #e3dfd6 !important; }
+html body #app .grounded-cloud .askbar-fu:hover { border-color: #2563eb !important; color: #2563eb !important; }
+html body #app .grounded-cloud .askbar-fu--act { background: #2563eb !important; color: #fff !important; border-color: #2563eb !important; }
+
+/* §228 — FIX: Unassigned resident cards — stack name ABOVE pills, not side-by-side */
+html body #app .db-gap-card {
+  flex-direction: column !important; align-items: flex-start !important;
+  padding: 14px 16px !important; gap: 8px !important; min-width: 160px !important;
+}
+html body #app .db-gap-card > div, html body #app .db-gap-card > span {
+  width: 100% !important;
+}
+/* top row: avatar + name side by side */
+html body #app .db-gap-info {
+  display: flex !important; align-items: center !important; gap: 10px !important; width: 100% !important;
+}
+html body #app .db-gap-name {
+  font-size: 14px !important; font-weight: 600 !important; color: var(--text-1, #07111f) !important;
+  white-space: normal !important; word-break: normal !important; line-height: 1.3 !important;
+}
+html body #app .db-gap-year {
+  font-size: 10.5px !important; color: var(--text-4, #909399) !important; display: block !important;
+}
+/* bottom row: pills on their own line, full width */
+html body #app .db-gap-pills {
+  display: flex !important; gap: 5px !important; flex-wrap: wrap !important; width: 100% !important;
+  margin-top: 2px !important;
+}
