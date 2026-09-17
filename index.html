@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=92">
+    <link rel="stylesheet" href="style.css?v=94">
 
     <style id="neumac-layout">
       /* ── Monthly rotation view ── */
@@ -9589,12 +9589,12 @@
                     </div>
             </header>
             <!-- Dev Banner -->
-            <div class="dev-banner" role="status" aria-live="polite">
+            <div class="dev-banner" :class="{'dev-banner--hidden': devBannerHidden}" role="status" aria-live="polite">
               <div class="dev-banner-inner">
                 <span class="dev-banner-dot"></span>
                 <span class="dev-banner-label">Beta</span>
                 <span class="dev-banner-text">Clinical operations platform · Internal preview · Feedback welcome</span>
-                <a href="mailto:baraka@enkiama.com" class="dev-banner-cta">Send feedback →</a>
+                <a href="mailto:baraka@enkiama.com" class="dev-banner-cta">Send feedback →</a><button @click="devBannerHidden=true" style="margin-left:auto;background:none;border:none;color:var(--nm-text3,#5a6472);cursor:pointer;font-size:16px;padding:0 4px" title="Dismiss">×</button>
               </div>
             </div>
 
@@ -20301,7 +20301,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=146"></script>
+    <script src="app.js?v=147"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
