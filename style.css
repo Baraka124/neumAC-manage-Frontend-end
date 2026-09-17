@@ -43258,3 +43258,428 @@ html body #app *::-webkit-scrollbar-thumb:hover { background:#aeb9c1; background
 @media (prefers-reduced-motion:reduce) {
   html body #app .grounded-orb-wrap, html body #app .grounded-head-orb, html body #app .dbh-btn, html body #app .db-gap-item { transition:none !important; animation:none !important; }
 }
+
+/* ======================================================================
+   V7 — OVERVIEW + GROUNDED INTENSIVE POLISH
+   Focus: dashboard stat cards, on-call presentation, grounded contrast.
+   Purely visual — no architecture changes.
+   ====================================================================== */
+
+:root {
+  --v7-emerald: #14b87a;
+  --v7-blue: #2c67c7;
+  --v7-teal: #0c9ea3;
+  --v7-violet: #8b5cf6;
+  --v7-text: #13263a;
+  --v7-text-soft: #617184;
+  --v7-border: #d9e2e5;
+  --v7-surface: #ffffff;
+  --v7-surface-soft: #fbfcfd;
+}
+
+/* ===== KPI CARDS ===== */
+html body #app .dbsr {
+  gap: 10px !important;
+  padding: 10px 10px 2px !important;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+html body #app .dbsr-stat {
+  min-height: 154px !important;
+  padding: 18px 20px 16px !important;
+  border: 1px solid rgba(18,38,58,.10) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(180deg,#ffffff 0%,#fcfdfd 100%) !important;
+  box-shadow: 0 10px 28px rgba(8, 23, 39, .055), 0 1px 0 rgba(255,255,255,.85) inset !important;
+  gap: 8px !important;
+}
+html body #app .dbsr-stat:hover {
+  background: linear-gradient(180deg,#ffffff 0%,#f9fcfd 100%) !important;
+  box-shadow: 0 14px 34px rgba(8, 23, 39, .08), 0 1px 0 rgba(255,255,255,.9) inset !important;
+  transform: translateY(-1px) !important;
+}
+html body #app .dbsr-stat::before {
+  content: '' !important;
+  position: absolute !important;
+  right: -24px !important;
+  top: -28px !important;
+  width: 120px !important;
+  height: 120px !important;
+  border-radius: 50% !important;
+  opacity: .08 !important;
+  pointer-events: none !important;
+}
+html body #app .dbsr-stat:nth-child(1)::before { background: radial-gradient(circle, var(--v7-emerald) 0%, transparent 70%) !important; }
+html body #app .dbsr-stat:nth-child(2)::before { background: radial-gradient(circle, var(--v7-blue) 0%, transparent 70%) !important; }
+html body #app .dbsr-stat:nth-child(3)::before { background: radial-gradient(circle, var(--v7-teal) 0%, transparent 70%) !important; }
+html body #app .dbsr-stat:nth-child(4)::before { background: radial-gradient(circle, var(--v7-violet) 0%, transparent 70%) !important; }
+html body #app .dbsr-num {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-size: 58px !important;
+  line-height: .92 !important;
+  letter-spacing: -.06em !important;
+  margin-bottom: 2px !important;
+}
+html body #app .dbsr-lbl {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .12em !important;
+  font-weight: 700 !important;
+  color: #627487 !important;
+}
+html body #app .dbsr-pills {
+  margin-top: auto !important;
+  gap: 7px !important;
+  align-items: center !important;
+}
+html body #app .dbsr-pill {
+  min-height: 28px !important;
+  padding: 4px 11px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.01em !important;
+  border: 1px solid rgba(18,38,58,.08) !important;
+  background: #f4f7f8 !important;
+  color: #46586a !important;
+}
+html body #app .dbsr-pill--muted {
+  background: #f2f4f6 !important;
+  color: #5c6d7e !important;
+  border-color: rgba(18,38,58,.06) !important;
+}
+html body #app .dbsr-pill--ok,
+html body #app .dbsr-pill--teal {
+  background: rgba(12,158,163,.10) !important;
+  color: #0a7f85 !important;
+  border-color: rgba(12,158,163,.16) !important;
+}
+html body #app .dbsr-pill--blue {
+  background: rgba(44,103,199,.08) !important;
+  color: #295fae !important;
+  border-color: rgba(44,103,199,.16) !important;
+}
+html body #app .dbsr-pill--purple {
+  background: rgba(139,92,246,.08) !important;
+  color: #6c45cf !important;
+  border-color: rgba(139,92,246,.14) !important;
+}
+html body #app .dbsr-pill--warn {
+  background: rgba(231,160,47,.12) !important;
+  color: #9b5d06 !important;
+  border-color: rgba(231,160,47,.18) !important;
+}
+html body #app .dbsr-accent {
+  height: 2px !important;
+  opacity: .9 !important;
+  border-bottom-left-radius: 20px !important;
+  border-bottom-right-radius: 20px !important;
+}
+/* make third card actually surface the clinician/time better */
+html body #app .dbsr-stat:nth-child(3) .dbsr-pills {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  align-items: start !important;
+}
+html body #app .dbsr-stat:nth-child(3) .dbsr-pill:first-child {
+  justify-self: start !important;
+  background: rgba(12,158,163,.10) !important;
+  color: #11384a !important;
+  border-color: rgba(12,158,163,.16) !important;
+  padding: 5px 12px !important;
+  font-weight: 700 !important;
+}
+html body #app .dbsr-stat:nth-child(3) .dbsr-pill:last-child {
+  justify-self: start !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 1px !important;
+  min-height: auto !important;
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  letter-spacing: .02em !important;
+  font-size: 12px !important;
+  color: #6a7b8e !important;
+}
+/* de-pill the other KPI footers slightly so they feel more editorial */
+html body #app .dbsr-stat:nth-child(1) .dbsr-pill:last-child,
+html body #app .dbsr-stat:nth-child(4) .dbsr-pill:last-child {
+  background: transparent !important;
+  border: none !important;
+  padding-left: 4px !important;
+  padding-right: 0 !important;
+  color: #64768a !important;
+}
+
+/* ===== PANELS / ON-CALL ===== */
+html body #app .db-panel {
+  border-radius: 22px !important;
+  border: 1px solid rgba(18,38,58,.08) !important;
+  box-shadow: 0 10px 28px rgba(8,23,39,.05) !important;
+}
+html body #app .db-panel-head {
+  padding: 16px 18px !important;
+}
+html body #app .db-panel-title {
+  font-size: 16px !important;
+  letter-spacing: -.02em !important;
+  font-weight: 700 !important;
+  color: #13263a !important;
+}
+html body #app .db-panel-link,
+html body #app .db-panel-head a {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+html body #app .db-panel-head .btn,
+html body #app .db-panel-head button {
+  border-radius: 12px !important;
+}
+html body #app .db-oc-dayrow {
+  padding: 14px 18px !important;
+}
+html body #app .db-oc-datecol {
+  width: 54px !important;
+  gap: 3px !important;
+  padding-top: 0 !important;
+}
+html body #app .db-oc-weekday {
+  font-size: 10px !important;
+  color: #7b8b9b !important;
+  letter-spacing: .11em !important;
+}
+html body #app .db-oc-daynum {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-size: 28px !important;
+  line-height: .95 !important;
+  font-weight: 400 !important;
+  color: #18314a !important;
+}
+html body #app .db-oc-slots { padding-left: 14px !important; }
+html body #app .db-oc-slot-row {
+  min-height: 58px !important;
+  border-radius: 14px !important;
+  padding: 10px 12px !important;
+  border: 1px solid rgba(12,158,163,.10) !important;
+  background: linear-gradient(180deg, rgba(12,158,163,.06), rgba(12,158,163,.03)) !important;
+}
+html body #app .db-oc-av {
+  width: 34px !important;
+  height: 34px !important;
+  font-size: 11px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 10px rgba(8,23,39,.08) !important;
+}
+html body #app .db-oc-name {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.015em !important;
+  color: #18314a !important;
+}
+html body #app .db-oc-time {
+  font-size: 11.5px !important;
+  font-family: 'DM Mono', ui-monospace, monospace !important;
+  color: #697b8f !important;
+  letter-spacing: .02em !important;
+}
+html body #app .db-oc-flag {
+  padding: 4px 8px !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  letter-spacing: .01em !important;
+}
+html body #app .db-oc-flag--nobackup {
+  background: rgba(231,160,47,.12) !important;
+  color: #9b5d06 !important;
+  border: 1px solid rgba(231,160,47,.18) !important;
+}
+html body #app .db-empty,
+html body #app .db-rot-empty,
+html body #app .db-rot-none {
+  color: #6a7c90 !important;
+}
+
+/* ===== GROUNDED CONTRAST + HIERARCHY ===== */
+html body #app .askbar-panel.grounded-cloud,
+html body #app .askbar-panel {
+  background: #fdfefe !important;
+  border: 1px solid rgba(17,35,56,.10) !important;
+  box-shadow: 0 34px 90px rgba(6, 21, 37, .34), 0 0 0 1px rgba(255,255,255,.08) inset !important;
+}
+html body #app .grounded-head,
+html body #app .grounded-cloud .grounded-head {
+  background: linear-gradient(90deg, #0d2340 0%, #10324f 52%, #0b5966 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+html body #app .grounded-head .askbar-head-t {
+  color: #f8fcfd !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+html body #app .grounded-head .askbar-head-s {
+  color: rgba(223,236,240,.76) !important;
+  font-size: 10.5px !important;
+}
+html body #app .grounded-head .askbar-head-live,
+html body #app .grounded-head .askbar-head-live * {
+  color: rgba(233,245,246,.82) !important;
+}
+html body #app .grounded-head-orb {
+  width: 38px !important; height: 38px !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.07), 0 10px 24px rgba(0,186,186,.20) !important;
+}
+html body #app .grounded-cloud .askbar-teach-btn,
+html body #app .grounded-head .askbar-teach-btn {
+  color: #d5f2ef !important;
+  border-color: rgba(130,223,220,.28) !important;
+  background: rgba(23,157,169,.10) !important;
+  font-weight: 700 !important;
+}
+html body #app .grounded-head .askbar-close {
+  background: rgba(255,255,255,.96) !important;
+  color: #5b6b7c !important;
+}
+/* stronger user prompt bubble */
+html body #app .askbar-q-bub {
+  background: linear-gradient(135deg, #c7f2f1 0%, #e2fbfb 100%) !important;
+  color: #12384a !important;
+  border: 1px solid rgba(15,167,167,.28) !important;
+  box-shadow: 0 8px 20px rgba(9, 79, 92, .08) !important;
+  font-weight: 700 !important;
+}
+/* reasoning trace: stop looking disabled */
+html body #app .askbar-trace-mini {
+  background: rgba(246,249,250,.92) !important;
+  border: 1px solid #dce4e6 !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+}
+html body #app .askbar-trace-mini-t {
+  color: #4f6274 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+html body #app .askbar-trace-mini-x {
+  color: #7b8c9e !important;
+  font-size: 11px !important;
+}
+html body #app .askbar-trace-orb { box-shadow: 0 0 0 3px rgba(116,99,250,.12) !important; }
+/* response card */
+html body #app .askbar-a-card {
+  background: #ffffff !important;
+  border: 1px solid #dde6e8 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 30px rgba(8,23,39,.06) !important;
+  padding: 18px 18px 16px !important;
+}
+html body #app .askbar-a-tx {
+  color: #16283b !important;
+  font-size: 15px !important;
+  line-height: 1.62 !important;
+}
+html body #app .askbar-a-card * {
+  color: inherit;
+}
+/* make nested cards / stat rows stronger */
+html body #app .askbar-a-card [class*="viz"],
+html body #app .askbar-a-card [class*="summary"],
+html body #app .askbar-a-card [class*="overview"] {
+  color: #16283b !important;
+}
+html body #app .askbar-a-card .askbar-chip,
+html body #app .askbar-conv .askbar-fu,
+html body #app .askbar-conv .askbar-action-btn {
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 14px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+html body #app .askbar-a-card .askbar-chip {
+  background: #f7fafb !important;
+  border-color: #d8e2e6 !important;
+  color: #33465a !important;
+}
+html body #app .askbar-conv .askbar-action-btn--primary {
+  background: #215ab4 !important;
+  color: #fff !important;
+  box-shadow: 0 12px 24px rgba(33,90,180,.18) !important;
+}
+/* suggestions / prompts */
+html body #app .askbar-sug-label {
+  color: #6b7c8f !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .11em !important;
+  text-transform: uppercase !important;
+}
+html body #app .askbar-sug-item {
+  background: #fff !important;
+  border-color: #dee5e8 !important;
+  box-shadow: 0 8px 20px rgba(7,17,31,.04) !important;
+  border-radius: 16px !important;
+  padding: 14px 15px !important;
+}
+html body #app .askbar-sug-t {
+  color: #17293e !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+html body #app .askbar-sug-d {
+  color: #6a7a8d !important;
+  font-size: 12px !important;
+}
+html body #app .askbar-sug-arrow { color: #7d8a99 !important; }
+/* greeting + input */
+html body #app .askbar-greeting-t {
+  color: #142238 !important;
+  font-size: 25px !important;
+}
+html body #app .askbar-greeting-s {
+  color: #59697b !important;
+  font-size: 13px !important;
+  max-width: 560px !important;
+}
+html body #app .askbar-input-wrap {
+  background: #fbfcfc !important;
+}
+html body #app .askbar-input {
+  min-height: 52px !important;
+  border-color: #d8e2e6 !important;
+  background: #ffffff !important;
+}
+html body #app .askbar-input > svg { color: #6f8292 !important; }
+html body #app .askbar-input input {
+  color: #17263a !important;
+  -webkit-text-fill-color: #17263a !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+}
+html body #app .askbar-input input::placeholder {
+  color: #94a1ad !important;
+  -webkit-text-fill-color: #94a1ad !important;
+}
+html body #app .askbar-input .askbar-send {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg,#0b7f86,#109ca3) !important;
+  box-shadow: 0 10px 20px rgba(11,127,134,.18) !important;
+}
+/* prevent the orb from covering content too closely */
+html body #app .grounded-orb-wrap {
+  bottom: 22px !important;
+  right: 18px !important;
+}
+
+@media (max-width: 900px) {
+  html body #app .dbsr-stat { min-height: 142px !important; }
+  html body #app .dbsr-num { font-size: 48px !important; }
+}
+@media (max-width: 640px) {
+  html body #app .dbsr { gap: 8px !important; padding: 8px 8px 0 !important; }
+  html body #app .dbsr-stat { min-height: 128px !important; padding: 14px 14px 12px !important; border-radius: 16px !important; }
+  html body #app .dbsr-num { font-size: 40px !important; }
+  html body #app .askbar-panel.grounded-cloud, html body #app .askbar-panel { width: calc(100vw - 14px) !important; }
+}
