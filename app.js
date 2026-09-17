@@ -1779,7 +1779,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function useAuth() {
       const currentUser = ref(null)
       const loginForm = reactive({ email: '', password: '', remember_me: false })
-      const loginLoading = ref(false)
+      const devBannerHidden = ref(false)
+        const loginLoading = ref(false)
 
       // hasPermission reads from the explicit permissions array returned by the backend
       // at login and /api/auth/me — no static matrix, no role inference.
