@@ -42953,199 +42953,153 @@ html body #app .news-view .news-card-right {
   gap: 10px !important; padding: 8px 14px !important;
 }
 
-
-/* ============================================================================
-   neumDesk V4 — COHERENT CLINICAL COMMAND SYSTEM
-   UI-only compatibility layer. Built against index (85).html + original CSS.
-   Scope: shell + Overview/dashboard. No DOM/state/visibility/layout-contract hacks.
-   ============================================================================ */
+/* ======================================================================
+   NEUMDESK V5 — VISUAL REFINEMENT SKIN
+   Presentation only. No structural re-layout, no Vue/backend changes.
+   ====================================================================== */
 :root{
- --nd-ink:#0b1728; --nd-ink-2:#334155; --nd-muted:#718096;
- --nd-canvas:#f3f5f6; --nd-surface:#fff; --nd-line:#e4e9ed;
- --nd-navy:#0b2747; --nd-navy-2:#123b66; --nd-blue:#1d5f9d;
- --nd-teal:#009c9c; --nd-teal-2:#00b7b0; --nd-mint:#e9f8f5;
- --nd-warn:#d78b16; --nd-danger:#c84b4b; --nd-ok:#15966a;
- --nd-r:12px; --nd-r-lg:18px;
- --nd-shadow:0 1px 2px rgba(11,23,40,.04),0 8px 28px rgba(11,23,40,.055);
- --nd-shadow-lg:0 18px 50px rgba(5,20,38,.16);
+  --v5-ink:#0b1f33; --v5-muted:#65758a; --v5-faint:#8b98a9;
+  --v5-line:#dfe6ec; --v5-line-soft:#edf1f4;
+  --v5-canvas:#f4f5f4; --v5-surface:#ffffff; --v5-soft:#f8fafb;
+  --v5-navy:#0b2948; --v5-blue:#174f82; --v5-teal:#00a6a6;
+  --v5-r8:8px; --v5-r12:12px; --v5-r16:16px;
+  --v5-shadow:0 1px 2px rgba(9,30,52,.04),0 8px 28px rgba(9,30,52,.055);
+  --v5-shadow-hover:0 2px 4px rgba(9,30,52,.05),0 14px 34px rgba(9,30,52,.09);
 }
 
-/* --- Shell: quieter chrome so module content carries the hierarchy --- */
-html body #app .main-content{background:var(--nd-canvas)!important;}
-html body #app .content-area{background:var(--nd-canvas)!important;}
+/* canvas + global crispness */
+html body #app .content-area{background:linear-gradient(180deg,#f7f8f7 0,#f3f4f3 42%,#f1f2f1 100%)!important;}
+html body #app{font-feature-settings:"kern" 1,"liga" 1!important;}
+
+/* SIDEBAR — same structure, more architectural and less luminous */
+html body #app .sidebar,html body #app aside.nmsb{
+  background:linear-gradient(180deg,#0a2949 0%,#0c3157 52%,#092642 100%)!important;
+  box-shadow:1px 0 0 rgba(255,255,255,.045),8px 0 30px rgba(5,20,36,.08)!important;
+}
+html body #app .sidebar::before{width:1px!important;background:linear-gradient(180deg,transparent 4%,rgba(0,212,212,.42) 22%,rgba(0,212,212,.12) 72%,transparent 96%)!important;}
+html body #app .nmsb-brand,html body #app .sidebar-header{border-bottom:1px solid rgba(255,255,255,.065)!important;}
+html body #app .nmsb-section-label,html body #app .sidebar-section-title{color:rgba(168,195,219,.58)!important;letter-spacing:.15em!important;font-weight:700!important;}
+html body #app .nmsb-item{border:1px solid transparent!important;border-radius:9px!important;transition:background .16s,border-color .16s,transform .16s!important;}
+html body #app .nmsb-item:hover{background:rgba(255,255,255,.055)!important;border-color:rgba(255,255,255,.045)!important;transform:translateX(1px)!important;}
+html body #app .nmsb-item.active,html body #app .nmsb-item--active{background:linear-gradient(90deg,rgba(255,255,255,.12),rgba(255,255,255,.075))!important;border-color:rgba(255,255,255,.07)!important;box-shadow:inset 3px 0 0 #16d4cf!important;}
+html body #app .nmsb-item.active::before,html body #app .nmsb-item--active::before{display:none!important;}
+html body #app .nmsb-search{background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:9px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;}
+html body #app .nmsb-user{border-top:1px solid rgba(255,255,255,.07)!important;background:rgba(0,0,0,.06)!important;}
+
+/* TOP NAV — preserve dimensions, make it visually quieter than hero */
 html body #app .top-navbar{
- background:rgba(255,255,255,.97)!important;
- border-bottom:1px solid var(--nd-line)!important;
- box-shadow:0 1px 0 rgba(15,23,42,.02)!important;
- color:var(--nd-ink)!important;
- backdrop-filter:saturate(140%) blur(14px);
+  background:rgba(250,252,253,.97)!important;
+  border-bottom:1px solid #dce4eb!important;
+  box-shadow:0 1px 0 rgba(9,30,52,.02)!important;
+  backdrop-filter:blur(14px)!important;
 }
-html body #app .top-navbar .navbar-title,
-html body #app .top-navbar .navbar-title *,
-html body #app .top-navbar .navbar-subtitle{color:var(--nd-ink)!important;}
-html body #app .top-navbar .navbar-subtitle{color:#718096!important;}
-html body #app .top-navbar input,
-html body #app .navbar-search-wrap input{
- background:#f6f8f9!important;border:1px solid #dce3e8!important;color:var(--nd-ink)!important;
- box-shadow:none!important;
-}
-html body #app .top-navbar input::placeholder{color:#94a3b8!important;-webkit-text-fill-color:#94a3b8!important;}
-html body #app .top-navbar button:not(.navbar-user-btn){color:#526579!important;border-color:#dce3e8!important;background:#fff!important;}
-html body #app .top-navbar button:not(.navbar-user-btn):hover{color:var(--nd-teal)!important;border-color:#a9d9d7!important;background:#f4fbfa!important;}
+html body #app .navbar-title{color:#0a2137!important;font-family:'Instrument Serif',Georgia,serif!important;font-weight:400!important;letter-spacing:-.025em!important;}
+html body #app .navbar-subtitle{color:#738398!important;}
+html body #app .top-navbar input,html body #app .navbar-search{background:#f4f7f9!important;border:1px solid #d6e0e8!important;color:#18324a!important;border-radius:10px!important;box-shadow:inset 0 1px 1px rgba(9,30,52,.025)!important;}
+html body #app .top-navbar input:focus{background:#fff!important;border-color:rgba(0,166,166,.55)!important;box-shadow:0 0 0 3px rgba(0,166,166,.09)!important;}
+html body #app .top-navbar button{border-color:#d9e2e9!important;color:#52677d!important;}
 
-/* Sidebar = persistent product spine, less gradient/noise */
-html body #app .sidebar{
- background:linear-gradient(180deg,#0a2848 0%,#0c3156 56%,#09243f 100%)!important;
- box-shadow:1px 0 0 rgba(255,255,255,.05),8px 0 28px rgba(6,24,43,.08)!important;
+/* OVERVIEW HERO — same box/layout; premium material and hierarchy */
+html body #app .view-dashboard .dbh-frame,html body #app .dbh-frame{
+  background:
+    radial-gradient(900px 380px at 105% -15%,rgba(13,190,190,.28),transparent 58%),
+    radial-gradient(620px 260px at 62% 115%,rgba(50,122,190,.16),transparent 66%),
+    linear-gradient(112deg,#0a2b4d 0%,#124c7b 58%,#12667a 100%)!important;
+  border-radius:0 0 18px 18px!important;
+  border:0!important;
+  box-shadow:0 12px 34px rgba(8,37,65,.15)!important;
 }
-html body #app .sidebar::before{opacity:.38!important;}
-html body #app .sidebar .nav-item.active,
-html body #app .sidebar .sidebar-item.active{
- background:rgba(255,255,255,.105)!important;
- box-shadow:inset 3px 0 0 #20d4cc!important;
-}
+html body #app .dbh-frame::after{content:""!important;position:absolute!important;inset:0!important;pointer-events:none!important;background:linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px)!important;background-size:72px 100%!important;opacity:.16!important;}
+html body #app .dbh-dayname{color:rgba(210,232,246,.72)!important;font-size:10px!important;letter-spacing:.16em!important;font-weight:700!important;}
+html body #app .dbh-date{font-family:'Instrument Serif',Georgia,serif!important;color:#fff!important;font-size:28px!important;line-height:1!important;letter-spacing:-.025em!important;text-shadow:0 1px 12px rgba(0,0,0,.08)!important;}
+html body #app .dbh-context{font-family:'DM Mono',monospace!important;color:rgba(211,232,245,.68)!important;font-size:10.5px!important;letter-spacing:.09em!important;}
+html body #app .dbh-health-pill{background:rgba(7,29,50,.24)!important;border:1px solid rgba(119,225,220,.28)!important;color:#d8fffb!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important;backdrop-filter:blur(8px)!important;}
+html body #app .dbh-btn{background:rgba(255,255,255,.075)!important;border:1px solid rgba(255,255,255,.16)!important;color:#f4f9fc!important;border-radius:9px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.055)!important;backdrop-filter:blur(8px)!important;}
+html body #app .dbh-btn:hover{background:rgba(255,255,255,.14)!important;border-color:rgba(255,255,255,.26)!important;transform:translateY(-1px)!important;}
+html body #app .dbh-btn--teal{background:linear-gradient(135deg,#00aaa8,#08b9c2)!important;border-color:rgba(255,255,255,.08)!important;box-shadow:0 6px 18px rgba(0,166,166,.22),inset 0 1px 0 rgba(255,255,255,.2)!important;}
+html body #app .dbh-alerts{border-top:1px solid rgba(255,255,255,.09)!important;}
+html body #app .dbh-alert{background:rgba(5,27,49,.18)!important;border:1px solid rgba(255,255,255,.075)!important;border-radius:8px!important;box-shadow:none!important;}
+html body #app .dbh-alert-text{color:rgba(246,250,253,.91)!important;}
 
-/* --- OVERVIEW: one command-centre composition --- */
-html body #app .dbh-frame{
- position:relative!important;
- margin:0!important;
- padding:24px 30px 0!important;
- background:
-   radial-gradient(900px 260px at 88% -20%,rgba(0,198,190,.24),transparent 62%),
-   linear-gradient(118deg,#0a294b 0%,#124b76 64%,#0b6572 100%)!important;
- border-radius:0 0 22px 22px!important;
- box-shadow:0 18px 40px rgba(8,39,70,.13)!important;
- overflow:hidden!important;
+/* KPI STRIP — retain four cards, make them feel like instrumentation */
+html body #app .view-dashboard .dbsr{gap:12px!important;background:transparent!important;border:0!important;padding:0!important;margin-top:12px!important;}
+html body #app .view-dashboard .dbsr-stat{
+  background:rgba(255,255,255,.96)!important;border:1px solid #dfe6eb!important;border-radius:14px!important;
+  box-shadow:var(--v5-shadow)!important;padding:18px 20px 16px!important;overflow:hidden!important;
+  transition:transform .16s,box-shadow .16s,border-color .16s!important;
 }
-html body #app .dbh-frame::after{
- content:"";position:absolute;inset:auto -70px -110px auto;width:310px;height:310px;border-radius:50%;
- border:1px solid rgba(255,255,255,.08);box-shadow:0 0 0 38px rgba(255,255,255,.018),0 0 0 78px rgba(255,255,255,.012);pointer-events:none;
-}
-html body #app .dbh-top{position:relative;z-index:1;padding:0 0 22px!important;align-items:flex-end!important;}
-html body #app .dbh-dayname{font-size:10px!important;letter-spacing:.16em!important;color:#84dcd6!important;font-weight:700!important;}
-html body #app .dbh-date{
- font-family:'Instrument Serif',Georgia,serif!important;font-size:32px!important;font-style:normal!important;font-weight:400!important;
- letter-spacing:-.035em!important;color:#fff!important;line-height:1.05!important;
-}
-html body #app .dbh-context{font-family:'DM Mono',monospace!important;font-size:10.5px!important;letter-spacing:.075em!important;color:rgba(225,241,248,.62)!important;text-transform:uppercase!important;margin-top:7px!important;}
-html body #app .dbh-health-pill{height:34px!important;padding:0 12px!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.14)!important;color:#dff7f4!important;box-shadow:inset 0 1px rgba(255,255,255,.05)!important;}
-html body #app .dbh-health-dot{box-shadow:0 0 0 4px rgba(16,185,129,.13)!important;}
-html body #app .dbh-btn{
- min-height:38px!important;padding:0 14px!important;border-radius:9px!important;background:rgba(255,255,255,.085)!important;
- border:1px solid rgba(255,255,255,.14)!important;color:#f4f8fb!important;font-size:12.5px!important;font-weight:600!important;
- box-shadow:inset 0 1px rgba(255,255,255,.05)!important;
-}
-html body #app .dbh-btn:hover{transform:translateY(-1px)!important;background:rgba(255,255,255,.15)!important;border-color:rgba(255,255,255,.25)!important;}
-html body #app .dbh-btn--teal{background:#00aeb0!important;border-color:#00bfc0!important;color:#fff!important;box-shadow:0 7px 20px rgba(0,174,176,.22)!important;}
+html body #app .view-dashboard .dbsr-stat:hover{transform:translateY(-2px)!important;box-shadow:var(--v5-shadow-hover)!important;border-color:#cedae3!important;}
+html body #app .view-dashboard .dbsr-stat::before{height:2px!important;left:18px!important;right:18px!important;top:0!important;border-radius:0 0 3px 3px!important;opacity:.92!important;}
+html body #app .view-dashboard .dbsr-num{font-family:'Instrument Serif',Georgia,serif!important;font-size:42px!important;line-height:.95!important;font-style:italic!important;font-weight:400!important;letter-spacing:-.045em!important;color:#153c66!important;margin-bottom:9px!important;}
+html body #app .view-dashboard .dbsr-stat:nth-child(1) .dbsr-num{color:#009b74!important;}
+html body #app .view-dashboard .dbsr-stat:nth-child(3) .dbsr-num{color:#008f92!important;}
+html body #app .view-dashboard .dbsr-stat:nth-child(4) .dbsr-num{color:#7047d9!important;}
+html body #app .view-dashboard .dbsr-lbl{font-size:10.5px!important;font-weight:750!important;letter-spacing:.105em!important;color:#5b6d80!important;}
+html body #app .view-dashboard .dbsr-pill{border:1px solid rgba(16,40,62,.045)!important;border-radius:999px!important;font-size:10.5px!important;font-weight:650!important;padding:3px 9px!important;}
 
-/* alerts become a restrained operational ticker */
-html body #app .dbh-alerts--grid{position:relative;z-index:1;margin:0!important;border-top:1px solid rgba(255,255,255,.10)!important;background:rgba(3,22,40,.14)!important;}
-html body #app .dbh-alerts--grid .dbh-alert{min-height:42px!important;padding:10px 16px!important;background:transparent!important;border-color:rgba(255,255,255,.08)!important;color:#e9f2f7!important;}
-html body #app .dbh-alert-text{color:rgba(244,249,252,.88)!important;font-size:11.5px!important;}
-html body #app .dbh-alert-dot{box-shadow:0 0 0 4px rgba(245,158,11,.10)!important;}
-
-/* KPI rail: one connected instrument panel, not four unrelated cards */
-html body #app .dbsr{
- position:relative!important;z-index:3!important;margin:-1px 22px 18px!important;gap:0!important;
- background:#fff!important;border:1px solid #e1e7eb!important;border-radius:0 0 16px 16px!important;
- box-shadow:var(--nd-shadow)!important;overflow:hidden!important;
+/* DASHBOARD PANELS — same dimensions and placement, better material */
+html body #app .view-dashboard .db-panel{
+  background:rgba(255,255,255,.97)!important;border:1px solid #dfe6eb!important;border-radius:15px!important;
+  box-shadow:var(--v5-shadow)!important;overflow:hidden!important;
 }
-html body #app .dbsr-stat{
- position:relative!important;min-height:132px!important;padding:21px 24px 18px!important;background:#fff!important;border:0!important;border-right:1px solid #e9edf0!important;border-radius:0!important;box-shadow:none!important;
+html body #app .view-dashboard .db-panel-head{
+  background:linear-gradient(180deg,#fff,#fbfcfc)!important;border-bottom:1px solid #e7ecef!important;
+  padding:13px 18px!important;min-height:54px!important;
 }
-html body #app .dbsr-stat:last-child{border-right:0!important;}
-html body #app .dbsr-accent{height:3px!important;top:0!important;left:0!important;right:0!important;border-radius:0!important;opacity:.9!important;}
-html body #app .dbsr-num{
- font-family:'Instrument Serif',Georgia,serif!important;font-size:43px!important;line-height:.95!important;font-weight:400!important;font-style:italic!important;letter-spacing:-.055em!important;color:#173b68!important;margin-bottom:10px!important;
+html body #app .view-dashboard .db-panel-title{color:#0d2d4d!important;font-size:11px!important;font-weight:800!important;letter-spacing:.075em!important;}
+html body #app .view-dashboard .db-panel-expand{background:#f8fafb!important;border:1px solid #dfe5ea!important;border-radius:8px!important;color:#607286!important;box-shadow:0 1px 1px rgba(9,30,52,.025)!important;}
+html body #app .view-dashboard .db-panel-link{color:#008f92!important;font-weight:650!important;}
+html body #app .view-dashboard .db-panel-link:hover{color:#006f73!important;}
+
+/* On-call rows */
+html body #app .db-oc-dayrow{border-bottom:1px solid #edf1f3!important;}
+html body #app .db-oc-dayrow:hover{background:#fafcfc!important;}
+html body #app .db-oc-slot-row{background:#f2f9fa!important;border:1px solid #e0eff0!important;border-radius:9px!important;}
+html body #app .db-oc-datecol--today{background:#eef9f8!important;border-radius:8px!important;}
+html body #app .db-oc-weekday{color:#748498!important;font-weight:750!important;letter-spacing:.08em!important;}
+html body #app .db-oc-daynum{font-family:'Instrument Serif',Georgia,serif!important;color:#173a5c!important;}
+
+/* Rotation occupancy */
+html body #app .db-unit-row{border-bottom:1px solid #edf1f3!important;transition:background .14s!important;}
+html body #app .db-unit-row:hover{background:#f8fbfb!important;}
+html body #app .db-unit-name{color:#18324a!important;font-weight:520!important;}
+
+/* UNASSIGNED RESIDENTS — same section, remove 'beige app within app' feeling */
+html body #app .db-gap-section,html body #app .db-gap-wrap,html body #app [class*="db-gap-section"]{
+  background:linear-gradient(180deg,#fffdf8,#fff)!important;border:1px solid #eadfcb!important;border-radius:15px!important;
+  box-shadow:0 1px 2px rgba(76,53,24,.025),0 8px 26px rgba(76,53,24,.035)!important;
 }
-html body #app .dbsr-num--teal{color:#009f96!important;}
-html body #app .dbsr-lbl{font-size:10.5px!important;letter-spacing:.085em!important;text-transform:uppercase!important;font-weight:750!important;color:#526274!important;margin-bottom:10px!important;}
-html body #app .dbsr-pills{gap:6px!important;}
-html body #app .dbsr-pill{font-size:10px!important;font-weight:650!important;border-radius:999px!important;padding:4px 9px!important;border:1px solid transparent!important;}
-
-/* Workspace geometry: editorial 5/7 split and disciplined vertical rhythm */
-html body #app .db-main-grid{gap:18px!important;padding:0 22px!important;align-items:start!important;grid-template-columns:minmax(360px,.92fr) minmax(520px,1.18fr)!important;}
-html body #app .db-right-col{gap:18px!important;}
-html body #app .db-panel{
- background:#fff!important;border:1px solid #e2e8ec!important;border-radius:14px!important;box-shadow:var(--nd-shadow)!important;overflow:hidden!important;
-}
-html body #app .db-panel-head{min-height:58px!important;padding:0 18px!important;background:linear-gradient(#fff,#fcfdfd)!important;border-bottom:1px solid #e7ecef!important;}
-html body #app .db-panel-title{font-size:11px!important;letter-spacing:.07em!important;text-transform:uppercase!important;font-weight:750!important;color:#17304f!important;}
-html body #app .db-panel-title svg{color:#7290a8!important;}
-html body #app .db-panel-link{font-size:11.5px!important;color:#087f83!important;font-weight:650!important;}
-html body #app .db-panel-expand{border:1px solid #e1e6ea!important;background:#fff!important;border-radius:8px!important;color:#5e7184!important;}
-
-/* On-call: make each day read like a clinical handoff, not a generic row */
-html body #app .db-oc-dayrow{padding:13px 16px!important;border-bottom:1px solid #edf0f2!important;gap:14px!important;}
-html body #app .db-oc-dayrow:hover{background:#f7fbfb!important;}
-html body #app .db-oc-datecol{min-width:48px!important;}
-html body #app .db-oc-weekday{font-size:9px!important;letter-spacing:.1em!important;color:#7a8997!important;}
-html body #app .db-oc-daynum{font-family:'Instrument Serif',Georgia,serif!important;font-size:23px!important;color:#17304f!important;}
-html body #app .db-oc-slot-row{border-radius:9px!important;padding:8px 10px!important;background:#f7fafb!important;border:1px solid #e9eef1!important;}
-html body #app .db-oc-slot-row--ok{background:#eff9f7!important;border-color:#d5efea!important;}
-html body #app .db-oc-name{color:#142338!important;font-weight:650!important;}
-
-/* Empty states: intentional breathing space */
-html body #app .db-panel-empty{min-height:100px!important;color:#7b8b9b!important;background:linear-gradient(180deg,#fff,#fcfdfd)!important;}
-
-/* Rotation-unit occupancy rows: tighter data-grid feel */
-html body #app .db-unit-panel>div:last-child{scrollbar-width:thin;scrollbar-color:#cbd5dc transparent;}
-html body #app .db-unit-panel>div:last-child>div[style*="display:flex"]{min-height:44px!important;padding:10px 18px!important;}
-
-/* Unassigned residents = structured warning surface, not a giant beige block */
-html body #app .db-gap-panel{
- margin:20px 22px 0!important;padding:0!important;background:#fff!important;border:1px solid #eadfca!important;border-radius:14px!important;box-shadow:var(--nd-shadow)!important;overflow:hidden!important;
-}
-html body #app .db-gap-head{min-height:58px!important;padding:0 18px!important;background:#fffaf1!important;border-bottom:1px solid #f0e4cf!important;}
-html body #app .db-gap-title{font-size:11px!important;letter-spacing:.075em!important;text-transform:uppercase!important;color:#684b20!important;font-weight:750!important;}
-html body #app .db-gap-grid{padding:16px 18px 18px!important;gap:12px!important;background:#fff!important;}
+html body #app .db-gap-head,html body #app .db-gap-header{background:linear-gradient(90deg,#fff9ed,#fffdf8)!important;border-bottom:1px solid #eee2ce!important;}
 html body #app .db-gap-item{
- min-height:118px!important;padding:16px!important;border:1px solid #e5e9ec!important;border-radius:12px!important;background:#fff!important;box-shadow:0 2px 10px rgba(11,23,40,.035)!important;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease!important;
+  background:#fff!important;border:1px solid #e3e8ec!important;border-radius:12px!important;
+  box-shadow:0 1px 2px rgba(9,30,52,.025)!important;transition:transform .15s,box-shadow .15s,border-color .15s!important;
 }
-html body #app .db-gap-item:hover{transform:translateY(-2px)!important;border-color:#cbd7dd!important;box-shadow:0 10px 24px rgba(11,23,40,.08)!important;}
-html body #app .db-gap-name{font-size:13px!important;color:#132238!important;font-weight:700!important;}
-html body #app .db-gap-year{font-family:'DM Mono',monospace!important;font-size:9.5px!important;color:#8795a5!important;}
-html body #app .db-gap-pill{background:#fff6e8!important;border:1px solid #f2d5a7!important;color:#a85c05!important;border-radius:999px!important;padding:4px 9px!important;font-size:9.5px!important;font-weight:700!important;}
+html body #app .db-gap-item:hover{transform:translateY(-1px)!important;border-color:#d3dde4!important;box-shadow:0 8px 22px rgba(9,30,52,.075)!important;}
+html body #app .db-gap-name{color:#122e48!important;font-weight:650!important;}
+html body #app .db-gap-pill{background:#fff7ed!important;border:1px solid #f1d7b5!important;color:#b75d05!important;font-weight:700!important;}
 
-/* Needs attention = risk console */
-html body #app .db-attn-panel{
- margin:18px 22px 22px!important;padding:0 18px 14px!important;background:#fff!important;border:1px solid #e2e8ec!important;border-radius:14px!important;box-shadow:var(--nd-shadow)!important;
-}
-html body #app .db-attn-hdr{min-height:54px!important;display:flex!important;align-items:center!important;border-bottom:1px solid #edf0f2!important;}
-html body #app .db-attn-item{min-height:44px!important;padding:9px 12px!important;border-radius:9px!important;background:#fffaf2!important;border:1px solid #f2e3c7!important;}
-html body #app .db-attn-icon{color:#d97706!important;}
-html body #app .db-attn-text{color:#17263a!important;font-weight:650!important;}
-html body #app .db-attn-meta{margin-left:auto!important;color:#7b8997!important;font-size:10.5px!important;}
-html body #app .db-sync-indicator{margin:0 22px 18px!important;color:#8795a5!important;font-size:10.5px!important;}
+/* ATTENTION — same location, more clinical and intentional */
+html body #app .db-attn-panel{background:#fff!important;border:1px solid #dfe6eb!important;border-radius:15px!important;box-shadow:var(--v5-shadow)!important;}
+html body #app .db-attn-hdr{background:linear-gradient(180deg,#fff,#fcfcfb)!important;border-bottom:1px solid #e9edef!important;}
+html body #app .db-attn-item{background:#fffcf5!important;border:1px solid #f1e4c8!important;border-radius:9px!important;}
+html body #app .db-attn-item:hover{background:#fff9eb!important;border-color:#ead7b1!important;}
+html body #app .db-attn-text{color:#17314a!important;}
 
-/* shared surface language — enough to connect other modules without repainting them */
-html body #app .card:not(.login-card),
-html body #app .tuc-card,
-html body #app .news-card{
- border-color:#e2e8ec!important;border-radius:12px!important;box-shadow:var(--nd-shadow)!important;
-}
-html body #app .content-area .card-header:not(.rhub-topbar):not(.nm-header):not(.udd-header){
- background:#fff!important;color:var(--nd-ink)!important;border-bottom:1px solid #e6ebee!important;
-}
-html body #app .content-area .card-header .card-title{color:#17304f!important;}
-html body #app .content-area .card-header .card-title svg{color:#7890a4!important;}
+/* shared controls: refine without altering layout */
+html body #app button:not(.nmsb-item):not(.dbh-btn),html body #app .btn{font-family:'DM Sans',sans-serif!important;letter-spacing:-.005em!important;}
+html body #app input,html body #app select,html body #app textarea{border-radius:9px!important;}
+html body #app input:focus,html body #app select:focus,html body #app textarea:focus{border-color:rgba(0,166,166,.52)!important;box-shadow:0 0 0 3px rgba(0,166,166,.08)!important;outline:none!important;}
 
-/* responsive — preserve original behavioral breakpoints, only adapt V4 geometry */
-@media(max-width:1180px){
- html body #app .db-main-grid{grid-template-columns:1fr!important;}
- html body #app .dbh-frame{padding-left:22px!important;padding-right:22px!important;}
-}
-@media(max-width:768px){
- html body #app .dbh-frame{padding:16px 14px 0!important;border-radius:0 0 16px 16px!important;}
- html body #app .dbh-top{align-items:flex-start!important;}
- html body #app .dbh-date{font-size:27px!important;}
- html body #app .dbsr{margin:0 10px 12px!important;border-radius:0 0 12px 12px!important;grid-template-columns:repeat(2,1fr)!important;}
- html body #app .dbsr-stat{min-height:112px!important;padding:16px!important;}
- html body #app .dbsr-stat:nth-child(2){border-right:0!important;}
- html body #app .dbsr-stat:nth-child(-n+2){border-bottom:1px solid #e9edf0!important;}
- html body #app .dbsr-num{font-size:34px!important;}
- html body #app .db-main-grid{padding:0 10px!important;gap:12px!important;}
- html body #app .db-gap-panel,html body #app .db-attn-panel{margin-left:10px!important;margin-right:10px!important;}
- html body #app .db-gap-grid{grid-template-columns:1fr!important;}
-}
-@media(prefers-reduced-motion:reduce){html body #app .db-gap-item:hover,html body #app .dbh-btn:hover{transform:none!important;}}
+/* tables across modules — visual continuity only */
+html body #app table{border-collapse:separate!important;border-spacing:0!important;}
+html body #app table thead th{background:#f7f9fa!important;color:#65758a!important;border-bottom:1px solid #dfe6eb!important;font-size:10.5px!important;font-weight:750!important;letter-spacing:.075em!important;}
+html body #app table tbody td{border-bottom-color:#edf1f3!important;}
+html body #app table tbody tr:hover td{background:#f8fbfb!important;}
+
+/* drawers/modals — same mechanics, better surface */
+html body #app .modal-content,html body #app [class*="drawer-panel"],html body #app .drawer-content{border:1px solid rgba(9,30,52,.09)!important;box-shadow:0 24px 70px rgba(6,24,42,.2)!important;}
+
+/* keyboard focus */
+html body #app :focus-visible{outline:2px solid rgba(0,166,166,.72)!important;outline-offset:2px!important;}
+
+@media (prefers-reduced-motion:reduce){html body #app *{transition-duration:.001ms!important;animation-duration:.001ms!important;}}
