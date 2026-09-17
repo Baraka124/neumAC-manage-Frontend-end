@@ -2,7 +2,7 @@
    neumDesk — style.css
    Clinical Operations Platform UI Override Stylesheet
    
-   Architecture: All rules are appended overrides on top of the  
+   Architecture: All rules are appended overrides on top of the
    base styles in index.html <style> blocks and style__10_.css.
    Cascade strategy: html #app .classname for specificity wins.
    
@@ -40723,30 +40723,30 @@ html body #app .grounded-head .askbar-head-s { color: rgba(0,212,212,.7) !import
 
 /* Recolor inner content for dark cloud */
 html body #app .grounded-cloud .askbar-conv, html body #app .grounded-cloud .askbar-digest { position: relative !important; z-index: 1 !important; }
-html body #app .grounded-cloud .askbar-q-bub { background: rgba(0,179,179,.16) !important; border: 1px solid rgba(0,179,179,.25) !important; color: #e0f7f7 !important; }
-html body #app .grounded-cloud .askbar-a-card { background: rgba(255,255,255,.05) !important; border: 1px solid rgba(0,179,179,.18) !important; }
-html body #app .grounded-cloud .askbar-a-tx { color: rgba(255,255,255,.92) !important; }
-html body #app .grounded-cloud .askbar-a-tx b { color: #00e5e5 !important; }
-html body #app .grounded-cloud .askbar-greeting-t { color: #fff !important; }
-html body #app .grounded-cloud .askbar-greeting-s { color: rgba(255,255,255,.6) !important; }
-html body #app .grounded-cloud .askbar-sug-label { color: rgba(255,255,255,.5) !important; }
-html body #app .grounded-cloud .askbar-sug-item { background: rgba(255,255,255,.04) !important; border: 1px solid rgba(255,255,255,.08) !important; }
-html body #app .grounded-cloud .askbar-sug-t { color: rgba(255,255,255,.9) !important; }
-html body #app .grounded-cloud .askbar-sug-d { color: rgba(255,255,255,.5) !important; }
-html body #app .grounded-cloud .askbar-input { background: rgba(255,255,255,.06) !important; border: 1px solid rgba(0,179,179,.28) !important; }
-html body #app .grounded-cloud .askbar-input input { color: #fff !important; }
-html body #app .grounded-cloud .askbar-input input::placeholder { color: rgba(255,255,255,.4) !important; }
-html body #app .grounded-cloud .askbar-close { color: rgba(255,255,255,.5) !important; }
-html body #app .grounded-cloud .askbar-fu { background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.12) !important; color: #e0f7f7 !important; }
-html body #app .grounded-cloud .askbar-fu--act { background: rgba(0,179,179,.25) !important; border-color: rgba(0,179,179,.4) !important; color: #fff !important; }
-html body #app .grounded-cloud .askbar-trace, html body #app .grounded-cloud .askbar-trace-mini { background: rgba(255,255,255,.04) !important; border-color: rgba(255,255,255,.08) !important; }
-html body #app .grounded-cloud .askbar-trace-ht, html body #app .grounded-cloud .askbar-trace-mini-t { color: rgba(255,255,255,.85) !important; }
-html body #app .grounded-cloud .askbar-trace-label { color: rgba(255,255,255,.9) !important; }
-html body #app .grounded-cloud .askbar-alert { background: rgba(255,255,255,.04) !important; border-color: rgba(255,255,255,.08) !important; }
-html body #app .grounded-cloud .askbar-alert-t { color: rgba(255,255,255,.92) !important; }
-html body #app .grounded-cloud .askbar-alert-d { color: rgba(255,255,255,.55) !important; }
-html body #app .grounded-cloud .askbar-digest-h-t { color: #fff !important; }
-html body #app .grounded-cloud .askbar-mode-link { color: rgba(255,255,255,.5) !important; border-color: rgba(0,179,179,.3) !important; }
+html body #app .grounded-cloud .askbar-q-bub { background: #2563eb !important; border: 1px solid #2563eb !important; color: #fff !important; border-radius: 16px 16px 4px 16px !important; }
+html body #app .grounded-cloud .askbar-a-card { background: #faf9f6 !important; border: 1px solid rgba(0,179,179,.18) !important; }
+html body #app .grounded-cloud .askbar-a-tx { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-a-tx b { color: #0891b2 !important; }
+html body #app .grounded-cloud .askbar-greeting-t { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-greeting-s { color: #5a6472 !important; }
+html body #app .grounded-cloud .askbar-sug-label { color: #5a6472 !important; }
+html body #app .grounded-cloud .askbar-sug-item { background: #faf9f6 !important; border: 1px solid #e3dfd6 !important; }
+html body #app .grounded-cloud .askbar-sug-t { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-sug-d { color: #5a6472 !important; }
+html body #app .grounded-cloud .askbar-input { background: #faf9f6 !important; border: 1px solid rgba(0,179,179,.28) !important; }
+html body #app .grounded-cloud .askbar-input input { color: #07111f !important; -webkit-text-fill-color: #07111f !important; }
+html body #app .grounded-cloud .askbar-input input::placeholder { color: #909399 !important; -webkit-text-fill-color: #909399 !important; opacity: 1 !important; }
+html body #app .grounded-cloud .askbar-close { color: #5a6472 !important; }
+html body #app .grounded-cloud .askbar-fu { background: #fff !important; border: 1px solid #e3dfd6 !important; color: #344154 !important; }
+html body #app .grounded-cloud .askbar-fu--act { background: #2563eb !important; border-color: #2563eb !important; color: #fff !important; }
+html body #app .grounded-cloud .askbar-trace, html body #app .grounded-cloud .askbar-trace-mini { background: #faf9f6 !important; border-color: #e3dfd6 !important; }
+html body #app .grounded-cloud .askbar-trace-ht, html body #app .grounded-cloud .askbar-trace-mini-t { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-trace-label { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-alert { background: #faf9f6 !important; border-color: #e3dfd6 !important; }
+html body #app .grounded-cloud .askbar-alert-t { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-alert-d { color: #5a6472 !important; }
+html body #app .grounded-cloud .askbar-digest-h-t { color: #07111f !important; }
+html body #app .grounded-cloud .askbar-mode-link { color: #5a6472 !important; border-color: rgba(0,179,179,.3) !important; }
 
 /* Mobile: cloud fills bottom */
 @media (max-width: 640px) {
@@ -40900,7 +40900,7 @@ html body #app .askbar-trust-copy.askbar-copy--ok::after { content: 'copied'; fo
 
 
 /* §91 — dark entity chips (was white, clashed with instrument) */
-html body #app .grounded-cloud .askbar-chip { background: rgba(255,255,255,.05) !important; border: 1px solid rgba(0,212,212,.2) !important; color: rgba(255,255,255,.9) !important; }
+html body #app .grounded-cloud .askbar-chip { background: #edebe5 !important; border: 1px solid #e3dfd6 !important; color: #344154 !important; }
 html body #app .grounded-cloud .askbar-chip:hover { background: rgba(0,212,212,.12) !important; border-color: rgba(0,212,212,.4) !important; }
 html body #app .grounded-cloud .askbar-chip svg { color: #00d4d4 !important; }
 /* trust line: ensure sentence case, no inherited uppercase */
@@ -41124,8 +41124,8 @@ html body #app .grounded-cloud .askbar-trace-mini {
   padding: 2px 4px !important; opacity: .5 !important; margin-bottom: 0 !important;
 }
 html body #app .grounded-cloud .askbar-trace-mini:hover { opacity: .8 !important; border: none !important; }
-html body #app .grounded-cloud .askbar-trace-mini-t { font-size: 10px !important; color: rgba(255,255,255,.45) !important; }
-html body #app .grounded-cloud .askbar-trace-mini-x { font-size: 10px !important; color: rgba(255,255,255,.3) !important; }
+html body #app .grounded-cloud .askbar-trace-mini-t { font-size: 10px !important; color: #909399 !important; }
+html body #app .grounded-cloud .askbar-trace-mini-x { font-size: 10px !important; color: #909399 !important; }
 
 /* — Action buttons under answers: premium, connected, tactile — */
 html body #app .grounded-cloud .askbar-a-actions { gap: 8px !important; margin-top: 12px !important; }
@@ -41142,7 +41142,7 @@ html body #app .grounded-cloud .askbar-act--secondary {
   background: rgba(255,255,255,.05) !important; border: 1px solid rgba(255,255,255,.14) !important;
   color: rgba(255,255,255,.85) !important;
 }
-html body #app .grounded-cloud .askbar-act--secondary:hover { background: rgba(255,255,255,.09) !important; border-color: rgba(0,212,212,.35) !important; }
+html body #app .grounded-cloud .askbar-act--secondary:hover { background: #edebe5 !important; border-color: rgba(0,212,212,.35) !important; }
 
 /* — Followup chips: quieter, connected to the answer — */
 html body #app .grounded-cloud .askbar-followups { gap: 7px !important; margin-top: 10px !important; }
@@ -41167,7 +41167,7 @@ html body #app .grounded-cloud .askbar-input:focus-within {
 html body #app .grounded-cloud .askbar-input input {
   font-size: 14px !important; color: #fff !important;
 }
-html body #app .grounded-cloud .askbar-input input::placeholder { color: rgba(255,255,255,.4) !important; }
+html body #app .grounded-cloud .askbar-input input::placeholder { color: #909399 !important; -webkit-text-fill-color: #909399 !important; }
 html body #app .grounded-cloud .askbar-send {
   width: 40px !important; height: 40px !important; border-radius: 12px !important;
   background: linear-gradient(135deg, #0891b2, #00d4d4) !important;
@@ -41209,18 +41209,18 @@ html body #app .grounded-cloud .askbar-trust--medium,
 html body #app .grounded-cloud .askbar-trust--low { background: transparent !important; padding: 11px 0 0 0 !important; }
 html body #app .grounded-cloud .askbar-trust--high .askbar-trust-state { color: #34d399 !important; }
 html body #app .grounded-cloud .askbar-trust--medium .askbar-trust-state { color: #fbbf24 !important; }
-html body #app .grounded-cloud .askbar-trust--low .askbar-trust-state { color: rgba(255,255,255,.45) !important; }
+html body #app .grounded-cloud .askbar-trust--low .askbar-trust-state { color: #909399 !important; }
 html body #app .grounded-cloud .askbar-trust-dot { width: 6px !important; height: 6px !important; border-radius: 50% !important; box-shadow: 0 0 6px currentColor !important; }
 html body #app .grounded-cloud .askbar-trust--high .askbar-trust-dot { background: #34d399 !important; color: #34d399 !important; }
 html body #app .grounded-cloud .askbar-trust--medium .askbar-trust-dot { background: #fbbf24 !important; color: #fbbf24 !important; }
-html body #app .grounded-cloud .askbar-trust--low .askbar-trust-dot { background: rgba(255,255,255,.4) !important; color: rgba(255,255,255,.4) !important; }
-html body #app .grounded-cloud .askbar-trust-src, html body #app .grounded-cloud .askbar-trust-time { color: rgba(255,255,255,.35) !important; }
-html body #app .grounded-cloud .askbar-trust-copy { margin-left: auto !important; color: rgba(255,255,255,.3) !important; background: transparent !important; border: none !important; }
+html body #app .grounded-cloud .askbar-trust--low .askbar-trust-dot { background: #909399 !important; color: #909399 !important; }
+html body #app .grounded-cloud .askbar-trust-src, html body #app .grounded-cloud .askbar-trust-time { color: #909399 !important; }
+html body #app .grounded-cloud .askbar-trust-copy { margin-left: auto !important; color: #909399 !important; background: transparent !important; border: none !important; }
 html body #app .grounded-cloud .askbar-trust-copy:hover { color: #4de8e8 !important; }
 
 /* Ensure the PLAIN answer (no card) also gets consistent card treatment */
 html body #app .grounded-cloud .askbar-a-bub > .askbar-a-card:only-child,
-html body #app .grounded-cloud .askbar-a-card { background: rgba(255,255,255,.045) !important; }
+html body #app .grounded-cloud .askbar-a-card { background: #faf9f6 !important; }
 
 /* ═══════════════════════════════════════════════════════════════════
    §105 — GROUNDED HEADER + INPUT + ORB — premium, final
@@ -41260,7 +41260,7 @@ html body #app .grounded-cloud .askbar-newchat {
   background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.14) !important;
   color: rgba(255,255,255,.75) !important;
 }
-html body #app .grounded-cloud .askbar-newchat:hover { background: rgba(255,255,255,.11) !important; color: #fff !important; }
+html body #app .grounded-cloud .askbar-newchat:hover { background: #edebe5 !important; color: #07111f !important; }
 /* Teach = the one accent action (teal, matches the system) */
 html body #app .grounded-cloud .askbar-teach-btn {
   background: rgba(0,212,212,.14) !important; border: 1px solid rgba(0,212,212,.35) !important;
@@ -41311,7 +41311,7 @@ html body #app .grounded-cloud .askbar-input input {
   flex: 1 !important; background: transparent !important; border: none !important; outline: none !important;
   font-size: 14px !important; color: #fff !important; padding: 9px 0 !important;
 }
-html body #app .grounded-cloud .askbar-input input::placeholder { color: rgba(255,255,255,.38) !important; }
+html body #app .grounded-cloud .askbar-input input::placeholder { color: #909399 !important; }
 html body #app .grounded-cloud .askbar-send {
   width: 42px !important; height: 42px !important; border-radius: 12px !important; flex-shrink: 0 !important;
   background: linear-gradient(135deg,#0891b2,#00d4d4) !important; border: none !important;
@@ -41354,7 +41354,7 @@ html body #app .grounded-cloud .askbar-roster-row {
 }
 html body #app .grounded-cloud .askbar-roster-row:last-child { border-bottom: none !important; }
 /* the "Today"/highlighted roster cell — cohesive teal */
-html body #app .grounded-cloud .askbar-roster-date { color: rgba(255,255,255,.45) !important; font-size: 11.5px !important; }
+html body #app .grounded-cloud .askbar-roster-date { color: #5a6472 !important; font-size: 11.5px !important; }
 html body #app .grounded-cloud .askbar-roster-name { color: #fff !important; font-size: 13.5px !important; }
 html body #app .grounded-cloud .askbar-roster-pill,
 html body #app .grounded-cloud .askbar-occ-count--full { border-radius: 100px !important; font-size: 10px !important; letter-spacing: .03em !important; }
@@ -42432,4 +42432,523 @@ html body #app .db-gap-year {
 html body #app .db-gap-pills {
   display: flex !important; gap: 5px !important; flex-wrap: wrap !important; width: 100% !important;
   margin-top: 2px !important;
+}
+
+/* §229 — FIX: Resident cards ACTUAL classes (db-gap-item, not db-gap-card) */
+html body #app .db-gap-grid {
+  display: flex !important; flex-wrap: wrap !important; gap: 12px !important;
+}
+html body #app .db-gap-item {
+  display: flex !important; flex-direction: column !important; align-items: flex-start !important;
+  gap: 6px !important; padding: 14px 16px !important; min-width: 170px !important;
+  flex: 1 1 200px !important; max-width: 260px !important;
+  border: 1px solid var(--border, #e3dfd6) !important; border-radius: 12px !important;
+  background: var(--surface, #fff) !important; cursor: pointer !important;
+}
+html body #app .db-gap-item:hover { box-shadow: 0 3px 12px rgba(10,22,40,.08) !important; }
+/* top row: avatar + name */
+html body #app .db-gap-item > div:first-child { flex-shrink: 0 !important; }
+html body #app .db-gap-info {
+  display: flex !important; flex-direction: column !important; gap: 2px !important;
+}
+html body #app .db-gap-name {
+  font-size: 14px !important; font-weight: 600 !important; line-height: 1.3 !important;
+  color: var(--text-1) !important;
+}
+/* pills: own row below the name */
+html body #app .db-gap-pills {
+  display: flex !important; gap: 5px !important; flex-wrap: wrap !important;
+  margin-top: 4px !important;
+}
+html body #app .db-gap-pill {
+  font-size: 10.5px !important; padding: 3px 8px !important;
+}
+
+/* §230 — FIX: Publications ⋮ button + dropdown actually clickable */
+html body #app .news-card-right .nm-more-btn {
+  position: relative !important; cursor: pointer !important; z-index: 10 !important;
+  width: 32px !important; height: 32px !important; display: flex !important;
+  align-items: center !important; justify-content: center !important;
+  border-radius: 8px !important; border: 1px solid var(--border, #e3dfd6) !important;
+  background: var(--surface, #fff) !important; pointer-events: auto !important;
+}
+html body #app .news-card-right .nm-more-btn:hover {
+  background: var(--surface-3, #edebe5) !important;
+}
+html body #app .news-card-right .nm-more-btn svg { pointer-events: none !important; }
+/* the dropdown when open */
+html body #app .nm-dropdown {
+  position: absolute !important; right: 0 !important; top: 100% !important;
+  z-index: 100 !important; min-width: 180px !important;
+  background: var(--surface, #fff) !important; border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 10px !important; box-shadow: 0 8px 24px rgba(10,22,40,.15) !important;
+  padding: 6px !important;
+}
+html body #app .nm-dropdown-item {
+  padding: 8px 12px !important; font-size: 13px !important; cursor: pointer !important;
+  border-radius: 6px !important; display: flex !important; align-items: center !important; gap: 8px !important;
+  color: var(--text-1, #07111f) !important;
+}
+html body #app .nm-dropdown-item:hover { background: var(--surface-2, #f7f6f2) !important; }
+html body #app .nm-dropdown-item.danger { color: #dc2626 !important; }
+html body #app .nm-dropdown-item.danger:hover { background: rgba(239,68,68,.06) !important; }
+html body #app .nm-dropdown-sep { height: 1px !important; background: var(--border, #e3dfd6) !important; margin: 4px 0 !important; }
+
+/* §231 — Publications card layout: tighter right column, contained cards */
+html body #app .news-view .news-card {
+  display: flex !important; align-items: stretch !important;
+  border: 1px solid var(--border, #e3dfd6) !important; border-radius: 12px !important;
+  margin-bottom: 10px !important; background: var(--surface, #fff) !important;
+  position: relative !important; overflow: visible !important;
+}
+html body #app .news-view .news-card-right {
+  display: flex !important; flex-direction: column !important; align-items: center !important;
+  justify-content: center !important; gap: 6px !important; padding: 12px !important;
+  border-left: 1px solid var(--border, #e3dfd6) !important; min-width: 90px !important;
+  flex-shrink: 0 !important; position: relative !important;
+}
+/* edit button */
+html body #app .news-card-right .news-edit-btn, html body #app .news-card-right button[class*="edit"] {
+  pointer-events: auto !important; cursor: pointer !important; z-index: 5 !important;
+}
+
+/* §229 — FIX: Publications three-dots clickable + dropdown visible + layout fix */
+/* the more button must be clickable */
+html body #app .news-view .nm-more-btn {
+  width: 32px !important; height: 32px !important; border-radius: 8px !important;
+  border: 1px solid var(--border, #e3dfd6) !important; background: var(--surface, #fff) !important;
+  cursor: pointer !important; display: flex !important; align-items: center !important;
+  justify-content: center !important; color: var(--text-2, #344154) !important;
+  position: relative !important; z-index: 10 !important; pointer-events: auto !important;
+}
+html body #app .news-view .nm-more-btn:hover { background: var(--surface-2, #f7f6f2) !important; }
+html body #app .news-view .nm-more-btn svg { pointer-events: none !important; }
+/* the dropdown menu — must be visible and above everything */
+html body #app .news-view .nm-dropdown {
+  position: absolute !important; top: 100% !important; right: 0 !important;
+  z-index: 9999 !important; min-width: 180px !important;
+  background: var(--surface, #fff) !important; border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 12px !important; box-shadow: 0 8px 32px rgba(10,22,40,.16) !important;
+  padding: 6px !important; margin-top: 4px !important;
+}
+html body #app .news-view .nm-dropdown-item {
+  padding: 8px 12px !important; border-radius: 8px !important; font-size: 13px !important;
+  color: var(--text-1, #07111f) !important; cursor: pointer !important;
+  display: flex !important; align-items: center !important; gap: 8px !important;
+}
+html body #app .news-view .nm-dropdown-item:hover { background: var(--surface-2, #f7f6f2) !important; }
+html body #app .news-view .nm-dropdown-item.danger { color: #dc2626 !important; }
+html body #app .news-view .nm-dropdown-item.danger:hover { background: rgba(239,68,68,.06) !important; }
+html body #app .news-view .nm-dropdown-sep { height: 1px !important; background: var(--border) !important; margin: 4px 0 !important; }
+
+/* the entire news-card-right column: ensure nothing clips the dropdown */
+html body #app .news-view .news-card { overflow: visible !important; }
+html body #app .news-view .news-card-right { overflow: visible !important; position: relative !important; z-index: 5 !important; }
+
+/* §230 — FIX: Publications layout — actions integrated, not floating randomly */
+/* make the right column a compact vertical stack with proper alignment */
+html body #app .news-view .news-card-right {
+  display: flex !important; flex-direction: column !important; align-items: flex-end !important;
+  gap: 6px !important; padding: 12px !important; justify-content: flex-start !important;
+  border-left: 1px solid var(--border, #e3dfd6) !important;
+}
+/* the edit button */
+html body #app .news-view .nm-news-primary--edit {
+  font-size: 12px !important; padding: 6px 12px !important; border-radius: 8px !important;
+  border: 1px solid var(--border) !important; background: var(--surface) !important;
+  color: var(--text-2) !important; cursor: pointer !important; white-space: nowrap !important;
+}
+html body #app .news-view .nm-news-primary--edit:hover { border-color: var(--blue, #2563eb) !important; color: var(--blue) !important; }
+/* visibility pill */
+html body #app .news-view .news-vis-pill, html body #app .news-view .nm-news-vis-pill {
+  font-size: 11px !important; padding: 3px 9px !important; border-radius: 100px !important;
+  white-space: nowrap !important;
+}
+/* publish button (for drafts) */
+html body #app .news-view .nm-news-primary--publish {
+  font-size: 12px !important; padding: 6px 12px !important; border-radius: 8px !important;
+  white-space: nowrap !important;
+}
+
+/* §231 — FIX: Resident cards stronger — ensure stacking works with higher specificity */
+html body #app .view-dashboard .db-gap-card,
+html body #app #app .db-gap-card,
+#app .db-gap-card {
+  flex-direction: column !important; align-items: flex-start !important;
+  padding: 14px 16px !important; gap: 6px !important;
+}
+html body #app .view-dashboard .db-gap-info,
+html body #app #app .db-gap-info,
+#app .db-gap-info {
+  display: flex !important; flex-direction: row !important; align-items: center !important;
+  gap: 10px !important; width: 100% !important;
+}
+html body #app .view-dashboard .db-gap-pills,
+html body #app #app .db-gap-pills,
+#app .db-gap-pills {
+  display: flex !important; gap: 5px !important; width: 100% !important;
+  margin-top: 2px !important;
+}
+html body #app .view-dashboard .db-gap-name,
+html body #app #app .db-gap-name,
+#app .db-gap-name {
+  font-size: 14px !important; font-weight: 600 !important;
+  white-space: normal !important; word-break: normal !important; line-height: 1.3 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §232 — PUBLICATIONS REDESIGN: contained, dense, clean cards
+   ═══════════════════════════════════════════════════════════════════════ */
+/* each news card: contained, with clear boundary */
+html body #app .news-view .news-card {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  background: var(--surface, #fff) !important;
+  border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 12px !important;
+  margin-bottom: 10px !important;
+  overflow: visible !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.04) !important;
+  transition: box-shadow .15s !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+html body #app .news-view .news-card:hover {
+  box-shadow: 0 3px 12px rgba(10,22,40,.08) !important;
+}
+/* type stripe left border */
+html body #app .news-view .news-card--update { border-left: 3px solid #0891b2 !important; }
+html body #app .news-view .news-card--article { border-left: 3px solid #2563eb !important; }
+html body #app .news-view .news-card--publication { border-left: 3px solid #7c3aed !important; }
+html body #app .news-view .news-card--highlight { border-left: 3px solid #f59e0b !important; }
+
+/* hide the old left column (it was a 4px strip, now using border-left instead) */
+html body #app .news-view .news-card-left { display: none !important; }
+
+/* body: compact, everything visible */
+html body #app .news-view .news-card-body {
+  padding: 14px 16px !important;
+  display: flex !important; flex-direction: column !important; gap: 6px !important;
+  min-width: 0 !important; justify-content: center !important;
+}
+/* type badge */
+html body #app .news-view .news-card-tag {
+  align-self: flex-start !important; font-size: 10px !important; font-weight: 700 !important;
+  letter-spacing: .06em !important; text-transform: uppercase !important;
+  padding: 2px 8px !important; border-radius: 4px !important;
+}
+/* title */
+html body #app .news-view .news-card-title {
+  font-size: 15px !important; font-weight: 650 !important; line-height: 1.35 !important;
+  color: var(--text-1, #07111f) !important; margin: 0 !important;
+}
+/* content preview */
+html body #app .news-view .news-card-excerpt, html body #app .news-view .news-card-content {
+  font-size: 12.5px !important; color: var(--text-3, #5a6472) !important; line-height: 1.4 !important;
+  display: -webkit-box !important; -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important;
+  overflow: hidden !important; margin: 0 !important;
+}
+/* metadata row (author + date + research line) */
+html body #app .news-view .news-card-meta {
+  display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important;
+  font-size: 12px !important; color: var(--text-3) !important; margin-top: 2px !important;
+}
+/* DOI link */
+html body #app .news-view .news-card-doi {
+  font-size: 11.5px !important; color: var(--text-3) !important;
+}
+/* journal name */
+html body #app .news-view .news-card-journal {
+  font-style: italic !important; color: #0891b2 !important; font-size: 13px !important;
+}
+
+/* RIGHT COLUMN: compact, integrated, not floating */
+html body #app .news-view .news-card-right {
+  display: flex !important; flex-direction: column !important; align-items: flex-end !important;
+  justify-content: center !important; gap: 6px !important;
+  padding: 12px 14px !important; border-left: 1px solid var(--border, #e3dfd6) !important;
+  min-width: 0 !important; flex-shrink: 0 !important; position: relative !important;
+  overflow: visible !important; z-index: 5 !important;
+}
+/* status dot — inline with visibility pill */
+html body #app .news-view .news-status-dot, html body #app .news-view [class*="status-dot"] {
+  width: 6px !important; height: 6px !important; border-radius: 50% !important; flex-shrink: 0 !important;
+}
+/* visibility pill */
+html body #app .news-view .news-vis-pill, html body #app .news-view .nm-news-vis-pill,
+html body #app .news-view [class*="vis-pill"], html body #app .news-view .news-card-right [class*="badge"] {
+  font-size: 10px !important; padding: 2px 8px !important; border-radius: 100px !important;
+  background: var(--surface-3, #edebe5) !important; color: var(--text-3) !important;
+  white-space: nowrap !important; font-weight: 500 !important;
+}
+/* edit button */
+html body #app .news-view .nm-news-primary--edit,
+html body #app .news-view .news-card-right .btn {
+  font-size: 11.5px !important; padding: 5px 10px !important; border-radius: 8px !important;
+  border: 1px solid var(--border, #e3dfd6) !important; background: var(--surface, #fff) !important;
+  color: var(--text-2, #344154) !important; cursor: pointer !important; white-space: nowrap !important;
+}
+html body #app .news-view .nm-news-primary--edit:hover,
+html body #app .news-view .news-card-right .btn:hover {
+  border-color: var(--blue, #2563eb) !important; color: var(--blue) !important;
+}
+/* three-dots button */
+html body #app .news-view .nm-more-btn {
+  width: 28px !important; height: 28px !important; border-radius: 6px !important;
+  border: 1px solid var(--border, #e3dfd6) !important; background: var(--surface, #fff) !important;
+  cursor: pointer !important; display: flex !important; align-items: center !important;
+  justify-content: center !important; color: var(--text-3) !important;
+  position: relative !important; z-index: 10 !important; pointer-events: auto !important;
+}
+html body #app .news-view .nm-more-btn:hover { background: var(--surface-2) !important; color: var(--text-1) !important; }
+/* publish button for drafts */
+html body #app .news-view .nm-news-primary--publish {
+  font-size: 11.5px !important; padding: 5px 12px !important; border-radius: 8px !important;
+  white-space: nowrap !important;
+}
+/* DRAFT badge */
+html body #app .news-view [class*="draft-badge"], html body #app .news-view .news-card-right .badge-draft {
+  font-size: 10px !important; font-weight: 700 !important; padding: 2px 8px !important;
+  border-radius: 4px !important; background: #fef3c7 !important; color: #92400e !important;
+}
+/* hide empty image placeholders */
+html body #app .news-view .news-card-photo:empty,
+html body #app .news-view .news-card-thumb:empty,
+html body #app .news-view [class*="news-card-img"]:empty,
+html body #app .news-view .news-card-img:not([src]) { display: none !important; }
+
+/* The filter/search row */
+html body #app .news-view .news-filters, html body #app .news-view [class*="filter-row"] {
+  margin-bottom: 12px !important;
+}
+
+/* §232b — publications: actions INLINE, not vertical; tighter cards */
+html body #app .news-view .news-card-right {
+  flex-direction: row !important; align-items: center !important;
+  gap: 8px !important; padding: 10px 14px !important;
+  justify-content: flex-end !important; flex-wrap: wrap !important;
+}
+/* tighter card body */
+html body #app .news-view .news-card-body {
+  padding: 12px 16px !important; gap: 4px !important;
+}
+/* smaller type badge */
+html body #app .news-view .news-card-tag { margin-bottom: 2px !important; }
+/* reduce overall card height by removing unnecessary min-height */
+html body #app .news-view .news-card { min-height: 0 !important; align-items: center !important; }
+/* the status dot: inline before the visibility pill */
+html body #app .news-view .news-card-right .news-status-dot {
+  order: -1 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §233 — PUBLICATIONS ELITE: compact rows, hover-reveal, progressive disclosure
+   Principle: a list, not a gallery. Scan 20+ items. Interact on hover.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* OVERRIDE the card-based layout with a row-based one */
+html body #app .news-view .news-card {
+  display: flex !important; align-items: center !important;
+  gap: 0 !important; padding: 0 !important;
+  border-radius: 0 !important; margin-bottom: 0 !important;
+  border: none !important; border-bottom: 1px solid var(--border, #e3dfd6) !important;
+  box-shadow: none !important; min-height: 0 !important;
+  background: var(--surface, #fff) !important;
+  transition: background .1s !important;
+  border-left: none !important;
+}
+/* type stripe: thin left accent on hover only */
+html body #app .news-view .news-card--update { border-left: 0 !important; }
+html body #app .news-view .news-card--article { border-left: 0 !important; }
+html body #app .news-view .news-card--publication { border-left: 0 !important; }
+html body #app .news-view .news-card--highlight { border-left: 0 !important; }
+html body #app .news-view .news-card:hover {
+  background: var(--surface-2, #faf9f6) !important;
+}
+/* body: single line, compact */
+html body #app .news-view .news-card-body {
+  flex: 1 !important; min-width: 0 !important;
+  padding: 10px 16px !important; gap: 0 !important;
+  display: flex !important; flex-direction: row !important; align-items: center !important;
+}
+/* type badge: tiny inline pill */
+html body #app .news-view .news-card-tag {
+  font-size: 9px !important; font-weight: 700 !important; padding: 1px 6px !important;
+  border-radius: 3px !important; margin-right: 10px !important; flex-shrink: 0 !important;
+  letter-spacing: .05em !important; text-transform: uppercase !important;
+  margin-bottom: 0 !important; align-self: center !important;
+}
+/* title: single line, truncated */
+html body #app .news-view .news-card-title {
+  font-size: 14px !important; font-weight: 550 !important; line-height: 1.3 !important;
+  white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;
+  flex: 1 !important; min-width: 0 !important; margin: 0 !important;
+}
+/* metadata (author, date, journal) — inline after title, muted */
+html body #app .news-view .news-card-meta {
+  display: flex !important; align-items: center !important; gap: 8px !important;
+  flex-shrink: 0 !important; margin-left: 12px !important; margin-top: 0 !important;
+  font-size: 12px !important; color: var(--text-4, #909399) !important;
+  white-space: nowrap !important;
+}
+/* hide content preview, DOI, journal, author chips — they show on expand/click */
+/* hide detail elements — only these specific ones, not the title containers */
+html body #app .news-view .news-card-excerpt,
+html body #app .news-view .news-card-content,
+html body #app .news-view .news-card-doi,
+html body #app .news-view .news-card-authors,
+html body #app .news-view .news-card-rl {
+  display: none !important;
+}
+/* title and tag: inline in the row */
+html body #app .news-view .news-card-body .news-card-tag { display: inline-flex !important; }
+html body #app .news-view .news-card-body .news-card-title { display: block !important; flex: 1 !important; min-width: 0 !important; }
+
+/* RIGHT COLUMN: hidden at rest, shown on hover */
+html body #app .news-view .news-card-right {
+  display: flex !important; flex-direction: row !important; align-items: center !important;
+  gap: 6px !important; padding: 6px 12px !important;
+  border-left: none !important; opacity: 0 !important;
+  transition: opacity .15s !important; flex-shrink: 0 !important;
+  position: relative !important; z-index: 5 !important; overflow: visible !important;
+}
+html body #app .news-view .news-card:hover .news-card-right {
+  opacity: 1 !important;
+}
+/* always show the status dot + visibility pill (they're status, not actions) */
+html body #app .news-view .news-card-right .news-status-dot,
+html body #app .news-view .news-card-right .news-vis-pill,
+html body #app .news-view .news-card-right .nm-news-vis-pill,
+html body #app .news-view .news-card-right [class*="vis-pill"],
+html body #app .news-view .news-card-right [class*="badge-draft"],
+html body #app .news-view .news-card-right [class*="draft"] {
+  opacity: 1 !important;
+}
+/* but wrap status items so they're always visible even when actions are hidden */
+html body #app .news-view .news-card-right {
+  opacity: 1 !important; /* show the column always for status */
+}
+html body #app .news-view .news-card-right .nm-news-primary--edit,
+html body #app .news-view .news-card-right .nm-news-primary--publish,
+html body #app .news-view .news-card-right .nm-more-btn {
+  opacity: 0 !important; transition: opacity .15s !important;
+}
+html body #app .news-view .news-card:hover .nm-news-primary--edit,
+html body #app .news-view .news-card:hover .nm-news-primary--publish,
+html body #app .news-view .news-card:hover .nm-more-btn {
+  opacity: 1 !important;
+}
+/* smaller action buttons */
+html body #app .news-view .nm-news-primary--edit { font-size: 11px !important; padding: 4px 8px !important; }
+html body #app .news-view .nm-more-btn { width: 26px !important; height: 26px !important; }
+
+/* first card: top border radius */
+html body #app .news-view .news-list > :first-child .news-card,
+html body #app .news-view .news-card:first-child {
+  border-top: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 10px 10px 0 0 !important;
+}
+html body #app .news-view .news-list > :last-child .news-card,
+html body #app .news-view .news-card:last-child {
+  border-radius: 0 0 10px 10px !important;
+}
+
+/* §233b — force tag + title on single line; kill image placeholders */
+html body #app .news-view .news-card-body {
+  flex-wrap: wrap !important;
+}
+/* all direct children of body: inline */
+html body #app .news-view .news-card-body > * {
+  display: inline !important; vertical-align: middle !important;
+}
+html body #app .news-view .news-card-body > .news-card-tag {
+  display: inline-flex !important; margin-right: 8px !important;
+}
+html body #app .news-view .news-card-body > [class*="title"],
+html body #app .news-view .news-card-title {
+  display: inline !important;
+}
+/* meta stays inline too */
+html body #app .news-view .news-card-meta {
+  display: inline-flex !important; margin-left: 10px !important;
+}
+/* kill ALL image/photo placeholders in news cards */
+html body #app .news-view .news-card img,
+html body #app .news-view .news-card [class*="photo"],
+html body #app .news-view .news-card [class*="thumb"],
+html body #app .news-view .news-card [class*="img"],
+html body #app .news-view .news-card-left { display: none !important; }
+/* the journal name: show inline after title for publications */
+html body #app .news-view .news-card-journal {
+  display: inline !important; font-style: italic !important;
+  color: #0891b2 !important; font-size: 12px !important; margin-left: 6px !important;
+}
+
+/* §233c — kill the highlight image placeholder (inline-styled div, 48x48) */
+html body #app .news-view .news-card--highlight .news-card-body > div[style*="48px"] { display: none !important; }
+html body #app .news-view .news-card--highlight .news-card-body > div[style*="border-radius:6px"] { display: none !important; }
+
+/* §234 — Fix highlight displacement + ditch rectangle buttons */
+/* highlight card: same alignment as other rows, not centered */
+html body #app .news-view .news-card--highlight .news-card-body {
+  text-align: left !important; align-items: flex-start !important;
+  justify-content: center !important;
+}
+/* kill the centered image/content layout in highlights */
+html body #app .news-view .news-card--highlight .news-card-body > div[style*="text-align:center"],
+html body #app .news-view .news-card--highlight .news-card-body > div[style*="text-align: center"] {
+  text-align: left !important;
+}
+
+/* DITCH rectangle buttons — make them ghost/text-only, not boxy pills */
+/* visibility pills: text-only, no border, no background */
+html body #app .news-view .news-vis-pill,
+html body #app .news-view .nm-news-vis-pill,
+html body #app .news-view [class*="vis-pill"],
+html body #app .news-view .news-card-right [class*="badge"] {
+  background: none !important; border: none !important;
+  padding: 0 !important; font-size: 11px !important; font-weight: 500 !important;
+  color: var(--text-4, #909399) !important;
+}
+/* DRAFT badge: just text with color, no box */
+html body #app .news-view [class*="draft-badge"],
+html body #app .news-view [class*="draft"] span,
+html body #app .news-view .news-card-right .badge-draft {
+  background: none !important; border: none !important;
+  color: #d97706 !important; font-weight: 600 !important; font-size: 11px !important;
+  padding: 0 !important;
+}
+/* Edit button: text-only with icon, no border */
+html body #app .news-view .nm-news-primary--edit,
+html body #app .news-view .news-card-right .btn {
+  background: none !important; border: none !important;
+  padding: 4px 0 !important; font-size: 12px !important; font-weight: 500 !important;
+  color: var(--text-3, #5a6472) !important; cursor: pointer !important;
+}
+html body #app .news-view .nm-news-primary--edit:hover,
+html body #app .news-view .news-card-right .btn:hover {
+  color: var(--blue, #2563eb) !important; background: none !important;
+}
+/* Publish button for drafts: keep it visible but softer */
+html body #app .news-view .nm-news-primary--publish {
+  background: var(--blue, #2563eb) !important; color: #fff !important;
+  border: none !important; border-radius: 8px !important;
+  padding: 5px 12px !important; font-size: 12px !important; font-weight: 600 !important;
+}
+/* three-dots: smaller, no border */
+html body #app .news-view .nm-more-btn {
+  width: 24px !important; height: 24px !important;
+  border: none !important; background: none !important;
+  color: var(--text-4, #909399) !important;
+}
+html body #app .news-view .nm-more-btn:hover {
+  background: var(--surface-2, #f7f6f2) !important; color: var(--text-1) !important;
+  border-radius: 6px !important;
+}
+/* status dot: slightly bigger for visibility */
+html body #app .news-view .news-status-dot, html body #app .news-view [class*="status-dot"] {
+  width: 7px !important; height: 7px !important;
+}
+/* the right column: tighter, just text elements now */
+html body #app .news-view .news-card-right {
+  gap: 10px !important; padding: 8px 14px !important;
 }
