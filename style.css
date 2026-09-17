@@ -42211,3 +42211,83 @@ html body #app .dev-banner-text { color: var(--text-3, #5a6472) !important; font
 html body #app .dev-banner-cta { color: var(--text-3) !important; }
 /* once dismissed, stays hidden for session */
 html body #app .dev-banner.dev-banner--hidden { display: none !important; }
+
+/* §217 — Leave view: premium stats + connected toolbar */
+html body #app .absence-stats, html body #app .leave-stats, html body #app [class*="abs-stat"] {
+  display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 12px !important;
+}
+html body #app .absence-stats > div, html body #app .leave-stats > div {
+  background: var(--surface, #fff) !important; border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 14px !important; padding: 14px 16px !important; position: relative !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.05) !important; overflow: hidden !important;
+}
+html body #app .absence-stats > div::before, html body #app .leave-stats > div::before {
+  content: '' !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important;
+  height: 3px !important; background: linear-gradient(90deg, #2563eb, #38bdf8) !important;
+}
+html body #app .absence-stats > div:nth-child(2)::before { background: linear-gradient(90deg, #0891b2, #22d3ee) !important; }
+html body #app .absence-stats > div:nth-child(3)::before { background: linear-gradient(90deg, #059669, #34d399) !important; }
+html body #app .absence-stats > div:nth-child(4)::before { background: linear-gradient(90deg, #ef4444, #f87171) !important; }
+/* the "no coverage" stat — make it stand out as a warning */
+html body #app .absence-stats > div:last-child .stat-label[class*="danger"],
+html body #app .absence-stats > div:last-child [style*="color: #ef4444"],
+html body #app .absence-stats > div:last-child [style*="color:#ef4444"] {
+  font-weight: 650 !important;
+}
+
+/* §218 — Coverage forecast bar: cleaner */
+html body #app .coverage-forecast, html body #app [class*="coverage-bar-row"] {
+  border-radius: 10px !important; overflow: hidden !important;
+}
+
+/* §219 — Leave toolbar (same connected-card treatment as Medical Staff) */
+html body #app [class*="absence-view"] .card.mb-6 .card-header,
+html body #app [class*="leave-view"] .card.mb-6 .card-header {
+  background: var(--surface-2, #f7f6f2) !important;
+  border-bottom: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 14px 14px 0 0 !important;
+}
+
+/* §220 — Rotations view: same treatment */
+html body #app [class*="rotation-view"] .card.mb-6 .card-header {
+  background: var(--surface-2, #f7f6f2) !important;
+  border-bottom: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 14px 14px 0 0 !important;
+}
+
+/* §221 — People cards grid (when it renders): clean cards */
+html body #app .staff-people-grid, html body #app .people-grid {
+  display: grid !important; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 12px !important;
+}
+html body #app .staff-person-card, html body #app .people-card {
+  background: var(--surface, #fff) !important; border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 14px !important; padding: 16px !important; text-align: center !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.05) !important; transition: box-shadow .15s !important;
+}
+html body #app .staff-person-card:hover, html body #app .people-card:hover {
+  box-shadow: 0 4px 16px rgba(10,22,40,.1) !important;
+}
+html body #app .staff-person-card .staff-name, html body #app .people-card .person-name {
+  font-size: 14px !important; font-weight: 650 !important; color: var(--text-1) !important;
+  word-break: break-word !important; overflow-wrap: break-word !important;
+}
+html body #app .staff-person-card .staff-role, html body #app .people-card .person-role {
+  font-size: 11.5px !important; color: var(--text-3) !important; margin-top: 4px !important;
+}
+/* avatar in people cards */
+html body #app .staff-person-card .staff-avatar, html body #app .people-card .person-avatar {
+  width: 48px !important; height: 48px !important; border-radius: 50% !important;
+  margin: 0 auto 10px !important; font-size: 16px !important;
+}
+
+/* §222 — Table row hover: subtle highlight across ALL tables */
+html body #app table.table tbody tr:hover {
+  background: rgba(37,99,235,.03) !important;
+}
+
+/* §223 — Empty states: consistent across modules */
+html body #app .empty-state, html body #app [class*="no-data"], html body #app [class*="empty-msg"] {
+  text-align: center !important; padding: 32px 20px !important;
+  color: var(--text-3, #5a6472) !important; font-size: 14px !important;
+}
