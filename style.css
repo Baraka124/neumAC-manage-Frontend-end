@@ -41901,3 +41901,313 @@ html body #app .news-view .news-card-right .btn,
 html body #app .news-view .news-card-right a { pointer-events: auto !important; cursor: pointer !important; position: relative !important; z-index: 3 !important; }
 /* ensure the news-card click doesn't swallow button clicks */
 html body #app .news-view .news-card-right * { pointer-events: auto !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   §212 — CHAT AREA SUPER UI — premium command interface
+   Principles: light/clean, proper bubbles, breathing room, polished header
+   ═══════════════════════════════════════════════════════════════════════ */
+/* overlay: stronger blur so dashboard doesn't compete */
+html body #app .askbar-overlay {
+  background: rgba(7,17,31,.55) !important; backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+/* panel: light, clean, taller, premium card */
+html body #app .askbar-panel {
+  background: #fff !important; border-radius: 20px !important;
+  box-shadow: 0 24px 80px rgba(7,17,31,.28), 0 0 0 1px rgba(0,0,0,.06) !important;
+  max-width: 480px !important; width: 94vw !important;
+  max-height: 82vh !important; display: flex !important; flex-direction: column !important;
+  overflow: hidden !important;
+}
+/* header: clean, light, brand-aware */
+html body #app .askbar-header {
+  padding: 16px 20px 14px !important; display: flex !important; align-items: center !important; gap: 12px !important;
+  border-bottom: 1px solid var(--border, #e3dfd6) !important; background: var(--surface-2, #faf9f6) !important;
+  flex-shrink: 0 !important;
+}
+html body #app .askbar-header .askbar-h-name {
+  font-family: var(--font-ui) !important; font-weight: 700 !important; font-size: 16px !important;
+  color: var(--text-1, #07111f) !important;
+}
+html body #app .askbar-header .askbar-h-sub {
+  font-size: 11.5px !important; color: var(--text-3, #5a6472) !important; font-weight: 400 !important;
+}
+/* header badges: subtle, not shouty */
+html body #app .askbar-header .askbar-h-badge {
+  font-size: 10px !important; padding: 2px 8px !important; border-radius: 100px !important;
+  font-weight: 600 !important; letter-spacing: .03em !important;
+}
+/* the grounded orb — refined */
+html body #app .askbar-header .grounded-orb {
+  width: 36px !important; height: 36px !important; border-radius: 12px !important;
+  background: linear-gradient(135deg, #0891b2, #0d9488) !important; flex-shrink: 0 !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+}
+html body #app .askbar-header .grounded-orb .grounded-particle { display: none !important; }
+html body #app .askbar-header .grounded-orb::after {
+  content: 'G' !important; font-family: var(--font-display, 'Instrument Serif', serif) !important;
+  font-size: 18px !important; font-weight: 400 !important; color: #fff !important;
+}
+/* close button */
+html body #app .askbar-header .askbar-close {
+  margin-left: auto !important; width: 32px !important; height: 32px !important;
+  border-radius: 10px !important; display: flex !important; align-items: center !important;
+  justify-content: center !important; background: transparent !important; border: none !important;
+  color: var(--text-3) !important; cursor: pointer !important; transition: background .15s !important;
+}
+html body #app .askbar-header .askbar-close:hover { background: var(--surface-3, #edebe5) !important; }
+
+/* conversation area: light, breathable */
+html body #app .askbar-conv {
+  padding: 18px 18px 8px !important; gap: 16px !important; background: #fff !important;
+}
+/* user question bubble: right-aligned, refined */
+html body #app .askbar-q-bub {
+  align-self: flex-end !important; background: var(--blue, #2563eb) !important;
+  color: #fff !important; font-size: 14px !important; font-weight: 500 !important;
+  padding: 10px 16px !important; border-radius: 16px 16px 4px 16px !important;
+  max-width: 78% !important; line-height: 1.4 !important;
+  box-shadow: 0 2px 6px rgba(37,99,235,.2) !important;
+}
+/* answer bubble: light card, not dark block */
+html body #app .askbar-a-card {
+  background: var(--surface-2, #faf9f6) !important;
+  border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 16px 16px 16px 4px !important; padding: 14px 16px !important;
+  box-shadow: none !important;
+}
+html body #app .askbar-a-tx {
+  font-size: 14px !important; line-height: 1.55 !important; color: var(--text-1, #07111f) !important;
+}
+/* chips: subtle, clickable */
+html body #app .askbar-a-card .askbar-chip {
+  font-size: 12px !important; padding: 4px 10px !important; border-radius: 100px !important;
+  background: var(--surface-3, #edebe5) !important; color: var(--text-2, #344154) !important;
+  border: 1px solid var(--border, #e3dfd6) !important; cursor: pointer !important;
+}
+html body #app .askbar-a-card .askbar-chip:hover { background: var(--border, #e3dfd6) !important; }
+/* verified stamp: compact inline */
+html body #app .askbar-a-card .askbar-a-footer {
+  display: flex !important; align-items: center !important; gap: 8px !important;
+  font-size: 11px !important; color: var(--text-4, #909399) !important; margin-top: 6px !important;
+  padding-top: 6px !important; border-top: 1px solid var(--border, #e3dfd6) !important;
+}
+/* action/followup buttons: clear hierarchy */
+html body #app .askbar-conv .askbar-fu, html body #app .askbar-conv .askbar-action-btn {
+  font-size: 12.5px !important; padding: 7px 14px !important; border-radius: 10px !important;
+  font-weight: 550 !important; border: 1px solid var(--border, #e3dfd6) !important;
+  background: var(--surface, #fff) !important; color: var(--text-2, #344154) !important;
+  cursor: pointer !important; transition: background .12s, border-color .12s !important;
+}
+html body #app .askbar-conv .askbar-fu:hover, html body #app .askbar-conv .askbar-action-btn:hover {
+  background: var(--surface-2, #faf9f6) !important; border-color: var(--blue, #2563eb) !important;
+  color: var(--blue) !important;
+}
+/* primary action button */
+html body #app .askbar-conv .askbar-action-btn--primary {
+  background: var(--blue, #2563eb) !important; color: #fff !important; border-color: transparent !important;
+}
+/* reslist inside chat: clean card items */
+html body #app .askbar-a-card .askbar-reslist-item {
+  padding: 8px 10px !important; border-radius: 8px !important;
+  background: var(--surface, #fff) !important; border: 1px solid var(--border, #e3dfd6) !important;
+  margin-bottom: 4px !important;
+}
+/* input: premium, bottom-anchored */
+html body #app .askbar-input-wrap {
+  padding: 14px 18px 16px !important; border-top: 1px solid var(--border, #e3dfd6) !important;
+  border-bottom: none !important; background: #fff !important;
+}
+html body #app .askbar-input {
+  background: var(--surface-2, #faf9f6) !important;
+  border: 1.5px solid var(--border, #e3dfd6) !important; border-radius: 14px !important;
+  padding: 12px 16px !important; transition: border-color .15s !important;
+}
+html body #app .askbar-input:focus-within {
+  border-color: var(--blue, #2563eb) !important; box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important;
+}
+html body #app .askbar-input input {
+  font-size: 14px !important; color: var(--text-1, #07111f) !important;
+}
+html body #app .askbar-input .askbar-send {
+  width: 32px !important; height: 32px !important; border-radius: 10px !important;
+  background: var(--blue, #2563eb) !important; color: #fff !important; border: none !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  cursor: pointer !important; flex-shrink: 0 !important;
+}
+/* suggestion cards (initial state): clean, light */
+html body #app .askbar-sug-item {
+  background: var(--surface-2, #faf9f6) !important;
+  border: 1px solid var(--border, #e3dfd6) !important; border-radius: 12px !important;
+  padding: 12px 14px !important; cursor: pointer !important;
+  transition: border-color .12s, background .12s !important;
+}
+html body #app .askbar-sug-item:hover {
+  border-color: var(--blue, #2563eb) !important; background: rgba(37,99,235,.04) !important;
+}
+html body #app .askbar-sug-label {
+  font-size: 12px !important; color: var(--text-3, #5a6472) !important; font-weight: 500 !important;
+  margin-bottom: 10px !important;
+}
+/* proposal cards in chat: clean, not dark */
+html body #app .askbar-proposal {
+  background: var(--surface-2, #faf9f6) !important;
+  border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 14px !important; padding: 14px !important;
+  color: var(--text-1, #07111f) !important;
+}
+html body #app .askbar-proposal-label {
+  font-size: 11px !important; color: var(--text-3) !important;
+  text-transform: uppercase !important; letter-spacing: .04em !important; font-weight: 600 !important;
+  margin-bottom: 8px !important;
+}
+html body #app .askbar-proposal-row { display: flex !important; gap: 10px !important; padding: 4px 0 !important; font-size: 13px !important; }
+html body #app .askbar-proposal-k { color: var(--text-3) !important; min-width: 60px !important; font-weight: 500 !important; }
+html body #app .askbar-proposal-v { color: var(--text-1) !important; }
+html body #app .askbar-proposal-confirm {
+  background: var(--blue, #2563eb) !important; color: #fff !important; border: none !important;
+  border-radius: 10px !important; padding: 8px 16px !important; font-weight: 600 !important; font-size: 13px !important;
+  cursor: pointer !important;
+}
+html body #app .askbar-proposal-cancel {
+  background: transparent !important; color: var(--text-3) !important; border: 1px solid var(--border) !important;
+  border-radius: 10px !important; padding: 8px 14px !important; font-size: 13px !important; cursor: pointer !important;
+}
+
+/* §212b — fix text visibility in light chat cards */
+html body #app .askbar-a-card * { color: var(--text-1, #07111f) !important; }
+html body #app .askbar-a-card .askbar-a-tx { color: var(--text-1, #07111f) !important; font-size: 14px !important; }
+html body #app .askbar-a-card .askbar-a-footer { color: var(--text-4, #909399) !important; }
+html body #app .askbar-a-card .askbar-a-footer * { color: var(--text-4, #909399) !important; }
+/* reslist items inside chat — readable on light */
+html body #app .askbar-a-card .askbar-reslist-item .askbar-reslist-title { color: var(--text-1) !important; font-weight: 600 !important; font-size: 13px !important; }
+html body #app .askbar-a-card .askbar-reslist-item .askbar-reslist-meta { color: var(--text-3, #5a6472) !important; font-size: 12px !important; }
+html body #app .askbar-a-card .askbar-reslist-item .askbar-reslist-badge { color: #b45309 !important; }
+/* chips inside cards */
+html body #app .askbar-a-card .askbar-chip { color: var(--text-2, #344154) !important; }
+/* question bubbles: fix overflow */
+html body #app .askbar-q-bub { max-width: 75% !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
+/* header cleanup: hide the cluttery badges, keep it clean */
+html body #app .askbar-header .askbar-h-badge[style*="NEW"],
+html body #app .askbar-header .askbar-h-badge:first-of-type { display: none !important; }
+/* teach button: subtle */
+html body #app .askbar-header .askbar-teach-btn {
+  font-size: 11px !important; padding: 4px 10px !important; border-radius: 8px !important;
+  background: var(--surface-3, #edebe5) !important; color: var(--text-3) !important;
+  border: 1px solid var(--border) !important;
+}
+/* live dot: subtle */
+html body #app .askbar-header .askbar-h-live { font-size: 10px !important; color: var(--text-4) !important; }
+
+/* §212c — fix question bubble clipping + panel overflow */
+html body #app .askbar-conv { overflow-x: hidden !important; padding-right: 18px !important; }
+html body #app .askbar-q-bub {
+  margin-right: 0 !important; box-sizing: border-box !important;
+}
+/* ensure the panel doesn't clip its children */
+html body #app .askbar-panel { overflow: visible !important; }
+html body #app .askbar-panel > * { overflow: visible !important; }
+html body #app .askbar-conv { overflow-y: auto !important; overflow-x: hidden !important; }
+
+/* §213 — Grounded collapsed orb: clean premium trigger, not 3 dots */
+html body #app .grounded-orb-wrap {
+  position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 9000 !important;
+  width: 52px !important; height: 52px !important; border-radius: 16px !important;
+  background: linear-gradient(135deg, #0891b2, #0d9488) !important;
+  border: none !important; cursor: pointer !important; padding: 0 !important;
+  box-shadow: 0 4px 20px rgba(8,145,178,.4), 0 0 0 0 rgba(8,145,178,.3) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  transition: transform .15s, box-shadow .15s !important;
+  animation: grounded-pulse 3s ease-in-out infinite !important;
+}
+html body #app .grounded-orb-wrap:hover {
+  transform: scale(1.08) !important;
+  box-shadow: 0 6px 28px rgba(8,145,178,.5) !important;
+  animation: none !important;
+}
+@keyframes grounded-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(8,145,178,.35), 0 0 0 0 rgba(8,145,178,.2); }
+  50% { box-shadow: 0 4px 20px rgba(8,145,178,.35), 0 0 0 8px rgba(8,145,178,0); }
+}
+/* hide the old cloud/particle elements */
+html body #app .grounded-orb-wrap .grounded-orb-cloud1,
+html body #app .grounded-orb-wrap .grounded-orb-cloud2,
+html body #app .grounded-orb-wrap .grounded-particle { display: none !important; }
+/* the orb itself: show a "G" in serif */
+html body #app .grounded-orb-wrap .grounded-orb {
+  width: 100% !important; height: 100% !important; display: flex !important;
+  align-items: center !important; justify-content: center !important;
+  background: transparent !important; border: none !important; border-radius: inherit !important;
+}
+html body #app .grounded-orb-wrap .grounded-orb::after {
+  content: 'G' !important; font-family: var(--font-display, 'Instrument Serif', serif) !important;
+  font-size: 24px !important; font-weight: 400 !important; color: #fff !important;
+  line-height: 1 !important;
+}
+/* alert badge when there are risks */
+html body #app .grounded-orb-wrap .grounded-orb-badge {
+  position: absolute !important; top: -4px !important; right: -4px !important;
+  min-width: 18px !important; height: 18px !important; border-radius: 100px !important;
+  background: #ef4444 !important; color: #fff !important; font-size: 10px !important;
+  font-weight: 700 !important; display: flex !important; align-items: center !important;
+  justify-content: center !important; padding: 0 5px !important;
+  box-shadow: 0 2px 6px rgba(239,68,68,.4) !important;
+}
+html body #app .grounded-orb--alert { animation: grounded-pulse-alert 2s ease-in-out infinite !important; }
+@keyframes grounded-pulse-alert {
+  0%, 100% { box-shadow: 0 4px 20px rgba(239,68,68,.3), 0 0 0 0 rgba(239,68,68,.2); }
+  50% { box-shadow: 0 4px 20px rgba(239,68,68,.3), 0 0 0 10px rgba(239,68,68,0); }
+}
+
+/* §214 — Clinical Units module: cleaner cards + header */
+html body #app .unit-card, html body #app .tu-card {
+  background: var(--surface, #fff) !important; border: 1px solid var(--border, #e3dfd6) !important;
+  border-radius: 14px !important; padding: 16px !important;
+  box-shadow: 0 1px 3px rgba(10,22,40,.05) !important; transition: box-shadow .15s !important;
+}
+html body #app .unit-card:hover, html body #app .tu-card:hover {
+  box-shadow: 0 4px 16px rgba(10,22,40,.1) !important;
+}
+html body #app .unit-card .unit-name, html body #app .tu-card .tu-name {
+  font-weight: 650 !important; font-size: 15px !important; color: var(--text-1) !important;
+}
+html body #app .unit-card .unit-meta, html body #app .tu-card .tu-meta {
+  font-size: 12px !important; color: var(--text-3) !important;
+}
+
+/* §215 — Warning colors: gray warnings → proper amber/red */
+html body #app [class*="warning"], html body #app [class*="warn"] {
+  color: #b45309 !important;
+}
+html body #app [class*="danger"], html body #app [class*="error"], html body #app [class*="--red"] {
+  color: #dc2626 !important;
+}
+html body #app .alert-warning, html body #app [class*="alert--warn"] {
+  background: rgba(251,191,36,.1) !important; border-color: rgba(251,191,36,.3) !important;
+  color: #92400e !important;
+}
+html body #app .alert-danger, html body #app [class*="alert--danger"], html body #app [class*="alert--error"] {
+  background: rgba(239,68,68,.08) !important; border-color: rgba(239,68,68,.25) !important;
+  color: #991b1b !important;
+}
+/* "No coverage today" pill — amber, not red or gray */
+html body #app .dbsr-pill--danger, html body #app .dbsr-pill--warn,
+html body #app [class*="no-coverage"] {
+  background: rgba(251,191,36,.14) !important; color: #b45309 !important;
+}
+
+/* §216 — Beta banner: dismissible, smaller, not permanent */
+html body #app .dev-banner {
+  position: relative !important; padding: 0 !important;
+  background: var(--surface-2, #faf9f6) !important; border-bottom: 1px solid var(--border, #e3dfd6) !important;
+}
+html body #app .dev-banner-inner { padding: 5px 20px !important; }
+html body #app .dev-banner-dot { background: var(--teal, #0891b2) !important; box-shadow: none !important; width: 5px !important; height: 5px !important; }
+html body #app .dev-banner-label {
+  color: var(--teal) !important; background: rgba(8,145,178,.08) !important;
+  border-color: rgba(8,145,178,.2) !important; font-size: 9px !important;
+}
+html body #app .dev-banner-text { color: var(--text-3, #5a6472) !important; font-size: 11px !important; }
+html body #app .dev-banner-cta { color: var(--text-3) !important; }
+/* once dismissed, stays hidden for session */
+html body #app .dev-banner.dev-banner--hidden { display: none !important; }
