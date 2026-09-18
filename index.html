@@ -238,7 +238,7 @@
                 </div>
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
                     <div v-if="turn.q" class="askbar-q-bub" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
-                    <div class="askbar-a-bub" :class="'askbar-turn--' + askBarTurnType(turn)">
+                    <div class="askbar-a-bub" :class="'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence'].includes(turn.visual.type) ? 'collection' : 'fact'))))))">
                         <div v-if="turn.trace && turn.trace.length && !turn.streaming" class="askbar-trace-mini" @click="turn.traceOpen = !turn.traceOpen">
                             <span class="askbar-trace-orb askbar-trace-orb--still"></span>
                             <span class="askbar-trace-mini-t">{{ turn.trace.length }} record check{{ turn.trace.length===1?'':'s' }}</span>
@@ -529,21 +529,31 @@
                                 </div>
                             </div>
 
-                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'profile'" class="askbar-profile">
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'profile'" class="askbar-profile" :class="'askbar-profile--'+(turn.visual.profile.kind||'staff')">
                                 <div class="askbar-profile-top">
-                                    <div class="askbar-profile-av">{{ turn.visual.profile.name.split(' ').map(w=>w[0]).slice(0,2).join('') }}</div>
+                                    <div class="askbar-profile-av">{{ turn.visual.profile.avatar || turn.visual.profile.name.split(' ').map(w=>w[0]).slice(0,2).join('') }}</div>
                                     <div class="askbar-profile-id">
                                         <div class="askbar-profile-name">{{ turn.visual.profile.name }}</div>
                                         <div class="askbar-profile-role">{{ turn.visual.profile.static.role }}<span v-if="turn.visual.profile.static.specialty"> · {{ turn.visual.profile.static.specialty }}</span><span v-if="turn.visual.profile.static.residency"> · {{ turn.visual.profile.static.residency }}</span></div>
                                     </div>
                                     <span class="askbar-profile-status" :class="'askbar-profile-status--'+turn.visual.profile.active.statusKind">{{ turn.visual.profile.active.status }}</span>
                                 </div>
-                                <div v-if="turn.visual.profile.static.roleFlags.length" class="askbar-profile-flags">
+                                <div v-if="(turn.visual.profile.kind||'staff')==='staff' && turn.visual.profile.static.roleFlags.length" class="askbar-profile-flags">
                                     <span v-for="f in turn.visual.profile.static.roleFlags" :key="f" class="askbar-profile-flag">{{ f }}</span>
                                 </div>
 
-                                <!-- STATIC identity -->
-                                <div class="askbar-profile-sec">
+                                <!-- Entity-aware overview: research objects/units should never masquerade as staff fields. -->
+                                <div v-if="turn.visual.profile.overview && turn.visual.profile.overview.length" class="askbar-profile-sec askbar-profile-sec--overview">
+                                    <div class="askbar-profile-sechead">Overview</div>
+                                    <div class="askbar-profile-grid">
+                                        <div v-for="(row,ri) in turn.visual.profile.overview" :key="ri" class="askbar-profile-row">
+                                            <span class="askbar-profile-k">{{ row.label }}</span><span>{{ row.value }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Staff-specific identity -->
+                                <div v-if="!(turn.visual.profile.overview && turn.visual.profile.overview.length)" class="askbar-profile-sec">
                                     <div class="askbar-profile-sechead">Identity</div>
                                     <div class="askbar-profile-grid">
                                         <div v-if="turn.visual.profile.static.email" class="askbar-profile-row"><span class="askbar-profile-k">Email</span><span>{{ turn.visual.profile.static.email }}</span></div>
@@ -554,11 +564,11 @@
                                     </div>
                                 </div>
 
-                                <!-- ACTIVE state -->
-                                <div class="askbar-profile-sec">
-                                    <div class="askbar-profile-sechead">Right now</div>
+                                <!-- Staff live state -->
+                                <div v-if="(turn.visual.profile.kind||'staff')==='staff'" class="askbar-profile-sec">
+                                    <div class="askbar-profile-sechead">Current</div>
                                     <div class="askbar-profile-grid">
-                                        <div v-if="turn.visual.profile.active.onLeave" class="askbar-profile-row"><span class="askbar-profile-k">On leave</span><span>{{ turn.visual.profile.active.onLeave }}</span></div>
+                                        <div v-if="turn.visual.profile.active.onLeave" class="askbar-profile-row"><span class="askbar-profile-k">Leave</span><span>{{ turn.visual.profile.active.onLeave }}</span></div>
                                         <div v-if="turn.visual.profile.active.rotation" class="askbar-profile-row"><span class="askbar-profile-k">Rotation</span><span>{{ turn.visual.profile.active.rotation }}</span></div>
                                         <div v-if="turn.visual.profile.active.nextOnCall" class="askbar-profile-row"><span class="askbar-profile-k">Next on-call</span><span>{{ turn.visual.profile.active.nextOnCall }}</span></div>
                                         <div v-if="turn.visual.profile.active.supervises" class="askbar-profile-row"><span class="askbar-profile-k">Supervising</span><span>{{ turn.visual.profile.active.supervises }} resident{{ turn.visual.profile.active.supervises===1?'':'s' }}</span></div>
@@ -566,22 +576,24 @@
                                     </div>
                                 </div>
 
-                                <!-- LINKS: research, projects, supervision (the graph view) -->
+                                <!-- Connected records — intentionally compact by default -->
                                 <div v-if="turn.visual.profile.links && turn.visual.profile.links.length" class="askbar-profile-sec">
-                                    <div class="askbar-profile-sechead">Involvement</div>
+                                    <div class="askbar-profile-sechead">{{ (turn.visual.profile.kind||'staff')==='staff' ? 'Connected activity' : ((turn.visual.profile.kind||'')==='research_line' ? 'Portfolio' : 'Related records') }}</div>
                                     <div class="askbar-profile-links">
-                                        <div v-for="(lk,li) in turn.visual.profile.links" :key="li" class="askbar-profile-link" :class="'askbar-profile-link--'+lk.kind">
+                                        <div v-for="(lk,li) in (turn.profileExpanded ? turn.visual.profile.links : turn.visual.profile.links.slice(0,2))" :key="li" class="askbar-profile-link" :class="'askbar-profile-link--'+lk.kind">
                                             <div class="askbar-profile-link-l">{{ lk.label }}</div>
                                             <div v-if="lk.detail" class="askbar-profile-link-d">{{ lk.detail }}</div>
                                         </div>
                                     </div>
+                                    <button v-if="turn.visual.profile.links.length > 2" class="askbar-inline-more" @click="turn.profileExpanded = !turn.profileExpanded">
+                                        {{ turn.profileExpanded ? 'Show less' : 'Show ' + (turn.visual.profile.links.length - 2) + ' more' }}
+                                    </button>
                                 </div>
 
-                                <!-- COMPLETENESS + add-info button -->
-                                <div v-if="turn.visual.profile.missing.length" class="askbar-profile-complete">
-                                    <div class="askbar-profile-cbar"><div class="askbar-profile-cfill" :style="{ width: turn.visual.profile.completeness + '%' }"></div></div>
-                                    <div class="askbar-profile-cmiss">Profile {{ turn.visual.profile.completeness }}% complete — missing: {{ turn.visual.profile.missing.join(', ') }}.</div>
-                                    <button class="askbar-profile-cbtn" @click="askBarCompleteProfile(turn.visual.profile.id)">+ Add missing details</button>
+                                <!-- Staff record completeness is useful, but should stay peripheral. -->
+                                <div v-if="(turn.visual.profile.kind||'staff')==='staff' && turn.visual.profile.missing.length" class="askbar-profile-complete askbar-profile-complete--compact">
+                                    <div class="askbar-profile-cmiss"><strong>Record {{ turn.visual.profile.completeness }}% complete</strong><span> · missing {{ turn.visual.profile.missing.join(', ') }}</span></div>
+                                    <button class="askbar-profile-cbtn" @click="askBarCompleteProfile(turn.visual.profile.id)">Complete record</button>
                                 </div>
                             </div>
 
@@ -613,13 +625,16 @@
                             <!-- structured on-call roster readout -->
                             <!-- research list: trials / projects / lines / publications, one per row -->
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'reslist'" class="askbar-reslist">
-                                <div v-for="(it,ii) in turn.visual.items" :key="ii" class="askbar-reslist-row" :class="'askbar-reslist-row--'+(it.tone||'default')">
+                                <div v-for="(it,ii) in (turn.listExpanded ? turn.visual.items : turn.visual.items.slice(0,5))" :key="ii" class="askbar-reslist-row" :class="'askbar-reslist-row--'+(it.tone||'default')">
                                     <div class="askbar-reslist-main">
                                         <span class="askbar-reslist-title">{{ it.title }}</span>
                                         <span v-if="it.badge" class="askbar-reslist-badge" :class="'askbar-reslist-badge--'+(it.tone||'default')">{{ it.badge }}</span>
                                     </div>
                                     <div v-if="it.meta" class="askbar-reslist-meta">{{ it.meta }}</div>
                                 </div>
+                                <button v-if="turn.visual.items.length > 5" class="askbar-inline-more askbar-inline-more--list" @click="turn.listExpanded = !turn.listExpanded">
+                                    {{ turn.listExpanded ? 'Show fewer' : 'Show ' + (turn.visual.items.length - 5) + ' more' }}
+                                </button>
                             </div>
 
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'roster'" class="askbar-roster">
@@ -12210,7 +12225,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=147"></script>
+    <script src="app.js?v=148"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
