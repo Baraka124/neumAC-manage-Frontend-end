@@ -12000,7 +12000,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           const completedTrace = askBar.trace.map(step => ({ ...step, done: true }))
           const full = ans.text || ''
-          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, trace: completedTrace, traceOpen: false, asOf: askBarNow(), streaming: true, revealing: false })
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, asOf: askBarNow(), streaming: true, revealing: false })
 
           // Keep the working surface visible for one calm beat, then replace it in place.
           const now = (typeof performance !== 'undefined' ? performance.now() : Date.now())
@@ -12435,7 +12435,6 @@ document.addEventListener('DOMContentLoaded', () => {
                       credentials: [trial.funding_status, trial.ethics_status].filter(Boolean), roleFlags: [] },
             active: { status: trial.status||'—', statusKind: /reclut|recruit|activ/i.test(trial.status||'')?'ok':'rotation', onLeave: null, nextOnCall: null, rotation: null, supervises: 0 },
             overview: [
-              { label: 'Status', value: trial.status || 'Not recorded' },
               { label: 'Phase', value: trial.phase ? (/^phase\b/i.test(trial.phase) ? trial.phase : ('Phase ' + trial.phase)) : 'Not recorded' },
               ...(enroll ? [{ label: 'Enrollment', value: enroll }] : []),
               ...(pi ? [{ label: 'Principal investigator', value: pi }] : []),
@@ -12469,7 +12468,6 @@ document.addEventListener('DOMContentLoaded', () => {
                       credentials: [pr.ip_status, pr.funding_status].filter(Boolean), roleFlags: pr.is_featured?['Featured']:[] },
             active: { status: pr.current_stage||pr.development_stage||'—', statusKind: 'ok', onLeave: null, nextOnCall: null, rotation: null, supervises: 0 },
             overview: [
-              { label: 'Status', value: pr.current_stage || pr.development_stage || 'In progress' },
               ...(pr.trl_level ? [{ label: 'Maturity', value: 'TRL ' + pr.trl_level }] : []),
               ...(lead ? [{ label: 'Lead investigator', value: lead }] : []),
               ...(line ? [{ label: 'Research line', value: (line.line_number?'L'+line.line_number+' · ':'')+(line.name||line.short_name) }] : []),
@@ -12510,7 +12508,6 @@ document.addEventListener('DOMContentLoaded', () => {
             active: { status: line.active===false?'Inactive':'Active', statusKind: line.active===false?'leave':'ok',
                       onLeave: null, nextOnCall: null, rotation: null, supervises: 0 },
             overview: [
-              { label: 'Status', value: line.active===false ? 'Inactive' : 'Active' },
               ...(coord ? [{ label: 'Coordinator', value: coord }] : []),
               { label: 'Clinical trials', value: String(trials.length) + (recruiting ? ` · ${recruiting} recruiting` : '') },
               { label: 'Innovation projects', value: String(projs.length) },
@@ -13507,17 +13504,24 @@ document.addEventListener('DOMContentLoaded', () => {
       // Detect when the user wants the COMPLETE list, not a truncated summary.
       const askBarWantsFull = (q) => /\b(full|all|every|complete|entire|whole|list|show me|todos|todas|completa|lista)\b/i.test(q || '')
 
+      // Empty results are not the same as uncertain results. If Grounded checks a
+      // real source and finds zero matching records, that can still be high-confidence.
+      const askBarAnswerIsEmpty = (a) => {
+        const txt = ((a && a.text) || '').toLowerCase()
+        return /no .* (on record|scheduled|found|are defined|are on record)|no upcoming|no active|nobody is|nothing came up|no matches|none (?:are|is)|full attendance|doesn'?t have an open|is not listed as pi|not listed as pi|no usable contact/.test(txt)
+      }
+      const askBarAnswerIsUncertain = (a) => {
+        const txt = ((a && a.text) || '').toLowerCase()
+        return /couldn'?t (map|tell|pull|find)|don'?t have enough|not enough data|try rephrasing|which .* did you mean|who do you mean|which .*\?/.test(txt)
+      }
       const askBarBuildAnswer = (intent) => {
         const a = _askBarBuildAnswerRaw(intent) || {}
-        // #4 Confidence from real signals: downgrade when the answer rests on
-        // no data or thin evidence; keep high only when grounded in real records.
         let conf = a.confidence || 'high'
-        const txt = (a.text || '').toLowerCase()
-        const emptyish = /no .* (on record|scheduled|found|are defined)|nobody is|nothing came up|couldn'?t (map|tell|pull)|don'?t have|no matches|full attendance|none /.test(txt)
         const hasSources = Array.isArray(a.sources) && a.sources.length > 0
-        if (emptyish) conf = 'low'
+        const emptyState = askBarAnswerIsEmpty(a)
+        if (askBarAnswerIsUncertain(a)) conf = 'low'
         else if (!hasSources && conf === 'high') conf = 'medium'
-        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [], confidence: conf, visual: a.visual || null, evidence: a.evidence || null, isDraft: a.isDraft || false }
+        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [], confidence: conf, visual: a.visual || null, evidence: a.evidence || null, isDraft: a.isDraft || false, emptyState }
       }
 
       const askBarGoTo = (action) => {
@@ -13575,12 +13579,15 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.context = { type: 'staff', id: s.id, name: s.full_name }
         const fu = c.clarifyAttr ? { kind: 'staff_attr', id: s.id, name: s.full_name, attr: c.clarifyAttr } : { kind: 'staff_summary', id: s.id, name: s.full_name }
         askBar.view = 'conversation'
+        askBar.thinking = 'Building the clinician view…'
+        askBar.loadingKind = 'profile'
+        askBar.loadingSources = ['Staff', 'On-call', 'Leave', 'Rotations', 'Research']
         askBar.loading = true
         setTimeout(() => {
           let ans
           try { ans = askBarBuildFollowup(fu) } catch (e) { ans = { text: `Here's ${s.full_name}.`, chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' } }
-          askBar.loading = false
-          const turn = Vue.reactive({ q: s.full_name, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, isDraft: ans.isDraft || false, asOf: askBarNow(), streaming: true })
+          askBar.loading = false; askBar.thinking = null; askBar.loadingSources = []
+          const turn = Vue.reactive({ q: s.full_name, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, isDraft: ans.isDraft || false, emptyState: askBarAnswerIsEmpty(ans), asOf: askBarNow(), streaming: true })
           askBar.turns.push(turn)
           askBarStreamTurn(turn, ans.text || '')
         }, 260)
@@ -13590,6 +13597,9 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = 'conversation'
         const intent = fu.followupKind || fu.intent || 'unknown'
         askBar.thinking = askBarThinkingFor(intent)
+        askBar.loadingKind = askBarLoadingKindFor(intent)
+        const followTrace = askBarTraceFor(intent).map(([label, src]) => ({ label, src, done: true }))
+        askBar.loadingSources = askBarLoadingSourceLabels(followTrace)
         askBar.loading = true
         setTimeout(() => {
           let ans
@@ -13599,7 +13609,8 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e) { ans = { text: 'Could not resolve that follow-up.', chips: [], actions: [], sources: [], followups: [], confidence: 'low' } }
           askBar.loading = false
           askBar.thinking = null
-          const turn = Vue.reactive({ q: fu.label, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, asOf: askBarNow(), streaming: true })
+          askBar.loadingSources = []
+          const turn = Vue.reactive({ q: fu.label, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: followTrace, traceOpen: false, asOf: askBarNow(), streaming: true })
           askBar.turns.push(turn)
           askBarStreamTurn(turn, ans.text || '')
         }, 420)
