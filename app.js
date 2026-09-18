@@ -7610,34 +7610,126 @@ document.addEventListener('DOMContentLoaded', () => {
         // states connected avoids the "teleport into a modal" feeling of a generic CMS.
         const newsLibraryHeaderOpen = ref(true)
         const newsLibraryFiltersOpen = ref(false)
-        const newsPeek = reactive({ show: false, post: null, x: 24, y: 96 })
+        const newsReturnFocusId = ref(null)
+
+        // V26 — actions live at viewport level, never inside a card.
+        // This fixes clipped/overlapped menus and guarantees the menu belongs to
+        // the record whose trigger was actually pressed.
+        const newsActionMenu = reactive({ show: false, post: null, x: 24, y: 96 })
+        const closeNewsActionMenu = () => { newsActionMenu.show = false; newsActionMenu.post = null }
+        const openNewsActionMenu = (post, evt) => {
+          if (!post) return
+          evt?.stopPropagation?.()
+          const rect = evt?.currentTarget?.getBoundingClientRect?.()
+          const menuW = 238
+          const menuH = 260
+          let x = rect ? rect.right - menuW : window.innerWidth - menuW - 24
+          let y = rect ? rect.bottom + 8 : 96
+          x = Math.max(14, Math.min(window.innerWidth - menuW - 14, x))
+          if (y + menuH > window.innerHeight - 14 && rect) y = Math.max(14, rect.top - menuH - 8)
+          newsActionMenu.x = x
+          newsActionMenu.y = y
+          newsActionMenu.post = post
+          newsActionMenu.show = true
+        }
+
+        const _rectPlain = (rect) => rect ? ({ left:rect.left, top:rect.top, right:rect.right, bottom:rect.bottom, width:rect.width, height:rect.height }) : null
+        const newsPeek = reactive({ show: false, post: null, x: 24, y: 96, sourceRect: null })
         const closeNewsPeek = () => { newsPeek.show = false; newsPeek.post = null }
         const openNewsPeek = (post, evt) => {
           if (!post) return
-          if (window.innerWidth < 900) { openNewsDrawer(post); return }
+          closeNewsActionMenu()
           const rect = evt?.currentTarget?.getBoundingClientRect?.()
-          const w = 430
+          const sourceRect = _rectPlain(rect)
+          if (window.innerWidth < 900) { openNewsDrawer(post, sourceRect); return }
+          const w = 455
           newsPeek.x = Math.max(24, Math.min(window.innerWidth - w - 24, rect ? rect.right - w : (window.innerWidth - w) / 2))
-          newsPeek.y = Math.max(78, Math.min(window.innerHeight - 360, rect ? rect.top + 26 : 120))
+          newsPeek.y = Math.max(72, Math.min(window.innerHeight - 370, rect ? rect.top + 24 : 112))
           newsPeek.post = post
+          newsPeek.sourceRect = sourceRect
           newsPeek.show = true
         }
 
-        const newsDrawer = reactive({ show: false, post: null, manageOpen: false, detailsOpen: false })
-        const openNewsDrawer = (post) => {
+        const newsDrawer = reactive({
+          show: false, post: null, manageOpen: false, detailsOpen: false, publicPreview: false,
+          sourceRect: null, returnWindowY: 0, returnContentY: 0
+        })
+        const newsDrawerPositionStyle = computed(() => {
+          if (!newsDrawer.post || newsDrawer.post.post_type !== 'update') return {}
+          const r = newsDrawer.sourceRect
+          const w = Math.min(660, window.innerWidth - 48)
+          const estimatedH = Math.min(470, window.innerHeight - 120)
+          if (!r) return { '--nrd-update-left': Math.max(24, window.innerWidth - w - 42) + 'px', '--nrd-update-top': Math.max(72, (window.innerHeight - estimatedH) / 2) + 'px' }
+          const preferredLeft = r.left + Math.min(96, r.width * .16)
+          const preferredTop = r.top + Math.min(42, r.height * .16)
+          const left = Math.max(24, Math.min(window.innerWidth - w - 24, preferredLeft))
+          const top = Math.max(72, Math.min(window.innerHeight - estimatedH - 24, preferredTop))
+          return { '--nrd-update-left':left + 'px', '--nrd-update-top':top + 'px' }
+        })
+        const openNewsDrawer = (post, sourceRect = null) => {
           if (!post) return
+          const content = document.querySelector('.content-area')
+          newsDrawer.returnWindowY = window.scrollY || 0
+          newsDrawer.returnContentY = content?.scrollTop || 0
+          newsDrawer.sourceRect = sourceRect || newsDrawer.sourceRect || null
           closeNewsPeek()
+          closeNewsActionMenu()
           newsDrawer.post = post
           newsDrawer.manageOpen = false
           newsDrawer.detailsOpen = false
+          newsDrawer.publicPreview = false
           newsDrawer.show = true
         }
         const closeNewsDrawer = () => {
+          const returnId = newsDrawer.post?.id || null
+          const winY = newsDrawer.returnWindowY || 0
+          const contentY = newsDrawer.returnContentY || 0
           newsDrawer.show = false
           newsDrawer.post = null
           newsDrawer.manageOpen = false
           newsDrawer.detailsOpen = false
+          newsDrawer.publicPreview = false
+          newsDrawer.sourceRect = null
+          Vue.nextTick(() => {
+            const content = document.querySelector('.content-area')
+            if (content && Number.isFinite(contentY)) content.scrollTop = contentY
+            if (Number.isFinite(winY)) window.scrollTo({ top: winY, behavior: 'auto' })
+            if (returnId) {
+              newsReturnFocusId.value = returnId
+              setTimeout(() => { if (newsReturnFocusId.value === returnId) newsReturnFocusId.value = null }, 1500)
+            }
+          })
         }
+        const exploreNewsLine = (lineId) => {
+          if (!lineId) return
+          newsFilters.type = ''
+          newsFilters.status = ''
+          newsFilters.scope = ''
+          newsFilters.search = newsOps.getLineName(lineId)
+          closeNewsDrawer()
+          newsLibraryHeaderOpen.value = false
+          Vue.nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+        }
+
+        const _closeNewsFloatingUI = () => {
+          if (newsActionMenu.show) closeNewsActionMenu()
+        }
+        const _newsScrollChrome = () => {
+          _closeNewsFloatingUI()
+          if (currentView.value !== 'news' || newsModal.show || newsDrawer.show) return
+          const content = document.querySelector('.content-area')
+          const y = Math.max(window.scrollY || 0, content?.scrollTop || 0)
+          if (y > 120) newsLibraryHeaderOpen.value = false
+          else if (y < 22) newsLibraryHeaderOpen.value = true
+        }
+        onMounted(() => {
+          window.addEventListener('resize', _closeNewsFloatingUI)
+          window.addEventListener('scroll', _newsScrollChrome, true)
+        })
+        onUnmounted(() => {
+          window.removeEventListener('resize', _closeNewsFloatingUI)
+          window.removeEventListener('scroll', _newsScrollChrome, true)
+        })
         const newsDrawerPrev = computed(() => {
           if (!newsDrawer.post) return null
           const list = newsOps.filteredNews.value
@@ -14134,9 +14226,10 @@ document.addEventListener('DOMContentLoaded', () => {
           loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews, saveNewsStudio, closeNewsStudioToReader,
           publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
-          newsLibraryHeaderOpen, newsLibraryFiltersOpen,
+          newsLibraryHeaderOpen, newsLibraryFiltersOpen, newsReturnFocusId,
+          newsActionMenu, openNewsActionMenu, closeNewsActionMenu,
           newsPeek, openNewsPeek, closeNewsPeek,
-          newsDrawer, openNewsDrawer, closeNewsDrawer,
+          newsDrawer, newsDrawerPositionStyle, openNewsDrawer, closeNewsDrawer, exploreNewsLine,
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
           newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName,
           drillToTrials, drillToProjects,
