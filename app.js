@@ -6272,7 +6272,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const q = debouncedNewsSearch.value.toLowerCase()
           posts = posts.filter(p =>
             (p.title || '').toLowerCase().includes(q) ||
-            (p.body  || '').toLowerCase().includes(q)
+            (p.body  || '').toLowerCase().includes(q) ||
+            (p.journal_name || '').toLowerCase().includes(q) ||
+            (p.authors_text || '').toLowerCase().includes(q) ||
+            (p.doi || '').toLowerCase().includes(q) ||
+            getLineName(p.research_line_id).toLowerCase().includes(q)
           )
         }
         return posts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -9048,6 +9052,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ])
 
             updateDashboardStats()
+            // Compare this live operational state with the previous visit once per session.
+            try { askBarRefreshContinuity() } catch (e) {}
 
             // Third batch: non-critical, fire and forget
             Promise.all([
@@ -9792,7 +9798,7 @@ document.addEventListener('DOMContentLoaded', () => {
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
         snoozed: [],       // dismissed alert keys (#16)
         entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
-        view: 'digest'     // 'digest' (proactive scan) | 'conversation'
+        view: 'digest'     // 'digest' | 'conversation' | 'timeline' | 'teach'
       })
 
       // Subject-aware anticipation: when a staff profile opens, tell the agent so it
@@ -9883,6 +9889,109 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       const askBarScanCount = Vue.computed(() => askBarScan.value.length)
 
+
+      // ══ GROUNDED CONTINUITY / RELEVANCE INTELLIGENCE ══════════════════
+      // These features are deliberately local-first. They make Grounded remember
+      // operational context across visits without changing backend contracts.
+      const askBarContinuity = reactive({ previousAt: null, changes: [], ready: false })
+      const askBarWatchlist = ref([])
+      const askBarTimelineVersion = ref(0)
+      let _continuityRefreshedForSession = false
+
+      const askBarUserKey = (suffix) => {
+        const u = currentUser.value
+        const id = u?.id || u?.email || 'anonymous'
+        return `grounded:${suffix}:${id}`
+      }
+      const askBarLoadWatchlist = () => {
+        try { askBarWatchlist.value = JSON.parse(localStorage.getItem(askBarUserKey('watchlist')) || '[]') || [] }
+        catch { askBarWatchlist.value = [] }
+      }
+      const askBarSaveWatchlist = () => {
+        try { localStorage.setItem(askBarUserKey('watchlist'), JSON.stringify(askBarWatchlist.value.slice(0,40))) } catch {}
+      }
+      const askBarWatchKey = (kind, id) => `${kind || 'entity'}:${id}`
+      const askBarIsWatched = (kind, id) => !!id && askBarWatchlist.value.some(w => w.key === askBarWatchKey(kind, id))
+      const askBarToggleWatch = (profile) => {
+        if (!profile?.id) return
+        const kind = profile.kind || 'staff'
+        const key = askBarWatchKey(kind, profile.id)
+        const i = askBarWatchlist.value.findIndex(w => w.key === key)
+        if (i >= 0) askBarWatchlist.value.splice(i, 1)
+        else askBarWatchlist.value.unshift({ key, kind, id: profile.id, name: profile.name })
+        askBarSaveWatchlist()
+      }
+
+      const askBarBuildContinuitySnapshot = () => {
+        const today = Utils.normalizeDate(new Date())
+        const entries = []
+        ;(onCallSchedule.value || []).filter(o => Utils.normalizeDate(o.duty_date) >= today).slice(0,120).forEach(o => {
+          const pid = o.primary_physician_id
+          const bid = o.backup_physician_id
+          const date = Utils.normalizeDate(o.duty_date)
+          entries.push({ key:`oncall:${o.id || date+':'+pid}`, kind:'oncall', sig:[date,pid,bid||'',o.shift_type||''].join('|'),
+            title:'On-call coverage', detail:`${getStaffName(pid)} · ${Utils.formatDateShort(date)}`, entityKeys:[`staff:${pid}`].concat(bid?[`staff:${bid}`]:[]) })
+        })
+        ;(absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status)).slice(0,120).forEach(a => {
+          const pid = a.staff_member_id
+          entries.push({ key:`leave:${a.id || pid+':'+a.start_date}`, kind:'leave', sig:[a.start_date,a.end_date,a.absence_reason,a.current_status].join('|'),
+            title:'Leave record', detail:`${getStaffName(pid)} · ${Utils.formatDateShort(a.start_date)}–${Utils.formatDateShort(a.end_date)}`, entityKeys:[`staff:${pid}`] })
+        })
+        ;(rotations.value || []).filter(r => ['active','scheduled'].includes(r.rotation_status)).slice(0,160).forEach(r => {
+          const uid = r.training_unit_id, pid = r.resident_id, sid = r.supervising_attending_id
+          const unit = (trainingUnits.value || []).find(u => u.id === uid)
+          entries.push({ key:`rotation:${r.id || pid+':'+uid+':'+r.start_date}`, kind:'rotation', sig:[r.rotation_status,r.start_date,r.end_date,uid,sid||''].join('|'),
+            title:'Rotation', detail:`${getStaffName(pid)} · ${unit?.unit_name || 'clinical unit'}`, entityKeys:[`staff:${pid}`,`unit:${uid}`].concat(sid?[`staff:${sid}`]:[]) })
+        })
+        return { at:new Date().toISOString(), entries }
+      }
+      const askBarDiffContinuity = (prev, cur) => {
+        if (!prev?.entries || !Array.isArray(prev.entries)) return []
+        const a = new Map(prev.entries.map(e => [e.key,e]))
+        const b = new Map(cur.entries.map(e => [e.key,e]))
+        const out = []
+        for (const [k,e] of b) {
+          const old = a.get(k)
+          if (!old) out.push({ id:'add:'+k, change:'added', kind:e.kind, title:e.title, detail:e.detail, entityKeys:e.entityKeys||[], at:cur.at })
+          else if (old.sig !== e.sig) out.push({ id:'chg:'+k, change:'changed', kind:e.kind, title:`${e.title} updated`, detail:e.detail, entityKeys:e.entityKeys||[], at:cur.at })
+        }
+        for (const [k,e] of a) if (!b.has(k)) out.push({ id:'rem:'+k, change:'removed', kind:e.kind, title:`${e.title} removed`, detail:e.detail, entityKeys:e.entityKeys||[], at:cur.at })
+        return out.slice(0,24)
+      }
+      const askBarRefreshContinuity = () => {
+        if (!currentUser.value || _continuityRefreshedForSession) return
+        _continuityRefreshedForSession = true
+        askBarLoadWatchlist()
+        const key = askBarUserKey('snapshot')
+        let prev = null
+        try { prev = JSON.parse(localStorage.getItem(key) || 'null') } catch {}
+        const cur = askBarBuildContinuitySnapshot()
+        askBarContinuity.previousAt = prev?.at || null
+        askBarContinuity.changes = askBarDiffContinuity(prev, cur)
+        askBarContinuity.ready = true
+        try { localStorage.setItem(key, JSON.stringify(cur)) } catch {}
+      }
+      const askBarChanges = Vue.computed(() => askBarContinuity.changes || [])
+      const askBarWatchedChanges = Vue.computed(() => {
+        const keys = new Set((askBarWatchlist.value || []).map(w => w.key))
+        return askBarChanges.value.filter(c => (c.entityKeys || []).some(k => keys.has(k)))
+      })
+      const askBarTimeline = Vue.computed(() => {
+        // Reactive tick keeps the timeline fresh when Grounded commits an action.
+        askBarTimelineVersion.value
+        let persisted = []
+        try { persisted = JSON.parse(localStorage.getItem(askBarUserKey('timeline')) || '[]') || [] } catch {}
+        const continuity = askBarChanges.value.map(c => ({ type:'detected', title:c.title, detail:c.detail, at:c.at, kind:c.kind }))
+        return continuity.concat(persisted).sort((x,y)=>String(y.at||'').localeCompare(String(x.at||''))).slice(0,60)
+      })
+      const askBarToggleTimeline = () => { askBar.view = askBar.view === 'timeline' ? 'conversation' : 'timeline' }
+
+      watch(() => currentUser.value?.id || currentUser.value?.email, () => {
+        _continuityRefreshedForSession = false
+        askBarContinuity.previousAt = null; askBarContinuity.changes = []; askBarContinuity.ready = false
+        askBarLoadWatchlist()
+      })
+
       // ══ §8 EVENT-DRIVEN — proactive alerts surfaced in the notification bell ══
       // The scan engine detects consequential state (conflicts, gaps, expiries) from
       // LIVE data. Instead of only showing them inside the agent, feed them to the bell
@@ -9927,8 +10036,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const vt = turn.visual && turn.visual.type
         if (vt === 'profile') return 'profile'
         if (vt === 'risklist') return 'alert'
-        if (['workload','occupancy','bars','enroll'].includes(vt)) return 'insight'
-        if (['board','reslist','roster','absence'].includes(vt)) return 'collection'
+        if (['workload','occupancy','bars','enroll','scenario'].includes(vt)) return 'insight'
+        if (['board','reslist','roster','absence','publication_list'].includes(vt)) return 'collection'
         return 'fact'
       }
 
@@ -10054,7 +10163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             askBar.subject = null
           }
         } catch (e) { askBar.subject = null }
-        askBar.view = askBarScanCount.value ? 'digest' : 'conversation'
+        askBar.view = (askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation'
         // Pull fresh data so the agent never answers from a stale local snapshot.
         // Best-effort and silent — if a loader is missing or fails, we just use what we have.
         try { staffOps.loadMedicalStaff && staffOps.loadMedicalStaff() } catch (e) {}
@@ -10067,7 +10176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
         if (askBar.view === 'teach') loadBrain()
       }
-      const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.subject = null; askBar.view = askBarScanCount.value ? 'digest' : 'conversation' }
+      const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.subject = null; askBar.view = (askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation' }
       const runSuggestion = (s) => { askBar.query = s.t; askBarResolve(s.intent) }
       const askBarSnooze = (alert) => {
         if (alert._key && !askBar.snoozed.includes(alert._key)) askBar.snoozed.push(alert._key)
@@ -10202,7 +10311,8 @@ document.addEventListener('DOMContentLoaded', () => {
           type: ex.type,
           start: ex.start, end: ex.end, days, dateLabel,
           covering: ex.covering ? { id: ex.covering.id, name: ex.covering.full_name } : null,
-          conflicts
+          conflicts,
+          impact: askBarEvaluatePersonUnavailable(ex.subject, ex.start, ex.end)
         }
         askBar.turns.push(Vue.reactive({
           q: '', text: '', proposal, chips: [], actions: [], sources: ['staff', 'leave records', 'on-call schedule'],
@@ -10230,6 +10340,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // refresh local absence data so the rest of the app reflects it immediately
           try { absenceOps.loadAbsences() } catch (e) {}
           turn.commitText = `\u2713 Recorded: ${proposal.subject.name} \u2014 ${proposal.reasonLabel}, ${proposal.dateLabel}${proposal.covering ? `, covered by ${proposal.covering.name}` : ''}.`
+          askBarLog('change', { title:'Leave recorded', detail:`${proposal.subject.name} · ${proposal.reasonLabel} · ${proposal.dateLabel}`, kind:'leave', entityKeys:[`staff:${proposal.subject.id}`] })
         } catch (err) {
           turn.writing = false
           turn.commitError = (err && err.message) ? err.message : 'Could not save. Check permissions or try again.'
@@ -10294,7 +10405,15 @@ document.addEventListener('DOMContentLoaded', () => {
           // §8 PROACTIVE: if blocked, the Workforce Agent suggests who CAN cover instead.
           alternatives: (onLeave.length > 0)
             ? askBarWorkforceAvailable(ex.start, { excludeId: ex.subject.id }).slice(0, 3)
-            : []
+            : [],
+          impact: {
+            items: [
+              { label:'Availability', value:onLeave.length ? 'Blocked by leave' : 'Available', tone:onLeave.length?'attention':'clear', detail:onLeave.length ? 'An active leave record overlaps this duty date' : 'No leave conflict found' },
+              { label:'Existing duty', value:already ? 'Already scheduled' : 'No duplicate duty', tone:already?'attention':'clear', detail:already ? 'A primary on-call record already exists for this person on this date' : 'No duplicate assignment found for this person' },
+              { label:'Backup', value:ex.backup ? ex.backup.full_name : 'Not assigned', tone:ex.backup?'clear':'attention', detail:ex.backup ? 'Named backup will be stored with the duty record' : 'Coverage resilience is lower without a backup' }
+            ],
+            alternatives: (onLeave.length > 0) ? askBarWorkforceAvailable(ex.start, { excludeId: ex.subject.id }).slice(0, 3) : []
+          }
         }
         askBar.turns.push(Vue.reactive({
           q: '', text: '', oncallProposal: proposal, chips: [], actions: [],
@@ -10320,6 +10439,7 @@ document.addEventListener('DOMContentLoaded', () => {
           turn.writing = false; turn.committed = true
           try { onCallOps.loadOnCallSchedule() } catch (e) {}
           turn.commitText = `\u2713 ${proposal.subject.name} is on call ${proposal.dateLabel}${proposal.backup ? `, backup ${proposal.backup.name}` : ''}.`
+          askBarLog('change', { title:'On-call scheduled', detail:`${proposal.subject.name} · ${proposal.dateLabel}`, kind:'oncall', entityKeys:[`staff:${proposal.subject.id}`] })
         } catch (err) {
           turn.writing = false
           const msg = (err && err.message) ? err.message : 'Could not save.'
@@ -11440,8 +11560,20 @@ document.addEventListener('DOMContentLoaded', () => {
       // Audit trail: every question asked + action taken (clinical accountability).
       const askBarAudit = Vue.ref([])
       const askBarLog = (type, detail) => {
-        askBarAudit.value.push({ type, detail, at: new Date().toISOString(), user: currentUser.value?.full_name || 'unknown' })
+        const entry = { type, detail, at: new Date().toISOString(), user: currentUser.value?.full_name || 'unknown' }
+        askBarAudit.value.push(entry)
         if (askBarAudit.value.length > 200) askBarAudit.value.shift()
+        // Persist only meaningful operational events for the Grounded timeline.
+        if (type === 'change' || type === 'action') {
+          try {
+            const key = askBarUserKey('timeline')
+            const arr = JSON.parse(localStorage.getItem(key) || '[]') || []
+            const title = detail?.title || detail?.label || (type === 'change' ? 'Department change' : 'Grounded action')
+            arr.unshift({ type, title, detail: detail?.detail || detail?.summary || '', at: entry.at, kind: detail?.kind || null, entityKeys: detail?.entityKeys || [] })
+            localStorage.setItem(key, JSON.stringify(arr.slice(0,120)))
+            askBarTimelineVersion.value++
+          } catch {}
+        }
       }
 
       // ══════════════════════════════════════════════════════════════
@@ -11564,6 +11696,66 @@ document.addEventListener('DOMContentLoaded', () => {
           .sort((a, b) => a.shifts - b.shifts)
       }
 
+
+      // ══ SCENARIO + IMPACT ENGINE ═══════════════════════════════════════
+      // One dependency evaluator powers both hypothetical scenarios and
+      // pre-commit impact previews. It never writes data.
+      const askBarOverlap = (start, end, rStart, rEnd) => {
+        const a = Utils.normalizeDate(start), b = Utils.normalizeDate(end || start)
+        const x = Utils.normalizeDate(rStart), y = Utils.normalizeDate(rEnd || rStart)
+        return x <= b && y >= a
+      }
+      const askBarEvaluatePersonUnavailable = (person, start, end = start) => {
+        if (!person || !start) return { items:[], alternatives:[] }
+        const shifts = (onCallSchedule.value || []).filter(o =>
+          (o.primary_physician_id === person.id || o.backup_physician_id === person.id) &&
+          askBarOverlap(start,end,o.duty_date,o.duty_date))
+        const supervised = (rotations.value || []).filter(r =>
+          r.supervising_attending_id === person.id && ['active','scheduled'].includes(r.rotation_status) &&
+          askBarOverlap(start,end,r.start_date,r.end_date))
+        const residentRot = (rotations.value || []).filter(r =>
+          r.resident_id === person.id && ['active','scheduled'].includes(r.rotation_status) &&
+          askBarOverlap(start,end,r.start_date,r.end_date))
+        const unitSup = (trainingUnits.value || []).filter(u =>
+          (u.default_supervisor_id || u.supervisor_id || u.supervising_attending_id) === person.id && (u.unit_status||'active') !== 'inactive')
+        const trials = (researchOps.clinicalTrials.value || []).filter(t => t.principal_investigator_id === person.id || (t.co_investigators||[]).includes(person.id) || (t.sub_investigators||[]).includes(person.id))
+        const lines = (researchOps.researchLines.value || []).filter(l => l.coordinator_id === person.id)
+        const projects = (researchOps.innovationProjects.value || []).filter(pr => pr.lead_investigator_id === person.id || (pr.co_investigators||[]).includes(person.id))
+        const alternatives = askBarWorkforceAvailable(start, { excludeId: person.id }).slice(0,3)
+        const items = [
+          { label:'On-call coverage', value: shifts.length ? `${shifts.length} duty ${shifts.length===1?'shift':'shifts'} affected` : 'No duty conflict', tone: shifts.length?'attention':'clear', detail: shifts.length ? shifts.slice(0,3).map(o=>Utils.formatDateShort(o.duty_date)).join(', ') : 'No matching on-call assignment in the selected period' },
+          { label:'Supervision', value: supervised.length ? `${supervised.length} resident ${supervised.length===1?'assignment':'assignments'} affected` : 'No supervision conflict', tone: supervised.length?'attention':'clear', detail: supervised.length ? supervised.slice(0,3).map(r=>getStaffName(r.resident_id)).join(', ') : (residentRot.length ? `${person.full_name} has ${residentRot.length} own rotation assignment${residentRot.length===1?'':'s'}` : 'No overlapping supervision assignment') },
+          { label:'Clinical units', value: unitSup.length ? `${unitSup.length} unit ${unitSup.length===1?'depends':'depend'} on this supervisor` : 'No default-unit dependency', tone:unitSup.length?'info':'clear', detail:unitSup.slice(0,3).map(u=>u.unit_name).join(', ') },
+          { label:'Research roles', value:(trials.length+lines.length+projects.length) ? `${trials.length+lines.length+projects.length} linked role${trials.length+lines.length+projects.length===1?'':'s'}` : 'No linked research role', tone:'info', detail:[trials.length?`${trials.length} trial${trials.length===1?'':'s'}`:null,lines.length?`${lines.length} line${lines.length===1?'':'s'}`:null,projects.length?`${projects.length} project${projects.length===1?'':'s'}`:null].filter(Boolean).join(' · ') }
+        ]
+        return { items, alternatives, shifts, supervised, unitSup, trials, lines, projects }
+      }
+      const askBarLooksScenario = (q) => /\bwhat if\b|\bsuppose\b|\bsimulate\b|\bscenario\b|\bif .*\b(unavailable|away|absent|off|on leave)\b/i.test(q || '')
+      const askBarStartScenario = (asked) => {
+        const person = askBarResolveStaff(asked)
+        const dates = askBarExtractDates(asked)
+        askBar.view = 'conversation'
+        askBar.query = ''
+        if (!person) {
+          askBar.turns.push(Vue.reactive({ q:asked, text:'Who should I simulate as unavailable? Name the person and include a date.', chips:[], actions:[], sources:['staff'], followups:[], confidence:'low', isClarify:true, asOf:askBarNow(), streaming:false }))
+          return
+        }
+        if (!dates.start) {
+          askBar.context = { type:'staff', id:person.id, name:person.full_name }
+          askBar.turns.push(Vue.reactive({ q:asked, text:`Which day should I simulate for ${person.full_name}?`, chips:[{label:person.full_name,id:person.id}], actions:[], sources:['staff'], followups:[], confidence:'high', isClarify:true, asOf:askBarNow(), streaming:false }))
+          return
+        }
+        const end = dates.end || dates.start
+        const impact = askBarEvaluatePersonUnavailable(person, dates.start, end)
+        const fmt = d => { try { return new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) } catch { return d } }
+        const dateLabel = dates.start===end ? fmt(dates.start) : `${fmt(dates.start)} – ${fmt(end)}`
+        const scenario = { subject:{id:person.id,name:person.full_name}, start:dates.start, end, dateLabel, items:impact.items, alternatives:impact.alternatives }
+        askBar.turns.push(Vue.reactive({
+          q:asked, text:`Scenario only — no departmental records have been changed.`, visual:{type:'scenario', scenario}, chips:[],
+          actions:[], sources:['staff','on-call schedule','leave records','rotations','research'], followups:[{label:'Prepare leave change',intent:'record_leave',q:`put ${person.full_name} on leave ${dates.start}`}], confidence:'high', asOf:askBarNow(), streaming:false
+        }))
+      }
+
       const askBarRecommendBackup = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
         const outPerson = askBarResolveStaff(q)
@@ -11628,6 +11820,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const asked = (asked0Arg !== undefined ? asked0Arg : askBar.query).trim()
         if (!asked && !forcedIntent) return
         askBar.view = 'conversation'
+        // Scenario mode is explicitly non-destructive and takes priority over normal intent routing.
+        if (!forcedIntent && askBarLooksScenario(asked)) { askBarStartScenario(asked); return }
         // Multi-turn: if we're mid leave-request waiting for a detail, try to complete it.
         // Only when the pending was set on the immediately-preceding turn (not stale state).
         if (!forcedIntent && askBar.pendingLeave && askBar.pendingLeave.awaiting) {
@@ -12097,7 +12291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const credentials = []
           if (s.has_phd) credentials.push('PhD' + (s.phd_field ? ' (' + s.phd_field + ')' : ''))
-          if (s.academic_degree) credentials.push(s.academic_degree)
+          if (s.academic_degree && !(s.has_phd && /ph\.?d|doctor/i.test(String(s.academic_degree)))) credentials.push(s.academic_degree)
           if (s.can_be_pi) credentials.push('PI-eligible')
           if (s.can_supervise_residents) credentials.push('can supervise')
           if (s.has_medical_license || s.medical_license) credentials.push('licensed')
@@ -12402,7 +12596,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'publications') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
-          let pubs = (newsPosts.value || []).filter(p => !p.post_type || /public|paper|article|journal/i.test(p.post_type) || true)
+          let pubs = (newsPosts.value || []).filter(p => p.post_type === 'publication' || !!p.doi || !!p.journal_name)
           // filter by person if named
           const person = askBarResolveStaff(q.replace(/\b(publications?|papers?|published|by|of|recent|what|have|we|show|list)\b/gi,' '))
           if (person && /\bby\b|\bof\b/.test(q)) {
@@ -12412,8 +12606,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const isCount = /(how many|number of|count)/.test(q)
           if (isCount) return { text: `${pubs.length} publication${pubs.length===1?'':'s'} on record${person?` for ${person.full_name}`:''}.`, chips: [], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [{ label: 'List them', intent: 'publications', q: 'list publications' }], confidence: 'high' }
           const top = pubs.slice(0, 8)
-          const items = top.map(p => ({ title: p.title, badge: p.journal_name || null, tone: 'research', meta: [p.authors_text, p.doi?('DOI '+p.doi):null].filter(Boolean).join(' · ') }))
-          return { text: `${pubs.length} publication${pubs.length===1?'':'s'}${person?` by ${person.full_name}`:''}${pubs.length>8?' (showing 8)':''}:`, visual: { type: 'reslist', items }, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [], confidence: 'high' }
+          const items = top.map(p => ({
+            id:p.id, title:p.title, journal:p.journal_name || null, authors:p.authors_text || null, doi:p.doi || null,
+            date:p.published_at || p.created_at || null, line:p.research_line_id ? newsLineName(p.research_line_id) : null
+          }))
+          return { text: `${pubs.length} publication${pubs.length===1?'':'s'}${person?` by ${person.full_name}`:''}${pubs.length>8?' (showing 8)':''}:`, visual: { type: 'publication_list', items, total:pubs.length }, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [], confidence: 'high' }
         }
         if (intent === 'trial_profile') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
@@ -12891,7 +13088,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const active = rots.filter(r => r.rotation_status === 'active' && r.training_unit_id === unit.id)
           const scheduled = rots.filter(r => r.rotation_status === 'scheduled' && r.training_unit_id === unit.id)
           const cap = unit.maximum_residents || 5
-          const sup = (medicalStaff.value||[]).find(s => s.id === (unit.default_supervisor_id||unit.supervisor_id))
+          const sup = (medicalStaff.value||[]).find(s => s.id === (unit.default_supervisor_id||unit.supervisor_id||unit.supervising_attending_id))
           // build a profile-style card for the unit
           const profile = {
             id: unit.id, name: unit.unit_name, kind: 'unit', avatar: unit.unit_code || 'CU',
@@ -12907,7 +13104,8 @@ document.addEventListener('DOMContentLoaded', () => {
               ...(unit.specialty ? [{ label: 'Specialty', value: unit.specialty }] : []),
               ...((unit.location_building || unit.location_floor) ? [{ label: 'Location', value: [unit.location_building, unit.location_floor].filter(Boolean).join(' · ') }] : [])
             ],
-            links: [], completeness: 100, missing: []
+            links: [], completeness: 100, missing: [],
+            unitSummary: { active: active.length, capacity: cap, scheduled: scheduled.length, supervisor: sup ? sup.full_name : null }
           }
           const L = profile.links
           if (sup) L.push({ label: 'Supervisor', detail: sup.full_name, kind: 'people' })
@@ -13449,15 +13647,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const _nu = (s) => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
           const unitHit = (trainingUnits.value || []).find(u => u.unit_name && (_nu(uq) === _nu(u.unit_name) || (_nu(uq).length > 3 && _nu(u.unit_name).includes(_nu(uq))) || (u.unit_code && _nu(uq) === _nu(u.unit_code))))
           if (unitHit) {
-            const rots = (rotations.value || []).filter(r => r.rotation_status === 'active' && r.training_unit_id === unitHit.id)
-            const cap = unitHit.maximum_residents || 5
-            const sup = (medicalStaff.value||[]).find(s => s.id === (unitHit.default_supervisor_id||unitHit.supervisor_id))
-            const residents = rots.map(r => getStaffName(r.resident_id)).filter(Boolean)
-            let t = `${unitHit.unit_name}${unitHit.unit_code?` (${unitHit.unit_code})`:''} — ${rots.length}/${cap} residents${rots.length>=cap?' · full':(rots.length===0?' · free':' · has space')}.`
-            if (sup) t += ` Supervisor: ${sup.full_name}.`
-            if (residents.length) t += ` Currently: ${residents.join(', ')}.`
-            if (unitHit.specialty) t += ` Specialty: ${unitHit.specialty}.`
-            return { text: t, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [{ label: 'Which units are free?', intent: 'unit_status', q: 'which units are free' }], confidence: 'high' }
+            // A bare entity name should open the same rich semantic object as
+            // “about <unit>”, not collapse back to a one-line fact response.
+            return askBarBuildAnswer('unit_profile')
           }
           const staffTried = askBarResolveStaff(uq)
           let text, tip = null
@@ -13592,28 +13784,105 @@ document.addEventListener('DOMContentLoaded', () => {
           askBarStreamTurn(turn, ans.text || '')
         }, 260)
       }
-      // Run a follow-up chip: either a fresh intent, or a context-based follow-up
+      // Reveal the START of the newest turn rather than blindly scrolling to the
+      // absolute bottom. This matters for rich/long answers (profiles, boards, lists):
+      // bottom-scrolling can land on the footer/follow-ups and make the new answer look
+      // as though it never rendered behind the composer.
+      const askBarRevealLatestTurn = (smooth = true) => {
+        Vue.nextTick(() => {
+          const c = document.querySelector('.askbar-conv')
+          if (!c) return
+          const qs = c.querySelectorAll('.askbar-q-bub')
+          const q = qs.length ? qs[qs.length - 1] : null
+          if (!q) { askBarScrollToBottom(smooth); return }
+          const reveal = () => {
+            const top = Math.max(0, q.offsetTop - 10)
+            try { c.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' }) }
+            catch (e) { c.scrollTop = top }
+          }
+          reveal()
+          // Rich Vue content can increase the turn height after the first paint.
+          // Re-anchor to the question, not the bottom, after those layouts settle.
+          setTimeout(reveal, 120)
+          setTimeout(reveal, 380)
+        })
+      }
+
+      // Run a guided follow-up.
+      // IMPORTANT: intent-based chips go back through the full resolver so action flows,
+      // parsers and question-specific context are preserved. Context follow-ups keep the
+      // full metadata (attr/id/name) instead of collapsing e.g. Certificates? into another
+      // generic clinician profile.
       const askBarRunFollowup = (fu) => {
+        if (!fu) return
         askBar.view = 'conversation'
-        const intent = fu.followupKind || fu.intent || 'unknown'
+
+        // A normal intent follow-up should behave exactly like the user typed the chip.
+        // This fixes stale askBar.lastAsked state and action chips such as record_leave.
+        if (!fu.followupKind) {
+          const q = (fu.q || fu.label || '').trim()
+          askBar.query = q
+          askBar.lastAsked = q
+          askBarResolve(fu.intent || undefined)
+          return
+        }
+
+        const intent = fu.followupKind
+        const ctx = askBar.context || {}
+        const targetId = fu.subjectId || fu.id || ctx.id
+        const targetName = fu.name || ctx.name
+        const asked = (fu.q || fu.label || '').trim()
+        askBar.lastAsked = asked
+        askBar.query = ''
         askBar.thinking = askBarThinkingFor(intent)
         askBar.loadingKind = askBarLoadingKindFor(intent)
         const followTrace = askBarTraceFor(intent).map(([label, src]) => ({ label, src, done: true }))
         askBar.loadingSources = askBarLoadingSourceLabels(followTrace)
         askBar.loading = true
+
         setTimeout(() => {
           let ans
           try {
-            if (fu.followupKind && askBar.context) ans = askBarBuildFollowup({ kind: fu.followupKind, id: askBar.context.id, name: askBar.context.name })
-            else ans = askBarBuildAnswer(fu.intent || 'unknown')
-          } catch (e) { ans = { text: 'Could not resolve that follow-up.', chips: [], actions: [], sources: [], followups: [], confidence: 'low' } }
+            const payload = {
+              ...fu,
+              kind: fu.followupKind,
+              id: targetId,
+              name: targetName,
+              // preserve specific staff attribute metadata such as certs / pi / phd
+              attr: fu.attr || fu.clarifyAttr || null
+            }
+            ans = askBarBuildFollowup(payload)
+          } catch (e) {
+            console.error('[Grounded follow-up]', e)
+            ans = { text: 'Could not resolve that follow-up.', chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
+          }
+
           askBar.loading = false
           askBar.thinking = null
           askBar.loadingSources = []
-          const turn = Vue.reactive({ q: fu.label, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: followTrace, traceOpen: false, asOf: askBarNow(), streaming: true })
+          const turn = Vue.reactive({
+            q: fu.label || asked,
+            text: '',
+            chips: ans.chips || [],
+            actions: ans.actions || [],
+            sources: ans.sources || [],
+            followups: ans.followups || [],
+            confidence: ans.confidence || 'high',
+            visual: ans.visual || null,
+            evidence: ans.evidence || null,
+            evidenceOpen: false,
+            isDraft: ans.isDraft || false,
+            isClarify: ans.isClarify || false,
+            emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans),
+            trace: followTrace,
+            traceOpen: false,
+            asOf: askBarNow(),
+            streaming: true,
+            revealing: false
+          })
           askBar.turns.push(turn)
-          askBarStreamTurn(turn, ans.text || '')
-        }, 420)
+          askBarStreamTurn(turn, ans.text || '', () => askBarRevealLatestTurn(true))
+        }, 320)
       }
 
 
@@ -13736,6 +14005,7 @@ document.addEventListener('DOMContentLoaded', () => {
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
           askBar, askBarSuggestions, askBarSuggestLabel, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBarContinuity, askBarChanges, askBarWatchedChanges, askBarTimeline, askBarWatchlist, askBarIsWatched, askBarToggleWatch, askBarToggleTimeline,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, teachTopicLabels, askBarToggleTeach,
           askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarConfirmExtendRotation, askBarConfirmRotationEdit, askBarConfirmOncallEdit, askBarConfirmLeaveEdit, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
