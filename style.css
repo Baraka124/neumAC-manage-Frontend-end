@@ -18740,4 +18740,151 @@ html body #app .nrd-v23-pager{max-width:980px!important;margin-top:20px!importan
   html body #app .nrd-v23-article-hero{margin:28px 0!important;min-height:0!important}
   html body #app .nrd-v23-article-hero img{min-height:0!important}
 }
-  
+
+/* ========================================================================
+   V26 — RESEARCH LIBRARY / ORIENTATION + ART DIRECTION + MENU FIX
+   - viewport-level action menu: no clipped/wrong-card dropdowns
+   - update bulletin layout + source-anchored note reader
+   - highlight art direction + intentional no-image fallback
+   - contextual/collapsing chrome
+   - return-to-source continuity
+   - public-view preview + stronger relationship navigation
+   ======================================================================== */
+
+/* --- bug fix: never render bespoke rectangular hover labels over neighbours --- */
+html body #app .knowledge-v23-icon-action>span{display:none!important}
+html body #app .knowledge-more-wrap{position:static!important}
+
+/* One menu for one record, teleported to viewport level. */
+.news-v26-action-layer{position:fixed;inset:0;z-index:20050;background:transparent}
+.news-v26-action-popover{position:fixed;width:238px;padding:8px;background:rgba(255,255,255,.985);border:1px solid #dde6e8;border-radius:16px;box-shadow:0 22px 62px rgba(7,27,43,.22);font-family:"DM Sans",Arial,sans-serif;animation:newsV26MenuIn .14s cubic-bezier(.22,1,.36,1)}
+@keyframes newsV26MenuIn{from{opacity:0;transform:translateY(-4px) scale(.985)}to{opacity:1;transform:none}}
+.news-v26-action-head{padding:9px 10px 11px;margin-bottom:3px;border-bottom:1px solid #edf1f2;min-width:0}
+.news-v26-action-head span{display:block;margin-bottom:5px;font:800 7.5px/1 "DM Sans",Arial,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#0c9293}
+.news-v26-action-head strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:650 11px/1.35 "DM Sans",Arial,sans-serif;color:#18334a}
+.news-v26-action-popover>button{width:100%;height:34px;border:0;background:transparent;border-radius:10px;display:flex;align-items:center;gap:10px;padding:0 10px;color:#536a7b;font:600 10.5px/1 "DM Sans",Arial,sans-serif;text-align:left;cursor:pointer}
+.news-v26-action-popover>button i{width:15px;text-align:center;color:#8396a3}
+.news-v26-action-popover>button:hover{background:#f0f6f5;color:#11344e}
+.news-v26-action-popover>button:hover i{color:#0a898b}
+.news-v26-action-popover>button.is-danger{color:#a34d4d}
+.news-v26-action-popover>button.is-danger:hover{background:#fbf0f0;color:#922f2f}
+.news-v26-action-popover>button.is-danger i{color:#b65a5a}
+.news-v26-action-sep{height:1px;background:#edf1f2;margin:5px 8px}
+
+/* --- masthead becomes truly subordinate once the user starts working --- */
+html body #app .news-v25-masthead.is-collapsed{padding:10px 48px 9px!important}
+html body #app .news-v25-masthead.is-collapsed .news-v25-ident h2{font-size:23px!important;letter-spacing:-.025em!important}
+html body #app .news-v25-masthead.is-collapsed .news-v25-record-count strong{font-size:22px!important}
+html body #app .news-v25-masthead.is-collapsed + .news-v25-commandbar{height:50px;min-height:50px}
+html body #app .news-v25-masthead.is-collapsed + .news-v25-commandbar .news-v25-tabs button{height:50px}
+
+/* --- update view: bulletin/timeline, never a centered floating card --- */
+html body #app .news-body--update{max-width:1320px!important;width:100%!important;margin:0 auto!important}
+html body #app .news-body--update>.knowledge-card--update{
+  width:100%!important;margin:0!important;padding:18px 6px 16px!important;border-radius:0!important;
+  border:0!important;border-bottom:1px solid #dde5e7!important;background:transparent!important;
+  box-shadow:none!important;transform:none!important;
+}
+html body #app .news-body--update>.knowledge-card--update:first-child{border-top:1px solid #dde5e7!important}
+html body #app .news-body--update>.knowledge-card--update:hover{background:linear-gradient(90deg,rgba(255,255,255,.88),rgba(255,255,255,.26))!important}
+html body #app .news-body--update .knowledge-v23-topline{margin:0 0 10px 144px!important}
+html body #app .news-body--update .update-v23{grid-template-columns:112px minmax(0,1fr)!important;gap:26px!important;align-items:start}
+html body #app .news-body--update .update-v23 time{padding-top:5px!important;color:#768a99!important}
+html body #app .news-body--update .update-v23 h3{font-size:25px!important;line-height:1.04!important;max-width:920px!important;margin-bottom:6px!important}
+html body #app .news-body--update .update-v23 p{max-width:900px!important;font-size:11.5px!important;line-height:1.55!important}
+html body #app .news-body--update .knowledge-v23-footer{padding-left:138px!important;border-top:0!important;margin-top:8px!important;padding-top:0!important}
+
+/* --- highlight: image behaves like a composed field, not a dark card with footer --- */
+html body #app .knowledge-card--highlight{min-height:390px!important;border-radius:18px!important;isolation:isolate}
+html body #app .highlight-v23-media::after{
+  background:
+    linear-gradient(90deg,rgba(4,23,39,.86) 0%,rgba(4,23,39,.60) 38%,rgba(4,23,39,.10) 72%,rgba(4,23,39,.02) 100%),
+    linear-gradient(0deg,rgba(4,23,39,.74) 0%,rgba(4,23,39,.08) 48%,rgba(4,23,39,.12) 100%)!important;
+}
+html body #app .highlight-v23-media img{filter:saturate(.9) contrast(1.02);transform:scale(1.001);transition:transform .5s cubic-bezier(.22,1,.36,1),filter .3s}
+html body #app .knowledge-card--highlight:hover .highlight-v23-media img{transform:scale(1.018);filter:saturate(1) contrast(1.03)}
+html body #app .highlight-v23-copy{align-self:end!important;padding:108px 34px 34px!important;max-width:78%!important}
+html body #app .highlight-v23-copy h3{font-size:42px!important;line-height:.98!important;letter-spacing:-.035em!important;text-wrap:balance}
+html body #app .highlight-v23-copy p{max-width:690px!important;color:rgba(244,250,251,.86)!important;font-size:11.5px!important}
+html body #app .highlight-v26-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:23px;font:550 9.5px/1.3 var(--font-ui);color:rgba(231,242,245,.72)}
+html body #app .highlight-v26-meta>span{display:flex;align-items:center;gap:6px}
+html body #app .highlight-v26-meta>span+span::before{content:"·";margin-right:2px;color:rgba(255,255,255,.38)}
+html body #app .highlight-v26-meta .news-author-av{width:22px!important;height:22px!important;font-size:7px!important;background:#0d9292!important;color:#fff!important}
+html body #app .highlight-v26-card-actions{position:absolute;right:20px;bottom:18px;z-index:4;display:flex;gap:5px}
+html body #app .knowledge-card--highlight .highlight-v26-card-actions .knowledge-v23-icon-action{background:rgba(7,30,47,.52)!important;border:1px solid rgba(255,255,255,.13)!important;color:rgba(255,255,255,.82)!important;backdrop-filter:blur(8px)}
+html body #app .knowledge-card--highlight .highlight-v26-card-actions .knowledge-v23-icon-action:hover{background:rgba(14,123,126,.82)!important;color:#fff!important}
+
+/* Intentional visual fallback: no image never looks like a missing asset. */
+html body #app .highlight-v26.has-fallback{background:linear-gradient(135deg,#0b2e48 0%,#123d55 48%,#0b777b 145%)!important}
+html body #app .highlight-v26-fallback{position:absolute;inset:0;overflow:hidden;background:radial-gradient(circle at 78% 26%,rgba(105,224,215,.18),transparent 28%),linear-gradient(125deg,transparent 42%,rgba(255,255,255,.035) 42% 43%,transparent 43% 58%,rgba(255,255,255,.028) 58% 59%,transparent 59%)}
+html body #app .highlight-v26-fallback-code{position:absolute;right:7%;top:50%;transform:translateY(-50%);font:400 clamp(80px,12vw,180px)/.8 "Instrument Serif",Georgia,serif;color:rgba(213,244,241,.09);letter-spacing:-.06em}
+html body #app .highlight-v26-fallback i{position:absolute;border:1px solid rgba(134,229,223,.12);border-radius:50%}
+html body #app .highlight-v26-fallback i:nth-child(2){width:190px;height:190px;right:10%;top:16%}
+html body #app .highlight-v26-fallback i:nth-child(3){width:320px;height:320px;right:-4%;top:3%}
+html body #app .highlight-v26-fallback i:nth-child(4){width:460px;height:460px;right:-13%;top:-11%}
+
+/* --- return-to-source continuity --- */
+html body #app .knowledge-card--v23.is-return-focus{animation:newsV26Return 1.35s ease-out}
+@keyframes newsV26Return{0%{box-shadow:0 0 0 1px rgba(11,148,149,0),0 0 0 rgba(11,148,149,0)}20%{box-shadow:0 0 0 2px rgba(11,148,149,.34),0 12px 34px rgba(11,148,149,.10)}100%{box-shadow:0 0 0 1px rgba(11,148,149,0),0 0 0 rgba(11,148,149,0)}}
+html body #app .knowledge-card--publication.is-return-focus,html body #app .knowledge-card--update.is-return-focus{background:linear-gradient(90deg,rgba(224,247,245,.5),transparent 60%)!important}
+
+/* --- update reader remains near the source object with only a light environmental veil --- */
+html body #app .nrd-backdrop--update{background:rgba(9,26,40,.20)!important;backdrop-filter:blur(3px) saturate(.9)!important}
+html body #app .nrd-v23.nrd--update{
+  left:var(--nrd-update-left,auto)!important;right:auto!important;
+  top:var(--nrd-update-top,88px)!important;bottom:auto!important;
+  width:min(660px,calc(100vw - 48px))!important;max-height:min(72vh,580px)!important;
+  border-radius:20px!important;box-shadow:0 28px 78px rgba(7,25,39,.25)!important;
+  transform-origin:22% 18%!important;
+}
+html body #app .nrd-v23-update{padding:34px 40px 40px!important}
+html body #app .nrd-v23-update time{font-size:9.5px!important;letter-spacing:.02em!important}
+html body #app .nrd-v23-update h1{font-family:"Instrument Serif",Georgia,serif!important;font-size:42px!important;line-height:.98!important;letter-spacing:-.035em!important;text-wrap:balance}
+html body #app .nrd-v23-update p{font-size:13px!important;line-height:1.65!important;color:#647b8d!important}
+
+/* --- highlight reader fallback / art direction --- */
+html body #app .nrd-v23-highlight.has-fallback{grid-template-columns:minmax(0,1.15fr) minmax(420px,.85fr)!important;background:#071d2d}
+html body #app .nrd-v26-highlight-fallback{position:relative;min-height:100%;overflow:hidden;background:radial-gradient(circle at 65% 32%,rgba(80,206,199,.20),transparent 29%),linear-gradient(135deg,#08243a,#0d4053 58%,#0d6f72)}
+html body #app .nrd-v26-highlight-fallback strong{position:absolute;right:8%;top:50%;transform:translateY(-50%);font:400 clamp(110px,18vw,260px)/.8 "Instrument Serif",Georgia,serif;color:rgba(210,244,241,.09);letter-spacing:-.06em}
+html body #app .nrd-v26-highlight-fallback i{position:absolute;border:1px solid rgba(132,227,221,.13);border-radius:50%}
+html body #app .nrd-v26-highlight-fallback i:nth-child(2){width:260px;height:260px;right:11%;top:21%}
+html body #app .nrd-v26-highlight-fallback i:nth-child(3){width:430px;height:430px;right:0;top:9%}
+html body #app .nrd-v26-highlight-fallback i:nth-child(4){width:620px;height:620px;right:-11%;top:-4%}
+
+/* --- Peek is allowed to finish the job for short updates. --- */
+html body #app .news-v24-peek.is-update .news-v24-peek-copy p{-webkit-line-clamp:6!important;line-clamp:6!important;font-size:12px!important}
+html body #app .news-v24-peek.is-publication .news-v24-peek-copy p{-webkit-line-clamp:2!important}
+
+/* --- relationship navigation becomes a deliberate knowledge surface --- */
+html body #app .nrd-v26-related .nrd-v23-related-head{display:flex!important;align-items:flex-end!important;justify-content:space-between!important;gap:20px!important}
+html body #app .nrd-v26-related .nrd-v23-related-head>div{display:flex;flex-direction:column;gap:4px}
+html body #app .nrd-v26-related .nrd-v23-related-head small{margin:0!important}
+html body #app .nrd-v26-explore-line{border:0!important;background:transparent!important;color:#0b8588!important;padding:0!important;font:700 10px/1.2 var(--font-ui)!important;cursor:pointer;white-space:nowrap;box-shadow:none!important}
+html body #app .nrd-v26-explore-line:hover{text-decoration:underline;text-underline-offset:4px}
+
+/* --- Public view preview: read-first, internal management chrome disappears. --- */
+html body #app .nrd-v26-public-previewbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:10px 24px;background:#edf8f6;border-bottom:1px solid #d7ebe8;color:#24495c}
+html body #app .nrd-v26-public-previewbar>div{display:flex;align-items:baseline;gap:10px;min-width:0}
+html body #app .nrd-v26-public-previewbar strong{font:750 9.5px/1 var(--font-ui);color:#087d7f;white-space:nowrap}
+html body #app .nrd-v26-public-previewbar span{font:500 9px/1.3 var(--font-ui);color:#718993;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body #app .nrd-v26-public-previewbar button{border:0!important;background:transparent!important;color:#0d6f73!important;font:700 9.5px/1 var(--font-ui)!important;cursor:pointer;padding:0!important;box-shadow:none!important;white-space:nowrap}
+html body #app .nrd-v23.is-public-preview .nrd-v24-reader-tools,html body #app .nrd-v23.is-public-preview .nrd-v24-details{display:none!important}
+html body #app .nrd-v23.is-public-preview .nrd-v23-status{display:none!important}
+html body #app .nrd-v23.is-public-preview .nrd-v23-head{background:#fff!important}
+html body #app .nrd-v26-public-preview-action{width:100%;margin-top:22px;padding:12px 0 0!important;border:0!important;border-top:1px solid #e3e9eb!important;background:transparent!important;display:flex;align-items:center;justify-content:space-between;color:#0a7f82;font:700 10px/1.3 var(--font-ui);cursor:pointer;box-shadow:none!important}
+html body #app .nrd-v26-public-preview-action span{font-size:15px;transition:transform .16s}
+html body #app .nrd-v26-public-preview-action:hover span{transform:translateX(3px)}
+
+@media (max-width:900px){
+  html body #app .news-body--update .knowledge-v23-topline{margin-left:0!important}
+  html body #app .news-body--update .update-v23{grid-template-columns:1fr!important;gap:8px!important}
+  html body #app .news-body--update .knowledge-v23-footer{padding-left:0!important}
+  html body #app .highlight-v23-copy{max-width:100%!important;padding:92px 24px 28px!important}
+  html body #app .highlight-v23-copy h3{font-size:34px!important}
+  html body #app .nrd-v23.nrd--update{left:0!important;top:0!important;width:100vw!important;height:100vh!important;max-height:none!important;border-radius:0!important}
+  html body #app .nrd-v26-public-previewbar span{display:none}
+}
+html body #app .nrd--highlight.is-public-preview .nrd-v23-head{background:#fff!important;border-color:#e4eaec!important}
+html body #app .nrd--highlight.is-public-preview .nrd-v23-type,
+html body #app .nrd--highlight.is-public-preview .nrd-v23-visibility{color:#526d80!important}
+html body #app .nrd--highlight.is-public-preview .nrd-v23-close{color:#6c7f8d!important}   
