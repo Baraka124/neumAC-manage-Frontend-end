@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=25">
+    <link rel="stylesheet" href="style.css?v=26">
 
     
 </head>
@@ -6115,7 +6115,7 @@
                         <div class="news-body news-body--studio news-body--v23" :class="'news-body--' + (newsFilters.type || 'all')">
                             <article v-for="post in filteredNews" :key="post.id"
                                      class="knowledge-card knowledge-card--v23"
-                                     :class="['knowledge-card--' + post.post_type, post.is_featured ? 'is-featured' : '', post.status !== 'published' ? 'is-' + post.status : '']"
+                                     :class="['knowledge-card--' + post.post_type, post.is_featured ? 'is-featured' : '', post.status !== 'published' ? 'is-' + post.status : '', newsReturnFocusId === post.id ? 'is-return-focus' : '']"
                                      @click.stop="openNewsPeek(post, $event)">
 
                                 <div class="knowledge-v23-topline">
@@ -6166,11 +6166,28 @@
                                 </template>
 
                                 <template v-else-if="post.post_type === 'highlight'">
-                                    <div class="highlight-v23" :class="{'has-image': post.image_urls?.[0] || post.featured_image_url}">
+                                    <div class="highlight-v23 highlight-v26" :class="{'has-image': post.image_urls?.[0] || post.featured_image_url, 'has-fallback': !(post.image_urls?.[0] || post.featured_image_url)}">
                                         <figure v-if="post.image_urls?.[0] || post.featured_image_url" class="highlight-v23-media">
-                                            <img :src="post.image_urls?.[0] || post.featured_image_url" :alt="post.title" onerror="this.style.display='none'">
+                                            <img :src="post.image_urls?.[0] || post.featured_image_url" :alt="post.title" onerror="this.closest('article')?.classList.add('image-failed')">
                                         </figure>
-                                        <div class="highlight-v23-copy"><h3>{{ post.title }}</h3><p v-if="post.body">{{ post.body }}</p><span class="knowledge-v23-open">View story →</span></div>
+                                        <div v-else class="highlight-v26-fallback" aria-hidden="true">
+                                            <span class="highlight-v26-fallback-code">{{ post.research_line_id ? (newsLineName(post.research_line_id).split('—')[0] || 'R').trim() : 'R&I' }}</span>
+                                            <i></i><i></i><i></i>
+                                        </div>
+                                        <div class="highlight-v23-copy">
+                                            <h3>{{ post.title }}</h3>
+                                            <p v-if="post.body">{{ post.body }}</p>
+                                            <span class="knowledge-v23-open">View story →</span>
+                                            <div class="highlight-v26-meta">
+                                                <span v-if="post.author_id"><span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>{{ newsAuthorName(post.author_id) }}</span>
+                                                <span v-if="post.research_line_id">{{ newsLineName(post.research_line_id) }}</span>
+                                                <span>{{ formatNewsDate(post.published_at || post.created_at) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="highlight-v26-card-actions" @click.stop>
+                                            <button v-if="hasPermission('news_posts','update')" class="knowledge-v23-icon-action" @click="editNews(post)" title="Edit" aria-label="Edit"><i class="fas fa-pen"></i></button>
+                                            <button class="knowledge-v23-icon-action" @click="openNewsActionMenu(post,$event)" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-h"></i></button>
+                                        </div>
                                     </div>
                                 </template>
 
@@ -6181,7 +6198,7 @@
                                     </div>
                                 </template>
 
-                                <footer class="knowledge-v23-footer">
+                                <footer v-if="post.post_type !== 'highlight'" class="knowledge-v23-footer">
                                     <div class="knowledge-v23-meta">
                                         <span v-if="post.author_id" class="knowledge-v23-author"><span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>{{ newsAuthorName(post.author_id) }}</span>
                                         <span v-if="post.research_line_id">{{ newsLineName(post.research_line_id) }}</span>
@@ -6193,13 +6210,7 @@
                                         <button v-if="post.status === 'draft' && hasPermission('news_posts','update')" class="knowledge-v23-icon-action is-publish" @click="publishNews(post)" title="Publish"><i class="fas fa-paper-plane"></i><span>Publish</span></button>
                                         <button v-if="hasPermission('news_posts','update')" class="knowledge-v23-icon-action" @click="editNews(post)" title="Edit"><i class="fas fa-pen"></i><span>Edit</span></button>
                                         <div class="news-actions knowledge-more-wrap">
-                                            <button class="knowledge-v23-icon-action" @click="activeNewsMenu = activeNewsMenu === post.id ? null : post.id" title="More actions"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
-                                            <div class="nm-dropdown nm-dropdown--v23" v-if="activeNewsMenu === post.id" @click.stop>
-                                                <div class="nm-dropdown-item" v-if="post.status === 'published' && post.is_public && hasPermission('news_posts','update')" @click="toggleNewsFeature(post); activeNewsMenu=null"><i class="fas fa-star"></i>{{ post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}</div>
-                                                <div class="nm-dropdown-item" @click="archiveNews(post); activeNewsMenu=null" v-if="post.status === 'published' && hasPermission('news_posts','update')"><i class="fas fa-archive"></i>Archive</div>
-                                                <div class="nm-dropdown-sep" v-if="hasPermission('news_posts','delete')"></div>
-                                                <div class="nm-dropdown-item danger" @click="deleteNews(post); activeNewsMenu=null" v-if="hasPermission('news_posts','delete')"><i class="fas fa-trash"></i>Delete</div>
-                                            </div>
+                                            <button class="knowledge-v23-icon-action" @click="openNewsActionMenu(post,$event)" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
                                         </div>
                                     </div>
                                 </footer>
@@ -6209,6 +6220,25 @@
                         <div v-if="newsLoading && !newsLoaded" class="news-v23-loading"><span class="news-sync-dot"></span> Preparing the research library…</div>
                         <div v-if="newsLoading && newsLoaded" class="news-v23-sync"><span class="news-sync-dot"></span> Syncing records</div>
                     </div>
+
+                    <!-- V26: one viewport-level action popover. It cannot be clipped by,
+                         or visually attach itself to, a neighbouring record. -->
+                    <teleport to="body">
+                        <div v-if="newsActionMenu.show && newsActionMenu.post" class="news-v26-action-layer" @click="closeNewsActionMenu">
+                            <div class="news-v26-action-popover" :style="{left:newsActionMenu.x+'px',top:newsActionMenu.y+'px'}" @click.stop>
+                                <div class="news-v26-action-head">
+                                    <span>{{ newsActionMenu.post.post_type }}</span>
+                                    <strong>{{ newsActionMenu.post.title }}</strong>
+                                </div>
+                                <button v-if="newsActionMenu.post.status === 'draft' && hasPermission('news_posts','update')" @click="publishNews(newsActionMenu.post); closeNewsActionMenu()"><i class="fas fa-paper-plane"></i><span>Publish</span></button>
+                                <button v-if="newsActionMenu.post.status === 'published' && hasPermission('news_posts','update')" @click="toggleNewsPublic(newsActionMenu.post); closeNewsActionMenu()"><i class="fas" :class="newsActionMenu.post.is_public ? 'fa-lock' : 'fa-globe'"></i><span>{{ newsActionMenu.post.is_public ? 'Make Internal' : 'Make Public' }}</span></button>
+                                <button v-if="newsActionMenu.post.status === 'published' && newsActionMenu.post.is_public && hasPermission('news_posts','update')" @click="toggleNewsFeature(newsActionMenu.post); closeNewsActionMenu()"><i class="fas fa-star"></i><span>{{ newsActionMenu.post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}</span></button>
+                                <button v-if="newsActionMenu.post.status === 'published' && hasPermission('news_posts','update')" @click="archiveNews(newsActionMenu.post); closeNewsActionMenu()"><i class="fas fa-archive"></i><span>Archive</span></button>
+                                <div class="news-v26-action-sep" v-if="hasPermission('news_posts','delete')"></div>
+                                <button class="is-danger" v-if="hasPermission('news_posts','delete')" @click="deleteNews(newsActionMenu.post); closeNewsActionMenu()"><i class="fas fa-trash"></i><span>Delete</span></button>
+                            </div>
+                        </div>
+                    </teleport>
                 </div>
 
             </div><!-- /content-area -->
@@ -7539,7 +7569,7 @@
             </div>
             <footer>
               <span :class="newsPeek.post.is_public ? 'is-public' : 'is-internal'">{{ newsPeek.post.is_public ? 'Public' : 'Internal' }}</span>
-              <button @click="openNewsDrawer(newsPeek.post)">{{ newsPeek.post.post_type==='article' ? 'Read article' : newsPeek.post.post_type==='highlight' ? 'View story' : newsPeek.post.post_type==='update' ? 'Open note' : 'Open folio' }} <i>→</i></button>
+              <button @click="openNewsDrawer(newsPeek.post, newsPeek.sourceRect)">{{ newsPeek.post.post_type==='article' ? 'Read article' : newsPeek.post.post_type==='highlight' ? 'View story' : newsPeek.post.post_type==='update' ? 'Open note' : 'Open folio' }} <i>→</i></button>
             </footer>
           </aside>
         </div>
@@ -7548,8 +7578,9 @@
              RESEARCH LIBRARY READER — V24 object choreography
         ============================================================ -->
         <template v-if="newsDrawer.show && newsDrawer.post">
-          <div class="nrd-backdrop nrd-backdrop--v23" @click="closeNewsDrawer()"></div>
-          <section class="nrd-drawer nrd-v23" :class="'nrd--' + newsDrawer.post.post_type"
+          <div class="nrd-backdrop nrd-backdrop--v23" :class="'nrd-backdrop--' + newsDrawer.post.post_type" @click="closeNewsDrawer()"></div>
+          <section class="nrd-drawer nrd-v23" :class="['nrd--' + newsDrawer.post.post_type, {'is-public-preview':newsDrawer.publicPreview}]"
+                   :style="newsDrawer.post.post_type==='update' ? newsDrawerPositionStyle : null"
                    @keydown.esc="closeNewsDrawer()" tabindex="-1" ref="nrdDrawer">
 
             <div class="nrd-v23-progress"><span :style="{ width: newsDrawer.post.word_count ? Math.min(100, Math.round((newsDrawer.post.word_count / (newsDrawer.post.post_type === 'update' ? 80 : 400)) * 100)) + '%' : '100%' }"></span></div>
@@ -7563,6 +7594,11 @@
               </div>
               <button class="nrd-v23-close" @click="closeNewsDrawer()" title="Close (Esc)" aria-label="Close"><span></span><span></span></button>
             </header>
+
+            <div v-if="newsDrawer.publicPreview" class="nrd-v26-public-previewbar">
+              <div><strong>Public view preview</strong><span>Preview of how this record is presented publicly. Final web layout may vary.</span></div>
+              <button @click="newsDrawer.publicPreview=false">Back to internal view</button>
+            </div>
 
             <div class="nrd-v23-scroll">
               <!-- PUBLICATION — scholarly folio -->
@@ -7606,10 +7642,11 @@
               </article>
 
               <!-- HIGHLIGHT — visual spotlight -->
-              <article v-else-if="newsDrawer.post.post_type === 'highlight'" class="nrd-v23-highlight">
+              <article v-else-if="newsDrawer.post.post_type === 'highlight'" class="nrd-v23-highlight" :class="{'has-fallback':!(newsDrawer.post.image_urls?.length || newsDrawer.post.featured_image_url)}">
                 <div class="nrd-v23-highlight-media" v-if="newsDrawer.post.image_urls?.length || newsDrawer.post.featured_image_url">
                   <img v-for="(url, i) in (newsDrawer.post.image_urls?.length ? newsDrawer.post.image_urls : newsDrawer.post.featured_image_url.split(',').map(s=>s.trim()).filter(Boolean))" :key="i" :src="url" :alt="newsDrawer.post.title" :class="{'is-primary':i===0}">
                 </div>
+                <div v-else class="nrd-v26-highlight-fallback" aria-hidden="true"><strong>{{ newsDrawerLineName ? newsDrawerLineName.split('—')[0].trim() : 'R&I' }}</strong><i></i><i></i><i></i></div>
                 <div class="nrd-v23-highlight-copy">
                   <div class="nrd-v23-eyebrow">Highlight <span v-if="newsDrawerLineName">· {{ newsDrawerLineName }}</span></div>
                   <h1>{{ newsDrawer.post.title }}</h1>
@@ -7628,8 +7665,11 @@
               </article>
 
               <!-- Connected output -->
-              <section v-if="newsDrawer.post.research_line_id && newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).length" class="nrd-v23-related">
-                <div class="nrd-v23-related-head"><span>Connected output</span><small>{{ newsDrawerLineName }}</small></div>
+              <section v-if="newsDrawer.post.research_line_id && newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).length" class="nrd-v23-related nrd-v26-related">
+                <div class="nrd-v23-related-head">
+                  <div><span>Connected output</span><small>{{ newsDrawerLineName }} · {{ newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).length }} related records</small></div>
+                  <button class="nrd-v26-explore-line" @click="exploreNewsLine(newsDrawer.post.research_line_id)">Explore research line →</button>
+                </div>
                 <button v-for="rel in newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).slice(0,3)" :key="rel.id" @click="openNewsDrawer(rel)" class="nrd-v23-related-item">
                   <span>{{ rel.post_type === 'publication' ? 'Publication' : rel.post_type === 'article' ? 'Article' : rel.post_type === 'highlight' ? 'Highlight' : 'Update' }}</span>
                   <strong>{{ rel.title }}</strong><i>→</i>
@@ -7673,6 +7713,7 @@
                 <div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div>
                 <div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div>
               </dl>
+              <button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button>
             </aside>
           </section>
         </template>
@@ -12225,7 +12266,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=25"></script>
+    <script src="app.js?v=26"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
