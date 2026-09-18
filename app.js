@@ -12033,7 +12033,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (s.is_oncall_manager) roleFlags2.push('On-call Manager')
 
           const profile = {
-            id: s.id, name,
+            id: s.id, name, kind: 'staff',
             // STATIC identity
             static: {
               role: _toTitle(s.staff_type || 'staff'),
@@ -12292,7 +12292,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const lname = (id) => { const l = lines.find(x=>x.id===id); return l ? (l.short_name||l.name) : null }
           const items = trials.slice(0, 8).map(t => {
             const e = researchOps.trialEnrollment ? researchOps.trialEnrollment(t) : null
-            const meta = [t.phase?('Phase '+t.phase):null, lname(t.research_line_id), e?`enrolled ${e.actual}/${e.target}`:null].filter(Boolean).join(' · ')
+            const meta = [t.phase?(/^phase\b/i.test(t.phase)?t.phase:('Phase '+t.phase)):null, lname(t.research_line_id), e?`enrolled ${e.actual}/${e.target}`:null].filter(Boolean).join(' · ')
             return { title: t.title, badge: 'recruiting', tone: 'recruiting', meta }
           })
           const text = `${trials.length} trial${trials.length===1?'':'s'} recruiting${trials.length>8?' (showing 8)':''}:`
@@ -12354,11 +12354,19 @@ document.addEventListener('DOMContentLoaded', () => {
           const coInv = (trial.co_investigators||[]).concat(trial.sub_investigators||[]).map(id=>getStaffName(id)).filter(Boolean)
           const enroll = trial.enrollment_target ? `${trial.actual_enrollment||0}/${trial.enrollment_target}` : (trial.actual_enrollment!=null?`${trial.actual_enrollment}`:null)
           const profile = {
-            id: trial.id, name: trial.title,
-            static: { role: [trial.phase?('Phase '+trial.phase):null, trial.study_type].filter(Boolean).join(' · ')||'Clinical trial', specialty: (trial.target_diseases||[]).slice(0,2).join(', ')||null, residency: trial.nct_number||trial.protocol_id||null,
+            id: trial.id, name: trial.title, kind: 'trial',
+            static: { role: [trial.phase?(/^phase\b/i.test(trial.phase)?trial.phase:('Phase '+trial.phase)):null, trial.study_type].filter(Boolean).join(' · ')||'Clinical trial', specialty: (trial.target_diseases||[]).slice(0,2).join(', ')||null, residency: trial.nct_number||trial.protocol_id||null,
                       email: null, phone: null, department: line?(line.name||line.short_name):null, experience: trial.sponsor_name||null,
                       credentials: [trial.funding_status, trial.ethics_status].filter(Boolean), roleFlags: [] },
-            active: { status: trial.status||'—', statusKind: /reclut|recruit|activ/i.test(trial.status||'')?'ok':'rotation', onLeave: null, nextOnCall: null, rotation: enroll?`Enrolled ${enroll}`:null, supervises: 0 },
+            active: { status: trial.status||'—', statusKind: /reclut|recruit|activ/i.test(trial.status||'')?'ok':'rotation', onLeave: null, nextOnCall: null, rotation: null, supervises: 0 },
+            overview: [
+              { label: 'Status', value: trial.status || 'Not recorded' },
+              { label: 'Phase', value: trial.phase ? (/^phase\b/i.test(trial.phase) ? trial.phase : ('Phase ' + trial.phase)) : 'Not recorded' },
+              ...(enroll ? [{ label: 'Enrollment', value: enroll }] : []),
+              ...(pi ? [{ label: 'Principal investigator', value: pi }] : []),
+              ...(line ? [{ label: 'Research line', value: (line.line_number?'L'+line.line_number+' · ':'')+(line.name||line.short_name) }] : []),
+              ...(trial.sponsor_name ? [{ label: 'Sponsor', value: trial.sponsor_name }] : [])
+            ],
             links: [], completeness: 100, missing: []
           }
           const L = profile.links
@@ -12366,7 +12374,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (coInv.length) L.push({ label: `${coInv.length} co/sub-investigator${coInv.length===1?'':'s'}`, detail: coInv.slice(0,3).join(', '), kind: 'people' })
           if (line) L.push({ label: 'Research line', detail: (line.line_number?'L'+line.line_number+' · ':'')+(line.name||line.short_name), kind: 'research' })
           if (trial.sponsor_name) L.push({ label: 'Sponsor', detail: trial.sponsor_name + (trial.funding_amount?` (${trial.funding_amount} ${trial.funding_currency||''})`:''), kind: 'project' })
-          const text = `${trial.title} — ${trial.status||'status unknown'}${trial.phase?`, Phase ${trial.phase}`:''}${enroll?`, enrolled ${enroll}`:''}${pi?`. PI: ${pi}`:''}.`
+          const text = `${trial.title} — ${trial.status||'status unknown'}${trial.phase?`, ${/^phase\b/i.test(trial.phase)?trial.phase:('Phase '+trial.phase)}`:''}${enroll?`, enrolled ${enroll}`:''}${pi?`. PI: ${pi}`:''}.`
           return { text, visual: { type: 'profile', profile }, chips: pi&&trial.principal_investigator_id?[{label:pi,id:trial.principal_investigator_id}]:[], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research','staff'], followups: line?[{ label: 'About this research line', intent: 'research_line_profile', q: 'line '+(line.line_number||line.name) }]:[], confidence: 'high' }
         }
         if (intent === 'project_profile') {
@@ -12380,11 +12388,18 @@ document.addEventListener('DOMContentLoaded', () => {
           const line = (researchOps.researchLines.value||[]).find(l => l.id === pr.research_line_id)
           const lead = pr.lead_investigator_id ? getStaffName(pr.lead_investigator_id) : null
           const profile = {
-            id: pr.id, name: pr.title,
+            id: pr.id, name: pr.title, kind: 'project',
             static: { role: [pr.category, pr.project_nature].filter(Boolean).join(' · ')||'Innovation project', specialty: (pr.target_diseases||[]).slice(0,2).join(', ')||null, residency: pr.trl_level?('TRL '+pr.trl_level):null,
                       email: null, phone: null, department: line?(line.name||line.short_name):null, experience: pr.development_stage||pr.current_stage||null,
                       credentials: [pr.ip_status, pr.funding_status].filter(Boolean), roleFlags: pr.is_featured?['Featured']:[] },
-            active: { status: pr.current_stage||pr.development_stage||'—', statusKind: 'ok', onLeave: null, nextOnCall: null, rotation: pr.partner_name?`Partner: ${pr.partner_name}`:(pr.partner_found?'Partner found':(pr.partner_needs?'Seeking partner':null)), supervises: 0 },
+            active: { status: pr.current_stage||pr.development_stage||'—', statusKind: 'ok', onLeave: null, nextOnCall: null, rotation: null, supervises: 0 },
+            overview: [
+              { label: 'Status', value: pr.current_stage || pr.development_stage || 'In progress' },
+              ...(pr.trl_level ? [{ label: 'Maturity', value: 'TRL ' + pr.trl_level }] : []),
+              ...(lead ? [{ label: 'Lead investigator', value: lead }] : []),
+              ...(line ? [{ label: 'Research line', value: (line.line_number?'L'+line.line_number+' · ':'')+(line.name||line.short_name) }] : []),
+              ...(pr.partner_name ? [{ label: 'Partner', value: pr.partner_name }] : (pr.partner_needs ? [{ label: 'Partner need', value: pr.partner_needs }] : []))
+            ],
             links: [], completeness: 100, missing: []
           }
           const L = profile.links
@@ -12413,12 +12428,19 @@ document.addEventListener('DOMContentLoaded', () => {
           const recruiting = trials.filter(t => /reclut|recruit|activ/i.test(t.status||'')).length
           // build a profile-style card
           const profile = {
-            id: line.id, name: (line.line_number?'L'+line.line_number+' · ':'') + (line.name || line.short_name),
+            id: line.id, name: (line.line_number?'L'+line.line_number+' · ':'') + (line.name || line.short_name), kind: 'research_line', avatar: line.line_number ? ('L' + line.line_number) : 'RL',
             static: { role: 'Research line', specialty: line.short_name && line.short_name!==line.name ? line.short_name : null, residency: null,
-                      email: null, phone: null, department: null, experience: line.active===false?'inactive':'active',
+                      email: null, phone: null, department: null, experience: null,
                       credentials: (line.keywords ? String(line.keywords).split(/[,;]/).slice(0,4).map(k=>k.trim()).filter(Boolean) : []), roleFlags: [] },
             active: { status: line.active===false?'Inactive':'Active', statusKind: line.active===false?'leave':'ok',
-                      onLeave: null, nextOnCall: null, rotation: `${trials.length} trials, ${projs.length} projects, ${pubs.length} papers`, supervises: 0 },
+                      onLeave: null, nextOnCall: null, rotation: null, supervises: 0 },
+            overview: [
+              { label: 'Status', value: line.active===false ? 'Inactive' : 'Active' },
+              ...(coord ? [{ label: 'Coordinator', value: coord }] : []),
+              { label: 'Clinical trials', value: String(trials.length) + (recruiting ? ` · ${recruiting} recruiting` : '') },
+              { label: 'Innovation projects', value: String(projs.length) },
+              { label: 'Publications', value: String(pubs.length) }
+            ],
             links: [], completeness: 100, missing: []
           }
           const L = profile.links
@@ -12800,12 +12822,19 @@ document.addEventListener('DOMContentLoaded', () => {
           const sup = (medicalStaff.value||[]).find(s => s.id === (unit.default_supervisor_id||unit.supervisor_id))
           // build a profile-style card for the unit
           const profile = {
-            id: unit.id, name: unit.unit_name,
+            id: unit.id, name: unit.unit_name, kind: 'unit', avatar: unit.unit_code || 'CU',
             static: { role: (unit.unit_type||'Clinical unit').replace(/_/g,' '), specialty: unit.specialty || null, residency: unit.unit_code || null,
                       email: null, phone: null, department: unit.department_name || null,
-                      experience: `capacity ${cap}`, credentials: [], roleFlags: [] },
+                      experience: null, credentials: [], roleFlags: [] },
             active: { status: active.length>=cap?'Full':(active.length===0?'Free':'Has space'), statusKind: active.length>=cap?'leave':(active.length===0?'ok':'rotation'),
-                      onLeave: null, nextOnCall: null, rotation: `${active.length}/${cap} residents`, supervises: 0 },
+                      onLeave: null, nextOnCall: null, rotation: null, supervises: 0 },
+            overview: [
+              { label: 'Status', value: active.length>=cap?'Full':(active.length===0?'Free':'Has space') },
+              { label: 'Capacity', value: `${active.length}/${cap} residents` },
+              ...(sup ? [{ label: 'Supervisor', value: sup.full_name }] : []),
+              ...(unit.specialty ? [{ label: 'Specialty', value: unit.specialty }] : []),
+              ...((unit.location_building || unit.location_floor) ? [{ label: 'Location', value: [unit.location_building, unit.location_floor].filter(Boolean).join(' · ') }] : [])
+            ],
             links: [], completeness: 100, missing: []
           }
           const L = profile.links
