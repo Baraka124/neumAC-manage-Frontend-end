@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=200">
+    <link rel="stylesheet" href="style.css?v=300">
 
     
 </head>
@@ -98,10 +98,10 @@
             </div>
             <div class="askbar-head grounded-head">
                 <span class="grounded-head-orb" :class="{ 'grounded-head-orb--think': askBar.loading }"></span>
-                <div><div class="askbar-head-t">Grounded</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'following up' : 'scanned just now' }}</div></div>
-                <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()">New</button>
+                <div><div class="askbar-head-t">Grounded</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'live context · following up' : 'department data · synced just now' }}</div></div>
+                <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()">New chat</button>
                 <button class="askbar-teach-btn" @click="askBarToggleTeach()" :class="{ 'askbar-teach-btn--on': askBar.view === 'teach' }" title="Teach Grounded">Teach</button>
-                <span class="askbar-head-live"><span class="askbar-head-dot"></span> live</span>
+                <span class="askbar-head-live"><span class="askbar-head-dot"></span> Live</span>
                 <button class="askbar-close" @click="closeAskBar()">✕</button>
             </div>
 
@@ -209,7 +209,7 @@
             <div v-if="askBar.view === 'conversation'" class="askbar-conv">
                 <div v-if="!askBar.turns.length" class="askbar-greeting">
                     <div class="askbar-greeting-t">What would you like to know?</div>
-                    <div class="askbar-greeting-s">I read your live data — coverage, leave, trials, rotations — and connect the dots. Ask in your own words.</div>
+                    <div class="askbar-greeting-s">Ask across live operations, people, rotations and research — Grounded connects the records for you.</div>
                 </div>
                 <div v-if="!askBar.turns.length" class="askbar-sug-label">{{ askBarSuggestLabel }}</div>
                 <div v-if="!askBar.turns.length" class="askbar-sug">
@@ -12307,7 +12307,7 @@
         }
 
         resize();
-        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });
+        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });   
         if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
     })();
     </script>
