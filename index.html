@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=411">
+    <link rel="stylesheet" href="style.css?v=421">
 
     
 </head>
@@ -107,6 +107,9 @@
                     <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()" title="Start a new Grounded conversation">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>New</span>
                     </button>
+                    <button class="askbar-history-btn" @click="askBarToggleTimeline()" :class="{ 'askbar-history-btn--on': askBar.view === 'timeline' }" title="Department activity">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Activity</span><span v-if="askBarChanges.length" class="askbar-tool-count">{{ askBarChanges.length }}</span>
+                    </button>
                     <button class="askbar-teach-btn" @click="askBarToggleTeach()" :class="{ 'askbar-teach-btn--on': askBar.view === 'teach' }" title="Teach Grounded">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg><span>Teach</span>
                     </button>
@@ -117,8 +120,22 @@
             </div>
 
             <!-- PROACTIVE DIGEST (scan) -->
-            <div v-if="askBar.view === 'digest' && askBarScanCount" class="askbar-digest">
-                <div class="askbar-digest-h">
+            <div v-if="askBar.view === 'digest'" class="askbar-digest">
+                <div v-if="askBarChanges.length" class="askbar-continuity">
+                    <div class="askbar-continuity-kicker">Since you were last here</div>
+                    <div class="askbar-continuity-title">{{ askBarChanges.length }} meaningful change{{ askBarChanges.length===1?'':'s' }} in department operations</div>
+                    <div class="askbar-continuity-grid">
+                        <div v-for="c in askBarChanges.slice(0,4)" :key="c.id" class="askbar-continuity-item" :class="'askbar-continuity-item--'+c.kind">
+                            <span class="askbar-continuity-dot"></span>
+                            <div><strong>{{ c.title }}</strong><span>{{ c.detail }}</span></div>
+                        </div>
+                    </div>
+                    <div class="askbar-continuity-foot">
+                        <span v-if="askBarWatchedChanges.length">{{ askBarWatchedChanges.length }} affect{{ askBarWatchedChanges.length===1?'s':'' }} something you follow</span>
+                        <button @click="askBarToggleTimeline()">View department timeline →</button>
+                    </div>
+                </div>
+                <div v-if="askBarScanCount" class="askbar-digest-h">
                     <span class="askbar-digest-h-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
                     <span class="askbar-digest-h-t">{{ askBarScanCount }} thing{{ askBarScanCount === 1 ? '' : 's' }} need{{ askBarScanCount === 1 ? 's' : '' }} attention</span>
                     <span class="askbar-digest-h-ct">as of {{ askBarNow() }}</span>
@@ -135,85 +152,107 @@
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                     </button>
                 </div>
-                <div v-if="!askBarScan.length" class="askbar-allclear">
+                <div v-if="!askBarScan.length && !askBarChanges.length" class="askbar-allclear">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                     All clear — nothing needs attention right now.
                 </div>
             </div>
 
-            <!-- TEACH GROUNDED — the Brain editor (self-growing knowledge) -->
-            <div v-if="askBar.view === 'teach'" class="askbar-teach">
-                <div class="askbar-teach-intro">
-                    <div class="askbar-teach-title">Teach Grounded</div>
-                    <div class="askbar-teach-sub">Add words and phrasings so the agent understands your department's language. Edits are saved and shared with everyone.</div>
+            <!-- DEPARTMENT TIMELINE — continuity and institutional memory -->
+            <div v-if="askBar.view === 'timeline'" class="askbar-timeline">
+                <div class="askbar-timeline-head">
+                    <div>
+                        <div class="askbar-timeline-kicker">Department memory</div>
+                        <div class="askbar-timeline-title">What changed</div>
+                        <div class="askbar-timeline-sub">Detected operational changes and confirmed Grounded actions, in one traceable stream.</div>
+                    </div>
+                    <button class="askbar-timeline-back" @click="askBar.view='conversation'">Back to Grounded</button>
                 </div>
-
-                <!-- Worklist: questions Grounded couldn't answer -->
-                <div class="askbar-teach-sec" v-if="brainRows.filter(r => r.kind === 'failed_query' && r.enabled).length">
-                    <div class="askbar-teach-h">⚠ Couldn't answer these ({{ brainRows.filter(r => r.kind === 'failed_query' && r.enabled).length }})</div>
-                    <div v-for="r in brainRows.filter(r => r.kind === 'failed_query' && r.enabled).slice(0,8)" :key="r.id" class="askbar-teach-fq">
-                        <span class="askbar-teach-fq-q">"{{ r.content }}"</span>
-                        <button class="askbar-teach-x" @click="brainToggle(r.id, false)" title="Dismiss">✕</button>
-                    </div>
+                <div v-if="askBarWatchlist.length" class="askbar-watch-strip">
+                    <span class="askbar-watch-strip-label">Following</span>
+                    <span v-for="w in askBarWatchlist.slice(0,6)" :key="w.key" class="askbar-watch-chip">{{ w.name }}</span>
+                    <span v-if="askBarWatchlist.length>6" class="askbar-watch-more">+{{ askBarWatchlist.length-6 }}</span>
                 </div>
-
-                <!-- Add knowledge — simple: topic + word -->
-                <div class="askbar-teach-sec">
-                    <div class="askbar-teach-h">Teach a word</div>
-                    <div class="askbar-teach-help">Pick a topic, type the word your team uses. e.g. On-call, guardia</div>
-                    <div class="askbar-teach-simple">
-                        <select v-model="teachForm.intent" class="askbar-teach-inp askbar-teach-inp--topic">
-                            <option value="">Topic…</option>
-                            <option value="oncall_upcoming">On-call / duty</option>
-                            <option value="absent_now">Leave / absence</option>
-                            <option value="rotations_deep">Rotations</option>
-                            <option value="units_overview">Clinical units</option>
-                            <option value="trials_recruiting">Trials</option>
-                            <option value="research_lines">Research lines</option>
-                            <option value="staff_with_phd">PhD holders</option>
-                            <option value="staff_can_pi">PI-eligible</option>
-                            <option value="departments_overview">Departments</option>
-                            <option value="briefing">Daily briefing</option>
-                            <option value="issues">Issues / conflicts</option>
-                        </select>
-                        <input v-model="teachForm.content" class="askbar-teach-inp askbar-teach-inp--word" placeholder="the word — e.g. guardia" @keyup.enter="teachSubmit()" />
-                        <button class="askbar-teach-go" :disabled="!teachForm.intent || !teachForm.content.trim()" @click="teachSubmit()" title="Teach it">→</button>
-                    </div>
-                    <div class="askbar-teach-langrow">
-                        <span class="askbar-teach-langlbl">Language:</span>
-                        <button v-for="lg in ['English','Galician','Spanish']" :key="lg" class="askbar-teach-langmini" :class="{ 'askbar-teach-langmini--on': teachForm.lang === lg }" @click="teachForm.lang = lg">{{ lg }}</button>
-                    </div>
-                    <div v-if="teachMsg" class="askbar-teach-msg">{{ teachMsg }}</div>
-                </div>
-
-                <!-- Admin curator — review, toggle (reverse), remove taught vocabulary -->
-                <div class="askbar-teach-sec" v-if="brainRows.filter(r => r.kind !== 'failed_query').length">
-                    <div class="askbar-teach-h">Taught vocabulary
-                        <span class="askbar-curator-count">{{ brainRows.filter(r => r.kind !== 'failed_query' && r.enabled).length }} active · {{ brainRows.filter(r => r.kind !== 'failed_query' && !r.enabled).length }} off</span>
-                    </div>
-                    <div class="askbar-curator-help">Toggle a word off to reverse it (kept but inactive), or remove it entirely.</div>
-                    <div v-for="r in brainRows.filter(r => r.kind !== 'failed_query').slice(0,40)" :key="r.id" class="askbar-curator-row" :class="{ 'askbar-curator-row--off': !r.enabled }">
-                        <button class="askbar-curator-toggle" :class="{ 'askbar-curator-toggle--on': r.enabled }" @click="brainToggle(r.id, !r.enabled)" :title="r.enabled ? 'Turn off (reverse)' : 'Turn on'">
-                            <span class="askbar-curator-knob"></span>
-                        </button>
-                        <div class="askbar-curator-body">
-                            <div class="askbar-curator-word">"{{ r.content }}"<span v-if="r.meta && r.meta.lang" class="askbar-curator-lang">{{ r.meta.lang }}</span></div>
-                            <div class="askbar-curator-topic">→ {{ (teachTopicLabels[r.intent] || r.intent || '').replace(/_/g,' ') }}</div>
+                <div v-if="askBarTimeline.length" class="askbar-timeline-list">
+                    <div v-for="(item,ti) in askBarTimeline" :key="ti" class="askbar-timeline-item" :class="'askbar-timeline-item--'+(item.kind||item.type||'default')">
+                        <div class="askbar-timeline-marker"></div>
+                        <div class="askbar-timeline-body">
+                            <div class="askbar-timeline-row"><strong>{{ item.title }}</strong><span>{{ item.at ? new Date(item.at).toLocaleString([], {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '' }}</span></div>
+                            <div v-if="item.detail" class="askbar-timeline-detail">{{ item.detail }}</div>
                         </div>
-                        <button class="askbar-curator-del" @click="brainDelete(r.id)" title="Remove permanently">✕</button>
+                    </div>
+                </div>
+                <div v-else class="askbar-timeline-empty">
+                    <div class="askbar-timeline-empty-mark">G</div>
+                    <strong>No meaningful changes recorded yet.</strong>
+                    <span>Grounded will build this history as departmental state changes.</span>
+                </div>
+            </div>
+
+            <!-- TEACH GROUNDED — department language layer -->
+            <div v-if="askBar.view === 'teach'" class="askbar-teach askbar-teach--v20">
+                <div class="askbar-teach-hero">
+                    <div>
+                        <div class="askbar-teach-eyebrow">Department language layer</div>
+                        <div class="askbar-teach-title">Teach the words your team actually uses.</div>
+                        <div class="askbar-teach-sub">Map local phrasing to concepts Grounded already understands. Changes are shared across the department.</div>
+                    </div>
+                    <div class="askbar-teach-stats">
+                        <div><strong>{{ brainRows.filter(r => r.kind !== 'failed_query' && r.enabled).length }}</strong><span>active terms</span></div>
+                        <div><strong>{{ brainRows.filter(r => r.kind === 'failed_query' && r.enabled).length }}</strong><span>learning queue</span></div>
+                        <div><strong>3</strong><span>languages</span></div>
                     </div>
                 </div>
 
-                <!-- Failed queries worklist — things to teach -->
-                <div class="askbar-teach-sec" v-if="brainRows.filter(r => r.kind === 'failed_query').length">
-                    <div class="askbar-teach-h">Needs teaching <span class="askbar-curator-count">{{ brainRows.filter(r => r.kind === 'failed_query').length }}</span></div>
-                    <div class="askbar-curator-help">Questions the assistant couldn't answer — teach the word above to fix.</div>
-                    <div v-for="r in brainRows.filter(r => r.kind === 'failed_query').slice(0,8)" :key="r.id" class="askbar-curator-fail" @click="teachForm.content = r.content">
-                        <span>"{{ r.content }}"</span>
-                        <button class="askbar-curator-del" @click.stop="brainDelete(r.id)" title="Dismiss">✕</button>
-                    </div>
+                <div class="askbar-teach-grid">
+                    <section class="askbar-teach-panel askbar-teach-panel--new">
+                        <div class="askbar-teach-panel-head">
+                            <div><span class="askbar-teach-step">01</span><strong>Add department language</strong></div>
+                            <span>Phrase → concept</span>
+                        </div>
+                        <div class="askbar-teach-fields">
+                            <label><span>Concept</span>
+                                <select v-model="teachForm.intent" class="askbar-teach-inp askbar-teach-inp--topic">
+                                    <option value="">Choose a concept…</option>
+                                    <option value="oncall_upcoming">On-call / duty</option><option value="absent_now">Leave / absence</option><option value="rotations_deep">Rotations</option><option value="units_overview">Clinical units</option><option value="trials_recruiting">Trials</option><option value="research_lines">Research lines</option><option value="staff_with_phd">PhD holders</option><option value="staff_can_pi">PI-eligible</option><option value="departments_overview">Departments</option><option value="briefing">Daily briefing</option><option value="issues">Issues / conflicts</option>
+                                </select>
+                            </label>
+                            <label class="askbar-teach-wordfield"><span>Department phrase</span><input v-model="teachForm.content" class="askbar-teach-inp askbar-teach-inp--word" placeholder="e.g. de garda, asma grave, UCRI…" @keyup.enter="teachSubmit()" /></label>
+                        </div>
+                        <div class="askbar-teach-compose-foot">
+                            <div class="askbar-teach-langrow"><span class="askbar-teach-langlbl">Language</span><button v-for="lg in ['English','Galician','Spanish']" :key="lg" class="askbar-teach-langmini" :class="{ 'askbar-teach-langmini--on': teachForm.lang === lg }" @click="teachForm.lang = lg">{{ lg }}</button></div>
+                            <button class="askbar-teach-submit" :disabled="!teachForm.intent || !teachForm.content.trim()" @click="teachSubmit()"><span>Teach Grounded</span><span>→</span></button>
+                        </div>
+                        <div v-if="teachMsg" class="askbar-teach-msg">{{ teachMsg }}</div>
+                    </section>
+
+                    <section class="askbar-teach-panel askbar-teach-panel--queue">
+                        <div class="askbar-teach-panel-head">
+                            <div><span class="askbar-teach-step">02</span><strong>Learning queue</strong></div>
+                            <span>{{ brainRows.filter(r => r.kind === 'failed_query' && r.enabled).length }} unresolved</span>
+                        </div>
+                        <div v-if="brainRows.filter(r => r.kind === 'failed_query' && r.enabled).length" class="askbar-learning-list">
+                            <div v-for="r in brainRows.filter(r => r.kind === 'failed_query' && r.enabled).slice(0,6)" :key="r.id" class="askbar-learning-item">
+                                <div class="askbar-learning-q">“{{ r.content }}”</div>
+                                <div class="askbar-learning-actions"><button @click="teachForm.content=r.content">Use as phrase</button><button class="askbar-learning-dismiss" @click="brainToggle(r.id,false)" title="Dismiss">Dismiss</button></div>
+                            </div>
+                        </div>
+                        <div v-else class="askbar-learning-clear"><span>✓</span><div><strong>Queue is clear</strong><small>No unresolved language examples right now.</small></div></div>
+                    </section>
                 </div>
-                <div v-if="brainLoading" class="askbar-teach-loading">Loading knowledge…</div>
+
+                <section class="askbar-teach-panel askbar-teach-panel--library" v-if="brainRows.filter(r => r.kind !== 'failed_query').length">
+                    <div class="askbar-teach-panel-head"><div><span class="askbar-teach-step">03</span><strong>Department vocabulary</strong></div><span>{{ brainRows.filter(r => r.kind !== 'failed_query' && r.enabled).length }} active · {{ brainRows.filter(r => r.kind !== 'failed_query' && !r.enabled).length }} off</span></div>
+                    <div class="askbar-vocab-list">
+                        <div v-for="r in brainRows.filter(r => r.kind !== 'failed_query').slice(0,40)" :key="r.id" class="askbar-vocab-row" :class="{ 'askbar-vocab-row--off': !r.enabled }">
+                            <button class="askbar-curator-toggle" :class="{ 'askbar-curator-toggle--on': r.enabled }" @click="brainToggle(r.id,!r.enabled)" :title="r.enabled ? 'Turn off' : 'Turn on'"><span class="askbar-curator-knob"></span></button>
+                            <div class="askbar-vocab-word"><strong>{{ r.content }}</strong><span v-if="r.meta && r.meta.lang">{{ r.meta.lang }}</span></div>
+                            <div class="askbar-vocab-map">{{ teachTopicLabels[r.intent] || (r.intent||'').replace(/_/g,' ') }}</div>
+                            <button class="askbar-vocab-remove" @click="brainDelete(r.id)" title="Remove">×</button>
+                        </div>
+                    </div>
+                </section>
+                <div v-if="brainLoading" class="askbar-teach-loading">Loading department language…</div>
             </div>
 
             <!-- CONVERSATION -->
@@ -238,7 +277,7 @@
                 </div>
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
                     <div v-if="turn.q" class="askbar-q-bub" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
-                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
+                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
                         <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
                             <div v-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state">
                                 <span class="askbar-empty-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg></span>
@@ -264,6 +303,10 @@
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">When</span><span class="askbar-proposal-v">{{ turn.proposal.dateLabel }} <span class="askbar-proposal-sub">· {{ turn.proposal.days }} day{{ turn.proposal.days===1?'':'s' }}</span></span></div>
                                     <div v-if="turn.proposal.covering" class="askbar-proposal-row"><span class="askbar-proposal-k">Cover</span><span class="askbar-proposal-v">{{ turn.proposal.covering.name }}</span></div>
                                 </div>
+                                <div v-if="turn.proposal.impact && turn.proposal.impact.items" class="askbar-impact-preview">
+                                    <div class="askbar-impact-preview-head"><span>Impact preview</span><small>Before anything changes</small></div>
+                                    <div class="askbar-impact-preview-grid"><div v-for="(im,ii) in turn.proposal.impact.items.slice(0,4)" :key="ii" class="askbar-impact-mini" :class="'askbar-impact-mini--'+im.tone"><span>{{ im.label }}</span><strong>{{ im.value }}</strong></div></div>
+                                </div>
                                 <div v-if="turn.proposal.conflicts && turn.proposal.conflicts.length && !turn.proposal.covering" class="askbar-proposal-warn">
                                     ⚠ {{ turn.proposal.subject.name }} is on call during this leave ({{ turn.proposal.conflicts.length }} shift{{ turn.proposal.conflicts.length===1?'':'s' }}) — coverage isn't arranged.
                                 </div>
@@ -287,6 +330,10 @@
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.oncallProposal.subject.name }}</span></div>
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">When</span><span class="askbar-proposal-v">{{ turn.oncallProposal.dateLabel }}</span></div>
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Backup</span><span class="askbar-proposal-v">{{ turn.oncallProposal.backup ? turn.oncallProposal.backup.name : '—' }}</span></div>
+                                </div>
+                                <div v-if="turn.oncallProposal.impact && turn.oncallProposal.impact.items" class="askbar-impact-preview">
+                                    <div class="askbar-impact-preview-head"><span>Impact preview</span><small>Before anything changes</small></div>
+                                    <div class="askbar-impact-preview-grid"><div v-for="(im,ii) in turn.oncallProposal.impact.items" :key="ii" class="askbar-impact-mini" :class="'askbar-impact-mini--'+im.tone"><span>{{ im.label }}</span><strong>{{ im.value }}</strong></div></div>
                                 </div>
                                 <div v-if="turn.oncallProposal.blocked" class="askbar-proposal-block">
                                     ⛔ {{ turn.oncallProposal.subject.name }} is on leave that day — they can't be on call.
@@ -528,25 +575,38 @@
                                         <div class="askbar-profile-name">{{ turn.visual.profile.name }}</div>
                                         <div class="askbar-profile-role">{{ turn.visual.profile.static.role }}<span v-if="turn.visual.profile.static.specialty"> · {{ turn.visual.profile.static.specialty }}</span><span v-if="turn.visual.profile.static.residency"> · {{ turn.visual.profile.static.residency }}</span></div>
                                     </div>
-                                    <span class="askbar-profile-status" :class="'askbar-profile-status--'+turn.visual.profile.active.statusKind">{{ turn.visual.profile.active.status }}</span>
+                                    <div class="askbar-profile-top-actions">
+                                        <button class="askbar-watch-btn" :class="{ 'askbar-watch-btn--on': askBarIsWatched(turn.visual.profile.kind||'staff', turn.visual.profile.id) }" @click="askBarToggleWatch(turn.visual.profile)" :title="askBarIsWatched(turn.visual.profile.kind||'staff', turn.visual.profile.id) ? 'Stop following' : 'Keep in my view'">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" :fill="askBarIsWatched(turn.visual.profile.kind||'staff', turn.visual.profile.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.7"><path d="M12 2l3.1 6.3 6.9 1-5 4.8 1.2 6.9L12 17.8 5.8 21 7 14.1 2 9.3l6.9-1L12 2z"/></svg><span>{{ askBarIsWatched(turn.visual.profile.kind||'staff', turn.visual.profile.id) ? 'Following' : 'Follow' }}</span>
+                                        </button>
+                                        <span class="askbar-profile-status" :class="'askbar-profile-status--'+turn.visual.profile.active.statusKind">{{ turn.visual.profile.active.status }}</span>
+                                    </div>
                                 </div>
                                 <div v-if="(turn.visual.profile.kind||'staff')==='staff' && turn.visual.profile.static.roleFlags.length" class="askbar-profile-flags">
                                     <span v-for="f in turn.visual.profile.static.roleFlags" :key="f" class="askbar-profile-flag">{{ f }}</span>
                                 </div>
 
-                                <!-- Entity-aware overview: research objects/units should never masquerade as staff fields. -->
-                                <div v-if="turn.visual.profile.overview && turn.visual.profile.overview.length" class="askbar-profile-sec askbar-profile-sec--overview">
-                                    <div class="askbar-profile-sechead">{{
-                                        turn.visual.profile.kind==='trial' ? 'Study overview' :
-                                        turn.visual.profile.kind==='project' ? 'Project overview' :
-                                        turn.visual.profile.kind==='research_line' ? 'Research line overview' :
-                                        turn.visual.profile.kind==='unit' ? 'Unit overview' : 'Overview'
-                                    }}</div>
-                                    <div class="askbar-profile-grid">
-                                        <div v-for="(row,ri) in turn.visual.profile.overview" :key="ri" class="askbar-profile-row">
-                                            <span class="askbar-profile-k">{{ row.label }}</span><span>{{ row.value }}</span>
-                                        </div>
+                                <!-- Entity-aware overview — each object gets its own visual grammar. -->
+                                <div v-if="turn.visual.profile.kind==='research_line' && turn.visual.profile.overview" class="askbar-profile-sec askbar-profile-sec--researchline">
+                                    <div class="askbar-profile-sechead">Research line overview</div>
+                                    <div class="askbar-researchline-coordinator" v-if="turn.visual.profile.overview.find(r=>r.label==='Coordinator')">
+                                        <span>Coordinator</span><strong>{{ turn.visual.profile.overview.find(r=>r.label==='Coordinator').value }}</strong>
                                     </div>
+                                    <div class="askbar-entity-metrics">
+                                        <div v-for="row in turn.visual.profile.overview.filter(r=>r.label!=='Coordinator')" :key="row.label" class="askbar-entity-metric"><strong>{{ row.value }}</strong><span>{{ row.label }}</span></div>
+                                    </div>
+                                </div>
+                                <div v-else-if="turn.visual.profile.kind==='unit' && turn.visual.profile.unitSummary" class="askbar-profile-sec askbar-profile-sec--unit">
+                                    <div class="askbar-profile-sechead">Unit capacity</div>
+                                    <div class="askbar-unit-state">
+                                        <div class="askbar-unit-capacity"><strong>{{ turn.visual.profile.unitSummary.active }}</strong><span>/ {{ turn.visual.profile.unitSummary.capacity }} residents</span></div>
+                                        <div class="askbar-unit-track"><span :style="{width: Math.min(100,(turn.visual.profile.unitSummary.active/Math.max(1,turn.visual.profile.unitSummary.capacity))*100)+'%'}"></span></div>
+                                        <div class="askbar-unit-facts"><span><b>{{ turn.visual.profile.unitSummary.scheduled }}</b> scheduled</span><span>{{ turn.visual.profile.unitSummary.supervisor || 'No default supervisor' }}</span></div>
+                                    </div>
+                                </div>
+                                <div v-else-if="turn.visual.profile.overview && turn.visual.profile.overview.length" class="askbar-profile-sec askbar-profile-sec--overview">
+                                    <div class="askbar-profile-sechead">{{ turn.visual.profile.kind==='trial' ? 'Study overview' : turn.visual.profile.kind==='project' ? 'Project overview' : 'Overview' }}</div>
+                                    <div class="askbar-profile-grid"><div v-for="(row,ri) in turn.visual.profile.overview" :key="ri" class="askbar-profile-row"><span class="askbar-profile-k">{{ row.label }}</span><span>{{ row.value }}</span></div></div>
                                 </div>
 
                                 <!-- Staff-specific identity -->
@@ -594,6 +654,19 @@
                                 </div>
                             </div>
 
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'scenario'" class="askbar-scenario">
+                                <div class="askbar-scenario-head">
+                                    <div><span class="askbar-scenario-eyebrow">Scenario · no records changed</span><strong>{{ turn.visual.scenario.subject.name }}</strong><span>{{ turn.visual.scenario.dateLabel }}</span></div>
+                                    <span class="askbar-scenario-badge">SIMULATION</span>
+                                </div>
+                                <div class="askbar-scenario-impact">
+                                    <div v-for="(im,ii) in turn.visual.scenario.items" :key="ii" class="askbar-impact-row" :class="'askbar-impact-row--'+im.tone">
+                                        <span class="askbar-impact-signal"></span><div><span>{{ im.label }}</span><strong>{{ im.value }}</strong><small v-if="im.detail">{{ im.detail }}</small></div>
+                                    </div>
+                                </div>
+                                <div v-if="turn.visual.scenario.alternatives && turn.visual.scenario.alternatives.length" class="askbar-scenario-options"><span>Potential coverage</span><button v-for="alt in turn.visual.scenario.alternatives" :key="alt.id" @click="askBarEntityMenu({id:alt.id},$event)">{{ alt.name }} <small>{{ alt.shifts }} calls</small></button></div>
+                            </div>
+
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'workload'" class="askbar-occ">
                                 <div v-for="(r,ri) in turn.visual.rows" :key="ri" class="askbar-occ-row">
                                     <div class="askbar-occ-head"><span class="askbar-occ-name">{{ r.name }}</span><span class="askbar-occ-count" :class="{ 'askbar-occ-count--full': r.full }">load {{ r.n }}</span></div>
@@ -632,6 +705,19 @@
                                 <button v-if="turn.visual.items.length > 5" class="askbar-inline-more askbar-inline-more--list" @click="turn.listExpanded = !turn.listExpanded">
                                     {{ turn.listExpanded ? 'Show fewer' : 'Show ' + (turn.visual.items.length - 5) + ' more' }}
                                 </button>
+                            </div>
+
+                            <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'publication_list'" class="askbar-publist">
+                                <div class="askbar-publist-head"><span>Research publications</span><small>{{ turn.visual.total }} on record</small></div>
+                                <article v-for="(pub,pi) in turn.visual.items" :key="pub.id||pi" class="askbar-pubrow">
+                                    <div class="askbar-pubrow-index">{{ String(pi+1).padStart(2,'0') }}</div>
+                                    <div class="askbar-pubrow-body">
+                                        <h4>{{ pub.title }}</h4>
+                                        <div v-if="pub.journal" class="askbar-pubrow-journal">{{ pub.journal }}</div>
+                                        <div v-if="pub.authors" class="askbar-pubrow-authors">{{ pub.authors }}</div>
+                                        <div class="askbar-pubrow-meta"><span v-if="pub.line">{{ pub.line }}</span><span v-if="pub.date">{{ new Date(pub.date).toLocaleDateString([], {day:'numeric',month:'short',year:'numeric'}) }}</span><span v-if="pub.doi" class="askbar-pubrow-doi">DOI {{ pub.doi }}</span></div>
+                                    </div>
+                                </article>
                             </div>
 
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'roster'" class="askbar-roster">
@@ -747,7 +833,9 @@
 
             <!-- INPUT (always at bottom) -->
             <div class="askbar-input-wrap">
-                <button v-if="askBar.view === 'digest' && askBarScanCount" class="askbar-mode-link" @click="askBar.view = 'conversation'">…or ask anything</button>
+                <button v-if="askBar.view === 'digest' && (askBarScanCount || askBarChanges.length)" class="askbar-mode-link" @click="askBar.view = 'conversation'">Ask Grounded about this context →</button>
+                <div v-else-if="askBar.view === 'teach'" class="askbar-mode-note"><span>Language layer</span><strong>Changes here are shared with the department.</strong></div>
+                <div v-else-if="askBar.view === 'timeline'" class="askbar-mode-note"><span>Department memory</span><strong>Activity is local to this Grounded workspace.</strong></div>
                 <div v-else class="askbar-input" :class="{ 'askbar-input--busy': askBar.loading }">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
                     <input v-model="askBar.query" @keyup.enter="askBarResolve()" :disabled="askBar.loading" :placeholder="askBar.loading ? 'Grounded is checking…' : (askBar.subject && askBar.subject.name ? 'Ask about ' + askBar.subject.name + '…' : (askBar.context && askBar.context.name ? 'Ask about ' + askBar.context.name + '…' : (askBar.turns.length ? 'Continue with this context…' : 'Ask about people, coverage, rotations or research…')))" autofocus>
@@ -5986,48 +6074,31 @@
                 <!-- ============================================================
                      NEWS & POSTS VIEW
                 ============================================================ -->
-                <div v-if="currentView === 'news'" class="news-view nd-l183" >
-
-                    <!-- Tab bar + action -->
-                    <div class="rhub-tabs">
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === '' }" @click="newsFilters.status = ''">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg> All
-                            <span class="rhub-tab-count">{{ newsPosts.length }}</span>
-                        </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'published' }" @click="newsFilters.status = 'published'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Published
-                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'published').length }}</span>
-                        </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'draft' }" @click="newsFilters.status = 'draft'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Drafts
-                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'draft').length }}</span>
-                        </button>
-                        <button class="rhub-tab" :class="{ 'rhub-tab--active': newsFilters.status === 'archived' }" @click="newsFilters.status = 'archived'">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Archived
-                            <span class="rhub-tab-count">{{ newsPosts.filter(p => p.status === 'archived').length }}</span>
-                        </button>
-                        <div  class="nd-l182">
-                            <button class="btn btn-primary btn-sm" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
-                            </button>
+                <div v-if="currentView === 'news'" class="news-view news-view--editorial nd-l183">
+                    <div class="news-editorial-head">
+                        <div>
+                            <div class="news-editorial-kicker">Research output · neumAC</div>
+                            <h2>Publications & knowledge</h2>
+                            <p>A curated institutional record of publications, clinical insight and department updates.</p>
                         </div>
+                        <button class="news-editorial-new" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')"><span>＋</span> New record</button>
                     </div>
-
-                    <!-- Filter bar -->
-                    <div class="news-filter-bar">
-                        <input type="text" class="form-control nd-l181" v-model="newsFilters.search" placeholder="Search posts…" >
-                        <select class="form-select nd-l180" v-model="newsFilters.type" >
-                            <option value="">All Types</option>
-                            <option value="update">Update</option>
-                            <option value="article">Article</option>
-                            <option value="publication">Publication</option>
-                            <option value="highlight">Highlight</option>
-                        </select>
-                        <select class="form-select nd-l179" v-model="newsFilters.scope" >
-                            <option value="">All Visibility</option>
-                            <option value="public">Public (website)</option>
-                            <option value="internal">Internal only</option>
-                        </select>
+                    <div class="news-editorial-metrics">
+                        <div><strong>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</strong><span>Publications</span></div>
+                        <div><strong>{{ newsPosts.filter(p=>p.post_type==='article').length }}</strong><span>Articles</span></div>
+                        <div><strong>{{ newsPosts.filter(p=>p.status==='published' && p.is_public).length }}</strong><span>Public records</span></div>
+                        <div><strong>{{ newsPosts.filter(p=>p.status==='draft').length }}</strong><span>Drafts</span></div>
+                    </div>
+                    <div class="news-type-tabs">
+                        <button :class="{'is-active':newsFilters.type===''}" @click="newsFilters.type=''">All output <span>{{ newsPosts.length }}</span></button>
+                        <button :class="{'is-active':newsFilters.type==='publication'}" @click="newsFilters.type='publication'">Publications <span>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</span></button>
+                        <button :class="{'is-active':newsFilters.type==='article'}" @click="newsFilters.type='article'">Articles <span>{{ newsPosts.filter(p=>p.post_type==='article').length }}</span></button>
+                        <button :class="{'is-active':newsFilters.type==='update'}" @click="newsFilters.type='update'">Updates <span>{{ newsPosts.filter(p=>p.post_type==='update').length }}</span></button>
+                    </div>
+                    <div class="news-filter-bar news-filter-bar--editorial">
+                        <label class="news-search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="text" v-model="newsFilters.search" placeholder="Search titles, journals, authors…"></label>
+                        <select class="form-select" v-model="newsFilters.status"><option value="">Any status</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
+                        <select class="form-select" v-model="newsFilters.scope"><option value="">Any visibility</option><option value="public">Public website</option><option value="internal">Internal only</option></select>
                     </div>
 
                     <!-- Posts list — v-show keeps DOM stable during background refresh -->
@@ -12292,7 +12363,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=148"></script>
+    <script src="app.js?v=201"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -12394,7 +12465,7 @@
 
         function animate(){
             frame++;
-            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;
+            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;   
             drawTree(breath);
             if(!REDUCED) raf = requestAnimationFrame(animate);
         }
