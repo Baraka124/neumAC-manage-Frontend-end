@@ -17821,3 +17821,139 @@ html body #app .nrd-footer .btn-success{background:#0b7f83!important;border-colo
   html body #app .nrd-drawer .nrd-body{padding:28px 22px 44px!important;}
   html body #app .nrd-photo-gallery{margin:0 -22px 24px!important;}
 }
+
+
+/* ======================================================================
+   V22 — Grounded login · institutional minimal editorial
+   Less message. More presence.
+   ====================================================================== */
+html body #app .login-container--v22{
+  position:relative !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) clamp(430px,36vw,560px) !important;
+  min-height:100vh !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  background:#091b31 !important;
+  color:#f4f9fb !important;
+}
+html body #app .login-container--v22::before,
+html body #app .login-container--v22::after{content:none !important;display:none !important;}
+html body #app .login-container--v22 .lc-v22-atmosphere{
+  position:absolute !important;inset:0 !important;z-index:0 !important;pointer-events:none !important;overflow:hidden !important;
+  background:
+    radial-gradient(ellipse at 18% 32%,rgba(35,89,143,.22) 0%,transparent 44%),
+    radial-gradient(ellipse at 66% 76%,rgba(12,146,150,.09) 0%,transparent 40%),
+    linear-gradient(145deg,#091a30 0%,#0a2038 58%,#0b2e42 100%) !important;
+}
+html body #app .login-container--v22 #loginTreeCanvas{position:absolute !important;inset:0 !important;width:100% !important;height:100% !important;opacity:.012 !important;}
+html body #app .login-container--v22 .lc-v22-flow{position:absolute !important;left:-4% !important;bottom:-4% !important;width:76% !important;height:86% !important;opacity:.085 !important;}
+html body #app .login-container--v22 .lc-v22-flow path{stroke:#63d4d1 !important;stroke-width:1.25 !important;stroke-linecap:round !important;}
+
+html body #app .lc-v22-story{
+  position:relative !important;z-index:1 !important;min-width:0 !important;min-height:100vh !important;
+  padding:clamp(42px,6vh,72px) clamp(54px,8vw,132px) clamp(34px,5vh,58px) !important;
+  display:flex !important;flex-direction:column !important;
+}
+html body #app .lc-v22-mast{display:flex !important;align-items:center !important;gap:15px !important;color:rgba(232,245,250,.88) !important;}
+html body #app .lc-v22-neumac{font:650 20px/1 var(--nd-ui,"DM Sans",sans-serif) !important;letter-spacing:-.035em !important;white-space:nowrap !important;}
+html body #app .lc-v22-neumac span{font-weight:800 !important;color:#c9f7f2 !important;}
+html body #app .lc-v22-mast-rule{width:1px !important;height:25px !important;background:rgba(219,237,245,.18) !important;}
+html body #app .lc-v22-area{max-width:175px !important;font:600 9.5px/1.35 var(--nd-ui,"DM Sans",sans-serif) !important;letter-spacing:.11em !important;text-transform:uppercase !important;color:rgba(191,214,225,.58) !important;}
+
+html body #app .lc-v22-hero{margin:auto 0 !important;max-width:700px !important;padding:4vh 0 7vh !important;}
+html body #app .lc-v22-product-line{display:flex !important;align-items:center !important;gap:10px !important;margin-bottom:27px !important;font:650 13px/1 var(--nd-ui,"DM Sans",sans-serif) !important;letter-spacing:.02em !important;color:rgba(225,241,246,.78) !important;}
+html body #app .lc-v22-mini-mark{width:30px !important;height:30px !important;border-radius:10px !important;display:grid !important;place-items:center !important;background:rgba(255,255,255,.055) !important;border:1px solid rgba(255,255,255,.08) !important;}
+html body #app .lc-v22-mini-mark .grounded-mark-svg{width:22px !important;height:22px !important;}
+html body #app .lc-v22-title{
+  margin:0 !important;
+  max-width:650px !important;
+  font:400 clamp(58px,5.9vw,92px)/.94 "Instrument Serif",Georgia,serif !important;
+  letter-spacing:-.047em !important;
+  color:#f6fbfd !important;
+  -webkit-text-fill-color:#f6fbfd !important;
+}
+html body #app .lc-v22-copy{
+  margin:28px 0 0 !important;
+  max-width:580px !important;
+  font:450 clamp(16px,1.35vw,20px)/1.5 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:-.012em !important;
+  color:rgba(204,224,234,.70) !important;
+}
+html body #app .lc-v22-story-foot{font:550 10px/1.4 var(--nd-ui,"DM Sans",sans-serif) !important;letter-spacing:.10em !important;text-transform:uppercase !important;color:rgba(181,206,219,.39) !important;}
+
+html body #app .lc-v22-access{
+  position:relative !important;z-index:2 !important;min-height:100vh !important;
+  background:#f8faf9 !important;color:#172a3c !important;
+  border-left:1px solid rgba(225,234,237,.80) !important;
+  display:flex !important;flex-direction:column !important;justify-content:space-between !important;
+  padding:clamp(38px,5.5vh,64px) clamp(38px,4.3vw,66px) clamp(30px,4vh,46px) !important;
+  box-shadow:none !important;
+}
+html body #app .lc-v22-access-inner{width:100% !important;max-width:405px !important;margin:auto !important;}
+html body #app .lc-v22-access-brand{display:flex !important;align-items:center !important;gap:12px !important;margin-bottom:clamp(70px,10vh,110px) !important;}
+html body #app .lc-v22-access-mark{display:grid !important;place-items:center !important;width:42px !important;height:42px !important;flex:0 0 42px !important;border-radius:13px !important;background:#102f50 !important;box-shadow:none !important;}
+html body #app .lc-v22-access-mark .grounded-mark-svg{width:29px !important;height:29px !important;}
+html body #app .lc-v22-access-name{font:700 20px/1.05 var(--nd-ui,"DM Sans",sans-serif) !important;letter-spacing:-.025em !important;color:#10283f !important;}
+html body #app .lc-v22-access-sub{margin-top:4px !important;font:650 9px/1 var(--nd-ui,"DM Sans",sans-serif) !important;letter-spacing:.14em !important;text-transform:uppercase !important;color:#82909d !important;}
+html body #app .lc-v22-signin-head{margin-bottom:28px !important;}
+html body #app .lc-v22-signin-head h2{margin:0 !important;font:400 34px/1.05 "Instrument Serif",Georgia,serif !important;letter-spacing:-.025em !important;color:#152c40 !important;}
+html body #app .lc-v22-signin-head p{margin:7px 0 0 !important;font:450 13px/1.5 var(--nd-ui,"DM Sans",sans-serif) !important;color:#82909c !important;}
+
+html body #app .login-container--v22 .lc-form{display:flex !important;flex-direction:column !important;gap:16px !important;}
+html body #app .login-container--v22 .lc-field{gap:7px !important;}
+html body #app .login-container--v22 .lc-label{font:600 11.5px/1.3 var(--nd-ui,"DM Sans",sans-serif) !important;letter-spacing:0 !important;text-transform:none !important;color:#526678 !important;}
+html body #app .login-container--v22 .lc-input-wrap{position:relative !important;display:flex !important;align-items:center !important;}
+html body #app .login-container--v22 .lc-input-wrap>svg{position:absolute !important;left:15px !important;top:50% !important;transform:translateY(-50%) !important;color:#a1aeb9 !important;z-index:2 !important;}
+html body #app .login-container--v22 .lc-input{
+  width:100% !important;height:52px !important;padding:0 46px 0 43px !important;
+  border:1px solid #d8e1e5 !important;border-radius:12px !important;background:#fff !important;
+  box-shadow:none !important;outline:none !important;
+  font:500 14px/1 var(--nd-ui,"DM Sans",sans-serif) !important;color:#173047 !important;
+  transition:border-color .15s ease,box-shadow .15s ease !important;
+}
+html body #app .login-container--v22 .lc-input::placeholder{color:#a8b3bc !important;}
+html body #app .login-container--v22 .lc-input:hover{border-color:#c8d4d9 !important;}
+html body #app .login-container--v22 .lc-input:focus{border-color:#64b8bb !important;box-shadow:0 0 0 3px rgba(40,148,152,.07) !important;}
+html body #app .login-container--v22 .lc-input-wrap:focus-within>svg{color:#208e91 !important;}
+html body #app .login-container--v22 .lc-eye{right:10px !important;color:#9aa8b3 !important;}
+html body #app .login-container--v22 .lc-meta-row{display:flex !important;align-items:center !important;justify-content:space-between !important;margin:2px 0 0 !important;}
+html body #app .login-container--v22 .lc-remember,
+html body #app .login-container--v22 .lc-forgot{font:500 12px/1.3 var(--nd-ui,"DM Sans",sans-serif) !important;}
+html body #app .login-container--v22 .lc-remember{color:#788895 !important;}
+html body #app .login-container--v22 .lc-forgot{color:#356b82 !important;text-decoration:none !important;}
+html body #app .login-container--v22 .lc-forgot:hover{color:#0d777c !important;}
+html body #app .login-container--v22 .lc-remember input{width:14px !important;height:14px !important;accent-color:#197f83 !important;}
+html body #app .lc-v22-submit{
+  width:100% !important;height:52px !important;margin-top:9px !important;
+  border:0 !important;border-radius:12px !important;background:#123b61 !important;color:#fff !important;
+  box-shadow:none !important;font:700 14px/1 var(--nd-ui,"DM Sans",sans-serif) !important;
+  display:flex !important;align-items:center !important;justify-content:center !important;gap:10px !important;
+  cursor:pointer !important;transition:background .15s ease,transform .15s ease !important;
+}
+html body #app .lc-v22-submit:hover:not(:disabled){background:#0f4b68 !important;transform:translateY(-1px) !important;}
+html body #app .lc-v22-submit:active:not(:disabled){transform:none !important;}
+html body #app .lc-v22-submit:disabled{opacity:.56 !important;cursor:not-allowed !important;}
+html body #app .lc-v22-access-foot{display:flex !important;align-items:center !important;gap:7px !important;color:#9aa6ae !important;font:500 10.5px/1.35 var(--nd-ui,"DM Sans",sans-serif) !important;}
+html body #app .lc-v22-access-foot svg{color:#8ea2ae !important;}
+html body #app .login-container--v22 .login-error{margin:0 0 18px !important;border-radius:10px !important;}
+
+@media (max-width:1020px){
+  html body #app .login-container--v22{grid-template-columns:minmax(0,1fr) minmax(410px,48vw) !important;}
+  html body #app .lc-v22-story{padding-left:54px !important;padding-right:46px !important;}
+  html body #app .lc-v22-title{font-size:58px !important;}
+}
+@media (max-width:820px){
+  html body #app .login-container--v22{display:block !important;background:#f8faf9 !important;}
+  html body #app .lc-v22-story{display:none !important;}
+  html body #app .lc-v22-access{min-height:100vh !important;border-left:0 !important;padding:32px 28px 24px !important;}
+  html body #app .lc-v22-access-inner{max-width:430px !important;}
+  html body #app .lc-v22-access-brand{margin-bottom:72px !important;}
+  html body #app .lc-v22-access::before{content:"neumAC · Área Sanitaria de A Coruña y Cee" !important;position:absolute !important;left:28px !important;right:28px !important;top:24px !important;text-align:right !important;font:600 9px/1.3 var(--nd-ui,"DM Sans",sans-serif) !important;letter-spacing:.08em !important;text-transform:uppercase !important;color:#93a0aa !important;}
+}
+@media (max-width:520px){
+  html body #app .lc-v22-access{padding:26px 20px 20px !important;}
+  html body #app .lc-v22-access::before{left:20px !important;right:20px !important;font-size:8px !important;}
+  html body #app .lc-v22-access-brand{margin-bottom:58px !important;}
+  html body #app .lc-v22-signin-head h2{font-size:31px !important;}
+}
