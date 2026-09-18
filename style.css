@@ -15424,3 +15424,253 @@ html body #app .grounded-cloud [disabled] { cursor:not-allowed !important; }
 @media (prefers-reduced-motion:reduce) {
   html body #app .grounded-cloud *,html body #app .grounded-orb-wrap { animation:none !important; transition:none !important; }
 }
+
+/* ======================================================================
+   V11 — GROUNDED / CALM CLINICAL INTELLIGENCE
+   One presentation contract across facts, profiles, collections, insights,
+   alerts, proposals and clarifications. Presentation only.
+   ====================================================================== */
+
+/* Pulmonology-aware Grounded mark — airflow / branching without literal lungs */
+html body #app .grounded-mark-svg {
+  width: 82% !important;
+  height: 82% !important;
+  display: block !important;
+  overflow: visible !important;
+}
+html body #app .grounded-mark-g {
+  fill: none !important;
+  stroke: rgba(255,255,255,.96) !important;
+  stroke-width: 5.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+html body #app .grounded-mark-flow {
+  fill: none !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+html body #app .grounded-mark-flow--a { stroke:#8ff4ed !important; stroke-width:3.0 !important; opacity:.96 !important; }
+html body #app .grounded-mark-flow--b { stroke:#56d7d3 !important; stroke-width:2.5 !important; opacity:.88 !important; }
+html body #app .grounded-mark-flow--c { stroke:#baf8f0 !important; stroke-width:2.5 !important; opacity:.82 !important; }
+html body #app .grounded-orb-wrap .grounded-orb::after { content:none !important; display:none !important; }
+html body #app .grounded-head-orb {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:4px !important;
+}
+html body #app .grounded-head-orb .grounded-mark-svg { width:100% !important; height:100% !important; }
+
+/* Adaptive console: composed, not an unnecessarily tall chat sheet */
+html body #app .askbar-panel.grounded-cloud {
+  height:auto !important;
+  min-height:min(540px,calc(100vh - 48px)) !important;
+  max-height:calc(100vh - 48px) !important;
+}
+html body #app .askbar-conv {
+  flex:0 1 auto !important;
+  max-height:calc(100vh - 188px) !important;
+  min-height:240px !important;
+}
+
+/* Response grammar */
+html body #app .askbar-a-bub {
+  width:100% !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:8px !important;
+}
+
+/* Rich responses own their surface: remove card-inside-card nesting. */
+html body #app .askbar-turn--profile .askbar-a-card,
+html body #app .askbar-turn--collection .askbar-a-card,
+html body #app .askbar-turn--insight .askbar-a-card,
+html body #app .askbar-turn--alert .askbar-a-card,
+html body #app .askbar-turn--proposal .askbar-a-card {
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+}
+html body #app .askbar-turn--profile .askbar-a-card::before,
+html body #app .askbar-turn--collection .askbar-a-card::before,
+html body #app .askbar-turn--insight .askbar-a-card::before,
+html body #app .askbar-turn--alert .askbar-a-card::before,
+html body #app .askbar-turn--proposal .askbar-a-card::before { display:none !important; }
+
+/* In rich modes, prose is a short lede, not a competing card. */
+html body #app .askbar-turn--collection .askbar-a-tx,
+html body #app .askbar-turn--insight .askbar-a-tx,
+html body #app .askbar-turn--alert .askbar-a-tx,
+html body #app .askbar-turn--proposal .askbar-a-tx {
+  padding:0 3px 2px !important;
+  color:#253b50 !important;
+  -webkit-text-fill-color:#253b50 !important;
+  font-size:13.5px !important;
+  line-height:1.55 !important;
+}
+
+/* Primary rich components sit directly on the intelligence canvas. */
+html body #app .askbar-turn--profile .askbar-profile,
+html body #app .askbar-turn--collection .askbar-board,
+html body #app .askbar-turn--collection .askbar-reslist,
+html body #app .askbar-turn--collection .askbar-roster,
+html body #app .askbar-turn--collection .askbar-absence,
+html body #app .askbar-turn--insight .askbar-viz,
+html body #app .askbar-turn--insight .askbar-occ,
+html body #app .askbar-turn--insight .askbar-cmp,
+html body #app .askbar-turn--alert .askbar-risk,
+html body #app .askbar-turn--proposal .askbar-proposal {
+  margin-top:0 !important;
+}
+
+/* Facts remain beautifully simple. */
+html body #app .askbar-turn--fact .askbar-a-card {
+  border-radius:18px !important;
+  border:1px solid #dfe7e9 !important;
+  background:#fff !important;
+  box-shadow:0 10px 26px rgba(7,22,37,.045) !important;
+}
+html body #app .askbar-turn--fact .askbar-a-card::before {
+  top:20px !important;
+  bottom:20px !important;
+  width:2px !important;
+  background:#65c9c7 !important;
+}
+
+/* Clarification should feel invitational rather than like an error. */
+html body #app .askbar-turn--clarification .askbar-a-card {
+  background:#fbfcfb !important;
+  border-color:#d8e6e5 !important;
+  box-shadow:0 8px 22px rgba(7,22,37,.04) !important;
+}
+html body #app .askbar-turn--clarification .askbar-a-card::before { background:#7abec1 !important; }
+
+/* Alerts: calm attention, not alarm theatre. */
+html body #app .askbar-turn--alert .askbar-risk {
+  border-color:#ead8b8 !important;
+  background:#fffdfa !important;
+  box-shadow:0 8px 24px rgba(92,64,20,.04) !important;
+}
+
+/* Proposal = explicit control boundary. */
+html body #app .askbar-turn--proposal .askbar-proposal {
+  border-radius:16px !important;
+  border:1px solid #d8e3e5 !important;
+  box-shadow:0 10px 26px rgba(7,22,37,.045) !important;
+}
+html body #app .askbar-turn--proposal .askbar-proposal-h {
+  background:#f6f9f9 !important;
+}
+html body #app .askbar-turn--proposal .askbar-proposal-tag {
+  background:#fff5e1 !important;
+  color:#8b5b0a !important;
+  -webkit-text-fill-color:#8b5b0a !important;
+}
+
+/* Evidence/check disclosure — trustworthy, never faded. */
+html body #app .askbar-trace-mini {
+  min-height:30px !important;
+  padding:3px 4px !important;
+  gap:7px !important;
+  opacity:1 !important;
+}
+html body #app .askbar-trace-mini-t {
+  color:#5f7385 !important;
+  -webkit-text-fill-color:#5f7385 !important;
+  font-size:10.5px !important;
+  font-weight:650 !important;
+}
+html body #app .askbar-trace-mini-x {
+  color:#728698 !important;
+  -webkit-text-fill-color:#728698 !important;
+  font-size:10px !important;
+  font-weight:600 !important;
+}
+html body #app .askbar-trace-mini:hover .askbar-trace-mini-x { color:#0d777d !important; -webkit-text-fill-color:#0d777d !important; }
+html body #app .askbar-trace--expanded {
+  margin:0 2px 2px !important;
+  border:1px solid #e1e8ea !important;
+  border-radius:12px !important;
+  background:#f9fbfb !important;
+  box-shadow:none !important;
+}
+html body #app .askbar-trace-ht { color:#4d6478 !important; -webkit-text-fill-color:#4d6478 !important; }
+
+/* Provenance is a trust signature, not tiny legal text. */
+html body #app .askbar-turn--profile .askbar-trust,
+html body #app .askbar-turn--collection .askbar-trust,
+html body #app .askbar-turn--insight .askbar-trust,
+html body #app .askbar-turn--alert .askbar-trust,
+html body #app .askbar-turn--proposal .askbar-trust {
+  margin-top:9px !important;
+  padding:9px 3px 0 !important;
+  border-top:0 !important;
+}
+html body #app .askbar-trust-state {
+  font-weight:750 !important;
+  letter-spacing:-.005em !important;
+}
+html body #app .askbar-trust-src {
+  color:#62788a !important;
+  -webkit-text-fill-color:#62788a !important;
+}
+html body #app .askbar-trust-time {
+  color:#8594a1 !important;
+  -webkit-text-fill-color:#8594a1 !important;
+}
+
+/* Profile: calm person-centric scan order */
+html body #app .askbar-turn--profile .askbar-profile {
+  background:#fff !important;
+  border-color:#dce6e8 !important;
+  box-shadow:0 12px 30px rgba(7,22,37,.05) !important;
+}
+html body #app .askbar-profile-sechead {
+  color:#64788b !important;
+  -webkit-text-fill-color:#64788b !important;
+  letter-spacing:.09em !important;
+}
+html body #app .askbar-profile-row {
+  grid-template-columns:112px minmax(0,1fr) !important;
+}
+
+/* Keep the input quiet at rest; interaction earns the teal ring. */
+html body #app .askbar-input-wrap {
+  background:rgba(250,252,252,.98) !important;
+  box-shadow:0 -8px 24px rgba(10,32,56,.025) !important;
+}
+html body #app .askbar-input {
+  min-height:52px !important;
+  border-radius:15px !important;
+  border-color:#d8e2e4 !important;
+  box-shadow:0 2px 8px rgba(7,22,37,.025) !important;
+}
+html body #app .askbar-input:focus-within {
+  border-color:#8cbfc1 !important;
+  box-shadow:0 0 0 3px rgba(11,144,150,.065) !important;
+}
+html body #app .askbar-send {
+  width:39px !important;
+  height:39px !important;
+  flex-basis:39px !important;
+  border-radius:11px !important;
+  box-shadow:0 6px 16px rgba(11,126,133,.14) !important;
+}
+
+/* Stillness is the default. Motion only communicates work/state. */
+html body #app .grounded-orb-wrap,
+html body #app .askbar-sug-item,
+html body #app .askbar-fu,
+html body #app .askbar-chip,
+html body #app .askbar-proposal-confirm,
+html body #app .askbar-proposal-cancel { transition-duration:.14s !important; }
+
+@media (max-width:700px) {
+  html body #app .askbar-panel.grounded-cloud { min-height:min(560px,92vh) !important; }
+  html body #app .askbar-conv { max-height:calc(92vh - 170px) !important; }
+  html body #app .askbar-profile-row { grid-template-columns:1fr !important; gap:3px !important; }
+}
