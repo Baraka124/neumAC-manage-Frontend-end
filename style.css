@@ -15801,3 +15801,289 @@ html body #app .askbar-profile-sec {
 html body #app .askbar-profile-sechead {
   margin-bottom:8px !important;
 }
+
+/* ========================================================================== 
+   Grounded V13 — Elite calm landing + command bar + single-surface composer
+   Pure presentation refinement. No Grounded logic changes.
+   ========================================================================== */
+
+/* --- Command bar: one quiet premium brand surface --- */
+html body #app .grounded-head {
+  min-height:78px !important;
+  padding:13px 16px 13px 18px !important;
+  gap:10px !important;
+  background:
+    radial-gradient(120% 180% at 100% 0%, rgba(19,143,149,.22) 0%, rgba(19,143,149,0) 48%),
+    linear-gradient(108deg,#081d34 0%,#0b2a43 58%,#0b505a 100%) !important;
+  border-bottom:1px solid rgba(255,255,255,.075) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 10px 30px rgba(5,25,42,.06) !important;
+}
+html body #app .grounded-head::after {
+  content:'' !important;
+  position:absolute !important;
+  left:18px !important;
+  right:18px !important;
+  bottom:0 !important;
+  height:1px !important;
+  background:linear-gradient(90deg,transparent,rgba(118,226,220,.14),transparent) !important;
+  pointer-events:none !important;
+}
+html body #app .grounded-head > * { position:relative !important; z-index:1 !important; }
+html body #app .grounded-head-orb {
+  flex:0 0 42px !important;
+  width:42px !important;
+  height:42px !important;
+  padding:4px !important;
+  border-radius:50% !important;
+  background:radial-gradient(circle at 32% 26%,#6ef4eb 0%,#22c9c5 32%,#0a969b 68%,#07566a 100%) !important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.10),0 8px 18px rgba(8,190,184,.16) !important;
+}
+html body #app .askbar-head-t {
+  font:720 18px/1.1 'DM Sans',system-ui,sans-serif !important;
+  letter-spacing:-.025em !important;
+}
+html body #app .askbar-head-s {
+  margin-top:4px !important;
+  color:rgba(224,239,242,.64) !important;
+  -webkit-text-fill-color:rgba(224,239,242,.64) !important;
+  font:520 10px/1.15 'DM Mono',monospace !important;
+  letter-spacing:.015em !important;
+}
+
+/* Actions belong together on the right rather than floating through the header. */
+html body #app .grounded-head .askbar-newchat {
+  margin-left:auto !important;
+}
+html body #app .grounded-head > .askbar-teach-btn:first-of-type {
+  margin-left:auto !important;
+}
+html body #app .grounded-head .askbar-newchat + .askbar-teach-btn {
+  margin-left:0 !important;
+}
+html body #app .askbar-newchat,
+html body #app .askbar-teach-btn {
+  height:34px !important;
+  padding:0 12px !important;
+  border-radius:10px !important;
+  border:1px solid rgba(167,229,226,.18) !important;
+  background:rgba(255,255,255,.045) !important;
+  color:rgba(239,250,250,.90) !important;
+  -webkit-text-fill-color:rgba(239,250,250,.90) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025) !important;
+  font:680 11px/1 'DM Sans',sans-serif !important;
+}
+html body #app .askbar-newchat:hover,
+html body #app .askbar-teach-btn:hover {
+  background:rgba(255,255,255,.085) !important;
+  border-color:rgba(167,229,226,.29) !important;
+}
+html body #app .askbar-teach-btn--on {
+  background:rgba(33,190,187,.18) !important;
+  border-color:rgba(105,232,226,.42) !important;
+}
+html body #app .askbar-head-live {
+  margin-left:2px !important;
+  height:30px !important;
+  padding:0 9px !important;
+  border-radius:999px !important;
+  border:1px solid rgba(153,226,215,.12) !important;
+  background:rgba(4,34,48,.16) !important;
+  gap:6px !important;
+  color:rgba(233,247,247,.74) !important;
+  -webkit-text-fill-color:rgba(233,247,247,.74) !important;
+  font:650 10px/1 'DM Sans',sans-serif !important;
+  letter-spacing:.045em !important;
+  text-transform:none !important;
+}
+html body #app .askbar-head-dot {
+  width:6px !important;
+  height:6px !important;
+  box-shadow:0 0 0 3px rgba(53,215,161,.09) !important;
+}
+html body #app .askbar-close {
+  flex:0 0 36px !important;
+  width:36px !important;
+  height:36px !important;
+  border-radius:50% !important;
+  border:1px solid rgba(255,255,255,.16) !important;
+  background:rgba(255,255,255,.07) !important;
+  color:rgba(240,248,249,.78) !important;
+  -webkit-text-fill-color:rgba(240,248,249,.78) !important;
+  box-shadow:none !important;
+  font-size:16px !important;
+}
+html body #app .askbar-close:hover {
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:rgba(255,255,255,.12) !important;
+  border-color:rgba(255,255,255,.24) !important;
+  transform:none !important;
+}
+
+/* --- Landing: calm hierarchy, no oversized editorial headline --- */
+html body #app .askbar-conv {
+  padding:22px 20px 16px !important;
+  gap:12px !important;
+}
+html body #app .askbar-greeting {
+  padding:2px 4px 0 !important;
+  margin:0 !important;
+}
+html body #app .askbar-greeting-t {
+  color:#14283c !important;
+  -webkit-text-fill-color:#14283c !important;
+  font:680 21px/1.22 'DM Sans',system-ui,sans-serif !important;
+  font-style:normal !important;
+  letter-spacing:-.025em !important;
+}
+html body #app .askbar-greeting-s {
+  max-width:545px !important;
+  margin-top:7px !important;
+  color:#647587 !important;
+  -webkit-text-fill-color:#647587 !important;
+  font:450 13px/1.52 'DM Sans',sans-serif !important;
+}
+html body #app .askbar-sug-label {
+  margin:17px 3px 5px !important;
+  color:#718394 !important;
+  -webkit-text-fill-color:#718394 !important;
+  font:720 10px/1 'DM Sans',sans-serif !important;
+  letter-spacing:.12em !important;
+}
+
+/* Suggestions become a quiet 2 × 2 decision field instead of four heavy rows. */
+html body #app .askbar-sug {
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:9px !important;
+  padding:0 !important;
+}
+html body #app .askbar-sug-item {
+  position:relative !important;
+  min-width:0 !important;
+  min-height:92px !important;
+  padding:14px 34px 13px 13px !important;
+  border-radius:15px !important;
+  align-items:flex-start !important;
+  gap:11px !important;
+  background:rgba(255,255,255,.78) !important;
+  border:1px solid #dee7e9 !important;
+  box-shadow:0 2px 8px rgba(7,22,37,.025) !important;
+}
+html body #app .askbar-sug-item:hover {
+  transform:translateY(-1px) !important;
+  background:#fff !important;
+  border-color:#b9d6d8 !important;
+  box-shadow:0 8px 20px rgba(7,22,37,.045) !important;
+}
+html body #app .askbar-sug-ic {
+  width:36px !important;
+  height:36px !important;
+  flex:0 0 36px !important;
+  border-radius:11px !important;
+  background:#eef5f5 !important;
+  color:#42657a !important;
+}
+html body #app .askbar-sug-ic--oncall { background:#eef4f9 !important; color:#45658b !important; }
+html body #app .askbar-sug-tx { padding-top:1px !important; }
+html body #app .askbar-sug-t {
+  font:680 13px/1.32 'DM Sans',sans-serif !important;
+  letter-spacing:-.012em !important;
+}
+html body #app .askbar-sug-d {
+  margin-top:4px !important;
+  color:#728395 !important;
+  -webkit-text-fill-color:#728395 !important;
+  font:450 11.25px/1.32 'DM Sans',sans-serif !important;
+}
+html body #app .askbar-sug-arrow {
+  position:absolute !important;
+  top:16px !important;
+  right:12px !important;
+  margin:0 !important;
+  width:13px !important;
+  height:13px !important;
+  color:#91a1ad !important;
+  opacity:.72 !important;
+}
+
+/* --- Composer: one surface only. Remove native/global input chrome completely. --- */
+html body #app .askbar-input-wrap {
+  padding:11px 16px 15px !important;
+  background:rgba(248,251,250,.985) !important;
+  border-top:1px solid #e5ecee !important;
+  box-shadow:0 -8px 22px rgba(9,29,45,.02) !important;
+}
+html body #app .askbar-input {
+  min-height:54px !important;
+  padding:6px 7px 6px 14px !important;
+  gap:10px !important;
+  border-radius:17px !important;
+  border:1px solid #d3dfe2 !important;
+  outline:0 !important;
+  background:rgba(255,255,255,.96) !important;
+  box-shadow:0 6px 18px rgba(7,22,37,.035) !important;
+}
+html body #app .askbar-input:focus-within {
+  border-color:#91c2c4 !important;
+  outline:0 !important;
+  box-shadow:0 0 0 1px rgba(13,145,151,.08),0 6px 18px rgba(7,22,37,.035) !important;
+}
+html body #app .askbar-panel.grounded-cloud .askbar-input input,
+html body #app .askbar-panel.grounded-cloud .askbar-input input:focus,
+html body #app .askbar-panel.grounded-cloud .askbar-input input:focus-visible,
+html body #app .askbar-panel.grounded-cloud .askbar-input input:hover {
+  -webkit-appearance:none !important;
+  appearance:none !important;
+  display:block !important;
+  flex:1 1 auto !important;
+  width:100% !important;
+  min-width:0 !important;
+  height:auto !important;
+  min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  outline:0 !important;
+  outline-offset:0 !important;
+  background:transparent !important;
+  background-image:none !important;
+  box-shadow:none !important;
+  filter:none !important;
+  color:#172a3e !important;
+  -webkit-text-fill-color:#172a3e !important;
+  font:540 13.5px/1.35 'DM Sans',sans-serif !important;
+}
+html body #app .askbar-panel.grounded-cloud .askbar-input input::placeholder {
+  color:#8b9aa7 !important;
+  -webkit-text-fill-color:#8b9aa7 !important;
+  opacity:1 !important;
+}
+html body #app .askbar-input > svg {
+  flex:0 0 auto !important;
+  color:#738697 !important;
+}
+html body #app .askbar-send {
+  flex:0 0 40px !important;
+  width:40px !important;
+  height:40px !important;
+  border-radius:12px !important;
+  box-shadow:0 6px 14px rgba(11,126,133,.12) !important;
+}
+html body #app .askbar-send:disabled {
+  opacity:1 !important;
+  background:#a8d9db !important;
+  box-shadow:none !important;
+}
+
+@media (max-width:700px) {
+  html body #app .grounded-head { min-height:72px !important; padding:11px 12px !important; gap:8px !important; }
+  html body #app .grounded-head-orb { width:38px !important; height:38px !important; flex-basis:38px !important; }
+  html body #app .askbar-head-t { font-size:16px !important; }
+  html body #app .askbar-head-s { font-size:9.5px !important; }
+  html body #app .askbar-close { width:34px !important; height:34px !important; flex-basis:34px !important; }
+  html body #app .askbar-sug { grid-template-columns:1fr !important; }
+  html body #app .askbar-sug-item { min-height:70px !important; }
+  html body #app .askbar-greeting-t { font-size:19px !important; }
+}
