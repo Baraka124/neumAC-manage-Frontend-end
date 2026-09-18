@@ -6211,13 +6211,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const activeNewsMenu = ref(null)
       const newsLoaded     = ref(false) // FIX Bug4: tracks whether fetch has been attempted, not just if results exist
       const newsModal      = reactive({
-        show: false, mode: 'add', _tab: 'meta',
+        show: false,
+        mode: 'add',
+        stage: 'choose',          // choose | compose
+        previewMode: 'internal',  // internal | public
+        saveState: '',
+        busy: false,
+        _hydrating: false,
+        _tab: 'meta',             // kept for backward compatibility with older markup
         form: {
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
           image_urls: [],  // up to 5, for articles and highlights
           author_id: '', research_line_id: '', is_public: false,
           status: 'draft', expires_at: '', published_at: '',
-          journal_name: '', authors_text: '', doi: '',
+          journal_name: '', authors_text: '', doi: '', is_featured: false,
           _imageInput: ''  // local draft input
         }
       })
@@ -6260,6 +6267,45 @@ document.addEventListener('DOMContentLoaded', () => {
           newsModal.form.expires_at = ''
         }
       })
+
+      // Quiet document-state feedback for the studio. This is intentionally not a toast:
+      // editing should feel like working on one document, not triggering a chain of alerts.
+      watch(() => newsModal.form, () => {
+        if (!newsModal.show || newsModal.stage !== 'compose' || newsModal._hydrating) return
+        newsModal.saveState = 'Unsaved changes'
+      }, { deep: true })
+
+      const hydrateNewsForm = (data, mode='add') => {
+        newsModal._hydrating = true
+        newsModal.mode = mode
+        Object.assign(newsModal.form, data)
+        Vue.nextTick(() => {
+          newsModal._hydrating = false
+          newsModal.saveState = mode === 'add' ? 'Draft not saved' : 'Saved'
+        })
+      }
+
+      const chooseNewsType = (type) => {
+        const t = ['publication','article','highlight','update'].includes(type) ? type : 'article'
+        if (newsModal.mode === 'add' && newsModal.form.post_type !== t) {
+          // Avoid hidden data travelling between object grammars when a creator changes type.
+          newsModal.form.body = ''
+          newsModal.form.image_urls = []
+          newsModal.form.featured_image_url = ''
+          newsModal.form.journal_name = ''
+          newsModal.form.authors_text = ''
+          newsModal.form.doi = ''
+          newsModal.form._imageInput = ''
+        }
+        newsModal.form.post_type = t
+        newsModal.form.expires_at = t === 'publication' ? '' : autoExpiry(t)
+        newsModal.stage = 'compose'
+        newsModal.previewMode = newsModal.form.is_public ? 'public' : 'internal'
+        Vue.nextTick(() => {
+          const el = document.querySelector('.news-v24-title-input, .news-v24-note-title')
+          if (el) el.focus()
+        })
+      }
 
       // ── Filtered list ────────────────────────────────────────
       const filteredNews = computed(() => {
@@ -6304,21 +6350,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const showAddNewsModal = () => {
-        newsModal.mode = 'add'
-        Object.assign(newsModal.form, {
+        hydrateNewsForm({
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
           image_urls: [], author_id: '', research_line_id: '', is_public: false,
           status: 'draft', expires_at: autoExpiry('article'), published_at: '',
-          journal_name: '', authors_text: '', doi: '', _imageInput: ''
-        })
+          journal_name: '', authors_text: '', doi: '', is_featured: false, _imageInput: ''
+        }, 'add')
+        newsModal.stage = 'choose'
+        newsModal.previewMode = 'internal'
         newsModal.show = true
       }
 
       const editNews = (post) => {
-        newsModal.mode = 'edit'
-        newsModal._tab = post.post_type === 'publication' ? 'publish' : 'content'
         const _s = (v) => v == null ? '' : String(v)
-        Object.assign(newsModal.form, {
+        hydrateNewsForm({
           ...post,
           body:               _s(post.body),
           featured_image_url: _s(post.featured_image_url),
@@ -6330,56 +6375,96 @@ document.addEventListener('DOMContentLoaded', () => {
           expires_at:         post.expires_at   ? post.expires_at.split('T')[0]   : '',
           published_at:       post.published_at ? post.published_at.split('T')[0] : '',
           image_urls:         Array.isArray(post.image_urls) ? [...post.image_urls] : (post.featured_image_url ? [post.featured_image_url] : []),
+          is_featured:        !!post.is_featured,
           _imageInput: ''
-        })
+        }, 'edit')
+        newsModal.stage = 'compose'
+        newsModal.previewMode = post.is_public ? 'public' : 'internal'
         newsModal.show = true
       }
 
-      const saveNews = async () => {
+      const validateNewsForm = () => {
         const _t = (v) => (v == null ? '' : String(v)).trim()
-        if (!_t(newsModal.form.title)) { showToast('Validation', 'Title is required', 'warning'); return }
+        if (!_t(newsModal.form.title)) { showToast('Validation', 'Title is required', 'warning'); return false }
         if (newsModal.form.post_type === 'highlight' && !(newsModal.form.image_urls?.length)) {
-          showToast('Validation', 'Highlight requires at least one image', 'warning'); return
+          showToast('Validation', 'Highlight requires at least one image', 'warning'); return false
         }
-        // Publication validation — require journal name or DOI
         if (newsModal.form.post_type === 'publication' && !_t(newsModal.form.journal_name) && !_t(newsModal.form.doi)) {
-          showToast('Validation', 'Publications require at least a journal name or DOI', 'warning'); return
+          showToast('Validation', 'Publications require at least a journal name or DOI', 'warning'); return false
         }
         if (newsModal.form.post_type !== 'publication' && !newsModal.form.author_id) {
-          showToast('Validation', 'Author is required', 'warning'); return
+          showToast('Validation', 'Author is required', 'warning'); return false
         }
         if (newsModal.form.post_type !== 'publication' && newsWordCount.value > newsWordLimit.value) {
-          showToast('Validation', `Exceeds ${newsWordLimit.value} word limit`, 'warning'); return
+          showToast('Validation', `Exceeds ${newsWordLimit.value} word limit`, 'warning'); return false
         }
-        const payload = {
+        return true
+      }
+
+      const newsPayload = (publishNow=false) => {
+        const _t = (v) => (v == null ? '' : String(v)).trim()
+        const status = publishNow ? 'published' : (newsModal.form.status || 'draft')
+        const publishedAt = status === 'published'
+          ? (newsModal.form.published_at || new Date().toISOString().split('T')[0])
+          : (newsModal.form.published_at || null)
+        return {
           post_type:          newsModal.form.post_type,
           title:              _t(newsModal.form.title),
           body:               _t(newsModal.form.body) || null,
           author_id:          newsModal.form.author_id || null,
           research_line_id:   newsModal.form.research_line_id || null,
-          is_public:          newsModal.form.is_public,
-          status:             newsModal.form.status,
+          is_public:          !!newsModal.form.is_public,
+          status,
+          is_featured:        !!newsModal.form.is_featured,
           image_urls:         Array.isArray(newsModal.form.image_urls) ? newsModal.form.image_urls : [],
-          expires_at:         newsModal.form.expires_at || null,
+          expires_at:         newsModal.form.expires_at || (status === 'published' && newsModal.form.post_type !== 'publication' ? autoExpiry(newsModal.form.post_type) : null),
+          published_at:       publishedAt,
           journal_name:       _t(newsModal.form.journal_name) || null,
           authors_text:       _t(newsModal.form.authors_text) || null,
           doi:                _t(newsModal.form.doi) || null,
           word_count:         newsWordCount.value
         }
-        if (payload.status === 'published' && !payload.expires_at && newsModal.form.post_type !== 'publication') {
-          payload.expires_at = autoExpiry(newsModal.form.post_type)
-        }
+      }
+
+      // Save inside the studio and return the fresh object. Publishing callers can then
+      // transition directly from the composer into the final reader — creation and
+      // consumption are two states of the same record, not unrelated screens.
+      const saveNews = async ({ publishNow=false } = {}) => {
+        if (!validateNewsForm() || newsModal.busy) return null
+        newsModal.busy = true
+        newsModal.saveState = publishNow ? 'Publishing…' : 'Saving…'
+        const payload = newsPayload(publishNow)
+        const wasAdd = newsModal.mode === 'add'
+        let response = null
         try {
-          if (newsModal.mode === 'add') {
-            await API.request('/api/news', { method: 'POST', body: payload })
-            showToast('Published', 'Post created', 'success')
-          } else {
-            await API.request(`/api/news/${newsModal.form.id}`, { method: 'PUT', body: payload })
-            showToast('Updated', 'Post saved', 'success')
-          }
-          newsModal.show = false
+          if (wasAdd) response = await API.request('/api/news', { method: 'POST', body: payload })
+          else response = await API.request(`/api/news/${newsModal.form.id}`, { method: 'PUT', body: payload })
+
           await loadNews()
-        } catch (e) { showToast('Error', e.message, 'error') }
+          const returnedId = response?.data?.id || response?.id || newsModal.form.id
+          let fresh = returnedId ? newsPosts.value.find(p => p.id === returnedId) : null
+          if (!fresh) {
+            fresh = [...(newsPosts.value || [])]
+              .filter(p => p.title === payload.title && p.post_type === payload.post_type)
+              .sort((a,b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))[0] || null
+          }
+          if (fresh) {
+            newsModal.form.id = fresh.id
+            newsModal.mode = 'edit'
+            newsModal.form.status = fresh.status
+            newsModal.form.is_public = !!fresh.is_public
+            newsModal.form.published_at = fresh.published_at ? fresh.published_at.split('T')[0] : newsModal.form.published_at
+          }
+          newsModal.saveState = publishNow ? 'Published' : 'Saved just now'
+          setTimeout(() => { if (newsModal.show && newsModal.saveState === 'Saved just now') newsModal.saveState = 'Saved' }, 2200)
+          return fresh
+        } catch (e) {
+          newsModal.saveState = 'Could not save'
+          showToast('Error', e.message, 'error')
+          return null
+        } finally {
+          newsModal.busy = false
+        }
       }
 
       // Strip joined/virtual fields before any PUT to backend
@@ -6391,14 +6476,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const publishNews = async (post) => {
         try {
           const expiry = post.expires_at || (post.post_type !== 'publication' ? autoExpiry(post.post_type) : null)
+          const publishedAt = post.published_at || new Date().toISOString()
           await API.request(`/api/news/${post.id}`, { method: 'PUT', body: {
             ...cleanPost(post), status: 'published',
-            published_at: new Date().toISOString(),
+            published_at: publishedAt,
             expires_at: expiry
           }})
-          showToast('Published', 'Post is now live', 'success')
-          await loadNews()
-        } catch (e) { showToast('Error', e.message, 'error') }
+          post.status = 'published'; post.published_at = publishedAt; post.expires_at = expiry
+          const idx = newsPosts.value.findIndex(p => p.id === post.id)
+          if (idx !== -1) newsPosts.value[idx] = { ...newsPosts.value[idx], ...post }
+          showToast('Published', 'Record published', 'success')
+          return post
+        } catch (e) { showToast('Error', e.message, 'error'); return null }
       }
 
       const toggleNewsFeature = async (post) => {
@@ -6425,44 +6514,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const archiveNews = async (post) => {
         showConfirmation({
-          title: 'Archive Post',
-          message: `Archive "${post.title}"? It will be hidden from view but not deleted.`,
+          title: 'Archive record?',
+          message: `Archive "${post.title}"? It will leave active library views but remain in the institutional record.`,
           onConfirm: async () => {
             try {
               await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...cleanPost(post), status: 'archived' }})
-              showToast('Archived', 'Post archived', 'info')
-              await loadNews()
+              post.status = 'archived'
+              const idx = newsPosts.value.findIndex(p => p.id === post.id)
+              if (idx !== -1) newsPosts.value[idx] = { ...newsPosts.value[idx], status: 'archived' }
+              showToast('Archived', 'Record archived', 'info')
             } catch (e) { showToast('Error', e.message, 'error') }
           }
         })
       }
 
-      const deleteNews = async (post) => {
+      const deleteNews = async (post, onDeleted = null) => {
         showConfirmation({
-          title: 'Delete Post',
-          message: `Permanently delete "${post.title}"? This cannot be undone.`,
+          title: 'Delete record?',
+          message: `Permanently delete "${post.title}"? This removes it from the Research Library and cannot be undone.`,
           onConfirm: async () => {
             try {
               await API.request(`/api/news/${post.id}`, { method: 'DELETE' })
-              showToast('Deleted', 'Post deleted', 'success')
-              await loadNews()
+              newsPosts.value = (newsPosts.value || []).filter(p => p.id !== post.id)
+              if (typeof onDeleted === 'function') onDeleted()
+              showToast('Deleted', 'Record deleted', 'success')
             } catch (e) { showToast('Error', e.message, 'error') }
           }
         })
       }
 
       const togglePublic = async (post) => {
-        try {
-          await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...cleanPost(post), is_public: !post.is_public }})
-          showToast('Updated', post.is_public ? 'Now internal only' : 'Now public on website', 'success')
-          await loadNews()
-        } catch (e) { showToast('Error', e.message, 'error') }
+        const nextPublic = !post.is_public
+        const label = nextPublic ? 'Make Public?' : 'Make Internal?'
+        const message = nextPublic
+          ? 'This record will be reflected in the public view on the web.'
+          : 'This record will no longer be reflected in the public view on the web.'
+        showConfirmation({
+          title: label,
+          message,
+          onConfirm: async () => {
+            try {
+              await API.request(`/api/news/${post.id}`, { method: 'PUT', body: { ...cleanPost(post), is_public: nextPublic }})
+              post.is_public = nextPublic
+              const idx = newsPosts.value.findIndex(p => p.id === post.id)
+              if (idx !== -1) newsPosts.value[idx] = { ...newsPosts.value[idx], is_public: nextPublic }
+              showToast('Updated', nextPublic ? 'Public' : 'Internal', 'success')
+            } catch (e) { showToast('Error', e.message, 'error') }
+          }
+        })
       }
 
       return {
         newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
         newsWordCount, newsWordLimit, activeNewsMenu,
-        loadNews, preloadNews, showAddNewsModal, editNews, saveNews,
+        loadNews, preloadNews, showAddNewsModal, chooseNewsType, editNews, saveNews,
         publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic,
         formatAuthorName, getLineName, autoExpiry
       }
@@ -7500,10 +7605,37 @@ document.addEventListener('DOMContentLoaded', () => {
           if (v === 'communications')   { commsOps.loadAnnouncements(); commsOps.loadOpsMetrics() }
         }, { immediate: false })
 
-        // ── NEWS READER DRAWER ────────────────────────────────────────
-        const newsDrawer = reactive({ show: false, post: null })
-        const openNewsDrawer = (post) => { newsDrawer.post = post; newsDrawer.show = true }
-        const closeNewsDrawer = () => { newsDrawer.show = false; newsDrawer.post = null }
+        // ── RESEARCH LIBRARY PEEK + READER ─────────────────────────────
+        // One object, several depths: library → peek → reader → edit. Keeping these
+        // states connected avoids the "teleport into a modal" feeling of a generic CMS.
+        const newsPeek = reactive({ show: false, post: null, x: 24, y: 96 })
+        const closeNewsPeek = () => { newsPeek.show = false; newsPeek.post = null }
+        const openNewsPeek = (post, evt) => {
+          if (!post) return
+          if (window.innerWidth < 900) { openNewsDrawer(post); return }
+          const rect = evt?.currentTarget?.getBoundingClientRect?.()
+          const w = 430
+          newsPeek.x = Math.max(24, Math.min(window.innerWidth - w - 24, rect ? rect.right - w : (window.innerWidth - w) / 2))
+          newsPeek.y = Math.max(78, Math.min(window.innerHeight - 360, rect ? rect.top + 26 : 120))
+          newsPeek.post = post
+          newsPeek.show = true
+        }
+
+        const newsDrawer = reactive({ show: false, post: null, manageOpen: false, detailsOpen: false })
+        const openNewsDrawer = (post) => {
+          if (!post) return
+          closeNewsPeek()
+          newsDrawer.post = post
+          newsDrawer.manageOpen = false
+          newsDrawer.detailsOpen = false
+          newsDrawer.show = true
+        }
+        const closeNewsDrawer = () => {
+          newsDrawer.show = false
+          newsDrawer.post = null
+          newsDrawer.manageOpen = false
+          newsDrawer.detailsOpen = false
+        }
         const newsDrawerPrev = computed(() => {
           if (!newsDrawer.post) return null
           const list = newsOps.filteredNews.value
@@ -7555,9 +7687,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
                 newsWordCount, newsWordLimit,
-                loadNews, showAddNewsModal, editNews, saveNews,
+                loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews,
                 publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic: toggleNewsPublic,
                 formatAuthorName: newsAuthorName, getLineName: newsLineName } = newsOps
+
+        const saveNewsStudio = async (publishNow = false) => {
+          const saved = await newsOps.saveNews({ publishNow })
+          if (saved && publishNow) {
+            newsModal.show = false
+            openNewsDrawer(saved)
+          }
+          return saved
+        }
+        const closeNewsStudioToReader = () => {
+          const id = newsModal.form.id
+          newsModal.show = false
+          if (!id) return
+          const fresh = (newsPosts.value || []).find(p => p.id === id)
+          if (fresh) openNewsDrawer(fresh)
+        }
 
         const openAssignRotationFromUnit = (unit, startDate) => {
           occupancyPanel.show   = false
@@ -13981,9 +14129,10 @@ document.addEventListener('DOMContentLoaded', () => {
           getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates, loadStaffUnits,
           newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
           newsWordCount, newsWordLimit,
-          loadNews, showAddNewsModal, editNews, saveNews,
+          loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews, saveNewsStudio, closeNewsStudioToReader,
           publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
+          newsPeek, openNewsPeek, closeNewsPeek,
           newsDrawer, openNewsDrawer, closeNewsDrawer,
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
           newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName,
