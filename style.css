@@ -17102,3 +17102,227 @@ html body #app .askbar-input input::placeholder{color:#8b99a5 !important;-webkit
   html body #app .askbar-trust-meta{margin-left:0 !important;}
   html body #app .askbar-followup-questions{margin-left:0 !important;justify-content:flex-start !important;}
 }
+
+/* ================================================================
+   V19.1 — Grounded component recovery / stable presentation patch
+   Fixes the unstyled units/residents board and restores compact,
+   calm profile density without changing Grounded logic or markup.
+   ================================================================ */
+
+/* The board markup existed but never had its own visual component rules.
+   Keep the outer response surface almost invisible; the information tiles
+   carry the structure. */
+html body #app .askbar-board{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:9px !important;
+  margin:9px 0 2px !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:#1d344a !important;
+}
+html body #app .askbar-tile{
+  position:relative !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) 44px !important;
+  grid-template-rows:auto auto auto !important;
+  column-gap:10px !important;
+  row-gap:4px !important;
+  min-width:0 !important;
+  min-height:94px !important;
+  padding:12px 12px 11px !important;
+  border:1px solid #dfe7e9 !important;
+  border-radius:13px !important;
+  background:#fcfdfd !important;
+  box-shadow:0 3px 11px rgba(12,36,56,.025) !important;
+  overflow:hidden !important;
+  transition:border-color .16s ease, background .16s ease, transform .16s ease !important;
+}
+html body #app .askbar-tile:hover{
+  border-color:#cbdadd !important;
+  background:#fff !important;
+  transform:translateY(-1px) !important;
+}
+html body #app .askbar-tile::before{
+  content:"" !important;
+  position:absolute !important;
+  left:0 !important;
+  top:13px !important;
+  bottom:13px !important;
+  width:2px !important;
+  border-radius:0 999px 999px 0 !important;
+  background:#cddadd !important;
+  opacity:.7 !important;
+}
+html body #app .askbar-tile--free::before{background:#36b7b2 !important;}
+html body #app .askbar-tile--partial::before{background:#d8a23a !important;}
+html body #app .askbar-tile--full::before{background:#d36a6a !important;}
+html body #app .askbar-tile--rotating::before{background:#587fbd !important;}
+html body #app .askbar-tile--leave::before{background:#d8a23a !important;}
+
+html body #app .askbar-tile-head{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  display:flex !important;
+  align-items:baseline !important;
+  gap:6px !important;
+  min-width:0 !important;
+  margin:0 !important;
+}
+html body #app .askbar-tile-title{
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+  font:650 12.5px/1.25 var(--font-ui) !important;
+  color:#19334b !important;
+  -webkit-text-fill-color:#19334b !important;
+}
+html body #app .askbar-tile-code{
+  flex:0 0 auto !important;
+  font:600 8.5px/1.2 var(--font-mono, ui-monospace, monospace) !important;
+  letter-spacing:.035em !important;
+  color:#93a3b1 !important;
+  -webkit-text-fill-color:#93a3b1 !important;
+}
+html body #app .askbar-tile-ring{
+  grid-column:2 !important;
+  grid-row:1 / span 3 !important;
+  align-self:center !important;
+  justify-self:end !important;
+  display:grid !important;
+  place-items:center !important;
+  width:42px !important;
+  height:42px !important;
+  border-radius:50% !important;
+  border:1px solid #d7e4e5 !important;
+  background:#f4f8f8 !important;
+  box-shadow:inset 0 0 0 4px #fff !important;
+}
+html body #app .askbar-tile-ring--free{border-color:#bfe5e2 !important;background:#eef9f7 !important;}
+html body #app .askbar-tile-ring--partial{border-color:#ead8ad !important;background:#fbf7ed !important;}
+html body #app .askbar-tile-ring--full{border-color:#eccaca !important;background:#fcf2f2 !important;}
+html body #app .askbar-tile-num{
+  font:700 13px/1 var(--font-ui) !important;
+  letter-spacing:-.025em !important;
+  color:#1d4550 !important;
+  -webkit-text-fill-color:#1d4550 !important;
+}
+html body #app .askbar-tile-cap{
+  font-size:9.5px !important;
+  font-weight:550 !important;
+  color:#8799a7 !important;
+  -webkit-text-fill-color:#8799a7 !important;
+}
+html body #app .askbar-tile-dot{
+  grid-column:2 !important;
+  grid-row:1 / span 3 !important;
+  align-self:center !important;
+  justify-self:end !important;
+  width:9px !important;
+  height:9px !important;
+  border-radius:50% !important;
+  background:#a9bbc5 !important;
+  box-shadow:0 0 0 5px rgba(169,187,197,.12) !important;
+}
+html body #app .askbar-tile-dot--free{background:#31b7aa !important;box-shadow:0 0 0 5px rgba(49,183,170,.11) !important;}
+html body #app .askbar-tile-dot--rotating{background:#5780be !important;box-shadow:0 0 0 5px rgba(87,128,190,.10) !important;}
+html body #app .askbar-tile-dot--leave{background:#d8a23a !important;box-shadow:0 0 0 5px rgba(216,162,58,.11) !important;}
+html body #app .askbar-tile-sub{
+  grid-column:1 !important;
+  grid-row:2 !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+  font:500 10.5px/1.3 var(--font-ui) !important;
+  color:#728596 !important;
+  -webkit-text-fill-color:#728596 !important;
+}
+html body #app .askbar-tile-sup,
+html body #app .askbar-tile-sched{
+  grid-column:1 !important;
+  font:600 9.5px/1.3 var(--font-ui) !important;
+  color:#8495a3 !important;
+  -webkit-text-fill-color:#8495a3 !important;
+}
+html body #app .askbar-tile-sup{grid-row:3 !important;}
+html body #app .askbar-tile-sched{grid-row:3 !important; color:#448a8d !important; -webkit-text-fill-color:#448a8d !important;}
+html body #app .askbar-tile-sup + .askbar-tile-sched{justify-self:end !important; grid-column:1 !important; font-weight:600 !important;}
+
+/* Profiles: preserve the newer semantic headings but recover the quiet,
+   information-first density. */
+html body #app .askbar-turn--profile .askbar-a-card{
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+html body #app .askbar-turn--profile .askbar-profile{
+  margin:5px 0 0 !important;
+  border:1px solid #dde7e8 !important;
+  border-radius:15px !important;
+  overflow:hidden !important;
+  background:#fff !important;
+  box-shadow:0 7px 24px rgba(10,35,55,.035) !important;
+}
+html body #app .askbar-profile-top{
+  padding:13px 15px !important;
+  background:linear-gradient(135deg,#f4faf9 0%,#fafcfc 65%,#f5f8fa 100%) !important;
+  border-bottom:1px solid #e3eaeb !important;
+}
+html body #app .askbar-profile-flags{
+  padding:9px 15px 0 !important;
+  gap:5px !important;
+}
+html body #app .askbar-profile-flag{
+  min-height:24px !important;
+  padding:4px 8px !important;
+  border-radius:7px !important;
+  background:#f6f8fb !important;
+  border:1px solid #dbe3ed !important;
+  font-size:9.5px !important;
+  color:#607189 !important;
+  -webkit-text-fill-color:#607189 !important;
+}
+html body #app .askbar-profile-sec{
+  padding:11px 15px 12px !important;
+  border-top:1px solid #e8eded !important;
+}
+html body #app .askbar-profile-flags + .askbar-profile-sec{border-top:0 !important;}
+html body #app .askbar-profile-sechead{
+  margin:0 0 7px !important;
+  font:700 9.5px/1.25 var(--font-ui) !important;
+  letter-spacing:.015em !important;
+  text-transform:none !important;
+  color:#748797 !important;
+  -webkit-text-fill-color:#748797 !important;
+}
+html body #app .askbar-profile-row{
+  min-height:29px !important;
+  padding:5px 0 !important;
+  border-bottom:1px solid #edf1f1 !important;
+}
+html body #app .askbar-profile-link{
+  padding:9px 11px !important;
+  border-radius:10px !important;
+  background:#fafcfc !important;
+  border:1px solid #e1e8e9 !important;
+  box-shadow:none !important;
+}
+html body #app .askbar-profile-link-l{font-size:11.5px !important;}
+html body #app .askbar-profile-link-d{font-size:10.3px !important;line-height:1.38 !important;}
+html body #app .askbar-profile-more{
+  margin-top:7px !important;
+  padding:2px 0 !important;
+  font-size:10.5px !important;
+}
+
+@media (max-width:760px){
+  html body #app .askbar-board{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+}
+@media (max-width:520px){
+  html body #app .askbar-board{grid-template-columns:1fr !important;}
+}
