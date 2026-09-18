@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=24">
+    <link rel="stylesheet" href="style.css?v=25">
 
     
 </head>
@@ -6050,45 +6050,59 @@
                      RESEARCH LIBRARY — V23 institutional editorial system
                 ============================================================ -->
                 <div v-if="currentView === 'news'" class="news-view news-studio news-v23 nd-l183">
-                    <header class="news-v23-masthead">
-                        <div class="news-v23-ident">
-                            <div class="news-editorial-kicker">Research library · neumAC</div>
-                            <h2>Publications &amp; knowledge</h2>
-                            <p>Scientific output, clinical insight and department updates — one living institutional record.</p>
+                    <header class="news-v25-masthead" :class="{'is-collapsed':!newsLibraryHeaderOpen}">
+                        <div class="news-v25-mast-main">
+                            <div class="news-v25-ident">
+                                <div class="news-editorial-kicker">Research library · neumAC</div>
+                                <h2>Publications &amp; knowledge</h2>
+                                <p>Scientific output, clinical insight and department updates — one living institutional record.</p>
+                            </div>
+                            <div class="news-v25-mast-actions">
+                                <div class="news-v25-record-count"><strong>{{ newsPosts.length }}</strong><span>records</span></div>
+                                <button class="news-v25-collapse" @click="newsLibraryHeaderOpen=!newsLibraryHeaderOpen"
+                                        :title="newsLibraryHeaderOpen ? 'Collapse library header' : 'Expand library header'"
+                                        :aria-label="newsLibraryHeaderOpen ? 'Collapse library header' : 'Expand library header'">
+                                    <span :class="{'is-collapsed':!newsLibraryHeaderOpen}">⌃</span>
+                                </button>
+                                <button class="news-v23-new" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')" title="New record">
+                                    <span class="news-v23-new-orb">＋</span><span>New record</span>
+                                </button>
+                            </div>
                         </div>
-                        <div class="news-v23-mast-actions">
-                            <div class="news-v23-record-count"><strong>{{ newsPosts.length }}</strong><span>records</span></div>
-                            <button class="news-v23-new" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')" title="New record">
-                                <span class="news-v23-new-orb">＋</span><span>New record</span>
-                            </button>
+                        <div class="news-v25-index">
+                            <span class="news-v25-index-label">Library index</span>
+                            <span><strong>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</strong> publications</span>
+                            <span><strong>{{ newsPosts.filter(p=>p.post_type==='article').length }}</strong> articles</span>
+                            <span><strong>{{ newsPosts.filter(p=>p.post_type==='highlight').length }}</strong> highlights</span>
+                            <span><strong>{{ newsPosts.filter(p=>p.post_type==='update').length }}</strong> updates</span>
+                            <span class="news-v25-index-public"><strong>{{ newsPosts.filter(p=>p.status==='published' && p.is_public).length }}</strong> Public</span>
                         </div>
                     </header>
 
-                    <div class="news-v23-index">
-                        <span class="news-v23-index-label">Library index</span>
-                        <span><strong>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</strong> publications</span>
-                        <span><strong>{{ newsPosts.filter(p=>p.post_type==='article').length }}</strong> articles</span>
-                        <span><strong>{{ newsPosts.filter(p=>p.post_type==='highlight').length }}</strong> highlights</span>
-                        <span><strong>{{ newsPosts.filter(p=>p.post_type==='update').length }}</strong> updates</span>
-                        <span class="news-v23-index-public"><strong>{{ newsPosts.filter(p=>p.status==='published' && p.is_public).length }}</strong> Public</span>
+                    <div class="news-v25-commandbar">
+                        <nav class="news-v25-tabs" aria-label="Research output type">
+                            <button :class="{'is-active':newsFilters.type===''}" @click="newsFilters.type=''">All <span>{{ newsPosts.length }}</span></button>
+                            <button :class="{'is-active':newsFilters.type==='publication'}" @click="newsFilters.type='publication'">Publications <span>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</span></button>
+                            <button :class="{'is-active':newsFilters.type==='article'}" @click="newsFilters.type='article'">Articles <span>{{ newsPosts.filter(p=>p.post_type==='article').length }}</span></button>
+                            <button :class="{'is-active':newsFilters.type==='highlight'}" @click="newsFilters.type='highlight'">Highlights <span>{{ newsPosts.filter(p=>p.post_type==='highlight').length }}</span></button>
+                            <button :class="{'is-active':newsFilters.type==='update'}" @click="newsFilters.type='update'">Updates <span>{{ newsPosts.filter(p=>p.post_type==='update').length }}</span></button>
+                        </nav>
+                        <label class="news-v25-search">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                            <input type="text" v-model="newsFilters.search" placeholder="Search the library…">
+                        </label>
+                        <button class="news-v25-filter-toggle" @click="newsLibraryFiltersOpen=!newsLibraryFiltersOpen" :class="{'is-active':newsLibraryFiltersOpen}"
+                                :title="newsLibraryFiltersOpen ? 'Hide filters' : 'Show filters'">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M8 14v6"/></svg>
+                            <span>Filter</span>
+                        </button>
+                        <span class="news-v25-shown">{{ filteredNews.length }} shown</span>
                     </div>
 
-                    <nav class="news-v23-tabs" aria-label="Research output type">
-                        <button :class="{'is-active':newsFilters.type===''}" @click="newsFilters.type=''">All output <span>{{ newsPosts.length }}</span></button>
-                        <button :class="{'is-active':newsFilters.type==='publication'}" @click="newsFilters.type='publication'">Publications <span>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</span></button>
-                        <button :class="{'is-active':newsFilters.type==='article'}" @click="newsFilters.type='article'">Articles <span>{{ newsPosts.filter(p=>p.post_type==='article').length }}</span></button>
-                        <button :class="{'is-active':newsFilters.type==='highlight'}" @click="newsFilters.type='highlight'">Highlights <span>{{ newsPosts.filter(p=>p.post_type==='highlight').length }}</span></button>
-                        <button :class="{'is-active':newsFilters.type==='update'}" @click="newsFilters.type='update'">Updates <span>{{ newsPosts.filter(p=>p.post_type==='update').length }}</span></button>
-                    </nav>
-
-                    <div class="news-v23-tools">
-                        <label class="news-v23-search">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                            <input type="text" v-model="newsFilters.search" placeholder="Search title, journal, author, DOI or research line…">
-                        </label>
-                        <label class="news-v23-select"><span>Status</span><select v-model="newsFilters.status"><option value="">Any</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></label>
-                        <label class="news-v23-select"><span>Visibility</span><select v-model="newsFilters.scope"><option value="">Any</option><option value="public">Public</option><option value="internal">Internal</option></select></label>
-                        <span class="news-v23-shown">{{ filteredNews.length }} shown</span>
+                    <div v-if="newsLibraryFiltersOpen" class="news-v25-filter-panel">
+                        <label><span>Status</span><select v-model="newsFilters.status"><option value="">Any status</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></label>
+                        <label><span>Visibility</span><select v-model="newsFilters.scope"><option value="">Any visibility</option><option value="public">Public</option><option value="internal">Internal</option></select></label>
+                        <button v-if="newsFilters.status || newsFilters.scope || newsFilters.search" @click="newsFilters.status=''; newsFilters.scope=''; newsFilters.search=''" class="news-v25-clear">Clear filters</button>
                     </div>
 
                     <div class="news-list news-list--studio news-list--v23" v-show="!newsLoading || newsPosts.length > 0">
@@ -6221,35 +6235,60 @@
                             </div>
                         </header>
 
-                        <!-- TYPE CHOOSER — not four cards; a quiet editorial index -->
-                        <div v-if="newsModal.stage==='choose'" class="news-v24-chooser">
-                            <div class="news-v24-chooser-intro">
-                                <span>New record</span>
-                                <h2>What are you adding?</h2>
-                                <p>Choose the object first. The studio will adapt to how that object is written, reviewed and published.</p>
+                        <!-- TYPE CHOOSER — V25 object atlas: no card wall, no dead vertical space -->
+                        <div v-if="newsModal.stage==='choose'" class="news-v25-chooser">
+                            <div class="news-v25-chooser-intro">
+                                <div class="news-v25-chooser-no">01 / CREATE</div>
+                                <span>Research studio</span>
+                                <h2>Choose the object.<br>Then shape the experience.</h2>
+                                <p>Each record has its own authoring, reading and publishing grammar.</p>
+                                <small>Publication · Article · Highlight · Update</small>
                             </div>
-                            <nav class="news-v24-type-index" aria-label="Choose record type">
-                                <button @click="chooseNewsType('publication')">
-                                    <span class="news-v24-type-no">01</span>
-                                    <span class="news-v24-type-copy"><strong>Publication</strong><small>Scholarly output · journal, authors, DOI and research line</small></span>
-                                    <span class="news-v24-type-arrow">↗</span>
+
+                            <nav class="news-v25-object-atlas" aria-label="Choose record type">
+                                <button class="is-publication" @click="chooseNewsType('publication')">
+                                    <div class="news-v25-atlas-top"><span>01</span><b>Publication</b><i>↗</i></div>
+                                    <div class="news-v25-atlas-demo demo-publication" aria-hidden="true">
+                                        <strong>2026</strong>
+                                        <div><span></span><span></span><span></span><small>DOI 10.1183/…</small></div>
+                                    </div>
+                                    <p>Scholarly record</p>
+                                    <small>Journal, authors, DOI, date and research line.</small>
                                 </button>
-                                <button @click="chooseNewsType('article')">
-                                    <span class="news-v24-type-no">02</span>
-                                    <span class="news-v24-type-copy"><strong>Article</strong><small>Editorial story · writing, imagery and reading experience</small></span>
-                                    <span class="news-v24-type-arrow">↗</span>
+
+                                <button class="is-article" @click="chooseNewsType('article')">
+                                    <div class="news-v25-atlas-top"><span>02</span><b>Article</b><i>↗</i></div>
+                                    <div class="news-v25-atlas-demo demo-article" aria-hidden="true">
+                                        <div class="demo-image"></div>
+                                        <div class="demo-copy"><span></span><span></span><span></span><span></span></div>
+                                    </div>
+                                    <p>Editorial story</p>
+                                    <small>Writing, imagery and a dedicated reading experience.</small>
                                 </button>
-                                <button @click="chooseNewsType('highlight')">
-                                    <span class="news-v24-type-no">03</span>
-                                    <span class="news-v24-type-copy"><strong>Highlight</strong><small>Visual research feature · image-led and concise</small></span>
-                                    <span class="news-v24-type-arrow">↗</span>
+
+                                <button class="is-highlight" @click="chooseNewsType('highlight')">
+                                    <div class="news-v25-atlas-top"><span>03</span><b>Highlight</b><i>↗</i></div>
+                                    <div class="news-v25-atlas-demo demo-highlight" aria-hidden="true">
+                                        <div class="demo-highlight-image"></div>
+                                        <div class="demo-highlight-line"></div>
+                                    </div>
+                                    <p>Visual research feature</p>
+                                    <small>Image-led, concise and designed to carry emphasis.</small>
                                 </button>
-                                <button @click="chooseNewsType('update')">
-                                    <span class="news-v24-type-no">04</span>
-                                    <span class="news-v24-type-copy"><strong>Update</strong><small>Institutional note · fast, dated and operational</small></span>
-                                    <span class="news-v24-type-arrow">↗</span>
+
+                                <button class="is-update" @click="chooseNewsType('update')">
+                                    <div class="news-v25-atlas-top"><span>04</span><b>Update</b><i>↗</i></div>
+                                    <div class="news-v25-atlas-demo demo-update" aria-hidden="true">
+                                        <time>18 SEP</time><span></span><span></span><span></span>
+                                    </div>
+                                    <p>Department note</p>
+                                    <small>Fast, dated and operational. No oversized editor.</small>
                                 </button>
                             </nav>
+
+                            <div class="news-v25-chooser-foot">
+                                <span>CREATE</span><i></i><span>PREVIEW</span><i></i><span>PUBLISH</span><i></i><span>READ</span>
+                            </div>
                         </div>
 
                         <!-- COMPOSER -->
@@ -7544,6 +7583,15 @@
                     <span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span>
                   </div>
                 </div>
+                <aside class="nrd-v25-pub-context">
+                  <span class="nrd-v25-context-kicker">Record context</span>
+                  <dl>
+                    <div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div>
+                    <div v-if="newsDrawerAuthorFull"><dt>Internal author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div>
+                    <div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="This record is reflected in the public view on the web.">ⓘ</span></dd></div>
+                    <div><dt>Status</dt><dd>{{ newsDrawer.post.status === 'published' ? 'Published' : newsDrawer.post.status === 'draft' ? 'Draft' : 'Archived' }}</dd></div>
+                  </dl>
+                </aside>
               </article>
 
               <!-- ARTICLE — immersive editorial reader -->
@@ -12177,7 +12225,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=24"></script>
+    <script src="app.js?v=25"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -12294,4 +12342,4 @@
 
 
 </body>
-</html>
+</html>  
