@@ -16087,3 +16087,193 @@ html body #app .askbar-send:disabled {
   html body #app .askbar-sug-item { min-height:70px !important; }
   html body #app .askbar-greeting-t { font-size:19px !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   V14 · CALM KPI RAIL
+   Dashboard summary should read as one quiet departmental state,
+   not four competing widgets.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* One shared summary surface */
+html body #app .view-dashboard .dbsr{
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  gap:0 !important;
+  margin:12px 10px 18px !important;
+  padding:0 !important;
+  background:#fff !important;
+  border:1px solid rgba(18,38,58,.09) !important;
+  border-radius:16px !important;
+  overflow:hidden !important;
+  box-shadow:0 5px 18px rgba(8,23,39,.035) !important;
+}
+
+/* Quiet cells instead of independent cards */
+html body #app .view-dashboard .dbsr-stat{
+  position:relative !important;
+  min-height:108px !important;
+  padding:16px 20px 15px !important;
+  gap:0 !important;
+  border:0 !important;
+  border-right:1px solid rgba(18,38,58,.075) !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+  transform:none !important;
+  transition:background .15s ease !important;
+}
+html body #app .view-dashboard .dbsr-stat:last-child{
+  border-right:0 !important;
+}
+html body #app .view-dashboard .dbsr-stat:hover{
+  background:#fafcfc !important;
+  box-shadow:none !important;
+  transform:none !important;
+}
+html body #app .view-dashboard .dbsr-stat:active{
+  background:#f7fafb !important;
+  transform:none !important;
+}
+
+/* Remove decorative module identities */
+html body #app .view-dashboard .dbsr-stat::before,
+html body #app .view-dashboard .dbsr-accent{
+  display:none !important;
+  content:none !important;
+}
+
+/* All headline numbers share one visual language */
+html body #app .view-dashboard .dbsr-num,
+html body #app .view-dashboard .dbsr-num--teal,
+html body #app .view-dashboard .dbsr-stat:nth-child(1) .dbsr-num,
+html body #app .view-dashboard .dbsr-stat:nth-child(2) .dbsr-num,
+html body #app .view-dashboard .dbsr-stat:nth-child(3) .dbsr-num,
+html body #app .view-dashboard .dbsr-stat:nth-child(4) .dbsr-num{
+  font-family:var(--nd-display,"Instrument Serif",Georgia,serif) !important;
+  font-size:36px !important;
+  font-style:normal !important;
+  font-weight:400 !important;
+  line-height:1 !important;
+  letter-spacing:-.035em !important;
+  color:#173650 !important;
+  margin:0 0 7px !important;
+}
+
+/* Softer title case, no dashboard shouting */
+html body #app .view-dashboard .dbsr-lbl{
+  font-family:var(--nd-ui,"DM Sans",system-ui,sans-serif) !important;
+  font-size:12px !important;
+  line-height:1.25 !important;
+  font-weight:650 !important;
+  text-transform:none !important;
+  letter-spacing:-.005em !important;
+  color:#526579 !important;
+  margin:0 0 10px !important;
+}
+
+/* Secondary information behaves like a sentence, not a row of badges */
+html body #app .view-dashboard .dbsr-pills,
+html body #app .view-dashboard .dbsr-stat:nth-child(3) .dbsr-pills{
+  display:flex !important;
+  flex-direction:row !important;
+  grid-template-columns:none !important;
+  align-items:baseline !important;
+  flex-wrap:wrap !important;
+  gap:0 !important;
+  margin-top:auto !important;
+}
+html body #app .view-dashboard .dbsr-pill,
+html body #app .view-dashboard .dbsr-pill--ok,
+html body #app .view-dashboard .dbsr-pill--blue,
+html body #app .view-dashboard .dbsr-pill--teal,
+html body #app .view-dashboard .dbsr-pill--purple,
+html body #app .view-dashboard .dbsr-pill--muted,
+html body #app .view-dashboard .dbsr-stat:nth-child(3) .dbsr-pill:first-child,
+html body #app .view-dashboard .dbsr-stat:nth-child(3) .dbsr-pill:last-child,
+html body #app .view-dashboard .dbsr-stat:nth-child(1) .dbsr-pill:last-child,
+html body #app .view-dashboard .dbsr-stat:nth-child(4) .dbsr-pill:last-child{
+  min-height:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  font-family:var(--nd-ui,"DM Sans",system-ui,sans-serif) !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+  font-weight:500 !important;
+  letter-spacing:0 !important;
+  color:#708094 !important;
+  justify-self:auto !important;
+}
+html body #app .view-dashboard .dbsr-pill + .dbsr-pill::before{
+  content:"·" !important;
+  display:inline-block !important;
+  margin:0 8px !important;
+  color:#b3bec8 !important;
+}
+
+/* The clinician name is the one piece of supporting text worth emphasizing */
+html body #app .view-dashboard .dbsr-stat:nth-child(3) .dbsr-pill:first-child{
+  color:#27465f !important;
+  font-weight:650 !important;
+}
+html body #app .view-dashboard .dbsr-stat:nth-child(3) .dbsr-pill:last-child{
+  font-family:var(--nd-data,"DM Mono",ui-monospace,monospace) !important;
+  font-size:11.5px !important;
+  color:#7d8b9b !important;
+}
+
+/* Semantic warnings remain visible because they carry meaning */
+html body #app .view-dashboard .dbsr-pill--warn{
+  min-height:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  color:#a56718 !important;
+  font-size:12px !important;
+  font-weight:600 !important;
+}
+html body #app .view-dashboard .dbsr-pill--danger{
+  min-height:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  color:#a65050 !important;
+  font-size:12px !important;
+  font-weight:600 !important;
+}
+
+/* Responsive: preserve the quiet rail rhythm */
+@media (max-width:900px){
+  html body #app .view-dashboard .dbsr{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  html body #app .view-dashboard .dbsr-stat{
+    min-height:102px !important;
+    border-right:1px solid rgba(18,38,58,.075) !important;
+    border-bottom:1px solid rgba(18,38,58,.075) !important;
+  }
+  html body #app .view-dashboard .dbsr-stat:nth-child(2n){border-right:0 !important;}
+  html body #app .view-dashboard .dbsr-stat:nth-child(n+3){border-bottom:0 !important;}
+}
+@media (max-width:520px){
+  html body #app .view-dashboard .dbsr{
+    grid-template-columns:1fr !important;
+  }
+  html body #app .view-dashboard .dbsr-stat,
+  html body #app .view-dashboard .dbsr-stat:nth-child(2n),
+  html body #app .view-dashboard .dbsr-stat:nth-child(n+3){
+    min-height:92px !important;
+    border-right:0 !important;
+    border-bottom:1px solid rgba(18,38,58,.075) !important;
+  }
+  html body #app .view-dashboard .dbsr-stat:last-child{border-bottom:0 !important;}
+  html body #app .view-dashboard .dbsr-num,
+  html body #app .view-dashboard .dbsr-num--teal{
+    font-size:32px !important;
+  }
+}
