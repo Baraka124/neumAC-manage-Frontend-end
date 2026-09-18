@@ -17597,7 +17597,7 @@ html body #app .news-view--editorial .nm-more-btn{width:28px!important;height:28
   html body #app .askbar-vocab-map{grid-column:2!important;}
   html body #app .news-editorial-head{display:block!important;}
   html body #app .news-editorial-new{margin-top:14px!important;}
-  html body #app .news-filter-bar--editorial{grid-template-columns:1fr!important;}
+  html body #app .news-filter-bar--editorial{grid-template-columns:1fr!important;}  
   html body #app .news-search{grid-column:auto!important;}
   html body #app .news-view--editorial .news-card{grid-template-columns:1fr!important;}
   html body #app .news-view--editorial .news-card-right{border-left:0!important;border-top:1px solid #edf0f1!important;min-width:0!important;}
