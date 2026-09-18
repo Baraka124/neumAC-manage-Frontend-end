@@ -6074,191 +6074,184 @@
                 <!-- ============================================================
                      NEWS & POSTS VIEW
                 ============================================================ -->
-                <div v-if="currentView === 'news'" class="news-view news-view--editorial nd-l183">
-                    <div class="news-editorial-head">
-                        <div>
-                            <div class="news-editorial-kicker">Research output · neumAC</div>
+                <div v-if="currentView === 'news'" class="news-view news-view--editorial news-studio nd-l183">
+                    <!-- Institutional editorial masthead -->
+                    <header class="news-studio-head">
+                        <div class="news-studio-head-copy">
+                            <div class="news-editorial-kicker">Research library · neumAC</div>
                             <h2>Publications & knowledge</h2>
-                            <p>A curated institutional record of publications, clinical insight and department updates.</p>
+                            <p>Scientific output, clinical insight and department updates — organised as a living institutional record.</p>
                         </div>
-                        <button class="news-editorial-new" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')"><span>＋</span> New record</button>
+                        <div class="news-studio-head-actions">
+                            <div class="news-studio-total"><strong>{{ newsPosts.length }}</strong><span>records</span></div>
+                            <button class="news-editorial-new" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')">
+                                <span class="news-new-plus">＋</span><span>New record</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- Quiet collection summary; not a dashboard KPI row -->
+                    <div class="news-library-summary">
+                        <div class="news-library-summary-lead">Library index</div>
+                        <div class="news-library-summary-items">
+                            <span><strong>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</strong> publications</span>
+                            <span><strong>{{ newsPosts.filter(p=>p.post_type==='article').length }}</strong> articles</span>
+                            <span><strong>{{ newsPosts.filter(p=>p.post_type==='update').length }}</strong> updates</span>
+                            <span><strong>{{ newsPosts.filter(p=>p.status==='published' && p.is_public).length }}</strong> public</span>
+                            <span v-if="newsPosts.filter(p=>p.status==='draft').length"><strong>{{ newsPosts.filter(p=>p.status==='draft').length }}</strong> drafts</span>
+                        </div>
                     </div>
-                    <div class="news-editorial-metrics">
-                        <div><strong>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</strong><span>Publications</span></div>
-                        <div><strong>{{ newsPosts.filter(p=>p.post_type==='article').length }}</strong><span>Articles</span></div>
-                        <div><strong>{{ newsPosts.filter(p=>p.status==='published' && p.is_public).length }}</strong><span>Public records</span></div>
-                        <div><strong>{{ newsPosts.filter(p=>p.status==='draft').length }}</strong><span>Drafts</span></div>
-                    </div>
-                    <div class="news-type-tabs">
+
+                    <!-- Content-native views: same data, different visual grammar -->
+                    <nav class="news-type-tabs news-type-tabs--studio" aria-label="Research output type">
                         <button :class="{'is-active':newsFilters.type===''}" @click="newsFilters.type=''">All output <span>{{ newsPosts.length }}</span></button>
                         <button :class="{'is-active':newsFilters.type==='publication'}" @click="newsFilters.type='publication'">Publications <span>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</span></button>
                         <button :class="{'is-active':newsFilters.type==='article'}" @click="newsFilters.type='article'">Articles <span>{{ newsPosts.filter(p=>p.post_type==='article').length }}</span></button>
                         <button :class="{'is-active':newsFilters.type==='update'}" @click="newsFilters.type='update'">Updates <span>{{ newsPosts.filter(p=>p.post_type==='update').length }}</span></button>
-                    </div>
-                    <div class="news-filter-bar news-filter-bar--editorial">
-                        <label class="news-search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="text" v-model="newsFilters.search" placeholder="Search titles, journals, authors…"></label>
+                    </nav>
+
+                    <div class="news-filter-bar news-filter-bar--editorial news-filter-bar--studio">
+                        <label class="news-search">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                            <input type="text" v-model="newsFilters.search" placeholder="Search title, journal, author, DOI or research line…">
+                        </label>
                         <select class="form-select" v-model="newsFilters.status"><option value="">Any status</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select>
                         <select class="form-select" v-model="newsFilters.scope"><option value="">Any visibility</option><option value="public">Public website</option><option value="internal">Internal only</option></select>
+                        <span class="news-result-count">{{ filteredNews.length }} shown</span>
                     </div>
 
-                    <!-- Posts list — v-show keeps DOM stable during background refresh -->
-                    <div class="news-list nd-l178" v-show="!newsLoading || newsPosts.length > 0" >
-                        <div v-if="filteredNews.length === 0" class="news-empty">
+                    <div class="news-list news-list--studio" v-show="!newsLoading || newsPosts.length > 0">
+                        <div v-if="filteredNews.length === 0" class="news-empty news-empty--studio">
                             <div class="nm-empty-icon">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22H20a1 1 0 001-1V5a1 1 0 00-1-1H8l-5 5v12a1 1 0 001 1z"/><path d="M8 4V9H3M12 13H16M12 17H16M8 13H9M8 17H9"/></svg>
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5.5h16M4 12h16M4 18.5h10"/></svg>
                             </div>
-                            <div class="nm-empty-title">No posts found</div>
-                            <div class="nm-empty-sub">{{ newsFilters.search || newsFilters.type || newsFilters.scope ? 'Try clearing your filters' : 'Create your first post to share updates with the team' }}</div>
-                            <button v-if="hasPermission('news_posts','create') && !newsFilters.search && !newsFilters.type" class="nm-empty-action" @click="showAddNewsModal">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> New Post
-                            </button>
+                            <div class="nm-empty-title">Nothing in this view</div>
+                            <div class="nm-empty-sub">{{ newsFilters.search || newsFilters.type || newsFilters.scope ? 'Try another search or clear a filter.' : 'Add the first record to the research library.' }}</div>
+                            <button v-if="hasPermission('news_posts','create') && !newsFilters.search && !newsFilters.type" class="nm-empty-action" @click="showAddNewsModal">＋ New record</button>
                         </div>
 
-                        <div class="news-body">
-                        <div v-for="post in filteredNews" :key="post.id" class="news-card" :class="['news-card--' + post.post_type, post.is_featured ? 'news-card--featured' : '']" @click.stop="openNewsDrawer(post)">
+                        <div class="news-body news-body--studio" :class="'news-body--' + (newsFilters.type || 'all')">
+                            <article v-for="post in filteredNews" :key="post.id"
+                                     class="knowledge-card"
+                                     :class="['knowledge-card--' + post.post_type, post.is_featured ? 'is-featured' : '', post.status !== 'published' ? 'is-' + post.status : '']"
+                                     @click.stop="openNewsDrawer(post)">
 
-                            <!-- Left accent stripe -->
-                            <div class="news-card-left"></div>
-
-                            <!-- Featured badge -->
-                            <div v-if="post.is_featured"  class="nd-l177 nd-v181">
-                                <svg width="9" height="9" viewBox="0 0 24 24" fill="var(--nm-teal)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                Homepage
-                            </div>
-
-                            <!-- Content -->
-                            <div class="news-card-body" :style="post.post_type === 'highlight' ? 'display:flex;gap:12px;' : ''">
-                                <!-- Highlight thumbnail — the photo is the actual content here,
-                                     shown inline in the row, not as a strip below the text the
-                                     way articles use it. Highlights require an image, so this is
-                                     never empty in practice. -->
-                                <div v-if="post.post_type === 'highlight'"  class="nd-l176 nd-v180">
-                                    <img v-if="post.image_urls?.[0] || post.featured_image_url" :src="post.image_urls?.[0] || post.featured_image_url"
-                                          onerror="this.style.display='none'" class="nd-l116">
-                                </div>
-                                <div  class="nd-l027">
-                                <div class="news-card-tag" :class="'tag-' + post.post_type">
-                                    {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'highlight' ? 'Highlight' : 'Publication' }}
-                                </div>
-                                <div class="news-card-title">{{ post.title }}</div>
-
-                                <!-- Publication fields — journal prominent -->
-                                <div v-if="post.post_type === 'publication'" class="news-pub-meta">
-                                    <div v-if="post.journal_name" class="news-pub-line">{{ post.journal_name }}</div>
-                                    <div v-if="post.authors_text" class="news-pub-authors">{{ post.authors_text }}</div>
-                                    <a v-if="post.doi" :href="'https://doi.org/' + post.doi" target="_blank" class="news-pub-doi">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg> DOI {{ post.doi }}
-                                    </a>
-                                    <!-- Fallback: show body as excerpt if no publication metadata is filled -->
-                                    <span v-if="!post.journal_name && !post.authors_text && !post.doi && post.body"
-                                          class="news-card-excerpt nd-l028" >{{ post.body }}</span>
-                                    <span v-if="!post.journal_name && !post.authors_text && !post.doi && !post.body"
-                                           class="nd-v179">No publication details added yet</span>
+                                <div class="knowledge-card-topline">
+                                    <div class="knowledge-type">
+                                        <span class="knowledge-type-mark"></span>
+                                        {{ post.post_type === 'update' ? 'Update' : post.post_type === 'article' ? 'Article' : post.post_type === 'highlight' ? 'Highlight' : 'Publication' }}
+                                        <span v-if="post.is_featured" class="knowledge-featured">Featured</span>
+                                    </div>
+                                    <div class="knowledge-state" @click.stop>
+                                        <span v-if="post.status !== 'published'" class="knowledge-status" :class="'is-' + post.status">{{ post.status === 'draft' ? 'Draft' : 'Archived' }}</span>
+                                        <button v-else class="knowledge-visibility" @click="toggleNewsPublic(post)"
+                                                :disabled="!hasPermission('news_posts','update')"
+                                                :title="post.is_public ? 'Public — click to make internal' : 'Internal — click to make public'">
+                                            <span class="knowledge-state-dot" :class="post.is_public ? 'is-public' : 'is-internal'"></span>
+                                            <i class="fas" :class="post.is_public ? 'fa-globe' : 'fa-lock'"></i>
+                                            {{ post.is_public ? 'Public' : 'Internal' }}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <!-- Body preview — articles and updates only. Highlights aren't
-                                     really "written"; the photo + title is the whole content,
-                                     so an excerpt here would just repeat the title or show
-                                     nothing useful. -->
-                                <div v-if="post.body && post.post_type !== 'publication' && post.post_type !== 'highlight'" class="news-card-excerpt">{{ post.body }}</div>
-
-                                <!-- Image strip — articles only. Highlights use the inline
-                                     thumbnail above instead. -->
-                                <div v-if="(post.image_urls?.length || post.featured_image_url) && post.post_type === 'article'"
-                                      class="nd-l326 nd-v299">
-                                    <img v-for="(url, idx) in (post.image_urls?.length ? post.image_urls : [post.featured_image_url]).slice(0,5)"
-                                         :key="idx" :src="url"
-                                         :style="{ flex: idx === 0 ? '2' : '1', height: '60px', objectFit: 'cover', borderRadius: '5px', minWidth: 0 }"
-                                         onerror="this.style.display='none'">
-                                </div>
-
-                                <!-- Meta row -->
-                                <div class="news-card-meta">
-                                    <span v-if="post.author_id" class="news-meta-item">
-                                        <span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>
-                                        {{ newsAuthorName(post.author_id) }}
-                                    </span>
-                                    <span v-if="post.research_line_id" class="news-meta-item news-meta-line">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg> {{ newsLineName(post.research_line_id) }}
-                                    </span>
-                                    <span class="news-meta-item">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14H10M8 18H10M14 14H16M14 18H16"/></svg>
-                                        {{ formatNewsDate(post.published_at || post.created_at) }}
-                                    </span>
-                                    <span v-if="post.word_count && post.post_type !== 'publication' && post.post_type !== 'highlight'" class="news-meta-item news-wc">
-                                        {{ post.word_count }}w
-                                    </span>
-                                    <span v-if="post.expires_at && post.post_type !== 'publication' && post.post_type !== 'highlight'" class="news-meta-item news-expiry"
-                                          :class="{ 'news-expiry--warn': new Date(post.expires_at) < new Date(Date.now() + 14*86400000) }">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Expires {{ formatDate(post.expires_at) }}
-                                    </span>
-                                </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: status + primary action + overflow -->
-                            <div class="news-card-right" @click.stop="() => {}">
-                                <span v-if="post.status !== 'published'" class="news-status-badge" :class="'nsb--' + post.status">
-                                    {{ post.status === 'draft' ? 'Draft' : 'Archived' }}
-                                </span>
-                                <span v-else class="news-status-dot" :style="post.is_public ? 'background:#10b981' : 'background:#888'" title="Published"></span>
-                                <button class="news-vis-btn" @click="toggleNewsPublic(post)"
-                                        :title="post.is_public ? 'Public — click to make internal' : 'Internal — click to make public'"
-                                        v-if="post.status === 'published' && hasPermission('news_posts','update')">
-                                    <i class="fas" :class="post.is_public ? 'fa-globe' : 'fa-lock'"></i>
-                                    <span>{{ post.is_public ? 'Public' : 'Internal' }}</span>
-                                </button>
-                                <div class="news-actions nd-l052" >
-                                    <button v-if="post.status === 'draft' && hasPermission('news_posts','update')"
-                                            class="nm-news-primary nm-news-primary--pub"
-                                            @click.stop="publishNews(post)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Publish
-                                    </button>
-                                    <button v-if="hasPermission('news_posts','update')"
-                                            class="nm-news-primary nm-news-primary--edit"
-                                            @click.stop="editNews(post)">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg> Edit
-                                    </button>
-                                    <div class="nm-more-btn" @click.stop="activeNewsMenu = activeNewsMenu === post.id ? null : post.id">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                                        <div class="nm-dropdown" v-if="activeNewsMenu === post.id" @click.stop="() => {}">
-                                            <!-- Feature / Unfeature on homepage -->
-                                            <div class="nm-dropdown-item"
-                                                 v-if="post.status === 'published' && post.is_public && hasPermission('news_posts','update')"
-                                                 @click="toggleNewsFeature(post); activeNewsMenu=null"
-                                                 :style="post.is_featured ? 'color:var(--nm-teal);font-weight:500;' : ''">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" :stroke="post.is_featured ? 'var(--nm-teal)' : 'currentColor'" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                                {{ post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}
-                                            </div>
-                                            <div class="nm-dropdown-sep" v-if="post.status === 'published' && post.is_public && hasPermission('news_posts','update')"></div>
-                                            <div class="nm-dropdown-item" @click="archiveNews(post); activeNewsMenu=null"
-                                                 v-if="post.status === 'published' && hasPermission('news_posts','update')">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Archive
-                                            </div>
-                                            <div class="nm-dropdown-sep" v-if="hasPermission('news_posts','delete')"></div>
-                                            <div class="nm-dropdown-item danger" @click="deleteNews(post); activeNewsMenu=null"
-                                                 v-if="hasPermission('news_posts','delete')">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg> Delete
+                                <!-- PUBLICATION: bibliography first; never render the article/body blob here -->
+                                <template v-if="post.post_type === 'publication'">
+                                    <div class="publication-citation">
+                                        <div class="publication-year">{{ (post.published_at || post.created_at || '').slice(0,4) || '—' }}</div>
+                                        <div class="publication-citation-main">
+                                            <h3>{{ post.title }}</h3>
+                                            <div v-if="post.journal_name" class="publication-journal">{{ post.journal_name }}</div>
+                                            <div v-if="post.authors_text" class="publication-authors">{{ post.authors_text }}</div>
+                                            <div class="publication-links">
+                                                <a v-if="post.doi" :href="'https://doi.org/' + post.doi" target="_blank" @click.stop class="publication-doi">
+                                                    DOI {{ post.doi }} <span>↗</span>
+                                                </a>
+                                                <span v-else class="publication-missing">Bibliographic DOI not recorded</span>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                </template>
 
-                    <!-- Loading state — inline top bar, doesn't wipe card list -->
-                    <div v-if="newsLoading && !newsLoaded" class="news-loading">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Loading posts…
-                    </div>
-                    <!-- Subtle sync indicator when refreshing in background (already loaded) -->
-                    <div v-if="newsLoading && newsLoaded"  class="nd-l175 nd-v178">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="fa-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                        Syncing…
+                                <!-- ARTICLE: editorial preview; clamp the body instead of dumping it -->
+                                <template v-else-if="post.post_type === 'article'">
+                                    <div class="article-preview" :class="{'has-image': post.image_urls?.[0] || post.featured_image_url}">
+                                        <div class="article-preview-copy">
+                                            <h3>{{ post.title }}</h3>
+                                            <p v-if="post.body">{{ post.body }}</p>
+                                        </div>
+                                        <div v-if="post.image_urls?.[0] || post.featured_image_url" class="article-preview-media">
+                                            <img :src="post.image_urls?.[0] || post.featured_image_url" :alt="post.title" onerror="this.style.display='none'">
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- UPDATE: a concise departmental memo -->
+                                <template v-else-if="post.post_type === 'update'">
+                                    <div class="update-preview">
+                                        <div class="update-date">{{ formatNewsDate(post.published_at || post.created_at) }}</div>
+                                        <div>
+                                            <h3>{{ post.title }}</h3>
+                                            <p v-if="post.body">{{ post.body }}</p>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- HIGHLIGHT: image-led record -->
+                                <template v-else>
+                                    <div class="highlight-preview">
+                                        <img v-if="post.image_urls?.[0] || post.featured_image_url" :src="post.image_urls?.[0] || post.featured_image_url" :alt="post.title" onerror="this.style.display='none'">
+                                        <div>
+                                            <h3>{{ post.title }}</h3>
+                                            <p v-if="post.body">{{ post.body }}</p>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <footer class="knowledge-card-footer">
+                                    <div class="knowledge-meta">
+                                        <span v-if="post.author_id" class="knowledge-author">
+                                            <span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>
+                                            {{ newsAuthorName(post.author_id) }}
+                                        </span>
+                                        <span v-if="post.research_line_id" class="knowledge-line">{{ newsLineName(post.research_line_id) }}</span>
+                                        <span class="knowledge-date" v-if="post.post_type !== 'update'">{{ formatNewsDate(post.published_at || post.created_at) }}</span>
+                                        <span v-if="post.word_count && post.post_type==='article'" class="knowledge-read">{{ Math.max(1, Math.ceil(post.word_count / 220)) }} min read</span>
+                                        <span v-if="post.expires_at && post.post_type !== 'publication'" class="knowledge-expiry" :class="{'is-soon': new Date(post.expires_at) < new Date(Date.now() + 14*86400000)}">Expires {{ formatDate(post.expires_at) }}</span>
+                                    </div>
+                                    <div class="knowledge-actions" @click.stop>
+                                        <button v-if="post.status === 'draft' && hasPermission('news_posts','update')" class="knowledge-action-primary" @click="publishNews(post)">Publish</button>
+                                        <button v-if="hasPermission('news_posts','update')" class="knowledge-action" @click="editNews(post)" title="Edit record">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg><span>Edit</span>
+                                        </button>
+                                        <div class="news-actions knowledge-more-wrap">
+                                            <button class="knowledge-more" @click="activeNewsMenu = activeNewsMenu === post.id ? null : post.id" title="More actions">•••</button>
+                                            <div class="nm-dropdown" v-if="activeNewsMenu === post.id" @click.stop>
+                                                <div class="nm-dropdown-item" v-if="post.status === 'published' && post.is_public && hasPermission('news_posts','update')" @click="toggleNewsFeature(post); activeNewsMenu=null">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                                    {{ post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}
+                                                </div>
+                                                <div class="nm-dropdown-sep" v-if="post.status === 'published' && post.is_public && hasPermission('news_posts','update')"></div>
+                                                <div class="nm-dropdown-item" @click="archiveNews(post); activeNewsMenu=null" v-if="post.status === 'published' && hasPermission('news_posts','update')">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Archive
+                                                </div>
+                                                <div class="nm-dropdown-sep" v-if="hasPermission('news_posts','delete')"></div>
+                                                <div class="nm-dropdown-item danger" @click="deleteNews(post); activeNewsMenu=null" v-if="hasPermission('news_posts','delete')">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg> Delete
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </footer>
+                            </article>
+                        </div>
+
+                        <div v-if="newsLoading && !newsLoaded" class="news-loading news-loading--studio">
+                            <span class="news-sync-dot"></span> Preparing the research library…
+                        </div>
+                        <div v-if="newsLoading && newsLoaded" class="news-syncing"><span class="news-sync-dot"></span> Syncing records</div>
                     </div>
                 </div>
 
-                        </div><!-- /news-body -->
             </div><!-- /content-area -->
 
                 <!-- ============================================================
@@ -12465,7 +12458,7 @@
 
         function animate(){
             frame++;
-            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;   
+            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;
             drawTree(breath);
             if(!REDUCED) raf = requestAnimationFrame(animate);
         }
@@ -12480,4 +12473,4 @@
 
 
 </body>
-</html>
+</html>  
