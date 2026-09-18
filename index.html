@@ -89,19 +89,31 @@
                 <button class="askbar-entmenu-it" @click="askBarEntityAction('summary')"><svg width="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> Full summary</button>
             </div>
             <div class="askbar-head grounded-head">
-                <span class="grounded-head-orb" :class="{ 'grounded-head-orb--think': askBar.loading }" aria-hidden="true">
-                    <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
-                        <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
-                        <path class="grounded-mark-flow grounded-mark-flow--b" d="M19.2 23.5C23.5 19.1 28.1 17.4 32.7 18.1C37.2 18.7 41 21.1 44.5 24.1"/>
-                        <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
-                    </svg>
-                </span>
-                <div><div class="askbar-head-t">Grounded</div><div class="askbar-head-s">{{ askBar.view === 'conversation' && askBar.turns.length ? 'live context · following up' : 'department data · synced just now' }}</div></div>
-                <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()">New chat</button>
-                <button class="askbar-teach-btn" @click="askBarToggleTeach()" :class="{ 'askbar-teach-btn--on': askBar.view === 'teach' }" title="Teach Grounded">Teach</button>
-                <span class="askbar-head-live"><span class="askbar-head-dot"></span> Live</span>
-                <button class="askbar-close" @click="closeAskBar()">✕</button>
+                <div class="grounded-head-brand">
+                    <span class="grounded-head-orb" :class="{ 'grounded-head-orb--think': askBar.loading }" aria-hidden="true">
+                        <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
+                            <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
+                            <path class="grounded-mark-flow grounded-mark-flow--b" d="M19.2 23.5C23.5 19.1 28.1 17.4 32.7 18.1C37.2 18.7 41 21.1 44.5 24.1"/>
+                            <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
+                        </svg>
+                    </span>
+                    <div class="grounded-head-copy">
+                        <div class="askbar-head-t">Grounded</div>
+                        <div class="askbar-head-s"><span class="askbar-head-dot"></span><span>{{ askBar.view === 'conversation' && askBar.turns.length ? 'Context retained' : 'Department context' }}</span><span class="askbar-head-sep">·</span><span>live</span></div>
+                    </div>
+                </div>
+                <div class="grounded-head-tools">
+                    <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()" title="Start a new Grounded conversation">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>New</span>
+                    </button>
+                    <button class="askbar-teach-btn" @click="askBarToggleTeach()" :class="{ 'askbar-teach-btn--on': askBar.view === 'teach' }" title="Teach Grounded">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg><span>Teach</span>
+                    </button>
+                    <button class="askbar-close" @click="closeAskBar()" aria-label="Close Grounded" title="Close">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
             </div>
 
             <!-- PROACTIVE DIGEST (scan) -->
@@ -227,20 +239,12 @@
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
                     <div v-if="turn.q" class="askbar-q-bub" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
                     <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
-                        <div v-if="turn.trace && turn.trace.length && !turn.streaming" class="askbar-trace-mini" @click="turn.traceOpen = !turn.traceOpen">
-                            <span class="askbar-trace-orb askbar-trace-orb--still"></span>
-                            <span class="askbar-trace-mini-t">{{ turn.trace.length }} record check{{ turn.trace.length===1?'':'s' }}</span>
-                            <span class="askbar-trace-mini-x">{{ turn.traceOpen ? 'Hide checks' : 'How Grounded checked' }}</span>
-                        </div>
-                        <div v-if="turn.traceOpen && !turn.streaming" class="askbar-trace askbar-trace--expanded">
-                            <div v-for="(step, si) in turn.trace" :key="si" class="askbar-trace-step askbar-trace-step--done">
-                                <span class="askbar-trace-ic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
-                                <span class="askbar-trace-label">{{ step.label }}</span>
-                                <span class="askbar-trace-src">{{ step.src }}</span>
-                            </div>
-                        </div>
                         <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
-                            <div v-if="!(turn.visual && turn.visual.type === 'profile')" class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
+                            <div v-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state">
+                                <span class="askbar-empty-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg></span>
+                                <div><div class="askbar-empty-title">{{ turn.text }}</div><div class="askbar-empty-sub">No matching current record was found in the sources Grounded checked.</div></div>
+                            </div>
+                            <div v-else-if="!(turn.visual && turn.visual.type === 'profile')" class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
 
                             <!-- §3 clarify: pick leave reason -->
                             <div v-if="turn.leaveClarify" class="askbar-leave-reasons">
@@ -251,8 +255,8 @@
                             <div v-if="turn.proposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
                                     <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
-                                    <span>Proposed change · <b>record leave</b></span>
-                                    <span class="askbar-proposal-tag">not saved yet</span>
+                                    <span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>record leave</b></span>
+                                    <span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span>
                                 </div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.proposal.subject.name }}</span></div>
@@ -276,8 +280,8 @@
                             <div v-if="turn.oncallProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': turn.oncallProposal.blocked && !turn.committed }">
                                 <div class="askbar-proposal-h">
                                     <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-                                    <span>Proposed change · <b>schedule on-call</b></span>
-                                    <span class="askbar-proposal-tag">not saved yet</span>
+                                    <span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>schedule on-call</b></span>
+                                    <span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span>
                                 </div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.oncallProposal.subject.name }}</span></div>
@@ -315,8 +319,8 @@
                             <div v-if="turn.rotaDraft" class="askbar-proposal askbar-rota" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
                                     <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-                                    <span>Draft rota · <b>{{ turn.rotaDraft.rangeLabel }}</b></span>
-                                    <span class="askbar-proposal-tag">not saved yet</span>
+                                    <span>{{ turn.committed ? 'Published rota' : 'Draft rota' }} · <b>{{ turn.rotaDraft.rangeLabel }}</b></span>
+                                    <span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span>
                                 </div>
                                 <div class="askbar-rota-grid">
                                     <div v-for="(d,di) in turn.rotaDraft.days" :key="d.date" class="askbar-rota-day" :class="{ 'askbar-rota-day--gap': !d.assignee }">
@@ -338,7 +342,7 @@
 
                             <!-- §6 return-from-leave card -->
                             <div v-if="turn.returnProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
-                                <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span><span>Proposed change · <b>return from leave</b></span><span class="askbar-proposal-tag">not saved yet</span></div>
+                                <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span><span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>return from leave</b></span><span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span></div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.returnProposal.name }}</span></div>
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Was</span><span class="askbar-proposal-v">{{ turn.returnProposal.reason }} · {{ turn.returnProposal.was }}</span></div>
@@ -357,7 +361,7 @@
 
                             <!-- §6 rotation-edit proposal -->
                             <div v-if="turn.rotationEditProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
-                                <div class="askbar-proposal-label">Proposed change · edit rotation</div>
+                                <div class="askbar-proposal-label">{{ turn.committed ? 'Saved change' : 'Proposed change' }} · edit rotation</div>
                                 <div class="askbar-proposal-rows">
                                     <div v-for="r in turn.rotationEditProposal.rows" :key="r.k" class="askbar-proposal-row">
                                         <span class="askbar-proposal-k">{{ r.k }}</span>
@@ -375,7 +379,7 @@
 
                             <!-- §6 leave-edit proposal -->
                             <div v-if="turn.leaveEditProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
-                                <div class="askbar-proposal-label">Proposed change · edit leave</div>
+                                <div class="askbar-proposal-label">{{ turn.committed ? 'Saved change' : 'Proposed change' }} · edit leave</div>
                                 <div class="askbar-proposal-rows">
                                     <div v-for="r in turn.leaveEditProposal.rows" :key="r.k" class="askbar-proposal-row">
                                         <span class="askbar-proposal-k">{{ r.k }}</span>
@@ -393,7 +397,7 @@
 
                             <!-- §6 extend-rotation proposal -->
                             <div v-if="turn.rotationExtendProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
-                                <div class="askbar-proposal-label">Proposed change · extend rotation</div>
+                                <div class="askbar-proposal-label">{{ turn.committed ? 'Saved change' : 'Proposed change' }} · extend rotation</div>
                                 <div class="askbar-proposal-rows">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.rotationExtendProposal.name }}</span></div>
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Unit</span><span class="askbar-proposal-v">{{ turn.rotationExtendProposal.unit }}</span></div>
@@ -413,8 +417,8 @@
                             <div v-if="turn.multiRotation" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
                                     <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span>
-                                    <span>Proposed change · <b>{{ turn.multiRotation.rows.length }} rotations</b></span>
-                                    <span class="askbar-proposal-tag">not saved yet</span>
+                                    <span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>{{ turn.multiRotation.rows.length }} rotations</b></span>
+                                    <span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span>
                                 </div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.multiRotation.resident.name }}</span></div>
@@ -441,7 +445,7 @@
                             </div>
 
                             <div v-if="turn.rotationProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': (turn.rotationProposal.noSup || turn.rotationProposal.supWarn) && !turn.committed }">
-                                <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span>Proposed change · <b>rotation</b></span><span class="askbar-proposal-tag">not saved yet</span></div>
+                                <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>rotation</b></span><span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span></div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.rotationProposal.resident.name }}</span></div>
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Unit</span><span class="askbar-proposal-v">{{ turn.rotationProposal.unit.name }} <span class="askbar-proposal-sub">· {{ turn.rotationProposal.occ }}</span></span></div>
@@ -481,8 +485,8 @@
                             <div v-if="turn.removeProposal" class="askbar-proposal askbar-proposal--remove" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
                                     <span class="askbar-proposal-ic askbar-proposal-ic--danger"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span>
-                                    <span>Confirm removal · <b>{{ {leave:'cancel leave', oncall:'remove on-call', rotation:'cancel rotation', rota_batch:'clear rota'}[turn.removeProposal.kind] || 'remove' }}</b></span>
-                                    <span class="askbar-proposal-tag askbar-proposal-tag--danger">will delete</span>
+                                    <span>{{ turn.committed ? 'Saved change' : 'Confirm removal' }} · <b>{{ {leave:'cancel leave', oncall:'remove on-call', rotation:'cancel rotation', rota_batch:'clear rota'}[turn.removeProposal.kind] || 'remove' }}</b></span>
+                                    <span class="askbar-proposal-tag" :class="turn.committed ? 'askbar-proposal-tag--saved' : 'askbar-proposal-tag--danger'">{{ turn.committed ? 'removed' : 'will delete' }}</span>
                                 </div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.removeProposal.name }}</span></div>
@@ -532,7 +536,12 @@
 
                                 <!-- Entity-aware overview: research objects/units should never masquerade as staff fields. -->
                                 <div v-if="turn.visual.profile.overview && turn.visual.profile.overview.length" class="askbar-profile-sec askbar-profile-sec--overview">
-                                    <div class="askbar-profile-sechead">Overview</div>
+                                    <div class="askbar-profile-sechead">{{
+                                        turn.visual.profile.kind==='trial' ? 'Study overview' :
+                                        turn.visual.profile.kind==='project' ? 'Project overview' :
+                                        turn.visual.profile.kind==='research_line' ? 'Research line overview' :
+                                        turn.visual.profile.kind==='unit' ? 'Unit overview' : 'Overview'
+                                    }}</div>
                                     <div class="askbar-profile-grid">
                                         <div v-for="(row,ri) in turn.visual.profile.overview" :key="ri" class="askbar-profile-row">
                                             <span class="askbar-profile-k">{{ row.label }}</span><span>{{ row.value }}</span>
@@ -542,7 +551,7 @@
 
                                 <!-- Staff-specific identity -->
                                 <div v-if="!(turn.visual.profile.overview && turn.visual.profile.overview.length)" class="askbar-profile-sec">
-                                    <div class="askbar-profile-sechead">Identity</div>
+                                    <div class="askbar-profile-sechead">Contact & credentials</div>
                                     <div class="askbar-profile-grid">
                                         <div v-if="turn.visual.profile.static.email" class="askbar-profile-row"><span class="askbar-profile-k">Email</span><span>{{ turn.visual.profile.static.email }}</span></div>
                                         <div v-if="turn.visual.profile.static.phone" class="askbar-profile-row"><span class="askbar-profile-k">Phone</span><span>{{ turn.visual.profile.static.phone }}</span></div>
@@ -554,7 +563,7 @@
 
                                 <!-- Staff live state -->
                                 <div v-if="(turn.visual.profile.kind||'staff')==='staff'" class="askbar-profile-sec">
-                                    <div class="askbar-profile-sechead">Current</div>
+                                    <div class="askbar-profile-sechead">Current activity</div>
                                     <div class="askbar-profile-grid">
                                         <div v-if="turn.visual.profile.active.onLeave" class="askbar-profile-row"><span class="askbar-profile-k">Leave</span><span>{{ turn.visual.profile.active.onLeave }}</span></div>
                                         <div v-if="turn.visual.profile.active.rotation" class="askbar-profile-row"><span class="askbar-profile-k">Rotation</span><span>{{ turn.visual.profile.active.rotation }}</span></div>
@@ -566,7 +575,7 @@
 
                                 <!-- Connected records — intentionally compact by default -->
                                 <div v-if="turn.visual.profile.links && turn.visual.profile.links.length" class="askbar-profile-sec">
-                                    <div class="askbar-profile-sechead">{{ (turn.visual.profile.kind||'staff')==='staff' ? 'Connected activity' : ((turn.visual.profile.kind||'')==='research_line' ? 'Portfolio' : 'Related records') }}</div>
+                                    <div class="askbar-profile-sechead">{{ (turn.visual.profile.kind||'staff')==='staff' ? 'Connected work' : ((turn.visual.profile.kind||'')==='research_line' ? 'Portfolio' : 'Related records') }}</div>
                                     <div class="askbar-profile-links">
                                         <div v-for="(lk,li) in (turn.profileExpanded ? turn.visual.profile.links : turn.visual.profile.links.slice(0,2))" :key="li" class="askbar-profile-link" :class="'askbar-profile-link--'+lk.kind">
                                             <div class="askbar-profile-link-l">{{ lk.label }}</div>
@@ -654,15 +663,28 @@
                                 <div v-else-if="turn.chips && turn.chips.length" class="askbar-chips">
                                     <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click.stop="c.clarifyAttr !== undefined ? askBarResolveClarified(c) : askBarEntityMenu(c, $event)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
                                 </div>
-                                <div class="askbar-trust" :class="['askbar-trust--' + turn.confidence, { 'askbar-trust--clickable': turn.evidence && turn.evidence.length }]">
-                                    <span class="askbar-trust-dot" :title="turn.confidence==='high' ? 'Grounded in department records' : turn.confidence==='medium' ? 'Partial data — some records may be missing' : 'Limited grounding'"></span>
-                                    <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Grounded' : turn.confidence==='medium' ? 'Partial data' : 'Limited data' }}</span>
-                                    <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src" :class="{ 'askbar-trust-src--link': turn.evidence && turn.evidence.length }" @click="turn.evidence && turn.evidence.length ? (turn.evidenceOpen = !turn.evidenceOpen) : null">·
-                                        <span v-for="(s,si) in turn.sources" :key="s" :title="askBarSourceDesc(s)">{{ s }}<span v-if="si < turn.sources.length-1">, </span></span>
-                                        <svg v-if="turn.evidence && turn.evidence.length" class="askbar-trust-chev" :class="{ 'askbar-trust-chev--open': turn.evidenceOpen }" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
-                                    </span>
-                                    <span v-if="turn.asOf" class="askbar-trust-time">{{ turn.asOf }}</span>
-                                    <button class="askbar-trust-copy" @click="askBarCopyAnswer(turn, $event)" title="Copy answer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                                <div class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
+                                    <div class="askbar-trust-main">
+                                        <span class="askbar-trust-dot" :title="turn.confidence==='high' ? 'Grounded in department records' : turn.confidence==='medium' ? 'Some records may be missing' : 'Limited grounding'"></span>
+                                        <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Grounded in' : turn.confidence==='medium' ? 'Partial · grounded in' : 'Limited · checked' }}</span>
+                                        <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src">
+                                            <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ src }}<span v-if="si < turn.sources.length-1" class="askbar-source-sep"> · </span></span>
+                                        </span>
+                                    </div>
+                                    <div class="askbar-trust-meta">
+                                        <button v-if="turn.trace && turn.trace.length" class="askbar-trust-checks" @click="turn.traceOpen = !turn.traceOpen">{{ turn.traceOpen ? 'Hide checks' : turn.trace.length + ' check' + (turn.trace.length===1?'':'s') }}</button>
+                                        <button v-if="turn.evidence && turn.evidence.length" class="askbar-trust-checks" @click="turn.evidenceOpen = !turn.evidenceOpen">{{ turn.evidenceOpen ? 'Hide records' : 'Records' }}</button>
+                                        <span v-if="turn.asOf" class="askbar-trust-time">as of {{ turn.asOf }}</span>
+                                        <button class="askbar-trust-copy" @click="askBarCopyAnswer(turn, $event)" title="Copy answer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                                    </div>
+                                </div>
+                                <div v-if="turn.traceOpen && turn.trace && turn.trace.length" class="askbar-trace askbar-trace--expanded askbar-trace--footnote">
+                                    <div class="askbar-evidence-h">How Grounded checked</div>
+                                    <div v-for="(step, si) in turn.trace" :key="si" class="askbar-trace-step askbar-trace-step--done">
+                                        <span class="askbar-trace-ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                                        <span class="askbar-trace-label">{{ step.label }}</span>
+                                        <span class="askbar-trace-src">{{ step.src }}</span>
+                                    </div>
                                 </div>
                                 <div v-if="turn.evidenceOpen && turn.evidence && turn.evidence.length" class="askbar-evidence">
                                     <div class="askbar-evidence-h">Based on these records</div>
@@ -674,8 +696,13 @@
                             </template>
                         </div>
                         <div v-if="!turn.streaming && (turn.actions && turn.actions.length || turn.followups && turn.followups.length)" class="askbar-followups">
-                            <button v-for="(a,i) in turn.actions" :key="'a'+i" class="askbar-fu askbar-fu--act" @click="askBarGoTo(a)">{{ a.label }}</button>
-                            <button v-for="(f,i) in turn.followups" :key="'f'+i" class="askbar-fu" @click="askBarRunFollowup(f)">{{ f.label }}</button>
+                            <div v-if="turn.actions && turn.actions.length" class="askbar-followup-actions">
+                                <button v-for="(a,i) in turn.actions" :key="'a'+i" class="askbar-fu askbar-fu--act" @click="askBarGoTo(a)">{{ a.label }} <span aria-hidden="true">↗</span></button>
+                            </div>
+                            <div v-if="turn.followups && turn.followups.length" class="askbar-followup-questions">
+                                <span class="askbar-followup-label">Continue</span>
+                                <button v-for="(f,i) in turn.followups" :key="'f'+i" class="askbar-fu" @click="askBarRunFollowup(f)">{{ f.label }}</button>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -723,7 +750,7 @@
                 <button v-if="askBar.view === 'digest' && askBarScanCount" class="askbar-mode-link" @click="askBar.view = 'conversation'">…or ask anything</button>
                 <div v-else class="askbar-input" :class="{ 'askbar-input--busy': askBar.loading }">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" :disabled="askBar.loading" :placeholder="askBar.loading ? 'Grounded is checking…' : (askBar.turns.length ? 'Ask a follow-up…' : 'Ask about coverage, trials, rotations…')" autofocus>
+                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" :disabled="askBar.loading" :placeholder="askBar.loading ? 'Grounded is checking…' : (askBar.subject && askBar.subject.name ? 'Ask about ' + askBar.subject.name + '…' : (askBar.context && askBar.context.name ? 'Ask about ' + askBar.context.name + '…' : (askBar.turns.length ? 'Continue with this context…' : 'Ask about people, coverage, rotations or research…')))" autofocus>
                     <button class="askbar-send" @click="askBarResolve()" :disabled="askBar.loading || !askBar.query.trim()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
                 </div>
             </div>
@@ -748,49 +775,63 @@
     </div>
 
     <!-- ============ LOGIN SCREEN ============ -->
-    <div v-if="!currentUser" class="login-container">
+    <div v-if="!currentUser" class="login-container login-container--editorial">
 
-        <!-- Anatomical bronchial tree background -->
-        <div class="lc-bg">
-            <canvas id="loginTreeCanvas" aria-hidden="true"></canvas>
+        <!-- Quiet respiratory gesture — abstract airflow, not literal anatomy -->
+        <div class="lc-bg" aria-hidden="true">
+            <canvas id="loginTreeCanvas"></canvas>
+            <svg class="lc-airflow-watermark" viewBox="0 0 1200 820" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                <path d="M-40 475C118 394 221 359 348 366C465 373 553 426 688 430C820 434 925 395 1240 269"/>
+                <path d="M-10 390C153 307 278 285 392 312C505 338 574 389 697 391C831 393 946 342 1224 206"/>
+                <path d="M81 555C239 520 326 538 409 591C492 644 562 713 695 729C829 745 970 697 1225 584"/>
+            </svg>
         </div>
 
         <section class="lc-entry-story" aria-label="Grounded overview">
-            <div class="lc-story-kicker"><span class="lc-story-dot"></span> neumAC · Pneumology</div>
-            <h1 class="lc-story-title">One department.<br><span>One grounded view.</span></h1>
-            <p class="lc-story-copy">Operations, people, rotations and research — connected in one calm clinical workspace.</p>
-            <div class="lc-story-proof">Live context <span>·</span> Controlled actions <span>·</span> Traceable sources</div>
-        </section>
-
-        <!-- Card -->
-        <div class="login-card">
-
-            <!-- Top: neumAC brand -->
-            <div class="lc-brand">
-                <div class="lc-brand-logo">
-                    <!-- neumAC wordmark SVG — the research group logo, unchanged -->
-                    <svg viewBox="0 0 110 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="lc-neumax-svg">
-                        <defs>
-                            <linearGradient id="ng" x1="0" y1="0" x2="110" y2="0" gradientUnits="userSpaceOnUse">
-                                <stop offset="0%" stop-color="#00b4d8"/>
-                                <stop offset="55%" stop-color="#0077b6"/>
-                                <stop offset="100%" stop-color="#023e8a"/>
-                            </linearGradient>
-                        </defs>
-                        <text x="0" y="26" font-family="'DM Sans', sans-serif" font-weight="700"
-                              font-size="28" fill="url(#ng)" letter-spacing="-0.5">neum</text>
-                        <text x="72" y="26" font-family="'DM Sans', sans-serif" font-weight="800"
-                              font-size="28" fill="url(#ng)" letter-spacing="-0.5">AC</text>
+            <header class="lc-institution-mast">
+                <div class="lc-institution-lockup">
+                    <svg viewBox="0 0 110 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="lc-institution-neumac" aria-label="neumAC">
+                        <text x="0" y="26" font-family="'DM Sans', sans-serif" font-weight="700" font-size="28" fill="currentColor" letter-spacing="-0.5">neum</text>
+                        <text x="72" y="26" font-family="'DM Sans', sans-serif" font-weight="800" font-size="28" fill="currentColor" letter-spacing="-0.5">AC</text>
                     </svg>
-                    <div class="lc-brand-divider"></div>
-                    <div class="lc-brand-area">
-                        <span>ÁREA SANITARIA DE</span>
-                        <span>A CORUÑA Y CEE</span>
+                    <div class="lc-institution-rule"></div>
+                    <div class="lc-institution-name">
+                        <span>Área Sanitaria de</span>
+                        <span>A Coruña y Cee</span>
+                    </div>
+                </div>
+                <div class="lc-institution-dept">Pneumology · Research &amp; Operations</div>
+            </header>
+
+            <div class="lc-editorial-body">
+                <div class="lc-story-kicker">Grounded · Department intelligence</div>
+                <h1 class="lc-story-title">Clinical operations,<br><em>made legible.</em></h1>
+                <p class="lc-story-copy">One connected view across people, coverage, rotations and research — designed for a department that needs clarity before complexity.</p>
+
+                <div class="lc-story-proof" aria-label="Grounded principles">
+                    <div class="lc-proof-item">
+                        <span class="lc-proof-label">Live context</span>
+                        <span class="lc-proof-copy">Across active department records</span>
+                    </div>
+                    <div class="lc-proof-item">
+                        <span class="lc-proof-label">Controlled actions</span>
+                        <span class="lc-proof-copy">Review before anything changes</span>
+                    </div>
+                    <div class="lc-proof-item">
+                        <span class="lc-proof-label">Traceable sources</span>
+                        <span class="lc-proof-copy">See what Grounded checked</span>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Middle: Grounded platform identity -->
+        <!-- Institutional access sheet -->
+        <div class="login-card login-card--editorial">
+            <div class="lc-mobile-institution">
+                <span>neumAC</span>
+                <span>Área Sanitaria de A Coruña y Cee</span>
+            </div>
+
             <div class="lc-product lc-product--grounded">
                 <div class="lc-grounded-lockup">
                     <span class="lc-grounded-mark" aria-hidden="true">
@@ -804,26 +845,20 @@
                     <div class="lc-grounded-copy">
                         <div class="lc-product-name">Grounded</div>
                         <div class="lc-product-sub">Department intelligence</div>
-                        <div class="lc-product-attr">Clinical operations and research, connected.</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Divider -->
-            <div class="lc-sep"></div>
-
             <div class="lc-access-intro">
                 <div class="lc-access-title">Welcome back</div>
-                <div class="lc-access-copy">Sign in to open your department workspace.</div>
+                <div class="lc-access-copy">Sign in to open the department workspace.</div>
             </div>
 
-            <!-- Error -->
             <div v-if="loginError" class="login-error" :class="{'login-error--warn': loginError.includes('expired') || loginError.includes('session')}">
                 <i class="fas" :class="loginError.includes('expired') || loginError.includes('session') ? 'fa-clock' : 'fa-exclamation-circle'"></i>
                 <span>{{ loginError }}</span>
             </div>
 
-            <!-- Form -->
             <form class="lc-form" @submit.prevent="handleLogin" autocomplete="on">
                 <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.email }">
                     <label class="lc-label">Email</label>
@@ -868,9 +903,16 @@
                 </button>
             </form>
 
-
-
+            <div class="lc-security-note">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                <span>Authorised departmental access · activity is traceable</span>
+            </div>
         </div><!-- /login-card -->
+
+        <footer class="lc-entry-footer">
+            <span>neumAC · Pneumology · Área Sanitaria de A Coruña y Cee</span>
+            <span>Grounded · Clinical intelligence</span>
+        </footer>
     </div>
 
     <!-- ============ MAIN APPLICATION ============ -->
@@ -12367,4 +12409,4 @@
 
 
 </body>
-</html>
+</html>  
