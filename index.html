@@ -862,67 +862,27 @@
         </div>
     </div>
 
-    <!-- ============ LOGIN SCREEN ============ -->
-    <div v-if="!currentUser" class="login-container login-container--editorial">
-
-        <!-- Quiet respiratory gesture — abstract airflow, not literal anatomy -->
-        <div class="lc-bg" aria-hidden="true">
+    <!-- ============ LOGIN SCREEN · V22 institutional minimal ============ -->
+    <div v-if="!currentUser" class="login-container login-container--v22">
+        <div class="lc-v22-atmosphere" aria-hidden="true">
             <canvas id="loginTreeCanvas"></canvas>
-            <svg class="lc-airflow-watermark" viewBox="0 0 1200 820" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-                <path d="M-40 475C118 394 221 359 348 366C465 373 553 426 688 430C820 434 925 395 1240 269"/>
-                <path d="M-10 390C153 307 278 285 392 312C505 338 574 389 697 391C831 393 946 342 1224 206"/>
-                <path d="M81 555C239 520 326 538 409 591C492 644 562 713 695 729C829 745 970 697 1225 584"/>
+            <svg class="lc-v22-flow" viewBox="0 0 1200 820" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                <path d="M-80 536C118 426 240 384 378 394C517 405 588 476 730 473C861 471 1003 399 1260 253"/>
+                <path d="M-40 430C126 343 263 322 383 352C502 382 591 430 718 421C868 411 1015 327 1240 195"/>
+                <path d="M115 624C273 580 373 594 459 648C547 703 620 753 752 754C894 755 1027 703 1235 608"/>
             </svg>
         </div>
 
-        <section class="lc-entry-story" aria-label="Grounded overview">
-            <header class="lc-institution-mast">
-                <div class="lc-institution-lockup">
-                    <svg viewBox="0 0 110 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="lc-institution-neumac" aria-label="neumAC">
-                        <text x="0" y="26" font-family="'DM Sans', sans-serif" font-weight="700" font-size="28" fill="currentColor" letter-spacing="-0.5">neum</text>
-                        <text x="72" y="26" font-family="'DM Sans', sans-serif" font-weight="800" font-size="28" fill="currentColor" letter-spacing="-0.5">AC</text>
-                    </svg>
-                    <div class="lc-institution-rule"></div>
-                    <div class="lc-institution-name">
-                        <span>Área Sanitaria de</span>
-                        <span>A Coruña y Cee</span>
-                    </div>
-                </div>
-                <div class="lc-institution-dept">Pneumology · Research &amp; Operations</div>
+        <section class="lc-v22-story" aria-label="Grounded">
+            <header class="lc-v22-mast">
+                <div class="lc-v22-neumac">neum<span>AC</span></div>
+                <span class="lc-v22-mast-rule"></span>
+                <div class="lc-v22-area">Área Sanitaria de A Coruña y Cee</div>
             </header>
 
-            <div class="lc-editorial-body">
-                <div class="lc-story-kicker">Grounded · Department intelligence</div>
-                <h1 class="lc-story-title">Clinical operations,<br><em>made legible.</em></h1>
-                <p class="lc-story-copy">One connected view across people, coverage, rotations and research — designed for a department that needs clarity before complexity.</p>
-
-                <div class="lc-story-proof" aria-label="Grounded principles">
-                    <div class="lc-proof-item">
-                        <span class="lc-proof-label">Live context</span>
-                        <span class="lc-proof-copy">Across active department records</span>
-                    </div>
-                    <div class="lc-proof-item">
-                        <span class="lc-proof-label">Controlled actions</span>
-                        <span class="lc-proof-copy">Review before anything changes</span>
-                    </div>
-                    <div class="lc-proof-item">
-                        <span class="lc-proof-label">Traceable sources</span>
-                        <span class="lc-proof-copy">See what Grounded checked</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Institutional access sheet -->
-        <div class="login-card login-card--editorial">
-            <div class="lc-mobile-institution">
-                <span>neumAC</span>
-                <span>Área Sanitaria de A Coruña y Cee</span>
-            </div>
-
-            <div class="lc-product lc-product--grounded">
-                <div class="lc-grounded-lockup">
-                    <span class="lc-grounded-mark" aria-hidden="true">
+            <div class="lc-v22-hero">
+                <div class="lc-v22-product-line">
+                    <span class="lc-v22-mini-mark" aria-hidden="true">
                         <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
                             <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
@@ -930,77 +890,92 @@
                             <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
                         </svg>
                     </span>
-                    <div class="lc-grounded-copy">
-                        <div class="lc-product-name">Grounded</div>
-                        <div class="lc-product-sub">Department intelligence</div>
-                    </div>
+                    <span>Grounded</span>
                 </div>
+                <h1 class="lc-v22-title">A clear view<br>of the department.</h1>
+                <p class="lc-v22-copy">People, coverage, rotations and research — connected.</p>
             </div>
 
-            <div class="lc-access-intro">
-                <div class="lc-access-title">Welcome back</div>
-                <div class="lc-access-copy">Sign in to open the department workspace.</div>
+            <footer class="lc-v22-story-foot">Pneumology · Research &amp; operations</footer>
+        </section>
+
+        <aside class="lc-v22-access" aria-label="Sign in to Grounded">
+            <div class="lc-v22-access-inner">
+                <header class="lc-v22-access-brand">
+                    <span class="lc-v22-access-mark" aria-hidden="true">
+                        <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
+                            <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
+                            <path class="grounded-mark-flow grounded-mark-flow--b" d="M19.2 23.5C23.5 19.1 28.1 17.4 32.7 18.1C37.2 18.7 41 21.1 44.5 24.1"/>
+                            <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <div class="lc-v22-access-name">Grounded</div>
+                        <div class="lc-v22-access-sub">Department workspace</div>
+                    </div>
+                </header>
+
+                <div class="lc-v22-signin-head">
+                    <h2>Sign in</h2>
+                    <p>Use your authorised account to continue.</p>
+                </div>
+
+                <div v-if="loginError" class="login-error" :class="{'login-error--warn': loginError.includes('expired') || loginError.includes('session')}">
+                    <i class="fas" :class="loginError.includes('expired') || loginError.includes('session') ? 'fa-clock' : 'fa-exclamation-circle'"></i>
+                    <span>{{ loginError }}</span>
+                </div>
+
+                <form class="lc-form lc-v22-form" @submit.prevent="handleLogin" autocomplete="on">
+                    <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.email }">
+                        <label class="lc-label">Email</label>
+                        <div class="lc-input-wrap">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+                            <input type="email" class="lc-input" v-model="loginForm.email"
+                                   placeholder="name@sergas.es" autocomplete="email"
+                                   @input="clearLoginError('email')"
+                                   @keyup.enter="handleLogin">
+                        </div>
+                        <span v-if="loginFieldErrors.email" class="lc-field-err">{{ loginFieldErrors.email }}</span>
+                    </div>
+
+                    <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.password }">
+                        <label class="lc-label">Password</label>
+                        <div class="lc-input-wrap">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <input :type="showPassword ? 'text' : 'password'" class="lc-input"
+                                   v-model="loginForm.password" placeholder="••••••••"
+                                   autocomplete="current-password"
+                                   @input="clearLoginError('password')"
+                                   @keyup.enter="handleLogin">
+                            <button type="button" class="lc-eye" @click="showPassword = !showPassword" tabindex="-1" aria-label="Toggle password visibility" title="Toggle password visibility">
+                                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                            </button>
+                        </div>
+                        <span v-if="loginFieldErrors.password" class="lc-field-err">{{ loginFieldErrors.password }}</span>
+                    </div>
+
+                    <div class="lc-meta-row">
+                        <label class="lc-remember">
+                            <input type="checkbox" v-model="loginForm.remember_me">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#" class="lc-forgot" @click.prevent="handleForgotPassword">Reset password</a>
+                    </div>
+
+                    <button class="lc-submit lc-v22-submit" @click="handleLogin" :disabled="loginLoading">
+                        <i v-if="loginLoading" class="fas fa-spinner fa-spin"></i>
+                        <span>{{ loginLoading ? 'Opening Grounded…' : 'Enter Grounded' }}</span>
+                        <i v-if="!loginLoading" class="fas fa-arrow-right lc-submit-arrow"></i>
+                    </button>
+                </form>
             </div>
 
-            <div v-if="loginError" class="login-error" :class="{'login-error--warn': loginError.includes('expired') || loginError.includes('session')}">
-                <i class="fas" :class="loginError.includes('expired') || loginError.includes('session') ? 'fa-clock' : 'fa-exclamation-circle'"></i>
-                <span>{{ loginError }}</span>
-            </div>
-
-            <form class="lc-form" @submit.prevent="handleLogin" autocomplete="on">
-                <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.email }">
-                    <label class="lc-label">Email</label>
-                    <div class="lc-input-wrap">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
-                        <input type="email" class="lc-input" v-model="loginForm.email"
-                               placeholder="name@sergas.es" autocomplete="email"
-                               @input="clearLoginError('email')"
-                               @keyup.enter="handleLogin">
-                    </div>
-                    <span v-if="loginFieldErrors.email" class="lc-field-err">{{ loginFieldErrors.email }}</span>
-                </div>
-
-                <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.password }">
-                    <label class="lc-label">Password</label>
-                    <div class="lc-input-wrap">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        <input :type="showPassword ? 'text' : 'password'" class="lc-input"
-                               v-model="loginForm.password" placeholder="••••••••"
-                               autocomplete="current-password"
-                               @input="clearLoginError('password')"
-                               @keyup.enter="handleLogin">
-                        <button type="button" class="lc-eye" @click="showPassword = !showPassword" tabindex="-1" aria-label="Toggle password visibility" title="Toggle password visibility">
-                            <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                        </button>
-                    </div>
-                    <span v-if="loginFieldErrors.password" class="lc-field-err">{{ loginFieldErrors.password }}</span>
-                </div>
-
-                <div class="lc-meta-row">
-                    <label class="lc-remember">
-                        <input type="checkbox" v-model="loginForm.remember_me">
-                        <span>Remember me</span>
-                    </label>
-                    <a href="#" class="lc-forgot" @click.prevent="handleForgotPassword">Reset password</a>
-                </div>
-
-                <button class="lc-submit" @click="handleLogin" :disabled="loginLoading">
-                    <i v-if="loginLoading" class="fas fa-spinner fa-spin"></i>
-                    <span>{{ loginLoading ? 'Opening Grounded…' : 'Enter Grounded' }}</span>
-                    <i v-if="!loginLoading" class="fas fa-arrow-right lc-submit-arrow"></i>
-                </button>
-            </form>
-
-            <div class="lc-security-note">
+            <footer class="lc-v22-access-foot">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                <span>Authorised departmental access · activity is traceable</span>
-            </div>
-        </div><!-- /login-card -->
-
-        <footer class="lc-entry-footer">
-            <span>neumAC · Pneumology · Área Sanitaria de A Coruña y Cee</span>
-            <span>Grounded · Clinical intelligence</span>
-        </footer>
+                <span>Authorised departmental access</span>
+            </footer>
+        </aside>
     </div>
 
     <!-- ============ MAIN APPLICATION ============ -->
@@ -12473,4 +12448,4 @@
 
 
 </body>
-</html>  
+</html>
