@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue  
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
 
     // ── DIAGNOSTIC: visible error banner ─────────────────────────────────
     // Built with plain DOM calls (no Vue) so it still works even when the
@@ -9911,6 +9911,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const askBarNow = () => { const d = new Date(); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
 
+      // Presentation contract for Grounded turns. This does not alter intent or backend
+      // behaviour; it gives the UI one stable visual grammar for every response.
+      const askBarTurnType = (turn) => {
+        if (!turn) return 'fact'
+        const isProposal = !!(turn.proposal || turn.oncallProposal || turn.rotaDraft ||
+          turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal ||
+          turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal ||
+          turn.removeProposal)
+        if (isProposal) return 'proposal'
+        if (turn.isClarify || turn.leaveClarify) return 'clarification'
+        const vt = turn.visual && turn.visual.type
+        if (vt === 'profile') return 'profile'
+        if (vt === 'risklist') return 'alert'
+        if (['workload','occupancy','bars','enroll'].includes(vt)) return 'insight'
+        if (['board','reslist','roster','absence'].includes(vt)) return 'collection'
+        return 'fact'
+      }
+
       // Anticipatory suggestions: react to the module/subject in view so the agent
       // offers the RELEVANT next actions (chat-executable first), not a fixed list.
       const _SUGGEST_BY_VIEW = {
@@ -13602,7 +13620,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarSuggestLabel, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarSuggestLabel, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, teachTopicLabels, askBarToggleTeach,
           askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarConfirmExtendRotation, askBarConfirmRotationEdit, askBarConfirmOncallEdit, askBarConfirmLeaveEdit, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,
