@@ -7608,6 +7608,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // ── RESEARCH LIBRARY PEEK + READER ─────────────────────────────
         // One object, several depths: library → peek → reader → edit. Keeping these
         // states connected avoids the "teleport into a modal" feeling of a generic CMS.
+        const newsLibraryHeaderOpen = ref(true)
+        const newsLibraryFiltersOpen = ref(false)
         const newsPeek = reactive({ show: false, post: null, x: 24, y: 96 })
         const closeNewsPeek = () => { newsPeek.show = false; newsPeek.post = null }
         const openNewsPeek = (post, evt) => {
@@ -14132,6 +14134,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews, saveNewsStudio, closeNewsStudioToReader,
           publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
+          newsLibraryHeaderOpen, newsLibraryFiltersOpen,
           newsPeek, openNewsPeek, closeNewsPeek,
           newsDrawer, openNewsDrawer, closeNewsDrawer,
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
