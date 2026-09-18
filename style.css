@@ -16678,3 +16678,427 @@ html body #app .view-dashboard .dbsr-pill--danger{
   #app .askbar-working-sources,#app .askbar-working-preview{margin-left:0 !important;}
   #app .askbar-working-preview{margin-top:13px !important;}
 }
+
+
+/* =====================================================================
+   V18 · INSTITUTIONAL EDITORIAL LOGIN
+   Less software, more institution. Editorial typography + clinical restraint.
+   ===================================================================== */
+#app .login-container--editorial{
+  position:relative !important;
+  min-height:100vh !important;
+  display:grid !important;
+  grid-template-columns:minmax(0, 1.38fr) minmax(390px, 455px) !important;
+  align-items:center !important;
+  gap:clamp(72px, 8vw, 148px) !important;
+  padding:clamp(54px, 6vw, 92px) clamp(58px, 8vw, 142px) 92px !important;
+  overflow:hidden !important;
+  background:
+    radial-gradient(ellipse at 15% 45%, rgba(41,89,143,.34) 0%, transparent 52%),
+    radial-gradient(ellipse at 80% 78%, rgba(18,124,135,.12) 0%, transparent 38%),
+    linear-gradient(150deg,#091a31 0%,#0d2948 55%,#0a3247 100%) !important;
+}
+#app .login-container--editorial .lc-bg{opacity:1 !important;}
+#app .login-container--editorial #loginTreeCanvas{opacity:.012 !important;}
+#app .lc-airflow-watermark{
+  position:absolute !important;
+  inset:-3% -7% -3% -7% !important;
+  width:114% !important;
+  height:106% !important;
+  pointer-events:none !important;
+  opacity:.22 !important;
+}
+#app .lc-airflow-watermark path{
+  stroke:rgba(111,218,211,.18) !important;
+  stroke-width:1.15 !important;
+  vector-effect:non-scaling-stroke !important;
+}
+#app .lc-airflow-watermark path:nth-child(2){stroke:rgba(142,206,230,.12) !important;}
+#app .lc-airflow-watermark path:nth-child(3){stroke:rgba(111,218,211,.09) !important;}
+
+#app .lc-entry-story{
+  z-index:1 !important;
+  align-self:stretch !important;
+  max-width:none !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  min-width:0 !important;
+  padding-right:clamp(6px,2vw,36px) !important;
+}
+#app .lc-institution-mast{
+  position:absolute !important;
+  top:clamp(42px,5vw,72px) !important;
+  left:clamp(58px,8vw,142px) !important;
+  right:calc(455px + clamp(130px, 14vw, 220px)) !important;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:28px !important;
+  padding-bottom:18px !important;
+  border-bottom:1px solid rgba(220,236,245,.13) !important;
+}
+#app .lc-institution-lockup{display:flex !important;align-items:center !important;gap:14px !important;}
+#app .lc-institution-neumac{width:92px !important;height:auto !important;color:rgba(235,247,252,.90) !important;}
+#app .lc-institution-rule{width:1px !important;height:28px !important;background:rgba(218,235,244,.24) !important;}
+#app .lc-institution-name{display:flex !important;flex-direction:column !important;gap:1px !important;}
+#app .lc-institution-name span{
+  font:600 9.5px/1.38 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:.12em !important;
+  text-transform:uppercase !important;
+  color:rgba(205,225,236,.63) !important;
+}
+#app .lc-institution-dept{
+  padding-top:6px !important;
+  font:600 10px/1.3 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:.15em !important;
+  text-transform:uppercase !important;
+  color:rgba(174,207,222,.46) !important;
+  white-space:nowrap !important;
+}
+
+#app .lc-editorial-body{max-width:690px !important;margin-top:34px !important;}
+#app .lc-story-kicker{
+  margin-bottom:20px !important;
+  display:block !important;
+  font:650 11px/1.2 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:.16em !important;
+  text-transform:uppercase !important;
+  color:rgba(117,218,211,.74) !important;
+}
+#app .lc-story-title{
+  max-width:680px !important;
+  margin:0 !important;
+  font-family:"Instrument Serif", Georgia, serif !important;
+  font-style:normal !important;
+  font-weight:400 !important;
+  font-size:clamp(54px,5.1vw,78px) !important;
+  line-height:.98 !important;
+  letter-spacing:-.038em !important;
+  color:#f5f8fb !important;
+}
+#app .lc-story-title em{
+  font-style:italic !important;
+  font-weight:400 !important;
+  color:#8bded8 !important;
+}
+#app .lc-story-copy{
+  max-width:590px !important;
+  margin:28px 0 0 !important;
+  font:450 17px/1.65 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:-.01em !important;
+  color:rgba(218,233,241,.74) !important;
+}
+#app .lc-story-proof{
+  max-width:640px !important;
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:0 !important;
+  margin-top:42px !important;
+  padding-top:19px !important;
+  border-top:1px solid rgba(220,236,245,.11) !important;
+}
+#app .lc-proof-item{
+  min-width:0 !important;
+  padding:0 20px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:6px !important;
+  border-left:1px solid rgba(220,236,245,.10) !important;
+}
+#app .lc-proof-item:first-child{padding-left:0 !important;border-left:none !important;}
+#app .lc-proof-label{
+  font:650 11px/1.25 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:.045em !important;
+  color:rgba(232,244,249,.88) !important;
+}
+#app .lc-proof-copy{
+  font:450 11.5px/1.45 var(--nd-ui,"DM Sans",sans-serif) !important;
+  color:rgba(180,205,219,.52) !important;
+}
+
+/* Access sheet: quiet, almost print-like. */
+#app .login-card--editorial{
+  z-index:2 !important;
+  width:100% !important;
+  max-width:455px !important;
+  padding:38px 40px 32px !important;
+  border:1px solid rgba(216,225,231,.96) !important;
+  border-radius:22px !important;
+  background:#fcfdfd !important;
+  box-shadow:0 24px 58px rgba(1,13,24,.22),0 3px 10px rgba(1,13,24,.055) !important;
+  backdrop-filter:none !important;
+}
+#app .login-card--editorial::before{display:none !important;}
+#app .lc-mobile-institution{display:none !important;}
+#app .login-card--editorial .lc-product{margin:0 0 30px !important;text-align:left !important;}
+#app .login-card--editorial .lc-grounded-lockup{gap:13px !important;}
+#app .login-card--editorial .lc-grounded-mark{
+  width:46px !important;
+  height:46px !important;
+  flex:0 0 46px !important;
+  border-radius:14px !important;
+  background:#102f4f !important;
+  box-shadow:none !important;
+}
+#app .login-card--editorial .lc-grounded-mark .grounded-mark-svg{width:33px !important;height:33px !important;}
+#app .login-card--editorial .lc-product-name{
+  margin:0 0 4px !important;
+  font:720 26px/1 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:-.03em !important;
+  color:#10263d !important;
+}
+#app .login-card--editorial .lc-product-sub{
+  font:700 9.7px/1.2 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:.16em !important;
+  text-transform:uppercase !important;
+  color:#718295 !important;
+}
+#app .login-card--editorial .lc-access-intro{
+  margin:0 0 22px !important;
+  padding-top:23px !important;
+  border-top:1px solid #e7ecef !important;
+}
+#app .login-card--editorial .lc-access-title{
+  font:650 17px/1.3 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:-.015em !important;
+  color:#26394c !important;
+}
+#app .login-card--editorial .lc-access-copy{
+  margin-top:4px !important;
+  font:450 13px/1.5 var(--nd-ui,"DM Sans",sans-serif) !important;
+  color:#8795a3 !important;
+}
+#app .login-card--editorial .lc-form{gap:15px !important;}
+#app .login-card--editorial .lc-label{
+  font:600 12px/1.25 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:0 !important;
+  text-transform:none !important;
+  color:#566878 !important;
+}
+#app .login-card--editorial .lc-input{
+  height:51px !important;
+  border:1px solid #dbe2e7 !important;
+  border-radius:12px !important;
+  background:#fafcfc !important;
+  box-shadow:none !important;
+  font-size:14.5px !important;
+  color:#172b3f !important;
+}
+#app .login-card--editorial .lc-input:hover{border-color:#cbd6dc !important;background:#fff !important;}
+#app .login-card--editorial .lc-input:focus{
+  border-color:#75bfc1 !important;
+  background:#fff !important;
+  box-shadow:0 0 0 3px rgba(28,149,151,.065) !important;
+}
+#app .login-card--editorial .lc-input-wrap:focus-within svg{color:#1c8f91 !important;}
+#app .login-card--editorial .lc-meta-row{margin-top:1px !important;}
+#app .login-card--editorial .lc-remember,
+#app .login-card--editorial .lc-forgot{font-size:12.25px !important;}
+#app .login-card--editorial .lc-submit{
+  height:52px !important;
+  margin-top:10px !important;
+  border-radius:12px !important;
+  background:#113a61 !important;
+  box-shadow:none !important;
+  font-size:14.5px !important;
+  font-weight:700 !important;
+  transition:background .16s ease, transform .16s ease !important;
+}
+#app .login-card--editorial .lc-submit:hover:not(:disabled){
+  background:#0d4a69 !important;
+  box-shadow:none !important;
+  transform:translateY(-1px) !important;
+}
+#app .login-card--editorial .lc-submit:active:not(:disabled){transform:translateY(0) !important;}
+#app .lc-security-note{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:7px !important;
+  margin-top:22px !important;
+  padding-top:18px !important;
+  border-top:1px solid #edf0f2 !important;
+  font:500 10.5px/1.35 var(--nd-ui,"DM Sans",sans-serif) !important;
+  color:#94a0aa !important;
+}
+#app .lc-security-note svg{color:#8397a7 !important;flex:0 0 auto !important;}
+
+#app .lc-entry-footer{
+  position:absolute !important;
+  z-index:1 !important;
+  left:clamp(58px,8vw,142px) !important;
+  right:clamp(58px,8vw,142px) !important;
+  bottom:28px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:24px !important;
+  padding-top:15px !important;
+  border-top:1px solid rgba(220,236,245,.095) !important;
+  font:500 10.5px/1.4 var(--nd-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:.025em !important;
+  color:rgba(183,207,220,.43) !important;
+}
+
+@media (max-width:1150px){
+  #app .login-container--editorial{
+    grid-template-columns:minmax(0,1fr) minmax(380px,440px) !important;
+    gap:56px !important;
+    padding-left:54px !important;
+    padding-right:54px !important;
+  }
+  #app .lc-institution-mast{left:54px !important;right:54px !important;}
+  #app .lc-entry-footer{left:54px !important;right:54px !important;}
+  #app .lc-institution-dept{display:none !important;}
+  #app .lc-story-title{font-size:58px !important;}
+}
+@media (max-width:920px){
+  #app .login-container--editorial{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    padding:34px 22px !important;
+  }
+  #app .lc-entry-story,
+  #app .lc-institution-mast,
+  #app .lc-entry-footer{display:none !important;}
+  #app .login-card--editorial{max-width:460px !important;}
+  #app .lc-mobile-institution{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:14px !important;
+    margin-bottom:24px !important;
+    padding-bottom:16px !important;
+    border-bottom:1px solid #e8edef !important;
+    font:650 9.5px/1.35 var(--nd-ui,"DM Sans",sans-serif) !important;
+    letter-spacing:.09em !important;
+    text-transform:uppercase !important;
+    color:#728395 !important;
+  }
+  #app .lc-mobile-institution span:first-child{font-size:12px !important;letter-spacing:-.01em !important;text-transform:none !important;color:#173b60 !important;}
+}
+@media (max-width:560px){
+  #app .login-container--editorial{padding:18px 14px !important;}
+  #app .login-card--editorial{padding:28px 22px 24px !important;border-radius:18px !important;}
+  #app .lc-mobile-institution{align-items:flex-start !important;flex-direction:column !important;gap:4px !important;}
+  #app .login-card--editorial .lc-product{margin-bottom:24px !important;}
+  #app .login-card--editorial .lc-product-name{font-size:24px !important;}
+  #app .login-card--editorial .lc-grounded-mark{width:43px !important;height:43px !important;flex-basis:43px !important;}
+}
+
+
+/* ======================================================================
+   V19 — Grounded response system refinement
+   Calm density · editorial provenance · contextual controls · commit states
+   ====================================================================== */
+
+/* Header becomes one composed masthead, not a row of competing controls. */
+html body #app .grounded-head{
+  min-height:78px !important;
+  padding:13px 14px 13px 17px !important;
+  gap:14px !important;
+  background:linear-gradient(112deg,#0a2037 0%,#0c2c45 58%,#0b5962 100%) !important;
+}
+html body #app .grounded-head-brand{display:flex !important;align-items:center !important;gap:11px !important;min-width:0 !important;flex:1 1 auto !important;}
+html body #app .grounded-head-copy{min-width:0 !important;}
+html body #app .grounded-head-orb{width:38px !important;height:38px !important;flex:0 0 38px !important;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 6px 18px rgba(8,190,184,.16) !important;}
+html body #app .askbar-head-t{font-size:16px !important;font-weight:720 !important;letter-spacing:-.018em !important;}
+html body #app .askbar-head-s{display:flex !important;align-items:center !important;gap:6px !important;margin-top:4px !important;font:500 10px/1.15 'DM Sans',sans-serif !important;letter-spacing:.015em !important;color:rgba(225,240,243,.68) !important;}
+html body #app .askbar-head-dot{width:6px !important;height:6px !important;box-shadow:0 0 0 3px rgba(53,215,161,.075) !important;}
+html body #app .askbar-head-sep{opacity:.5 !important;}
+html body #app .grounded-head-tools{display:flex !important;align-items:center !important;gap:5px !important;flex:0 0 auto !important;padding-left:8px !important;border-left:1px solid rgba(255,255,255,.08) !important;}
+html body #app .askbar-newchat,html body #app .askbar-teach-btn{
+  height:34px !important;padding:0 9px !important;border-radius:9px !important;gap:6px !important;display:inline-flex !important;align-items:center !important;
+  border:1px solid transparent !important;background:transparent !important;color:rgba(228,242,244,.76) !important;-webkit-text-fill-color:rgba(228,242,244,.76) !important;
+  font:650 10.5px/1 'DM Sans',sans-serif !important;box-shadow:none !important;
+}
+html body #app .askbar-newchat:hover,html body #app .askbar-teach-btn:hover{background:rgba(255,255,255,.07) !important;border-color:rgba(255,255,255,.09) !important;color:#fff !important;-webkit-text-fill-color:#fff !important;}
+html body #app .askbar-teach-btn--on{background:rgba(15,152,155,.22) !important;border-color:rgba(92,219,213,.20) !important;color:#ebffff !important;-webkit-text-fill-color:#ebffff !important;}
+html body #app .askbar-close{width:34px !important;height:34px !important;flex:0 0 34px !important;border-radius:9px !important;background:transparent !important;border:1px solid transparent !important;color:rgba(228,242,244,.62) !important;-webkit-text-fill-color:rgba(228,242,244,.62) !important;box-shadow:none !important;}
+html body #app .askbar-close:hover{background:rgba(255,255,255,.07) !important;border-color:rgba(255,255,255,.09) !important;color:#fff !important;transform:none !important;}
+
+/* Consistent vertical rhythm across all seven response archetypes. */
+html body #app .askbar-conv{gap:0 !important;padding:20px 20px 16px !important;}
+html body #app .askbar-q-bub{margin:0 0 8px auto !important;max-width:84% !important;padding:8px 11px !important;border-radius:12px 12px 4px 12px !important;font-size:11.5px !important;line-height:1.4 !important;box-shadow:none !important;}
+html body #app .askbar-a-bub{margin:0 0 18px !important;}
+html body #app .askbar-a-card{padding:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;}
+html body #app .askbar-turn--fact .askbar-a-card{max-width:94% !important;}
+html body #app .askbar-turn--fact .askbar-a-tx{padding:2px 2px 1px !important;font-size:13.5px !important;line-height:1.62 !important;color:#20384d !important;-webkit-text-fill-color:#20384d !important;}
+html body #app .askbar-turn--profile .askbar-a-tx,html body #app .askbar-turn--collection .askbar-a-tx,html body #app .askbar-turn--insight .askbar-a-tx,html body #app .askbar-turn--alert .askbar-a-tx{font-size:12.5px !important;line-height:1.5 !important;color:#526779 !important;-webkit-text-fill-color:#526779 !important;margin:0 2px 7px !important;}
+html body #app .askbar-turn--proposal .askbar-a-tx:empty{display:none !important;}
+html body #app .askbar-profile,html body #app .askbar-viz,html body #app .askbar-occ,html body #app .askbar-cmp,html body #app .askbar-risk,html body #app .askbar-board{margin-top:8px !important;}
+html body #app .askbar-roster,html body #app .askbar-reslist,html body #app .askbar-rota-grid{margin:8px 0 8px !important;}
+
+/* Entity cards: editorial semantics rather than generic form fields. */
+html body #app .askbar-profile{border-radius:14px !important;box-shadow:0 5px 18px rgba(7,22,37,.03) !important;}
+html body #app .askbar-profile-top{padding:13px 14px 12px !important;background:linear-gradient(135deg,#f5faf9 0%,#fbfdfd 68%,#f5f8fb 100%) !important;}
+html body #app .askbar-profile-av{width:44px !important;height:44px !important;border-radius:13px !important;}
+html body #app .askbar-profile-name{font-size:14.5px !important;}
+html body #app .askbar-profile-status{min-height:24px !important;padding:4px 8px !important;font-size:9px !important;}
+html body #app .askbar-profile-sec{padding:11px 14px 12px !important;}
+html body #app .askbar-profile-sechead{text-transform:none !important;letter-spacing:.015em !important;font-size:10px !important;font-weight:700 !important;color:#748595 !important;-webkit-text-fill-color:#748595 !important;margin-bottom:7px !important;}
+html body #app .askbar-profile-row{grid-template-columns:110px minmax(0,1fr) !important;padding:5px 0 !important;}
+html body #app .askbar-profile-k{font-size:10px !important;font-weight:600 !important;color:#83909c !important;-webkit-text-fill-color:#83909c !important;}
+html body #app .askbar-profile-link{padding:8px 10px 8px 12px !important;border-radius:9px !important;background:#fafcfc !important;}
+
+/* Empty states: quiet evidence of a real check, not an error or dead end. */
+html body #app .askbar-empty-state{display:flex !important;align-items:flex-start !important;gap:10px !important;padding:12px 13px !important;border:1px solid #e2e9eb !important;border-radius:12px !important;background:#fbfdfd !important;}
+html body #app .askbar-empty-mark{width:28px !important;height:28px !important;flex:0 0 28px !important;border-radius:9px !important;display:grid !important;place-items:center !important;background:#f0f5f5 !important;color:#6c808f !important;}
+html body #app .askbar-empty-title{font:650 12.5px/1.45 'DM Sans',sans-serif !important;color:#30475a !important;-webkit-text-fill-color:#30475a !important;}
+html body #app .askbar-empty-sub{margin-top:3px !important;font:500 10.5px/1.45 'DM Sans',sans-serif !important;color:#85929e !important;-webkit-text-fill-color:#85929e !important;}
+
+/* Provenance behaves like a publication footnote. */
+html body #app .askbar-trust{display:flex !important;align-items:flex-start !important;justify-content:space-between !important;gap:12px !important;margin:10px 2px 0 !important;padding:8px 0 0 !important;border-top:1px solid #e8edef !important;background:transparent !important;min-height:0 !important;}
+html body #app .askbar-trust-main{display:flex !important;align-items:center !important;min-width:0 !important;gap:5px !important;flex-wrap:wrap !important;}
+html body #app .askbar-trust-dot{width:5px !important;height:5px !important;flex:0 0 5px !important;border-radius:50% !important;background:#16986f !important;box-shadow:none !important;}
+html body #app .askbar-trust--medium .askbar-trust-dot{background:#c28628 !important;}
+html body #app .askbar-trust--low .askbar-trust-dot{background:#8996a2 !important;}
+html body #app .askbar-trust-state{font:650 9.5px/1.3 'DM Sans',sans-serif !important;color:#718291 !important;-webkit-text-fill-color:#718291 !important;white-space:nowrap !important;}
+html body #app .askbar-trust-src{font:500 9.5px/1.35 'DM Sans',sans-serif !important;color:#84929e !important;-webkit-text-fill-color:#84929e !important;text-transform:capitalize !important;min-width:0 !important;}
+html body #app .askbar-source-sep{opacity:.55 !important;padding:0 1px !important;}
+html body #app .askbar-trust-meta{margin-left:auto !important;display:flex !important;align-items:center !important;gap:5px !important;flex:0 0 auto !important;}
+html body #app .askbar-trust-time{font:500 9px/1 'DM Mono',monospace !important;color:#99a4ad !important;-webkit-text-fill-color:#99a4ad !important;white-space:nowrap !important;}
+html body #app .askbar-trust-checks{padding:2px 4px !important;border:0 !important;background:transparent !important;color:#7c8b97 !important;-webkit-text-fill-color:#7c8b97 !important;font:600 9px/1 'DM Sans',sans-serif !important;cursor:pointer !important;border-radius:5px !important;}
+html body #app .askbar-trust-checks:hover{background:#eef3f4 !important;color:#42606f !important;}
+html body #app .askbar-trust-copy{width:22px !important;height:22px !important;border:0 !important;background:transparent !important;border-radius:6px !important;color:#95a1ab !important;padding:0 !important;display:grid !important;place-items:center !important;}
+html body #app .askbar-trust-copy:hover{background:#eef3f4 !important;color:#42606f !important;}
+html body #app .askbar-trace--footnote,html body #app .askbar-evidence{margin:7px 0 0 !important;padding:9px 10px !important;border:1px solid #e5ebed !important;border-radius:10px !important;background:#fafcfc !important;box-shadow:none !important;}
+html body #app .askbar-trace--footnote .askbar-evidence-h,html body #app .askbar-evidence-h{text-transform:none !important;letter-spacing:.01em !important;font-size:9.5px !important;color:#748595 !important;}
+html body #app .askbar-trace-step{min-height:27px !important;padding:4px 0 !important;}
+
+/* Follow-up questions recede into the periphery until the user needs them. */
+html body #app .askbar-followups{display:flex !important;align-items:flex-start !important;justify-content:space-between !important;gap:10px !important;flex-wrap:wrap !important;margin:8px 2px 0 !important;padding:0 !important;border:0 !important;background:transparent !important;}
+html body #app .askbar-followup-actions,html body #app .askbar-followup-questions{display:flex !important;align-items:center !important;gap:5px !important;flex-wrap:wrap !important;}
+html body #app .askbar-followup-questions{margin-left:auto !important;justify-content:flex-end !important;}
+html body #app .askbar-followup-label{font:600 9px/1 'DM Sans',sans-serif !important;color:#9aa5ad !important;-webkit-text-fill-color:#9aa5ad !important;margin-right:1px !important;}
+html body #app .askbar-fu{min-height:26px !important;padding:4px 6px !important;border:0 !important;border-radius:6px !important;background:transparent !important;color:#6e8190 !important;-webkit-text-fill-color:#6e8190 !important;font:600 10px/1.25 'DM Sans',sans-serif !important;box-shadow:none !important;}
+html body #app .askbar-fu:hover{background:#edf3f3 !important;color:#2d5b66 !important;-webkit-text-fill-color:#2d5b66 !important;}
+html body #app .askbar-fu--act{color:#2e6f78 !important;-webkit-text-fill-color:#2e6f78 !important;font-weight:700 !important;}
+
+/* Proposal lifecycle: proposed → writing → committed is visible in the same object. */
+html body #app .askbar-proposal{box-shadow:0 4px 16px rgba(7,22,37,.025) !important;}
+html body #app .askbar-proposal-tag--saved{background:#e9f6f0 !important;color:#176f53 !important;-webkit-text-fill-color:#176f53 !important;border:1px solid #c5e6d7 !important;}
+html body #app .askbar-proposal--done{border-color:#cfe4da !important;background:#fcfefd !important;}
+html body #app .askbar-proposal--done .askbar-proposal-h,html body #app .askbar-proposal--done .askbar-proposal-label{background:#f2f8f5 !important;border-bottom-color:#deebe4 !important;color:#285c4c !important;-webkit-text-fill-color:#285c4c !important;}
+html body #app .askbar-proposal--done .askbar-proposal-ic{background:#e4f4ec !important;color:#167054 !important;}
+html body #app .askbar-proposal-ok{display:flex !important;align-items:center !important;gap:7px !important;margin:0 !important;padding:10px 12px !important;border:0 !important;border-top:1px solid #e2eee8 !important;border-radius:0 !important;background:transparent !important;color:#23624e !important;-webkit-text-fill-color:#23624e !important;font-size:11px !important;}
+html body #app .askbar-proposal-ok::before{content:'✓' !important;width:18px !important;height:18px !important;border-radius:50% !important;display:grid !important;place-items:center !important;background:#e5f5ed !important;color:#167054 !important;font-weight:800 !important;}
+html body #app .askbar-proposal--done .askbar-proposal-actions{display:none !important;}
+
+/* Composer feels aware of context without becoming conversationally noisy. */
+html body #app .askbar-input-wrap{padding-top:11px !important;}
+html body #app .askbar-input{min-height:54px !important;border-radius:16px !important;box-shadow:0 2px 10px rgba(7,22,37,.025) !important;}
+html body #app .askbar-input:focus-within{border-color:#88bfc1 !important;box-shadow:0 0 0 3px rgba(11,144,150,.065) !important;}
+html body #app .askbar-input input::placeholder{color:#8b99a5 !important;-webkit-text-fill-color:#8b99a5 !important;}
+
+@media (max-width:720px){
+  html body #app .grounded-head{padding:12px !important;}
+  html body #app .grounded-head-tools{gap:2px !important;padding-left:5px !important;}
+  html body #app .askbar-newchat span,html body #app .askbar-teach-btn span{display:none !important;}
+  html body #app .askbar-newchat,html body #app .askbar-teach-btn{width:32px !important;padding:0 !important;justify-content:center !important;}
+  html body #app .askbar-trust{flex-direction:column !important;gap:5px !important;}
+  html body #app .askbar-trust-meta{margin-left:0 !important;}
+  html body #app .askbar-followup-questions{margin-left:0 !important;justify-content:flex-start !important;}
+}
