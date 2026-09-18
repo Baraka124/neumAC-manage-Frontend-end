@@ -9783,8 +9783,11 @@ document.addEventListener('DOMContentLoaded', () => {
         lastAsked: '',
         subject: null,   // {type:'staff'|'unit'|'rotation', id, name} — set when a record is opened
         loading: false,
-        thinking: null,    // string shown while it "thinks" (what it's checking)
-        trace: [],         // live reasoning steps [{label, src, done}] — the agent feel
+        thinking: null,    // calm, contextual acknowledgement of what Grounded is checking
+        loadingKind: 'fact', // fact | profile | collection | insight | proposal
+        loadingSources: [],  // compact, truthful source labels shown while working
+        loadingStartedAt: 0,
+        trace: [],         // checks used to explain the answer after it settles
         turns: [],         // conversation history: [{ q, text, chips, actions, sources, followups, confidence, asOf, streaming }]
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
         snoozed: [],       // dismissed alert keys (#16)
@@ -11314,21 +11317,68 @@ document.addEventListener('DOMContentLoaded', () => {
         return null
       }
 
-      // ── Batch 1: thinking states per intent (what it's checking) ──
+      // ── Calm working states — acknowledge the request without AI theatre. ──
+      // These labels describe the department records the deterministic builders are about
+      // to read. They are intentionally short, factual and context-sensitive.
       const askBarThinkingFor = (intent) => {
         const map = {
-          issues: 'Cross-referencing schedule, leave & rotations…',
-          briefing: 'Reading today’s duty, leave & coverage…',
-          coverage_gaps: 'Checking unit staffing levels…',
-          absent_now: 'Scanning leave records…',
-          trials_recruiting: 'Reviewing trial enrollment…',
-          oncall_upcoming: 'Reading the on-call schedule…',
+          issues: 'Checking coverage, leave and rotations…',
+          risk_scan: 'Checking today’s operational risks…',
+          today_snapshot: 'Assembling today’s department view…',
+          this_week_ahead: 'Reviewing the week ahead…',
+          dept_health: 'Connecting current department signals…',
+          briefing: 'Preparing today’s department briefing…',
+          coverage_gaps: 'Checking unit coverage…',
+          absent_now: 'Checking current leave records…',
+          absence_upcoming: 'Reviewing upcoming leave…',
+          trials_recruiting: 'Reviewing recruiting trials…',
+          trials_overview: 'Reading the clinical-trial portfolio…',
+          research_lines: 'Reading the research portfolio…',
+          research_summary: 'Connecting research activity…',
+          research_line_profile: 'Connecting this research line…',
+          trial_profile: 'Connecting this clinical trial…',
+          project_profile: 'Connecting this innovation project…',
+          publications: 'Reviewing recent publications…',
+          oncall_upcoming: 'Reviewing on-call coverage…',
+          oncall_week: 'Reviewing this week’s on-call coverage…',
+          oncall_fairness: 'Comparing on-call distribution…',
+          oncall_no_backup: 'Checking shifts without backup…',
           rotations_active: 'Checking active rotations…',
-          staff_leave: 'Cross-referencing leave records…',
-          staff_oncall: 'Reading the on-call schedule…',
-          staff_rotation: 'Checking rotation assignments…'
+          rotations_upcoming: 'Reviewing upcoming rotations…',
+          residents_board: 'Connecting residents and rotations…',
+          units_board: 'Checking clinical-unit occupancy…',
+          unit_status: 'Checking unit capacity and assignments…',
+          unit_profile: 'Connecting this clinical unit…',
+          staff_summary: 'Building the clinician view…',
+          staff_attr: 'Checking the clinician record…',
+          staff_roster: 'Reading the staff directory…',
+          staff_leave: 'Cross-checking the clinician with leave records…',
+          staff_oncall: 'Cross-checking the clinician with on-call…',
+          staff_rotation: 'Cross-checking the clinician with rotations…',
+          workload_analysis: 'Comparing department workload…',
+          recommend_backup: 'Checking eligible backup coverage…',
+          draft_email: 'Preparing the draft from current records…'
         }
-        return map[intent] || 'Pulling from live data…'
+        return map[intent] || 'Checking department records…'
+      }
+
+      const askBarLoadingKindFor = (intent) => {
+        if (/^(staff_summary|staff_attr|research_line_profile|trial_profile|project_profile|unit_profile)$/.test(intent || '')) return 'profile'
+        if (/^(oncall_week|oncall_upcoming|absent_now|absence_upcoming|trials_recruiting|trials_overview|research_lines|publications|staff_roster|residents_board|units_board|rotations_active|rotations_upcoming)$/.test(intent || '')) return 'collection'
+        if (/^(issues|risk_scan|today_snapshot|this_week_ahead|dept_health|briefing|coverage_gaps|research_summary|workload_analysis|oncall_fairness|oncall_no_backup)$/.test(intent || '')) return 'insight'
+        if (/^(record_leave|record_oncall|assign_rotation|draft_rota|return_leave|cancel_leave|remove_oncall|cancel_rotation|edit_rotation|edit_oncall|edit_leave|extend_rotation)$/.test(intent || '')) return 'proposal'
+        return 'fact'
+      }
+
+      const askBarLoadingSourceLabels = (trace) => {
+        const labels = {
+          'on-call': 'On-call', leave: 'Leave', rotations: 'Rotations', research: 'Research',
+          staff: 'Staff', synthesis: 'Cross-check', data: 'Department data', units: 'Units',
+          publications: 'Publications', trials: 'Trials'
+        }
+        const seen = new Set()
+        return (trace || []).map(step => labels[step.src] || String(step.src || '').replace(/(^|[-_ ])([a-z])/g, (_, a, b) => a + b.toUpperCase()))
+          .filter(label => label && !seen.has(label) && seen.add(label)).slice(0, 5)
       }
 
       // Stream an answer's text into the turn, char-batched, so it feels alive.
@@ -11343,16 +11393,27 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       }
       const askBarStreamTurn = (turn, fullText, done) => {
+        // Operational answers should feel resolved, not generated token-by-token.
+        // Keep streaming only for authored drafts where progressive writing is meaningful.
+        if (!turn.isDraft) {
+          turn.text = fullText || ''
+          turn.streaming = false
+          turn.revealing = true
+          askBarScrollToBottom(false)
+          setTimeout(() => { turn.revealing = false }, 320)
+          if (done) done()
+          return
+        }
         turn.text = ''
         turn.streaming = true
-        const step = Math.max(1, Math.round(fullText.length / 36)) // ~36 frames
+        const step = Math.max(1, Math.round((fullText || '').length / 36))
         let i = 0
         const tick = () => {
-          i = Math.min(fullText.length, i + step)
-          turn.text = fullText.slice(0, i)
+          i = Math.min((fullText || '').length, i + step)
+          turn.text = (fullText || '').slice(0, i)
           Vue.nextTick(() => { const c = document.querySelector('.askbar-conv'); if (c) c.scrollTop = c.scrollHeight })
-          if (i < fullText.length) { setTimeout(tick, 18) }
-          else { turn.streaming = false; if (done) done() }
+          if (i < (fullText || '').length) { setTimeout(tick, 18) }
+          else { turn.streaming = false; turn.revealing = true; setTimeout(() => { turn.revealing = false }, 320); if (done) done() }
         }
         tick()
       }
@@ -11915,15 +11976,21 @@ document.addEventListener('DOMContentLoaded', () => {
           askBar.query = ''
           return
         }
-        // Show the reasoning trace (real steps over real data) — the "agent" feel.
+        // Calm acknowledgement → record check → settled answer.
+        // We no longer animate fabricated sequential "reasoning" steps. The checks are
+        // retained for provenance after the answer, while the working state only says
+        // what records Grounded is consulting.
         askBar.trace = askBarTraceFor(intent).map(([label, src]) => ({ label, src, done: false }))
         askBar.thinking = askBarThinkingFor(intent)
+        askBar.loadingKind = askBarLoadingKindFor(intent)
+        askBar.loadingSources = askBarLoadingSourceLabels(askBar.trace)
+        askBar.loadingStartedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now())
         askBar.loading = true
         askBar.lastAsked = asked
         askBar.query = ''
-        // Reveal trace steps one by one for a "working" feel.
-        askBar.trace.forEach((step, i) => { setTimeout(() => { if (askBar.trace[i]) askBar.trace[i].done = true }, 160 + i * 200) })
-        const traceTime = 160 + askBar.trace.length * 200
+
+        // A short acknowledgement beat makes state change legible without slowing the system
+        // into chatbot theatre. The underlying deterministic answer is built immediately.
         setTimeout(() => {
           let ans
           try {
@@ -11931,15 +11998,23 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch (e) {
             ans = { text: "Sorry — I couldn't pull that together. Try rephrasing, or check the relevant view directly.", chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
           }
-          askBar.loading = false
-          askBar.thinking = null
-          // Push the turn with a held-back text, then stream it in. Keep the trace on the turn.
+          const completedTrace = askBar.trace.map(step => ({ ...step, done: true }))
           const full = ans.text || ''
-          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, trace: askBar.trace.slice(), traceOpen: false, asOf: askBarNow(), streaming: true })
-          askBar.trace = []
-          askBar.turns.push(turn)
-          askBarStreamTurn(turn, full)
-        }, Math.max(480, traceTime))
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, trace: completedTrace, traceOpen: false, asOf: askBarNow(), streaming: true, revealing: false })
+
+          // Keep the working surface visible for one calm beat, then replace it in place.
+          const now = (typeof performance !== 'undefined' ? performance.now() : Date.now())
+          const elapsed = now - askBar.loadingStartedAt
+          const settleDelay = Math.max(0, 320 - elapsed)
+          setTimeout(() => {
+            askBar.loading = false
+            askBar.thinking = null
+            askBar.loadingSources = []
+            askBar.trace = []
+            askBar.turns.push(turn)
+            askBarStreamTurn(turn, full)
+          }, settleDelay)
+        }, 0)
       }
 
       // Follow-up answers that use remembered context
