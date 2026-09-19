@@ -1240,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (cached) return cached
         }
 
-        const config = { method, headers: this.headers(), mode: 'cors', cache: 'no-cache', credentials: 'include' }
+        const config = { method, headers: this.headers(), mode: 'cors', cache: 'no-cache', credentials: 'include', ...(options.signal ? { signal: options.signal } : {}) }
         if (options.body) config.body = JSON.stringify(options.body)
 
         try {
@@ -11008,6 +11008,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // ══════════════════════════════════════════════════════════════
       const askBar = reactive({
         open: false,
+        refreshing: false,
+        refreshError: '',
+        refreshedAt: null,
         query: '',
         lastAsked: '',
         subject: null,   // {type:'staff'|'unit'|'rotation', id, name} — set when a record is opened
@@ -11502,6 +11505,58 @@ document.addEventListener('DOMContentLoaded', () => {
       // Called by the app when a record is opened, so the agent can anticipate for it.
       const setAgentSubject = (type, id, name) => { askBar.subject = (id ? { type, id, name } : null) }
 
+      let askBarRefreshGeneration = 0
+      const askBarRefreshRecords = async () => {
+        const generation = ++askBarRefreshGeneration
+        const userId = currentUser.value?.id
+        if (!userId) return
+        askBar.refreshing = true
+        askBar.loading = false
+        askBar.refreshError = ''
+        askBar.refreshedAt = null
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 15000)
+        // Fetch explicitly: legacy loaders may swallow errors or write derived absence state.
+        // Commit the complete snapshot only after every required source is available.
+        const specs = [
+          ['/api/medical-staff?limit=500', medicalStaff, a => a.filter(x => !x.deleted_at)],
+          ['/api/oncall', onCallSchedule, a => a.map(x => ({...x, duty_date:Utils.normalizeDate(x.duty_date)}))],
+          ['/api/absence-records?limit=500', absences, a => a.filter(x => x.current_status !== 'cancelled').map(x => ({...x, start_date:Utils.normalizeDate(x.start_date), end_date:Utils.normalizeDate(x.end_date)}))],
+          ['/api/rotations?limit=500', rotations, a => a.map(x => ({...x, start_date:Utils.normalizeDate(x.start_date || x.rotation_start_date), end_date:Utils.normalizeDate(x.end_date || x.rotation_end_date)}))],
+          ['/api/training-units', trainingUnits],
+          ['/api/research-lines', researchOps.researchLines],
+          ['/api/clinical-trials?limit=500', researchOps.clinicalTrials],
+          ['/api/innovation-projects?limit=500', researchOps.innovationProjects],
+          ['/api/news?limit=100', newsPosts]
+        ]
+        try {
+          const results = await Promise.all(specs.map(async ([path]) => {
+            const collected = []
+            for (let page = 1; page <= 100; page++) {
+              const endpoint = page === 1 ? path : path + (path.includes('?') ? '&' : '?') + 'page=' + page
+              const result = await API.request(endpoint, {skipCache:true, signal:controller.signal})
+              const rows = Array.isArray(result) ? result : result?.data
+              if (!Array.isArray(rows) || result?.success === false) throw new Error('Unexpected source response')
+              collected.push(...rows)
+              const more = result?.pagination ? collected.length < result.pagination.total : (path.startsWith('/api/news?') && rows.length === 100)
+              if (!more) return collected
+              if (!rows.length) throw new Error('Incomplete source response')
+            }
+            throw new Error('Source exceeds verification limit')
+          }))
+          if (generation !== askBarRefreshGeneration || currentUser.value?.id !== userId) return
+          specs.forEach(([, target, normalize], i) => { target.value = normalize ? normalize(results[i]) : results[i] })
+          askBar.refreshedAt = askBarNow()
+        } catch (e) {
+          controller.abort()
+          if (generation === askBarRefreshGeneration && currentUser.value?.id === userId) {
+            askBar.refreshError = 'Current records could not be verified. Answers are paused; existing answers are historical. Check your connection or access and retry.'
+          }
+        } finally {
+          clearTimeout(timeout)
+          if (generation === askBarRefreshGeneration) askBar.refreshing = false
+        }
+      }
       const openAskBar  = () => {
         if (!currentUser.value) return
         const visibleSubject = askBarInferVisibleSubject()
@@ -11510,7 +11565,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const newKey = visibleSubject?.id ? `${visibleSubject.type}:${visibleSubject.id}` : ''
         // Moving from one visible object to another starts a clean contextual thread.
         // Re-opening Grounded on the same object preserves the conversation.
-        if (newKey && oldKey && newKey !== oldKey) { askBar.turns = []; askBar.query = '' }
+        if (newKey && newKey !== oldKey) { askBar.turns = []; askBar.query = '' }
         if (visibleSubject) {
           askBar.subject = { ...visibleSubject }
           askBar.context = { ...visibleSubject }
@@ -11526,20 +11581,20 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = visibleSubject ? 'conversation' : ((askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation')
         // Pull fresh data so the agent never answers from a stale local snapshot.
         // Best-effort and silent — loaders may run in parallel with the current view.
-        try { staffOps.loadMedicalStaff && staffOps.loadMedicalStaff() } catch (e) {}
-        try { onCallOps.loadOnCallSchedule && onCallOps.loadOnCallSchedule() } catch (e) {}
-        try { absenceOps.loadAbsences && absenceOps.loadAbsences() } catch (e) {}
-        try { rotationOps.loadRotations && rotationOps.loadRotations() } catch (e) {}
-        try { visibleSubject && /^(trial|project|research_line)$/.test(visibleSubject.type) && researchOps.loadAllResearch && researchOps.loadAllResearch() } catch (e) {}
-        try { visibleSubject?.type === 'research_record' && !newsOps.newsLoaded.value && newsOps.loadNews && newsOps.loadNews() } catch (e) {}
+        askBarRefreshRecords()
         Vue.nextTick(() => { if (askBar.view === 'conversation') document.querySelector('.askbar-input input')?.focus() })
       }
-      const closeAskBar = () => { askBar.open = false; askBar.query = '' }
+      const closeAskBar = () => { ++askBarRefreshGeneration; askBar.open = false; askBar.query = ''; askBar.loading = false; askBar.refreshing = false }
       const askBarToggleTeach = () => {
         askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
         if (askBar.view === 'teach') loadBrain()
       }
-      const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.subject = null; askBar.view = (askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation' }
+      const askBarReset = () => {
+        if (askBar.loading) return
+        askBar.turns = []; askBar.query = ''; askBar.lastAsked = ''; askBar.entityMenu = null
+        askBar.subject = null; askBar.context = null
+        openAskBar()
+      }
       const runSuggestion = (s) => {
         if (!s) return
         // Contextual suggestions (Research Library object, staff follow-up, etc.)
@@ -12250,11 +12305,28 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { turn.writing = false }
       }
       const askBarConfirmLeaveEdit = async (p, turn) => {
+        if (turn.writing || turn.committed || turn.cancelled || askBar.refreshing || askBar.refreshError) return
         turn.writing = true
+        turn.commitError = null
         try {
-          await API.request(`/api/absences/${p.id}`, { method: 'PUT', body: p.changes })
+          const response = await API.request(`/api/absence-records/${p.id}`, {skipCache:true})
+          const current = response?.data || response
+          const original = p.original
+          const fields = ['staff_member_id','absence_type','absence_reason','start_date','end_date','coverage_arranged','covering_staff_id','coverage_notes','hod_notes']
+          const comparable = (record, key) => /^(start_date|end_date)$/.test(key) ? Utils.normalizeDate(record[key]) : (record[key] ?? null)
+          if (!original || fields.some(k => JSON.stringify(comparable(current,k)) !== JSON.stringify(comparable(original,k)))) throw new Error('This leave record changed. Refresh and create a new proposal before saving.')
+          if (['cancelled','returned_to_duty'].includes(current.current_status)) throw new Error('This leave is no longer open. Create a new proposal.')
+          const body = Object.fromEntries(fields.filter(k => current[k] !== undefined).map(k => [k,current[k]]))
+          Object.assign(body, p.changes)
+          body.start_date = Utils.normalizeDate(body.start_date)
+          body.end_date = Utils.normalizeDate(body.end_date)
+          body.coverage_notes = body.coverage_notes || ''
+          body.hod_notes = body.hod_notes || ''
+          body.coverage_arranged = !!body.coverage_arranged
+          if (!body.start_date || !body.end_date || body.end_date < body.start_date) throw new Error('Check the leave start and end dates.')
+          await API.updateAbsence(p.id, body)
           turn.committed = true; turn.commitText = `✓ ${p.name}'s leave updated.`
-          try { await absenceOps.loadAbsences() } catch {}
+          await askBarRefreshRecords()
         } catch (e) { turn.commitError = e?.message || 'Failed to update leave.' }
         finally { turn.writing = false }
       }
@@ -13172,6 +13244,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const askBarResolve = (forcedIntent) => {
+        if (askBar.refreshing || askBar.refreshError) return
         const asked0 = askBar.query.trim()
         // Multi-question: if the input holds several questions, answer each in turn.
         if (!forcedIntent && !askBar.pendingLeave) {
@@ -13632,7 +13705,7 @@ document.addEventListener('DOMContentLoaded', () => {
             askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} has leave: ${a.absence_reason||'—'}, ${fmt(a.start_date)} – ${fmt(a.end_date)}. What do you want to change? (e.g. "move end to 20 Oct" or "change start to next Monday")`,chips:[{label:person.full_name,id:person.id}],actions:[],sources:['leave records'],followups:[{label:'Cancel this leave',intent:'cancel_leave',q:`cancel ${person.full_name} leave`}],confidence:'low',asOf:askBarNow(),streaming:false}))
             return
           }
-          askBar.turns.push(Vue.reactive({q:'',text:'',leaveEditProposal:{ id:a.id, name:person.full_name, changes, rows },chips:[],actions:[],sources:['leave records'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false}))
+          askBar.turns.push(Vue.reactive({q:'',text:'',leaveEditProposal:{ id:a.id, name:person.full_name, changes, rows, original:{...a} },chips:[],actions:[],sources:['leave records'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false}))
           return
         }
         if (intent === 'record_callout') {
@@ -13807,7 +13880,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // A short acknowledgement beat makes state change legible without slowing the system
         // into chatbot theatre. The underlying deterministic answer is built immediately.
+        const answerGeneration = askBarRefreshGeneration
         setTimeout(() => {
+          if (answerGeneration !== askBarRefreshGeneration) return
           let ans
           try {
             ans = followup ? askBarBuildFollowup(followup) : askBarBuildAnswer(forcedIntent || askBarMatchIntent(asked))
@@ -13823,6 +13898,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const elapsed = now - askBar.loadingStartedAt
           const settleDelay = Math.max(0, 320 - elapsed)
           setTimeout(() => {
+            if (answerGeneration !== askBarRefreshGeneration) return
             askBar.loading = false
             askBar.thinking = null
             askBar.loadingSources = []
@@ -15644,6 +15720,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // full metadata (attr/id/name) instead of collapsing e.g. Certificates? into another
       // generic clinician profile.
       const askBarRunFollowup = (fu) => {
+        if (askBar.refreshing || askBar.refreshError || askBar.loading) return
         if (!fu) return
         askBar.view = 'conversation'
 
@@ -15667,6 +15744,7 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.thinking = askBarThinkingFor(intent)
         askBar.loadingKind = askBarLoadingKindFor(intent)
         const followTrace = askBarTraceFor(intent).map(([label, src]) => ({ label, src, done: true }))
+        const followGeneration = askBarRefreshGeneration
         askBar.loadingSources = askBarLoadingSourceLabels(followTrace)
         askBar.loading = true
 
@@ -15681,6 +15759,7 @@ document.addEventListener('DOMContentLoaded', () => {
               // preserve specific staff attribute metadata such as certs / pi / phd
               attr: fu.attr || fu.clarifyAttr || null
             }
+            if (followGeneration !== askBarRefreshGeneration) return
             ans = askBarBuildFollowup(payload)
           } catch (e) {
             console.error('[Grounded follow-up]', e)
@@ -15718,6 +15797,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return {
           // Existing returns
+          askBarRefreshRecords,
           loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, isAdmin,
           previewIntro, dismissPreviewIntro,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
@@ -16039,7 +16119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     app.config.errorHandler = (err, instance, info) => {
       console.error('[neumDesk render error]', err, info)
       const viewName = instance?.setupState?.currentView?.value
-      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)   
+      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info) 
     }
 
     app.mount('#app')
