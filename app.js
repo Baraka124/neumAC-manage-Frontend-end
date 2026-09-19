@@ -5708,7 +5708,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const researchLineModal = reactive({ show: false, mode: 'add', form: { line_number: null, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: 0, active: true } })
 
-      const clinicalTrialModal = reactive({ show: false, mode: 'add', form: {
+      const clinicalTrialModal = reactive({ show: false, mode: 'add', baseline: '', form: {
         protocol_id: '', title: '', research_line_id: '',
         phase: '', status: 'En preparación',
         description: '', inclusion_criteria: '', exclusion_criteria: '',
@@ -5737,7 +5737,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const trialDetailModal = reactive({ show: false, trial: null, study: null })
 
-      const innovationProjectModal = reactive({ show: false, mode: 'add', form: {
+      const innovationProjectModal = reactive({ show: false, mode: 'add', baseline: '', form: {
         title: '', category: 'Dispositivo', current_stage: 'development',
         description: '', clinical_rationale: '', research_line_id: '',
         lead_investigator_id: '', co_investigators: [],
@@ -5900,35 +5900,67 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const removeMilestone = (form, idx) => { form.milestones.splice(idx, 1) }
 
-      // ── Study/Project completeness score ──────────────────────
-      const getStudyCompleteness = (s) => {
+      // ── Study/Project record completeness ──────────────────────
+      // Documentation completeness only — never a regulatory-readiness score.
+      const getStudyCompleteness = (s = {}) => {
+        const clinicalFocusRecorded = !!(s.target_diseases?.length) || (s.scope_type && s.scope_type !== 'specific') || !!String(s.scope_note || '').trim()
+        const protocolRecorded = s.protocol_applicable === false || !!s.protocol_finalized || !!String(s.protocol_id || '').trim()
         const checks = [
-          !!s.principal_investigator_id,
-          !!s.start_date,
-          !!(s.end_date || s.estimated_end_date),
-          !!(s.enrollment_target),
-          !!(s.sponsor_name || s.sponsor_type),
-          !!s.ethics_status,
-          !!s.study_type,
-          !!(s.target_diseases?.length),
-          !!s.protocol_finalized,
+          ['Study title', !!String(s.title || '').trim()],
+          ['Research line', !!s.research_line_id],
+          ['Study type', !!s.study_type],
+          ['Principal investigator', !!s.principal_investigator_id],
+          ['Clinical focus / scope', clinicalFocusRecorded],
+          ['Protocol status', protocolRecorded],
+          ['Ethics / CEIm status', !!s.ethics_status],
+          ['Study stage', !!s.status],
         ]
-        return {
-          score: checks.filter(Boolean).length, total: checks.length,
-          missing: ['PI','Fecha inicio','Fecha fin','Enrolamiento objetivo','Sponsor','Aprobación ética','Tipo de estudio','Enfermedades diana','Protocolo finalizado'].filter((_, i) => !checks[i])
-        }
+        const score = checks.filter(([,ok]) => ok).length
+        return { score, total: checks.length, percent: Math.round((score / checks.length) * 100), missing: checks.filter(([,ok]) => !ok).map(([label]) => label) }
       }
-      const getProjectCompleteness = (p) => {
+      const getProjectCompleteness = (p = {}) => {
+        const clinicalFocusRecorded = !!(p.target_diseases?.length) || (p.scope_type && p.scope_type !== 'specific') || !!String(p.scope_note || '').trim()
         const checks = [
-          !!p.lead_investigator_id,
-          !!p.start_date,
-          !!(p.budget || p.funding_source || p.funding_status !== 'not_applicable'),
-          !!(p.target_diseases?.length),
-          !!(p.trl_level),
-          !!(p.regulatory_pathway && p.regulatory_pathway !== 'none'),
+          ['Project title', !!String(p.title || '').trim()],
+          ['Research line', !!p.research_line_id],
+          ['Innovation category', !!p.category],
+          ['Clinical / project lead', !!p.lead_investigator_id],
+          ['Clinical need / rationale', !!String(p.clinical_rationale || p.description || '').trim()],
+          ['Clinical focus / scope', clinicalFocusRecorded],
+          ['Development stage', !!p.current_stage],
+          ['Funding position', !!p.funding_status],
         ]
-        return { score: checks.filter(Boolean).length, total: checks.length,
-          missing: ['Investigador principal','Fecha inicio','Financiación','Enfermedades','Nivel TRL','Vía regulatoria'].filter((_, i) => !checks[i]) }
+        const score = checks.filter(([,ok]) => ok).length
+        return { score, total: checks.length, percent: Math.round((score / checks.length) * 100), missing: checks.filter(([,ok]) => !ok).map(([label]) => label) }
+      }
+
+      const _editorSnapshot = (form = {}) => {
+        const omit = new Set(['_diseaseInput','_milestoneLabel','_milestoneDate','_extMemberDraft','keywordsInput'])
+        const clean = {}
+        Object.keys(form).filter(k => !omit.has(k)).sort().forEach(k => { clean[k] = form[k] })
+        try { return JSON.stringify(clean) } catch { return '' }
+      }
+      const _captureStudyBaseline = () => { clinicalTrialModal.baseline = _editorSnapshot(clinicalTrialModal.form) }
+      const _captureProjectBaseline = () => { innovationProjectModal.baseline = _editorSnapshot(innovationProjectModal.form) }
+      const clinicalTrialEditorDirty = computed(() => !!clinicalTrialModal.show && !!clinicalTrialModal.baseline && _editorSnapshot(clinicalTrialModal.form) !== clinicalTrialModal.baseline)
+      const innovationProjectEditorDirty = computed(() => !!innovationProjectModal.show && !!innovationProjectModal.baseline && _editorSnapshot(innovationProjectModal.form) !== innovationProjectModal.baseline)
+      const requestCloseClinicalTrialEditor = () => {
+        if (!clinicalTrialEditorDirty.value) { clinicalTrialModal.show = false; return }
+        showConfirmation({
+          title: 'Discard unsaved study changes?',
+          message: 'Changes made in this clinical study record have not been saved.',
+          confirmButtonText: 'Discard changes', confirmButtonClass: 'btn-danger',
+          onConfirm: () => { clinicalTrialModal.show = false }
+        })
+      }
+      const requestCloseInnovationProjectEditor = () => {
+        if (!innovationProjectEditorDirty.value) { innovationProjectModal.show = false; return }
+        showConfirmation({
+          title: 'Discard unsaved project changes?',
+          message: 'Changes made in this clinical innovation record have not been saved.',
+          confirmButtonText: 'Discard changes', confirmButtonClass: 'btn-danger',
+          onConfirm: () => { innovationProjectModal.show = false }
+        })
       }
 
       const researchLoading = ref(false)
@@ -5969,6 +6001,7 @@ document.addEventListener('DOMContentLoaded', () => {
           _extMemberDraft: { name: '', institution: '', role: '', email: '' }
         })
         clinicalTrialModal.show = true
+        _captureStudyBaseline()
       }
       const showAddProjectModal = (line = null) => {
         innovationProjectModal.mode = 'add'
@@ -5985,6 +6018,7 @@ document.addEventListener('DOMContentLoaded', () => {
           _extMemberDraft: { name: '', institution: '', role: '', email: '' }
         })
         innovationProjectModal.show = true
+        _captureProjectBaseline()
       }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
@@ -6011,8 +6045,9 @@ document.addEventListener('DOMContentLoaded', () => {
           institutional_role: t.institutional_role || ''
         }
         clinicalTrialModal.show = true
+        _captureStudyBaseline()
       }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '' }; innovationProjectModal.show = true }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '' }; innovationProjectModal.show = true; _captureProjectBaseline() }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.study = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
@@ -6065,7 +6100,7 @@ document.addEventListener('DOMContentLoaded', () => {
           delete payload._extMemberDraft
           if (clinicalTrialModal.mode === 'add') { clinicalTrials.value.unshift(await API.createClinicalTrial(payload)); showToast('Success', 'Clinical study created', 'success') }
           else { const result = await API.updateClinicalTrial(payload.id, payload); const idx = clinicalTrials.value.findIndex(t => t.id === result.id); if (idx !== -1) clinicalTrials.value[idx] = result; showToast('Success', 'Clinical study updated', 'success') }
-          clinicalTrialModal.show = false; await loadClinicalTrials(); loadAnalyticsSummary()
+          _captureStudyBaseline(); clinicalTrialModal.show = false; await loadClinicalTrials(); loadAnalyticsSummary()
         } catch (e) { showToast('Error', e?.message || 'Failed to save study', 'error') }
         finally { saving.value = false }
       }
@@ -6098,7 +6133,7 @@ document.addEventListener('DOMContentLoaded', () => {
           else payload.partner_name = ''
           if (innovationProjectModal.mode === 'add') { innovationProjects.value.unshift(await API.createInnovationProject(payload)); showToast('Success', 'Innovation project created', 'success') }
           else { const result = await API.updateInnovationProject(payload.id, payload); const idx = innovationProjects.value.findIndex(p => p.id === result.id); if (idx !== -1) innovationProjects.value[idx] = result; showToast('Success', 'Innovation project updated', 'success') }
-          innovationProjectModal.show = false; await loadInnovationProjects(); loadAnalyticsSummary(); loadPartnerCollaborations()
+          _captureProjectBaseline(); innovationProjectModal.show = false; await loadInnovationProjects(); loadAnalyticsSummary(); loadPartnerCollaborations()
         } catch (e) { showToast('Error', e?.message || 'Failed to save project', 'error') }
         finally { saving.value = false }
       }
@@ -6239,8 +6274,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTeamRole, getTeamRole, addCoInvestigator, removeCoInvestigator,
         // Milestone helpers
         addMilestone, toggleMilestone, removeMilestone,
-        // Completeness
-        getStudyCompleteness, getProjectCompleteness,
+        // Completeness + editor stewardship
+        getStudyCompleteness, getProjectCompleteness, clinicalTrialEditorDirty, innovationProjectEditorDirty, requestCloseClinicalTrialEditor, requestCloseInnovationProjectEditor,
       }
     }
 
@@ -7319,6 +7354,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // V31 — programme-level Research navigation. Kept outside useResearch so
         // the existing CRUD/data composable remains untouched.
         const lineTab = ref('overview')
+        const scrollResearchEditorSection = (id) => {
+          if (!id) return
+          Vue.nextTick(() => {
+            const el = document.getElementById(id)
+            if (!el) return
+            try { el.scrollIntoView({ behavior:'smooth', block:'start' }) } catch { el.scrollIntoView() }
+          })
+        }
 
         // ══════════════════════════════════════════════════════════════════
         // §1 CANONICAL KNOWLEDGE MODEL — adopted (inlined, reads live arrays)
@@ -7925,6 +7968,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const newsReadingProgress = ref(0)
         const newsReaderCompact = ref(false)
         const newsEditorFocusMode = ref(false)
+        const newsEditorPreviewOpen = ref(true)
+        watch(() => newsModal.show, show => { if (show) newsEditorPreviewOpen.value = true })
 
         // V37 — Research Library uses its own full-height scroller, matching Research.
         // Centralising this avoids window/content-area scroll mismatches that previously
@@ -8512,14 +8557,30 @@ document.addEventListener('DOMContentLoaded', () => {
           newsDrawer.detailsOpen = false
           newsEditorDetailsOpen.value = false
           newsEditorFocusMode.value = false
+          newsEditorPreviewOpen.value = true
           newsPublishReview.value = false
           newsOps.editNews(post)
         }
-        const closeNewsEditor = () => {
+        const _newsEditorHasMeaningfulContent = () => {
+          const f = newsModal.form || {}
+          return !!(String(f.title || '').trim() || String(f.body || '').trim() || String(f.journal_name || '').trim() || String(f.doi || '').trim() || (Array.isArray(f.image_urls) && f.image_urls.length))
+        }
+        const _closeNewsEditorNow = () => {
           newsPublishReview.value = false
           newsEditorDetailsOpen.value = false
           newsEditorFocusMode.value = false
+          newsEditorPreviewOpen.value = true
           newsModal.show = false
+        }
+        const closeNewsEditor = () => {
+          const dirty = newsModal.stage === 'compose' && (newsModal.saveState === 'Unsaved changes' || (newsModal.mode === 'add' && _newsEditorHasMeaningfulContent()))
+          if (!dirty) { _closeNewsEditorNow(); return }
+          showConfirmation({
+            title: 'Discard unsaved Research Library changes?',
+            message: 'This record contains changes that have not been saved.',
+            confirmButtonText: 'Discard changes', confirmButtonClass: 'btn-danger',
+            onConfirm: _closeNewsEditorNow
+          })
         }
         // ── END NEWS READER DRAWER ────────────────────────────────────
 
@@ -15266,6 +15327,11 @@ document.addEventListener('DOMContentLoaded', () => {
           removeMilestone: researchOps.removeMilestone,
           getStudyCompleteness: researchOps.getStudyCompleteness,
           getProjectCompleteness: researchOps.getProjectCompleteness,
+          clinicalTrialEditorDirty: researchOps.clinicalTrialEditorDirty,
+          innovationProjectEditorDirty: researchOps.innovationProjectEditorDirty,
+          requestCloseClinicalTrialEditor: researchOps.requestCloseClinicalTrialEditor,
+          requestCloseInnovationProjectEditor: researchOps.requestCloseInnovationProjectEditor,
+          scrollResearchEditorSection,
           researchLoading: researchOps.researchLoading,
           researchPortfolioSummary, researchLinePortfolio, researchLineStudies, researchLineProjects, researchLineOutputs, studyGovernance,
           openResearchLineLibrary, openResearchLibraryRecord,
@@ -15299,7 +15365,7 @@ document.addEventListener('DOMContentLoaded', () => {
           newsPeek, openNewsPeek, closeNewsPeek,
           newsDrawer, newsDrawerPositionStyle, openNewsDrawer, closeNewsDrawer, exploreNewsLine, exploreNewsAuthor, exploreNewsYear, newsReadingProgress, newsReaderCompact, updateNewsReadingProgress, openGroundedForNews, newsActiveConnections, newsConnectionLabel, openNewsConnectionTray, exploreActiveNewsConnection,
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs, newsDrawerSegments, newsEditorPreviewSegments, newsPlainBody, newsInsertEvidence, newsDrawerConnections, newsDrawerLifecycle, newsCitation, copyNewsCitation, copyNewsDoi,
-          newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName, newsEditorDetailsOpen, newsEditorFocusMode, newsEditorOutline, newsJumpToOutline, newsPublishReview, openNewsEditorFromReader, closeNewsEditor,
+          newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName, newsEditorDetailsOpen, newsEditorFocusMode, newsEditorPreviewOpen, newsEditorOutline, newsJumpToOutline, newsPublishReview, openNewsEditorFromReader, closeNewsEditor,
           drillToTrials, drillToProjects,
           portfolioKPIs,
           getLineAccent:     getLineAccentGlobal,
