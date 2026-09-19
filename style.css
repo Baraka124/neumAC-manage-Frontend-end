@@ -20208,3 +20208,525 @@ html body #app .news-v27-article-editor{position:relative}
 }
 #app .rv36-governance-warning strong{display:block;font:650 11px/1.35 'DM Sans',sans-serif;color:#66430f;}
 #app .rv36-governance-warning small{display:block;margin-top:2px;font:500 10.5px/1.45 'DM Sans',sans-serif;color:#87632a;}
+
+/* ========================================================================== 
+   V37 · RESEARCH LIBRARY / SCROLL, HEADER & CONTRAST HARDENING
+   Fixes the full-height Library scroll ownership, clarifies the fold control,
+   reduces title duplication in the shell, and raises secondary-text contrast.
+   ========================================================================== */
+
+/* Research Library owns its vertical scroll exactly like Research. */
+#app .content-area--fullheight > .news-view{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overscroll-behavior-y:contain;
+  scrollbar-gutter:stable;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:#b7c5cb transparent;
+}
+#app .content-area--fullheight > .news-view::-webkit-scrollbar{width:8px}
+#app .content-area--fullheight > .news-view::-webkit-scrollbar-track{background:transparent}
+#app .content-area--fullheight > .news-view::-webkit-scrollbar-thumb{background:#c3cfd4;border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+#app .content-area--fullheight > .news-view::-webkit-scrollbar-thumb:hover{background:#a8b8bf;background-clip:padding-box}
+
+/* The application bar is context chrome here, not a second editorial masthead. */
+#app .top-navbar.top-navbar--research-context .navbar-title{
+  font-family:'DM Sans',system-ui,sans-serif !important;
+  font-style:normal !important;
+  font-size:18px !important;
+  line-height:1.08 !important;
+  font-weight:650 !important;
+  letter-spacing:-.02em !important;
+  color:#132f43 !important;
+}
+#app .top-navbar.top-navbar--research-context .navbar-subtitle{
+  display:block !important;
+  margin-top:2px !important;
+  font-size:10.8px !important;
+  line-height:1.2 !important;
+  font-weight:500 !important;
+  color:#687b89 !important;
+}
+#app .top-navbar.top-navbar--research-context .navbar-title-block{
+  border-left:2px solid #13a7aa !important;
+  padding-left:12px !important;
+}
+#app .top-navbar.top-navbar--research-context .search-input{
+  background:#f7f9fa !important;
+  border:1px solid #dfe6e9 !important;
+  color:#294c60 !important;
+}
+#app .top-navbar.top-navbar--research-context .search-input::placeholder{color:#8a9aa4 !important;opacity:1 !important}
+#app .top-navbar.top-navbar--research-context .search-box>svg{color:#708694 !important;opacity:.9 !important}
+
+/* Masthead: less dead space, clearer hierarchy, intentional controls. */
+html body #app .news-v25-masthead{
+  padding:24px 42px 16px !important;
+  background:#fff !important;
+}
+html body #app .news-v25-mast-main{align-items:center !important;gap:28px !important}
+html body #app .news-v25-ident h2{
+  font-size:40px !important;
+  line-height:1 !important;
+  letter-spacing:-.034em !important;
+  color:#102e43 !important;
+}
+html body #app .news-v25-ident p{
+  margin-top:7px !important;
+  max-width:760px !important;
+  color:#526b7d !important;
+  font-size:12.6px !important;
+  line-height:1.45 !important;
+}
+html body #app .news-v25-ident .news-editorial-kicker{color:#087f82 !important}
+html body #app .news-v25-mast-actions{gap:12px !important}
+html body #app .news-v25-record-count{padding-right:4px !important}
+html body #app .news-v25-record-count strong{font-size:31px !important;color:#14364d !important}
+html body #app .news-v25-record-count span{font-size:9.5px !important;color:#637888 !important;letter-spacing:.11em !important}
+html body #app .news-v25-index{
+  margin-top:14px !important;
+  min-height:26px !important;
+  color:#5e7486 !important;
+  font-size:11px !important;
+}
+html body #app .news-v25-index-label{color:#607686 !important;font-size:9.6px !important}
+
+/* The fold control now reads as an intentional UI affordance, not stray text. */
+html body #app .news-v25-collapse{
+  width:34px !important;
+  height:34px !important;
+  flex:0 0 34px !important;
+  border:1px solid #d9e3e6 !important;
+  background:#f7faf9 !important;
+  color:#365e6d !important;
+  border-radius:50% !important;
+  display:grid !important;
+  place-items:center !important;
+  box-shadow:0 1px 0 rgba(15,45,61,.03) !important;
+  transition:background .16s,border-color .16s,color .16s,transform .16s !important;
+}
+html body #app .news-v25-collapse:hover{
+  background:#edf6f5 !important;
+  border-color:#a9cfcc !important;
+  color:#087f82 !important;
+  transform:translateY(-1px);
+}
+html body #app .news-v25-collapse:focus-visible{outline:2px solid rgba(10,142,144,.35) !important;outline-offset:2px !important}
+html body #app .news-v25-collapse svg{display:block;transition:transform .18s ease}
+html body #app .news-v25-collapse svg.is-collapsed{transform:rotate(180deg)}
+
+html body #app .news-v25-masthead.is-collapsed{
+  padding:11px 42px 10px !important;
+}
+html body #app .news-v25-masthead.is-collapsed .news-v25-ident h2{
+  font-size:24px !important;
+  line-height:1 !important;
+}
+html body #app .news-v25-masthead.is-collapsed .news-v23-new-orb{width:32px !important;height:32px !important}
+
+/* Secondary text was too pale at common 100–125% Windows scaling. */
+html body #app .news-v23,
+html body #app .news-v24-studio,
+html body #app .news-v24-peek,
+html body #app .nrd-v23{
+  --rl-muted:#5e7485;
+  --rl-faint:#748795;
+}
+html body #app .news-v29-lens-surface>header strong,
+html body #app .news-v29-lens-surface>header small{color:#536b7d !important}
+html body #app .news-v29-line-copy p{color:#647b8b !important;font-size:10.8px !important}
+html body #app .news-v29-breakdown span{color:#587184 !important}
+html body #app .news-v29-line-total span{color:#607787 !important}
+html body #app .news-v29-people-grid p{color:#587184 !important}
+html body #app .news-v29-people-grid small{color:#667b89 !important;font-size:10.3px !important}
+html body #app .news-v29-year-rail small,
+html body #app .news-v29-year-rail p{color:#586f80 !important}
+html body #app .news-v29-topic-field small{color:#657987 !important;font-size:10.3px !important}
+html body #app .news-v28-reviewdesk>header small{color:#586f80 !important;font-size:10.8px !important}
+html body #app .news-v28-review-empty{color:#536b7c !important}
+html body #app .news-v28-set-empty{color:#566e7f !important;font-size:11.2px !important}
+html body #app .news-v23-empty span{color:#617789 !important;font-size:11.5px !important}
+html body #app .news-v25-shown{color:#5f7484 !important;font-weight:650 !important}
+
+/* Lens pages are overview surfaces. Do not force a duplicate full record stream
+   until a specific line/person/year/topic has been chosen. */
+html body #app .news-v29-lens-surface{padding-bottom:30px !important}
+
+/* Research secondary copy gets the same contrast floor as the Library. */
+#app .rv31-programme-heading p,
+#app .rv31-stream-main small,
+#app .rv32-row-main p,
+#app .rv32-project-context small,
+#app .rv33-main p,
+#app .rv33-programme-table span>small,
+#app .rv35-section-intro>small{
+  color:#607685 !important;
+}
+#app .rv31-state,
+#app .rv31-domain-label,
+#app .rv32-row-kicker,
+#app .rv33-intel-panel>header small{color:#647989 !important}
+
+@media(max-width:900px){
+  html body #app .news-v25-masthead{padding-left:24px !important;padding-right:24px !important}
+  html body #app .news-v25-masthead.is-collapsed{padding-left:24px !important;padding-right:24px !important}
+  #app .top-navbar.top-navbar--research-context .navbar-subtitle{display:none !important}
+}
+@media(max-width:620px){
+  html body #app .news-v25-ident h2{font-size:34px !important}
+  html body #app .news-v25-masthead{padding:20px 18px 14px !important}
+  html body #app .news-v25-masthead.is-collapsed{padding:10px 18px !important}
+  html body #app .news-v25-record-count{display:none !important}
+}
+
+/* One scroll owner: the Library workspace itself. The legacy news-list scroller
+   created a nested-scroll trap where lens content sat outside the scrollable area. */
+#app .content-area--fullheight > .news-view > .news-list{
+  flex:0 0 auto !important;
+  min-height:auto !important;
+  overflow:visible !important;
+}
+
+/* V37.1 — make the overview fold control self-explanatory instead of a lone glyph. */
+html body #app .news-v25-collapse{
+  width:auto !important;
+  min-width:0 !important;
+  height:32px !important;
+  flex:0 0 auto !important;
+  padding:0 0 0 11px !important;
+  gap:7px !important;
+  border:0 !important;
+  border-left:1px solid #dce5e7 !important;
+  background:transparent !important;
+  border-radius:0 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:#526c7d !important;
+  box-shadow:none !important;
+  transform:none !important;
+}
+html body #app .news-v25-collapse:hover{
+  background:transparent !important;
+  border-left-color:#a9c8c7 !important;
+  color:#087f82 !important;
+  transform:none !important;
+}
+html body #app .news-v37-collapse-label{
+  display:block !important;
+  font:650 10.5px/1 'DM Sans',system-ui,sans-serif !important;
+  letter-spacing:0 !important;
+  color:inherit !important;
+}
+html body #app .news-v25-collapse svg{
+  flex:0 0 auto !important;
+  transition:transform .18s ease !important;
+}
+html body #app .news-v25-collapse svg.is-collapsed{transform:rotate(180deg) !important}
+
+/* The two navigation rails should remain legible without becoming visually loud. */
+html body #app .news-v25-tabs button{color:#5b7182 !important}
+html body #app .news-v25-tabs button span{color:#718795 !important}
+html body #app .news-v28-lens-label{color:#5d7384 !important}
+html body #app .news-v28-lensbar>button{color:#526a7c !important}
+html body #app .news-v25-search{color:#677f8e !important}
+html body #app .news-v25-search input::placeholder{color:#758a97 !important;opacity:1 !important}
+
+@media(max-width:620px){
+  html body #app .news-v37-collapse-label{display:none !important}
+  html body #app .news-v25-collapse{padding-left:8px !important;width:28px !important}
+}
+
+/* ========================================================================== 
+   V38 · RESEARCH EXPERIENCE / FOCUS & READER REFINEMENT
+   The Library now keeps quick context and full reading in the visual centre.
+   Research headers share one quieter, higher-contrast institutional grammar.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Research Library quick preview — centred, deliberate focus.
+   The previous source-relative popover preserved spatial continuity, but on
+   wide screens it could push the preview into peripheral vision.
+   -------------------------------------------------------------------------- */
+html body #app .news-v24-peek-layer{
+  background:rgba(8,29,43,.14) !important;
+  backdrop-filter:blur(2px) !important;
+  -webkit-backdrop-filter:blur(2px) !important;
+}
+html body #app .news-v24-peek.news-v38-focus-peek{
+  left:50% !important;
+  top:50% !important;
+  transform:translate(-50%,-50%) !important;
+  width:min(560px,calc(100vw - 48px)) !important;
+  max-height:min(72vh,640px) !important;
+  border-radius:18px !important;
+  border:1px solid rgba(24,61,81,.13) !important;
+  box-shadow:0 34px 100px rgba(7,26,39,.24) !important;
+  animation:newsV38PeekIn .18s cubic-bezier(.22,.61,.36,1) !important;
+}
+@keyframes newsV38PeekIn{
+  from{opacity:0;transform:translate(-50%,calc(-50% + 8px)) scale(.985)}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+html body #app .news-v38-focus-peek>header.news-v38-peek-head{
+  min-height:54px !important;
+  height:auto !important;
+  flex:0 0 auto !important;
+  padding:10px 14px 10px 18px !important;
+  background:#fbfcfc !important;
+  border-bottom:1px solid #e5ebed !important;
+}
+html body #app .news-v38-peek-headcopy{display:flex;align-items:baseline;gap:10px;min-width:0}
+html body #app .news-v38-peek-headcopy>span{
+  font:700 9.5px/1 'DM Sans',system-ui,sans-serif !important;
+  letter-spacing:.08em !important;
+  text-transform:uppercase !important;
+  color:#718593 !important;
+}
+html body #app .news-v38-peek-headcopy>strong{
+  font:650 12px/1 'DM Sans',system-ui,sans-serif !important;
+  color:#15384e !important;
+}
+html body #app .news-v38-peek-headtools{display:flex;align-items:center;gap:10px}
+html body #app .news-v38-peek-headtools>em{
+  font:650 9.5px/1 'DM Sans',system-ui,sans-serif !important;
+  font-style:normal !important;
+  color:#637988 !important;
+  padding:5px 8px !important;
+  border-radius:999px !important;
+  background:#f0f4f5 !important;
+}
+html body #app .news-v38-peek-headtools>em.is-public{color:#0b796d !important;background:#eaf6f3 !important}
+html body #app .news-v38-focus-peek>figure{height:168px !important;flex-basis:168px !important}
+html body #app .news-v38-focus-peek .news-v24-peek-copy{padding:22px 24px 20px !important}
+html body #app .news-v38-focus-peek .news-v24-peek-copy h3{
+  font-size:29px !important;
+  line-height:1.04 !important;
+  margin-bottom:12px !important;
+  color:#102f45 !important;
+}
+html body #app .news-v38-focus-peek .news-v24-peek-copy p{
+  font-size:12.5px !important;
+  line-height:1.58 !important;
+  color:#526b7d !important;
+}
+html body #app .news-v38-focus-peek>footer{
+  min-height:58px !important;
+  height:auto !important;
+  padding:0 20px 0 24px !important;
+  background:#fff !important;
+}
+html body #app .news-v38-focus-peek>footer>span{
+  max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:10.5px !important;color:#5f7484 !important
+}
+html body #app .news-v38-focus-peek>footer button{
+  gap:10px !important;font-size:11.5px !important;color:#123a52 !important
+}
+html body #app .news-v38-focus-peek>footer button i{
+  width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+  background:#0c7f82;color:#fff !important
+}
+html body #app .news-v38-focus-peek>footer button:hover i{transform:translateX(2px) !important}
+
+/* --------------------------------------------------------------------------
+   Reader shell — object-specific, but always visually centred.
+   -------------------------------------------------------------------------- */
+html body #app .nrd-backdrop--v23{
+  background:rgba(8,27,40,.26) !important;
+  backdrop-filter:blur(4px) !important;
+  -webkit-backdrop-filter:blur(4px) !important;
+}
+html body #app .nrd-v27{
+  max-width:none !important;
+  border:1px solid rgba(19,54,75,.13) !important;
+  box-shadow:0 34px 110px rgba(6,24,37,.24) !important;
+}
+html body #app .nrd-v27.nrd--article{
+  left:3vw !important;top:3vh !important;right:auto !important;bottom:auto !important;
+  width:94vw !important;height:94vh !important;border-radius:18px !important;
+}
+html body #app .nrd-v27.nrd--publication{
+  left:6vw !important;right:6vw !important;top:6vh !important;bottom:6vh !important;
+  width:auto !important;height:auto !important;border-radius:18px !important;
+}
+html body #app .nrd-v27.nrd--highlight{
+  left:4vw !important;right:4vw !important;top:5vh !important;bottom:5vh !important;
+  width:auto !important;height:auto !important;border-radius:18px !important;
+}
+html body #app .nrd-v27.nrd--update{
+  left:20vw !important;right:20vw !important;top:11vh !important;bottom:11vh !important;
+  width:auto !important;height:auto !important;border-radius:18px !important;
+  transform:none !important;transform-origin:center !important;
+}
+html body #app .nrd-v27-readingbar{
+  height:58px !important;min-height:58px !important;
+  grid-template-columns:minmax(150px,auto) minmax(0,1fr) auto !important;
+  gap:16px !important;padding:0 14px 0 18px !important;
+  border-bottom-color:#dce5e8 !important;
+  background:rgba(255,255,255,.97) !important;
+}
+html body #app .nrd-v38-reading-context{gap:8px !important}
+html body #app .nrd-v38-reading-context>span{
+  color:#17394f !important;font-weight:700 !important
+}
+html body #app .nrd-v38-reading-context>em{
+  font:650 9px/1 'DM Sans',system-ui,sans-serif !important;
+  font-style:normal !important;padding:4px 7px;border-radius:999px;
+  color:#657988;background:#eef3f4
+}
+html body #app .nrd-v38-reading-context>em.is-public{color:#0a786d;background:#eaf6f3}
+html body #app .nrd-v38-reading-context>strong{color:#38566b !important;font-size:10.8px !important}
+html body #app .nrd-v38-reading-actions{gap:5px !important;color:#4e6778 !important}
+html body #app .nrd-v38-progress-label{margin-right:3px;color:#5f7585 !important}
+html body #app .nrd-v38-head-action{
+  height:32px !important;display:inline-flex !important;align-items:center !important;gap:6px !important;
+  border:0 !important;background:transparent !important;border-radius:8px !important;
+  padding:0 8px !important;box-shadow:none !important;cursor:pointer !important;
+  color:#536d7e !important;font:650 10px/1 'DM Sans',system-ui,sans-serif !important;
+}
+html body #app .nrd-v38-head-action i{font-size:10px !important;color:#718592 !important}
+html body #app .nrd-v38-head-action:hover,
+html body #app .nrd-v38-head-action.is-active{background:#eef6f5 !important;color:#0b7479 !important}
+html body #app .nrd-v38-head-action:hover i,
+html body #app .nrd-v38-head-action.is-active i{color:#0b8586 !important}
+html body #app .nrd-v38-head-manage{position:relative !important}
+html body #app .nrd-v38-manage-menu{
+  right:0 !important;top:38px !important;width:230px !important;z-index:100 !important;
+}
+html body #app .nrd-v38-close{
+  position:static !important;width:32px !important;height:32px !important;margin-left:2px !important;
+  border-radius:50% !important;background:#f3f6f7 !important;border:1px solid #e0e7e9 !important;
+}
+html body #app .nrd-v38-close:hover{background:#eaf2f2 !important;border-color:#c7d7d9 !important}
+/* The old floating tools are superseded by the reading bar controls. */
+html body #app .nrd-v27-reader-tools{display:none !important}
+/* Details are now opened where attention already is: under the reader header. */
+html body #app .nrd-v27-details{
+  left:50% !important;right:auto !important;top:70px !important;bottom:auto !important;
+  transform:translateX(-50%) !important;
+  width:min(470px,calc(100% - 48px)) !important;
+  max-height:calc(100% - 94px) !important;
+  border-radius:16px !important;padding:22px 24px 24px !important;
+  box-shadow:0 24px 76px rgba(7,27,41,.20) !important;
+}
+html body #app .nrd-v27-details>button{top:16px !important;right:16px !important}
+html body #app .nrd-v27-details-kicker{font-size:10px !important;color:#637989 !important}
+html body #app .nrd-v27-details dt{font-size:10px !important;color:#687d8a !important}
+html body #app .nrd-v27-details dd{font-size:11.8px !important;color:#365266 !important}
+
+/* Publication reads as a scholarly folio in the centre rather than a side drawer. */
+html body #app .nrd-v27-publication{
+  max-width:1120px !important;margin:0 auto !important;
+  padding:64px 58px 48px !important;
+  grid-template-columns:110px minmax(0,1fr) 190px !important;
+  gap:34px !important;
+}
+html body #app .nrd-v23-pub-main h1{font-size:52px !important;line-height:1.01 !important;max-width:760px !important}
+html body #app .nrd-v27-object-context{padding-left:18px !important;border-left-color:#dce5e7 !important}
+
+/* Highlights remain immersive, but sit inside a deliberate frame. */
+html body #app .nrd-v27-highlight{min-height:calc(90vh - 58px) !important}
+html body #app .nrd-v27-highlight .nrd-v23-highlight-copy h1{font-size:clamp(44px,4.1vw,68px) !important}
+
+/* Updates are short institutional notes — focused, not source-anchored popovers. */
+html body #app .nrd-v27-update{
+  max-width:760px !important;margin:0 auto !important;padding:54px 54px 62px !important;
+}
+html body #app .nrd-v27-update time{color:#607686 !important}
+html body #app .nrd-v27-update h1{font-size:46px !important;line-height:1.02 !important;color:#12374f !important}
+html body #app .nrd-v27-update p{font-size:15.5px !important;line-height:1.74 !important;color:#38566a !important}
+
+/* Connections and pagination align to the reader's visual axis. */
+html body #app .nrd-v28-connections,
+html body #app .nrd-v27-pager{max-width:1120px !important}
+
+/* --------------------------------------------------------------------------
+   Research module — common institutional header grammar.
+   -------------------------------------------------------------------------- */
+#app .rv31-masthead,
+#app .rv32-collection-hero,
+#app .rv32-record-hero,
+#app .rv31-line-hero{
+  background:linear-gradient(180deg,#fff 0%,#fcfdfd 100%) !important;
+}
+#app .rv31-masthead,
+#app .rv32-collection-hero{
+  border-top:2px solid #0a8e90 !important;
+}
+#app .rv31-eyebrow,#app .rv32-eyebrow{
+  font-size:10px !important;letter-spacing:.105em !important;
+  color:#0a7e82 !important;font-weight:750 !important;
+}
+#app .rv31-masthead h1,#app .rv32-collection-hero h1,#app .rv31-line-hero h1,#app .rv32-record-copy h1{
+  color:#102f45 !important;text-wrap:balance;
+}
+#app .rv31-masthead p,#app .rv32-collection-hero p,#app .rv31-line-copy p{
+  color:#526b7d !important;
+}
+#app .rv31-line-context,#app .rv32-context-bar{
+  color:#607686 !important;background:rgba(252,253,253,.96) !important;
+}
+#app .rv31-line-context>span,#app .rv32-context-bar>span{color:#607686 !important}
+#app .rv32-record-hero{
+  border-left:3px solid #dce8e8 !important;
+  padding-left:37px !important;
+}
+#app .rv32-record-hero--study{border-left-color:#0a8e90 !important}
+#app .rv32-record-hero--innovation{border-left-color:#5e7d9b !important}
+#app .rv38-record-line{color:#0b767b !important;font-weight:650 !important}
+#app .rv31-line-mark{
+  width:64px;height:64px;border:1px solid #dbe5e6;border-radius:50%;
+  display:grid;place-items:center;align-self:start;background:#f8fbfa;
+  font-family:'DM Mono',monospace;font-weight:700
+}
+#app .rv31-line-actions{align-self:start !important}
+#app .rv31-round-action,#app .rv32-circle-action{
+  border-color:#d7e2e5 !important;background:#fff !important;color:#365a6d !important;
+  box-shadow:0 2px 10px rgba(13,42,58,.035) !important;
+}
+#app .rv31-round-action:hover,#app .rv32-circle-action:hover{
+  border-color:#a8cecb !important;background:#eff8f6 !important;color:#087d80 !important;
+}
+/* Make muted information read as secondary, not disabled. */
+#app .rv31-map-stat span,#app .rv31-governance-note,#app .rv32-section-heading small,
+#app .rv32-governance-item small,#app .rv33-relationship-intro small,#app .rv33-life-lane-head span,
+#app .rv33-context small,#app .rv33-governance-mini span{color:#5c7485 !important}
+
+@media(max-width:1100px){
+  html body #app .nrd-v27.nrd--update{left:10vw !important;right:10vw !important}
+  html body #app .nrd-v27.nrd--publication{left:3vw !important;right:3vw !important}
+  html body #app .nrd-v27-publication{grid-template-columns:92px minmax(0,1fr) !important;padding:50px 34px 42px !important}
+  html body #app .nrd-v27-publication .nrd-v27-object-context{grid-column:2;margin-top:12px;border-left:0;border-top:1px solid #dce5e7;padding:18px 0 0 !important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  html body #app .nrd-v27.nrd--publication,
+  html body #app .nrd-v27.nrd--highlight,
+  html body #app .nrd-v27.nrd--update{
+    left:0 !important;right:0 !important;top:0 !important;bottom:0 !important;
+    width:100vw !important;height:100vh !important;border-radius:0 !important;
+  }
+  html body #app .nrd-v27.nrd--article{left:0 !important;top:0 !important;width:100vw !important;height:100vh !important;border-radius:0 !important}
+  html body #app .nrd-v38-head-action span{display:none !important}
+  html body #app .nrd-v38-head-action{width:30px !important;padding:0 !important;justify-content:center !important}
+  html body #app .nrd-v38-reading-context>em{display:none !important}
+  html body #app .nrd-v27-details{top:64px !important;width:calc(100% - 28px) !important}
+  #app .rv32-record-hero{padding-left:24px !important;border-left-width:2px !important}
+}
+@media(max-width:620px){
+  html body #app .news-v38-focus-peek{width:calc(100vw - 24px) !important}
+  html body #app .nrd-v27-readingbar{grid-template-columns:auto 1fr auto !important;padding-left:12px !important;padding-right:10px !important}
+  html body #app .nrd-v27-back b{display:none !important}
+  html body #app .nrd-v38-reading-context>span{font-size:9.5px !important}
+  #app .rv31-line-mark{width:46px;height:46px}
+}
+
+/* Direct-open cards with a deliberate secondary Quick preview control. */
+html body #app .knowledge-card--v23[role="button"]{cursor:pointer}
+html body #app .knowledge-card--v23[role="button"]:focus-visible{
+  outline:2px solid rgba(10,142,144,.42) !important;
+  outline-offset:3px !important;
+}
+html body #app .news-v38-peek-action{color:#587181 !important}
+html body #app .news-v38-peek-action:hover{color:#087f82 !important;background:#edf6f5 !important}
