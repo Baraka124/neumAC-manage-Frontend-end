@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=38">
+    <link rel="stylesheet" href="style.css?v=39">
 
     
 </head>
@@ -6218,22 +6218,24 @@
                      RESEARCH EDITOR — object-aware clinical research authoring
                 ============================================================ -->
                 <div v-if="newsModal.show" class="news-v24-studio-overlay news-v27-editor-overlay" @click.self="closeNewsEditor()">
-                    <section class="news-v24-studio news-v27-editor news-v29-editor" :class="['is-' + newsModal.form.post_type, 'stage-' + newsModal.stage, {'is-focus':newsEditorFocusMode}]">
+                    <section class="news-v24-studio news-v27-editor news-v29-editor" :class="['is-' + newsModal.form.post_type, 'stage-' + newsModal.stage, {'is-focus':newsEditorFocusMode,'is-preview-off':!newsEditorPreviewOpen}]">
 
                         <header class="news-v24-studio-head news-v27-editor-head">
                             <div class="news-v24-studio-brand">
                                 <button v-if="newsModal.stage==='compose' && newsModal.mode==='add'" class="news-v24-backtype" @click="newsModal.stage='choose'" title="Choose another type">←</button>
                                 <span class="news-v24-studio-mark">R</span>
                                 <div>
-                                    <div class="news-v24-studio-kicker">Research Library · neumAC</div>
-                                    <strong v-if="newsModal.stage==='choose'">New research record</strong>
-                                    <strong v-else>{{ newsModal.mode==='add' ? 'Create' : 'Edit' }} {{ {'publication':'publication','article':'article','highlight':'highlight','update':'update'}[newsModal.form.post_type] }}</strong>
+                                    <div class="news-v24-studio-kicker">neumAC · Research stewardship</div>
+                                    <strong v-if="newsModal.stage==='choose'">Create a research record</strong>
+                                    <strong v-else>Research Editor · {{ {'publication':'Publication','article':'Article','highlight':'Highlight','update':'Update'}[newsModal.form.post_type] }}</strong>
                                 </div>
                             </div>
                             <div class="news-v24-studio-headright">
+                                <span v-if="newsModal.stage==='compose'" class="news-v39-object-chip">{{ {'publication':'Scholarly record','article':'Long-form article','highlight':'Visual highlight','update':'Department update'}[newsModal.form.post_type] }}</span>
                                 <span v-if="newsModal.stage==='compose'" class="news-v24-save-state" :class="{'is-dirty':newsModal.saveState==='Unsaved changes','is-saving':newsModal.busy}">{{ newsModal.saveState }}</span>
+                                <button v-if="newsModal.stage==='compose'" class="news-v39-preview-trigger" @click="newsEditorPreviewOpen=!newsEditorPreviewOpen" :class="{'is-active':newsEditorPreviewOpen}" :title="newsEditorPreviewOpen ? 'Hide preview' : 'Show preview'"><i class="fas fa-eye"></i><span>{{ newsEditorPreviewOpen ? 'Preview on' : 'Preview off' }}</span></button>
                                 <button v-if="newsModal.stage==='compose' && newsModal.form.post_type==='article'" class="news-v29-focus-trigger" @click="newsEditorFocusMode=!newsEditorFocusMode" :class="{'is-active':newsEditorFocusMode}" :title="newsEditorFocusMode ? 'Exit focused writing' : 'Focused writing'">⌁ <span>{{ newsEditorFocusMode ? 'Exit focus' : 'Focus' }}</span></button>
-                                <button v-if="newsModal.stage==='compose'" class="news-v27-details-trigger" @click="newsEditorDetailsOpen=!newsEditorDetailsOpen" :class="{'is-active':newsEditorDetailsOpen}" title="Record details">ⓘ <span>Details</span></button>
+                                <button v-if="newsModal.stage==='compose'" class="news-v27-details-trigger" @click="newsEditorDetailsOpen=!newsEditorDetailsOpen" :class="{'is-active':newsEditorDetailsOpen}" title="Record stewardship">ⓘ <span>Stewardship</span></button>
                                 <button class="news-v24-close" @click="closeNewsEditor()" aria-label="Close" title="Close"><span></span><span></span></button>
                             </div>
                         </header>
@@ -6272,6 +6274,13 @@
                                         <button @click="newsModal.previewMode='compare'" :class="{'is-active':newsModal.previewMode==='compare'}">Compare</button>
                                     </div>
                                 </div>
+
+                                <section class="news-v39-readiness" aria-label="Record completeness">
+                                    <div class="news-v39-readiness-copy"><span>Record completeness</span><strong>{{ newsReviewReadiness(newsModal.form).score }}%</strong></div>
+                                    <div class="news-v39-readiness-meter"><i :style="{width:newsReviewReadiness(newsModal.form).score+'%'}"></i></div>
+                                    <small v-if="newsReviewReadiness(newsModal.form).missing.length">Still to record: {{ newsReviewReadiness(newsModal.form).missing.slice(0,3).join(' · ') }}<template v-if="newsReviewReadiness(newsModal.form).missing.length>3"> · +{{ newsReviewReadiness(newsModal.form).missing.length-3 }}</template></small>
+                                    <small v-else>Core metadata recorded · ready for publication check</small>
+                                </section>
 
                                 <div v-if="newsModal.form.post_type==='publication'" class="news-v24-editor-body news-v24-editor-publication news-v27-publication-editor">
                                     <div class="news-v24-object-label">Publication</div>
@@ -6328,7 +6337,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 </div>
 
                                 <aside v-if="newsEditorDetailsOpen" class="news-v27-record-inspector">
-                                    <header><div><span>Record details</span><strong>{{ newsModal.form.post_type }}</strong></div><button @click="newsEditorDetailsOpen=false" aria-label="Close details">×</button></header>
+                                    <header><div><span>Record stewardship</span><strong>{{ newsModal.form.post_type }}</strong></div><button @click="newsEditorDetailsOpen=false" aria-label="Close stewardship">×</button></header>
                                     <div class="news-v27-inspector-fields">
                                         <label v-if="newsModal.form.post_type!=='publication'"><span>Author</span><select v-model="newsModal.form.author_id"><option value="">Select author</option><option v-for="s in allStaffLookup" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></label>
                                         <label><span>Research line</span><select v-model="newsModal.form.research_line_id"><option value="">No research line</option><option v-for="l in researchLines" :key="l.id" :value="l.id">L{{ l.line_number }} — {{ l.short_name || l.research_line_name || l.name }}</option></select></label>
@@ -6340,7 +6349,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
 
                             <aside class="news-v24-live-preview news-v27-live-preview" :class="['mode-' + newsModal.previewMode, 'preview-' + newsModal.form.post_type]">
-                                <header><div><span>{{ newsModal.previewMode==='public' ? 'Public web preview' : newsModal.previewMode==='reader' ? 'Reader preview' : newsModal.previewMode==='compare' ? 'Internal / Public comparison' : 'Library preview' }}</span><small v-if="newsModal.previewMode==='public'">Presentation preview · final web layout may vary</small><small v-else-if="newsModal.previewMode==='reader'">Internal reading view</small><small v-else-if="newsModal.previewMode==='compare'">Check what changes when the record is Public</small><small v-else>Research Library</small></div><span class="news-v24-preview-status">{{ newsModal.form.status==='published' ? 'Published' : 'Draft' }}</span></header>
+                                <header><div><span>{{ newsModal.previewMode==='public' ? 'Public web' : newsModal.previewMode==='reader' ? 'Reader' : newsModal.previewMode==='compare' ? 'Internal / Public' : 'Library' }} preview</span><small v-if="newsModal.previewMode==='public'">Presentation preview · final web layout may vary</small><small v-else-if="newsModal.previewMode==='reader'">Internal reading view</small><small v-else-if="newsModal.previewMode==='compare'">Check what changes when the record is Public</small><small v-else>Research Library</small></div><span class="news-v24-preview-status">{{ newsModal.form.status==='published' ? 'Published' : 'Draft' }}</span></header>
                                 <div v-if="newsModal.previewMode==='compare'" class="news-v28-compare-preview">
                                     <section><header><b>Internal</b><span>Department context retained</span></header><h3>{{ newsModal.form.title || 'Untitled record' }}</h3><p>{{ newsPlainBody(newsModal.form.body) || 'No body content yet.' }}</p><dl><div><dt>Author</dt><dd>{{ newsAuthorName(newsModal.form.author_id) }}</dd></div><div><dt>Research line</dt><dd>{{ newsLineName(newsModal.form.research_line_id) }}</dd></div><div><dt>Status</dt><dd>{{ newsModal.form.status }}</dd></div></dl></section>
                                     <section><header><b>Public web</b><span>{{ newsModal.form.is_public ? 'Will be reflected on the web' : 'Preview only · currently Internal' }}</span></header><h3>{{ newsModal.form.title || 'Untitled record' }}</h3><p>{{ newsPlainBody(newsModal.form.body) || 'No body content yet.' }}</p><dl><div><dt>Type</dt><dd>{{ newsModal.form.post_type }}</dd></div><div v-if="newsModal.form.research_line_id"><dt>Research line</dt><dd>{{ newsLineName(newsModal.form.research_line_id) }}</dd></div><div><dt>Visibility</dt><dd>{{ newsModal.form.is_public ? 'Public' : 'Internal' }}</dd></div></dl></section>
@@ -10069,9 +10078,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                 <!-- RIGHT: form -->
                 <div class="sm-right">
                     <div class="sm-form-header">
-                        <div class="sm-form-title">
+                        <div class="sm-form-title rv39-editor-title">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                            {{ researchLineModal.mode === 'add' ? 'New Research Line' : 'Edit Research Line' }}
+                            <div><span>Research programme</span><strong>{{ researchLineModal.mode === 'add' ? 'Create research line' : 'Edit research line' }}</strong><small>Purpose · scope · programme identity</small></div>
                         </div>
                         <button class="sm-form-close" @click="researchLineModal.show = false" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
@@ -10103,26 +10112,26 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                         <div class="sm-field" :class="{'has-error': fieldErrors.researchLine?.research_line_name}">
-                            <div class="sm-label">Line Name <span class="req">·</span></div>
+                            <div class="sm-label">Programme name <span class="req">·</span></div>
                             <input type="text" class="sm-input" :class="{filled: researchLineModal.form.research_line_name}"
                                    v-model="researchLineModal.form.research_line_name" required
-                                   placeholder="e.g. Oncología Torácica"
+                                   placeholder="e.g. Thoracic Oncology"
                                    @input="clearFieldError('researchLine','research_line_name')">
                             <small v-if="fieldErrors.researchLine?.research_line_name" class="error-text">{{ fieldErrors.researchLine.research_line_name }}</small>
                         </div>
 
                         <div class="sm-field">
-                            <div class="sm-label">Description</div>
+                            <div class="sm-label">Programme description</div>
                             <textarea class="sm-input nd-l062" v-model="researchLineModal.form.description"
                                       rows="2" 
                                       placeholder="Brief description of focus and goals…"></textarea>
                         </div>
 
                         <div class="sm-field">
-                            <div class="sm-label">Scope / Capabilities <span class="hint">— shown on the research line card</span></div>
+                            <div class="sm-label">Scope &amp; capabilities <span class="hint">— what this programme can investigate or validate</span></div>
                             <input type="text" class="sm-input" :class="{filled: researchLineModal.form.capabilities}"
                                    v-model="researchLineModal.form.capabilities"
-                                   placeholder="e.g. Trasplante, HTP, Fibrosis Pulmonar">
+                                   placeholder="e.g. transplantation, pulmonary hypertension, pulmonary fibrosis">
                         </div>
 
                         <div class="sm-field">
@@ -10151,7 +10160,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <button class="sm-btn-back" @click="researchLineModal.show = false">Cancel</button>
                         <button class="sm-btn-save" @click="saveResearchLine" :disabled="saving">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                            {{ saving ? 'Saving…' : researchLineModal.mode === 'add' ? 'Add Research Line' : 'Save changes' }}
+                            {{ saving ? 'Saving…' : researchLineModal.mode === 'add' ? 'Create research line' : 'Save changes' }}
                         </button>
                     </div>
                 </div>
@@ -10162,7 +10171,7 @@ Use Section heading to structure longer clinical or research articles."></textar
         
 
         <!-- ============ CLINICAL TRIAL MODAL ============ -->
-        <div v-if="clinicalTrialModal.show" class="modal-overlay">
+        <div v-if="clinicalTrialModal.show" class="modal-overlay" @click.self="requestCloseClinicalTrialEditor">
             <div class="sm-modal nd-l061 rv32-study-editor" >
 
                 <!-- ══ LEFT: trial identity preview ══ -->
@@ -10199,6 +10208,21 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </span>
                         </div>
                     </div>
+
+                    <section class="rv39-study-stewardship">
+                        <div class="rv39-completeness-head"><span>Record completeness</span><strong>{{ getStudyCompleteness(clinicalTrialModal.form).percent }}%</strong></div>
+                        <div class="rv39-completeness-bar"><i :style="{width:getStudyCompleteness(clinicalTrialModal.form).percent+'%'}"></i></div>
+                        <small v-if="getStudyCompleteness(clinicalTrialModal.form).missing.length">Still to record: {{ getStudyCompleteness(clinicalTrialModal.form).missing.slice(0,2).join(' · ') }}<template v-if="getStudyCompleteness(clinicalTrialModal.form).missing.length>2"> · +{{ getStudyCompleteness(clinicalTrialModal.form).missing.length-2 }}</template></small>
+                        <small v-else>Core study record complete</small>
+                        <nav class="rv39-record-map" aria-label="Study record sections">
+                            <button type="button" @click="scrollResearchEditorSection('rv39-study-identity')"><b>01</b><span>Identity</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-study-design')"><b>02</b><span>Clinical design</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-study-governance')"><b>03</b><span>Governance</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-study-delivery')"><b>04</b><span>Delivery</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-study-protocol')"><b>05</b><span>Protocol</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-study-team')"><b>06</b><span>Team</span></button>
+                        </nav>
+                    </section>
 
                     <!-- PI + research line detail -->
                     <div  class="nd-l057">
@@ -10265,18 +10289,18 @@ Use Section heading to structure longer clinical or research articles."></textar
                 <!-- ══ RIGHT: FORM ══ -->
                 <div class="sm-right">
                     <div class="sm-form-header">
-                        <div class="sm-form-title">
+                        <div class="sm-form-title rv39-editor-title">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                            {{ clinicalTrialModal.mode === 'add' ? 'New clinical study' : 'Edit clinical study' }}
+                            <div><span>Clinical study record</span><strong>{{ clinicalTrialModal.mode === 'add' ? 'Create study' : 'Edit study' }}</strong><small>Evidence · governance · delivery</small></div>
                         </div>
-                        <button class="sm-form-close" @click="clinicalTrialModal.show = false" aria-label="Close" title="Close">
+                        <button class="sm-form-close" @click="requestCloseClinicalTrialEditor" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
                         </button>
                     </div>
 
                     <div class="sm-form-body rv34-study-form">
 
-                        <section class="rv34-editor-section">
+                        <section class="rv34-editor-section" id="rv39-study-identity">
                             <header><div><span>Study identity</span><strong>Classify the study and place it within the research programme.</strong></div></header>
                             <div class="sm-row">
                                 <div class="sm-field">
@@ -10331,7 +10355,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                         </div>
 
-                        <section class="rv34-editor-section">
+                        <section class="rv34-editor-section" id="rv39-study-design">
                             <header><div><span>Clinical design</span><strong>Indication, population, sponsor and delivery context</strong></div></header>
                             <div class="sm-row">
                                 <div class="sm-field" v-if="clinicalTrialModal.form.study_type === 'Clinical Trial'">
@@ -10377,7 +10401,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                         </section>
 
-                        <section class="rv34-editor-section rv34-editor-section--governance">
+                        <section class="rv34-editor-section rv34-editor-section--governance" id="rv39-study-governance">
                             <header><div><span>Research governance</span><strong>Protocol · ethics / CEIm · accountability</strong></div><small>Record only what applies to this study.</small></header>
                             <div class="sm-row">
                                 <div class="sm-field" :class="{'has-error': fieldErrors.trial?.protocol_id}"><div class="sm-label">Protocol ID <span class="hint">— if applicable</span></div><input type="text" class="sm-input" v-model="clinicalTrialModal.form.protocol_id" placeholder="e.g. NCT12345678 / local protocol code"><small v-if="fieldErrors.trial?.protocol_id" class="error-text">{{ fieldErrors.trial?.protocol_id }}</small></div>
@@ -10393,7 +10417,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <div class="sm-field"><div class="sm-label">Study contact email</div><input type="email" class="sm-input" v-model="clinicalTrialModal.form.contact_email" placeholder="study@hospital.org"></div>
                         </section>
 
-                        <section class="rv34-editor-section">
+                        <section class="rv34-editor-section" id="rv39-study-delivery">
                             <header><div><span>Recruitment &amp; timeline</span><strong>Operational progression</strong></div><small>Recruitment metrics remain distinct from overall study stage.</small></header>
                             <div class="rv34-metric-inputs">
                                 <label><span>Target recruitment</span><input type="number" min="0" v-model.number="clinicalTrialModal.form.enrollment_target" placeholder="0"></label>
@@ -10407,7 +10431,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <div class="sm-field"><div class="sm-label">Actual end <span class="hint">— when completed</span></div><input type="date" class="sm-input" v-model="clinicalTrialModal.form.actual_end_date" :min="clinicalTrialModal.form.start_date || undefined"></div>
                         </section>
 
-                        <section class="rv34-editor-section">
+                        <section class="rv34-editor-section" id="rv39-study-protocol">
                             <header><div><span>Protocol context</span><strong>Description &amp; eligibility</strong></div></header>
                             <div class="sm-field"><div class="sm-label">Study description</div><textarea class="sm-input rv34-textarea" rows="4" v-model="clinicalTrialModal.form.description" placeholder="Purpose, design and relevant clinical context."></textarea></div>
                             <div class="sm-row rv34-criteria-grid">
@@ -10416,7 +10440,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                         </section>
 
-                        <section class="rv34-editor-section">
+                        <section class="rv34-editor-section" id="rv39-study-milestones">
                             <header><div><span>Progression</span><strong>Study milestones</strong></div><small>Operational milestones already supported by the current record schema.</small></header>
                             <div class="rv34-milestone-editor">
                                 <div v-if="(clinicalTrialModal.form.milestones || []).length" class="rv34-milestone-list">
@@ -10434,7 +10458,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                         </section>
 
-                        <section class="rv34-editor-section">
+                        <section class="rv34-editor-section" id="rv39-study-team">
                             <header><div><span>People</span><strong>Study team</strong></div></header>
                             <div class="sm-row">
                                 <div class="sm-field"><div class="sm-label">Principal Investigator <span class="req">·</span></div><select class="sm-select" v-model="clinicalTrialModal.form.principal_investigator_id"><option value="">— Not assigned —</option><option v-for="s in medicalStaff" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></div>
@@ -10466,7 +10490,8 @@ Use Section heading to structure longer clinical or research articles."></textar
                     </div>
 
                     <div class="sm-form-footer">
-                        <button class="sm-btn-back" @click="clinicalTrialModal.show = false">Cancel</button>
+                        <span v-if="clinicalTrialEditorDirty" class="rv39-unsaved-indicator">Unsaved changes</span>
+                        <button class="sm-btn-back" @click="requestCloseClinicalTrialEditor">Cancel</button>
                         <button class="sm-btn-save" @click="saveClinicalTrial" :disabled="saving">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                             {{ saving ? 'Saving…' : clinicalTrialModal.mode === 'add' ? 'Add study' : 'Save changes' }}
@@ -10480,16 +10505,22 @@ Use Section heading to structure longer clinical or research articles."></textar
         
 
         <!-- ============ INNOVATION PROJECT MODAL ============ -->
-        <div v-if="innovationProjectModal.show" class="modal-overlay">
+        <div v-if="innovationProjectModal.show" class="modal-overlay" @click.self="requestCloseInnovationProjectEditor">
             <div class="modal-container modal-wide rv32-project-editor">
                 <div class="modal-header">
-                    <div class="modal-title">
+                    <div class="modal-title rv39-editor-title">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/><path d="M7.5 16H12"/></svg>
-                        {{ innovationProjectModal.mode === 'add' ? 'New clinical innovation' : 'Edit clinical innovation' }}
+                        <div><span>Clinical innovation record</span><strong>{{ innovationProjectModal.mode === 'add' ? 'Create innovation' : 'Edit innovation' }}</strong><small>Need · development · validation · implementation</small></div>
                     </div>
-                    <button class="modal-close" @click="innovationProjectModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                    <button class="modal-close" @click="requestCloseInnovationProjectEditor" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
                 <div class="modal-body">
+
+                    <section class="rv39-project-stewardship">
+                        <div class="rv39-project-stewardship-copy"><span>Innovation record</span><h2>{{ innovationProjectModal.form.title || 'Untitled clinical innovation' }}</h2><p>{{ innovationProjectModal.form.research_line_id ? getResearchLineName(innovationProjectModal.form.research_line_id) : 'Research line not assigned' }} · {{ formatInnovationStage(innovationProjectModal.form.current_stage) }}</p></div>
+                        <div class="rv39-project-completeness"><div><span>Record completeness</span><strong>{{ getProjectCompleteness(innovationProjectModal.form).percent }}%</strong></div><div class="rv39-completeness-bar"><i :style="{width:getProjectCompleteness(innovationProjectModal.form).percent+'%'}"></i></div><small v-if="getProjectCompleteness(innovationProjectModal.form).missing.length">Still to record: {{ getProjectCompleteness(innovationProjectModal.form).missing.slice(0,2).join(' · ') }}<template v-if="getProjectCompleteness(innovationProjectModal.form).missing.length>2"> · +{{ getProjectCompleteness(innovationProjectModal.form).missing.length-2 }}</template></small><small v-else>Core innovation record complete</small></div>
+                        <nav class="rv39-project-map" aria-label="Innovation record sections"><button type="button" @click="scrollResearchEditorSection('rv39-project-identity')">Identity</button><button type="button" @click="scrollResearchEditorSection('rv39-project-scope')">Clinical scope</button><button type="button" @click="scrollResearchEditorSection('rv39-project-readiness')">Readiness</button><button type="button" @click="scrollResearchEditorSection('rv39-project-milestones')">Milestones</button><button type="button" @click="scrollResearchEditorSection('rv39-project-team')">Team</button><button type="button" @click="scrollResearchEditorSection('rv39-project-publishing')">Publishing</button></nav>
+                    </section>
 
                     <!-- Stage picker — visual pipeline selector at top of modal -->
                     <div class="ipm-stage-picker">
@@ -10517,7 +10548,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4" id="rv39-project-identity">
                         <!-- Title -->
                         <div class="form-group col-span-2" :class="{ 'has-error': fieldErrors.project?.title }">
                             <label class="form-label">Project title *</label>
@@ -10576,7 +10607,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                       placeholder="Describe the clinical or operational problem this project addresses."></textarea>
                         </div>
 
-                        <section class="rv34-editor-section rv34-project-scope col-span-2">
+                        <section class="rv34-editor-section rv34-project-scope col-span-2" id="rv39-project-scope">
                             <header><div><span>Clinical scope</span><strong>Define the clinical focus and intended validation scope.</strong></div></header>
                             <div class="sm-field">
                                 <div class="sm-label">Clinical focus <span class="hint">— disease, population or pathway</span></div>
@@ -10613,7 +10644,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <small class="form-help">Used to improve internal discovery and filtering.</small>
                         </div>
 
-                        <section class="rv34-editor-section rv34-project-readiness col-span-2">
+                        <section class="rv34-editor-section rv34-project-readiness col-span-2" id="rv39-project-readiness">
                             <header><div><span>Readiness &amp; funding</span><strong>Maturity, regulatory route and implementation context</strong></div></header>
                             <div class="sm-row">
                                 <div class="sm-field"><div class="sm-label">TRL</div><select class="sm-select" v-model.number="innovationProjectModal.form.trl_level"><option :value="null">Not recorded</option><option v-for="n in 9" :key="n" :value="n">TRL {{ n }}</option></select></div>
@@ -10666,7 +10697,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
                     </div><!-- /grid -->
 
-                        <section class="rv34-editor-section rv34-project-milestones">
+                        <section class="rv34-editor-section rv34-project-milestones" id="rv39-project-milestones">
                             <header><div><span>Progression</span><strong>Project milestones</strong></div><small>Development, validation and implementation checkpoints.</small></header>
                             <div class="rv34-milestone-editor">
                                 <div v-if="(innovationProjectModal.form.milestones || []).length" class="rv34-milestone-list">
@@ -10685,7 +10716,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </section>
 
                         <!-- Team section -->
-                        <div class="sm-section-title nd-l041" >Project team &amp; collaborators</div>
+                        <div class="sm-section-title nd-l041" id="rv39-project-team">Project team &amp; collaborators</div>
                         <div  class="nd-l040">
                             <div class="sm-field">
                                 <div class="sm-label">Clinical / project lead</div>
@@ -10740,7 +10771,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                 </div><!-- /modal-body (external team end) -->
 
                 <!-- ── NEW FIELDS: URLs, Nature, Featured ─────────────── -->
-                <div  class="nd-l034 nd-v040">
+                <div id="rv39-project-publishing" class="nd-l034 nd-v040">
 
                     <!-- Project nature: clinical study vs innovation -->
                     <div class="sm-field nd-l028" >
@@ -10791,10 +10822,11 @@ Use Section heading to structure longer clinical or research articles."></textar
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" @click="innovationProjectModal.show = false">Cancel</button>
+                    <span v-if="innovationProjectEditorDirty" class="rv39-unsaved-indicator">Unsaved changes</span>
+                    <button class="btn btn-secondary" @click="requestCloseInnovationProjectEditor">Cancel</button>
                     <button class="btn btn-primary" @click="saveInnovationProject" :disabled="saving">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        {{ saving ? 'Saving...' : (innovationProjectModal.mode === 'add' ? 'Add Project' : 'Save changes') }}
+                        {{ saving ? 'Saving…' : (innovationProjectModal.mode === 'add' ? 'Create innovation' : 'Save changes') }}
                     </button>
                 </div>
             </div>
@@ -12182,7 +12214,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=38"></script>
+    <script src="app.js?v=39"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
