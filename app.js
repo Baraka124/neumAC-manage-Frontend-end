@@ -6440,6 +6440,7 @@ document.addEventListener('DOMContentLoaded', () => {
           author_id: '', research_line_id: '', is_public: false,
           status: 'draft', expires_at: '', published_at: '',
           journal_name: '', authors_text: '', doi: '', is_featured: false,
+          keywords: [], _keywordInput: '',
           _imageInput: ''  // local draft input
         }
       })
@@ -6451,6 +6452,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return t.trim() === '' ? 0 : t.trim().split(/\s+/).length
       })
       const newsWordLimit  = computed(() => newsModal.form.post_type === 'update' ? 80 : newsModal.form.post_type === 'highlight' ? 120 : newsModal.form.post_type === 'article' ? 1500 : 0)
+
+      // V42 — article index terms. Prefer a real backend `keywords` field when the
+      // API exposes it; otherwise keep a browser-local sidecar so the current
+      // workspace can still index and search terms without breaking older backends.
+      const newsKeywordBackendCapable = ref(false)
+      const normaliseNewsKeywords = (value) => {
+        const raw = Array.isArray(value) ? value : (typeof value === 'string' ? value.split(/[,;|]/) : [])
+        const out = []
+        const seen = new Set()
+        for (const item of raw) {
+          const kw = String(item ?? '').trim().replace(/\s+/g, ' ').slice(0, 28)
+          const key = kw.toLocaleLowerCase()
+          if (!kw || seen.has(key)) continue
+          seen.add(key); out.push(kw)
+          if (out.length >= 10) break
+        }
+        return out
+      }
+      const _newsKeywordStorageKey = (id) => `neumdesk.researchLibrary.indexTerms.${id}`
+      const _readLocalNewsKeywords = (id) => {
+        if (!id) return []
+        try { return normaliseNewsKeywords(JSON.parse(localStorage.getItem(_newsKeywordStorageKey(id)) || '[]')) } catch { return [] }
+      }
+      const _saveLocalNewsKeywords = (id, value) => {
+        if (!id) return
+        try { localStorage.setItem(_newsKeywordStorageKey(id), JSON.stringify(normaliseNewsKeywords(value))) } catch {}
+      }
+      const _decorateNewsKeywords = (post) => {
+        if (!post || typeof post !== 'object') return post
+        const backend = Object.prototype.hasOwnProperty.call(post, 'keywords')
+        if (backend) newsKeywordBackendCapable.value = true
+        const keywords = normaliseNewsKeywords(backend ? post.keywords : _readLocalNewsKeywords(post.id))
+        return { ...post, keywords }
+      }
 
       // ── Helpers ─────────────────────────────────────────────
       const formatAuthorName = (staffId) => {
@@ -6510,6 +6545,8 @@ document.addEventListener('DOMContentLoaded', () => {
           newsModal.form.journal_name = ''
           newsModal.form.authors_text = ''
           newsModal.form.doi = ''
+          newsModal.form.keywords = []
+          newsModal.form._keywordInput = ''
           newsModal.form._imageInput = ''
         }
         newsModal.form.post_type = t
@@ -6540,6 +6577,7 @@ document.addEventListener('DOMContentLoaded', () => {
             (p.journal_name || '').toLowerCase().includes(q) ||
             (p.authors_text || '').toLowerCase().includes(q) ||
             (p.doi || '').toLowerCase().includes(q) ||
+            normaliseNewsKeywords(p.keywords).join(' ').toLowerCase().includes(q) ||
             getLineName(p.research_line_id).toLowerCase().includes(q)
           )
         }
@@ -6554,7 +6592,9 @@ document.addEventListener('DOMContentLoaded', () => {
           // Must unwrap .data — if we use getList/ensureArray the Object.values()
           // fallback would flatten the nested author/research_line join objects.
           const res = await API.request('/api/news')
-          newsPosts.value = res?.data || Utils.ensureArray(res) || []
+          const rows = res?.data || Utils.ensureArray(res) || []
+          newsKeywordBackendCapable.value = rows.some(p => p && Object.prototype.hasOwnProperty.call(p, 'keywords'))
+          newsPosts.value = rows.map(_decorateNewsKeywords)
         } catch (e) { newsPosts.value = []; console.error('[neumDesk] loadNews failed:', e); showToast('Error', 'Could not load the Research Library', 'error') }
         finally { newsLoading.value = false; newsLoaded.value = true }
       }
@@ -6562,7 +6602,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (newsLoaded.value || newsLoading.value) return
         try {
           const res = await API.request('/api/news')
-          newsPosts.value = res?.data || Utils.ensureArray(res) || []
+          const rows = res?.data || Utils.ensureArray(res) || []
+          newsKeywordBackendCapable.value = rows.some(p => p && Object.prototype.hasOwnProperty.call(p, 'keywords'))
+          newsPosts.value = rows.map(_decorateNewsKeywords)
           newsLoaded.value = true
         } catch (e) { console.error('[neumDesk] preloadNews failed:', e) }
       }
@@ -6572,7 +6614,7 @@ document.addEventListener('DOMContentLoaded', () => {
           id: null, post_type: 'article', title: '', body: '', featured_image_url: '',
           image_urls: [], author_id: '', research_line_id: '', is_public: false,
           status: 'draft', expires_at: autoExpiry('article'), published_at: '',
-          journal_name: '', authors_text: '', doi: '', is_featured: false, _imageInput: ''
+          journal_name: '', authors_text: '', doi: '', is_featured: false, keywords: [], _keywordInput: '', _imageInput: ''
         }, 'add')
         newsModal.stage = 'choose'
         newsModal.previewMode = 'library'
@@ -6594,6 +6636,8 @@ document.addEventListener('DOMContentLoaded', () => {
           published_at:       post.published_at ? post.published_at.split('T')[0] : '',
           image_urls:         Array.isArray(post.image_urls) ? [...post.image_urls] : (post.featured_image_url ? [post.featured_image_url] : []),
           is_featured:        !!post.is_featured,
+          keywords:           normaliseNewsKeywords(post.keywords),
+          _keywordInput: '',
           _imageInput: ''
         }, 'edit')
         newsModal.stage = 'compose'
@@ -6625,7 +6669,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const publishedAt = status === 'published'
           ? (newsModal.form.published_at || new Date().toISOString().split('T')[0])
           : (newsModal.form.published_at || null)
-        return {
+        const payload = {
           post_type:          newsModal.form.post_type,
           title:              _t(newsModal.form.title),
           body:               _t(newsModal.form.body) || null,
@@ -6642,6 +6686,8 @@ document.addEventListener('DOMContentLoaded', () => {
           doi:                _t(newsModal.form.doi) || null,
           word_count:         newsWordCount.value
         }
+        if (newsKeywordBackendCapable.value) payload.keywords = normaliseNewsKeywords(newsModal.form.keywords)
+        return payload
       }
 
       // Save inside the Research Editor and return the fresh object. Publishing callers can then
@@ -6672,6 +6718,12 @@ document.addEventListener('DOMContentLoaded', () => {
             newsModal.form.status = fresh.status
             newsModal.form.is_public = !!fresh.is_public
             newsModal.form.published_at = fresh.published_at ? fresh.published_at.split('T')[0] : newsModal.form.published_at
+            if (!newsKeywordBackendCapable.value) {
+              _saveLocalNewsKeywords(fresh.id, newsModal.form.keywords)
+              fresh.keywords = normaliseNewsKeywords(newsModal.form.keywords)
+              const idx = newsPosts.value.findIndex(p => String(p.id) === String(fresh.id))
+              if (idx !== -1) newsPosts.value[idx] = { ...newsPosts.value[idx], keywords: fresh.keywords }
+            }
           }
           newsModal.saveState = publishNow ? 'Published' : 'Saved just now'
           setTimeout(() => { if (newsModal.show && newsModal.saveState === 'Saved just now') newsModal.saveState = 'Saved' }, 2200)
@@ -6687,8 +6739,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Strip joined/virtual fields before any PUT to backend
       const cleanPost = (post) => {
-        const { author, research_line, ...rest } = post
-        return rest
+        const { author, research_line, keywords, _keywordInput, ...rest } = post
+        return newsKeywordBackendCapable.value ? { ...rest, keywords: normaliseNewsKeywords(keywords) } : rest
       }
 
       const publishNews = async (post) => {
@@ -6753,6 +6805,7 @@ document.addEventListener('DOMContentLoaded', () => {
           onConfirm: async () => {
             try {
               await API.request(`/api/news/${post.id}`, { method: 'DELETE' })
+              try { localStorage.removeItem(_newsKeywordStorageKey(post.id)) } catch {}
               newsPosts.value = (newsPosts.value || []).filter(p => p.id !== post.id)
               if (typeof onDeleted === 'function') onDeleted()
               showToast('Deleted', 'Record deleted', 'success')
@@ -6783,7 +6836,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       return {
-        newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
+        newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews, normaliseNewsKeywords, newsKeywordBackendCapable,
         newsWordCount, newsWordLimit, activeNewsMenu,
         loadNews, preloadNews, showAddNewsModal, chooseNewsType, editNews, saveNews,
         publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic,
@@ -7685,7 +7738,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashOps = useDashboard({ medicalStaff, allStaffLookup, rotations, absences, onCallSchedule, trainingUnits })
 
         const newsOps = useNews({ showToast, showConfirmation, medicalStaff, allStaffLookup, researchLines: researchOps.researchLines })
-
+        // V42 boot hardening — bind the Research Library state before any watch/computed
+        // below can synchronously evaluate it. V41 declared this destructuring later in
+        // setup, which put `newsModal` in the temporal dead zone during refresh.
+        const { newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
+                newsWordCount, newsWordLimit,
+                loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews,
+                publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic: toggleNewsPublic,
+                formatAuthorName: newsAuthorName, getLineName: newsLineName } = newsOps
         // ══════════════════════════════════════════════════════════════════
         // V31 · RESEARCH PORTFOLIO INTELLIGENCE
         // View-model only. Uses fields already present in the existing research
@@ -8001,7 +8061,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const newsReaderCompact = ref(false)
         const newsEditorFocusMode = ref(false)
         const newsEditorPreviewOpen = ref(true)
-        watch(() => newsModal.show, show => { if (show) newsEditorPreviewOpen.value = true })
+        watch(() => newsOps.newsModal.show, show => { if (show) newsEditorPreviewOpen.value = true })
 
         // V37 — Research Library uses its own full-height scroller, matching Research.
         // Centralising this avoids window/content-area scroll mismatches that previously
@@ -8106,7 +8166,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if(newsFilters.scope==='public') rows=rows.filter(p=>p.is_public)
           if(newsFilters.scope==='internal') rows=rows.filter(p=>!p.is_public)
           const q=(newsFilters.search||'').trim().toLowerCase()
-          if(q) rows=rows.filter(p=>((p.title||'')+' '+(p.body||'')+' '+newsOps.getLineName(p.research_line_id)).toLowerCase().includes(q))
+          if(q) rows=rows.filter(p=>((p.title||'')+' '+(p.body||'')+' '+newsOps.normaliseNewsKeywords(p.keywords).join(' ')+' '+newsOps.getLineName(p.research_line_id)).toLowerCase().includes(q))
           return rows.sort((a,b)=>newsReviewReadiness(b).score-newsReviewReadiness(a).score)
         })
 
@@ -8128,6 +8188,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rows = rows.filter(p => (
               (p.title || '') + ' ' + (p.body || '') + ' ' +
               (p.journal_name || '') + ' ' + (p.authors_text || '') + ' ' +
+              newsOps.normaliseNewsKeywords(p.keywords).join(' ') + ' ' +
               newsOps.getLineName(p.research_line_id)
             ).toLowerCase().includes(q))
           }
@@ -8146,8 +8207,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           if (newsLensMode.value === 'topics') {
             const map = new Map()
-            posts.forEach(p=>{ const words=((p.title||'')+' '+(p.body||'')).toLowerCase().match(/[a-záéíóúñü]{5,}/gi)||[]; new Set(words.filter(w=>!_topicStop.has(w))).forEach(w=>{ const row=map.get(w)||{key:w,label:_newsTopicLabel(w),kind:'topic',posts:[]}; row.posts.push(p); map.set(w,row) }) })
-            return [...map.values()].filter(r=>r.posts.length>1).map(r=>({...r,posts:_newsNewestFirst(r.posts),count:r.posts.length,breakdown:_newsGroupBreakdown(r.posts)})).sort((a,b)=>b.count-a.count).slice(0,16)
+            posts.forEach(p=>{
+              const explicit = newsOps.normaliseNewsKeywords(p.keywords).map(k=>({key:k.toLocaleLowerCase(),label:k,explicit:true}))
+              const words=((p.title||'')+' '+(p.body||'')).toLowerCase().match(/[a-záéíóúñü]{5,}/gi)||[]
+              const derived=[...new Set(words.filter(w=>!_topicStop.has(w)))].map(w=>({key:w,label:_newsTopicLabel(w),explicit:false}))
+              ;[...explicit,...derived].forEach(t=>{ const row=map.get(t.key)||{key:t.key,label:t.label,kind:'topic',posts:[],explicit:false}; if(!row.posts.some(x=>x.id===p.id)) row.posts.push(p); row.explicit=row.explicit||t.explicit; map.set(t.key,row) })
+            })
+            return [...map.values()].filter(r=>r.explicit || r.posts.length>1).map(r=>({...r,posts:_newsNewestFirst(r.posts),count:r.posts.length,breakdown:_newsGroupBreakdown(r.posts)})).sort((a,b)=>(Number(b.explicit)-Number(a.explicit)) || b.count-a.count).slice(0,20)
           }
           return []
         })
@@ -8400,7 +8466,7 @@ document.addEventListener('DOMContentLoaded', () => {
           add('saved','My Library',`${newsSavedIds.value.length} saved`,()=>{closeNewsCommand();setNewsLensMode('saved')})
           add('lines','Browse by research line','Institutional research lens',()=>{closeNewsCommand();setNewsLensMode('lines')})
           ;(researchOps.researchLines.value||[]).slice(0,12).forEach(l=>add(`line-${l.id}`,`L${l.line_number} · ${l.short_name||l.research_line_name||l.name}`,'Research line',()=>{closeNewsCommand();setNewsLensMode('lines');applyNewsLensGroup({kind:'line',key:String(l.id)})}))
-          ;(newsPosts.value||[]).slice(0,80).forEach(p=>add(`record-${p.id}`,p.title,p.post_type,()=>{closeNewsCommand();openNewsDrawer(p,null)}))
+          ;(newsPosts.value||[]).slice(0,80).forEach(p=>{ const kw=newsOps.normaliseNewsKeywords(p.keywords).slice(0,3); add(`record-${p.id}`,p.title,`${p.post_type}${kw.length ? ' · '+kw.join(' · ') : ''}`,()=>{closeNewsCommand();openNewsDrawer(p,null)}) })
           const filtered = q ? items.filter(i=>(i.label+' '+i.meta).toLowerCase().includes(q)) : items
           return filtered.slice(0,14)
         })
@@ -8461,6 +8527,49 @@ document.addEventListener('DOMContentLoaded', () => {
           while((m=re.exec(body))) out.push({ label:m[1].trim(), index:m.index, order:order++ })
           return out
         })
+        const _newsKeywordStop = new Set('about after again against along also among another because before being between both could during each from further here into itself just more most other over same should some such than that their them then there these they this those through under very what when where which while with would your article research clinical health healthcare department neumac neumact study studies using used'.split(/\s+/))
+        const newsKeywordSuggestions = computed(() => {
+          if (newsModal.form.post_type !== 'article') return []
+          const selected = new Set(newsOps.normaliseNewsKeywords(newsModal.form.keywords).map(k=>k.toLocaleLowerCase()))
+          const text = `${newsModal.form.title||''} ${newsPlainBody(newsModal.form.body||'')}`
+          const counts = new Map()
+          ;(text.match(/[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ-]{3,}/g) || []).forEach(word => {
+            const key=word.toLocaleLowerCase(); if(_newsKeywordStop.has(key) || selected.has(key)) return
+            counts.set(key,(counts.get(key)||0)+1)
+          })
+          return [...counts.entries()].sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0])).slice(0,8).map(([k])=>k.charAt(0).toUpperCase()+k.slice(1))
+        })
+        const addNewsKeyword = (value = null) => {
+          if (newsModal.form.post_type !== 'article') return
+          const raw = value == null ? newsModal.form._keywordInput : value
+          const candidate = String(raw ?? '').trim().replace(/^#+/,'').replace(/\s+/g,' ').slice(0,28)
+          if (!candidate) { newsModal.form._keywordInput=''; return }
+          const current = newsOps.normaliseNewsKeywords(newsModal.form.keywords)
+          if (current.length >= 10) { showToast('Index terms','Maximum 10 keywords','warning'); return }
+          if (!current.some(k=>k.toLocaleLowerCase()===candidate.toLocaleLowerCase())) current.push(candidate)
+          newsModal.form.keywords = newsOps.normaliseNewsKeywords(current)
+          newsModal.form._keywordInput=''
+        }
+        const removeNewsKeyword = (kw) => { newsModal.form.keywords = newsOps.normaliseNewsKeywords(newsModal.form.keywords).filter(k=>k!==kw) }
+        const newsKeywordKeydown = (e) => {
+          if (e.key==='Enter' || e.key===',') { e.preventDefault(); addNewsKeyword() }
+        }
+        const newsArticleSignals = computed(() => {
+          const paragraphs = newsEditorPreviewSegments.value.filter(x=>x.type==='paragraph')
+          return [
+            {label:'Opening',value:paragraphs[0]?.text?.length>=70 ? 'Established' : 'Add a stronger lead',ok:paragraphs[0]?.text?.length>=70},
+            {label:'Sections',value:newsEditorOutline.value.length ? `${newsEditorOutline.value.length} mapped` : 'Optional',ok:newsEditorOutline.value.length>0},
+            {label:'Index terms',value:`${newsOps.normaliseNewsKeywords(newsModal.form.keywords).length}/10`,ok:newsOps.normaliseNewsKeywords(newsModal.form.keywords).length>0},
+            {label:'Lead image',value:newsModal.form.image_urls?.[0] ? 'Added' : 'Optional',ok:!!newsModal.form.image_urls?.[0]}
+          ]
+        })
+        const newsDrawerKeywords = computed(() => newsOps.normaliseNewsKeywords(newsDrawer.post?.keywords))
+        const newsDrawerLeadIndex = computed(() => {
+          const paragraphs = newsDrawerSegments.value.map((seg,i)=>({seg,i})).filter(x=>x.seg.type==='paragraph')
+          return paragraphs.length > 1 ? paragraphs[0].i : -1
+        })
+        const newsDrawerLead = computed(() => newsDrawerLeadIndex.value >= 0 ? newsDrawerSegments.value[newsDrawerLeadIndex.value]?.text || '' : '')
+        const newsDrawerOutline = computed(() => newsDrawerSegments.value.filter(x=>x.type==='heading').map((x,i)=>({label:x.text,order:i+1})))
         const newsJumpToOutline = (item) => {
           if (!item) return
           Vue.nextTick(()=>{ const el=document.querySelector('.news-v27-writing-area'); if(!el)return; el.focus(); const pos=Math.max(0,Number(item.index)||0); el.setSelectionRange(pos,pos); const ratio=pos/Math.max(1,el.value.length); el.scrollTop=Math.max(0,(el.scrollHeight-el.clientHeight)*ratio-40) })
@@ -8522,7 +8631,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const newsDrawerAuthorFull = computed(() => {
           const id = newsDrawer.post?.author_id
           if (!id) return ''
-          const s = (medicalStaff.value || []).find(m => m.id === id)
+          const s = (allStaffLookup.value || []).find(m => String(m.id) === String(id)) || (medicalStaff.value || []).find(m => String(m.id) === String(id))
           return s?.full_name || ''
         })
         const newsDrawerInitials = computed(() => {
@@ -8621,12 +8730,6 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         }
         // ── END NEWS READER DRAWER ────────────────────────────────────
-
-        const { newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
-                newsWordCount, newsWordLimit,
-                loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews,
-                publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic: toggleNewsPublic,
-                formatAuthorName: newsAuthorName, getLineName: newsLineName } = newsOps
 
         const saveNewsEditor = async (publishNow = false) => {
           const saved = await newsOps.saveNews({ publishNow })
@@ -11156,7 +11259,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const vt = turn.visual && turn.visual.type
         if (vt === 'profile') return 'profile'
         if (vt === 'risklist') return 'alert'
-        if (['workload','occupancy','bars','enroll','scenario'].includes(vt)) return 'insight'
+        if (['workload','occupancy','bars','enroll','scenario','metric_summary'].includes(vt)) return 'insight'
         if (['board','reslist','roster','absence','publication_list'].includes(vt)) return 'collection'
         return 'fact'
       }
@@ -11266,6 +11369,24 @@ document.addEventListener('DOMContentLoaded', () => {
               { t: 'Is this Public?', d: 'This record · visibility', icon: 'briefing', followupKind: 'research_record_context', action: 'visibility', subjectId: subj.id, q: 'is this Public' },
             ]
           }
+          if (subj.type === 'study') return [
+            { t: 'Study overview', d: 'This study · live record', icon: 'research', intent: 'trial_profile', q: `details of ${nm}` },
+            { t: 'Protocol & ethics clearance', d: 'This study · requirements', icon: 'gap', intent: 'study_governance', q: `this study protocol and ethics` },
+            { t: 'Which research line?', d: 'This study · programme', icon: 'research', intent: 'trial_profile', q: `details of ${nm}` },
+            { t: 'Who leads this study?', d: 'This study · team', icon: 'staff', intent: 'trial_profile', q: `details of ${nm}` },
+          ]
+          if (subj.type === 'project') return [
+            { t: 'Project overview', d: 'This innovation · live record', icon: 'research', intent: 'project_profile', q: `details of ${nm}` },
+            { t: 'Protocol & ethics clearance', d: 'This innovation · clinical execution', icon: 'gap', intent: 'innovation_attention', q: `this project protocol ethics clearance` },
+            { t: 'Partner / readiness needs', d: 'This innovation · readiness', icon: 'briefing', intent: 'innovation_attention', q: `this project partner scope readiness` },
+            { t: 'Which research line?', d: 'This innovation · programme', icon: 'research', intent: 'project_profile', q: `details of ${nm}` },
+          ]
+          if (subj.type === 'research_line') return [
+            { t: 'Programme overview', d: 'This line · portfolio', icon: 'research', intent: 'research_line_profile', q: `line ${subj.lineNumber || nm}` },
+            { t: 'Recruiting studies', d: 'This line · evidence', icon: 'research', intent: 'trials_recruiting', q: `recruiting studies in line ${subj.lineNumber || nm}` },
+            { t: 'Innovation projects', d: 'This line · innovation', icon: 'research', intent: 'innovation_projects', q: `innovation projects in line ${subj.lineNumber || nm}` },
+            { t: 'Research output', d: 'This line · Library', icon: 'research', intent: 'publications', q: `publications in line ${subj.lineNumber || nm}` },
+          ]
           if (subj.type === 'unit') return [
             { t: `Who is in ${nm}?`,                  d: 'This unit · residents',     icon: 'staff',    intent: 'unit_status',      q: `who is in ${nm}` },
             { t: `Assign a resident to ${nm}`,        d: 'This unit · rotation',      icon: 'briefing', intent: 'assign_rotation',  q: `put ` },
@@ -11282,22 +11403,77 @@ document.addEventListener('DOMContentLoaded', () => {
         const list = _SUGGEST_BY_VIEW[key]
         return (list && list.length) ? list : _SUGGEST_DEFAULT
       })
+      // V43 · make the active Grounded scope explicit. The assistant should never
+      // feel detached from the record/module the user is currently inspecting.
+      const askBarContextLabel = Vue.computed(() => {
+        const s = askBar.subject || (askBar.context?.id ? askBar.context : null)
+        if (s?.type === 'research_record') { const k=String(s.postType || 'record').replace(/_/g,' '); return `Research Library · ${k.charAt(0).toUpperCase()+k.slice(1)}` }
+        if (s?.type === 'study') return 'Clinical study'
+        if (s?.type === 'project') return 'Clinical innovation'
+        if (s?.type === 'research_line') return s.lineNumber ? `Research line · L${s.lineNumber}` : 'Research line'
+        if (s?.type === 'staff') return 'Clinician record'
+        if (s?.type === 'unit') return 'Clinical unit'
+        if (s?.type === 'rotation') return 'Rotation'
+        const v = currentView.value
+        if (/research|trial|innovation|analytics/.test(v)) return 'Research portfolio'
+        if (v === 'news') return 'Research Library'
+        if (v === 'oncall_schedule') return 'On-call'
+        if (v === 'staff_absence') return 'Leave & coverage'
+        if (v === 'resident_rotations') return 'Rotations'
+        if (v === 'training_units') return 'Clinical units'
+        if (v === 'medical_staff') return 'Staff'
+        return 'Department'
+      })
+      const askBarContextDetail = Vue.computed(() => askBar.subject?.name || askBar.context?.name || '')
+      const askBarClearSubject = () => {
+        askBar.subject = null
+        askBar.context = null
+        askBar.turns = []
+        askBar.query = ''
+      }
+
       // Called by the app when a record is opened, so the agent can anticipate for it.
       const setAgentSubject = (type, id, name) => { askBar.subject = (id ? { type, id, name } : null) }
 
       const openAskBar  = () => {
         if (!currentUser.value) return
         askBar.open = true
-        // Subject-aware: sync to whatever record is open right now (or clear).
+        const _previousSubjectKey = askBar.subject ? `${askBar.subject.type}:${askBar.subject.id}` : ''
+        // V43 subject-aware entry. Prefer the most specific object currently visible,
+        // then fall back to module context. This keeps Grounded attached to the user's work.
         try {
-          if (staffOps.staffProfileModal && staffOps.staffProfileModal.show && staffOps.staffProfileModal.staff) {
-            const s = staffOps.staffProfileModal.staff
-            askBar.subject = { type: 'staff', id: s.id, name: s.full_name }
+          if (newsDrawer?.show && newsDrawer.post) {
+            const p = newsDrawer.post
+            askBar.subject = { type:'research_record', id:p.id, name:p.title, postType:p.post_type, researchLineId:p.research_line_id||null, authorId:p.author_id||null, visibility:p.is_public?'Public':'Internal', status:p.status||null }
+            askBar.context = { ...askBar.subject }
+          } else if (researchOps.selectedStudy?.value) {
+            const st = researchOps.selectedStudy.value
+            askBar.subject = { type:'study', id:st.id, name:st.title || st.protocol_id || 'Clinical study', researchLineId:st.research_line_id||null }
+            askBar.context = { ...askBar.subject }
+          } else if (researchOps.selectedProject?.value) {
+            const pr = researchOps.selectedProject.value
+            askBar.subject = { type:'project', id:pr.id, name:pr.title || 'Clinical innovation', researchLineId:pr.research_line_id||null }
+            askBar.context = { ...askBar.subject }
+          } else if (researchOps.researchHubPage?.value === 'line' && researchOps.selectedLine?.value) {
+            const ln = researchOps.selectedLine.value
+            askBar.subject = { type:'research_line', id:ln.id, name:ln.research_line_name || ln.name || 'Research line', lineNumber:ln.line_number||null }
+            askBar.context = { ...askBar.subject }
+          } else if (staffOps.staffProfileModal && staffOps.staffProfileModal.show && staffOps.staffProfileModal.staff) {
+            const st = staffOps.staffProfileModal.staff
+            askBar.subject = { type: 'staff', id: st.id, name: st.full_name }
+            askBar.context = { ...askBar.subject }
           } else {
             askBar.subject = null
           }
         } catch (e) { askBar.subject = null }
-        askBar.view = (askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation'
+        const _nextSubjectKey = askBar.subject ? `${askBar.subject.type}:${askBar.subject.id}` : ''
+        if (_nextSubjectKey && _nextSubjectKey !== _previousSubjectKey) {
+          askBar.turns = []
+          askBar.query = ''
+        }
+        // Object context should open directly into conversation. The proactive digest is
+        // still the default when Grounded is opened department-wide.
+        askBar.view = askBar.subject ? 'conversation' : ((askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation')
         // Pull fresh data so the agent never answers from a stale local snapshot.
         // Best-effort and silent — if a loader is missing or fails, we just use what we have.
         try { staffOps.loadMedicalStaff && staffOps.loadMedicalStaff() } catch (e) {}
@@ -11310,7 +11486,7 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
         if (askBar.view === 'teach') loadBrain()
       }
-      const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.subject = null; askBar.view = (askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation' }
+      const askBarReset = () => { askBar.turns = []; askBar.query = ''; askBar.context = askBar.subject ? { ...askBar.subject } : null; askBar.view = askBar.subject ? 'conversation' : ((askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation') }
       const runSuggestion = (s) => {
         if (!s) return
         // Contextual suggestions (Research Library object, staff follow-up, etc.)
@@ -13914,13 +14090,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const projs = researchOps.innovationProjects.value || []
           const pubs = (newsPosts.value || []).filter(p => p.post_type === 'publication' || p.doi)
           const recruiting = trials.filter(t => /reclut|recruit|activ/i.test(t.status||'')).length
-          const items = [
-            { title: 'Clinical trials', badge: recruiting+' recruiting', tone: recruiting?'recruiting':'default', meta: `${trials.length} total` },
-            { title: 'Research lines', badge: lines.length+'', tone:'research', meta: `${lines.filter(l=>l.coordinator_id).length} with a coordinator` },
-            { title: 'Innovation projects', badge: projs.length+'', tone:'project', meta: `${projs.filter(p=>p.trl_level>=6).length} at TRL 6+` },
-            { title: 'Publications', badge: pubs.length+'', tone:'research', meta: `${pubs.filter(p=>p.journal_name).length} in journals` },
-          ]
-          return { text: `Research portfolio: ${trials.length} trials (${recruiting} recruiting), ${lines.length} lines, ${projs.length} projects, ${pubs.length} publications.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research','publications'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }, { label: 'Who is most research-active?', intent: 'research_activity' }], confidence: 'high' }
+          const visual = { type:'metric_summary', eyebrow:'Research & Innovation', title:'Portfolio pulse', aside:'Live departmental records', metrics:[
+            { value:lines.length, label:'Research lines', tone:'navy', detail:`${lines.filter(l=>l.coordinator_id).length} coordinated` },
+            { value:trials.length, label:'Clinical studies', tone:'blue', detail:`${recruiting} recruiting` },
+            { value:projs.length, label:'Innovation projects', tone:'teal', detail:`${projs.filter(p=>Number(p.trl_level)>=6).length} at TRL 6+` },
+            { value:pubs.length, label:'Publications', tone:'quiet', detail:`${pubs.filter(p=>p.journal_name).length} with journal recorded` }
+          ] }
+          return { text: `Current research activity across the department.`, visual, chips: [], actions: [{ label: 'Open Research', view: 'research_hub', primary: true }], sources: ['research','publications'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }, { label: 'Study requirements', intent: 'study_governance', q:'studies missing protocol ethics or PI' }], confidence: 'high' }
         }
         if (intent === 'research_activity') {
           const trials = researchOps.clinicalTrials.value || []
@@ -13941,33 +14117,56 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'study_governance') {
           const trials = researchOps.clinicalTrials.value || []
           const q = String(askBar.lastAsked || askBar.query || '').toLowerCase()
+          if (askBar.subject?.type === 'study' && /\b(this|current)\b/.test(q)) {
+            const st = trials.find(t => String(t.id) === String(askBar.subject.id))
+            if (st) {
+              const protocolValue = st.protocol_applicable === false ? 'N/A' : (st.protocol_finalized ? 'Final' : (st.protocol_id ? 'Recorded' : 'Missing'))
+              const ethicsRaw = String(st.ethics_status || '').trim()
+              const ethicsValue = ethicsRaw ? ethicsRaw.replace(/_/g,' ').replace(/(^|\s)\S/g,m=>m.toUpperCase()) : 'Not recorded'
+              const piValue = st.principal_investigator_id ? getStaffName(st.principal_investigator_id) : 'Missing'
+              const visual = { type:'metric_summary', eyebrow:'Study requirements', title:'Protocol & ethics clearance', aside:'Recorded fields', metrics:[
+                { value:protocolValue, label:'Clinical protocol', tone:protocolValue==='Missing'?'quiet':'teal', detail:st.protocol_id || (st.protocol_applicable===false?'Not applicable':'') },
+                { value:ethicsValue, label:'Ethics / CEIm', tone:/approv|clear|valid/i.test(ethicsValue)?'teal':'quiet', detail:st.ethics_reference || '' },
+                { value:piValue, label:'Principal investigator', tone:st.principal_investigator_id?'navy':'quiet' }
+              ], note:'This reflects fields recorded in neumDesk; it is not an independent regulatory assessment.' }
+              return { text:`Recorded execution requirements for ${st.title || 'this study'}.`, visual, chips:st.principal_investigator_id?[{label:piValue,id:st.principal_investigator_id}]:[], actions:[{label:'Open study',view:'research_hub',primary:true}], sources:['research'], followups:[{label:'Study overview',intent:'trial_profile',q:`details of ${st.title || ''}`}], confidence:'high' }
+            }
+          }
           let rows = trials.filter(t => !t.protocol_finalized || !t.ethics_status || t.ethics_status === 'pending' || !t.principal_investigator_id)
+          if (askBar.subject?.type === 'study' && /\b(this|current)\b/.test(q)) rows = rows.filter(t => String(t.id) === String(askBar.subject.id))
           if (/ethic|ceim/.test(q)) rows = rows.filter(t => !t.ethics_status || t.ethics_status === 'pending')
           else if (/protocol/.test(q)) rows = rows.filter(t => !t.protocol_finalized)
           else if (/\bpi\b|principal investigator/.test(q)) rows = rows.filter(t => !t.principal_investigator_id)
           if (!rows.length) return { text: 'No matching study-requirement gaps are recorded in the current clinical study data.', chips: [], actions: [{ label: 'Open Research', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }], confidence: 'high' }
-          const items = rows.slice(0,8).map(t => ({ title:t.title, badge:[!t.protocol_finalized?'protocol':null,(!t.ethics_status||t.ethics_status==='pending')?'ethics':null,!t.principal_investigator_id?'PI':null].filter(Boolean).join(' · '), tone:'warning', meta:t.protocol_id || researchOps.getResearchLineName(t.research_line_id) }))
+          const items = rows.slice(0,8).map(t => ({ title:t.title, badge:[!t.protocol_finalized?'protocol':null,(!t.ethics_status||t.ethics_status==='pending')?'ethics':null,!t.principal_investigator_id?'PI':null].filter(Boolean).join(' · '), tone:'warning', meta:t.protocol_id || researchOps.getResearchLineName(t.research_line_id), targetKind:'study', targetId:t.id }))
           return { text: `${rows.length} clinical stud${rows.length===1?'y':'ies'} match the study-requirement attention requested.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open Research',view:'research_hub',primary:true}], sources:['research'], followups:[{label:'Which are recruiting?',intent:'trials_recruiting'}], confidence:'high' }
         }
         if (intent === 'innovation_attention') {
           const projects = researchOps.innovationProjects.value || []
           const q = String(askBar.lastAsked || askBar.query || '').toLowerCase()
+          if (/protocol|ethic|ceim|clearance/.test(q)) {
+            const scoped = askBar.subject?.type === 'project' ? projects.find(p => String(p.id) === String(askBar.subject.id)) : null
+            const who = scoped?.title ? ` for ${scoped.title}` : ''
+            return { text:`I can’t verify protocol or Ethics Committee / CEIm clearance${who} from the live innovation registry yet. Those clinical-execution fields are currently UI-ready but are not persisted by the innovation-project API.`, chips:[], actions:[{label:'Open Clinical innovation',view:'research_hub',primary:true}], sources:['research'], followups:[{label:'Show recorded project details',intent:'project_profile',q:scoped?.title ? `details of ${scoped.title}` : 'innovation project details'}], confidence:'high' }
+          }
           let rows = projects.filter(p => !p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found))
+          if (askBar.subject?.type === 'project' && /\b(this|current)\b/.test(q)) rows = rows.filter(p => String(p.id) === String(askBar.subject.id))
           if (/partner/.test(q)) rows = rows.filter(p => (p.partner_needs||[]).length && !p.partner_found)
           else if (/scope/.test(q)) rows = rows.filter(p => !p.scope_finalized)
           if (!rows.length) return { text:'No matching innovation attention items are recorded.', chips:[], actions:[{label:'Open Research',view:'research_hub',primary:true}], sources:['research'], followups:[], confidence:'high' }
-          const items = rows.slice(0,8).map(p => ({ title:p.title, badge:!p.scope_finalized?'scope pending':`${(p.partner_needs||[]).length} partner need${(p.partner_needs||[]).length===1?'':'s'}`, tone:'warning', meta:[p.current_stage||p.development_stage,p.category].filter(Boolean).join(' · ') }))
+          const items = rows.slice(0,8).map(p => ({ title:p.title, badge:!p.scope_finalized?'scope pending':`${(p.partner_needs||[]).length} partner need${(p.partner_needs||[]).length===1?'':'s'}`, tone:'warning', meta:[p.current_stage||p.development_stage,p.category].filter(Boolean).join(' · '), targetKind:'project', targetId:p.id }))
           return { text:`${rows.length} innovation project${rows.length===1?'':'s'} match the requested attention criteria.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open Research',view:'research_hub',primary:true}], sources:['research'], followups:[], confidence:'high' }
         }
         if (intent === 'trials_recruiting') {
-          const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
+          let trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
+          if (askBar.subject?.type === 'research_line') trials = trials.filter(t => String(t.research_line_id) === String(askBar.subject.id))
           if (!trials.length) return { text: 'No trials are actively recruiting right now.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
           const lines = researchOps.researchLines.value || []
           const lname = (id) => { const l = lines.find(x=>x.id===id); return l ? (l.short_name||l.name) : null }
           const items = trials.slice(0, 8).map(t => {
             const e = researchOps.trialEnrollment ? researchOps.trialEnrollment(t) : null
             const meta = [t.phase?(/^phase\b/i.test(t.phase)?t.phase:('Phase '+t.phase)):null, lname(t.research_line_id), e?`enrolled ${e.actual}/${e.target}`:null].filter(Boolean).join(' · ')
-            return { title: t.title, badge: 'recruiting', tone: 'recruiting', meta }
+            return { title: t.title, badge: 'recruiting', tone: 'recruiting', meta, targetKind:'study', targetId:t.id }
           })
           const text = `${trials.length} trial${trials.length===1?'':'s'} recruiting${trials.length>8?' (showing 8)':''}:`
           return { text, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'All trials', intent: 'trials_overview' }], confidence: 'high' }
@@ -13989,8 +14188,15 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!trials.length) return { text: 'No clinical trials are on record.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
           const k = researchOps.trialStatusKey
           const rec = trials.filter(t => k && k(t)==='recruiting').length, act = trials.filter(t => k && k(t)==='active').length
-          const enrolled = trials.reduce((s,t)=>s+(t.actual_enrollment||0),0)
-          return { text: `${trials.length} trial${trials.length===1?'':'s'} on record — ${rec} recruiting, ${act} active. ${enrolled} participants enrolled across all studies.`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'Which are recruiting?', intent: 'trials_recruiting' }], confidence: 'high' }
+          const enrolled = trials.reduce((sum,t)=>sum+(Number(t.actual_enrollment)||0),0)
+          const targets = trials.reduce((sum,t)=>sum+(Number(t.enrollment_target)||0),0)
+          const visual = { type:'metric_summary', eyebrow:'Clinical studies', title:'Portfolio at a glance', aside:'Live research registry', metrics:[
+            { value:trials.length, label:'Studies on record', tone:'navy' },
+            { value:rec, label:'Recruiting', tone:'teal' },
+            { value:act, label:'Active delivery', tone:'blue' },
+            { value:enrolled, label:'Enrolled', tone:enrolled ? 'teal' : 'quiet', detail:targets ? `of ${targets} target` : 'recorded across studies' }
+          ], note: enrolled===0 ? 'No enrolment has been recorded in the current study records.' : `${enrolled} participant${enrolled===1?'':'s'} recorded across the portfolio.` }
+          return { text: `The current clinical-study portfolio is shown below.`, visual, chips: [], actions: [{ label: 'Open Research', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'Which are recruiting?', intent: 'trials_recruiting' }, { label:'Study requirements', intent:'study_governance', q:'studies missing protocol ethics or PI' }], confidence: 'high' }
         }
         if (intent === 'trials_by_person') {
           const person = askBarResolveStaff(askBar.lastAsked || askBar.query)
@@ -14046,7 +14252,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const trials = researchOps.clinicalTrials.value || []
           const _nu = (x) => (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
           const clean = q.replace(/\b(tell me about|about|the|details?|of|for|on|profile|show me|status|info|trial|study|ensayo)\b/gi,' ').trim()
-          let trial = trials.find(t => t.nct_number && _nu(q).includes(_nu(t.nct_number))) ||
+          let trial = (askBar.subject?.type === 'study' ? trials.find(t => String(t.id) === String(askBar.subject.id)) : null) ||
+                      (askBar.context?.type === 'study' ? trials.find(t => String(t.id) === String(askBar.context.id)) : null) ||
+                      trials.find(t => t.nct_number && _nu(q).includes(_nu(t.nct_number))) ||
                       trials.find(t => t.title && clean.length>3 && _nu(t.title).includes(_nu(clean))) ||
                       trials.find(t => t.title && _nu(t.title).split(/\s+/).some(w=>w.length>4 && _nu(q).includes(w)))
           if (!trial) return { text: `Which trial? Name it or its NCT number. We have ${trials.length}.`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }], confidence: 'low' }
@@ -14082,7 +14290,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const projs = researchOps.innovationProjects.value || []
           const _nu = (x) => (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
           const clean = q.replace(/\b(tell me about|about|the|details?|of|for|on|profile|show me|status|project|proyecto|innovation)\b/gi,' ').trim()
-          let pr = projs.find(p => p.title && clean.length>3 && _nu(p.title).includes(_nu(clean))) ||
+          let pr = (askBar.subject?.type === 'project' ? projs.find(p => String(p.id) === String(askBar.subject.id)) : null) ||
+                   (askBar.context?.type === 'project' ? projs.find(p => String(p.id) === String(askBar.context.id)) : null) ||
+                   projs.find(p => p.title && clean.length>3 && _nu(p.title).includes(_nu(clean))) ||
                    projs.find(p => p.title && _nu(p.title).split(/\s+/).some(w=>w.length>4 && _nu(q).includes(w)))
           if (!pr) return { text: `Which project? Name it. We have ${projs.length} innovation projects.`, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'low' }
           const line = (researchOps.researchLines.value||[]).find(l => l.id === pr.research_line_id)
@@ -14114,7 +14324,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const lines = researchOps.researchLines.value || []
           const _nu = (x) => (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
           // resolve line: by number ("line 3") or by name/keyword
-          let line = null
+          let line = (askBar.subject?.type === 'research_line' ? lines.find(l => String(l.id) === String(askBar.subject.id)) : null) ||
+                     (askBar.context?.type === 'research_line' ? lines.find(l => String(l.id) === String(askBar.context.id)) : null)
           const numM = q.match(/line\s*(\d+)/) || q.match(/\bl(\d+)\b/)
           if (numM) line = lines.find(l => String(l.line_number) === numM[1])
           if (!line) line = lines.find(l => (l.name||l.short_name) && _nu(q).includes(_nu(l.short_name||'')) && (l.short_name||'').length>3)
@@ -14158,19 +14369,20 @@ document.addEventListener('DOMContentLoaded', () => {
           const items = sorted.slice(0,10).map(l => {
             const nt = trialsAll.filter(t=>t.research_line_id===l.id).length
             const meta = [l.coordinator_id?('coord: '+getStaffName(l.coordinator_id)):null, nt?(nt+' trial'+(nt===1?'':'s')):null].filter(Boolean).join(' · ')
-            return { title: (l.line_number?'L'+l.line_number+' · ':'')+(l.research_line_name||l.name), tone:'research', meta }
+            return { title: (l.line_number?'L'+l.line_number+' · ':'')+(l.research_line_name||l.name), tone:'research', meta, targetKind:'research_line', targetId:l.id }
           })
           const text = `${lines.length} research line${lines.length===1?'':'s'}:`
           return { text, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
         }
         if (intent === 'innovation_projects') {
-          const projs = researchOps.innovationProjects.value || []
+          let projs = researchOps.innovationProjects.value || []
+          if (askBar.subject?.type === 'research_line') projs = projs.filter(p => String(p.research_line_id) === String(askBar.subject.id))
           if (!projs.length) return { text: 'No innovation projects are on record.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
           const lines = researchOps.researchLines.value || []
           const lname = (id) => { const l = lines.find(x=>x.id===id); return l ? (l.short_name||l.name) : null }
           const items = projs.slice(0, 10).map(p => {
             const meta = [p.trl_level?('TRL '+p.trl_level):null, p.category, lname(p.research_line_id), p.partner_name?('partner: '+p.partner_name):null].filter(Boolean).join(' · ')
-            return { title: p.title, badge: p.current_stage || p.development_stage || null, tone: 'project', meta }
+            return { title: p.title, badge: p.current_stage || p.development_stage || null, tone: 'project', meta, targetKind:'project', targetId:p.id }
           })
           const text = `${projs.length} innovation project${projs.length===1?'':'s'}${projs.length>10?' (showing 10)':''}:`
           return { text, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
@@ -15108,6 +15320,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      // V43 · response labels keep every answer archetype visually legible without
+      // turning the console into a stack of identical chat bubbles.
+      const askBarTurnLabel = (turn) => {
+        if (!turn || turn.streaming) return ''
+        const type = askBarTurnType(turn)
+        if (type === 'proposal') return 'Change proposal'
+        if (type === 'clarification') return 'Clarification'
+        if (type === 'profile') return 'Connected record'
+        if (type === 'collection') return 'Live records'
+        if (type === 'alert') return 'Needs attention'
+        if (type === 'insight') return 'Department intelligence'
+        if ((turn.sources||[]).includes('research')) return 'Research'
+        if ((turn.sources||[]).includes('publications')) return 'Research Library'
+        if ((turn.sources||[]).includes('staff')) return 'Department record'
+        return 'Grounded answer'
+      }
+      const askBarSourceLabel = (s) => ({
+        research:'Research', publications:'Research Library', staff:'Staff', rotations:'Rotations', units:'Units',
+        'on-call schedule':'On-call', 'leave records':'Leave', departments:'Departments', hospitals:'Hospitals',
+        'coverage areas':'Coverage', 'emergency callouts':'Callouts', announcements:'Announcements', 'ops metrics':'Operations'
+      }[s] || String(s || '').replace(/(^|[-_ ])([a-z])/g, (_,a,b)=>a+b.toUpperCase()))
+
+      // Open the exact record named by a Grounded collection. This is intentionally
+      // explicit: lists become navigation surfaces rather than dead summaries.
+      const askBarOpenResultItem = (it) => {
+        if (!it || !it.targetKind) return
+        const kind = it.targetKind, id = it.targetId
+        try {
+          if (kind === 'study') {
+            const rec = (researchOps.clinicalTrials.value || []).find(x => String(x.id) === String(id)); if (!rec) return
+            switchView('research_hub'); Vue.nextTick(() => researchOps.openStudy(rec, 'allstudies')); closeAskBar(); return
+          }
+          if (kind === 'project') {
+            const rec = (researchOps.innovationProjects.value || []).find(x => String(x.id) === String(id)); if (!rec) return
+            switchView('research_hub'); Vue.nextTick(() => researchOps.openProject(rec, 'allprojects')); closeAskBar(); return
+          }
+          if (kind === 'research_line') {
+            const rec = (researchOps.researchLines.value || []).find(x => String(x.id) === String(id)); if (!rec) return
+            switchView('research_hub'); Vue.nextTick(() => researchOps.openLine(rec)); closeAskBar(); return
+          }
+          if (kind === 'library') {
+            const rec = (newsPosts.value || []).find(x => String(x.id) === String(id)); if (!rec) return
+            switchView('news'); Vue.nextTick(() => openNewsDrawer(rec)); closeAskBar(); return
+          }
+        } catch (e) { console.error('[Grounded navigation]', e) }
+      }
+
       // Ensure every answer carries sources/followups arrays (defaults) + confidence.
       // #5 Provenance: plain-language description of what each source is.
       const askBarSourceDesc = (s) => ({
@@ -15432,6 +15691,7 @@ document.addEventListener('DOMContentLoaded', () => {
           newsPeek, openNewsPeek, closeNewsPeek,
           newsDrawer, newsDrawerPositionStyle, openNewsDrawer, closeNewsDrawer, exploreNewsLine, exploreNewsAuthor, exploreNewsYear, newsReadingProgress, newsReaderCompact, updateNewsReadingProgress, openGroundedForNews, newsActiveConnections, newsConnectionLabel, openNewsConnectionTray, exploreActiveNewsConnection,
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs, newsDrawerSegments, newsEditorPreviewSegments, newsPlainBody, newsInsertEvidence, newsDrawerConnections, newsDrawerLifecycle, newsCitation, copyNewsCitation, copyNewsDoi,
+          newsKeywordSuggestions, addNewsKeyword, removeNewsKeyword, newsKeywordKeydown, newsArticleSignals, newsDrawerKeywords, newsDrawerLeadIndex, newsDrawerLead, newsDrawerOutline,
           newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName, newsEditorDetailsOpen, newsEditorFocusMode, newsEditorPreviewOpen, newsEditorOutline, newsJumpToOutline, newsPublishReview, openNewsEditorFromReader, closeNewsEditor,
           drillToTrials, drillToProjects,
           portfolioKPIs,
@@ -15450,7 +15710,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarSuggestLabel, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarSuggestLabel, askBarContextLabel, askBarContextDetail, askBarClearSubject, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarTurnLabel, askBarSourceLabel, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarOpenResultItem, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           askBarContinuity, askBarChanges, askBarWatchedChanges, askBarTimeline, askBarWatchlist, askBarIsWatched, askBarToggleWatch, askBarToggleTimeline,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, teachTopicLabels, askBarToggleTeach,
           askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarConfirmExtendRotation, askBarConfirmRotationEdit, askBarConfirmOncallEdit, askBarConfirmLeaveEdit, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
