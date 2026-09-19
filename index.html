@@ -4,34 +4,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Grounded — by neumAC</title>
+    <title>neumDesk · neumAC</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=43">
+    <link rel="stylesheet" href="style.css?v=44">
 
     
 </head>
 <body>
 <div id="app" v-cloak>
 
-    <!-- Grounded splash screen — shows on first load, fades out after 1.8s -->
+    <!-- neumDesk splash — short institutional first paint -->
     <transition name="splash-fade">
         <div v-if="splashVisible" class="nd-splash">
             <div class="nd-splash-inner">
-                <div class="nd-splash-mark nd-splash-mark--grounded">
-                    <svg class="grounded-mark-svg nd-splash-g" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Grounded">
-                        <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
-                        <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
-                        <path class="grounded-mark-flow grounded-mark-flow--b" d="M19.2 23.5C23.5 19.1 28.1 17.4 32.7 18.1C37.2 18.7 41 21.1 44.5 24.1"/>
-                        <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
+                <div class="nd-splash-mark nd-splash-mark--neumdesk">
+                    <svg class="nd-splash-neumdesk-svg" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="neumDesk">
+                        <defs><linearGradient id="nd-splash-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8BE9FF"/><stop offset="100%" stop-color="#7FF5D7"/></linearGradient></defs>
+                        <rect x="96" y="96" width="320" height="320" rx="72" fill="rgba(255,255,255,.07)"/>
+                        <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#nd-splash-logo-grad)" stroke-width="18" stroke-linecap="round" opacity=".72"/>
+                        <path d="M172 322 V236 M172 268 C172 244 192 228 220 228 C256 228 276 250 276 288 V322" fill="none" stroke="url(#nd-splash-logo-grad)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
-                <div class="nd-splash-wordmark">Grounded</div>
-                <div class="nd-splash-tagline">One calm view across clinical operations and research</div>
+                <div class="nd-splash-wordmark nd-splash-wordmark--neumdesk">neumDesk</div>
+                <div class="nd-splash-tagline">Clinical operations · research · intelligence</div>
                 <div class="nd-splash-sig nd-splash-sig--meta">
                     <span class="nd-splash-meta"><strong>neumAC</strong> · Pneumology · Área Sanitaria de A Coruña y Cee</span>
                 </div>
@@ -118,18 +118,6 @@
                     <button class="askbar-close" @click="closeAskBar()" aria-label="Close Grounded" title="Close">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6 6 18"/></svg>
                     </button>
-                </div>
-            </div>
-
-            <!-- V43 · active context — Grounded should always say what it is looking at -->
-            <div v-if="askBar.view === 'conversation'" class="askbar-context-bar" :class="{ 'askbar-context-bar--object': !!askBar.subject }">
-                <div class="askbar-context-left">
-                    <span class="askbar-context-kicker">{{ askBarContextLabel }}</span>
-                    <strong v-if="askBarContextDetail" class="askbar-context-title">{{ askBarContextDetail }}</strong>
-                </div>
-                <div class="askbar-context-right">
-                    <span class="askbar-context-live"><i></i> live records</span>
-                    <button v-if="askBar.subject || (askBar.context && askBar.context.id)" class="askbar-context-clear" @click="askBarClearSubject()" title="Ask across the department instead">Department-wide</button>
                 </div>
             </div>
 
@@ -271,9 +259,19 @@
 
             <!-- CONVERSATION -->
             <div v-if="askBar.view === 'conversation'" class="askbar-conv">
+                <section v-if="askBarContextCard" class="askbar-v43-context" :class="'askbar-v43-context--' + (askBarContextCard.tone || 'default')">
+                    <div class="askbar-v43-context-mark" aria-hidden="true"><span></span></div>
+                    <div class="askbar-v43-context-body">
+                        <div class="askbar-v43-context-kicker">Active context · {{ askBarContextCard.kind }}</div>
+                        <div class="askbar-v43-context-title">{{ askBarContextCard.title }}</div>
+                        <div v-if="askBarContextCard.subtitle" class="askbar-v43-context-sub">{{ askBarContextCard.subtitle }}</div>
+                        <div v-if="askBarContextCard.facts && askBarContextCard.facts.length" class="askbar-v43-context-facts"><span v-for="fact in askBarContextCard.facts" :key="fact">{{ fact }}</span></div>
+                    </div>
+                    <button class="askbar-v43-context-clear" @click="askBarClearContext()" title="Clear this record context">Department view</button>
+                </section>
                 <div v-if="!askBar.turns.length" class="askbar-greeting">
-                    <div class="askbar-greeting-t">What would you like to know?</div>
-                    <div class="askbar-greeting-s">Ask across live operations, people, rotations and research — Grounded connects the records for you.</div>
+                    <div class="askbar-greeting-t">{{ askBarContextCard ? 'Ask about what you are viewing.' : 'What would you like to know?' }}</div>
+                    <div class="askbar-greeting-s">{{ askBarContextCard ? 'Grounded keeps this record in context while you ask, compare or navigate connected information.' : 'Ask across live operations, people, rotations and research — Grounded connects the records for you.' }}</div>
                 </div>
                 <div v-if="!askBar.turns.length" class="askbar-sug-label">{{ askBarSuggestLabel }}</div>
                 <div v-if="!askBar.turns.length" class="askbar-sug">
@@ -291,16 +289,21 @@
                 </div>
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
                     <div v-if="turn.q" class="askbar-q-bub" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
-                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','metric_summary'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
+                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','grounded_facts'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
                         <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
-                            <div v-if="!turn.streaming && askBarTurnLabel(turn)" class="askbar-answer-label">
-                                <span>{{ askBarTurnLabel(turn) }}</span><i></i>
-                            </div>
+                            <div v-if="!turn.streaming && askBarTurnLabel(turn)" class="askbar-v43-answer-kicker">{{ askBarTurnLabel(turn) }}</div>
                             <div v-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state">
                                 <span class="askbar-empty-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg></span>
                                 <div><div class="askbar-empty-title">{{ turn.text }}</div><div class="askbar-empty-sub">No matching current record was found in the sources Grounded checked.</div></div>
                             </div>
                             <div v-else-if="!(turn.visual && turn.visual.type === 'profile')" class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
+
+                            <section v-if="!turn.streaming && turn.visual && turn.visual.type === 'grounded_facts'" class="askbar-v43-facts">
+                                <header><span>{{ turn.visual.eyebrow || 'Current record' }}</span><strong>{{ turn.visual.title }}</strong></header>
+                                <div class="askbar-v43-facts-grid">
+                                    <div v-for="(row,ri) in turn.visual.rows" :key="ri" class="askbar-v43-fact"><span>{{ row.label }}</span><strong>{{ row.value || 'Not recorded' }}</strong></div>
+                                </div>
+                            </section>
 
                             <!-- §3 clarify: pick leave reason -->
                             <div v-if="turn.leaveClarify" class="askbar-leave-reasons">
@@ -545,20 +548,6 @@
                                 <div v-if="turn.visual.delta" class="askbar-cmp-delta">{{ turn.visual.delta }}</div>
                             </div>
 
-                            <!-- V43 · concise intelligence summary for count/portfolio answers -->
-                            <section v-if="!turn.streaming && turn.visual && turn.visual.type === 'metric_summary'" class="askbar-metric-summary">
-                                <div class="askbar-metric-summary-head">
-                                    <div><span v-if="turn.visual.eyebrow">{{ turn.visual.eyebrow }}</span><strong v-if="turn.visual.title">{{ turn.visual.title }}</strong></div>
-                                    <small v-if="turn.visual.aside">{{ turn.visual.aside }}</small>
-                                </div>
-                                <div class="askbar-metric-grid">
-                                    <div v-for="(m,mi) in turn.visual.metrics" :key="mi" class="askbar-metric" :class="'askbar-metric--'+(m.tone||'default')">
-                                        <strong>{{ m.value }}</strong><span>{{ m.label }}</span><small v-if="m.detail">{{ m.detail }}</small>
-                                    </div>
-                                </div>
-                                <div v-if="turn.visual.note" class="askbar-metric-note">{{ turn.visual.note }}</div>
-                            </section>
-
                             <!-- §6 REMOVE (destructive) proposal card -->
                             <div v-if="turn.removeProposal" class="askbar-proposal askbar-proposal--remove" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
@@ -726,11 +715,10 @@
                             <!-- structured on-call roster readout -->
                             <!-- research list: trials / projects / lines / publications, one per row -->
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'reslist'" class="askbar-reslist">
-                                <div v-for="(it,ii) in (turn.listExpanded ? turn.visual.items : turn.visual.items.slice(0,5))" :key="ii" class="askbar-reslist-row" :class="['askbar-reslist-row--'+(it.tone||'default'), { 'askbar-reslist-row--actionable': !!it.targetKind }]" :role="it.targetKind ? 'button' : null" :tabindex="it.targetKind ? 0 : null" @click="askBarOpenResultItem(it)" @keydown.enter.prevent="askBarOpenResultItem(it)" @keydown.space.prevent="askBarOpenResultItem(it)">
+                                <div v-for="(it,ii) in (turn.listExpanded ? turn.visual.items : turn.visual.items.slice(0,5))" :key="ii" class="askbar-reslist-row" :class="'askbar-reslist-row--'+(it.tone||'default')">
                                     <div class="askbar-reslist-main">
                                         <span class="askbar-reslist-title">{{ it.title }}</span>
                                         <span v-if="it.badge" class="askbar-reslist-badge" :class="'askbar-reslist-badge--'+(it.tone||'default')">{{ it.badge }}</span>
-                                        <span v-if="it.targetKind" class="askbar-reslist-go" aria-hidden="true">↗</span>
                                     </div>
                                     <div v-if="it.meta" class="askbar-reslist-meta">{{ it.meta }}</div>
                                 </div>
@@ -741,7 +729,7 @@
 
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'publication_list'" class="askbar-publist">
                                 <div class="askbar-publist-head"><span>Research publications</span><small>{{ turn.visual.total }} on record</small></div>
-                                <article v-for="(pub,pi) in turn.visual.items" :key="pub.id||pi" class="askbar-pubrow askbar-pubrow--actionable" role="button" tabindex="0" @click="askBarOpenResultItem({targetKind:'library',targetId:pub.id})" @keydown.enter.prevent="askBarOpenResultItem({targetKind:'library',targetId:pub.id})">
+                                <article v-for="(pub,pi) in turn.visual.items" :key="pub.id||pi" class="askbar-pubrow">
                                     <div class="askbar-pubrow-index">{{ String(pi+1).padStart(2,'0') }}</div>
                                     <div class="askbar-pubrow-body">
                                         <h4>{{ pub.title }}</h4>
@@ -784,9 +772,9 @@
                                 <div v-if="turn.confidence!=='low' || (turn.sources && turn.sources.length) || (turn.evidence && turn.evidence.length)" class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
                                     <div class="askbar-trust-main">
                                         <span class="askbar-trust-dot" :title="turn.confidence==='high' ? 'Grounded in department records' : turn.confidence==='medium' ? 'Some records may be missing' : 'Limited grounding'"></span>
-                                        <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Grounded in' : turn.confidence==='medium' ? 'Partially grounded in' : 'Checked' }}</span>
+                                        <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Grounded in' : turn.confidence==='medium' ? 'Partial · grounded in' : 'Limited · checked' }}</span>
                                         <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src">
-                                            <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ askBarSourceLabel(src) }}<span v-if="si < turn.sources.length-1" class="askbar-source-sep"> · </span></span>
+                                            <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ src }}<span v-if="si < turn.sources.length-1" class="askbar-source-sep"> · </span></span>
                                         </span>
                                     </div>
                                     <div class="askbar-trust-meta">
@@ -870,7 +858,7 @@
                 <div v-else-if="askBar.view === 'timeline'" class="askbar-mode-note"><span>Department memory</span><strong>Activity is local to this Grounded workspace.</strong></div>
                 <div v-else class="askbar-input" :class="{ 'askbar-input--busy': askBar.loading }">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" :disabled="askBar.loading" :placeholder="askBar.loading ? 'Grounded is checking…' : (askBar.subject && askBar.subject.name ? 'Ask about ' + askBar.subject.name + '…' : (askBar.context && askBar.context.name ? 'Ask about ' + askBar.context.name + '…' : (askBar.turns.length ? 'Continue with this context…' : 'Ask about people, coverage, rotations or research…')))" autofocus>
+                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" :disabled="askBar.loading" :placeholder="askBar.loading ? 'Checking current records…' : (askBarContextCard ? 'Ask about this ' + askBarContextCard.kind.toLowerCase() + '…' : (askBar.turns.length ? 'Continue with this context…' : 'Ask across people, operations or research…'))" autofocus>
                     <button class="askbar-send" @click="askBarResolve()" :disabled="askBar.loading || !askBar.query.trim()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
                 </div>
             </div>
@@ -894,27 +882,47 @@
         </div>
     </div>
 
-    <!-- ============ LOGIN SCREEN · V22 institutional minimal ============ -->
-    <div v-if="!currentUser" class="login-container login-container--v22">
-        <div class="lc-v22-atmosphere" aria-hidden="true">
+    <!-- ============ LOGIN SCREEN · V44 institutional threshold ============ -->
+    <div v-if="!currentUser" class="login-container login-container--v44">
+        <div class="lc-v44-atmosphere" aria-hidden="true">
             <canvas id="loginTreeCanvas"></canvas>
-            <svg class="lc-v22-flow" viewBox="0 0 1200 820" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <svg class="lc-v44-flow" viewBox="0 0 1200 820" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
                 <path d="M-80 536C118 426 240 384 378 394C517 405 588 476 730 473C861 471 1003 399 1260 253"/>
                 <path d="M-40 430C126 343 263 322 383 352C502 382 591 430 718 421C868 411 1015 327 1240 195"/>
                 <path d="M115 624C273 580 373 594 459 648C547 703 620 753 752 754C894 755 1027 703 1235 608"/>
             </svg>
         </div>
 
-        <section class="lc-v22-story" aria-label="Grounded">
-            <header class="lc-v22-mast">
-                <div class="lc-v22-neumac">neum<span>AC</span></div>
-                <span class="lc-v22-mast-rule"></span>
-                <div class="lc-v22-area">Área Sanitaria de A Coruña y Cee</div>
+        <section class="lc-v44-story" aria-label="neumDesk departmental workspace">
+            <header class="lc-v44-mast">
+                <div class="lc-v44-neumac">neum<span>AC</span></div>
+                <span class="lc-v44-mast-rule"></span>
+                <div class="lc-v44-area">Área Sanitaria de A Coruña y Cee</div>
             </header>
 
-            <div class="lc-v22-hero">
-                <div class="lc-v22-product-line">
-                    <span class="lc-v22-mini-mark" aria-hidden="true">
+            <div class="lc-v44-hero">
+                <div class="lc-v44-product">
+                    <span class="lc-v44-product-mark" aria-hidden="true">
+                        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                            <defs><linearGradient id="lc-v44-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8BE9FF"/><stop offset="100%" stop-color="#7FF5D7"/></linearGradient></defs>
+                            <rect x="96" y="96" width="320" height="320" rx="72" fill="rgba(255,255,255,.07)"/>
+                            <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#lc-v44-logo-grad)" stroke-width="18" stroke-linecap="round" opacity=".72"/>
+                            <path d="M172 322 V236 M172 268 C172 244 192 228 220 228 C256 228 276 250 276 288 V322" fill="none" stroke="url(#lc-v44-logo-grad)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span class="lc-v44-wordmark"><span>neum</span><strong>Desk</strong></span>
+                    <span class="lc-v44-product-kicker">Departmental workspace</span>
+                </div>
+
+                <h1 class="lc-v44-title">One workspace<br>for the department.</h1>
+                <p class="lc-v44-copy">Clinical operations, research and innovation — connected around the people and work of Pneumology.</p>
+
+                <div class="lc-v44-scope" aria-label="Workspace scope">
+                    <span>Clinical operations</span><span>Research programmes</span><span>Clinical studies</span><span>Innovation</span>
+                </div>
+
+                <div class="lc-v44-grounded">
+                    <span class="lc-v44-grounded-mark" aria-hidden="true">
                         <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
                             <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
@@ -922,90 +930,88 @@
                             <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
                         </svg>
                     </span>
-                    <span>Grounded</span>
+                    <div><strong>Grounded</strong><span>Conversational intelligence across live departmental records.</span></div>
                 </div>
-                <h1 class="lc-v22-title">A clear view<br>of the department.</h1>
-                <p class="lc-v22-copy">People, coverage, rotations and research — connected.</p>
             </div>
 
-            <footer class="lc-v22-story-foot">Pneumology · Research &amp; operations</footer>
+            <footer class="lc-v44-story-foot">Pneumology · neumAC · Internal departmental system</footer>
         </section>
 
-        <aside class="lc-v22-access" aria-label="Sign in to Grounded">
-            <div class="lc-v22-access-inner">
-                <header class="lc-v22-access-brand">
-                    <span class="lc-v22-access-mark" aria-hidden="true">
-                        <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--b" d="M19.2 23.5C23.5 19.1 28.1 17.4 32.7 18.1C37.2 18.7 41 21.1 44.5 24.1"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
+        <aside class="lc-v44-access" aria-label="Sign in to neumDesk">
+            <div class="lc-v44-access-inner">
+                <header class="lc-v44-access-brand">
+                    <span class="lc-v44-access-mark" aria-hidden="true">
+                        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                            <defs><linearGradient id="lc-v44-access-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8BE9FF"/><stop offset="100%" stop-color="#7FF5D7"/></linearGradient></defs>
+                            <path d="M186 200 Q256 155 326 200" fill="none" stroke="url(#lc-v44-access-grad)" stroke-width="18" stroke-linecap="round" opacity=".72"/>
+                            <path d="M172 322 V236 M172 268 C172 244 192 228 220 228 C256 228 276 250 276 288 V322" fill="none" stroke="url(#lc-v44-access-grad)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </span>
                     <div>
-                        <div class="lc-v22-access-name">Grounded</div>
-                        <div class="lc-v22-access-sub">Department workspace</div>
+                        <div class="lc-v44-access-name"><span>neum</span><strong>Desk</strong></div>
+                        <div class="lc-v44-access-sub">Pneumology · neumAC</div>
                     </div>
                 </header>
 
-                <div class="lc-v22-signin-head">
-                    <h2>Sign in</h2>
-                    <p>Use your authorised account to continue.</p>
+                <div class="lc-v44-signin-head">
+                    <div class="lc-v44-eyebrow">Authorised access</div>
+                    <h2>Department access</h2>
+                    <p>Sign in with your authorised neumDesk account.</p>
                 </div>
 
-                <div v-if="loginError" class="login-error" :class="{'login-error--warn': loginError.includes('expired') || loginError.includes('session')}">
+                <div v-if="loginError" class="login-error lc-v44-login-error" :class="{'login-error--warn': loginError.includes('expired') || loginError.includes('session')}">
                     <i class="fas" :class="loginError.includes('expired') || loginError.includes('session') ? 'fa-clock' : 'fa-exclamation-circle'"></i>
                     <span>{{ loginError }}</span>
                 </div>
 
-                <form class="lc-form lc-v22-form" @submit.prevent="handleLogin" autocomplete="on">
+                <form class="lc-form lc-v44-form" @submit.prevent="handleLogin" autocomplete="on">
                     <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.email }">
-                        <label class="lc-label">Email</label>
+                        <label class="lc-label" for="nd-login-email">Email</label>
                         <div class="lc-input-wrap">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
-                            <input type="email" class="lc-input" v-model="loginForm.email"
-                                   placeholder="name@sergas.es" autocomplete="email"
-                                   @input="clearLoginError('email')"
-                                   @keyup.enter="handleLogin">
+                            <input id="nd-login-email" type="email" class="lc-input" v-model="loginForm.email"
+                                   placeholder="your authorised email" autocomplete="email"
+                                   @input="clearLoginError('email')">
                         </div>
                         <span v-if="loginFieldErrors.email" class="lc-field-err">{{ loginFieldErrors.email }}</span>
                     </div>
 
                     <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.password }">
-                        <label class="lc-label">Password</label>
+                        <label class="lc-label" for="nd-login-password">Password</label>
                         <div class="lc-input-wrap">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            <input :type="showPassword ? 'text' : 'password'" class="lc-input"
+                            <input id="nd-login-password" :type="showPassword ? 'text' : 'password'" class="lc-input"
                                    v-model="loginForm.password" placeholder="••••••••"
                                    autocomplete="current-password"
-                                   @input="clearLoginError('password')"
-                                   @keyup.enter="handleLogin">
-                            <button type="button" class="lc-eye" @click="showPassword = !showPassword" tabindex="-1" aria-label="Toggle password visibility" title="Toggle password visibility">
+                                   @input="clearLoginError('password')">
+                            <button type="button" class="lc-eye" @click="showPassword = !showPassword" aria-label="Toggle password visibility" title="Toggle password visibility">
                                 <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
                             </button>
                         </div>
                         <span v-if="loginFieldErrors.password" class="lc-field-err">{{ loginFieldErrors.password }}</span>
                     </div>
 
-                    <div class="lc-meta-row">
+                    <div class="lc-v44-session-row">
                         <label class="lc-remember">
                             <input type="checkbox" v-model="loginForm.remember_me">
-                            <span>Remember me</span>
+                            <span>Keep me signed in on this device</span>
                         </label>
-                        <a href="#" class="lc-forgot" @click.prevent="handleForgotPassword">Reset password</a>
+                        <a href="#" class="lc-forgot" @click.prevent="handleForgotPassword">Access help</a>
                     </div>
 
-                    <button class="lc-submit lc-v22-submit" @click="handleLogin" :disabled="loginLoading">
+                    <button type="submit" class="lc-submit lc-v44-submit" :disabled="loginLoading">
                         <i v-if="loginLoading" class="fas fa-spinner fa-spin"></i>
-                        <span>{{ loginLoading ? 'Opening Grounded…' : 'Enter Grounded' }}</span>
-                        <i v-if="!loginLoading" class="fas fa-arrow-right lc-submit-arrow"></i>
+                        <span>{{ loginLoading ? 'Opening neumDesk…' : 'Enter neumDesk' }}</span>
+                        <svg v-if="!loginLoading" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
                     </button>
+
+                    <p class="lc-v44-session-note">On shared computers, leave “Keep me signed in” off.</p>
                 </form>
             </div>
 
-            <footer class="lc-v22-access-foot">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                <span>Authorised departmental access</span>
+            <footer class="lc-v44-access-foot">
+                <span class="lc-v44-lock"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Authorised departmental access</span>
+                <span>neumAC · Pneumology</span>
             </footer>
         </aside>
     </div>
@@ -12349,7 +12355,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=43"></script>
+    <script src="app.js?v=44"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -12457,7 +12463,7 @@ Use Section heading to structure longer clinical or research articles."></textar
         }
 
         resize();
-        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });  
+        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });
         if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
     })();
     </script>
