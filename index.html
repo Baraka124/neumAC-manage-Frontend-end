@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="style.css?v=36">
 
     
 </head>
@@ -1569,7 +1569,9 @@
                                       group === 'absences' ? 'Absences' :
                                       group === 'areas' ? 'Coverage Areas' :
                                       group === 'units' ? 'Training Units' :
-                                      group === 'research' ? 'Research' : group
+                                      group === 'research' ? 'Research lines' :
+                                      group === 'studies' ? 'Clinical studies' :
+                                      group === 'projects' ? 'Clinical innovation' : group
                                     }}</div>
                                     <div v-for="item in items" :key="item.id" class="search-result-item" @mousedown="item.action">
                                         <i class="fas" :class="item.icon"></i>
@@ -5250,10 +5252,10 @@
                         </header>
 
                         <nav class="rv31-nav" aria-label="Research sections">
-                            <button class="rv31-nav-item on" @click="researchHubPage='overview'">Research lines <span>{{ researchLines.length }}</span></button>
-                            <button class="rv31-nav-item" @click="researchHubPage='allstudies'">Clinical studies <span>{{ clinicalTrials.length }}</span></button>
-                            <button class="rv31-nav-item" @click="researchHubPage='allprojects'">Clinical innovation <span>{{ innovationProjects.length }}</span></button>
-                            <button class="rv31-nav-item" @click="researchHubPage='analytics'">Intelligence</button>
+                            <button class="rv31-nav-item on" @click="openResearchPage('overview')">Research lines <span>{{ researchLines.length }}</span></button>
+                            <button class="rv31-nav-item" @click="openResearchPage('allstudies')">Clinical studies <span>{{ clinicalTrials.length }}</span></button>
+                            <button class="rv31-nav-item" @click="openResearchPage('allprojects')">Clinical innovation <span>{{ innovationProjects.length }}</span></button>
+                            <button class="rv31-nav-item" @click="openResearchPage('analytics')">Intelligence</button>
                         </nav>
 
                         <section class="rv31-pulse" aria-label="Research portfolio summary">
@@ -5303,7 +5305,7 @@
                             </div>
 
                             <div class="rv31-programmes" v-if="filteredResearchLines.length">
-                                <article v-for="line in filteredResearchLines" :key="line.id" class="rv31-programme" @click="openLine(line)">
+                                <article v-for="line in filteredResearchLines" :key="line.id" class="rv31-programme" role="button" tabindex="0" @click="openLine(line)" @keydown.enter.prevent="openLine(line)" @keydown.space.prevent="openLine(line)">
                                     <div class="rv31-programme-id">
                                         <span :style="{color:getLineAccent(line.line_number).color}">L{{ line.line_number }}</span>
                                         <i :style="{background:getLineAccent(line.line_number).color}"></i>
@@ -5379,8 +5381,8 @@
                             </div>
                             <div class="rv31-line-actions">
                                 <button v-if="hasPermission('research_lines','update')" class="rv31-round-action" @click="editResearchLine(selectedLine)" title="Edit research line">✎</button>
-                                <button v-if="hasPermission('clinical_trials','create') || hasPermission('research_lines','create')" class="rv31-round-action" @click="showAddTrialModal(selectedLine)" title="Add clinical study">＋<span>Study</span></button>
-                                <button v-if="hasPermission('innovation_projects','create') || hasPermission('research_lines','create')" class="rv31-round-action" @click="showAddProjectModal(selectedLine)" title="Add clinical innovation project">＋<span>Innovation</span></button>
+                                <button v-if="hasPermission('clinical_trials','create')" class="rv31-round-action" @click="showAddTrialModal(selectedLine)" title="Add clinical study">＋<span>Study</span></button>
+                                <button v-if="hasPermission('innovation_projects','create')" class="rv31-round-action" @click="showAddProjectModal(selectedLine)" title="Add clinical innovation project">＋<span>Innovation</span></button>
                             </div>
                         </header>
 
@@ -5469,10 +5471,10 @@
 
                         <!-- Clinical studies -->
                         <div v-if="lineTab === 'studies'" class="rv31-line-list rv33-line-register">
-                            <div class="rv31-list-head"><div><span>Clinical evidence</span><h2>Clinical studies</h2><p>Studies, trials, cohorts and registries linked to this programme.</p></div><button class="rv31-text-action rv31-text-action--primary" @click="showAddTrialModal(selectedLine)"><span class="rv31-action-glyph">＋</span><span>New study</span></button></div>
+                            <div class="rv31-list-head"><div><span>Clinical evidence</span><h2>Clinical studies</h2><p>Studies, trials, cohorts and registries linked to this programme.</p></div><button v-if="hasPermission('clinical_trials','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddTrialModal(selectedLine)"><span class="rv31-action-glyph">＋</span><span>New study</span></button></div>
                             <div v-if="!researchLineStudies(selectedLine?.id).length" class="rv31-empty"><strong>No clinical studies yet</strong><span>Add the first study to this programme.</span></div>
                             <div class="rv33-line-records" v-else>
-                                <article v-for="trial in researchLineStudies(selectedLine?.id)" :key="trial.id" class="rv33-study-row" @click="openStudy(trial)">
+                                <article v-for="trial in researchLineStudies(selectedLine?.id)" :key="trial.id" class="rv33-study-row" role="button" tabindex="0" @click="openStudy(trial)" @keydown.enter.prevent="openStudy(trial)" @keydown.space.prevent="openStudy(trial)">
                                     <div class="rv33-state"><i :class="'is-'+trialStatusKey(trial)"></i><span>{{ TRIAL_STATUS_LABEL[trialStatusKey(trial)] }}</span></div>
                                     <div class="rv33-main">
                                         <div class="rv33-kicker"><span v-if="trial.study_type">{{ trial.study_type }}</span><span v-if="trial.phase">{{ trial.phase }}</span><span v-if="trial.protocol_id" class="rv32-code">{{ trial.protocol_id }}</span></div>
@@ -5482,7 +5484,7 @@
                                     <div class="rv33-governance-mini">
                                         <span>Governance</span>
                                         <div><b :class="{ok:trial.protocol_finalized}">{{ trial.protocol_finalized ? 'Protocol ✓' : 'Protocol' }}</b><b :class="{ok:trial.ethics_status==='approved'}">{{ trial.ethics_status==='approved' ? 'Ethics ✓' : 'Ethics' }}</b><b :class="{ok:trial.principal_investigator_id}">{{ trial.principal_investigator_id ? 'PI ✓' : 'PI' }}</b></div>
-                                        <small>{{ trial.sponsor_name || (trial.is_multicentre ? 'Multicentre study' : 'Sponsor not recorded') }}</small>
+                                        <small v-if="trial.sponsor_name || trial.is_multicentre">{{ trial.sponsor_name || 'Multicentre study' }}<template v-if="trial.sponsor_name && trial.is_multicentre"> · Multicentre</template></small>
                                     </div>
                                     <div class="rv33-metric" v-if="trialEnrollment(trial)"><strong>{{ trialEnrollment(trial).actual }}<small>/{{ trialEnrollment(trial).target }}</small></strong><span>{{ trialEnrollment(trial).remaining }} to target</span><div class="rv32-progress"><i :class="'is-'+trialEnrollment(trial).health" :style="{width:trialEnrollment(trial).pct+'%'}"></i></div></div>
                                     <div class="rv33-metric rv33-metric--empty" v-else><span>Recruitment</span><small>Target not recorded</small></div>
@@ -5493,18 +5495,18 @@
 
                         <!-- Clinical innovation -->
                         <div v-if="lineTab === 'projects'" class="rv31-line-list rv33-line-register">
-                            <div class="rv31-list-head"><div><span>Clinical innovation</span><h2>Innovation projects</h2><p>Clinical needs moving through development, validation and implementation.</p></div><button class="rv31-text-action rv31-text-action--primary" @click="showAddProjectModal(selectedLine)"><span class="rv31-action-glyph">＋</span><span>New project</span></button></div>
+                            <div class="rv31-list-head"><div><span>Clinical innovation</span><h2>Innovation projects</h2><p>Clinical needs moving through development, validation and implementation.</p></div><button v-if="hasPermission('innovation_projects','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddProjectModal(selectedLine)"><span class="rv31-action-glyph">＋</span><span>New project</span></button></div>
                             <div v-if="!researchLineProjects(selectedLine?.id).length" class="rv31-empty"><strong>No clinical innovation projects yet</strong><span>Add the first innovation project to this programme.</span></div>
                             <div class="rv33-line-records" v-else>
-                                <article v-for="proj in researchLineProjects(selectedLine?.id)" :key="proj.id" class="rv33-project-row" @click="openProject(proj)">
+                                <article v-for="proj in researchLineProjects(selectedLine?.id)" :key="proj.id" class="rv33-project-row" role="button" tabindex="0" @click="openProject(proj)" @keydown.enter.prevent="openProject(proj)" @keydown.space.prevent="openProject(proj)">
                                     <div class="rv33-stage"><span>{{ formatInnovationStage(proj.current_stage || proj.development_stage) }}</span><i></i></div>
                                     <div class="rv33-main">
                                         <div class="rv33-kicker"><span>{{ formatInnovationCategory(proj.category) }}</span><span v-if="proj.trl_level">TRL {{ proj.trl_level }}</span></div>
                                         <h3>{{ proj.title }}</h3>
                                         <p>{{ proj.clinical_rationale || proj.description || 'No clinical rationale recorded' }}</p>
                                     </div>
-                                    <div class="rv33-context"><span>Clinical focus</span><strong>{{ (proj.target_diseases||[]).length ? proj.target_diseases.join(' · ') : (proj.scope_note || 'Not recorded') }}</strong><small>{{ ({funded:'Funded',seeking:'Seeking funding',applied:'Applied',not_applicable:'Funding not applicable',completed:'Funding completed'})[proj.funding_status || 'not_applicable'] }}</small></div>
-                                    <div class="rv33-context"><span>Collaboration</span><strong>{{ proj.partner_found ? (proj.partner_name || 'Partner recorded') : ((proj.partner_needs||[]).length ? (proj.partner_needs.length+' partner need'+(proj.partner_needs.length===1?'':'s')) : 'No partner need recorded') }}</strong><small>{{ proj.scope_finalized ? 'Scope finalized' : 'Scope pending' }}</small></div>
+                                    <div class="rv33-context"><span>Clinical focus</span><strong>{{ (proj.target_diseases||[]).length ? proj.target_diseases.join(' · ') : (proj.scope_note || 'Not recorded') }}</strong><small>{{ formatFundingStatus(proj.funding_status) }}</small></div>
+                                    <div class="rv33-context"><span>Collaboration</span><strong>{{ proj.partner_found ? (proj.partner_name || 'Partner recorded') : ((proj.partner_needs||[]).length ? (proj.partner_needs.length+' partner need'+(proj.partner_needs.length===1?'':'s')) : 'No external partner need recorded') }}</strong><small>{{ proj.scope_finalized ? 'Scope confirmed' : 'Scope pending' }}</small></div>
                                     <i class="rv33-arrow">→</i>
                                 </article>
                             </div>
@@ -5520,7 +5522,7 @@
                     <div v-if="researchHubPage === 'study'" class="rv32-page rv32-study-detail" >
                         <div v-if="selectedStudy">
                             <div class="rv32-context-bar">
-                                <button class="rv32-back" @click="goToLine">← <span>{{ selectedLine ? (selectedLine.research_line_name || selectedLine.name) : 'Research' }}</span></button>
+                                <button class="rv32-back" @click="goBackFromRecord">← <span>{{ researchRecordBackLabel }}</span></button>
                                 <span>Clinical study</span>
                             </div>
 
@@ -5535,7 +5537,7 @@
                                         <span class="rv32-status-dot" :class="'is-' + trialStatusKey(selectedStudy)">{{ TRIAL_STATUS_LABEL[trialStatusKey(selectedStudy)] }}</span>
                                     </div>
                                 </div>
-                                <button class="rv32-circle-action" @click="editTrial(selectedStudy)" title="Edit clinical study" aria-label="Edit clinical study">✎</button>
+                                <button v-if="hasPermission('clinical_trials','update')" class="rv32-circle-action" @click="editTrial(selectedStudy)" title="Edit clinical study" aria-label="Edit clinical study">✎</button>
                             </header>
 
                             <section class="rv32-study-command">
@@ -5570,7 +5572,7 @@
                             </section>
 
                             <section class="rv32-lifecycle-block rv33-study-lifecycle-block">
-                                <div class="rv32-section-heading"><div><span>Study lifecycle</span><h2>Study delivery &amp; recruitment</h2></div><small>Study status and recruitment status are kept separate.</small></div>
+                                <div class="rv32-section-heading"><div><span>Study lifecycle</span><h2>Study delivery &amp; recruitment</h2></div><small>Study status and recruitment progress are shown separately.</small></div>
                                 <div class="rv33-dual-lifecycle">
                                     <div class="rv33-life-lane">
                                         <div class="rv33-life-lane-head"><span>Study lifecycle</span><strong>{{ trialStatusKey(selectedStudy)==='prep' ? 'Preparation' : trialStatusKey(selectedStudy)==='done' ? 'Completed' : 'Active delivery' }}</strong></div>
@@ -5605,7 +5607,7 @@
                                             <div><span>Phase</span><strong>{{ selectedStudy.phase || 'Not applicable or not recorded' }}</strong></div>
                                             <div><span>Population</span><strong>{{ ({adult:'Adult',paediatric:'Paediatric',mixed:'Mixed',not_applicable:'Not applicable'})[selectedStudy.population_type] || 'Not recorded' }}</strong></div>
                                             <div><span>Centre model</span><strong>{{ selectedStudy.is_multicentre ? 'Multicentre' : 'Single-centre or not recorded as multicentre' }}</strong><small v-if="selectedStudy.is_multicentre && selectedStudy.participating_centres">{{ selectedStudy.participating_centres }} participating centres</small></div>
-                                            <div><span>Sponsor</span><strong>{{ selectedStudy.sponsor_name || 'Not recorded' }}</strong><small v-if="selectedStudy.sponsor_type">{{ selectedStudy.sponsor_type }}</small></div>
+                                            <div><span>Sponsor</span><strong>{{ selectedStudy.sponsor_name || 'Not recorded / not applicable' }}</strong><small v-if="selectedStudy.sponsor_type">{{ selectedStudy.sponsor_type }}</small></div>
                                             <div><span>Funding</span><strong>{{ ({funded:'Funded',seeking:'Seeking funding',applied:'Applied',not_applicable:'Not applicable',completed:'Completed'})[selectedStudy.funding_status || 'not_applicable'] }}</strong></div>
                                         </div>
                                     </section>
@@ -5644,10 +5646,10 @@
                                         <span>Timeline</span>
                                         <div class="rv32-side-facts"><div><small>Start</small><strong>{{ selectedStudy.start_date || '—' }}</strong></div><div><small>Expected end</small><strong>{{ selectedStudy.estimated_end_date || selectedStudy.end_date || '—' }}</strong></div><div v-if="selectedStudy.actual_end_date"><small>Actual end</small><strong>{{ selectedStudy.actual_end_date }}</strong></div></div>
                                     </section>
-                                    <section class="rv32-side-section rv32-side-section--management">
+                                    <section v-if="hasPermission('clinical_trials','update') || hasPermission('clinical_trials','delete')" class="rv32-side-section rv32-side-section--management">
                                         <span>Record management</span>
-                                        <button class="rv32-text-link" @click="editTrial(selectedStudy)">✎ Edit clinical study</button>
-                                        <button class="rv32-text-link rv32-text-link--danger" @click="deleteClinicalTrial(selectedStudy.id); goToLine()">Delete study</button>
+                                        <button v-if="hasPermission('clinical_trials','update')" class="rv32-text-link" @click="editTrial(selectedStudy)">✎ Edit clinical study</button>
+                                        <button v-if="hasPermission('clinical_trials','delete')" class="rv32-text-link rv32-text-link--danger" @click="deleteClinicalTrial(selectedStudy, goBackFromRecord)">Delete study</button>
                                     </section>
                                 </aside>
                             </div>
@@ -5657,7 +5659,7 @@
                     <div v-if="researchHubPage === 'project'" class="rv32-page rv32-project-detail" >
                         <div v-if="selectedProject">
                             <div class="rv32-context-bar">
-                                <button class="rv32-back" @click="goToLine">← <span>{{ selectedLine ? (selectedLine.research_line_name || selectedLine.name) : 'Research' }}</span></button>
+                                <button class="rv32-back" @click="goBackFromRecord">← <span>{{ researchRecordBackLabel }}</span></button>
                                 <span>Clinical innovation</span>
                             </div>
 
@@ -5671,7 +5673,7 @@
                                         <span v-if="selectedProject.trl_level">TRL {{ selectedProject.trl_level }}</span>
                                     </div>
                                 </div>
-                                <button class="rv32-circle-action" @click="editProject(selectedProject)" title="Edit clinical innovation project" aria-label="Edit clinical innovation project">✎</button>
+                                <button v-if="hasPermission('innovation_projects','update')" class="rv32-circle-action" @click="editProject(selectedProject)" title="Edit clinical innovation project" aria-label="Edit clinical innovation project">✎</button>
                             </header>
 
                             <section class="rv32-innovation-need">
@@ -5696,7 +5698,7 @@
                             <section class="rv32-governance-band rv32-governance-band--innovation" :class="{'attention': !selectedProject.scope_finalized || (selectedProject.regulatory_pathway && selectedProject.regulatory_pathway!=='none' && !selectedProject.trl_level)}">
                                 <div class="rv32-governance-intro"><span class="rv32-governance-dot"></span><div><strong>Innovation governance</strong><small>Scope, validation readiness and regulatory pathway where applicable</small></div></div>
                                 <div class="rv32-governance-item" :class="{'ok':selectedProject.scope_finalized,'attention':!selectedProject.scope_finalized}"><span>Scope</span><strong>{{ selectedProject.scope_finalized ? 'Finalized' : 'Pending' }}</strong></div>
-                                <div class="rv32-governance-item"><span>Regulatory pathway</span><strong>{{ ({none:'None recorded',ce_mdr:'CE MDR',samd:'SaMD',aemps:'AEMPS',fda:'FDA',other:'Other'})[selectedProject.regulatory_pathway || 'none'] }}</strong></div>
+                                <div class="rv32-governance-item"><span>Regulatory pathway</span><strong>{{ formatRegulatoryPathway(selectedProject.regulatory_pathway) }}</strong></div>
                                 <div class="rv32-governance-item"><span>Funding</span><strong>{{ ({funded:'Funded',seeking:'Seeking funding',applied:'Applied',not_applicable:'Not applicable',completed:'Completed'})[selectedProject.funding_status || 'not_applicable'] }}</strong><small v-if="selectedProject.funding_source">{{ selectedProject.funding_source }}</small></div>
                                 <div class="rv32-governance-item"><span>Clinical validation governance</span><strong>{{ ({approved:'Ethics approved',pending:'Ethics pending',exempt:'Ethics exempt',not_required:'Not required'})[selectedProject.ethics_status] || 'Not recorded' }}</strong><small>{{ selectedProject.validation_protocol_id ? ('Protocol · '+selectedProject.validation_protocol_id) : 'Protocol / ethics where applicable' }}</small></div>
                             </section>
@@ -5752,10 +5754,10 @@
                                         <a v-if="selectedProject.repo_url" :href="selectedProject.repo_url" target="_blank" rel="noopener">Repository ↗</a>
                                         <a v-if="selectedProject.demo_url" :href="selectedProject.demo_url" target="_blank" rel="noopener">Live system ↗</a>
                                     </section>
-                                    <section class="rv32-side-section rv32-side-section--management">
+                                    <section v-if="hasPermission('innovation_projects','update') || hasPermission('innovation_projects','delete')" class="rv32-side-section rv32-side-section--management">
                                         <span>Record management</span>
-                                        <button class="rv32-text-link" @click="editProject(selectedProject)">✎ Edit clinical innovation</button>
-                                        <button class="rv32-text-link rv32-text-link--danger" @click="deleteInnovationProject(selectedProject.id); goToLine()">Delete project</button>
+                                        <button v-if="hasPermission('innovation_projects','update')" class="rv32-text-link" @click="editProject(selectedProject)">✎ Edit clinical innovation</button>
+                                        <button v-if="hasPermission('innovation_projects','delete')" class="rv32-text-link rv32-text-link--danger" @click="deleteInnovationProject(selectedProject, goBackFromRecord)">Delete project</button>
                                     </section>
                                 </aside>
                             </div>
@@ -5763,17 +5765,17 @@
                     </div><!-- /project -->
                     <!-- ══ V32 · CLINICAL STUDIES PORTFOLIO ════════════════════════ -->
                     <div v-if="researchHubPage === 'allstudies'" class="rv32-page rv32-collection rv32-studies" >
-                        <div class="rv32-context-bar"><button class="rv32-back" @click="researchHubPage='overview'">← <span>Research</span></button><span>Clinical evidence</span></div>
+                        <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Clinical evidence</span></div>
                         <header class="rv32-collection-hero">
                             <div><div class="rv32-eyebrow">CLINICAL EVIDENCE</div><h1>Clinical studies</h1><p>Track study status, enrolment, protocol readiness and research governance across Pneumology.</p></div>
-                            <button v-if="hasPermission('research_lines','create')" class="rv32-add-action" @click="showAddTrialModal(null)"><span>＋</span> New clinical study</button>
+                            <button v-if="hasPermission('clinical_trials','create')" class="rv32-add-action" @click="showAddTrialModal(null)"><span>＋</span> New clinical study</button>
                         </header>
 
                         <section class="rv32-pulse-row">
                             <div><span>Active studies</span><strong>{{ clinicalTrials.filter(t=>['active','recruiting'].includes(trialStatusKey(t))).length }}</strong><small>{{ countTrialsByStatus('recruiting') }} recruiting</small></div>
                             <div><span>Recruitment</span><strong>{{ clinicalTrials.reduce((s,t)=>s+(Number(t.actual_enrollment)||0),0) }}<template v-if="clinicalTrials.reduce((s,t)=>s+(Number(t.enrollment_target)||0),0)"> / {{ clinicalTrials.reduce((s,t)=>s+(Number(t.enrollment_target)||0),0) }}</template></strong><small>enrolled across studies with a recorded target</small></div>
                             <div><span>Multicentre</span><strong>{{ clinicalTrials.filter(t=>t.is_multicentre).length }}</strong><small>studies marked multicentre</small></div>
-                            <div :class="{'attention':clinicalTrials.filter(t=>studyGovernance(t).any).length}"><span>Governance</span><strong>{{ clinicalTrials.filter(t=>studyGovernance(t).any).length }}</strong><small>records needing attention</small></div>
+                            <div :class="{'attention':clinicalTrials.filter(t=>studyGovernance(t).any).length}"><span>Governance</span><strong>{{ clinicalTrials.filter(t=>studyGovernance(t).any).length }}</strong><small>study records to review</small></div>
                         </section>
 
                         <section class="rv32-control-rail">
@@ -5781,6 +5783,7 @@
                             <select v-model="trialFilters.line"><option value="">All research lines</option><option v-for="line in researchLines" :key="line.id" :value="line.id">L{{ line.line_number }} · {{ line.research_line_name || line.name }}</option></select>
                             <select v-model="trialFilters.phase"><option value="">All phases</option><option value="Phase I">Phase I</option><option value="Phase II">Phase II</option><option value="Phase III">Phase III</option><option value="Phase IV">Phase IV</option></select>
                             <button v-if="trialFilters.search || trialFilters.line || trialFilters.phase || trialFilters.status" class="rv32-clear" @click="trialFilters.search='';trialFilters.line='';trialFilters.phase='';trialFilters.status=''">Clear</button>
+                            <span class="rv36-filter-count" aria-live="polite">{{ filteredTrialsAll.length }} shown</span>
                         </section>
 
                         <nav class="rv32-state-rail" aria-label="Study status filters">
@@ -5793,7 +5796,7 @@
 
                         <section class="rv32-record-list">
                             <div v-if="!filteredTrialsAll.length" class="rv32-empty"><strong>No clinical studies found</strong><span>Adjust the current filters or create a new study.</span></div>
-                            <article v-for="trial in filteredTrialsAll" :key="trial.id" class="rv32-study-row" @click="selectedLine=researchLines.find(l=>l.id===trial.research_line_id);openStudy(trial)">
+                            <article v-for="trial in filteredTrialsAll" :key="trial.id" class="rv32-study-row" role="button" tabindex="0" @click="openStudy(trial, 'allstudies')" @keydown.enter.prevent="openStudy(trial, 'allstudies')" @keydown.space.prevent="openStudy(trial, 'allstudies')">
                                 <div class="rv32-row-state"><i :class="'is-'+trialStatusKey(trial)"></i><span>{{ TRIAL_STATUS_LABEL[trialStatusKey(trial)] }}</span></div>
                                 <div class="rv32-row-main">
                                     <div class="rv32-row-kicker"><span v-if="trial.study_type">{{ trial.study_type }}</span><span v-if="trial.phase">{{ trial.phase }}</span><span v-if="trial.protocol_id" class="rv32-code">{{ trial.protocol_id }}</span></div>
@@ -5802,7 +5805,7 @@
                                 </div>
                                 <div class="rv32-row-governance">
                                     <span>Governance</span>
-                                    <div><b :class="{ok:trial.protocol_finalized}">{{ trial.protocol_finalized ? 'Protocol ✓' : 'Protocol pending' }}</b><b :class="{ok:trial.ethics_status==='approved'}">{{ trial.ethics_status==='approved' ? 'Ethics ✓' : (trial.ethics_status ? 'Ethics '+trial.ethics_status : 'Ethics not set') }}</b><b :class="{ok:trial.principal_investigator_id}">{{ trial.principal_investigator_id ? 'PI assigned' : 'PI missing' }}</b></div>
+                                    <div><b :class="{ok:trial.protocol_finalized}">{{ trial.protocol_finalized ? 'Protocol ✓' : 'Protocol pending' }}</b><b :class="{ok:trial.ethics_status==='approved'}">{{ trial.ethics_status==='approved' ? 'Ethics ✓' : (trial.ethics_status ? 'Ethics · '+formatEthicsStatus(trial.ethics_status) : 'Ethics not recorded') }}</b><b :class="{ok:trial.principal_investigator_id}">{{ trial.principal_investigator_id ? 'PI assigned' : 'PI missing' }}</b></div>
                                     <small v-if="trial.sponsor_name">{{ trial.sponsor_name }}<template v-if="trial.is_multicentre"> · Multicentre</template></small><small v-else-if="trial.is_multicentre">Multicentre · {{ trial.participating_centres || '?' }} centres</small>
                                 </div>
                                 <div class="rv32-row-recruitment" v-if="trialEnrollment(trial)"><div><strong>{{ trialEnrollment(trial).actual }}</strong><span>/ {{ trialEnrollment(trial).target }}</span></div><small>{{ trialEnrollment(trial).remaining }} to target</small><div class="rv32-progress"><i :class="'is-'+trialEnrollment(trial).health" :style="{width:trialEnrollment(trial).pct+'%'}"></i></div></div>
@@ -5813,14 +5816,14 @@
                     </div><!-- /allstudies -->
                     <!-- ══ V32 · CLINICAL INNOVATION PORTFOLIO ═══════════════════ -->
                     <div v-if="researchHubPage === 'allprojects'" class="rv32-page rv32-collection rv32-innovation" >
-                        <div class="rv32-context-bar"><button class="rv32-back" @click="researchHubPage='overview'">← <span>Research</span></button><span>Clinical innovation</span></div>
+                        <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Clinical innovation</span></div>
                         <header class="rv32-collection-hero">
                             <div><div class="rv32-eyebrow">CLINICAL INNOVATION</div><h1>Clinical innovation</h1><p>From clinical need to validation, implementation and scale.</p></div>
-                            <button v-if="hasPermission('research_lines','create')" class="rv32-add-action" @click="showAddProjectModal(null)"><span>＋</span> New innovation project</button>
+                            <button v-if="hasPermission('innovation_projects','create')" class="rv32-add-action" @click="showAddProjectModal(null)"><span>＋</span> New innovation project</button>
                         </header>
 
                         <section class="rv32-pulse-row">
-                            <div><span>Active projects</span><strong>{{ innovationProjects.length }}</strong><small>across the recorded portfolio</small></div>
+                            <div><span>Projects</span><strong>{{ innovationProjects.length }}</strong><small>across the recorded portfolio</small></div>
                             <div><span>Validation / later</span><strong>{{ innovationProjects.filter(p=>/valid|implement|deploy|scale|escal|comercial/i.test(p.current_stage||p.development_stage||'')).length }}</strong><small>projects in later development</small></div>
                             <div><span>Funded</span><strong>{{ innovationProjects.filter(p=>p.funding_status==='funded').length }}</strong><small>projects marked funded</small></div>
                             <div :class="{'attention':innovationProjects.filter(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found)).length}"><span>Attention</span><strong>{{ innovationProjects.filter(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found)).length }}</strong><small>scope or unresolved partner needs</small></div>
@@ -5836,19 +5839,20 @@
                             <select v-model="projectFilters.research_line_id"><option value="">All research lines</option><option v-for="line in researchLines" :key="line.id" :value="line.id">L{{ line.line_number }} · {{ line.research_line_name || line.name }}</option></select>
                             <select v-model="projectFilters.funding_status"><option value="">All funding states</option><option value="funded">Funded</option><option value="seeking">Seeking funding</option><option value="applied">Applied</option><option value="not_applicable">Not applicable</option><option value="completed">Completed</option></select>
                             <button v-if="projectFilters.search || projectFilters.research_line_id || projectFilters.funding_status || projectFilters.stage" class="rv32-clear" @click="projectFilters.search='';projectFilters.research_line_id='';projectFilters.funding_status='';projectFilters.stage=''">Clear</button>
+                            <span class="rv36-filter-count" aria-live="polite">{{ filteredProjectsAll.length }} shown</span>
                         </section>
 
                         <section class="rv32-record-list">
                             <div v-if="!filteredProjectsAll.length" class="rv32-empty"><strong>No clinical innovation projects found</strong><span>Adjust the current filters or create a new project.</span></div>
-                            <article v-for="proj in filteredProjectsAll" :key="proj.id" class="rv32-project-row" @click="selectedLine=researchLines.find(l=>l.id===proj.research_line_id);openProject(proj)">
+                            <article v-for="proj in filteredProjectsAll" :key="proj.id" class="rv32-project-row" role="button" tabindex="0" @click="openProject(proj, 'allprojects')" @keydown.enter.prevent="openProject(proj, 'allprojects')" @keydown.space.prevent="openProject(proj, 'allprojects')">
                                 <div class="rv32-project-stage"><span>{{ formatInnovationStage(proj.current_stage || proj.development_stage) }}</span><i></i></div>
                                 <div class="rv32-row-main">
                                     <div class="rv32-row-kicker"><span>{{ formatInnovationCategory(proj.category) }}</span><span v-if="proj.trl_level">TRL {{ proj.trl_level }}</span><span>{{ getResearchLineName(proj.research_line_id) }}</span></div>
                                     <h2>{{ proj.title }}</h2>
                                     <p>{{ proj.clinical_rationale || proj.description || ((proj.target_diseases||[]).length ? proj.target_diseases.join(' · ') : 'No clinical rationale recorded') }}</p>
                                 </div>
-                                <div class="rv32-project-context"><span>Clinical focus</span><strong>{{ (proj.target_diseases||[]).length ? proj.target_diseases.join(' · ') : (proj.scope_note || 'Not recorded') }}</strong><small>{{ ({funded:'Funded',seeking:'Seeking funding',applied:'Applied',not_applicable:'Funding not applicable',completed:'Funding completed'})[proj.funding_status || 'not_applicable'] }}<template v-if="proj.regulatory_pathway && proj.regulatory_pathway!=='none'"> · {{ proj.regulatory_pathway }}</template></small></div>
-                                <div class="rv32-project-context"><span>Collaboration</span><strong>{{ proj.partner_found ? (proj.partner_name || 'Partner recorded') : ((proj.partner_needs||[]).length ? (proj.partner_needs.length+' partner need'+(proj.partner_needs.length===1?'':'s')) : 'No partner need recorded') }}</strong><small>{{ proj.scope_finalized ? 'Scope finalized' : 'Scope pending' }}</small></div>
+                                <div class="rv32-project-context"><span>Clinical focus</span><strong>{{ (proj.target_diseases||[]).length ? proj.target_diseases.join(' · ') : (proj.scope_note || 'Not recorded') }}</strong><small>{{ formatFundingStatus(proj.funding_status) }}<template v-if="proj.regulatory_pathway && proj.regulatory_pathway!=='none'"> · {{ formatRegulatoryPathway(proj.regulatory_pathway) }}</template></small></div>
+                                <div class="rv32-project-context"><span>Collaboration</span><strong>{{ proj.partner_found ? (proj.partner_name || 'Partner recorded') : ((proj.partner_needs||[]).length ? (proj.partner_needs.length+' partner need'+(proj.partner_needs.length===1?'':'s')) : 'No external partner need recorded') }}</strong><small>{{ proj.scope_finalized ? 'Scope confirmed' : 'Scope pending' }}</small></div>
                                 <div class="rv32-row-arrow">→</div>
                             </article>
                         </section>
@@ -5856,7 +5860,7 @@
 
                     <!-- ══ V33 · RESEARCH INTELLIGENCE ═════════════════════════════ -->
                     <div v-if="researchHubPage === 'analytics'" class="rv33-intelligence rv32-page">
-                        <div class="rv32-context-bar"><button class="rv32-back" @click="researchHubPage='overview'">← <span>Research</span></button><span>Research intelligence</span></div>
+                        <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Research intelligence</span></div>
                         <header class="rv32-collection-hero rv33-intelligence-hero"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>A portfolio view of enrolment, governance, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
 
                         <section class="rv32-pulse-row rv33-intel-pulse">
@@ -5885,7 +5889,7 @@
                             <section class="rv33-intel-panel">
                                 <header><div><span>Clinical evidence</span><h2>Enrolment watch</h2></div><small>Studies open to recruitment</small></header>
                                 <div class="rv33-intel-list">
-                                    <button v-for="trial in clinicalTrials.filter(t=>trialStatusKey(t)==='recruiting').slice().sort((a,b)=>(trialEnrollment(b)?.remaining||0)-(trialEnrollment(a)?.remaining||0)).slice(0,6)" :key="trial.id" @click="selectedLine=researchLines.find(l=>l.id===trial.research_line_id);openStudy(trial)">
+                                    <button v-for="trial in clinicalTrials.filter(t=>trialStatusKey(t)==='recruiting').slice().sort((a,b)=>(trialEnrollment(b)?.remaining||0)-(trialEnrollment(a)?.remaining||0)).slice(0,6)" :key="trial.id" @click="openStudy(trial, 'analytics')">
                                         <span><strong>{{ trial.title }}</strong><small>{{ trial.protocol_id || getResearchLineName(trial.research_line_id) }}</small></span>
                                         <b v-if="trialEnrollment(trial)">{{ trialEnrollment(trial).actual }}/{{ trialEnrollment(trial).target }}<small>{{ trialEnrollment(trial).remaining }} to target</small></b><b v-else>—<small>target missing</small></b>
                                     </button>
@@ -5896,7 +5900,7 @@
                             <section class="rv33-intel-panel">
                                 <header><div><span>Research governance</span><h2>Attention queue</h2></div><small>Recorded gaps only</small></header>
                                 <div class="rv33-intel-list">
-                                    <button v-for="trial in clinicalTrials.filter(t=>studyGovernance(t).any).slice(0,6)" :key="trial.id" @click="selectedLine=researchLines.find(l=>l.id===trial.research_line_id);openStudy(trial)">
+                                    <button v-for="trial in clinicalTrials.filter(t=>studyGovernance(t).any).slice(0,6)" :key="trial.id" @click="openStudy(trial, 'analytics')">
                                         <span><strong>{{ trial.title }}</strong><small>{{ [!trial.protocol_finalized?'Protocol':null,!trial.ethics_status?'Ethics':null,!trial.principal_investigator_id?'PI':null].filter(Boolean).join(' · ') }}</small></span><i>→</i>
                                     </button>
                                     <div v-if="!clinicalTrials.some(t=>studyGovernance(t).any)" class="rv32-not-recorded">No governance gaps are recorded.</div>
@@ -5906,7 +5910,7 @@
                             <section class="rv33-intel-panel">
                                 <header><div><span>Clinical innovation</span><h2>Development attention</h2></div><small>Scope / collaboration</small></header>
                                 <div class="rv33-intel-list">
-                                    <button v-for="proj in innovationProjects.filter(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found)).slice(0,6)" :key="proj.id" @click="selectedLine=researchLines.find(l=>l.id===proj.research_line_id);openProject(proj)">
+                                    <button v-for="proj in innovationProjects.filter(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found)).slice(0,6)" :key="proj.id" @click="openProject(proj, 'analytics')">
                                         <span><strong>{{ proj.title }}</strong><small>{{ !proj.scope_finalized ? 'Scope pending' : ((proj.partner_needs||[]).length+' partner need'+((proj.partner_needs||[]).length===1?'':'s')) }}</small></span><i>→</i>
                                     </button>
                                     <div v-if="!innovationProjects.some(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found))" class="rv32-not-recorded">No development attention items are recorded.</div>
@@ -6297,7 +6301,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div v-else-if="newsModal.form.post_type==='highlight'" class="news-v24-editor-body news-v24-editor-highlight">
                                     <div class="news-v24-object-label">Research highlight</div>
                                     <div class="news-v24-highlight-compose">
-                                        <div class="news-v24-highlight-media-editor"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><button v-else @click.prevent="triggerNewsImagePicker" class="news-v24-add-visual"><span>＋</span><strong>Add the visual</strong><small>A Highlight begins with its evidence or image</small></button><input id="newsImageFileInput" type="file" accept="image/*" @change="uploadNewsImage(newsModal.form,$event)" hidden><div v-if="newsModal.form.image_urls.length" class="news-v24-highlight-media-actions"><button @click.prevent="triggerNewsImagePicker">＋ Add another</button><button @click.prevent="newsModal.form.image_urls.splice(0,1)">Remove lead image</button></div></div>
+                                        <div class="news-v24-highlight-media-editor"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><button v-else @click.prevent="triggerNewsImagePicker" class="news-v24-add-visual"><span>＋</span><strong>Add the visual</strong><small>A Highlight begins with its evidence or image</small></button><input id="newsHighlightImageFileInput" type="file" accept="image/*" @change="uploadNewsImage(newsModal.form,$event)" hidden><div v-if="newsModal.form.image_urls.length" class="news-v24-highlight-media-actions"><button @click.prevent="triggerNewsImagePicker">＋ Add another</button><button @click.prevent="newsModal.form.image_urls.splice(0,1)">Remove lead image</button></div></div>
                                         <div class="news-v24-highlight-copy-editor"><textarea class="news-v24-title-input" v-model="newsModal.form.title" rows="3" placeholder="Highlight headline"></textarea><textarea class="news-v24-highlight-copyarea" v-model="newsModal.form.body" placeholder="What should the department understand from this result or milestone?"></textarea></div>
                                     </div>
                                 </div>
@@ -6663,7 +6667,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <div class="pd-stat">
                                 <div class="pd-stat-n pd-stat-n--teal">{{ clinicalTrials.filter(t=>t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)).length }}</div>
                                 <div class="pd-stat-l">Studies</div>
-                                <div class="pd-stat-sub" v-if="clinicalTrials.filter(t=>(t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)) && (t.status==='Recruiting'||t.status==='Activo'||t.recruitment_status==='recruiting')).length">{{ clinicalTrials.filter(t=>(t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)) && (t.status==='Recruiting'||t.status==='Activo'||t.recruitment_status==='recruiting')).length }} recruiting</div>
+                                <div class="pd-stat-sub" v-if="clinicalTrials.filter(t=>(t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)) && (['active','recruiting'].includes(trialStatusKey(t)) || trialRecruitmentKey(t)==='recruiting')).length">{{ clinicalTrials.filter(t=>(t.principal_investigator_id===staffProfileModal.staff.id || (t.co_investigators||[]).includes(staffProfileModal.staff.id)) && (['active','recruiting'].includes(trialStatusKey(t)) || trialRecruitmentKey(t)==='recruiting')).length }} recruiting</div>
                             </div>
                             <div class="pd-stat">
                                 <div class="pd-stat-n">{{ rotations.filter(r=>r.supervising_attending_id===staffProfileModal.staff.id && r.rotation_status==='active').length }}</div>
@@ -6979,7 +6983,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                             <div class="pd-ov-title">{{ t.title }}</div>
                                             <div class="pd-ov-meta">{{ t.principal_investigator_id===staffProfileModal.staff.id ? 'Principal Investigator' : 'Co-investigator' }}<span v-if="t.phase"> · {{ t.phase }}</span></div>
                                         </div>
-                                        <span class="pd-ov-tag pd-ov-tag--soon" v-if="t.status==='Recruiting'||t.recruitment_status==='recruiting'">RECRUITING</span>
+                                        <span class="pd-ov-tag pd-ov-tag--soon" v-if="trialRecruitmentKey(t)==='recruiting'">RECRUITING</span>
                                     </div>
                                     <!-- progress bar only when both enrollment fields exist -->
                                     <template v-if="t.enrollment_target && t.actual_enrollment != null">
@@ -7220,7 +7224,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         <span class="pd-trial-title">{{ trial.title }}</span>
                                         <span class="pd-trial-meta">{{ trial.phase }} · <span class="pd-trial-role">{{ trial.role }}</span></span>
                                     </div>
-                                    <span class="pd-badge" :class="{ 'pd-badge--ok': trial.status === 'Activo', 'pd-badge--blue': trial.status === 'Reclutando', 'pd-badge--neutral': trial.status === 'Completado' }">{{ formatStudyStatus(trial.status) }}</span>
+                                    <span class="pd-badge" :class="{ 'pd-badge--ok': trialStatusKey(trial) === 'active', 'pd-badge--blue': trialRecruitmentKey(trial) === 'recruiting', 'pd-badge--neutral': trialStatusKey(trial) === 'done' }">{{ formatStudyStatus(trial.status) }}</span>
                                 </div>
                             </div>
 
@@ -10149,7 +10153,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                   :style="clinicalTrialModal.form.status === 'Reclutando' ? 'background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.2);color:#10b981;'
                                         : clinicalTrialModal.form.status === 'Completado'  ? 'background:rgba(107,114,128,.1);border-color:rgba(107,114,128,.2);color:rgba(255,255,255,.45);'
                                         : 'background:rgba(0,179,179,.1);border-color:rgba(0,179,179,.2);color:#00B3B3;'">
-                                {{ clinicalTrialModal.form.status }}
+                                {{ formatStudyStatus(clinicalTrialModal.form.status) }}
                             </span>
                         </div>
                     </div>
@@ -10207,7 +10211,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                     <!-- Delete in edit mode -->
                     <div v-if="clinicalTrialModal.mode==='edit'"  class="nd-l050">
                         <button class="btn btn-sm btn-secondary nd-l049 nd-v023" 
-                                @click="deleteClinicalTrial(clinicalTrialModal.form); clinicalTrialModal.show=false">
+                                @click="deleteClinicalTrial(clinicalTrialModal.form, () => { clinicalTrialModal.show=false; if (researchHubPage === 'study') goBackFromRecord() })">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                             Delete study
                         </button>
@@ -10300,6 +10304,10 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <select class="sm-select" v-model="clinicalTrialModal.form.status">
                                         <option value="">Select…</option><option value="En preparación">In preparation</option><option value="Reclutando">Recruiting</option><option value="Activo">Active / follow-up</option><option value="Completado">Completed</option>
                                     </select>
+                                </div>
+                                <div v-if="clinicalTrialModal.form.status === 'Reclutando' && studyGovernance(clinicalTrialModal.form).any" class="rv36-governance-warning" role="status">
+                                    <span aria-hidden="true">!</span>
+                                    <div><strong>Recruiting is recorded while governance items remain incomplete.</strong><small>Review protocol, ethics / CEIm and PI information before relying on this status operationally.</small></div>
                                 </div>
                             </div>
 
@@ -10540,7 +10548,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div class="sm-field"><div class="sm-label">Population</div><select class="sm-select" v-model="innovationProjectModal.form.population_type"><option value="adult">Adult</option><option value="paediatric">Paediatric</option><option value="mixed">Mixed</option><option value="not_applicable">Not applicable</option></select></div>
                             </div>
                             <div class="sm-field"><div class="sm-label">Scope note</div><input class="sm-input" v-model="innovationProjectModal.form.scope_note" placeholder="Optional clarification of disease, pathway or service scope."></div>
-                            <div class="rv34-toggle-cluster rv34-toggle-cluster--inline"><label><input type="checkbox" v-model="innovationProjectModal.form.scope_finalized"><span><strong>Scope finalized</strong><small>Clinical need and intended validation scope are agreed.</small></span></label></div>
+                            <div class="rv34-toggle-cluster rv34-toggle-cluster--inline"><label><input type="checkbox" v-model="innovationProjectModal.form.scope_finalized"><span><strong>Scope confirmed</strong><small>Clinical need and intended validation scope are agreed.</small></span></label></div>
                         </section>
 
                         <!-- Keywords -->
@@ -12132,7 +12140,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=35"></script>
+    <script src="app.js?v=36"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
