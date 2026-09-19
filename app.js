@@ -729,11 +729,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 3. ENHANCED UTILS CLASS ============
     const PROJECT_STAGES_DATA = [
       { key: 'Idea',             label: 'Idea',            icon: 'fa-lightbulb',    color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
-      { key: 'Prototipo',        label: 'Prototipo',       icon: 'fa-cube',         color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
-      { key: 'Piloto',           label: 'Piloto',          icon: 'fa-play-circle',  color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
-      { key: 'Validación',       label: 'Validación',      icon: 'fa-check-double', color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
-      { key: 'Escalamiento',     label: 'Escalamiento',    icon: 'fa-chart-line',   color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
-      { key: 'Comercialización', label: 'Comercialización',icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 6 }
+      { key: 'Prototipo',        label: 'Prototype',       icon: 'fa-cube',         color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
+      { key: 'Piloto',           label: 'Pilot',          icon: 'fa-play-circle',  color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
+      { key: 'Validación',       label: 'Validation',      icon: 'fa-check-double', color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
+      { key: 'Escalamiento',     label: 'Scale-up',    icon: 'fa-chart-line',   color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
+      { key: 'Comercialización', label: 'Commercialisation',icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 6 }
     ]
 
     // ── Pulmonology disease options ──────────────────────────────
@@ -7532,6 +7532,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const _isLateInnovationStage = (project) => /valid|implement|deployment|scale|escal|comercial|pilot|piloto/i.test(String(project?.current_stage || project?.development_stage || ''))
         const _isCompletedInnovation = (project) => /complete|completed|closed|finaliz|conclu/i.test(String(project?.current_stage || project?.development_stage || ''))
+        const formatInnovationCategory = (value) => ({
+          'Dispositivo':'Medical device',
+          'Salud Digital':'Digital health',
+          'IA / ML':'AI / ML',
+          'Tecnologia Quirurgica':'Surgical technology'
+        })[value] || value || 'Clinical innovation'
+        const formatInnovationStage = (value) => ({
+          'Idea':'Idea',
+          'Prototipo':'Prototype',
+          'Piloto':'Pilot',
+          'Validación':'Validation',
+          'Escalamiento':'Scale-up',
+          'Comercialización':'Commercialisation'
+        })[value] || value || 'Stage not recorded'
+        const formatPartnerNeed = (value) => ({
+          'Financiación':'Funding',
+          'Distribución':'Distribution',
+          'Fabricación':'Manufacturing',
+          'Software':'Software',
+          'Regulatorio':'Regulatory',
+          'Ensayos clínicos':'Clinical trials',
+          'Licencia de tecnología':'Technology licensing',
+          'Co-desarrollo':'Co-development'
+        })[value] || value
         const studyGovernance = (study) => {
           const protocolApplicable = study?.protocol_applicable !== false
           const protocolGap = protocolApplicable && !study?.protocol_finalized
@@ -15191,7 +15215,7 @@ document.addEventListener('DOMContentLoaded', () => {
           understaffedUnitAlerts,
           getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
           getPreviewStatusClass, getPreviewStatusText, updatePreview, requestFullDossier,
-          getPhaseColor: Utils.getPhaseColor, getPartnerTypeColor: Utils.getPartnerTypeColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatPercentage: Utils.formatPercentage,
+          getPhaseColor: Utils.getPhaseColor, getPartnerTypeColor: Utils.getPartnerTypeColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatInnovationCategory, formatInnovationStage, formatPartnerNeed, formatPercentage: Utils.formatPercentage,
           availablePhysicians, availableResidents, availableAttendings, availableHeadsOfDepartment, availableReplacementStaff,
           // FIX 11: Partner needs options with an "Other" escape hatch handled in template
           availablePartnerNeeds: ['Financiación', 'Distribución', 'Fabricación', 'Software', 'Regulatorio', 'Ensayos clínicos', 'Licencia de tecnología', 'Co-desarrollo'],
