@@ -19973,3 +19973,139 @@ html body #app .news-v27-article-editor{position:relative}
 #app .rv34-add-quiet{border:0;background:#123b4d;color:#fff;border-radius:8px;padding:0 12px;font:650 10px/1 'DM Sans',sans-serif;cursor:pointer}
 #app .rv34-project-milestones{margin:16px 0 18px}
 @media(max-width:620px){#app .rv34-milestone-add{grid-template-columns:1fr}.rv34-add-quiet{min-height:36px}}
+
+/* ========================================================================== 
+   V35 · RESEARCH UI / MICROCOPY POLISH
+   Quiet clinical editorial layer. Keeps V31–V34 behaviour and backend bindings.
+   ========================================================================== */
+#app .research-hub{--r35-navy:#12384c;--r35-teal:#157f82;--r35-ink:#18394d;--r35-muted:#6f8290;--r35-rule:#dfe6e8;background:#f7f8f8!important}
+
+/* Research navigation and overview — less card-like, more institutional */
+#app .nmsb-item[title="Research"] .nmsb-icon,
+#app .nmsb-section .nmsb-item.active .nmsb-icon--violet{color:#157f82!important;background:rgba(21,127,130,.08)!important}
+#app .rv31-masthead{padding-top:38px;padding-bottom:28px}
+#app .rv31-masthead h1{font-size:44px}
+#app .rv31-masthead p{font-size:13px;line-height:1.5;color:#5e7483;max-width:720px}
+#app .rv31-eyebrow,#app .rv32-eyebrow{font-size:10.5px!important;letter-spacing:.075em!important}
+#app .rv31-nav-item{font-size:11.5px;letter-spacing:-.005em}
+#app .rv31-nav-item span{font-size:10.5px}
+#app .rv31-pulse{margin-top:20px;border:0;border-top:1px solid var(--r35-rule);border-bottom:1px solid var(--r35-rule);border-radius:0;box-shadow:none}
+#app .rv31-pulse-cell{min-height:108px}
+#app .rv31-pulse-kicker{font-size:10.5px;letter-spacing:.055em}
+#app .rv31-pulse-cell small{font-size:11px;line-height:1.3}
+#app .rv31-pulse-cell--lead{background:#12384c}
+#app .rv31-landscape{padding-top:34px}
+#app .rv31-section-kicker{font-size:10.5px!important;letter-spacing:.055em!important}
+#app .rv31-section-head p,#app .rv31-list-head p{font-size:12.2px;max-width:680px}
+#app .rv31-search input{font-size:11.5px}
+#app .rv31-programmes{border:0;border-top:1px solid var(--r35-rule);border-bottom:1px solid var(--r35-rule);border-radius:0;box-shadow:none}
+#app .rv31-programme{min-height:150px}
+#app .rv31-programme-heading h3{font-size:23px}
+#app .rv31-programme-heading p{font-size:11.8px;line-height:1.48}
+#app .rv31-state{font-size:10px;letter-spacing:.045em}
+#app .rv31-person-link{font-size:11px}
+#app .rv31-person-link b{font-size:10px;letter-spacing:.04em}
+#app .rv31-domain-label{font-size:10.3px!important;letter-spacing:.045em!important}
+#app .rv31-domain small{font-size:10.8px!important;line-height:1.32}
+#app .rv31-governance{border-left:0;border-right:0;border-radius:0;box-shadow:none;padding-top:15px;padding-bottom:15px}
+#app .rv31-governance-title strong{font-size:12px}
+#app .rv31-governance-title small,#app .rv31-governance-metrics span,#app .rv31-governance-note{font-size:10.5px}
+#app .rv31-line-tabs button{font-size:11px}
+#app .rv31-line-tabs button span{font-size:10px}
+#app .rv31-workstream-head>div>span,#app .rv31-list-head>div>span{font-size:10.2px;letter-spacing:.055em}
+#app .rv31-stream-main b{font-size:11.8px!important}
+#app .rv31-stream-main small{font-size:10.7px!important}
+
+/* Clinical studies / innovation collections — stronger scanability */
+#app .rv32-collection-hero{padding-top:36px;padding-bottom:26px}
+#app .rv32-collection-hero p{font-size:12.2px;line-height:1.5}
+#app .rv32-pulse-row>div{min-height:106px}
+#app .rv32-pulse-row span{font-size:10.3px;letter-spacing:.05em}
+#app .rv32-pulse-row small{font-size:10.8px}
+#app .rv32-search input{font-size:11.8px}
+#app .rv32-control-rail select,#app .rv32-clear,#app .rv32-state-rail button{font-size:11px}
+#app .rv32-state-rail button span{font-size:10px}
+#app .rv32-row-state{font-size:10.2px}
+#app .rv32-row-kicker{font-size:10px;letter-spacing:.04em}
+#app .rv32-row-main h2{font-size:22px;line-height:1.14}
+#app .rv32-row-main p{font-size:11.4px;line-height:1.45}
+#app .rv32-row-governance>span,#app .rv32-project-context>span,#app .rv32-row-recruitment--empty>span{font-size:10.2px;letter-spacing:.045em}
+#app .rv32-row-governance b{font-size:10.4px}
+#app .rv32-row-governance small,#app .rv32-row-recruitment small{font-size:10.6px}
+#app .rv32-record-list{border-top:1px solid #e1e7e9}
+#app .rv32-record-hero h1{letter-spacing:-.03em}
+#app .rv32-record-meta{font-size:10.8px!important}
+#app .rv32-command-label{font-size:10.5px!important;letter-spacing:.05em!important}
+#app .rv32-not-recorded{font-size:10.8px!important}
+#app .rv32-section-heading>div>span{font-size:10.2px!important;letter-spacing:.05em!important}
+#app .rv32-section-heading>small{font-size:10.5px!important}
+#app .rv32-fact-grid span,#app .rv32-side-section>span{font-size:10.2px!important;letter-spacing:.045em!important}
+#app .rv32-fact-grid strong,#app .rv32-side-section strong{font-size:11.4px!important}
+#app .rv32-prose{font-size:12px!important;line-height:1.62!important;color:#536d7c!important}
+#app .rv32-team-row strong{font-size:11.4px!important}
+#app .rv32-team-row small{font-size:10.5px!important}
+#app .rv32-project-step i{background:#c8d2d6!important}
+#app .rv32-project-step.current i{background:#157f82!important}
+
+/* V33 programme register / intelligence — flatten panels and raise text floor */
+#app .rv33-state,#app .rv33-stage{font-size:10.2px!important}
+#app .rv33-kicker{font-size:10.1px!important;letter-spacing:.04em!important}
+#app .rv33-main h3{font-size:21px!important}
+#app .rv33-main p{font-size:11.3px!important;line-height:1.46!important}
+#app .rv33-governance-mini>span,#app .rv33-context>span{font-size:10.1px!important;letter-spacing:.045em!important}
+#app .rv33-governance-mini b,#app .rv33-context strong{font-size:10.5px!important}
+#app .rv33-governance-mini small,#app .rv33-context small,#app .rv33-metric span,#app .rv33-metric small{font-size:10.4px!important}
+#app .rv33-relationship-band{border-left:0;border-right:0;border-radius:0!important;box-shadow:none!important}
+#app .rv33-relationship-band span{font-size:10.2px!important;letter-spacing:.045em!important}
+#app .rv33-relationship-band small{font-size:10.5px!important}
+#app .rv33-life-lane-head span,#app .rv33-recruitment-summary span{font-size:10.2px!important}
+#app .rv33-intel-panel{border-radius:0!important;box-shadow:none!important;border-left:0!important;border-right:0!important}
+#app .rv33-intel-panel header span,#app .rv33-programme-table em{font-size:10.1px!important;letter-spacing:.04em!important}
+#app .rv33-intel-panel header small,#app .rv33-programme-table small,#app .rv33-intel-list span>small,#app .rv33-intel-list>button>b small{font-size:10.5px!important}
+#app .rv33-intel-list span>strong{font-size:11.8px!important}
+
+/* Research editors — clearer hierarchy, quieter controls, no tiny helper text */
+#app .rv32-study-editor .sm-form-title,#app .rv32-project-editor .modal-title{font-size:12.5px!important;letter-spacing:-.005em!important}
+#app .rv34-study-form{gap:20px}
+#app .rv34-editor-section{padding-top:19px}
+#app .rv34-editor-section>header{margin-bottom:15px}
+#app .rv34-editor-section>header>div>span{font-size:10.2px;letter-spacing:.055em;margin-bottom:5px}
+#app .rv34-editor-section>header>div>strong{font-size:16px;line-height:1.25}
+#app .rv34-editor-section>header>small,#app .rv34-help{font-size:10.6px;line-height:1.42}
+#app .rv32-study-editor .sm-label,#app .rv32-project-editor .sm-label,#app .rv32-project-editor .form-label{font-size:10.5px!important;letter-spacing:.01em!important;text-transform:none!important}
+#app .rv32-study-editor .sm-input,#app .rv32-study-editor .sm-select,#app .rv32-project-editor .sm-input,#app .rv32-project-editor .sm-select,#app .rv32-project-editor .form-control,#app .rv32-project-editor .form-select{font-size:11.5px!important}
+#app .rv34-editor-section--governance{border-radius:7px;background:#f9fbfa}
+#app .rv34-tag-editor,#app .rv34-toggle-cluster>label,#app .rv34-metric-inputs,#app .rv34-milestone-editor{border-radius:7px}
+#app .rv34-line-picks label{border-radius:6px;font-size:10.5px}
+#app .rv34-line-picks b{font-size:10px}
+#app .rv34-tag-editor>span{border-radius:6px;font-size:10.5px}
+#app .rv34-toggle-cluster>label strong{font-size:11px}
+#app .rv34-toggle-cluster>label small{font-size:10.3px}
+#app .rv34-metric-inputs span{font-size:10px;letter-spacing:.045em}
+#app .rv34-milestone-list span strong{font-size:11px}
+#app .rv34-milestone-list span small{font-size:10px}
+#app .rv34-add-quiet{background:transparent;color:#126f73;border-radius:0;padding:0 8px;font-size:10.8px;min-height:34px}
+#app .rv34-add-quiet:hover{color:#0a5559;text-decoration:underline;text-underline-offset:3px}
+#app .rv33-editor-boundary{border-radius:7px!important}
+#app .rv33-boundary-head>div>span{font-size:10.2px!important;letter-spacing:.05em!important}
+#app .rv33-boundary-head>div>strong{font-size:14px!important}
+#app .rv33-editor-boundary>p{font-size:10.6px!important;line-height:1.45!important}
+#app .rv33-boundary-head>b{font-size:10px!important;letter-spacing:.045em!important}
+#app .rv32-project-editor .ipm-stage-picker-label{font-size:10.5px!important;letter-spacing:.045em!important;text-transform:none!important}
+#app .rv32-project-editor .ipm-stage-btn{border-radius:7px!important;font-size:10.5px!important}
+#app .rv32-project-editor .ipm-stage-btn--active{background:#f0f7f6!important;border-color:#7cb7b4!important;color:#175e62!important;box-shadow:none!important}
+#app .rv32-project-editor .form-help,#app .rv32-project-editor .form-hint{font-size:10.5px!important;line-height:1.4!important}
+#app .rv32-study-editor .sm-btn-save{border-radius:8px!important;box-shadow:none!important}
+#app .rv32-study-editor .sm-btn-back{font-size:11px!important}
+
+/* Mobile: keep labels readable instead of vertical microtype */
+@media(max-width:720px){
+  #app .rv33-state span,#app .rv33-stage span{writing-mode:horizontal-tb!important;transform:none!important;font-size:10px!important}
+  #app .rv33-state,#app .rv33-stage{justify-content:center!important;align-items:center!important;text-align:center!important}
+}
+#app .rv35-section-intro{margin:26px 38px 8px;display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:12px;color:#17384c}
+#app .rv35-section-intro>span{font:700 10.2px/1 'DM Sans',sans-serif;letter-spacing:.05em;text-transform:uppercase;color:#7c8e99}
+#app .rv35-section-intro>strong{font:500 14px/1.25 'DM Sans',sans-serif;color:#2b4d5f}
+#app .rv35-section-intro>small{font:500 10.5px/1.35 'DM Sans',sans-serif;color:#84939c;text-align:right}
+@media(max-width:900px){#app .rv35-section-intro{margin-left:24px;margin-right:24px;grid-template-columns:1fr}.rv35-section-intro>small{text-align:left!important}}
+@media(max-width:620px){#app .rv35-section-intro{margin-left:18px;margin-right:18px}}
