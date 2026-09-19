@@ -61,6 +61,31 @@ document.addEventListener('DOMContentLoaded', () => {
     ]
     const getLineAccentGlobal = (lineNumber) => LINE_ACCENTS_GLOBAL[((lineNumber || 1) - 1) % 6]
 
+    // Research status normalization is shared across portfolio, staff profiles,
+    // navigation summaries and Grounded. The API currently contains a mixture
+    // of Spanish/English historical values, so UI logic must never compare raw
+    // status strings directly.
+    const normalizeTrialStatusKey = (trialOrStatus) => {
+      const raw = typeof trialOrStatus === 'object' && trialOrStatus !== null
+        ? (trialOrStatus.status || trialOrStatus.recruitment_status || '')
+        : (trialOrStatus || '')
+      const s = String(raw).trim().toLowerCase()
+      if (/(reclut|recruit|enrol|enroll)/.test(s)) return 'recruiting'
+      if (/(activ|ongoing|in progress|follow[- ]?up)/.test(s)) return 'active'
+      if (/(prepar|setup|pending|not yet)/.test(s)) return 'prep'
+      if (/(complet|finaliz|closed|done)/.test(s)) return 'done'
+      return 'other'
+    }
+    const normalizeRecruitmentStatusKey = (trial) => {
+      const raw = trial?.recruitment_status || trial?.status || ''
+      const s = String(raw).trim().toLowerCase()
+      if (/(reclut|recruit|enrol|enroll)/.test(s)) return 'recruiting'
+      if (/(pause|paused|suspend)/.test(s)) return 'paused'
+      if (/(closed|complet|finaliz|terminat|withdraw)/.test(s)) return 'closed'
+      if (/(not yet|prepar|setup|pending)/.test(s)) return 'not_yet'
+      return 'unknown'
+    }
+
     const ROLES = {
       ADMIN: 'system_admin',
       HEAD: 'department_head',
@@ -1673,8 +1698,8 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // FIX 4: active count includes trials where staff is any role (PI or Co-I)
           const allActiveTrials = new Set([
-            ...trialsAsPI.filter(t => ['Activo', 'Reclutando'].includes(t.status)).map(t => t.id),
-            ...trialsAsCoI.filter(t => ['Activo', 'Reclutando'].includes(t.status)).map(t => t.id)
+            ...trialsAsPI.filter(t => ['active', 'recruiting'].includes(normalizeTrialStatusKey(t))).map(t => t.id),
+            ...trialsAsCoI.filter(t => ['active', 'recruiting'].includes(normalizeTrialStatusKey(t))).map(t => t.id)
           ]);
           
           return {
@@ -1686,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', () => {
             trials: {
               asPI: trialsAsPI.length, asCoI: trialsAsCoI.length, asSubI: trialsAsSubI.length,
               active: allActiveTrials.size,
-              completed: trialsAsPI.filter(t => t.status === 'Completado').length, byPhase,
+              completed: trialsAsPI.filter(t => normalizeTrialStatusKey(t) === 'done').length, byPhase,
               list: [...trialsAsPI.slice(0, 3).map(t => ({ id: t.id, title: t.title, status: t.status, phase: t.phase, role: 'PI' })), ...trialsAsCoI.slice(0, 3).map(t => ({ id: t.id, title: t.title, status: t.status, phase: t.phase, role: 'Co-I' })), ...trialsAsSubI.slice(0, 3).map(t => ({ id: t.id, title: t.title, status: t.status, phase: t.phase, role: 'Sub-I' }))].slice(0, 8)
             },
             projects: {
@@ -5606,22 +5631,86 @@ document.addEventListener('DOMContentLoaded', () => {
       const projectFilters = reactive({ research_line_id: '', category: '', stage: '', funding_status: '', search: '' })
 
       // ── Page navigation (overview → line → study/project) ─────
-      const researchHubPage   = ref('overview')  // 'overview' | 'line' | 'study' | 'project'
+      const researchHubPage   = ref('overview')  // overview | line | allstudies | allprojects | analytics | study | project
       const selectedLine      = ref(null)
       const selectedStudy     = ref(null)
       const selectedProject   = ref(null)
+      const researchRecordReturnPage = ref('overview')
 
-      const openLine    = (line)    => { selectedLine.value = line;    selectedStudy.value = null; selectedProject.value = null; researchHubPage.value = 'line'    }
-      const openStudy   = (study)   => { selectedStudy.value = study;   researchHubPage.value = 'study'   }
-      const openProject = (project) => { selectedProject.value = project; researchHubPage.value = 'project' }
-      const goToOverview= ()        => { researchHubPage.value = 'overview' }
-      const goToLine    = ()        => { researchHubPage.value = 'line'; selectedStudy.value = null; selectedProject.value = null }
+      // Research is a full-height workspace, so it owns its scroll container.
+      // Reset position after page changes; otherwise a detail view can inherit a
+      // deep scroll offset from the previous collection and appear "stuck".
+      const resetResearchScroll = (behavior = 'auto') => {
+        Vue.nextTick(() => {
+          const scroller = document.querySelector('.content-area--fullheight > .research-hub') || document.querySelector('.research-hub')
+          if (!scroller) return
+          try { scroller.scrollTo({ top: 0, left: 0, behavior }) }
+          catch (_) { scroller.scrollTop = 0 }
+        })
+      }
+      const openResearchPage = (page = 'overview') => {
+        researchHubPage.value = page
+        selectedStudy.value = null
+        selectedProject.value = null
+        resetResearchScroll()
+      }
+      const openLine = (line) => {
+        selectedLine.value = line || null
+        selectedStudy.value = null
+        selectedProject.value = null
+        researchRecordReturnPage.value = 'overview'
+        researchHubPage.value = line ? 'line' : 'overview'
+        resetResearchScroll()
+      }
+      const openStudy = (study, fromPage = null) => {
+        const origin = fromPage || researchHubPage.value
+        researchRecordReturnPage.value = origin === 'line' ? 'line' : origin === 'analytics' ? 'analytics' : 'allstudies'
+        selectedStudy.value = study || null
+        selectedProject.value = null
+        if (study?.research_line_id) {
+          selectedLine.value = researchLines.value.find(l => String(l.id) === String(study.research_line_id)) || null
+        }
+        researchHubPage.value = 'study'
+        resetResearchScroll()
+      }
+      const openProject = (project, fromPage = null) => {
+        const origin = fromPage || researchHubPage.value
+        researchRecordReturnPage.value = origin === 'line' ? 'line' : origin === 'analytics' ? 'analytics' : 'allprojects'
+        selectedProject.value = project || null
+        selectedStudy.value = null
+        if (project?.research_line_id) {
+          selectedLine.value = researchLines.value.find(l => String(l.id) === String(project.research_line_id)) || null
+        }
+        researchHubPage.value = 'project'
+        resetResearchScroll()
+      }
+      const goToOverview = () => { openResearchPage('overview') }
+      const goToLine = () => {
+        if (!selectedLine.value) { openResearchPage(selectedStudy.value ? 'allstudies' : selectedProject.value ? 'allprojects' : 'overview'); return }
+        researchHubPage.value = 'line'
+        selectedStudy.value = null
+        selectedProject.value = null
+        resetResearchScroll()
+      }
+      const goBackFromRecord = () => {
+        const target = researchRecordReturnPage.value
+        if (target === 'line' && selectedLine.value) { goToLine(); return }
+        const fallback = selectedStudy.value ? 'allstudies' : selectedProject.value ? 'allprojects' : 'overview'
+        openResearchPage(['allstudies','allprojects','analytics','overview'].includes(target) ? target : fallback)
+      }
+      const researchRecordBackLabel = computed(() => {
+        if (researchRecordReturnPage.value === 'line' && selectedLine.value) return selectedLine.value.research_line_name || selectedLine.value.name || 'Research programme'
+        if (researchRecordReturnPage.value === 'allstudies') return 'Clinical studies'
+        if (researchRecordReturnPage.value === 'allprojects') return 'Clinical innovation'
+        if (researchRecordReturnPage.value === 'analytics') return 'Research intelligence'
+        return 'Research'
+      })
 
       const researchLineModal = reactive({ show: false, mode: 'add', form: { line_number: null, name: '', description: '', capabilities: 'Alcance y capacidades', sort_order: 0, active: true } })
 
       const clinicalTrialModal = reactive({ show: false, mode: 'add', form: {
         protocol_id: '', title: '', research_line_id: '',
-        phase: '', status: 'Reclutando',
+        phase: '', status: 'En preparación',
         description: '', inclusion_criteria: '', exclusion_criteria: '',
         principal_investigator_id: '', co_investigators: [], sub_investigators: [],
         contact_email: '', featured_in_website: true, display_order: 0,
@@ -5696,14 +5785,8 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       // ── Research helpers: normalize mixed ES/EN statuses + recruitment health ──
-      const trialStatusKey = (t) => {
-        const s = String(t?.status || t?.recruitment_status || '').toLowerCase()
-        if (/(reclut|recruit)/.test(s)) return 'recruiting'
-        if (/(activ|ongoing|in progress)/.test(s)) return 'active'
-        if (/(prepar|setup|pending)/.test(s)) return 'prep'
-        if (/(complet|finaliz|closed|done)/.test(s)) return 'done'
-        return 'other'
-      }
+      const trialStatusKey = (t) => normalizeTrialStatusKey(t)
+      const trialRecruitmentKey = (t) => normalizeRecruitmentStatusKey(t)
       const TRIAL_STATUS_LABEL = { recruiting: 'Recruiting', active: 'Active', prep: 'In preparation', done: 'Completed', other: 'Other' }
       const countTrialsByStatus = (key) => clinicalTrials.value.filter(t => trialStatusKey(t) === key).length
 
@@ -5874,7 +5957,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clinicalTrialModal.mode = 'add'
         Object.assign(clinicalTrialModal.form, {
           protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '',
-          phase: '', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '',
+          phase: '', status: 'En preparación', description: '', inclusion_criteria: '', exclusion_criteria: '',
           principal_investigator_id: '', co_investigators: [], sub_investigators: [], data_manager_id: '',
           contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1,
           start_date: '', end_date: '', estimated_end_date: '', actual_end_date: '', sponsor_name: '', sponsor_type: '',
@@ -6026,7 +6109,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const deleteResearchLine = (line) => {
-        const activeTrials = clinicalTrials.value.filter(t => t.research_line_id === line.id && !['Completado','Suspendido','Cancelado'].includes(t.status))
+        const activeTrials = clinicalTrials.value.filter(t => t.research_line_id === line.id && !/(complet|finaliz|closed|done|suspend|cancel|terminat|withdraw)/i.test(String(t.status || '')))
         const activeProjects = innovationProjects.value.filter(p => p.research_line_id === line.id)
         if (activeTrials.length || activeProjects.length) {
           showConfirmation({
@@ -6046,8 +6129,43 @@ document.addEventListener('DOMContentLoaded', () => {
           onConfirm: async () => { await API.deleteResearchLine(line.id); await loadResearchLines(); showToast('Success', 'Research line deleted', 'success'); loadAnalyticsSummary() }
         })
       }
-      const deleteClinicalTrial = (trial) => showConfirmation({ title: 'Delete Study', message: `Delete "${trial.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', details: `Protocol: ${trial.protocol_id}`, onConfirm: async () => { await API.deleteClinicalTrial(trial.id); await loadClinicalTrials(); showToast('Success', 'Study deleted', 'success'); loadAnalyticsSummary() } })
-      const deleteInnovationProject = (project) => showConfirmation({ title: 'Delete Project', message: `Delete "${project.title}"?`, icon: 'fa-trash', confirmButtonText: 'Delete', confirmButtonClass: 'btn-danger', onConfirm: async () => { await API.deleteInnovationProject(project.id); await loadInnovationProjects(); showToast('Success', 'Project deleted', 'success'); loadAnalyticsSummary(); loadPartnerCollaborations() } })
+      const deleteClinicalTrial = (trial, afterDelete = null) => {
+        if (!trial?.id) return
+        showConfirmation({
+          title: 'Delete Study',
+          message: `Delete "${trial.title || 'this study'}"?`,
+          icon: 'fa-trash',
+          confirmButtonText: 'Delete',
+          confirmButtonClass: 'btn-danger',
+          details: trial.protocol_id ? `Protocol: ${trial.protocol_id}` : 'This action cannot be undone.',
+          onConfirm: async () => {
+            await API.deleteClinicalTrial(trial.id)
+            await loadClinicalTrials()
+            showToast('Success', 'Study deleted', 'success')
+            loadAnalyticsSummary()
+            if (typeof afterDelete === 'function') afterDelete()
+          }
+        })
+      }
+      const deleteInnovationProject = (project, afterDelete = null) => {
+        if (!project?.id) return
+        showConfirmation({
+          title: 'Delete Project',
+          message: `Delete "${project.title || 'this project'}"?`,
+          icon: 'fa-trash',
+          confirmButtonText: 'Delete',
+          confirmButtonClass: 'btn-danger',
+          details: 'This action cannot be undone.',
+          onConfirm: async () => {
+            await API.deleteInnovationProject(project.id)
+            await loadInnovationProjects()
+            showToast('Success', 'Project deleted', 'success')
+            loadAnalyticsSummary()
+            loadPartnerCollaborations()
+            if (typeof afterDelete === 'function') afterDelete()
+          }
+        })
+      }
 
       // ── Quick research profile built entirely from local refs (no API call) ──
       const getStaffResearchQuick = (staffId) => {
@@ -6069,7 +6187,7 @@ document.addEventListener('DOMContentLoaded', () => {
           coordinatorLines: coordinatorLines.map(l => ({ id: l.id, line_number: l.line_number, name: l.research_line_name || l.name })),
           trials: {
             asPI: trialsAsPI.length, asCoI: trialsAsCoI.length, asSubI: trialsAsSub.length,
-            active: allTrials.filter(t => ['Activo','Reclutando'].includes(t.status)).length,
+            active: allTrials.filter(t => ['active','recruiting'].includes(normalizeTrialStatusKey(t))).length,
             list: allTrials.map(t => ({
               id: t.id, title: t.title, phase: t.phase, status: t.status,
               role: trialsAsPI.find(x => x.id === t.id) ? 'Principal Investigator'
@@ -6110,10 +6228,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
-        researchHubPage, selectedLine, selectedStudy, selectedProject,
-        openLine, openStudy, openProject, goToOverview, goToLine,
+        researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
+        openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
         // Disease helpers
         addDisease, removeDisease, handleDiseaseKey,
         // External team helpers
@@ -6159,8 +6277,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const totalLines    = (researchLines.value || []).length
           const activeLines   = (researchLines.value || []).filter(l => l.active !== false).length
           const totalTrials   = (clinicalTrials.value || []).length
-          const activeTrials  = (clinicalTrials.value || []).filter(t => ['Activo','Reclutando'].includes(t.status)).length
-          const recruitingTrials = (clinicalTrials.value || []).filter(t => t.status === 'Reclutando').length
+          const activeTrials  = (clinicalTrials.value || []).filter(t => ['active','recruiting'].includes(normalizeTrialStatusKey(t))).length
+          const recruitingTrials = (clinicalTrials.value || []).filter(t => normalizeRecruitmentStatusKey(t) === 'recruiting').length
           const totalProjects = (innovationProjects.value || []).length
           const lateStageProjects = (innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalamiento','Comercialización'].includes(p.current_stage)).length
           const totalEnrolled = (clinicalTrials.value || []).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
@@ -7436,7 +7554,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ...line,
             stats: {
               totalStudies:    trials.filter(t => t.research_line_id === line.id).length,
-              activeTrials:    trials.filter(t => t.research_line_id === line.id && ['Activo','Reclutando'].includes(t.status)).length,
+              activeTrials:    trials.filter(t => t.research_line_id === line.id && ['active','recruiting'].includes(normalizeTrialStatusKey(t))).length,
               totalProjects:   projects.filter(p => p.research_line_id === line.id).length,
               totalEnrollment: trials.filter(t => t.research_line_id === line.id).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
             }
@@ -7471,8 +7589,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalLines       = (researchOps.researchLines.value || []).length
             const activeLines      = (researchOps.researchLines.value || []).filter(l => l.active !== false).length
             const totalTrials      = (researchOps.clinicalTrials.value || []).length
-            const activeTrials     = (researchOps.clinicalTrials.value || []).filter(t => ['Activo','Reclutando'].includes(t.status)).length
-            const recruitingTrials = (researchOps.clinicalTrials.value || []).filter(t => t.status === 'Reclutando').length
+            const activeTrials     = (researchOps.clinicalTrials.value || []).filter(t => ['active','recruiting'].includes(researchOps.trialStatusKey(t))).length
+            const recruitingTrials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialRecruitmentKey(t) === 'recruiting').length
             const totalProjects    = (researchOps.innovationProjects.value || []).length
             const lateStageProjects = (researchOps.innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalamiento','Comercialización'].includes(p.current_stage)).length
             const totalEnrolled    = (researchOps.clinicalTrials.value || []).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
@@ -7556,6 +7674,15 @@ document.addEventListener('DOMContentLoaded', () => {
           'Licencia de tecnología':'Technology licensing',
           'Co-desarrollo':'Co-development'
         })[value] || value
+        const formatEthicsStatus = (value) => ({
+          approved:'Approved', pending:'Pending', exempt:'Exempt', not_required:'Not required'
+        })[String(value || '').toLowerCase()] || (value ? String(value).replace(/_/g,' ') : 'Not recorded')
+        const formatRegulatoryPathway = (value) => ({
+          none:'Not applicable / not recorded', ce_mdr:'CE MDR', samd:'SaMD', aemps:'AEMPS', fda:'FDA', other:'Other'
+        })[String(value || 'none').toLowerCase()] || value
+        const formatFundingStatus = (value) => ({
+          funded:'Funded', seeking:'Seeking funding', applied:'Applied', not_applicable:'Not applicable', completed:'Completed'
+        })[String(value || 'not_applicable').toLowerCase()] || value
         const studyGovernance = (study) => {
           const protocolApplicable = study?.protocol_applicable !== false
           const protocolGap = protocolApplicable && !study?.protocol_finalized
@@ -8623,7 +8750,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // ── Research ──────────────────────────────────────────────────
             if (['research_hub','research_lines','clinical_trials','innovation_projects','analytics_dashboard','analytics_performance','analytics_partners'].includes(v)) {
               const lines = researchOps.researchLines?.value?.length || 0
-              const trials = researchOps.clinicalTrials?.value?.filter(t => ['Reclutando','Activo'].includes(t.status)).length || 0
+              const trials = researchOps.clinicalTrials?.value?.filter(t => ['active','recruiting'].includes(researchOps.trialStatusKey(t))).length || 0
               const projects = researchOps.innovationProjects?.value?.length || 0
               if (!lines && !trials) return 'No research data loaded yet'
               return `${lines} line${lines !== 1 ? 's' : ''} · ${trials} active stud${trials !== 1 ? 'ies' : 'y'} · ${projects} project${projects !== 1 ? 's' : ''}`
@@ -8796,37 +8923,30 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isAdmin() && !permMgmt.users.length && !permMgmt.loading) loadPermissionUsers()
             return
           }
-          if (view === 'research_hub') {
-            // Direct navigation — always reset to overview
-            researchOps.researchHubPage.value = 'overview'
-            if (!analyticsOps.researchHubTab.value) analyticsOps.researchHubTab.value = 'lines'
-            currentView.value = 'research_hub'
-            if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) {
-              researchOps.loadAllResearch()
-            }
-            return
-          } else if (view === 'research_lines') {
+          if (view === 'research_hub' || view === 'research_lines') {
             analyticsOps.researchHubTab.value = 'lines'
             currentView.value = 'research_hub'
             if (filters.line) researchOps.trialFilters.line = filters.line
-            if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) {
-              researchOps.loadAllResearch()
-            }
+            researchOps.openResearchPage('overview')
+            if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) researchOps.loadAllResearch()
             return
           } else if (view === 'clinical_trials') {
             analyticsOps.researchHubTab.value = 'trials'
             currentView.value = 'research_hub'
             if (filters.line) researchOps.trialFilters.line = filters.line
-            if (!researchOps.clinicalTrials.value.length && !researchOps.researchLoading.value) {
-              researchOps.loadAllResearch()
-            }
+            researchOps.openResearchPage('allstudies')
+            if (!researchOps.clinicalTrials.value.length && !researchOps.researchLoading.value) researchOps.loadAllResearch()
             return
           } else if (view === 'innovation_projects') {
             analyticsOps.researchHubTab.value = 'projects'
             currentView.value = 'research_hub'
-            if (!researchOps.innovationProjects.value.length && !researchOps.researchLoading.value) {
-              researchOps.loadAllResearch()
-            }
+            researchOps.openResearchPage('allprojects')
+            if (!researchOps.innovationProjects.value.length && !researchOps.researchLoading.value) researchOps.loadAllResearch()
+            return
+          } else if (['analytics_dashboard','analytics_performance','analytics_partners','research_intelligence'].includes(view)) {
+            currentView.value = 'research_hub'
+            researchOps.openResearchPage('analytics')
+            if (!researchOps.researchLines.value.length && !researchOps.researchLoading.value) researchOps.loadAllResearch()
             return
           }
         }
@@ -8939,12 +9059,31 @@ document.addEventListener('DOMContentLoaded', () => {
           // ── Research ───────────────────────────────────────────────────
           const lines = (researchOps.researchLines.value || []).filter(l =>
             (l.research_line_name || l.name || '').toLowerCase().includes(q) ||
-            (l.description || '').toLowerCase().includes(q)
+            (l.description || '').toLowerCase().includes(q) ||
+            (l.keywords || []).join(' ').toLowerCase().includes(q)
           ).slice(0, 2)
           if (lines.length) results.research = lines.map(l => ({
             id: l.id, name: l.research_line_name || l.name,
-            meta: 'Research line', icon: 'fa-flask',
-            action: () => { switchView('research_lines'); close() }
+            meta: `Research line · L${l.line_number || '—'}`, icon: 'fa-flask',
+            action: () => { currentView.value = 'research_hub'; lineTab.value = 'overview'; researchOps.openLine(l); close() }
+          }))
+
+          const studies = (researchOps.clinicalTrials.value || []).filter(t =>
+            [t.title,t.protocol_id,t.sponsor_name,t.study_type,(t.target_diseases||[]).join(' '),researchOps.getResearchLineName(t.research_line_id)].filter(Boolean).join(' ').toLowerCase().includes(q)
+          ).slice(0, 3)
+          if (studies.length) results.studies = studies.map(t => ({
+            id: t.id, name: t.title,
+            meta: `Clinical study${t.protocol_id ? ' · '+t.protocol_id : ''}`, icon: 'fa-vial',
+            action: () => { currentView.value = 'research_hub'; lineTab.value = 'studies'; researchOps.openStudy(t, 'allstudies'); close() }
+          }))
+
+          const projects = (researchOps.innovationProjects.value || []).filter(p =>
+            [p.title,p.description,p.clinical_rationale,p.partner_name,(p.target_diseases||[]).join(' '),(p.keywords||[]).join(' '),researchOps.getResearchLineName(p.research_line_id)].filter(Boolean).join(' ').toLowerCase().includes(q)
+          ).slice(0, 3)
+          if (projects.length) results.projects = projects.map(p => ({
+            id: p.id, name: p.title,
+            meta: 'Clinical innovation', icon: 'fa-lightbulb',
+            action: () => { currentView.value = 'research_hub'; lineTab.value = 'projects'; researchOps.openProject(p, 'allprojects'); close() }
           }))
 
           return results
@@ -9489,7 +9628,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // the returned public URL to the post's image list. Raw fetch (not
       // API.request) because FormData must not be JSON.stringify'd.
       const newsImageUploading = ref(false)
-      const triggerNewsImagePicker = () => { document.getElementById('newsImageFileInput')?.click() }
+      const triggerNewsImagePicker = () => { const id = newsModal.form?.post_type === 'highlight' ? 'newsHighlightImageFileInput' : 'newsImageFileInput'; document.getElementById(id)?.click() }
       const uploadNewsImage = async (form, fileInputEvent) => {
         const file = fileInputEvent.target.files?.[0]
         fileInputEvent.target.value = '' // allow picking the same file again later
@@ -9777,7 +9916,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { selector: '.sidebar', title: 'Navigation', text: 'Use the sidebar to move between modules — clinical, operations, and research.' },
         { selector: '[data-tour="staff"]', title: 'Medical Staff', text: 'All 94 staff members live here. Search, filter, view profiles, and manage rotations.' },
         { selector: '[data-tour="oncall"]', title: 'On-call Schedule', text: 'See and manage guardias. The calendar view shows coverage gaps automatically.' },
-        { selector: '[data-tour="research"]', title: 'Research Hub', text: 'Research lines, clinical trials, and innovation projects all in one place.' },
+        { selector: '[data-tour="research"]', title: 'Research', text: 'Research programmes, clinical studies, innovation and connected evidence in one workspace.' },
         { selector: '[data-tour="settings"]', title: 'Settings & Permissions', text: 'Manage staff types, services, and — if you are an admin — user permissions.' },
       ]
 
@@ -10098,8 +10237,11 @@ document.addEventListener('DOMContentLoaded', () => {
             { type:'view', id:'resident_rotations', label:'Rotations',      sub:'Structure'       },
             { type:'view', id:'staff_absence',      label:'Absence',        sub:'Administration'  },
             { type:'view', id:'system_settings',    label:'Settings',       sub:'Administration'  },
-            { type:'view', id:'research_hub',       label:'Research Hub',   sub:'Research'        },
-            { type:'view', id:'news',               label:'News & Posts',   sub:'Research'        },
+            { type:'view', id:'research_hub',       label:'Research',            sub:'Research programmes' },
+            { type:'view', id:'clinical_trials',    label:'Clinical studies',   sub:'Research · evidence'  },
+            { type:'view', id:'innovation_projects',label:'Clinical innovation',sub:'Research · development'},
+            { type:'view', id:'research_intelligence', label:'Research intelligence', sub:'Research · portfolio' },
+            { type:'view', id:'news',               label:'Research Library',    sub:'Research output'       },
           ]
           const staffItems = !q ? [] : medicalStaff.value
             .filter(s => s.full_name?.toLowerCase().includes(q))
@@ -11005,10 +11147,10 @@ document.addEventListener('DOMContentLoaded', () => {
               switchView('oncall_schedule'); showAddOnCallModal()
             } else if (alert.resolve === 'assign_supervisor') {
               switchView('resident_rotations')
-            } else if (alert.resolve === 'open_trial' && alert.trialId && researchOps.viewTrial) {
-              switchView('research_hub')
+            } else if (alert.resolve === 'open_trial' && alert.trialId && researchOps.openStudy) {
+              currentView.value = 'research_hub'
               const t = (researchOps.clinicalTrials.value || []).find(x => x.id === alert.trialId)
-              if (t) researchOps.viewTrial(t)
+              if (t) { lineTab.value = 'studies'; researchOps.openStudy(t, 'allstudies') }
             } else if (alert.staffId) {
               askBarOpenStaff(alert.staffId)
             } else if (alert.view) {
@@ -15021,8 +15163,8 @@ document.addEventListener('DOMContentLoaded', () => {
           selectedStudy:    researchOps.selectedStudy,
           selectedProject:  researchOps.selectedProject,
           openLine: (line) => { lineTab.value = 'overview'; researchOps.openLine(line); },
-          openStudy: (study) => { lineTab.value = 'studies'; researchOps.openStudy(study); },
-          openProject: (project) => { lineTab.value = 'projects'; researchOps.openProject(project); },
+          openStudy: (study, fromPage) => { lineTab.value = 'studies'; researchOps.openStudy(study, fromPage); },
+          openProject: (project, fromPage) => { lineTab.value = 'projects'; researchOps.openProject(project, fromPage); },
           goToOverview:     researchOps.goToOverview,
           goToLine:         researchOps.goToLine,
           lineTab,
@@ -15215,7 +15357,7 @@ document.addEventListener('DOMContentLoaded', () => {
           understaffedUnitAlerts,
           getPreviewCardClass, getPreviewIcon, getPreviewReasonText,
           getPreviewStatusClass, getPreviewStatusText, updatePreview, requestFullDossier,
-          getPhaseColor: Utils.getPhaseColor, getPartnerTypeColor: Utils.getPartnerTypeColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatInnovationCategory, formatInnovationStage, formatPartnerNeed, formatPercentage: Utils.formatPercentage,
+          getPhaseColor: Utils.getPhaseColor, getPartnerTypeColor: Utils.getPartnerTypeColor, getStageColor: Utils.getStageColor, getStageConfig: Utils.getStageConfig, PROJECT_STAGES: PROJECT_STAGES_DATA, formatInnovationCategory, formatInnovationStage, formatPartnerNeed, formatEthicsStatus, formatRegulatoryPathway, formatFundingStatus, formatPercentage: Utils.formatPercentage,
           availablePhysicians, availableResidents, availableAttendings, availableHeadsOfDepartment, availableReplacementStaff,
           // FIX 11: Partner needs options with an "Other" escape hatch handled in template
           availablePartnerNeeds: ['Financiación', 'Distribución', 'Fabricación', 'Software', 'Regulatorio', 'Ensayos clínicos', 'Licencia de tecnología', 'Co-desarrollo'],
