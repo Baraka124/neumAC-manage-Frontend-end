@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=26.1">
+    <link rel="stylesheet" href="style.css?v=27">
 
     
 </head>
@@ -1297,12 +1297,12 @@
                     </a>
                     <a href="#" class="nmsb-item" :class="{ active: currentView === 'news' }"
                        @click.prevent="switchView('news'); mobileMenuOpen = false"
-                       :title="sidebarCollapsed ? 'Publications' : null">
+                       :title="sidebarCollapsed ? 'Research Library' : null">
                         <span class="nmsb-icon nmsb-icon--violet">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                         </span>
                         <span class="nmsb-label" v-if="!sidebarCollapsed">
-                            Publications
+                            Research Library
                             <em class="nmsb-sub">{{ newsPosts.filter(p=>p.status==='published').length }} published{{ newsPosts.filter(p=>p.status==='draft').length ? ' · ' + newsPosts.filter(p=>p.status==='draft').length + ' drafts' : '' }}</em>
                         </span>
                         <span v-if="!sidebarCollapsed && newsPosts.filter(p=>p.status==='draft').length > 0"
@@ -6055,9 +6055,9 @@
                     <header class="news-v25-masthead" :class="{'is-collapsed':!newsLibraryHeaderOpen}">
                         <div class="news-v25-mast-main">
                             <div class="news-v25-ident">
-                                <div class="news-editorial-kicker">Research library · neumAC</div>
-                                <h2>Publications &amp; knowledge</h2>
-                                <p>Scientific output, clinical insight and department updates — one living institutional record.</p>
+                                <div class="news-editorial-kicker">neumAC · Research &amp; Innovation</div>
+                                <h2>Research Library</h2>
+                                <p>Scientific output, clinical insight and departmental knowledge — connected to the work that produced it.</p>
                             </div>
                             <div class="news-v25-mast-actions">
                                 <div class="news-v25-record-count"><strong>{{ newsPosts.length }}</strong><span>records</span></div>
@@ -6082,6 +6082,9 @@
                     </header>
 
                     <div class="news-v25-commandbar">
+                        <div v-if="!newsLibraryHeaderOpen" class="news-v27-command-context">
+                            <strong>{{ newsLibraryContextLabel }}</strong><span>{{ filteredNews.length }}</span>
+                        </div>
                         <nav class="news-v25-tabs" aria-label="Research output type">
                             <button :class="{'is-active':newsFilters.type===''}" @click="newsFilters.type=''">All <span>{{ newsPosts.length }}</span></button>
                             <button :class="{'is-active':newsFilters.type==='publication'}" @click="newsFilters.type='publication'">Publications <span>{{ newsPosts.filter(p=>p.post_type==='publication').length }}</span></button>
@@ -6129,13 +6132,12 @@
                                     <div class="knowledge-v23-state" @click.stop>
                                         <span v-if="post.status !== 'published'" class="knowledge-v23-status" :class="'is-' + post.status">{{ post.status === 'draft' ? 'Draft' : 'Archived' }}</span>
                                         <template v-else>
-                                            <button class="knowledge-v23-visibility" @click="toggleNewsPublic(post)"
-                                                    :disabled="!hasPermission('news_posts','update')"
-                                                    :title="post.is_public ? 'Public — reflected in the public view on the web. Click to Make Internal.' : 'Internal — not reflected in the public view on the web. Click to Make Public.'">
+                                            <span class="knowledge-v23-visibility"
+                                                  :title="post.is_public ? 'Public — reflected in the public view on the web.' : 'Internal — department only.'">
                                                 <span class="knowledge-state-dot" :class="post.is_public ? 'is-public' : 'is-internal'"></span>
                                                 <i class="fas" :class="post.is_public ? 'fa-globe' : 'fa-lock'"></i>
                                                 {{ post.is_public ? 'Public' : 'Internal' }}
-                                            </button>
+                                            </span>
                                             <span v-if="post.is_public" class="knowledge-v23-info" title="Public records are reflected in the public view on the web." aria-label="Public records are reflected in the public view on the web.">i</span>
                                         </template>
                                     </div>
@@ -6168,12 +6170,14 @@
                                 </template>
 
                                 <template v-else-if="post.post_type === 'highlight'">
-                                    <div class="highlight-v23 highlight-v26" :class="{'has-image': post.image_urls?.[0] || post.featured_image_url, 'has-fallback': !(post.image_urls?.[0] || post.featured_image_url)}">
+                                    <div class="highlight-v23 highlight-v26" :class="[{'has-image': post.image_urls?.[0] || post.featured_image_url, 'has-fallback': !(post.image_urls?.[0] || post.featured_image_url)}, newsVisualSide(post)]">
                                         <figure v-if="post.image_urls?.[0] || post.featured_image_url" class="highlight-v23-media">
                                             <img :src="post.image_urls?.[0] || post.featured_image_url" :alt="post.title" onerror="this.closest('article')?.classList.add('image-failed')">
                                         </figure>
-                                        <div v-else class="highlight-v26-fallback" aria-hidden="true">
+                                        <div v-else class="highlight-v26-fallback highlight-v27-poster" aria-hidden="true">
                                             <span class="highlight-v26-fallback-code">{{ post.research_line_id ? (newsLineName(post.research_line_id).split('—')[0] || 'R').trim() : 'R&I' }}</span>
+                                            <time>{{ (post.published_at || post.created_at || '').slice(0,4) || '—' }}</time>
+                                            <b>{{ (post.title || 'Research').split(' ').slice(0,3).join(' ') }}</b>
                                             <i></i><i></i><i></i>
                                         </div>
                                         <div class="highlight-v23-copy">
@@ -6209,10 +6213,10 @@
                                         <span v-if="post.expires_at && post.post_type !== 'publication'" class="knowledge-expiry" :class="{'is-soon': new Date(post.expires_at) < new Date(Date.now() + 14*86400000)}">Expires {{ formatDate(post.expires_at) }}</span>
                                     </div>
                                     <div class="knowledge-v23-actions" @click.stop>
-                                        <button v-if="post.status === 'draft' && hasPermission('news_posts','update')" class="knowledge-v23-icon-action is-publish" @click="publishNews(post)" title="Publish"><i class="fas fa-paper-plane"></i><span>Publish</span></button>
-                                        <button v-if="hasPermission('news_posts','update')" class="knowledge-v23-icon-action" @click="editNews(post)" title="Edit"><i class="fas fa-pen"></i><span>Edit</span></button>
+                                        <button v-if="post.status === 'draft' && hasPermission('news_posts','update')" class="knowledge-v23-icon-action is-publish" @click="publishNews(post)" title="Publish" aria-label="Publish"><i class="fas fa-paper-plane"></i></button>
+                                        <button v-if="hasPermission('news_posts','update')" class="knowledge-v23-icon-action" @click="editNews(post)" title="Edit" aria-label="Edit"><i class="fas fa-pen"></i></button>
                                         <div class="news-actions knowledge-more-wrap">
-                                            <button class="knowledge-v23-icon-action" @click="openNewsActionMenu(post,$event)" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
+                                            <button class="knowledge-v23-icon-action" @click="openNewsActionMenu(post,$event)" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-h"></i></button>
                                         </div>
                                     </div>
                                 </footer>
@@ -6246,105 +6250,64 @@
             </div><!-- /content-area -->
 
                 <!-- ============================================================
-                     RESEARCH STUDIO — V24 object-aware create / edit / preview
+                     RESEARCH EDITOR — object-aware clinical research authoring
                 ============================================================ -->
-                <div v-if="newsModal.show" class="news-v24-studio-overlay" @click.self="newsModal.show = false">
-                    <section class="news-v24-studio" :class="['is-' + newsModal.form.post_type, 'stage-' + newsModal.stage]">
+                <div v-if="newsModal.show" class="news-v24-studio-overlay news-v27-editor-overlay" @click.self="closeNewsEditor()">
+                    <section class="news-v24-studio news-v27-editor" :class="['is-' + newsModal.form.post_type, 'stage-' + newsModal.stage]">
 
-                        <header class="news-v24-studio-head">
+                        <header class="news-v24-studio-head news-v27-editor-head">
                             <div class="news-v24-studio-brand">
                                 <button v-if="newsModal.stage==='compose' && newsModal.mode==='add'" class="news-v24-backtype" @click="newsModal.stage='choose'" title="Choose another type">←</button>
                                 <span class="news-v24-studio-mark">R</span>
                                 <div>
-                                    <div class="news-v24-studio-kicker">Research studio · neumAC</div>
-                                    <strong v-if="newsModal.stage==='choose'">New library record</strong>
+                                    <div class="news-v24-studio-kicker">Research Library · neumAC</div>
+                                    <strong v-if="newsModal.stage==='choose'">New research record</strong>
                                     <strong v-else>{{ newsModal.mode==='add' ? 'Create' : 'Edit' }} {{ {'publication':'publication','article':'article','highlight':'highlight','update':'update'}[newsModal.form.post_type] }}</strong>
                                 </div>
                             </div>
                             <div class="news-v24-studio-headright">
                                 <span v-if="newsModal.stage==='compose'" class="news-v24-save-state" :class="{'is-dirty':newsModal.saveState==='Unsaved changes','is-saving':newsModal.busy}">{{ newsModal.saveState }}</span>
-                                <button class="news-v24-close" @click="newsModal.show=false" aria-label="Close" title="Close"><span></span><span></span></button>
+                                <button v-if="newsModal.stage==='compose'" class="news-v27-details-trigger" @click="newsEditorDetailsOpen=!newsEditorDetailsOpen" :class="{'is-active':newsEditorDetailsOpen}" title="Record details">ⓘ <span>Details</span></button>
+                                <button class="news-v24-close" @click="closeNewsEditor()" aria-label="Close" title="Close"><span></span><span></span></button>
                             </div>
                         </header>
 
-                        <!-- TYPE CHOOSER — V25 object atlas: no card wall, no dead vertical space -->
-                        <div v-if="newsModal.stage==='choose'" class="news-v25-chooser">
+                        <div v-if="newsModal.stage==='choose'" class="news-v25-chooser news-v27-chooser">
                             <div class="news-v25-chooser-intro">
-                                <div class="news-v25-chooser-no">01 / CREATE</div>
-                                <span>Research studio</span>
-                                <h2>Choose the object.<br>Then shape the experience.</h2>
-                                <p>Each record has its own authoring, reading and publishing grammar.</p>
+                                <div class="news-v25-chooser-no">NEW RECORD</div>
+                                <span>Research Library</span>
+                                <h2>Choose the record type.</h2>
+                                <p>Each type preserves the metadata, reading behaviour and publication workflow appropriate to its clinical or research use.</p>
                                 <small>Publication · Article · Highlight · Update</small>
                             </div>
-
                             <nav class="news-v25-object-atlas" aria-label="Choose record type">
-                                <button class="is-publication" @click="chooseNewsType('publication')">
-                                    <div class="news-v25-atlas-top"><span>01</span><b>Publication</b><i>↗</i></div>
-                                    <div class="news-v25-atlas-demo demo-publication" aria-hidden="true">
-                                        <strong>2026</strong>
-                                        <div><span></span><span></span><span></span><small>DOI 10.1183/…</small></div>
-                                    </div>
-                                    <p>Scholarly record</p>
-                                    <small>Journal, authors, DOI, date and research line.</small>
-                                </button>
-
-                                <button class="is-article" @click="chooseNewsType('article')">
-                                    <div class="news-v25-atlas-top"><span>02</span><b>Article</b><i>↗</i></div>
-                                    <div class="news-v25-atlas-demo demo-article" aria-hidden="true">
-                                        <div class="demo-image"></div>
-                                        <div class="demo-copy"><span></span><span></span><span></span><span></span></div>
-                                    </div>
-                                    <p>Editorial story</p>
-                                    <small>Writing, imagery and a dedicated reading experience.</small>
-                                </button>
-
-                                <button class="is-highlight" @click="chooseNewsType('highlight')">
-                                    <div class="news-v25-atlas-top"><span>03</span><b>Highlight</b><i>↗</i></div>
-                                    <div class="news-v25-atlas-demo demo-highlight" aria-hidden="true">
-                                        <div class="demo-highlight-image"></div>
-                                        <div class="demo-highlight-line"></div>
-                                    </div>
-                                    <p>Visual research feature</p>
-                                    <small>Image-led, concise and designed to carry emphasis.</small>
-                                </button>
-
-                                <button class="is-update" @click="chooseNewsType('update')">
-                                    <div class="news-v25-atlas-top"><span>04</span><b>Update</b><i>↗</i></div>
-                                    <div class="news-v25-atlas-demo demo-update" aria-hidden="true">
-                                        <time>18 SEP</time><span></span><span></span><span></span>
-                                    </div>
-                                    <p>Department note</p>
-                                    <small>Fast, dated and operational. No oversized editor.</small>
-                                </button>
+                                <button class="is-publication" @click="chooseNewsType('publication')"><div class="news-v25-atlas-top"><span>01</span><b>Publication</b><i>↗</i></div><div class="news-v25-atlas-demo demo-publication" aria-hidden="true"><strong>2026</strong><div><span></span><span></span><span></span><small>DOI 10.1183/…</small></div></div><p>Scholarly record</p><small>Journal, authors, DOI, date and research line.</small></button>
+                                <button class="is-article" @click="chooseNewsType('article')"><div class="news-v25-atlas-top"><span>02</span><b>Article</b><i>↗</i></div><div class="news-v25-atlas-demo demo-article" aria-hidden="true"><div class="demo-image"></div><div class="demo-copy"><span></span><span></span><span></span><span></span></div></div><p>Research article</p><small>Long-form clinical or research communication with imagery.</small></button>
+                                <button class="is-highlight" @click="chooseNewsType('highlight')"><div class="news-v25-atlas-top"><span>03</span><b>Highlight</b><i>↗</i></div><div class="news-v25-atlas-demo demo-highlight" aria-hidden="true"><div class="demo-highlight-image"></div><div class="demo-highlight-line"></div></div><p>Research highlight</p><small>Image-led communication for a result, milestone or research moment.</small></button>
+                                <button class="is-update" @click="chooseNewsType('update')"><div class="news-v25-atlas-top"><span>04</span><b>Update</b><i>↗</i></div><div class="news-v25-atlas-demo demo-update" aria-hidden="true"><time>18 SEP</time><span></span><span></span><span></span></div><p>Department update</p><small>Concise, dated and operational.</small></button>
                             </nav>
-
-                            <div class="news-v25-chooser-foot">
-                                <span>CREATE</span><i></i><span>PREVIEW</span><i></i><span>PUBLISH</span><i></i><span>READ</span>
-                            </div>
+                            <div class="news-v25-chooser-foot"><span>CREATE</span><i></i><span>REVIEW</span><i></i><span>PUBLISH</span><i></i><span>READ</span></div>
                         </div>
 
-                        <!-- COMPOSER -->
-                        <div v-else class="news-v24-compose-shell">
-                            <div class="news-v24-editor">
-                                <div class="news-v24-lifecycle">
+                        <div v-else class="news-v24-compose-shell news-v27-compose-shell">
+                            <div class="news-v24-editor news-v27-editor-canvas">
+                                <div class="news-v24-lifecycle news-v27-lifecycle">
                                     <div class="news-v24-lifecycle-state">
-                                        <span>{{ newsModal.form.status==='published' ? 'Published' : newsModal.form.status==='archived' ? 'Archived' : 'Draft' }}</span>
-                                        <i></i>
+                                        <span>{{ newsModal.form.status==='published' ? 'Published' : newsModal.form.status==='archived' ? 'Archived' : 'Draft' }}</span><i></i>
                                         <button @click="newsModal.form.is_public=false" :class="{'is-active':!newsModal.form.is_public}">Internal</button>
                                         <button @click="newsModal.form.is_public=true" :class="{'is-active':newsModal.form.is_public}">Public</button>
                                         <span v-if="newsModal.form.is_public" class="news-v24-public-info" title="Public records are reflected in the public view on the web.">i</span>
                                     </div>
-                                    <div class="news-v24-preview-switch" aria-label="Preview mode">
+                                    <div class="news-v27-preview-switch" aria-label="Preview surface">
                                         <span>Preview</span>
-                                        <button @click="newsModal.previewMode='internal'" :class="{'is-active':newsModal.previewMode==='internal'}">Internal</button>
-                                        <button @click="newsModal.previewMode='public'" :class="{'is-active':newsModal.previewMode==='public'}">Public</button>
+                                        <button @click="newsModal.previewMode='library'" :class="{'is-active':newsModal.previewMode==='library'}">Library</button>
+                                        <button @click="newsModal.previewMode='reader'" :class="{'is-active':newsModal.previewMode==='reader'}">Reader</button>
+                                        <button @click="newsModal.previewMode='public'" :class="{'is-active':newsModal.previewMode==='public'}">Public web</button>
                                     </div>
                                 </div>
-                                <div v-if="newsModal.form.is_public" class="news-v24-public-note"><span>i</span> Public records are reflected in the public view on the web.</div>
 
-                                <!-- PUBLICATION COMPOSER -->
-                                <div v-if="newsModal.form.post_type==='publication'" class="news-v24-editor-body news-v24-editor-publication">
-                                    <div class="news-v24-object-label">Scholarly record</div>
+                                <div v-if="newsModal.form.post_type==='publication'" class="news-v24-editor-body news-v24-editor-publication news-v27-publication-editor">
+                                    <div class="news-v24-object-label">Publication</div>
                                     <textarea class="news-v24-title-input" v-model="newsModal.form.title" rows="2" placeholder="Publication title"></textarea>
                                     <div class="news-v24-citation-grid">
                                         <label><span>Journal</span><input v-model="newsModal.form.journal_name" placeholder="European Respiratory Journal"></label>
@@ -6356,107 +6319,68 @@
                                     </div>
                                 </div>
 
-                                <!-- ARTICLE COMPOSER -->
-                                <div v-else-if="newsModal.form.post_type==='article'" class="news-v24-editor-body news-v24-editor-article">
-                                    <div class="news-v24-object-label">Editorial article</div>
-                                    <textarea class="news-v24-title-input" v-model="newsModal.form.title" rows="2" placeholder="Article title"></textarea>
-                                    <textarea class="news-v24-writing-area" v-model="newsModal.form.body" :maxlength="15000" placeholder="Write the article…"></textarea>
-                                    <div class="news-v24-writing-meta"><span>{{ newsWordCount }} words</span><span>{{ Math.max(1, Math.round(newsWordCount/200)) }} min read</span><span v-if="newsWordCount > newsWordLimit" class="is-over">Studio guidance: {{ newsWordLimit }} words</span></div>
-                                    <div class="news-v24-media-strip">
-                                        <div class="news-v24-media-head"><strong>Lead image</strong><span>Optional · up to 5 images</span></div>
-                                        <div class="news-v24-images" v-if="newsModal.form.image_urls.length"><figure v-for="(url,idx) in newsModal.form.image_urls" :key="idx"><img :src="url" alt=""><button @click.prevent="newsModal.form.image_urls.splice(idx,1)" title="Remove">×</button></figure></div>
+                                <div v-else-if="newsModal.form.post_type==='article'" class="news-v24-editor-body news-v24-editor-article news-v27-article-editor">
+                                    <div class="news-v27-document-state"><span>ARTICLE</span><b>{{ newsModal.form.status==='published' ? 'PUBLISHED' : 'DRAFT' }}</b></div>
+                                    <textarea class="news-v24-title-input news-v27-article-title" v-model="newsModal.form.title" rows="2" placeholder="Untitled article"></textarea>
+                                    <textarea class="news-v24-writing-area news-v27-writing-area" v-model="newsModal.form.body" :maxlength="15000" placeholder="Begin the article…"></textarea>
+                                    <div class="news-v24-writing-meta news-v27-writing-meta"><span>{{ newsWordCount }} words</span><span>{{ Math.max(1, Math.round(newsWordCount/200)) }} min read</span><span v-if="newsWordCount > newsWordLimit" class="is-over">Recommended length: {{ newsWordLimit }} words</span></div>
+                                    <section class="news-v27-media-editor">
+                                        <header><div><strong>Lead image</strong><span>Optional · shown in the Library and Reader</span></div><button @click.prevent="triggerNewsImagePicker" :disabled="newsImageUploading">{{ newsImageUploading ? 'Uploading…' : '＋ Add image' }}</button></header>
                                         <input id="newsImageFileInput" type="file" accept="image/*" @change="uploadNewsImage(newsModal.form,$event)" hidden>
-                                        <div class="news-v24-media-actions"><button @click.prevent="triggerNewsImagePicker" :disabled="newsImageUploading">{{ newsImageUploading ? 'Uploading…' : '＋ Add image' }}</button><span>or</span><input v-model="newsModal.form._imageInput" placeholder="Paste image URL"><button @click.prevent="addNewsImage(newsModal.form)">Add</button></div>
-                                    </div>
-                                    <div class="news-v24-context-grid">
-                                        <label><span>Author</span><select v-model="newsModal.form.author_id"><option value="">Select author</option><option v-for="s in allStaffLookup" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></label>
-                                        <label><span>Research line</span><select v-model="newsModal.form.research_line_id"><option value="">No research line</option><option v-for="l in researchLines" :key="l.id" :value="l.id">L{{ l.line_number }} — {{ l.short_name || l.research_line_name || l.name }}</option></select></label>
-                                        <label><span>Publish date</span><input type="date" v-model="newsModal.form.published_at"></label>
-                                        <label><span>Expiry</span><input type="date" v-model="newsModal.form.expires_at"></label>
-                                    </div>
+                                        <div v-if="newsModal.form.image_urls.length" class="news-v27-image-board">
+                                            <figure><img :src="newsModal.form.image_urls[0]" alt=""><figcaption>Lead image</figcaption><button @click.prevent="newsModal.form.image_urls.splice(0,1)" title="Remove image">×</button></figure>
+                                            <div class="news-v27-crop-preview"><span>Framing check</span><div><figure><img :src="newsModal.form.image_urls[0]" alt=""><small>Library</small></figure><figure><img :src="newsModal.form.image_urls[0]" alt=""><small>Reader</small></figure><figure><img :src="newsModal.form.image_urls[0]" alt=""><small>Public web</small></figure></div></div>
+                                        </div>
+                                        <div class="news-v24-media-actions news-v27-url-add"><span>Image URL</span><input v-model="newsModal.form._imageInput" placeholder="Paste image URL"><button @click.prevent="addNewsImage(newsModal.form)">Add</button></div>
+                                    </section>
                                 </div>
 
-                                <!-- HIGHLIGHT COMPOSER -->
                                 <div v-else-if="newsModal.form.post_type==='highlight'" class="news-v24-editor-body news-v24-editor-highlight">
-                                    <div class="news-v24-object-label">Visual highlight</div>
+                                    <div class="news-v24-object-label">Research highlight</div>
                                     <div class="news-v24-highlight-compose">
-                                        <div class="news-v24-highlight-media-editor">
-                                            <figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure>
-                                            <button v-else @click.prevent="triggerNewsImagePicker" class="news-v24-add-visual"><span>＋</span><strong>Add the visual</strong><small>A Highlight starts with the image</small></button>
-                                            <input id="newsImageFileInput" type="file" accept="image/*" @change="uploadNewsImage(newsModal.form,$event)" hidden>
-                                            <div v-if="newsModal.form.image_urls.length" class="news-v24-highlight-media-actions"><button @click.prevent="triggerNewsImagePicker">＋ Add another</button><button @click.prevent="newsModal.form.image_urls.splice(0,1)">Remove lead image</button></div>
-                                        </div>
-                                        <div class="news-v24-highlight-copy-editor">
-                                            <textarea class="news-v24-title-input" v-model="newsModal.form.title" rows="3" placeholder="Highlight headline"></textarea>
-                                            <textarea class="news-v24-highlight-copyarea" v-model="newsModal.form.body" placeholder="What should people understand from this moment?"></textarea>
-                                            <div class="news-v24-context-grid is-compact">
-                                                <label><span>Author</span><select v-model="newsModal.form.author_id"><option value="">Select author</option><option v-for="s in allStaffLookup" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></label>
-                                                <label><span>Research line</span><select v-model="newsModal.form.research_line_id"><option value="">No research line</option><option v-for="l in researchLines" :key="l.id" :value="l.id">L{{ l.line_number }} — {{ l.short_name || l.research_line_name || l.name }}</option></select></label>
-                                                <label><span>Publish date</span><input type="date" v-model="newsModal.form.published_at"></label>
-                                                <label><span>Expiry</span><input type="date" v-model="newsModal.form.expires_at"></label>
-                                            </div>
-                                        </div>
+                                        <div class="news-v24-highlight-media-editor"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><button v-else @click.prevent="triggerNewsImagePicker" class="news-v24-add-visual"><span>＋</span><strong>Add the visual</strong><small>A Highlight begins with its evidence or image</small></button><input id="newsImageFileInput" type="file" accept="image/*" @change="uploadNewsImage(newsModal.form,$event)" hidden><div v-if="newsModal.form.image_urls.length" class="news-v24-highlight-media-actions"><button @click.prevent="triggerNewsImagePicker">＋ Add another</button><button @click.prevent="newsModal.form.image_urls.splice(0,1)">Remove lead image</button></div></div>
+                                        <div class="news-v24-highlight-copy-editor"><textarea class="news-v24-title-input" v-model="newsModal.form.title" rows="3" placeholder="Highlight headline"></textarea><textarea class="news-v24-highlight-copyarea" v-model="newsModal.form.body" placeholder="What should the department understand from this result or milestone?"></textarea></div>
                                     </div>
                                 </div>
 
-                                <!-- UPDATE COMPOSER -->
                                 <div v-else class="news-v24-editor-body news-v24-editor-update">
                                     <div class="news-v24-object-label">Department update</div>
-                                    <div class="news-v24-note-sheet">
-                                        <span class="news-v24-note-date">{{ newsModal.form.published_at || new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) }}</span>
-                                        <input class="news-v24-note-title" v-model="newsModal.form.title" placeholder="What changed?">
-                                        <textarea v-model="newsModal.form.body" placeholder="Write the update — concise and useful."></textarea>
-                                        <div class="news-v24-writing-meta"><span>{{ newsWordCount }} / {{ newsWordLimit }} words</span></div>
-                                    </div>
-                                    <div class="news-v24-context-grid is-compact">
-                                        <label><span>Author</span><select v-model="newsModal.form.author_id"><option value="">Select author</option><option v-for="s in allStaffLookup" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></label>
-                                        <label><span>Research line</span><select v-model="newsModal.form.research_line_id"><option value="">No research line</option><option v-for="l in researchLines" :key="l.id" :value="l.id">L{{ l.line_number }} — {{ l.short_name || l.research_line_name || l.name }}</option></select></label>
-                                        <label><span>Publish date</span><input type="date" v-model="newsModal.form.published_at"></label>
-                                        <label><span>Expiry</span><input type="date" v-model="newsModal.form.expires_at"></label>
-                                    </div>
+                                    <div class="news-v24-note-sheet"><span class="news-v24-note-date">{{ newsModal.form.published_at || new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) }}</span><input class="news-v24-note-title" v-model="newsModal.form.title" placeholder="What changed?"><textarea v-model="newsModal.form.body" placeholder="Write the update — concise and useful."></textarea><div class="news-v24-writing-meta"><span>{{ newsWordCount }} / {{ newsWordLimit }} words</span></div></div>
                                 </div>
+
+                                <aside v-if="newsEditorDetailsOpen" class="news-v27-record-inspector">
+                                    <header><div><span>Record details</span><strong>{{ newsModal.form.post_type }}</strong></div><button @click="newsEditorDetailsOpen=false" aria-label="Close details">×</button></header>
+                                    <div class="news-v27-inspector-fields">
+                                        <label v-if="newsModal.form.post_type!=='publication'"><span>Author</span><select v-model="newsModal.form.author_id"><option value="">Select author</option><option v-for="s in allStaffLookup" :key="s.id" :value="s.id">{{ s.full_name }}</option></select></label>
+                                        <label><span>Research line</span><select v-model="newsModal.form.research_line_id"><option value="">No research line</option><option v-for="l in researchLines" :key="l.id" :value="l.id">L{{ l.line_number }} — {{ l.short_name || l.research_line_name || l.name }}</option></select></label>
+                                        <label v-if="newsModal.form.post_type!=='publication'"><span>Publish date</span><input type="date" v-model="newsModal.form.published_at"></label>
+                                        <label v-if="newsModal.form.post_type!=='publication'"><span>Expiry</span><input type="date" v-model="newsModal.form.expires_at"></label>
+                                        <div class="news-v27-inspector-state"><span>Visibility</span><strong>{{ newsModal.form.is_public ? 'Public' : 'Internal' }}</strong><small v-if="newsModal.form.is_public">Reflected in the public view on the web.</small><small v-else>Department only.</small></div>
+                                    </div>
+                                </aside>
                             </div>
 
-                            <!-- LIVE PREVIEW: Internal / Public, same object, two surfaces -->
-                            <aside class="news-v24-live-preview" :class="['mode-' + newsModal.previewMode, 'preview-' + newsModal.form.post_type]">
-                                <header>
-                                    <div><span>{{ newsModal.previewMode==='public' ? 'Public web preview' : 'Internal record preview' }}</span><small v-if="newsModal.previewMode==='public'">Public records are reflected in the public view on the web.</small><small v-else>Department workspace</small></div>
-                                    <span class="news-v24-preview-status">{{ newsModal.form.status==='published' ? 'Published' : 'Draft' }}</span>
-                                </header>
+                            <aside class="news-v24-live-preview news-v27-live-preview" :class="['mode-' + newsModal.previewMode, 'preview-' + newsModal.form.post_type]">
+                                <header><div><span>{{ newsModal.previewMode==='public' ? 'Public web preview' : newsModal.previewMode==='reader' ? 'Reader preview' : 'Library preview' }}</span><small v-if="newsModal.previewMode==='public'">Presentation preview · final web layout may vary</small><small v-else-if="newsModal.previewMode==='reader'">Internal reading view</small><small v-else>Research Library</small></div><span class="news-v24-preview-status">{{ newsModal.form.status==='published' ? 'Published' : 'Draft' }}</span></header>
                                 <div class="news-v24-preview-canvas">
-                                    <article v-if="newsModal.form.post_type==='publication'" class="news-v24-preview-publication">
-                                        <div class="news-v24-preview-year">{{ (newsModal.form.published_at || '').slice(0,4) || new Date().getFullYear() }}</div>
-                                        <div><span>Publication</span><h3>{{ newsModal.form.title || 'Untitled publication' }}</h3><em>{{ newsModal.form.journal_name || 'Journal not added' }}</em><p>{{ newsModal.form.authors_text || 'Authors not added' }}</p><small v-if="newsModal.form.doi">DOI {{ newsModal.form.doi }}</small></div>
-                                    </article>
-                                    <article v-else-if="newsModal.form.post_type==='article'" class="news-v24-preview-article">
-                                        <figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure>
-                                        <span>Article</span><h3>{{ newsModal.form.title || 'Untitled article' }}</h3><p>{{ newsModal.form.body || 'Your article will appear here as you write.' }}</p>
-                                    </article>
-                                    <article v-else-if="newsModal.form.post_type==='highlight'" class="news-v24-preview-highlight">
-                                        <figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure>
-                                        <div><span>Highlight</span><h3>{{ newsModal.form.title || 'Untitled highlight' }}</h3><p>{{ newsModal.form.body || 'Short visual context.' }}</p></div>
-                                    </article>
-                                    <article v-else class="news-v24-preview-update">
-                                        <time>{{ newsModal.form.published_at || 'Today' }}</time><span>Department update</span><h3>{{ newsModal.form.title || 'Untitled update' }}</h3><p>{{ newsModal.form.body || 'The update will appear here.' }}</p>
-                                    </article>
+                                    <article v-if="newsModal.form.post_type==='publication'" class="news-v24-preview-publication"><div class="news-v24-preview-year">{{ (newsModal.form.published_at || '').slice(0,4) || new Date().getFullYear() }}</div><div><span>Publication</span><h3>{{ newsModal.form.title || 'Untitled publication' }}</h3><em>{{ newsModal.form.journal_name || 'Journal not added' }}</em><p>{{ newsModal.form.authors_text || 'Authors not added' }}</p><small v-if="newsModal.form.doi">DOI {{ newsModal.form.doi }}</small></div></article>
+                                    <article v-else-if="newsModal.form.post_type==='article'" class="news-v24-preview-article news-v27-preview-article"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><span>Article</span><h3>{{ newsModal.form.title || 'Untitled article' }}</h3><p>{{ newsModal.form.body || 'The article will appear here as you write.' }}</p></article>
+                                    <article v-else-if="newsModal.form.post_type==='highlight'" class="news-v24-preview-highlight"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><div><span>Highlight</span><h3>{{ newsModal.form.title || 'Untitled highlight' }}</h3><p>{{ newsModal.form.body || 'Short visual context.' }}</p></div></article>
+                                    <article v-else class="news-v24-preview-update"><time>{{ newsModal.form.published_at || 'Today' }}</time><span>Department update</span><h3>{{ newsModal.form.title || 'Untitled update' }}</h3><p>{{ newsModal.form.body || 'The update will appear here.' }}</p></article>
                                 </div>
-                                <footer><span>{{ newsModal.form.is_public ? '● Public' : '● Internal' }}</span><span v-if="newsModal.form.research_line_id">{{ newsLineName(newsModal.form.research_line_id) }}</span></footer>
+                                <footer><span>{{ newsModal.form.is_public ? '● Public' : '● Internal' }}</span><span v-if="newsModal.form.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span><span v-if="newsModal.form.research_line_id">{{ newsLineName(newsModal.form.research_line_id) }}</span></footer>
+                                <div v-if="newsModal.previewMode==='public' && !newsModal.form.is_public" class="news-v27-preview-warning">Preview only — this record is currently Internal.</div>
                             </aside>
                         </div>
 
-                        <!-- lifecycle footer -->
-                        <footer v-if="newsModal.stage==='compose'" class="news-v24-studio-foot">
-                            <div class="news-v24-foot-left">
-                                <button v-if="newsModal.mode==='edit' && newsModal.form.id" @click="closeNewsStudioToReader" class="news-v24-text-action">Return to reader</button>
-                                <span v-if="newsModal.form.is_public" class="news-v24-foot-public"><b>Public</b> · reflected in the public view on the web</span>
-                                <span v-else class="news-v24-foot-public"><b>Internal</b> · department only</span>
-                            </div>
-                            <div class="news-v24-foot-actions">
-                                <button class="news-v24-save" @click="saveNewsStudio(false)" :disabled="newsModal.busy">{{ newsModal.mode==='edit' ? 'Save changes' : 'Save draft' }}</button>
-                                <button v-if="newsModal.form.status!=='published'" class="news-v24-publish" @click="saveNewsStudio(true)" :disabled="newsModal.busy"><span>{{ newsModal.busy ? 'Working…' : 'Publish' }}</span><i>→</i></button>
-                                <button v-else class="news-v24-done" @click="closeNewsStudioToReader">Done</button>
-                            </div>
+                        <footer v-if="newsModal.stage==='compose'" class="news-v24-studio-foot news-v27-editor-foot">
+                            <div class="news-v24-foot-left"><button v-if="newsModal.mode==='edit' && newsModal.form.id" @click="closeNewsEditorToReader" class="news-v24-text-action">Return to reader</button><span v-if="newsModal.form.is_public" class="news-v24-foot-public"><b>Public</b> · reflected in the public view on the web</span><span v-else class="news-v24-foot-public"><b>Internal</b> · department only</span></div>
+                            <div class="news-v24-foot-actions"><button class="news-v24-save" @click="saveNewsEditor(false)" :disabled="newsModal.busy">{{ newsModal.mode==='edit' ? 'Save changes' : 'Save draft' }}</button><button v-if="newsModal.form.status!=='published'" class="news-v24-publish" @click="newsPublishReview=true" :disabled="newsModal.busy"><span>Review &amp; publish</span><i>→</i></button><button v-else class="news-v24-done" @click="closeNewsEditorToReader">Done</button></div>
                         </footer>
+
+                        <div v-if="newsPublishReview" class="news-v27-publish-review" @click.self="newsPublishReview=false">
+                            <section><span class="news-v27-review-kicker">Publication check</span><h3>Ready to publish?</h3><p>{{ newsModal.form.title || 'Untitled record' }}</p><dl><div><dt>Type</dt><dd>{{ newsModal.form.post_type }}</dd></div><div><dt>Visibility</dt><dd>{{ newsModal.form.is_public ? 'Public' : 'Internal' }}</dd></div><div v-if="newsModal.form.research_line_id"><dt>Research line</dt><dd>{{ newsLineName(newsModal.form.research_line_id) }}</dd></div></dl><div v-if="newsModal.form.is_public" class="news-v27-review-public"><span>i</span>This record will be reflected in the public view on the web.</div><footer><button @click="newsPublishReview=false">Back</button><button class="is-primary" @click="newsPublishReview=false; saveNewsEditor(true)" :disabled="newsModal.busy">{{ newsModal.busy ? 'Publishing…' : 'Publish' }} <span>→</span></button></footer></section>
+                        </div>
                     </section>
                 </div>
         </main>
@@ -7577,146 +7501,52 @@
         </div>
 
 <!-- ============================================================
-             RESEARCH LIBRARY READER — V24 object choreography
+             RESEARCH LIBRARY READER — V27 clinical reading environment
         ============================================================ -->
         <template v-if="newsDrawer.show && newsDrawer.post">
           <div class="nrd-backdrop nrd-backdrop--v23" :class="'nrd-backdrop--' + newsDrawer.post.post_type" @click="closeNewsDrawer()"></div>
-          <section class="nrd-drawer nrd-v23" :class="['nrd--' + newsDrawer.post.post_type, {'is-public-preview':newsDrawer.publicPreview}]"
-                   :style="newsDrawer.post.post_type==='update' ? newsDrawerPositionStyle : null"
-                   @keydown.esc="closeNewsDrawer()" tabindex="-1" ref="nrdDrawer">
-
-            <div class="nrd-v23-progress"><span :style="{ width: newsDrawer.post.word_count ? Math.min(100, Math.round((newsDrawer.post.word_count / (newsDrawer.post.post_type === 'update' ? 80 : 400)) * 100)) + '%' : '100%' }"></span></div>
-
-            <header class="nrd-v23-head">
-              <div class="nrd-v23-statebar">
-                <span class="nrd-v23-type">{{ newsDrawer.post.post_type === 'update' ? 'Update' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Publication' }}</span>
-                <span class="nrd-v23-status" :class="'is-' + newsDrawer.post.status">{{ newsDrawer.post.status === 'published' ? 'Published' : newsDrawer.post.status === 'draft' ? 'Draft' : 'Archived' }}</span>
-                <span class="nrd-v23-visibility" :class="newsDrawer.post.is_public ? 'is-public' : 'is-internal'"><span></span><i class="fas" :class="newsDrawer.post.is_public ? 'fa-globe' : 'fa-lock'"></i>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }}</span>
-                <span v-if="newsDrawer.post.is_public" class="nrd-v23-public-info" title="Public records are reflected in the public view on the web." aria-label="Public records are reflected in the public view on the web.">i</span>
-              </div>
-              <button class="nrd-v23-close" @click="closeNewsDrawer()" title="Close (Esc)" aria-label="Close"><span></span><span></span></button>
+          <section class="nrd-drawer nrd-v23 nrd-v27" :class="['nrd--' + newsDrawer.post.post_type, {'is-public-preview':newsDrawer.publicPreview,'is-reader-compact':newsReaderCompact}]" :style="newsDrawer.post.post_type==='update' ? newsDrawerPositionStyle : null" @keydown.esc="closeNewsDrawer()" tabindex="-1" ref="nrdDrawer">
+            <div class="nrd-v23-progress nrd-v27-progress"><span :style="{width: newsReadingProgress + '%'}"></span></div>
+            <header class="nrd-v27-readingbar">
+              <button class="nrd-v27-back" @click="closeNewsDrawer()" title="Back to Research Library"><span>←</span><b>Research Library</b></button>
+              <div class="nrd-v27-reading-context"><span>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</span><strong v-if="newsReaderCompact">{{ newsDrawer.post.title }}</strong></div>
+              <div class="nrd-v27-reading-actions"><span v-if="newsDrawer.post.post_type==='article' && newsReaderCompact">{{ Math.round(newsReadingProgress) }}%</span><button class="nrd-v23-close" @click="closeNewsDrawer()" title="Close (Esc)" aria-label="Close"><span></span><span></span></button></div>
             </header>
+            <div v-if="newsDrawer.publicPreview" class="nrd-v26-public-previewbar"><div><strong>Public view preview</strong><span>Preview of how this record is presented publicly. Final web layout may vary.</span></div><button @click="newsDrawer.publicPreview=false">Back to internal view</button></div>
 
-            <div v-if="newsDrawer.publicPreview" class="nrd-v26-public-previewbar">
-              <div><strong>Public view preview</strong><span>Preview of how this record is presented publicly. Final web layout may vary.</span></div>
-              <button @click="newsDrawer.publicPreview=false">Back to internal view</button>
-            </div>
-
-            <div class="nrd-v23-scroll">
-              <!-- PUBLICATION — scholarly folio -->
-              <article v-if="newsDrawer.post.post_type === 'publication'" class="nrd-v23-publication">
-                <div class="nrd-v23-pub-rail">
-                  <div class="nrd-v23-pub-year">{{ (newsDrawer.post.published_at || newsDrawer.post.created_at || '').slice(0,4) || '—' }}</div>
-                  <div v-if="newsDrawerLineName" class="nrd-v23-pub-line">{{ newsDrawerLineName }}</div>
-                </div>
-                <div class="nrd-v23-pub-main">
-                  <div class="nrd-v23-eyebrow">Scholarly record</div>
-                  <h1>{{ newsDrawer.post.title }}</h1>
-                  <div v-if="newsDrawer.post.journal_name" class="nrd-v23-pub-journal">{{ newsDrawer.post.journal_name }}</div>
-                  <div v-if="newsDrawer.post.authors_text" class="nrd-v23-pub-authors">{{ newsDrawer.post.authors_text }}</div>
-                  <a v-if="newsDrawer.post.doi" :href="'https://doi.org/' + newsDrawer.post.doi" target="_blank" class="nrd-v23-pub-doi">DOI {{ newsDrawer.post.doi }} <span>↗</span></a>
-                  <div v-else class="nrd-v23-pub-missing">DOI not recorded</div>
-                  <div class="nrd-v23-pub-byline">
-                    <span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span>
-                    <span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span>
-                  </div>
-                </div>
-                <aside class="nrd-v25-pub-context">
-                  <span class="nrd-v25-context-kicker">Record context</span>
-                  <dl>
-                    <div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div>
-                    <div v-if="newsDrawerAuthorFull"><dt>Internal author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div>
-                    <div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="This record is reflected in the public view on the web.">ⓘ</span></dd></div>
-                    <div><dt>Status</dt><dd>{{ newsDrawer.post.status === 'published' ? 'Published' : newsDrawer.post.status === 'draft' ? 'Draft' : 'Archived' }}</dd></div>
-                  </dl>
-                </aside>
+            <div class="nrd-v23-scroll nrd-v27-scroll" @scroll="updateNewsReadingProgress($event)">
+              <article v-if="newsDrawer.post.post_type === 'publication'" class="nrd-v23-publication nrd-v27-publication">
+                <div class="nrd-v23-pub-rail"><div class="nrd-v23-pub-year">{{ (newsDrawer.post.published_at || newsDrawer.post.created_at || '').slice(0,4) || '—' }}</div><div v-if="newsDrawerLineName" class="nrd-v23-pub-line">{{ newsDrawerLineName }}</div></div>
+                <div class="nrd-v23-pub-main"><div class="nrd-v23-eyebrow">Publication</div><h1>{{ newsDrawer.post.title }}</h1><div v-if="newsDrawer.post.journal_name" class="nrd-v23-pub-journal">{{ newsDrawer.post.journal_name }}</div><div v-if="newsDrawer.post.authors_text" class="nrd-v23-pub-authors">{{ newsDrawer.post.authors_text }}</div><a v-if="newsDrawer.post.doi" :href="'https://doi.org/' + newsDrawer.post.doi" target="_blank" class="nrd-v23-pub-doi">DOI {{ newsDrawer.post.doi }} <span>↗</span></a><div v-else class="nrd-v23-pub-missing">DOI not recorded</div><div class="nrd-v23-pub-byline"><span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span><span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span></div></div>
+                <aside class="nrd-v27-object-context"><span>Connected</span><button v-if="newsDrawerLineName" @click="exploreNewsLine(newsDrawer.post.research_line_id)">{{ newsDrawerLineName }}</button><button v-if="newsDrawerAuthorFull">{{ newsDrawerAuthorFull }}</button><button @click="openGroundedForNews(newsDrawer.post)">Ask Grounded ↗</button></aside>
               </article>
 
-              <!-- ARTICLE — immersive editorial reader -->
-              <article v-else-if="newsDrawer.post.post_type === 'article'" class="nrd-v23-article">
-                <div class="nrd-v23-article-head">
-                  <div class="nrd-v23-eyebrow">Article <span v-if="newsDrawerLineName">· {{ newsDrawerLineName }}</span><span v-if="newsDrawerReadMins"> · {{ newsDrawerReadMins }} min read</span></div>
-                  <h1>{{ newsDrawer.post.title }}</h1>
-                  <div class="nrd-v23-byline"><span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span><span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span><span v-if="newsDrawer.post.word_count">{{ newsDrawer.post.word_count }} words</span></div>
-                </div>
-                <figure v-if="newsDrawer.post.image_urls?.[0] || newsDrawer.post.featured_image_url" class="nrd-v23-article-hero"><img :src="newsDrawer.post.image_urls?.[0] || newsDrawer.post.featured_image_url" :alt="newsDrawer.post.title"></figure>
-                <div class="nrd-v23-article-body"><p v-for="(para, i) in newsDrawerBodyParagraphs" :key="i">{{ para }}</p></div>
+              <article v-else-if="newsDrawer.post.post_type === 'article'" class="nrd-v23-article nrd-v27-article">
+                <div class="nrd-v23-article-head"><div class="nrd-v23-eyebrow">Article <span v-if="newsDrawerLineName">· {{ newsDrawerLineName }}</span></div><h1>{{ newsDrawer.post.title }}</h1><div class="nrd-v23-byline"><span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span><span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span><span v-if="newsDrawerReadMins">{{ newsDrawerReadMins }} min read</span></div></div>
+                <figure v-if="newsDrawer.post.image_urls?.[0] || newsDrawer.post.featured_image_url" class="nrd-v23-article-hero nrd-v27-article-hero"><img :src="newsDrawer.post.image_urls?.[0] || newsDrawer.post.featured_image_url" :alt="newsDrawer.post.title"></figure>
+                <aside class="nrd-v27-article-context"><span>Context</span><button v-if="newsDrawerLineName" @click="exploreNewsLine(newsDrawer.post.research_line_id)">{{ newsDrawerLineName }}</button><button v-if="newsDrawerAuthorFull">{{ newsDrawerAuthorFull }}</button><button @click="openGroundedForNews(newsDrawer.post)">Ask Grounded about this article <i>↗</i></button></aside>
+                <div class="nrd-v23-article-body nrd-v27-article-body"><p v-for="(para, i) in newsDrawerBodyParagraphs" :key="i">{{ para }}</p></div>
               </article>
 
-              <!-- HIGHLIGHT — visual spotlight -->
-              <article v-else-if="newsDrawer.post.post_type === 'highlight'" class="nrd-v23-highlight" :class="{'has-fallback':!(newsDrawer.post.image_urls?.length || newsDrawer.post.featured_image_url)}">
-                <div class="nrd-v23-highlight-media" v-if="newsDrawer.post.image_urls?.length || newsDrawer.post.featured_image_url">
-                  <img v-for="(url, i) in (newsDrawer.post.image_urls?.length ? newsDrawer.post.image_urls : newsDrawer.post.featured_image_url.split(',').map(s=>s.trim()).filter(Boolean))" :key="i" :src="url" :alt="newsDrawer.post.title" :class="{'is-primary':i===0}">
-                </div>
-                <div v-else class="nrd-v26-highlight-fallback" aria-hidden="true"><strong>{{ newsDrawerLineName ? newsDrawerLineName.split('—')[0].trim() : 'R&I' }}</strong><i></i><i></i><i></i></div>
-                <div class="nrd-v23-highlight-copy">
-                  <div class="nrd-v23-eyebrow">Highlight <span v-if="newsDrawerLineName">· {{ newsDrawerLineName }}</span></div>
-                  <h1>{{ newsDrawer.post.title }}</h1>
-                  <div class="nrd-v23-byline"><span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span><span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span></div>
-                  <p v-if="newsDrawer.post.body">{{ newsDrawer.post.body }}</p>
-                </div>
+              <article v-else-if="newsDrawer.post.post_type === 'highlight'" class="nrd-v23-highlight nrd-v27-highlight" :class="[{'has-fallback':!(newsDrawer.post.image_urls?.length || newsDrawer.post.featured_image_url)}, newsVisualSide(newsDrawer.post)]">
+                <div class="nrd-v23-highlight-media" v-if="newsDrawer.post.image_urls?.length || newsDrawer.post.featured_image_url"><img v-for="(url, i) in (newsDrawer.post.image_urls?.length ? newsDrawer.post.image_urls : newsDrawer.post.featured_image_url.split(',').map(s=>s.trim()).filter(Boolean))" :key="i" :src="url" :alt="newsDrawer.post.title" :class="{'is-primary':i===0}"></div>
+                <div v-else class="nrd-v26-highlight-fallback nrd-v27-highlight-poster" aria-hidden="true"><strong>{{ newsDrawerLineName ? newsDrawerLineName.split('—')[0].trim() : 'R&I' }}</strong><time>{{ (newsDrawer.post.published_at || newsDrawer.post.created_at || '').slice(0,4) || '—' }}</time><b>{{ (newsDrawer.post.title || 'Research').split(' ').slice(0,4).join(' ') }}</b><i></i><i></i><i></i></div>
+                <div class="nrd-v23-highlight-copy"><div class="nrd-v23-eyebrow">Highlight <span v-if="newsDrawerLineName">· {{ newsDrawerLineName }}</span></div><h1>{{ newsDrawer.post.title }}</h1><div class="nrd-v23-byline"><span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span><span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span></div><p v-if="newsDrawer.post.body">{{ newsDrawer.post.body }}</p></div>
               </article>
 
-              <!-- UPDATE — compact institutional note -->
-              <article v-else class="nrd-v23-update">
-                <time>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</time>
-                <div class="nrd-v23-eyebrow">Department update <span v-if="newsDrawerLineName">· {{ newsDrawerLineName }}</span></div>
-                <h1>{{ newsDrawer.post.title }}</h1>
-                <p v-if="newsDrawer.post.body">{{ newsDrawer.post.body }}</p>
-                <div class="nrd-v23-byline"><span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span></div>
-              </article>
+              <article v-else class="nrd-v23-update nrd-v27-update"><time>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</time><div class="nrd-v23-eyebrow">Department update <span v-if="newsDrawerLineName">· {{ newsDrawerLineName }}</span></div><h1>{{ newsDrawer.post.title }}</h1><p v-if="newsDrawer.post.body">{{ newsDrawer.post.body }}</p><div class="nrd-v23-byline"><span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span></div></article>
 
-              <!-- Connected output -->
-              <section v-if="newsDrawer.post.research_line_id && newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).length" class="nrd-v23-related nrd-v26-related">
-                <div class="nrd-v23-related-head">
-                  <div><span>Connected output</span><small>{{ newsDrawerLineName }} · {{ newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).length }} related records</small></div>
-                  <button class="nrd-v26-explore-line" @click="exploreNewsLine(newsDrawer.post.research_line_id)">Explore research line →</button>
-                </div>
-                <button v-for="rel in newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).slice(0,3)" :key="rel.id" @click="openNewsDrawer(rel)" class="nrd-v23-related-item">
-                  <span>{{ rel.post_type === 'publication' ? 'Publication' : rel.post_type === 'article' ? 'Article' : rel.post_type === 'highlight' ? 'Highlight' : 'Update' }}</span>
-                  <strong>{{ rel.title }}</strong><i>→</i>
-                </button>
+              <section v-if="newsDrawer.post.research_line_id && newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).length" class="nrd-v23-related nrd-v26-related nrd-v27-related">
+                <div class="nrd-v23-related-head"><div><span>Continue exploring</span><small>{{ newsDrawerLineName }} · {{ newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).length }} related records</small></div><button class="nrd-v26-explore-line" @click="exploreNewsLine(newsDrawer.post.research_line_id)">Research line →</button></div>
+                <div class="nrd-v27-related-strip"><button v-for="rel in newsPosts.filter(p => p.id !== newsDrawer.post.id && p.research_line_id === newsDrawer.post.research_line_id).slice(0,3)" :key="rel.id" @click="openNewsDrawer(rel, null)" class="nrd-v23-related-item"><span>{{ rel.post_type === 'publication' ? 'Publication' : rel.post_type === 'article' ? 'Article' : rel.post_type === 'highlight' ? 'Highlight' : 'Update' }}</span><strong>{{ rel.title }}</strong><i>→</i></button></div>
               </section>
 
-              <nav v-if="newsDrawerPrev || newsDrawerNext" class="nrd-v23-pager">
-                <button v-if="newsDrawerPrev" @click="openNewsDrawer(newsDrawerPrev)"><span>← Previous</span><strong>{{ newsDrawerPrev.title }}</strong></button><span v-else></span>
-                <button v-if="newsDrawerNext" @click="openNewsDrawer(newsDrawerNext)" class="is-next"><span>Next →</span><strong>{{ newsDrawerNext.title }}</strong></button>
-              </nav>
+              <nav v-if="newsDrawerPrev || newsDrawerNext" class="nrd-v23-pager nrd-v27-pager"><span class="nrd-v27-pager-label">In this view</span><button v-if="newsDrawerPrev" @click="openNewsDrawer(newsDrawerPrev, null)"><span>← Previous</span><strong>{{ newsDrawerPrev.title }}</strong></button><span v-else></span><button v-if="newsDrawerNext" @click="openNewsDrawer(newsDrawerNext, null)" class="is-next"><span>Next →</span><strong>{{ newsDrawerNext.title }}</strong></button></nav>
             </div>
 
-            <!-- Reading is pristine by default. Management appears only on request. -->
-            <aside class="nrd-v24-reader-tools">
-              <button class="nrd-v24-circle" @click="newsDrawer.detailsOpen=!newsDrawer.detailsOpen" :class="{'is-active':newsDrawer.detailsOpen}" title="Details" aria-label="Details">i</button>
-              <div class="nrd-v24-manage" v-if="hasPermission('news_posts','update')">
-                <button class="nrd-v24-circle" @click="newsDrawer.manageOpen=!newsDrawer.manageOpen" :class="{'is-active':newsDrawer.manageOpen}" title="Manage" aria-label="Manage">•••</button>
-                <div v-if="newsDrawer.manageOpen" class="nrd-v24-manage-menu">
-                  <div class="nrd-v24-manage-title">Manage record</div>
-                  <button @click="editNews(newsDrawer.post); closeNewsDrawer()"><i class="fas fa-pen"></i><span>Edit</span></button>
-                  <button v-if="newsDrawer.post.status==='draft'" @click="publishNews(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-paper-plane"></i><span>Publish</span></button>
-                  <button v-if="newsDrawer.post.status==='published'" @click="toggleNewsPublic(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas" :class="newsDrawer.post.is_public ? 'fa-lock' : 'fa-globe'"></i><span>{{ newsDrawer.post.is_public ? 'Make Internal' : 'Make Public' }}</span></button>
-                  <button @click="toggleNewsFeature(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-star"></i><span>{{ newsDrawer.post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}</span></button>
-                  <div class="nrd-v24-manage-sep"></div>
-                  <button @click="archiveNews(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-archive"></i><span>Archive</span></button>
-                  <button class="is-danger" v-if="hasPermission('news_posts','delete')" @click="deleteNews(newsDrawer.post, closeNewsDrawer); newsDrawer.manageOpen=false"><i class="fas fa-trash"></i><span>Delete</span></button>
-                </div>
-              </div>
-            </aside>
+            <aside class="nrd-v24-reader-tools nrd-v27-reader-tools"><button class="nrd-v24-circle" @click="newsDrawer.detailsOpen=!newsDrawer.detailsOpen" :class="{'is-active':newsDrawer.detailsOpen}" title="Record details" aria-label="Record details">i</button><div class="nrd-v24-manage" v-if="hasPermission('news_posts','update')"><button class="nrd-v24-circle" @click="newsDrawer.manageOpen=!newsDrawer.manageOpen" :class="{'is-active':newsDrawer.manageOpen}" title="Manage" aria-label="Manage">•••</button><div v-if="newsDrawer.manageOpen" class="nrd-v24-manage-menu"><div class="nrd-v24-manage-title">Manage record</div><button @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-pen"></i><span>Edit</span></button><button v-if="newsDrawer.post.status==='draft'" @click="publishNews(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-paper-plane"></i><span>Publish</span></button><button v-if="newsDrawer.post.status==='published'" @click="toggleNewsPublic(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas" :class="newsDrawer.post.is_public ? 'fa-lock' : 'fa-globe'"></i><span>{{ newsDrawer.post.is_public ? 'Make Internal' : 'Make Public' }}</span></button><button @click="toggleNewsFeature(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-star"></i><span>{{ newsDrawer.post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}</span></button><div class="nrd-v24-manage-sep"></div><button @click="archiveNews(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-archive"></i><span>Archive</span></button><button class="is-danger" v-if="hasPermission('news_posts','delete')" @click="deleteNews(newsDrawer.post, closeNewsDrawer); newsDrawer.manageOpen=false"><i class="fas fa-trash"></i><span>Delete</span></button></div></div></aside>
 
-            <aside v-if="newsDrawer.detailsOpen" class="nrd-v24-details">
-              <button @click="newsDrawer.detailsOpen=false" aria-label="Close details">×</button>
-              <span class="nrd-v24-details-kicker">Record details</span>
-              <dl>
-                <div><dt>Type</dt><dd>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</dd></div>
-                <div><dt>Status</dt><dd>{{ newsDrawer.post.status }}</dd></div>
-                <div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span></dd></div>
-                <div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div>
-                <div v-if="newsDrawerAuthorFull"><dt>Author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div>
-                <div><dt>Created</dt><dd>{{ formatDate(newsDrawer.post.created_at) }}</dd></div>
-                <div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div>
-                <div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div>
-              </dl>
-              <button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button>
-            </aside>
+            <aside v-if="newsDrawer.detailsOpen" class="nrd-v24-details nrd-v27-details"><button @click="newsDrawer.detailsOpen=false" aria-label="Close details">×</button><span class="nrd-v24-details-kicker">Record details</span><dl><div><dt>Type</dt><dd>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</dd></div><div><dt>Status</dt><dd>{{ newsDrawer.post.status }}</dd></div><div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span></dd></div><div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div><div v-if="newsDrawerAuthorFull"><dt>Author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div><div><dt>Created</dt><dd>{{ formatDate(newsDrawer.post.created_at) }}</dd></div><div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div><div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div></dl><button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button></aside>
           </section>
         </template>
 
@@ -12268,7 +12098,7 @@
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=26.1"></script>
+    <script src="app.js?v=27"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -12362,7 +12192,7 @@
             ctx.bezierCurveTo(cxL-106*S,228*S,cxL-76*S,232*S,cxL-46*S,230*S);
             ctx.bezierCurveTo(cxL-28*S,228*S,cxL-18*S,218*S,cxL-16*S,204*S);
             ctx.bezierCurveTo(cxL-14*S,192*S,cxL-22*S,174*S,cxL-24*S,162*S);
-            ctx.bezierCurveTo(cxL-26*S,150*S,cxL-20*S,134*S,cxL-16*S,14*S);   
+            ctx.bezierCurveTo(cxL-26*S,150*S,cxL-20*S,134*S,cxL-16*S,14*S);
             ctx.stroke();
 
             ctx.globalAlpha = 1;
