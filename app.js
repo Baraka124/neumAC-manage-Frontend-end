@@ -739,14 +739,14 @@ document.addEventListener('DOMContentLoaded', () => {
       training_units:        'Training Units',
       staff_absence:         'Leave & Coverage',
       department_management: 'Departments',
-      research_hub:          'Research',
+      research_hub:          'Research & Innovation',
       research_lines:        'Research',
       clinical_trials:       'Research',
       innovation_projects:   'Research',
       analytics_dashboard:   'Research',
       analytics_performance: 'Research',
       analytics_partners:    'Research',
-      news:                  'Research Library',
+      news:                  'Research & Innovation',
       system_settings:       'Settings'
     }
     
@@ -7913,6 +7913,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // One object, several depths: library → peek → reader → edit. Keeping these
         // states connected avoids the "teleport into a modal" feeling of a generic CMS.
         const newsLibraryHeaderOpen = ref(true)
+        const newsLibraryHeaderUserCollapsed = ref(false)
+        const toggleNewsLibraryHeader = () => {
+          newsLibraryHeaderOpen.value = !newsLibraryHeaderOpen.value
+          newsLibraryHeaderUserCollapsed.value = !newsLibraryHeaderOpen.value
+        }
         const newsLibraryFiltersOpen = ref(false)
         const newsReturnFocusId = ref(null)
         const newsEditorDetailsOpen = ref(false)
@@ -7920,6 +7925,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const newsReadingProgress = ref(0)
         const newsReaderCompact = ref(false)
         const newsEditorFocusMode = ref(false)
+
+        // V37 — Research Library uses its own full-height scroller, matching Research.
+        // Centralising this avoids window/content-area scroll mismatches that previously
+        // clipped long lenses and made return-to-record positioning unreliable.
+        const getNewsScroller = () =>
+          document.querySelector('.content-area--fullheight > .news-view') ||
+          document.querySelector('.news-view')
+        const scrollNewsTo = (top = 0, behavior = 'auto') => {
+          Vue.nextTick(() => {
+            const scroller = getNewsScroller()
+            if (!scroller) return
+            try { scroller.scrollTo({ top, left: 0, behavior }) }
+            catch (_) { scroller.scrollTop = top }
+          })
+        }
 
         // V28 — Research Library lenses, personal reading tools and command layer.
         // Personal saved items/sets are deliberately user-browser scoped; institutional
@@ -8013,11 +8033,31 @@ document.addEventListener('DOMContentLoaded', () => {
           return rows.sort((a,b)=>newsReviewReadiness(b).score-newsReviewReadiness(a).score)
         })
 
-        const _topicStop = new Set('the and for with from into over under this that these those article update research neumac neumact study studies clinical department new use using used our their your about between through beyond more less how what when where why who has have had was were are is be been being a an of to in on at by as or not can may will would could should'.split(/\s+/))
+        const _topicStop = new Set('the and for with from into over under this that these those article update research neumac neumact study studies clinical department new use using used our their your about between through beyond more less how what when where why who has have had was were are is be been being a an of to in on at by as or not can may will would could should latest document documents experience experiences medical medicine health healthcare report reports presentation presentations introducing world questions answers'.split(/\s+/))
         const _newsGroupBreakdown = (rows=[]) => rows.reduce((acc,p)=>{ const k=p.post_type||'other'; acc[k]=(acc[k]||0)+1; return acc }, {})
         const _newsNewestFirst = (rows=[]) => [...rows].sort((a,b)=>new Date(b.published_at||b.created_at||0)-new Date(a.published_at||a.created_at||0))
+        const _newsTopicLabel = (w='') => ({ covid:'COVID', separ:'SEPAR', asthma:'Asthma', robotic:'Robotic', surgery:'Surgery', respiratory:'Respiratory' }[w] || (w ? w.charAt(0).toUpperCase()+w.slice(1) : 'Topic'))
+
+        // Lens summaries must honour the output-type tab. Previously "Publications"
+        // could still show article/highlight counts inside People/Lines/Years.
+        const newsLensSourcePosts = computed(() => {
+          let rows = newsPosts.value || []
+          if (newsFilters.type) rows = rows.filter(p => p.post_type === newsFilters.type)
+          if (newsFilters.status) rows = rows.filter(p => p.status === newsFilters.status)
+          if (newsFilters.scope === 'public') rows = rows.filter(p => p.is_public)
+          if (newsFilters.scope === 'internal') rows = rows.filter(p => !p.is_public)
+          const q = String(newsFilters.search || '').trim().toLowerCase()
+          if (q && newsLensMode.value !== 'topics') {
+            rows = rows.filter(p => (
+              (p.title || '') + ' ' + (p.body || '') + ' ' +
+              (p.journal_name || '') + ' ' + (p.authors_text || '') + ' ' +
+              newsOps.getLineName(p.research_line_id)
+            ).toLowerCase().includes(q))
+          }
+          return rows
+        })
         const newsLensGroups = computed(() => {
-          const posts = newsPosts.value || []
+          const posts = newsLensSourcePosts.value || []
           if (newsLensMode.value === 'lines') {
             const m = new Map(); posts.forEach(p=>{ if(!p.research_line_id) return; const k=String(p.research_line_id); const row=m.get(k)||{key:k,label:newsOps.getLineName(p.research_line_id),kind:'line',posts:[]}; row.posts.push(p); m.set(k,row) }); return [...m.values()].map(r=>({...r,posts:_newsNewestFirst(r.posts),count:r.posts.length,breakdown:_newsGroupBreakdown(r.posts)})).sort((a,b)=>b.count-a.count)
           }
@@ -8029,14 +8069,18 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           if (newsLensMode.value === 'topics') {
             const map = new Map()
-            posts.forEach(p=>{ const words=((p.title||'')+' '+(p.body||'')).toLowerCase().match(/[a-záéíóúñü]{5,}/gi)||[]; new Set(words.filter(w=>!_topicStop.has(w))).forEach(w=>{ const row=map.get(w)||{key:w,label:w.charAt(0).toUpperCase()+w.slice(1),kind:'topic',posts:[]}; row.posts.push(p); map.set(w,row) }) })
+            posts.forEach(p=>{ const words=((p.title||'')+' '+(p.body||'')).toLowerCase().match(/[a-záéíóúñü]{5,}/gi)||[]; new Set(words.filter(w=>!_topicStop.has(w))).forEach(w=>{ const row=map.get(w)||{key:w,label:_newsTopicLabel(w),kind:'topic',posts:[]}; row.posts.push(p); map.set(w,row) }) })
             return [...map.values()].filter(r=>r.posts.length>1).map(r=>({...r,posts:_newsNewestFirst(r.posts),count:r.posts.length,breakdown:_newsGroupBreakdown(r.posts)})).sort((a,b)=>b.count-a.count).slice(0,16)
           }
           return []
         })
         const newsLensInitials = (name='') => name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase() || 'R'
         const newsLensOrdinal = (g) => { const m=String(g?.label||'').match(/L\s*(\d+)/i); return m ? `L${m[1]}` : 'R&I' }
-        const newsLensBreakdownLabel = (g) => { const b=g?.breakdown||{}; return [['publication','publications'],['article','articles'],['highlight','highlights'],['update','updates']].filter(([k])=>b[k]).map(([k,l])=>`${b[k]} ${l}`).join(' · ') }
+        const newsLensBreakdownLabel = (g) => {
+          const b=g?.breakdown||{}
+          const labels={publication:['publication','publications'],article:['article','articles'],highlight:['highlight','highlights'],update:['update','updates']}
+          return Object.keys(labels).filter(k=>b[k]).map(k=>`${b[k]} ${labels[k][b[k]===1?0:1]}`).join(' · ')
+        }
         const clearNewsStructuredFilters = () => { newsFilters.line=''; newsFilters.author=''; newsFilters.year='' }
         const setNewsLensMode = (mode) => {
           const prev = newsLensMode.value
@@ -8047,14 +8091,18 @@ document.addEventListener('DOMContentLoaded', () => {
           else if (mode === 'saved') { newsFilters.status=''; newsFilters.type=''; newsFilters.scope=''; newsFilters.search='' }
           else if (mode === 'browse') { if (prev === 'review') newsFilters.status=''; newsFilters.scope=''; newsFilters.search='' }
           else { newsFilters.status=''; newsFilters.scope=''; newsFilters.search='' }
+          scrollNewsTo(0, 'auto')
         }
         const applyNewsLensGroup = (g) => {
           if (!g) return
-          clearNewsStructuredFilters(); newsFilters.search=''; newsFilters.status=''; newsFilters.scope=''; newsFilters.type=''
+          // Keep the active output-type tab when drilling into a lens group.
+          // The previous reset made a Publications lens unexpectedly reopen all record types.
+          clearNewsStructuredFilters(); newsFilters.search=''; newsFilters.status=''; newsFilters.scope=''
           if (g.kind==='line') newsFilters.line=g.key
           else if (g.kind==='author') newsFilters.author=g.key
           else if (g.kind==='year') newsFilters.year=g.key
           else if (g.kind==='topic') newsFilters.search=g.key
+          scrollNewsTo(0, 'auto')
         }
         const newsDisplayPosts = computed(() => {
           const base = newsOps.filteredNews.value || []
@@ -8065,6 +8113,34 @@ document.addEventListener('DOMContentLoaded', () => {
             return base.filter(p=>ids.includes(p.id))
           }
           return base
+        })
+
+        const newsShowRecordList = computed(() => {
+          if (newsLensMode.value === 'review') return false
+          if (newsLensMode.value === 'browse' || newsLensMode.value === 'saved') return true
+          if (newsLensMode.value === 'lines') return !!newsFilters.line
+          if (newsLensMode.value === 'people') return !!newsFilters.author
+          if (newsLensMode.value === 'years') return !!newsFilters.year
+          if (newsLensMode.value === 'topics') return !!String(newsFilters.search || '').trim()
+          return true
+        })
+        const newsShownLabel = computed(() => {
+          if (newsLensMode.value === 'review') {
+            const n = newsReviewQueue.value.length
+            return `${n} ${n === 1 ? 'draft' : 'drafts'} in review`
+          }
+          if (newsLensMode.value === 'saved') {
+            const n = newsDisplayPosts.value.length
+            return `${n} saved`
+          }
+          if (['lines','people','years','topics'].includes(newsLensMode.value) && !newsShowRecordList.value) {
+            const n = newsLensGroups.value.length
+            const unit = newsLensMode.value === 'lines' ? 'lines' :
+                         newsLensMode.value === 'people' ? 'people' :
+                         newsLensMode.value === 'years' ? 'years' : 'topics'
+            return `${n} ${unit}`
+          }
+          return `${newsDisplayPosts.value.length} shown`
         })
 
         const newsLibraryContextLabel = computed(() => {
@@ -8147,7 +8223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         const openNewsDrawer = (post, sourceRect = null) => {
           if (!post) return
-          const content = document.querySelector('.content-area')
+          const content = getNewsScroller()
           // Preserve the Library return position only when entering the reader from the Library.
           // Related/previous/next navigation keeps the original return position.
           if (!newsDrawer.show) {
@@ -8186,9 +8262,9 @@ document.addEventListener('DOMContentLoaded', () => {
           newsReadingProgress.value = 0
           newsReaderCompact.value = false
           Vue.nextTick(() => {
-            const content = document.querySelector('.content-area')
+            const content = getNewsScroller()
             if (content && Number.isFinite(contentY)) content.scrollTop = contentY
-            if (Number.isFinite(winY)) window.scrollTo({ top: winY, behavior: 'auto' })
+            if (Number.isFinite(winY) && winY > 0) window.scrollTo({ top: winY, behavior: 'auto' })
             if (returnId) {
               newsReturnFocusId.value = returnId
               setTimeout(() => { if (newsReturnFocusId.value === returnId) newsReturnFocusId.value = null }, 1500)
@@ -8207,17 +8283,17 @@ document.addEventListener('DOMContentLoaded', () => {
           newsFilters.line = String(lineId)
           closeNewsDrawer()
           newsLibraryHeaderOpen.value = false
-          Vue.nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+          scrollNewsTo(0, 'smooth')
         }
         const exploreNewsAuthor = (authorId) => {
           if (!authorId) return
           newsLensMode.value='people'; newsFilters.type='';newsFilters.status='';newsFilters.scope='';newsFilters.search='';newsFilters.line='';newsFilters.year='';newsFilters.author=String(authorId)
-          closeNewsDrawer(); newsLibraryHeaderOpen.value=false; Vue.nextTick(()=>window.scrollTo({top:0,behavior:'smooth'}))
+          closeNewsDrawer(); newsLibraryHeaderOpen.value=false; scrollNewsTo(0, 'smooth')
         }
         const exploreNewsYear = (year) => {
           if (!year) return
           newsLensMode.value='years'; newsFilters.type='';newsFilters.status='';newsFilters.scope='';newsFilters.search='';newsFilters.line='';newsFilters.author='';newsFilters.year=String(year)
-          closeNewsDrawer(); newsLibraryHeaderOpen.value=false; Vue.nextTick(()=>window.scrollTo({top:0,behavior:'smooth'}))
+          closeNewsDrawer(); newsLibraryHeaderOpen.value=false; scrollNewsTo(0, 'smooth')
         }
 
         const _closeNewsFloatingUI = () => {
@@ -8226,10 +8302,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const _newsScrollChrome = () => {
           _closeNewsFloatingUI()
           if (currentView.value !== 'news' || newsModal.show || newsDrawer.show) return
-          const content = document.querySelector('.content-area')
-          const y = Math.max(window.scrollY || 0, content?.scrollTop || 0)
+          const scroller = getNewsScroller()
+          const y = Math.max(window.scrollY || 0, scroller?.scrollTop || 0)
           if (y > 120) newsLibraryHeaderOpen.value = false
-          else if (y < 22) newsLibraryHeaderOpen.value = true
+          else if (y < 22 && !newsLibraryHeaderUserCollapsed.value) newsLibraryHeaderOpen.value = true
         }
         const openNewsCommand = () => { newsCommand.show=true; newsCommand.query=''; newsCommand.selected=0; Vue.nextTick(()=>document.querySelector('.news-v28-command input')?.focus()) }
         const closeNewsCommand = () => { newsCommand.show=false; newsCommand.query=''; newsCommand.selected=0 }
@@ -8245,7 +8321,7 @@ document.addEventListener('DOMContentLoaded', () => {
           add('public','Public records','Reflected in the public web view',()=>{closeNewsCommand();setNewsLensMode('browse');newsFilters.scope='public'})
           add('saved','My Library',`${newsSavedIds.value.length} saved`,()=>{closeNewsCommand();setNewsLensMode('saved')})
           add('lines','Browse by research line','Institutional research lens',()=>{closeNewsCommand();setNewsLensMode('lines')})
-          ;(researchLines.value||[]).slice(0,12).forEach(l=>add(`line-${l.id}`,`L${l.line_number} · ${l.short_name||l.research_line_name||l.name}`,'Research line',()=>{closeNewsCommand();setNewsLensMode('lines');applyNewsLensGroup({kind:'line',key:String(l.id)})}))
+          ;(researchOps.researchLines.value||[]).slice(0,12).forEach(l=>add(`line-${l.id}`,`L${l.line_number} · ${l.short_name||l.research_line_name||l.name}`,'Research line',()=>{closeNewsCommand();setNewsLensMode('lines');applyNewsLensGroup({kind:'line',key:String(l.id)})}))
           ;(newsPosts.value||[]).slice(0,80).forEach(p=>add(`record-${p.id}`,p.title,p.post_type,()=>{closeNewsCommand();openNewsDrawer(p,null)}))
           const filtered = q ? items.filter(i=>(i.label+' '+i.meta).toLowerCase().includes(q)) : items
           return filtered.slice(0,14)
@@ -8752,16 +8828,19 @@ document.addEventListener('DOMContentLoaded', () => {
               const lines = researchOps.researchLines?.value?.length || 0
               const trials = researchOps.clinicalTrials?.value?.filter(t => ['active','recruiting'].includes(researchOps.trialStatusKey(t))).length || 0
               const projects = researchOps.innovationProjects?.value?.length || 0
-              if (!lines && !trials) return 'No research data loaded yet'
-              return `${lines} line${lines !== 1 ? 's' : ''} · ${trials} active stud${trials !== 1 ? 'ies' : 'y'} · ${projects} project${projects !== 1 ? 's' : ''}`
+              const section = v === 'research_hub'
+                ? ({ overview:'Portfolio', line:'Research programme', allstudies:'Clinical studies', allprojects:'Clinical innovation', analytics:'Research intelligence', study:'Clinical study', project:'Clinical innovation' }[researchOps.researchHubPage?.value] || 'Portfolio')
+                : 'Portfolio'
+              if (!lines && !trials) return `${section} · no research data loaded yet`
+              return `${section} · ${lines} line${lines !== 1 ? 's' : ''} · ${trials} active stud${trials !== 1 ? 'ies' : 'y'} · ${projects} project${projects !== 1 ? 's' : ''}`
             }
-            // ── News ──────────────────────────────────────────────────────
+            // ── Research Library ───────────────────────────────────────────
             if (v === 'news') {
               const posts = newsOps.newsPosts?.value || []
               const published = posts.filter(p => p.status === 'published').length
               const drafts = posts.filter(p => p.status === 'draft').length
-              if (!posts.length) return 'No posts yet'
-              return `${published} published${drafts ? ` · ${drafts} draft${drafts !== 1 ? 's' : ''}` : ''}`
+              if (!posts.length) return 'Research Library · no records yet'
+              return `Research Library · ${published} published${drafts ? ` · ${drafts} draft${drafts !== 1 ? 's' : ''}` : ''}`
             }
             // ── Dashboard ─────────────────────────────────────────────────
             if (v === 'dashboard') {
@@ -15213,7 +15292,7 @@ document.addEventListener('DOMContentLoaded', () => {
           publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
           newsLibraryHeaderOpen, newsLibraryFiltersOpen, newsReturnFocusId,
-          newsLensMode, setNewsLensMode, newsLensGroups, applyNewsLensGroup, newsDisplayPosts, newsReviewQueue, newsReviewReadiness, newsReviewStage, newsLensInitials, newsLensOrdinal, newsLensBreakdownLabel,
+          newsLensMode, setNewsLensMode, newsLensGroups, applyNewsLensGroup, newsDisplayPosts, newsShowRecordList, newsShownLabel, toggleNewsLibraryHeader, newsReviewQueue, newsReviewReadiness, newsReviewStage, newsLensInitials, newsLensOrdinal, newsLensBreakdownLabel,
           newsSavedIds, newsFollowedLines, newsResearchSets, newsActiveSetId, newsIsSaved, newsIsFollowingLine, toggleNewsFollowLine, toggleNewsSaved, newsSetComposer, openNewsSetComposer, saveNewsSet, deleteNewsSet, applyNewsSet,
           newsCommand, newsCommandResults, openNewsCommand, closeNewsCommand, runNewsCommand,
           newsActionMenu, openNewsActionMenu, closeNewsActionMenu, newsVisualSide, newsLibraryContextLabel,
@@ -15428,7 +15507,7 @@ document.addEventListener('DOMContentLoaded', () => {
     app.config.errorHandler = (err, instance, info) => {
       console.error('[neumDesk render error]', err, info)
       const viewName = instance?.setupState?.currentView?.value
-      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info) 
+      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)   
     }
 
     app.mount('#app')
