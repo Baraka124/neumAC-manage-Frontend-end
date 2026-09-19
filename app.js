@@ -5761,6 +5761,7 @@ document.addEventListener('DOMContentLoaded', () => {
         demo_url:       '',   // Live demo / deployed domain
         is_featured:    false,
         _diseaseInput: '', _milestoneLabel: '', _milestoneDate: '',
+        _protocol_applicability: '', _validation_protocol_id: '', _validation_protocol_status: '', _ethics_clearance: '',
         _extMemberDraft: { name: '', institution: '', role: '', email: '' },
       }})
 
@@ -5935,7 +5936,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const _editorSnapshot = (form = {}) => {
-        const omit = new Set(['_diseaseInput','_milestoneLabel','_milestoneDate','_extMemberDraft','keywordsInput'])
+        const omit = new Set(['_diseaseInput','_milestoneLabel','_milestoneDate','_extMemberDraft','keywordsInput','_protocol_applicability','_validation_protocol_id','_validation_protocol_status','_ethics_clearance'])
         const clean = {}
         Object.keys(form).filter(k => !omit.has(k)).sort().forEach(k => { clean[k] = form[k] })
         try { return JSON.stringify(clean) } catch { return '' }
@@ -6015,6 +6016,7 @@ document.addEventListener('DOMContentLoaded', () => {
           scope_note: '', regulatory_pathway: 'none', population_type: 'adult', team_roles: {}, external_team: [],
           project_nature: 'clinical_innovation', project_url: '', repo_url: '', demo_url: '',
           research_origin: '', delivery_model: '', institutional_role: '', _diseaseInput: '', _milestoneLabel: '', _milestoneDate: '',
+          _protocol_applicability: '', _validation_protocol_id: '', _validation_protocol_status: '', _ethics_clearance: '',
           _extMemberDraft: { name: '', institution: '', role: '', email: '' }
         })
         innovationProjectModal.show = true
@@ -6047,7 +6049,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clinicalTrialModal.show = true
         _captureStudyBaseline()
       }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '' }; innovationProjectModal.show = true; _captureProjectBaseline() }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '', _protocol_applicability: (p.validation_protocol_id || p.ethics_status) ? 'required' : '', _validation_protocol_id: p.validation_protocol_id || '', _validation_protocol_status: p.validation_protocol_finalized ? 'final' : '', _ethics_clearance: p.ethics_status || '' }; innovationProjectModal.show = true; _captureProjectBaseline() }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.study = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
@@ -6122,6 +6124,12 @@ document.addEventListener('DOMContentLoaded', () => {
           delete payload._milestoneLabel
           delete payload._milestoneDate
           delete payload._extMemberDraft
+          // V40 procedural boundary: protocol / ethics clearance UI is ready,
+          // but these fields are not persisted until the innovation-project API schema is migrated.
+          delete payload._protocol_applicability
+          delete payload._validation_protocol_id
+          delete payload._validation_protocol_status
+          delete payload._ethics_clearance
           // m3 FIX: removed legacy co_leads/tags mirroring — backend B6 whitelist
           // no longer passes these through to Supabase, so mirroring was silently dropped anyway.
           // co_investigators and keywords are sent directly under their correct column names.
@@ -7359,6 +7367,15 @@ document.addEventListener('DOMContentLoaded', () => {
           Vue.nextTick(() => {
             const el = document.getElementById(id)
             if (!el) return
+            const scroller = el.closest('.rv40-project-scroll, .modal-body, .sm-form-body, .news-v27-editor-canvas')
+            if (scroller && scroller.scrollHeight > scroller.clientHeight) {
+              const s = scroller.getBoundingClientRect()
+              const r = el.getBoundingClientRect()
+              const stickyOffset = scroller.classList.contains('rv40-project-scroll') ? 22 : (scroller.classList.contains('modal-body') ? 54 : 18)
+              const top = Math.max(0, scroller.scrollTop + (r.top - s.top) - stickyOffset)
+              try { scroller.scrollTo({ top, behavior:'smooth' }) } catch { scroller.scrollTop = top }
+              return
+            }
             try { el.scrollIntoView({ behavior:'smooth', block:'start' }) } catch { el.scrollIntoView() }
           })
         }
@@ -13882,9 +13899,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (/ethic|ceim/.test(q)) rows = rows.filter(t => !t.ethics_status || t.ethics_status === 'pending')
           else if (/protocol/.test(q)) rows = rows.filter(t => !t.protocol_finalized)
           else if (/\bpi\b|principal investigator/.test(q)) rows = rows.filter(t => !t.principal_investigator_id)
-          if (!rows.length) return { text: 'No matching governance gaps are recorded in the current clinical study data.', chips: [], actions: [{ label: 'Open Research', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }], confidence: 'high' }
+          if (!rows.length) return { text: 'No matching study-requirement gaps are recorded in the current clinical study data.', chips: [], actions: [{ label: 'Open Research', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }], confidence: 'high' }
           const items = rows.slice(0,8).map(t => ({ title:t.title, badge:[!t.protocol_finalized?'protocol':null,(!t.ethics_status||t.ethics_status==='pending')?'ethics':null,!t.principal_investigator_id?'PI':null].filter(Boolean).join(' · '), tone:'warning', meta:t.protocol_id || researchOps.getResearchLineName(t.research_line_id) }))
-          return { text: `${rows.length} clinical stud${rows.length===1?'y':'ies'} match the governance attention requested.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open Research',view:'research_hub',primary:true}], sources:['research'], followups:[{label:'Which are recruiting?',intent:'trials_recruiting'}], confidence:'high' }
+          return { text: `${rows.length} clinical stud${rows.length===1?'y':'ies'} match the study-requirement attention requested.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open Research',view:'research_hub',primary:true}], sources:['research'], followups:[{label:'Which are recruiting?',intent:'trials_recruiting'}], confidence:'high' }
         }
         if (intent === 'innovation_attention') {
           const projects = researchOps.innovationProjects.value || []
