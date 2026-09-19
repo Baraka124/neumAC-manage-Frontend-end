@@ -21664,7 +21664,7 @@ html body #app .lc-v44-lock{display:inline-flex!important;align-items:center!imp
 html body #app .lc-v44-lock svg{color:#7894a0!important}
 
 @media(max-width:1080px){
-  html body #app .login-container--v44{grid-template-columns:minmax(0,1fr) minmax(410px,45vw)!important}
+  html body #app .login-container--v44{grid-template-columns:minmax(0,1fr) minmax(410px,45vw)!important}  
   html body #app .lc-v44-story{padding-left:52px!important;padding-right:44px!important}
   html body #app .lc-v44-title{font-size:58px!important}
   html body #app .lc-v44-product-kicker{display:none!important}
