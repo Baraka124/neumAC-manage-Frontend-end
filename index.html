@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=39">
+    <link rel="stylesheet" href="style.css?v=40">
 
     
 </head>
@@ -5239,7 +5239,7 @@
                             <div class="rv31-masthead-copy">
                                 <div class="rv31-eyebrow">PNEUMOLOGY · RESEARCH PORTFOLIO</div>
                                 <h1>Research</h1>
-                                <p>One portfolio for clinical studies, innovation, governance and research output.</p>
+                                <p>One portfolio for clinical studies, innovation, study requirements and research output.</p>
                             </div>
                             <div class="rv31-masthead-actions">
                                 <button v-if="hasPermission('analytics','export')" class="rv31-text-action" @click="showExportModal" title="Export research portfolio">
@@ -5280,7 +5280,7 @@
                                 <small>{{ researchPortfolioSummary.lateStageProjects }} in pilot / validation / implementation</small>
                             </div>
                             <div class="rv31-pulse-cell" :class="{'rv31-pulse-cell--attention': researchPortfolioSummary.governanceAttention > 0}">
-                                <span class="rv31-pulse-kicker">Governance</span>
+                                <span class="rv31-pulse-kicker">Study readiness</span>
                                 <strong>{{ researchPortfolioSummary.governanceAttention }}</strong>
                                 <small>{{ researchPortfolioSummary.governanceAttention ? (researchPortfolioSummary.governanceAttention === 1 ? 'study record to review' : 'study records to review') : 'no gaps in tracked fields' }}</small>
                             </div>
@@ -5347,9 +5347,9 @@
                                             <small>{{ researchLinePortfolio(line).publications }} publications · {{ researchLinePortfolio(line).articles }} articles</small>
                                         </div>
                                         <div class="rv31-domain rv31-domain--governance" :class="{'attention':researchLinePortfolio(line).governance>0}">
-                                            <span class="rv31-domain-label">Governance</span>
+                                            <span class="rv31-domain-label">Study readiness</span>
                                             <strong>{{ researchLinePortfolio(line).governance }}</strong>
-                                            <small>{{ researchLinePortfolio(line).governance ? 'to review' : 'no recorded gaps' }}</small>
+                                            <small>{{ researchLinePortfolio(line).governance ? 'to review' : 'no gaps in tracked fields' }}</small>
                                         </div>
                                     </div>
                                     <div class="rv31-programme-open" aria-hidden="true">→</div>
@@ -5370,7 +5370,7 @@
                             <div class="rv31-line-copy">
                                 <div class="rv31-eyebrow">RESEARCH LINE · PROGRAMME</div>
                                 <h1>{{ selectedLine.research_line_name || selectedLine.name }}</h1>
-                                <p>{{ selectedLine.description || 'No programme description has been recorded yet.' }}</p>
+                                <p class="rv40-programme-statement">{{ selectedLine.description || 'No programme description has been recorded yet.' }}</p>
                                 <div class="rv31-line-identity">
                                     <button v-if="selectedLine.coordinator_id" class="rv31-person-link" @click="viewStaffDetails(medicalStaff.find(s=>String(s.id)===String(selectedLine.coordinator_id)))">
                                         <span class="rv31-person-avatar" :style="{background:getLineAccent(selectedLine.line_number).light,color:getLineAccent(selectedLine.line_number).color}">{{ selectedLine.coordinator_name ? selectedLine.coordinator_name.split(' ').filter(Boolean).slice(-2).map(w=>w[0]).join('').toUpperCase() : '?' }}</span>
@@ -5416,14 +5416,14 @@
                         <section v-if="selectedLine" class="rv31-governance" :class="{'rv31-governance--attention':researchLinePortfolio(selectedLine).governance>0}">
                             <div class="rv31-governance-title">
                                 <span class="rv31-governance-dot"></span>
-                                <div><strong>Research governance</strong><small>Protocol, ethics and accountable study leadership</small></div>
+                                <div><strong>Study requirements</strong><small>Protocol, ethics committee clearance and accountable study leadership</small></div>
                             </div>
                             <div class="rv31-governance-metrics">
                                 <span><b>{{ researchLinePortfolio(selectedLine).protocolGaps }}</b> protocol gaps</span>
                                 <span><b>{{ researchLinePortfolio(selectedLine).ethicsGaps }}</b> ethics items</span>
                                 <span><b>{{ researchLinePortfolio(selectedLine).piGaps }}</b> PI gaps</span>
                             </div>
-                            <small class="rv31-governance-note">Signals reflect the governance fields currently recorded in neumDesk.</small>
+                            <small class="rv31-governance-note">Signals reflect protocol, ethics-clearance and PI fields currently recorded in neumDesk.</small>
                         </section>
 
                         <nav class="rv31-line-tabs">
@@ -5482,7 +5482,7 @@
                                         <p>{{ (trial.target_diseases||[]).length ? trial.target_diseases.join(' · ') : 'Clinical focus not recorded' }}</p>
                                     </div>
                                     <div class="rv33-governance-mini">
-                                        <span>Governance</span>
+                                        <span>Study requirements</span>
                                         <div><b :class="{ok:trial.protocol_finalized}">{{ trial.protocol_finalized ? 'Protocol ✓' : 'Protocol' }}</b><b :class="{ok:trial.ethics_status==='approved'}">{{ trial.ethics_status==='approved' ? 'Ethics ✓' : 'Ethics' }}</b><b :class="{ok:trial.principal_investigator_id}">{{ trial.principal_investigator_id ? 'PI ✓' : 'PI' }}</b></div>
                                         <small v-if="trial.sponsor_name || trial.is_multicentre">{{ trial.sponsor_name || 'Multicentre study' }}<template v-if="trial.sponsor_name && trial.is_multicentre"> · Multicentre</template></small>
                                     </div>
@@ -5565,9 +5565,9 @@
                             </section>
 
                             <section class="rv32-governance-band" :class="{'attention': studyGovernance(selectedStudy).any}">
-                                <div class="rv32-governance-intro"><span class="rv32-governance-dot"></span><div><strong>Research governance</strong><small>Protocol readiness, ethics clearance and accountable study leadership</small></div></div>
+                                <div class="rv32-governance-intro"><span class="rv32-governance-dot"></span><div><strong>Study requirements</strong><small>Protocol readiness, ethics committee / CEIm clearance and accountable study leadership</small></div></div>
                                 <div class="rv32-governance-item" :class="{'ok':selectedStudy.protocol_applicable===false || selectedStudy.protocol_finalized,'attention':studyGovernance(selectedStudy).protocolGap}"><span>Protocol</span><strong>{{ selectedStudy.protocol_applicable===false ? 'Not applicable' : (selectedStudy.protocol_finalized ? 'Finalized' : 'Pending') }}</strong><small>{{ selectedStudy.protocol_id || (selectedStudy.protocol_applicable===false ? 'No protocol required recorded' : 'No protocol ID') }}</small></div>
-                                <div class="rv32-governance-item" :class="{'ok':selectedStudy.ethics_status==='approved','attention':!selectedStudy.ethics_status || selectedStudy.ethics_status==='pending'}"><span>Ethics / CEIm</span><strong>{{ ({approved:'Approved',pending:'Pending',exempt:'Exempt',not_required:'Not required'})[selectedStudy.ethics_status] || 'Not recorded' }}</strong></div>
+                                <div class="rv32-governance-item" :class="{'ok':selectedStudy.ethics_status==='approved','attention':!selectedStudy.ethics_status || selectedStudy.ethics_status==='pending'}"><span>Ethics / CEIm clearance</span><strong>{{ ({approved:'Approved',pending:'Pending',exempt:'Exempt',not_required:'Not required'})[selectedStudy.ethics_status] || 'Not recorded' }}</strong></div>
                                 <div class="rv32-governance-item" :class="{'ok':selectedStudy.principal_investigator_id,'attention':!selectedStudy.principal_investigator_id}"><span>PI</span><strong>{{ selectedStudy.principal_investigator_id ? 'Assigned' : 'Not assigned' }}</strong></div>
                                 <div class="rv32-governance-item"><span>Consent / regulatory</span><strong>{{ selectedStudy.consent_version ? ('Consent ' + selectedStudy.consent_version) : (selectedStudy.regulatory_status || 'Not recorded') }}</strong><small v-if="selectedStudy.ethics_reference">Ethics ref · {{ selectedStudy.ethics_reference }}</small></div>
                             </section>
@@ -5697,12 +5697,28 @@
                                 </div>
                             </section>
 
-                            <section class="rv32-governance-band rv32-governance-band--innovation" :class="{'attention': !selectedProject.scope_finalized || (selectedProject.regulatory_pathway && selectedProject.regulatory_pathway!=='none' && !selectedProject.trl_level)}">
-                                <div class="rv32-governance-intro"><span class="rv32-governance-dot"></span><div><strong>Innovation governance</strong><small>Scope, validation readiness and regulatory pathway where applicable</small></div></div>
-                                <div class="rv32-governance-item" :class="{'ok':selectedProject.scope_finalized,'attention':!selectedProject.scope_finalized}"><span>Scope</span><strong>{{ selectedProject.scope_finalized ? 'Confirmed' : 'Pending' }}</strong></div>
-                                <div class="rv32-governance-item"><span>Regulatory pathway</span><strong>{{ formatRegulatoryPathway(selectedProject.regulatory_pathway) }}</strong></div>
-                                <div class="rv32-governance-item"><span>Funding</span><strong>{{ ({funded:'Funded',seeking:'Seeking funding',applied:'Applied',not_applicable:'Not applicable',completed:'Completed'})[selectedProject.funding_status || 'not_applicable'] }}</strong><small v-if="selectedProject.funding_source">{{ selectedProject.funding_source }}</small></div>
-                                <div class="rv32-governance-item"><span>Clinical validation governance</span><strong>{{ ({approved:'Ethics approved',pending:'Ethics pending',exempt:'Ethics exempt',not_required:'Not required'})[selectedProject.ethics_status] || 'Not recorded' }}</strong><small>{{ selectedProject.validation_protocol_id ? ('Protocol · '+selectedProject.validation_protocol_id) : 'Protocol / ethics where applicable' }}</small></div>
+                            <section class="rv32-governance-band rv32-governance-band--innovation rv40-procedure-band">
+                                <div class="rv32-governance-intro"><span class="rv32-governance-dot"></span><div><strong>Clinical execution clearance</strong><small>Protocol to be followed and ethics committee / CEIm clearance for patient-facing testing or clinical validation, where applicable.</small></div></div>
+                                <div class="rv32-governance-item" :class="{'ok':selectedProject.validation_protocol_id}">
+                                    <span>Clinical protocol</span>
+                                    <strong>{{ selectedProject.validation_protocol_id || 'Not recorded' }}</strong>
+                                    <small>Protocol or study plan to be followed during clinical execution / validation.</small>
+                                </div>
+                                <div class="rv32-governance-item" :class="{'ok':selectedProject.ethics_status==='approved'}">
+                                    <span>Ethics / CEIm clearance</span>
+                                    <strong>{{ ({approved:'Approved',pending:'Pending',exempt:'Exempt',not_required:'Not required'})[selectedProject.ethics_status] || 'Not recorded' }}</strong>
+                                    <small>Record the committee decision when ethics review applies.</small>
+                                </div>
+                                <div class="rv32-governance-item" :class="{'ok':selectedProject.scope_finalized}">
+                                    <span>Validation scope</span>
+                                    <strong>{{ selectedProject.scope_finalized ? 'Confirmed' : 'Pending' }}</strong>
+                                    <small>Clinical need, population and intended validation scope.</small>
+                                </div>
+                                <div class="rv32-governance-item">
+                                    <span>Regulatory pathway</span>
+                                    <strong>{{ formatRegulatoryPathway(selectedProject.regulatory_pathway) }}</strong>
+                                    <small>Device / software / other regulatory route where relevant.</small>
+                                </div>
                             </section>
 
                             <div class="rv32-detail-layout">
@@ -5716,6 +5732,7 @@
                                             <div><span>Population</span><strong>{{ ({adult:'Adult',paediatric:'Paediatric',mixed:'Mixed',not_applicable:'Not applicable'})[selectedProject.population_type || 'adult'] }}</strong></div>
                                             <div><span>Partner status</span><strong>{{ selectedProject.partner_found ? (selectedProject.partner_name || 'Partner recorded') : 'No partner recorded' }}</strong></div>
                                             <div><span>IP status</span><strong>{{ selectedProject.ip_status || 'Not recorded' }}</strong></div>
+                                            <div><span>Funding</span><strong>{{ formatFundingStatus(selectedProject.funding_status) }}</strong><small v-if="selectedProject.funding_source">{{ selectedProject.funding_source }}</small></div>
                                         </div>
                                     </section>
 
@@ -5769,7 +5786,7 @@
                     <div v-if="researchHubPage === 'allstudies'" class="rv32-page rv32-collection rv32-studies" >
                         <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Clinical evidence</span></div>
                         <header class="rv32-collection-hero">
-                            <div><div class="rv32-eyebrow">CLINICAL EVIDENCE</div><h1>Clinical studies</h1><p>Track study status, enrolment, protocol readiness and research governance across Pneumology.</p></div>
+                            <div><div class="rv32-eyebrow">CLINICAL EVIDENCE</div><h1>Clinical studies</h1><p>Track study status, enrolment, protocol readiness and ethics / CEIm clearance across Pneumology.</p></div>
                             <button v-if="hasPermission('clinical_trials','create')" class="rv32-add-action" @click="showAddTrialModal(null)"><span>＋</span> New clinical study</button>
                         </header>
 
@@ -5777,7 +5794,7 @@
                             <div><span>Active studies</span><strong>{{ clinicalTrials.filter(t=>['active','recruiting'].includes(trialStatusKey(t))).length }}</strong><small>{{ countTrialsByStatus('recruiting') }} recruiting</small></div>
                             <div><span>Recruitment</span><strong>{{ clinicalTrials.reduce((s,t)=>s+(Number(t.actual_enrollment)||0),0) }}<template v-if="clinicalTrials.reduce((s,t)=>s+(Number(t.enrollment_target)||0),0)"> / {{ clinicalTrials.reduce((s,t)=>s+(Number(t.enrollment_target)||0),0) }}</template></strong><small>enrolled across studies with a recorded target</small></div>
                             <div><span>Multicentre</span><strong>{{ clinicalTrials.filter(t=>t.is_multicentre).length }}</strong><small>studies marked multicentre</small></div>
-                            <div :class="{'attention':clinicalTrials.filter(t=>studyGovernance(t).any).length}"><span>Governance</span><strong>{{ clinicalTrials.filter(t=>studyGovernance(t).any).length }}</strong><small>study records to review</small></div>
+                            <div :class="{'attention':clinicalTrials.filter(t=>studyGovernance(t).any).length}"><span>Study readiness</span><strong>{{ clinicalTrials.filter(t=>studyGovernance(t).any).length }}</strong><small>study records to review</small></div>
                         </section>
 
                         <section class="rv32-control-rail">
@@ -5806,7 +5823,7 @@
                                     <p>{{ (trial.target_diseases||[]).length ? trial.target_diseases.join(' · ') : getResearchLineName(trial.research_line_id) }}</p>
                                 </div>
                                 <div class="rv32-row-governance">
-                                    <span>Governance</span>
+                                    <span>Study requirements</span>
                                     <div><b :class="{ok:trial.protocol_finalized}">{{ trial.protocol_finalized ? 'Protocol ✓' : 'Protocol pending' }}</b><b :class="{ok:trial.ethics_status==='approved'}">{{ trial.ethics_status==='approved' ? 'Ethics ✓' : (trial.ethics_status ? 'Ethics · '+formatEthicsStatus(trial.ethics_status) : 'Ethics not recorded') }}</b><b :class="{ok:trial.principal_investigator_id}">{{ trial.principal_investigator_id ? 'PI assigned' : 'PI missing' }}</b></div>
                                     <small v-if="trial.sponsor_name">{{ trial.sponsor_name }}<template v-if="trial.is_multicentre"> · Multicentre</template></small><small v-else-if="trial.is_multicentre">Multicentre · {{ trial.participating_centres || '?' }} centres</small>
                                 </div>
@@ -5863,13 +5880,13 @@
                     <!-- ══ V33 · RESEARCH INTELLIGENCE ═════════════════════════════ -->
                     <div v-if="researchHubPage === 'analytics'" class="rv33-intelligence rv32-page">
                         <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Research intelligence</span></div>
-                        <header class="rv32-collection-hero rv33-intelligence-hero"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>Portfolio signals across enrolment, governance, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
+                        <header class="rv32-collection-hero rv33-intelligence-hero"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>Portfolio signals across enrolment, study requirements, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
 
                         <section class="rv32-pulse-row rv33-intel-pulse">
                             <div><span>Clinical studies</span><strong>{{ clinicalTrials.length }}</strong><small>{{ countTrialsByStatus('recruiting') }} recruiting</small></div>
                             <div><span>Enrolled</span><strong>{{ clinicalTrials.reduce((s,t)=>s+(Number(t.actual_enrollment)||0),0) }}</strong><small>participants enrolled across recorded studies</small></div>
                             <div><span>Clinical innovation</span><strong>{{ innovationProjects.length }}</strong><small>{{ innovationProjects.filter(p=>/valid|implement|deploy|scale|escal|comercial/i.test(p.current_stage||p.development_stage||'')).length }} validation / later</small></div>
-                            <div :class="{'attention':clinicalTrials.filter(t=>studyGovernance(t).any).length}"><span>Governance attention</span><strong>{{ clinicalTrials.filter(t=>studyGovernance(t).any).length }}</strong><small>study records with recorded gaps</small></div>
+                            <div :class="{'attention':clinicalTrials.filter(t=>studyGovernance(t).any).length}"><span>Study requirements</span><strong>{{ clinicalTrials.filter(t=>studyGovernance(t).any).length }}</strong><small>study records with recorded gaps</small></div>
                         </section>
 
                         <div class="rv33-intelligence-grid">
@@ -5882,7 +5899,7 @@
                                         <span><em>Studies</em><strong>{{ researchLinePortfolio(line).studies }}</strong><small>{{ researchLinePortfolio(line).recruiting }} recruiting</small></span>
                                         <span><em>Innovation</em><strong>{{ researchLinePortfolio(line).projects }}</strong><small>{{ researchLinePortfolio(line).lateProjects }} later-stage</small></span>
                                         <span><em>Output</em><strong>{{ researchLinePortfolio(line).outputs }}</strong><small>{{ researchLinePortfolio(line).publications }} publications</small></span>
-                                        <span :class="{'attention':researchLinePortfolio(line).governance>0}"><em>Governance</em><strong>{{ researchLinePortfolio(line).governance }}</strong><small>{{ researchLinePortfolio(line).governance ? 'review' : 'clear' }}</small></span>
+                                        <span :class="{'attention':researchLinePortfolio(line).governance>0}"><em>Study readiness</em><strong>{{ researchLinePortfolio(line).governance }}</strong><small>{{ researchLinePortfolio(line).governance ? 'review' : 'clear' }}</small></span>
                                         <i>→</i>
                                     </button>
                                 </div>
@@ -5900,12 +5917,12 @@
                             </section>
 
                             <section class="rv33-intel-panel">
-                                <header><div><span>Research governance</span><h2>Attention queue</h2></div><small>Recorded gaps only</small></header>
+                                <header><div><span>Study requirements</span><h2>Attention queue</h2></div><small>Protocol · ethics clearance · PI</small></header>
                                 <div class="rv33-intel-list">
                                     <button v-for="trial in clinicalTrials.filter(t=>studyGovernance(t).any).slice(0,6)" :key="trial.id" @click="openStudy(trial, 'analytics')">
                                         <span><strong>{{ trial.title }}</strong><small>{{ [!trial.protocol_finalized?'Protocol':null,!trial.ethics_status?'Ethics':null,!trial.principal_investigator_id?'PI':null].filter(Boolean).join(' · ') }}</small></span><i>→</i>
                                     </button>
-                                    <div v-if="!clinicalTrials.some(t=>studyGovernance(t).any)" class="rv32-not-recorded">No governance gaps are recorded.</div>
+                                    <div v-if="!clinicalTrials.some(t=>studyGovernance(t).any)" class="rv32-not-recorded">No tracked study-requirement gaps are recorded.</div>
                                 </div>
                             </section>
 
@@ -10217,7 +10234,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <nav class="rv39-record-map" aria-label="Study record sections">
                             <button type="button" @click="scrollResearchEditorSection('rv39-study-identity')"><b>01</b><span>Identity</span></button>
                             <button type="button" @click="scrollResearchEditorSection('rv39-study-design')"><b>02</b><span>Clinical design</span></button>
-                            <button type="button" @click="scrollResearchEditorSection('rv39-study-governance')"><b>03</b><span>Governance</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-study-governance')"><b>03</b><span>Requirements</span></button>
                             <button type="button" @click="scrollResearchEditorSection('rv39-study-delivery')"><b>04</b><span>Delivery</span></button>
                             <button type="button" @click="scrollResearchEditorSection('rv39-study-protocol')"><b>05</b><span>Protocol</span></button>
                             <button type="button" @click="scrollResearchEditorSection('rv39-study-team')"><b>06</b><span>Team</span></button>
@@ -10291,7 +10308,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                     <div class="sm-form-header">
                         <div class="sm-form-title rv39-editor-title">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
-                            <div><span>Clinical study record</span><strong>{{ clinicalTrialModal.mode === 'add' ? 'Create study' : 'Edit study' }}</strong><small>Evidence · governance · delivery</small></div>
+                            <div><span>Clinical study record</span><strong>{{ clinicalTrialModal.mode === 'add' ? 'Create study' : 'Edit study' }}</strong><small>Evidence · requirements · delivery</small></div>
                         </div>
                         <button class="sm-form-close" @click="requestCloseClinicalTrialEditor" aria-label="Close" title="Close">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
@@ -10373,7 +10390,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 </div>
                                 <div v-if="clinicalTrialModal.form.status === 'Reclutando' && studyGovernance(clinicalTrialModal.form).any" class="rv36-governance-warning" role="status">
                                     <span aria-hidden="true">!</span>
-                                    <div><strong>Recruiting is recorded while governance items remain incomplete.</strong><small>Review protocol, ethics / CEIm and PI information before relying on this status operationally.</small></div>
+                                    <div><strong>Recruiting is recorded while required study fields remain incomplete.</strong><small>Review protocol, ethics / CEIm and PI information before relying on this status operationally.</small></div>
                                 </div>
                             </div>
 
@@ -10402,10 +10419,10 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </section>
 
                         <section class="rv34-editor-section rv34-editor-section--governance" id="rv39-study-governance">
-                            <header><div><span>Research governance</span><strong>Protocol · ethics / CEIm · accountability</strong></div><small>Record only what applies to this study.</small></header>
+                            <header><div><span>Study requirements</span><strong>Protocol · ethics / CEIm clearance · accountable leadership</strong></div><small>Procedural and study-responsibility fields — record only what applies.</small></header>
                             <div class="sm-row">
                                 <div class="sm-field" :class="{'has-error': fieldErrors.trial?.protocol_id}"><div class="sm-label">Protocol ID <span class="hint">— if applicable</span></div><input type="text" class="sm-input" v-model="clinicalTrialModal.form.protocol_id" placeholder="e.g. NCT12345678 / local protocol code"><small v-if="fieldErrors.trial?.protocol_id" class="error-text">{{ fieldErrors.trial?.protocol_id }}</small></div>
-                                <div class="sm-field"><div class="sm-label">Ethics / CEIm</div><select class="sm-select" v-model="clinicalTrialModal.form.ethics_status"><option :value="null">Not recorded</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="exempt">Exempt</option><option value="not_required">Not required</option></select></div>
+                                <div class="sm-field"><div class="sm-label">Ethics / CEIm clearance</div><select class="sm-select" v-model="clinicalTrialModal.form.ethics_status"><option :value="null">Not recorded</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="exempt">Exempt</option><option value="not_required">Not required</option></select></div>
                             </div>
                             <div class="rv34-toggle-cluster rv34-toggle-cluster--inline">
                                 <label><input type="checkbox" v-model="clinicalTrialModal.form.protocol_finalized"><span><strong>Protocol finalized</strong><small>Final approved/current protocol is recorded.</small></span></label>
@@ -10514,16 +10531,37 @@ Use Section heading to structure longer clinical or research articles."></textar
                     </div>
                     <button class="modal-close" @click="requestCloseInnovationProjectEditor" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
                 </div>
-                <div class="modal-body">
-
-                    <section class="rv39-project-stewardship">
-                        <div class="rv39-project-stewardship-copy"><span>Innovation record</span><h2>{{ innovationProjectModal.form.title || 'Untitled clinical innovation' }}</h2><p>{{ innovationProjectModal.form.research_line_id ? getResearchLineName(innovationProjectModal.form.research_line_id) : 'Research line not assigned' }} · {{ formatInnovationStage(innovationProjectModal.form.current_stage) }}</p></div>
-                        <div class="rv39-project-completeness"><div><span>Record completeness</span><strong>{{ getProjectCompleteness(innovationProjectModal.form).percent }}%</strong></div><div class="rv39-completeness-bar"><i :style="{width:getProjectCompleteness(innovationProjectModal.form).percent+'%'}"></i></div><small v-if="getProjectCompleteness(innovationProjectModal.form).missing.length">Still to record: {{ getProjectCompleteness(innovationProjectModal.form).missing.slice(0,2).join(' · ') }}<template v-if="getProjectCompleteness(innovationProjectModal.form).missing.length>2"> · +{{ getProjectCompleteness(innovationProjectModal.form).missing.length-2 }}</template></small><small v-else>Core innovation record complete</small></div>
-                        <nav class="rv39-project-map" aria-label="Innovation record sections"><button type="button" @click="scrollResearchEditorSection('rv39-project-identity')">Identity</button><button type="button" @click="scrollResearchEditorSection('rv39-project-scope')">Clinical scope</button><button type="button" @click="scrollResearchEditorSection('rv39-project-readiness')">Readiness</button><button type="button" @click="scrollResearchEditorSection('rv39-project-milestones')">Milestones</button><button type="button" @click="scrollResearchEditorSection('rv39-project-team')">Team</button><button type="button" @click="scrollResearchEditorSection('rv39-project-publishing')">Publishing</button></nav>
-                    </section>
+                <div class="modal-body rv40-project-shell">
+                    <aside class="rv40-project-rail" aria-label="Innovation record navigation">
+                        <section class="rv39-project-stewardship rv40-project-intro">
+                            <div class="rv39-project-stewardship-copy"><span>Innovation record</span><h2>{{ innovationProjectModal.form.title || 'Untitled clinical innovation' }}</h2><p>{{ innovationProjectModal.form.research_line_id ? getResearchLineName(innovationProjectModal.form.research_line_id) : 'Research line not assigned' }} · {{ formatInnovationStage(innovationProjectModal.form.current_stage) }}</p></div>
+                            <div class="rv39-project-completeness"><div><span>Record completeness</span><strong>{{ getProjectCompleteness(innovationProjectModal.form).percent }}%</strong></div><div class="rv39-completeness-bar"><i :style="{width:getProjectCompleteness(innovationProjectModal.form).percent+'%'}"></i></div><small v-if="getProjectCompleteness(innovationProjectModal.form).missing.length">Still to record: {{ getProjectCompleteness(innovationProjectModal.form).missing.slice(0,2).join(' · ') }}<template v-if="getProjectCompleteness(innovationProjectModal.form).missing.length>2"> · +{{ getProjectCompleteness(innovationProjectModal.form).missing.length-2 }}</template></small><small v-else>Core innovation record complete</small></div>
+                        </section>
+                        <nav class="rv39-project-map rv40-project-map" aria-label="Innovation record sections">
+                            <button type="button" @click="scrollResearchEditorSection('rv39-project-identity')"><b>01</b><span>Identity</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-project-scope')"><b>02</b><span>Clinical scope</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv40-project-procedures')"><b>03</b><span>Protocol &amp; ethics</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-project-readiness')"><b>04</b><span>Readiness</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-project-milestones')"><b>05</b><span>Milestones</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-project-team')"><b>06</b><span>Team</span></button>
+                            <button type="button" @click="scrollResearchEditorSection('rv39-project-publishing')"><b>07</b><span>Publishing</span></button>
+                        </nav>
+                        <p class="rv40-project-rail-note">One continuous form. Use the map to move between sections without losing your place.</p>
+                    </aside>
+                    <div class="rv40-project-scroll">
+                    <div class="grid grid-cols-2 gap-4" id="rv39-project-identity">
+                        <!-- Title -->
+                        <div class="form-group col-span-2" :class="{ 'has-error': fieldErrors.project?.title }">
+                            <label class="form-label">Project title *</label>
+                            <input type="text" class="form-control" v-model="innovationProjectModal.form.title"
+                                   required @input="clearFieldError('project', 'title')"
+                                   :class="{ 'is-invalid': fieldErrors.project?.title }"
+                                   placeholder="e.g. Remote monitoring pathway for COPD patients">
+                            <small v-if="fieldErrors.project?.title" class="error-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg> {{ fieldErrors.project.title }}</small>
+                        </div>
 
                     <!-- Stage picker — visual pipeline selector at top of modal -->
-                    <div class="ipm-stage-picker">
+                    <div class="ipm-stage-picker col-span-2">
                         <div class="ipm-stage-picker-label">Development stage</div>
                         <div class="ipm-stage-options">
                             <button v-for="s in PROJECT_STAGES" :key="s.key"
@@ -10537,27 +10575,6 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </button>
                         </div>
                     </div>
-
-                    <div class="rv33-editor-boundary rv33-editor-boundary--innovation">
-                        <div class="rv33-boundary-head"><div><span>Institutional relationship</span><strong>Origin · delivery model · our role</strong></div><b>NOT SAVED YET</b></div>
-                        <p>UI-ready fields for the next backend migration. They are intentionally excluded from the current API payload so working innovation CRUD remains unchanged.</p>
-                        <div class="rv33-boundary-grid">
-                            <label><span>Origin</span><select class="form-select" v-model="innovationProjectModal.form.research_origin"><option value="">Not recorded</option><option value="department">neumAC-originated</option><option value="external">External</option><option value="consortium">External consortium</option></select></label>
-                            <label><span>Delivery model</span><select class="form-select" v-model="innovationProjectModal.form.delivery_model"><option value="">Not recorded</option><option>Departmental</option><option>Multi-institutional</option><option>Consortium</option></select></label>
-                            <label><span>Our role</span><select class="form-select" v-model="innovationProjectModal.form.institutional_role"><option value="">Not recorded</option><option>Coordinator</option><option>Partner</option><option>Clinical validation site</option><option>WP leader</option><option>Technology partner</option></select></label>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4" id="rv39-project-identity">
-                        <!-- Title -->
-                        <div class="form-group col-span-2" :class="{ 'has-error': fieldErrors.project?.title }">
-                            <label class="form-label">Project title *</label>
-                            <input type="text" class="form-control" v-model="innovationProjectModal.form.title"
-                                   required @input="clearFieldError('project', 'title')"
-                                   :class="{ 'is-invalid': fieldErrors.project?.title }"
-                                   placeholder="e.g. Remote monitoring pathway for COPD patients">
-                            <small v-if="fieldErrors.project?.title" class="error-text"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg> {{ fieldErrors.project.title }}</small>
-                        </div>
 
                         <!-- Research line + category -->
                         <div class="form-group">
@@ -10592,6 +10609,24 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <option value="Tecnologia Quirurgica">Surgical technology</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">Project nature <span class="form-hint">development vs formal clinical study</span></label>
+                            <select class="form-select" v-model="innovationProjectModal.form.project_nature">
+                                <option value="clinical_innovation">Clinical innovation — tool / device / platform / pathway</option>
+                                <option value="clinical_study">Clinical study — formal study object</option>
+                                <option value="hybrid">Hybrid — innovation moving into a formal clinical study</option>
+                            </select>
+                        </div>
+
+                    <div class="rv33-editor-boundary rv33-editor-boundary--innovation col-span-2">
+                        <div class="rv33-boundary-head"><div><span>Institutional relationship</span><strong>Origin · delivery model · our role</strong></div><b>NOT SAVED YET</b></div>
+                        <p>UI-ready fields for the next backend migration. They are intentionally excluded from the current API payload so working innovation CRUD remains unchanged.</p>
+                        <div class="rv33-boundary-grid">
+                            <label><span>Origin</span><select class="form-select" v-model="innovationProjectModal.form.research_origin"><option value="">Not recorded</option><option value="department">neumAC-originated</option><option value="external">External</option><option value="consortium">External consortium</option></select></label>
+                            <label><span>Delivery model</span><select class="form-select" v-model="innovationProjectModal.form.delivery_model"><option value="">Not recorded</option><option>Departmental</option><option>Multi-institutional</option><option>Consortium</option></select></label>
+                            <label><span>Our role</span><select class="form-select" v-model="innovationProjectModal.form.institutional_role"><option value="">Not recorded</option><option>Coordinator</option><option>Partner</option><option>Clinical validation site</option><option>WP leader</option><option>Technology partner</option></select></label>
+                        </div>
+                    </div>
 
                         <!-- Description -->
                         <div class="form-group col-span-2">
@@ -10622,6 +10657,55 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                             <div class="sm-field"><div class="sm-label">Scope note</div><input class="sm-input" v-model="innovationProjectModal.form.scope_note" placeholder="Optional clarification of disease, pathway or service scope."></div>
                             <div class="rv34-toggle-cluster rv34-toggle-cluster--inline"><label><input type="checkbox" v-model="innovationProjectModal.form.scope_finalized"><span><strong>Scope confirmed</strong><small>Clinical need and intended validation scope are agreed.</small></span></label></div>
+                        </section>
+
+                        <section class="rv34-editor-section rv40-procedure-editor col-span-2" id="rv40-project-procedures">
+                            <header>
+                                <div><span>Clinical execution</span><strong>Protocol &amp; ethics committee / CEIm clearance</strong></div>
+                                <small>Use when the innovation moves into patient-facing testing, prospective data collection or clinical validation.</small>
+                            </header>
+                            <div class="rv40-procedure-note">
+                                <span>PROCEDURAL RECORD</span>
+                                <p>This is about the protocol to be followed and ethics committee / CEIm clearance — not a generic governance score.</p>
+                                <b>NOT SAVED YET</b>
+                            </div>
+                            <div class="sm-row">
+                                <div class="sm-field">
+                                    <div class="sm-label">Protocol applicability</div>
+                                    <select class="sm-select" v-model="innovationProjectModal.form._protocol_applicability">
+                                        <option value="">Not assessed</option>
+                                        <option value="required">Required before clinical execution / validation</option>
+                                        <option value="not_required">Not required at this stage</option>
+                                    </select>
+                                </div>
+                                <div class="sm-field">
+                                    <div class="sm-label">Clinical protocol ID / code</div>
+                                    <input class="sm-input" v-model="innovationProjectModal.form._validation_protocol_id" placeholder="e.g. PROT-DIGI-2026-01">
+                                </div>
+                            </div>
+                            <div class="sm-row">
+                                <div class="sm-field">
+                                    <div class="sm-label">Protocol status</div>
+                                    <select class="sm-select" v-model="innovationProjectModal.form._validation_protocol_status">
+                                        <option value="">Not recorded</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="final">Final / approved for use</option>
+                                        <option value="amended">Amended</option>
+                                        <option value="not_required">Not required</option>
+                                    </select>
+                                </div>
+                                <div class="sm-field">
+                                    <div class="sm-label">Ethics committee / CEIm clearance</div>
+                                    <select class="sm-select" v-model="innovationProjectModal.form._ethics_clearance">
+                                        <option value="">Not recorded</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="approved">Approved</option>
+                                        <option value="exempt">Exempt</option>
+                                        <option value="not_required">Not required</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <small class="rv40-procedure-boundary">UI-ready procedural fields for the next backend migration. Until persistence is added, they are intentionally not sent to the API.</small>
                         </section>
 
                         <!-- Keywords -->
@@ -10768,20 +10852,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                         </div>
 
-                </div><!-- /modal-body (external team end) -->
-
-                <!-- ── NEW FIELDS: URLs, Nature, Featured ─────────────── -->
-                <div id="rv39-project-publishing" class="nd-l034 nd-v040">
-
-                    <!-- Project nature: clinical study vs innovation -->
-                    <div class="sm-field nd-l028" >
-                        <div class="sm-label">Project Nature <span class="hint">— development object classification</span></div>
-                        <select class="sm-select" v-model="innovationProjectModal.form.project_nature">
-                            <option value="clinical_innovation">Clinical Innovation — internal tool / device / platform</option>
-                            <option value="clinical_study">Clinical Study — formal protocol, ethics, trial registration</option>
-                            <option value="hybrid">Hybrid — innovation becoming a formal study</option>
-                        </select>
-                    </div>
+                <!-- ── PUBLISHING & LINKS ─────────────── -->
+                <div id="rv39-project-publishing" class="nd-l034 nd-v040 rv40-publishing-section">
+                    <div class="rv40-publishing-head"><span>Publishing &amp; links</span><strong>External presence and project destinations</strong></div>
 
                     <!-- URLs -->
                     <div  class="nd-l033">
@@ -10820,6 +10893,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <small  class="nd-l005 nd-v010">Eligible for the rotating project spotlight on the neumact.org homepage</small>
                     </label>
                 </div>
+
+                    </div><!-- /rv40-project-scroll -->
+                </div><!-- /modal-body -->
 
                 <div class="modal-footer">
                     <span v-if="innovationProjectEditorDirty" class="rv39-unsaved-indicator">Unsaved changes</span>
@@ -12214,7 +12290,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=39"></script>
+    <script src="app.js?v=40"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
