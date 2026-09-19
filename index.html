@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=36">
+    <link rel="stylesheet" href="style.css?v=38">
 
     
 </head>
@@ -1533,7 +1533,7 @@
         <main class="main-content" :class="{ 'main-content-expanded': sidebarCollapsed }">
 
             <!-- Top Navigation Bar -->
-            <header class="top-navbar">
+            <header class="top-navbar" :class="{'top-navbar--research-context': ['research_hub','news'].includes(currentView)}">
                 <div class="navbar-left">
                     <!-- Hamburger — visible on mobile only via CSS -->
                     <button class="nm-hamburger" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle menu" title="Toggle menu">
@@ -5282,7 +5282,7 @@
                             <div class="rv31-pulse-cell" :class="{'rv31-pulse-cell--attention': researchPortfolioSummary.governanceAttention > 0}">
                                 <span class="rv31-pulse-kicker">Governance</span>
                                 <strong>{{ researchPortfolioSummary.governanceAttention }}</strong>
-                                <small>{{ researchPortfolioSummary.governanceAttention ? (researchPortfolioSummary.governanceAttention === 1 ? 'study record to review' : 'study records to review') : 'no recorded governance gaps' }}</small>
+                                <small>{{ researchPortfolioSummary.governanceAttention ? (researchPortfolioSummary.governanceAttention === 1 ? 'study record to review' : 'study records to review') : 'no gaps in tracked fields' }}</small>
                             </div>
                         </section>
 
@@ -5368,7 +5368,7 @@
                         <header v-if="selectedLine" class="rv31-line-hero">
                             <div class="rv31-line-mark" :style="{color:getLineAccent(selectedLine.line_number).color}">L{{ selectedLine.line_number }}</div>
                             <div class="rv31-line-copy">
-                                <div class="rv31-eyebrow">RESEARCH PROGRAMME</div>
+                                <div class="rv31-eyebrow">RESEARCH LINE · PROGRAMME</div>
                                 <h1>{{ selectedLine.research_line_name || selectedLine.name }}</h1>
                                 <p>{{ selectedLine.description || 'No programme description has been recorded yet.' }}</p>
                                 <div class="rv31-line-identity">
@@ -5534,6 +5534,7 @@
                                         <span v-if="selectedStudy.protocol_id" class="rv32-code">{{ selectedStudy.protocol_id }}</span>
                                         <span>{{ selectedStudy.study_type || 'Clinical study' }}</span>
                                         <span v-if="selectedStudy.phase">{{ selectedStudy.phase }}</span>
+                                        <span v-if="selectedStudy.research_line_id" class="rv38-record-line">{{ getResearchLineName(selectedStudy.research_line_id) }}</span>
                                         <span class="rv32-status-dot" :class="'is-' + trialStatusKey(selectedStudy)">{{ TRIAL_STATUS_LABEL[trialStatusKey(selectedStudy)] }}</span>
                                     </div>
                                 </div>
@@ -5671,6 +5672,7 @@
                                         <span class="rv32-stage-state">{{ formatInnovationStage(selectedProject.current_stage || selectedProject.development_stage) }}</span>
                                         <span>{{ formatInnovationCategory(selectedProject.category) }}</span>
                                         <span v-if="selectedProject.trl_level">TRL {{ selectedProject.trl_level }}</span>
+                                        <span v-if="selectedProject.research_line_id" class="rv38-record-line">{{ getResearchLineName(selectedProject.research_line_id) }}</span>
                                     </div>
                                 </div>
                                 <button v-if="hasPermission('innovation_projects','update')" class="rv32-circle-action" @click="editProject(selectedProject)" title="Edit clinical innovation project" aria-label="Edit clinical innovation project">✎</button>
@@ -5697,7 +5699,7 @@
 
                             <section class="rv32-governance-band rv32-governance-band--innovation" :class="{'attention': !selectedProject.scope_finalized || (selectedProject.regulatory_pathway && selectedProject.regulatory_pathway!=='none' && !selectedProject.trl_level)}">
                                 <div class="rv32-governance-intro"><span class="rv32-governance-dot"></span><div><strong>Innovation governance</strong><small>Scope, validation readiness and regulatory pathway where applicable</small></div></div>
-                                <div class="rv32-governance-item" :class="{'ok':selectedProject.scope_finalized,'attention':!selectedProject.scope_finalized}"><span>Scope</span><strong>{{ selectedProject.scope_finalized ? 'Finalized' : 'Pending' }}</strong></div>
+                                <div class="rv32-governance-item" :class="{'ok':selectedProject.scope_finalized,'attention':!selectedProject.scope_finalized}"><span>Scope</span><strong>{{ selectedProject.scope_finalized ? 'Confirmed' : 'Pending' }}</strong></div>
                                 <div class="rv32-governance-item"><span>Regulatory pathway</span><strong>{{ formatRegulatoryPathway(selectedProject.regulatory_pathway) }}</strong></div>
                                 <div class="rv32-governance-item"><span>Funding</span><strong>{{ ({funded:'Funded',seeking:'Seeking funding',applied:'Applied',not_applicable:'Not applicable',completed:'Completed'})[selectedProject.funding_status || 'not_applicable'] }}</strong><small v-if="selectedProject.funding_source">{{ selectedProject.funding_source }}</small></div>
                                 <div class="rv32-governance-item"><span>Clinical validation governance</span><strong>{{ ({approved:'Ethics approved',pending:'Ethics pending',exempt:'Ethics exempt',not_required:'Not required'})[selectedProject.ethics_status] || 'Not recorded' }}</strong><small>{{ selectedProject.validation_protocol_id ? ('Protocol · '+selectedProject.validation_protocol_id) : 'Protocol / ethics where applicable' }}</small></div>
@@ -5824,7 +5826,7 @@
 
                         <section class="rv32-pulse-row">
                             <div><span>Projects</span><strong>{{ innovationProjects.length }}</strong><small>across the recorded portfolio</small></div>
-                            <div><span>Validation / later</span><strong>{{ innovationProjects.filter(p=>/valid|implement|deploy|scale|escal|comercial/i.test(p.current_stage||p.development_stage||'')).length }}</strong><small>projects in later development</small></div>
+                            <div><span>Validation onward</span><strong>{{ innovationProjects.filter(p=>/valid|implement|deploy|scale|escal|comercial/i.test(p.current_stage||p.development_stage||'')).length }}</strong><small>projects in later development</small></div>
                             <div><span>Funded</span><strong>{{ innovationProjects.filter(p=>p.funding_status==='funded').length }}</strong><small>projects marked funded</small></div>
                             <div :class="{'attention':innovationProjects.filter(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found)).length}"><span>Attention</span><strong>{{ innovationProjects.filter(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found)).length }}</strong><small>scope or unresolved partner needs</small></div>
                         </section>
@@ -5861,7 +5863,7 @@
                     <!-- ══ V33 · RESEARCH INTELLIGENCE ═════════════════════════════ -->
                     <div v-if="researchHubPage === 'analytics'" class="rv33-intelligence rv32-page">
                         <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Research intelligence</span></div>
-                        <header class="rv32-collection-hero rv33-intelligence-hero"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>A portfolio view of enrolment, governance, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
+                        <header class="rv32-collection-hero rv33-intelligence-hero"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>Portfolio signals across enrolment, governance, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
 
                         <section class="rv32-pulse-row rv33-intel-pulse">
                             <div><span>Clinical studies</span><strong>{{ clinicalTrials.length }}</strong><small>{{ countTrialsByStatus('recruiting') }} recruiting</small></div>
@@ -5930,14 +5932,18 @@
                             <div class="news-v25-ident">
                                 <div class="news-editorial-kicker">neumAC · Research &amp; Innovation</div>
                                 <h2>Research Library</h2>
-                                <p>Scientific output, clinical insight and departmental knowledge — connected to the work that produced it.</p>
+                                <p>Scientific output, clinical insight and departmental knowledge — connected to the programmes and people that produced them.</p>
                             </div>
                             <div class="news-v25-mast-actions">
                                 <div class="news-v25-record-count"><strong>{{ newsPosts.length }}</strong><span>records</span></div>
-                                <button class="news-v25-collapse" @click="newsLibraryHeaderOpen=!newsLibraryHeaderOpen"
-                                        :title="newsLibraryHeaderOpen ? 'Collapse library header' : 'Expand library header'"
-                                        :aria-label="newsLibraryHeaderOpen ? 'Collapse library header' : 'Expand library header'">
-                                    <span :class="{'is-collapsed':!newsLibraryHeaderOpen}">⌃</span>
+                                <button class="news-v25-collapse" @click="toggleNewsLibraryHeader"
+                                        :title="newsLibraryHeaderOpen ? 'Hide Library overview' : 'Show Library overview'"
+                                        :aria-label="newsLibraryHeaderOpen ? 'Hide Library overview' : 'Show Library overview'"
+                                        :aria-expanded="newsLibraryHeaderOpen ? 'true' : 'false'">
+                                    <span class="news-v37-collapse-label">Overview</span>
+                                    <svg :class="{'is-collapsed':!newsLibraryHeaderOpen}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="m6 14 6-6 6 6"/>
+                                    </svg>
                                 </button>
                                 <button class="news-v23-new" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')" title="New record">
                                     <span class="news-v23-new-orb">＋</span><span>New record</span>
@@ -5974,7 +5980,7 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M8 14v6"/></svg>
                             <span>Filter</span>
                         </button>
-                        <span class="news-v25-shown">{{ newsDisplayPosts.length }} shown</span>
+                        <span class="news-v25-shown">{{ newsShownLabel }}</span>
                     </div>
 
                     <div class="news-v28-lensbar" aria-label="Research Library lens">
@@ -6002,7 +6008,7 @@
                     </section>
 
                     <section v-else-if="newsLensMode==='people'" class="news-v29-lens-surface is-people">
-                        <header><div><span>Contributors</span><strong>{{ newsLensGroups.length }} people represented</strong></div><small>Enter the Library through the people creating and communicating the work.</small></header>
+                        <header><div><span>Contributors</span><strong>{{ newsLensGroups.length }} people represented</strong></div><small>Browse output through the people who created or communicated the work.</small></header>
                         <div class="news-v29-people-grid">
                             <button v-for="g in newsLensGroups" :key="'person-'+g.key" @click="applyNewsLensGroup(g)">
                                 <span class="news-v29-person-avatar">{{ newsLensInitials(g.label) }}</span>
@@ -6028,7 +6034,7 @@
                     </section>
 
                     <section v-if="newsLensMode==='review'" class="news-v28-reviewdesk news-v29-reviewdesk">
-                        <header><div><span>Review queue</span><strong>Clinical publication readiness</strong></div><small>Completeness and publication readiness are shown separately from formal approval. Reviewer assignment/approval is not invented without backend support.</small></header>
+                        <header><div><span>Review queue</span><strong>Publication readiness</strong></div><small>Record completeness and publishing readiness are shown here. Formal reviewer approval is shown only when supported by backend data.</small></header>
                         <div class="news-v29-review-path" aria-label="Publication lifecycle"><span>Draft</span><i></i><span>Ready for review</span><i></i><span>Publication check</span><i></i><span>Published</span></div>
                         <article v-for="post in newsReviewQueue" :key="post.id" @click="openNewsDrawer(post,null)">
                             <div><span>{{ post.post_type }}</span><h3>{{ post.title || 'Untitled record' }}</h3><small v-if="newsReviewReadiness(post).missing.length">Missing: {{ newsReviewReadiness(post).missing.join(', ') }}</small><small v-else>Core record fields complete · ready for publication check</small><div class="news-v29-record-stage"><b>{{ newsReviewStage(post).label }}</b><span v-for="n in 4" :key="n" :class="{'is-done':n<=newsReviewStage(post).step}"></span></div></div>
@@ -6055,18 +6061,26 @@
                         <button v-if="newsFilters.status || newsFilters.scope || newsFilters.search" @click="newsFilters.status=''; newsFilters.scope=''; newsFilters.search=''; newsFilters.line=''; newsFilters.author=''; newsFilters.year=''" class="news-v25-clear">Clear filters</button>
                     </div>
 
-                    <div class="news-list news-list--studio news-list--v23" v-show="!newsLoading || newsPosts.length > 0">
+                    <div class="news-list news-list--studio news-list--v23" v-show="newsShowRecordList && (!newsLoading || newsPosts.length > 0)">
                         <div v-if="newsDisplayPosts.length === 0 && newsLensMode!=='review'" class="news-v23-empty">
                             <div class="news-v23-empty-mark">∅</div>
-                            <div><strong>Nothing in this view</strong><span>{{ newsFilters.search || newsFilters.type || newsFilters.scope ? 'Try another search or clear a filter.' : 'Add the first record to the research library.' }}</span></div>
-                            <button v-if="hasPermission('news_posts','create') && !newsFilters.search && !newsFilters.type" class="news-v23-empty-new" @click="showAddNewsModal">＋ New record</button>
+                            <div>
+                                <strong>{{ newsLensMode==='saved' ? 'Nothing saved yet' : 'Nothing in this view' }}</strong>
+                                <span v-if="newsLensMode==='saved'">Save a record from Browse, follow a research line, or create a research set.</span>
+                                <span v-else>{{ newsFilters.search || newsFilters.type || newsFilters.scope ? 'Try another search or clear a filter.' : 'Add the first record to the research library.' }}</span>
+                            </div>
+                            <button v-if="newsLensMode==='saved'" class="news-v23-empty-new" @click="setNewsLensMode('browse')">Browse Library →</button>
+                            <button v-else-if="hasPermission('news_posts','create') && !newsFilters.search && !newsFilters.type" class="news-v23-empty-new" @click="showAddNewsModal">＋ New record</button>
                         </div>
 
                         <div class="news-body news-body--studio news-body--v23" :class="'news-body--' + (newsFilters.type || 'all')">
                             <article v-for="post in newsDisplayPosts" :key="post.id"
                                      class="knowledge-card knowledge-card--v23"
                                      :class="['knowledge-card--' + post.post_type, post.is_featured ? 'is-featured' : '', post.status !== 'published' ? 'is-' + post.status : '', newsReturnFocusId === post.id ? 'is-return-focus' : '']"
-                                     @click.stop="openNewsPeek(post, $event)">
+                                     role="button" tabindex="0"
+                                     @click.stop="openNewsDrawer(post, null)"
+                                     @keydown.enter.prevent="openNewsDrawer(post, null)"
+                                     @keydown.space.prevent="openNewsDrawer(post, null)">
 
                                 <div class="knowledge-v23-topline">
                                     <div class="knowledge-v23-type">
@@ -6128,7 +6142,7 @@
                                         <div class="highlight-v23-copy">
                                             <h3>{{ post.title }}</h3>
                                             <p v-if="post.body">{{ newsPlainBody(post.body) }}</p>
-                                            <span class="knowledge-v23-open">View story →</span>
+                                            <span class="knowledge-v23-open">Open highlight →</span>
                                             <div class="highlight-v26-meta">
                                                 <span v-if="post.author_id"><span class="news-author-av">{{ (newsAuthorName(post.author_id)||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}</span>{{ newsAuthorName(post.author_id) }}</span>
                                                 <span v-if="post.research_line_id">{{ newsLineName(post.research_line_id) }}</span>
@@ -6136,6 +6150,7 @@
                                             </div>
                                         </div>
                                         <div class="highlight-v26-card-actions" @click.stop>
+                                            <button class="knowledge-v23-icon-action news-v38-peek-action" @click="openNewsPeek(post,$event)" title="Quick preview" aria-label="Quick preview"><i class="fas fa-eye"></i></button>
                                             <button class="knowledge-v23-icon-action news-v28-save" :class="{'is-saved':newsIsSaved(post.id)}" @click="toggleNewsSaved(post)" :title="newsIsSaved(post.id) ? 'Remove from My Library' : 'Save to My Library'" :aria-label="newsIsSaved(post.id) ? 'Remove from My Library' : 'Save to My Library'"><i class="fas fa-bookmark"></i></button>
                                             <button v-if="hasPermission('news_posts','update')" class="knowledge-v23-icon-action" @click="editNews(post)" title="Edit" aria-label="Edit"><i class="fas fa-pen"></i></button>
                                             <button class="knowledge-v23-icon-action" @click="openNewsActionMenu(post,$event)" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-h"></i></button>
@@ -6146,7 +6161,7 @@
                                 <template v-else>
                                     <div class="update-v23">
                                         <time>{{ formatNewsDate(post.published_at || post.created_at) }}</time>
-                                        <div><h3>{{ post.title }}</h3><p v-if="post.body">{{ newsPlainBody(post.body) }}</p><span class="knowledge-v23-open">Open note →</span></div>
+                                        <div><h3>{{ post.title }}</h3><p v-if="post.body">{{ newsPlainBody(post.body) }}</p><span class="knowledge-v23-open">Open update →</span></div>
                                     </div>
                                 </template>
 
@@ -6159,8 +6174,9 @@
                                         <span v-if="post.expires_at && post.post_type !== 'publication'" class="knowledge-expiry" :class="{'is-soon': new Date(post.expires_at) < new Date(Date.now() + 14*86400000)}">Expires {{ formatDate(post.expires_at) }}</span>
                                     </div>
                                     <div class="knowledge-v23-actions" @click.stop>
+                                        <button class="knowledge-v23-icon-action news-v38-peek-action" @click="openNewsPeek(post,$event)" title="Quick preview" aria-label="Quick preview"><i class="fas fa-eye"></i></button>
                                         <button class="knowledge-v23-icon-action news-v28-save" :class="{'is-saved':newsIsSaved(post.id)}" @click="toggleNewsSaved(post)" :title="newsIsSaved(post.id) ? 'Remove from My Library' : 'Save to My Library'" :aria-label="newsIsSaved(post.id) ? 'Remove from My Library' : 'Save to My Library'"><i class="fas fa-bookmark"></i></button>
-                                        <button v-if="post.status === 'draft' && hasPermission('news_posts','update')" class="knowledge-v23-icon-action is-publish" @click="openNewsDrawer(post,null)" title="Review draft" aria-label="Review draft"><i class="fas fa-eye"></i></button>
+                                        <button v-if="post.status === 'draft' && hasPermission('news_posts','update')" class="knowledge-v23-icon-action is-publish" @click="openNewsDrawer(post,null)" title="Review draft" aria-label="Review draft"><i class="fas fa-clipboard-check"></i></button>
                                         <button v-if="hasPermission('news_posts','update')" class="knowledge-v23-icon-action" @click="editNews(post)" title="Edit" aria-label="Edit"><i class="fas fa-pen"></i></button>
                                         <div class="news-actions knowledge-more-wrap">
                                             <button class="knowledge-v23-icon-action" @click="openNewsActionMenu(post,$event)" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-h"></i></button>
@@ -7466,8 +7482,11 @@ Use Section heading to structure longer clinical or research articles."></textar
              RESEARCH LIBRARY PEEK — V24 fast context before reading
         ============================================================ -->
         <div v-if="newsPeek.show && newsPeek.post" class="news-v24-peek-layer" @click.self="closeNewsPeek()">
-          <aside class="news-v24-peek" :class="'is-' + newsPeek.post.post_type" :style="{left:newsPeek.x+'px',top:newsPeek.y+'px'}">
-            <header><span>{{ newsPeek.post.post_type==='publication' ? 'Publication' : newsPeek.post.post_type==='article' ? 'Article' : newsPeek.post.post_type==='highlight' ? 'Highlight' : 'Update' }}</span><button @click="closeNewsPeek()" aria-label="Close">×</button></header>
+          <aside class="news-v24-peek news-v38-focus-peek" :class="'is-' + newsPeek.post.post_type" :style="{left:newsPeek.x+'px',top:newsPeek.y+'px'}">
+            <header class="news-v38-peek-head">
+              <div class="news-v38-peek-headcopy"><span>Quick preview</span><strong>{{ newsPeek.post.post_type==='publication' ? 'Publication' : newsPeek.post.post_type==='article' ? 'Article' : newsPeek.post.post_type==='highlight' ? 'Highlight' : 'Update' }}</strong></div>
+              <div class="news-v38-peek-headtools"><em :class="newsPeek.post.is_public ? 'is-public' : 'is-internal'">{{ newsPeek.post.is_public ? 'Public' : 'Internal' }}</em><button @click="closeNewsPeek()" aria-label="Close preview" title="Close preview">×</button></div>
+            </header>
             <figure v-if="(newsPeek.post.post_type==='article' || newsPeek.post.post_type==='highlight') && (newsPeek.post.image_urls?.[0] || newsPeek.post.featured_image_url)"><img :src="newsPeek.post.image_urls?.[0] || newsPeek.post.featured_image_url" :alt="newsPeek.post.title"></figure>
             <div class="news-v24-peek-copy">
               <div v-if="newsPeek.post.post_type==='publication'" class="news-v24-peek-meta">{{ (newsPeek.post.published_at || newsPeek.post.created_at || '').slice(0,4) }} <span v-if="newsPeek.post.journal_name">· {{ newsPeek.post.journal_name }}</span></div>
@@ -7478,8 +7497,8 @@ Use Section heading to structure longer clinical or research articles."></textar
               <a v-if="newsPeek.post.doi" :href="'https://doi.org/' + newsPeek.post.doi" target="_blank" @click.stop>DOI ↗</a>
             </div>
             <footer>
-              <span :class="newsPeek.post.is_public ? 'is-public' : 'is-internal'">{{ newsPeek.post.is_public ? 'Public' : 'Internal' }}</span>
-              <button @click="openNewsDrawer(newsPeek.post, newsPeek.sourceRect)">{{ newsPeek.post.post_type==='article' ? 'Read article' : newsPeek.post.post_type==='highlight' ? 'View story' : newsPeek.post.post_type==='update' ? 'Open note' : 'Open folio' }} <i>→</i></button>
+              <span>{{ newsPeek.post.research_line_id ? newsLineName(newsPeek.post.research_line_id) : formatDate(newsPeek.post.published_at || newsPeek.post.created_at) }}</span>
+              <button @click="openNewsDrawer(newsPeek.post, newsPeek.sourceRect)">{{ newsPeek.post.post_type==='article' ? 'Read article' : newsPeek.post.post_type==='highlight' ? 'Open highlight' : newsPeek.post.post_type==='update' ? 'Open update' : 'Open publication' }} <i>→</i></button>
             </footer>
           </aside>
         </div>
@@ -7493,8 +7512,31 @@ Use Section heading to structure longer clinical or research articles."></textar
             <div class="nrd-v23-progress nrd-v27-progress"><span :style="{width: newsReadingProgress + '%'}"></span></div>
             <header class="nrd-v27-readingbar">
               <button class="nrd-v27-back" @click="closeNewsDrawer()" title="Back to Research Library"><span>←</span><b>Research Library</b></button>
-              <div class="nrd-v27-reading-context"><span>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</span><strong v-if="newsReaderCompact">{{ newsDrawer.post.title }}</strong></div>
-              <div class="nrd-v27-reading-actions"><span v-if="newsDrawer.post.post_type==='article' && newsReaderCompact">{{ Math.round(newsReadingProgress) }}%</span><button class="nrd-v23-close" @click="closeNewsDrawer()" title="Close (Esc)" aria-label="Close"><span></span><span></span></button></div>
+              <div class="nrd-v27-reading-context nrd-v38-reading-context">
+                <span>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</span>
+                <em :class="newsDrawer.post.is_public ? 'is-public' : 'is-internal'">{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }}</em>
+                <strong v-if="newsReaderCompact">{{ newsDrawer.post.title }}</strong>
+              </div>
+              <div class="nrd-v27-reading-actions nrd-v38-reading-actions">
+                <span v-if="newsDrawer.post.post_type==='article' && newsReaderCompact" class="nrd-v38-progress-label">{{ Math.round(newsReadingProgress) }}%</span>
+                <button class="nrd-v38-head-action" @click="toggleNewsSaved(newsDrawer.post)" :class="{'is-active':newsIsSaved(newsDrawer.post.id)}" :title="newsIsSaved(newsDrawer.post.id) ? 'Remove from My Library' : 'Save to My Library'"><i class="fas fa-bookmark"></i><span>{{ newsIsSaved(newsDrawer.post.id) ? 'Saved' : 'Save' }}</span></button>
+                <button class="nrd-v38-head-action" @click="newsDrawer.detailsOpen=!newsDrawer.detailsOpen; newsDrawer.manageOpen=false" :class="{'is-active':newsDrawer.detailsOpen}" title="Record details"><i class="fas fa-circle-info"></i><span>Details</span></button>
+                <div class="nrd-v24-manage nrd-v38-head-manage" v-if="hasPermission('news_posts','update')">
+                  <button class="nrd-v38-head-action" @click="newsDrawer.manageOpen=!newsDrawer.manageOpen; newsDrawer.detailsOpen=false" :class="{'is-active':newsDrawer.manageOpen}" title="Manage record"><i class="fas fa-ellipsis"></i><span>Manage</span></button>
+                  <div v-if="newsDrawer.manageOpen" class="nrd-v24-manage-menu nrd-v38-manage-menu">
+                    <div class="nrd-v24-manage-title">Manage record</div>
+                    <button @click="toggleNewsSaved(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-bookmark"></i><span>{{ newsIsSaved(newsDrawer.post.id) ? 'Remove from My Library' : 'Save to My Library' }}</span></button>
+                    <button @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-pen"></i><span>Edit</span></button>
+                    <button v-if="newsDrawer.post.status==='draft'" @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-clipboard-check"></i><span>Review &amp; publish</span></button>
+                    <button v-if="newsDrawer.post.status==='published'" @click="toggleNewsPublic(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas" :class="newsDrawer.post.is_public ? 'fa-lock' : 'fa-globe'"></i><span>{{ newsDrawer.post.is_public ? 'Make Internal' : 'Make Public' }}</span></button>
+                    <button @click="toggleNewsFeature(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-star"></i><span>{{ newsDrawer.post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}</span></button>
+                    <div class="nrd-v24-manage-sep"></div>
+                    <button @click="archiveNews(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-archive"></i><span>Archive</span></button>
+                    <button class="is-danger" v-if="hasPermission('news_posts','delete')" @click="deleteNews(newsDrawer.post, closeNewsDrawer); newsDrawer.manageOpen=false"><i class="fas fa-trash"></i><span>Delete</span></button>
+                  </div>
+                </div>
+                <button class="nrd-v23-close nrd-v38-close" @click="closeNewsDrawer()" title="Close (Esc)" aria-label="Close"><span></span><span></span></button>
+              </div>
             </header>
             <div v-if="newsDrawer.publicPreview" class="nrd-v26-public-previewbar"><div><strong>Public view preview</strong><span>Preview of how this record is presented publicly. Final web layout may vary.</span></div><button @click="newsDrawer.publicPreview=false">Back to internal view</button></div>
 
@@ -12140,7 +12182,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=36"></script>
+    <script src="app.js?v=38"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
