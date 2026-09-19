@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=41">
+    <link rel="stylesheet" href="style.css?v=43">
 
     
 </head>
@@ -118,6 +118,18 @@
                     <button class="askbar-close" @click="closeAskBar()" aria-label="Close Grounded" title="Close">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6 6 18"/></svg>
                     </button>
+                </div>
+            </div>
+
+            <!-- V43 · active context — Grounded should always say what it is looking at -->
+            <div v-if="askBar.view === 'conversation'" class="askbar-context-bar" :class="{ 'askbar-context-bar--object': !!askBar.subject }">
+                <div class="askbar-context-left">
+                    <span class="askbar-context-kicker">{{ askBarContextLabel }}</span>
+                    <strong v-if="askBarContextDetail" class="askbar-context-title">{{ askBarContextDetail }}</strong>
+                </div>
+                <div class="askbar-context-right">
+                    <span class="askbar-context-live"><i></i> live records</span>
+                    <button v-if="askBar.subject || (askBar.context && askBar.context.id)" class="askbar-context-clear" @click="askBarClearSubject()" title="Ask across the department instead">Department-wide</button>
                 </div>
             </div>
 
@@ -279,8 +291,11 @@
                 </div>
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
                     <div v-if="turn.q" class="askbar-q-bub" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
-                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
+                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','metric_summary'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
                         <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
+                            <div v-if="!turn.streaming && askBarTurnLabel(turn)" class="askbar-answer-label">
+                                <span>{{ askBarTurnLabel(turn) }}</span><i></i>
+                            </div>
                             <div v-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state">
                                 <span class="askbar-empty-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg></span>
                                 <div><div class="askbar-empty-title">{{ turn.text }}</div><div class="askbar-empty-sub">No matching current record was found in the sources Grounded checked.</div></div>
@@ -530,6 +545,20 @@
                                 <div v-if="turn.visual.delta" class="askbar-cmp-delta">{{ turn.visual.delta }}</div>
                             </div>
 
+                            <!-- V43 · concise intelligence summary for count/portfolio answers -->
+                            <section v-if="!turn.streaming && turn.visual && turn.visual.type === 'metric_summary'" class="askbar-metric-summary">
+                                <div class="askbar-metric-summary-head">
+                                    <div><span v-if="turn.visual.eyebrow">{{ turn.visual.eyebrow }}</span><strong v-if="turn.visual.title">{{ turn.visual.title }}</strong></div>
+                                    <small v-if="turn.visual.aside">{{ turn.visual.aside }}</small>
+                                </div>
+                                <div class="askbar-metric-grid">
+                                    <div v-for="(m,mi) in turn.visual.metrics" :key="mi" class="askbar-metric" :class="'askbar-metric--'+(m.tone||'default')">
+                                        <strong>{{ m.value }}</strong><span>{{ m.label }}</span><small v-if="m.detail">{{ m.detail }}</small>
+                                    </div>
+                                </div>
+                                <div v-if="turn.visual.note" class="askbar-metric-note">{{ turn.visual.note }}</div>
+                            </section>
+
                             <!-- §6 REMOVE (destructive) proposal card -->
                             <div v-if="turn.removeProposal" class="askbar-proposal askbar-proposal--remove" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
@@ -697,10 +726,11 @@
                             <!-- structured on-call roster readout -->
                             <!-- research list: trials / projects / lines / publications, one per row -->
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'reslist'" class="askbar-reslist">
-                                <div v-for="(it,ii) in (turn.listExpanded ? turn.visual.items : turn.visual.items.slice(0,5))" :key="ii" class="askbar-reslist-row" :class="'askbar-reslist-row--'+(it.tone||'default')">
+                                <div v-for="(it,ii) in (turn.listExpanded ? turn.visual.items : turn.visual.items.slice(0,5))" :key="ii" class="askbar-reslist-row" :class="['askbar-reslist-row--'+(it.tone||'default'), { 'askbar-reslist-row--actionable': !!it.targetKind }]" :role="it.targetKind ? 'button' : null" :tabindex="it.targetKind ? 0 : null" @click="askBarOpenResultItem(it)" @keydown.enter.prevent="askBarOpenResultItem(it)" @keydown.space.prevent="askBarOpenResultItem(it)">
                                     <div class="askbar-reslist-main">
                                         <span class="askbar-reslist-title">{{ it.title }}</span>
                                         <span v-if="it.badge" class="askbar-reslist-badge" :class="'askbar-reslist-badge--'+(it.tone||'default')">{{ it.badge }}</span>
+                                        <span v-if="it.targetKind" class="askbar-reslist-go" aria-hidden="true">↗</span>
                                     </div>
                                     <div v-if="it.meta" class="askbar-reslist-meta">{{ it.meta }}</div>
                                 </div>
@@ -711,7 +741,7 @@
 
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'publication_list'" class="askbar-publist">
                                 <div class="askbar-publist-head"><span>Research publications</span><small>{{ turn.visual.total }} on record</small></div>
-                                <article v-for="(pub,pi) in turn.visual.items" :key="pub.id||pi" class="askbar-pubrow">
+                                <article v-for="(pub,pi) in turn.visual.items" :key="pub.id||pi" class="askbar-pubrow askbar-pubrow--actionable" role="button" tabindex="0" @click="askBarOpenResultItem({targetKind:'library',targetId:pub.id})" @keydown.enter.prevent="askBarOpenResultItem({targetKind:'library',targetId:pub.id})">
                                     <div class="askbar-pubrow-index">{{ String(pi+1).padStart(2,'0') }}</div>
                                     <div class="askbar-pubrow-body">
                                         <h4>{{ pub.title }}</h4>
@@ -754,9 +784,9 @@
                                 <div v-if="turn.confidence!=='low' || (turn.sources && turn.sources.length) || (turn.evidence && turn.evidence.length)" class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
                                     <div class="askbar-trust-main">
                                         <span class="askbar-trust-dot" :title="turn.confidence==='high' ? 'Grounded in department records' : turn.confidence==='medium' ? 'Some records may be missing' : 'Limited grounding'"></span>
-                                        <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Grounded in' : turn.confidence==='medium' ? 'Partial · grounded in' : 'Limited · checked' }}</span>
+                                        <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Grounded in' : turn.confidence==='medium' ? 'Partially grounded in' : 'Checked' }}</span>
                                         <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src">
-                                            <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ src }}<span v-if="si < turn.sources.length-1" class="askbar-source-sep"> · </span></span>
+                                            <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ askBarSourceLabel(src) }}<span v-if="si < turn.sources.length-1" class="askbar-source-sep"> · </span></span>
                                         </span>
                                     </div>
                                     <div class="askbar-trust-meta">
@@ -6316,6 +6346,17 @@
                                 <div v-else-if="newsModal.form.post_type==='article'" class="news-v24-editor-body news-v24-editor-article news-v27-article-editor">
                                     <div class="news-v27-document-state"><span>ARTICLE</span><b>{{ newsModal.form.status==='published' ? 'PUBLISHED' : 'DRAFT' }}</b></div>
                                     <textarea class="news-v24-title-input news-v27-article-title" v-model="newsModal.form.title" rows="2" placeholder="Untitled article"></textarea>
+                                    <section class="news-v42-article-index" aria-label="Article indexing and structure">
+                                        <div class="news-v42-keyword-editor">
+                                            <header><div><span>Index terms</span><small>Up to 10 short keywords for finding, grouping and connecting this article.</small></div><b>{{ (newsModal.form.keywords || []).length }}/10</b></header>
+                                            <div class="news-v42-keyword-row">
+                                                <button v-for="kw in (newsModal.form.keywords || [])" :key="kw" @click.prevent="removeNewsKeyword(kw)" :title="'Remove ' + kw"><span>{{ kw }}</span><i>×</i></button>
+                                                <label v-if="(newsModal.form.keywords || []).length < 10"><span>#</span><input v-model="newsModal.form._keywordInput" maxlength="28" placeholder="Add keyword" @keydown="newsKeywordKeydown" @blur="addNewsKeyword()"></label>
+                                            </div>
+                                            <div v-if="newsKeywordSuggestions.length" class="news-v42-keyword-suggestions"><span>Suggested from the draft</span><button v-for="kw in newsKeywordSuggestions" :key="kw" @click.prevent="addNewsKeyword(kw)">+ {{ kw }}</button></div>
+                                        </div>
+                                        <div class="news-v42-article-signals" aria-label="Article structure signals"><div v-for="signal in newsArticleSignals" :key="signal.label" :class="{'is-ok':signal.ok}"><span>{{ signal.label }}</span><strong>{{ signal.value }}</strong></div></div>
+                                    </section>
                                     <div class="news-v28-evidence-tools" aria-label="Insert structured research block">
                                         <span>Insert</span>
                                         <button @click.prevent="newsInsertEvidence('heading')">Section heading</button>
@@ -6326,7 +6367,7 @@
                                         <button @click.prevent="newsInsertEvidence('quote')">Quote</button>
                                     </div>
                                     <aside v-if="newsEditorOutline.length" class="news-v29-document-map" aria-label="Article sections"><span>Document map</span><button v-for="item in newsEditorOutline" :key="item.index+'-'+item.label" @click.prevent="newsJumpToOutline(item)"><b>{{ item.order }}</b>{{ item.label }}</button></aside>
-                                    <textarea class="news-v24-writing-area news-v27-writing-area" v-model="newsModal.form.body" :maxlength="15000" placeholder="Begin the article…
+                                    <textarea class="news-v24-writing-area news-v27-writing-area" v-model="newsModal.form.body" :maxlength="15000" placeholder="Begin with a strong opening paragraph — when the article has more than one paragraph, this becomes the reader deck.
 
 Use Section heading to structure longer clinical or research articles."></textarea>
                                     <div class="news-v24-writing-meta news-v27-writing-meta"><span>{{ newsWordCount }} words</span><span>{{ Math.max(1, Math.round(newsWordCount/200)) }} min read</span><span v-if="newsEditorOutline.length">{{ newsEditorOutline.length }} sections</span><span v-if="newsWordCount > newsWordLimit" class="is-over">Recommended length: {{ newsWordLimit }} words</span></div>
@@ -6374,7 +6415,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 </div>
                                 <div v-else class="news-v24-preview-canvas">
                                     <article v-if="newsModal.form.post_type==='publication'" class="news-v24-preview-publication"><div class="news-v24-preview-year">{{ (newsModal.form.published_at || '').slice(0,4) || new Date().getFullYear() }}</div><div><span>Publication</span><h3>{{ newsModal.form.title || 'Untitled publication' }}</h3><em>{{ newsModal.form.journal_name || 'Journal not added' }}</em><p>{{ newsModal.form.authors_text || 'Authors not added' }}</p><small v-if="newsModal.form.doi">DOI {{ newsModal.form.doi }}</small></div></article>
-                                    <article v-else-if="newsModal.form.post_type==='article'" class="news-v24-preview-article news-v27-preview-article"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><span>Article</span><h3>{{ newsModal.form.title || 'Untitled article' }}</h3><p>{{ newsPlainBody(newsModal.form.body) || 'The article will appear here as you write.' }}</p></article>
+                                    <article v-else-if="newsModal.form.post_type==='article'" class="news-v24-preview-article news-v27-preview-article"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><span>Article</span><h3>{{ newsModal.form.title || 'Untitled article' }}</h3><div v-if="newsModal.form.keywords?.length" class="news-v42-preview-keywords"><b v-for="kw in newsModal.form.keywords.slice(0,5)" :key="kw">{{ kw }}</b></div><p>{{ newsPlainBody(newsModal.form.body) || 'The article will appear here as you write.' }}</p></article>
                                     <article v-else-if="newsModal.form.post_type==='highlight'" class="news-v24-preview-highlight"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><div><span>Highlight</span><h3>{{ newsModal.form.title || 'Untitled highlight' }}</h3><p>{{ newsModal.form.body || 'Short visual context.' }}</p></div></article>
                                     <article v-else class="news-v24-preview-update"><time>{{ newsModal.form.published_at || 'Today' }}</time><span>Department update</span><h3>{{ newsModal.form.title || 'Untitled update' }}</h3><p>{{ newsModal.form.body || 'The update will appear here.' }}</p></article>
                                 </div>
@@ -7574,20 +7615,37 @@ Use Section heading to structure longer clinical or research articles."></textar
                 <aside class="nrd-v27-object-context nrd-v28-context"><span>Connected</span><button v-if="newsDrawerLineName" @click="exploreNewsLine(newsDrawer.post.research_line_id)">{{ newsDrawerLineName }}</button><button v-if="newsDrawer.post.research_line_id" @click="toggleNewsFollowLine(newsDrawer.post.research_line_id)">{{ newsIsFollowingLine(newsDrawer.post.research_line_id) ? 'Following line ✓' : 'Follow research line' }}</button><button v-if="newsDrawerAuthorFull" @click="exploreNewsAuthor(newsDrawer.post.author_id)">{{ newsDrawerAuthorFull }}</button><button @click="toggleNewsSaved(newsDrawer.post)">{{ newsIsSaved(newsDrawer.post.id) ? 'Saved ✓' : 'Save to My Library' }}</button><button @click="copyNewsCitation(newsDrawer.post)">Copy citation</button><button v-if="newsDrawer.post.doi" @click="copyNewsDoi(newsDrawer.post)">Copy DOI</button><button @click="openGroundedForNews(newsDrawer.post)">Ask Grounded ↗</button></aside>
               </article>
 
-              <article v-else-if="newsDrawer.post.post_type === 'article'" class="nrd-v23-article nrd-v27-article">
-                <div class="nrd-v23-article-head"><div class="nrd-v23-eyebrow">Article <span v-if="newsDrawerLineName">· {{ newsDrawerLineName }}</span></div><h1>{{ newsDrawer.post.title }}</h1><div class="nrd-v23-byline"><span v-if="newsDrawerAuthorFull"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span>{{ newsDrawerAuthorFull }}</span><span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span><span v-if="newsDrawerReadMins">{{ newsDrawerReadMins }} min read</span></div></div>
-                <figure v-if="newsDrawer.post.image_urls?.[0] || newsDrawer.post.featured_image_url" class="nrd-v23-article-hero nrd-v27-article-hero"><img :src="newsDrawer.post.image_urls?.[0] || newsDrawer.post.featured_image_url" :alt="newsDrawer.post.title"></figure>
-                <aside class="nrd-v27-article-context nrd-v28-context"><span>Context</span><button v-if="newsDrawerLineName" @click="exploreNewsLine(newsDrawer.post.research_line_id)">{{ newsDrawerLineName }}</button><button v-if="newsDrawer.post.research_line_id" @click="toggleNewsFollowLine(newsDrawer.post.research_line_id)">{{ newsIsFollowingLine(newsDrawer.post.research_line_id) ? 'Following line ✓' : 'Follow research line' }}</button><button v-if="newsDrawerAuthorFull" @click="exploreNewsAuthor(newsDrawer.post.author_id)">{{ newsDrawerAuthorFull }}</button><button @click="toggleNewsSaved(newsDrawer.post)">{{ newsIsSaved(newsDrawer.post.id) ? 'Saved ✓' : 'Save to My Library' }}</button><button @click="openGroundedForNews(newsDrawer.post)">Ask Grounded about this article <i>↗</i></button></aside>
-                <div class="nrd-v23-article-body nrd-v27-article-body nrd-v28-article-body">
-                    <template v-for="(seg, i) in newsDrawerSegments" :key="i">
-                        <p v-if="seg.type==='paragraph'">{{ seg.text }}</p>
-                        <h2 v-else-if="seg.type==='heading'" class="nrd-v29-section-heading">{{ seg.text }}</h2>
-                        <aside v-else-if="seg.type==='key_finding'" class="nrd-v28-evidence is-finding"><span>Key finding</span><strong>{{ seg.text }}</strong></aside>
-                        <aside v-else-if="seg.type==='clinical_implication'" class="nrd-v28-evidence is-clinical"><span>Clinical implication</span><strong>{{ seg.text }}</strong></aside>
-                        <aside v-else-if="seg.type==='key_number'" class="nrd-v28-evidence is-number"><b>{{ seg.number || '—' }}</b><span>{{ seg.text }}</span></aside>
-                        <aside v-else-if="seg.type==='related_publication'" class="nrd-v28-evidence is-reference"><span>Related publication</span><strong>{{ seg.text }}</strong></aside>
-                        <blockquote v-else-if="seg.type==='quote'" class="nrd-v28-evidence is-quote">{{ seg.text }}</blockquote>
-                    </template>
+              <article v-else-if="newsDrawer.post.post_type === 'article'" class="nrd-v23-article nrd-v27-article nrd-v42-article">
+                <header class="nrd-v42-article-opening">
+                    <div class="nrd-v42-article-kicker"><span>Article</span><i></i><b>neumAC · Research &amp; Innovation</b><button v-if="newsDrawerLineName" @click="exploreNewsLine(newsDrawer.post.research_line_id)">{{ newsDrawerLineName }}</button></div>
+                    <h1>{{ newsDrawer.post.title }}</h1>
+                    <p v-if="newsDrawerLead" class="nrd-v42-article-deck">{{ newsDrawerLead }}</p>
+                    <div class="nrd-v42-article-meta">
+                        <button v-if="newsDrawerAuthorFull" @click="exploreNewsAuthor(newsDrawer.post.author_id)"><span class="nrd-v23-avatar">{{ newsDrawerInitials }}</span><strong>{{ newsDrawerAuthorFull }}</strong></button>
+                        <span>{{ formatDate(newsDrawer.post.published_at || newsDrawer.post.created_at) }}</span>
+                        <span v-if="newsDrawerReadMins">{{ newsDrawerReadMins }} min read</span>
+                        <span>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }}</span>
+                    </div>
+                    <div v-if="newsDrawerKeywords.length" class="nrd-v42-reader-keywords" aria-label="Article index terms"><span>Indexed by</span><button v-for="kw in newsDrawerKeywords" :key="kw" @click="newsFilters.search=kw; closeNewsDrawer(); newsLibraryHeaderOpen=false">{{ kw }}</button></div>
+                </header>
+                <figure v-if="newsDrawer.post.image_urls?.[0] || newsDrawer.post.featured_image_url" class="nrd-v23-article-hero nrd-v27-article-hero nrd-v42-article-hero"><img :src="newsDrawer.post.image_urls?.[0] || newsDrawer.post.featured_image_url" :alt="newsDrawer.post.title"></figure>
+                <div class="nrd-v42-reading-grid">
+                    <aside class="nrd-v42-reading-rail">
+                        <div class="nrd-v42-rail-block"><span>Context</span><button v-if="newsDrawerLineName" @click="exploreNewsLine(newsDrawer.post.research_line_id)">{{ newsDrawerLineName }}</button><button v-if="newsDrawerAuthorFull" @click="exploreNewsAuthor(newsDrawer.post.author_id)">{{ newsDrawerAuthorFull }}</button></div>
+                        <div v-if="newsDrawerOutline.length" class="nrd-v42-rail-block nrd-v42-outline"><span>In this article</span><div v-for="item in newsDrawerOutline" :key="item.order+'-'+item.label"><b>{{ String(item.order).padStart(2,'0') }}</b><em>{{ item.label }}</em></div></div>
+                        <div class="nrd-v42-rail-block nrd-v42-rail-actions"><button @click="toggleNewsSaved(newsDrawer.post)">{{ newsIsSaved(newsDrawer.post.id) ? 'Saved to My Library ✓' : 'Save to My Library' }}</button><button v-if="newsDrawer.post.research_line_id" @click="toggleNewsFollowLine(newsDrawer.post.research_line_id)">{{ newsIsFollowingLine(newsDrawer.post.research_line_id) ? 'Following research line ✓' : 'Follow research line' }}</button><button class="is-grounded" @click="openGroundedForNews(newsDrawer.post)">Ask Grounded <i>↗</i></button></div>
+                    </aside>
+                    <div class="nrd-v23-article-body nrd-v27-article-body nrd-v28-article-body nrd-v42-article-body">
+                        <template v-for="(seg, i) in newsDrawerSegments" :key="i">
+                            <p v-if="seg.type==='paragraph' && i!==newsDrawerLeadIndex">{{ seg.text }}</p>
+                            <h2 v-else-if="seg.type==='heading'" class="nrd-v29-section-heading">{{ seg.text }}</h2>
+                            <aside v-else-if="seg.type==='key_finding'" class="nrd-v28-evidence is-finding"><span>Key finding</span><strong>{{ seg.text }}</strong></aside>
+                            <aside v-else-if="seg.type==='clinical_implication'" class="nrd-v28-evidence is-clinical"><span>Clinical implication</span><strong>{{ seg.text }}</strong></aside>
+                            <aside v-else-if="seg.type==='key_number'" class="nrd-v28-evidence is-number"><b>{{ seg.number || '—' }}</b><span>{{ seg.text }}</span></aside>
+                            <aside v-else-if="seg.type==='related_publication'" class="nrd-v28-evidence is-reference"><span>Related publication</span><strong>{{ seg.text }}</strong></aside>
+                            <blockquote v-else-if="seg.type==='quote'" class="nrd-v28-evidence is-quote">{{ seg.text }}</blockquote>
+                        </template>
+                    </div>
                 </div>
               </article>
 
@@ -7618,7 +7676,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
             <aside class="nrd-v24-reader-tools nrd-v27-reader-tools"><button class="nrd-v24-circle" @click="newsDrawer.detailsOpen=!newsDrawer.detailsOpen" :class="{'is-active':newsDrawer.detailsOpen}" title="Record details" aria-label="Record details">i</button><div class="nrd-v24-manage" v-if="hasPermission('news_posts','update')"><button class="nrd-v24-circle" @click="newsDrawer.manageOpen=!newsDrawer.manageOpen" :class="{'is-active':newsDrawer.manageOpen}" title="Manage" aria-label="Manage">•••</button><div v-if="newsDrawer.manageOpen" class="nrd-v24-manage-menu"><div class="nrd-v24-manage-title">Manage record</div><button @click="toggleNewsSaved(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-bookmark"></i><span>{{ newsIsSaved(newsDrawer.post.id) ? 'Remove from My Library' : 'Save to My Library' }}</span></button><button @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-pen"></i><span>Edit</span></button><button v-if="newsDrawer.post.status==='draft'" @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-clipboard-check"></i><span>Review &amp; publish</span></button><button v-if="newsDrawer.post.status==='published'" @click="toggleNewsPublic(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas" :class="newsDrawer.post.is_public ? 'fa-lock' : 'fa-globe'"></i><span>{{ newsDrawer.post.is_public ? 'Make Internal' : 'Make Public' }}</span></button><button @click="toggleNewsFeature(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-star"></i><span>{{ newsDrawer.post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}</span></button><div class="nrd-v24-manage-sep"></div><button @click="archiveNews(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-archive"></i><span>Archive</span></button><button class="is-danger" v-if="hasPermission('news_posts','delete')" @click="deleteNews(newsDrawer.post, closeNewsDrawer); newsDrawer.manageOpen=false"><i class="fas fa-trash"></i><span>Delete</span></button></div></div></aside>
 
-            <aside v-if="newsDrawer.detailsOpen" class="nrd-v24-details nrd-v27-details"><button @click="newsDrawer.detailsOpen=false" aria-label="Close details">×</button><span class="nrd-v24-details-kicker">Record details</span><dl><div><dt>Type</dt><dd>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</dd></div><div><dt>Status</dt><dd>{{ newsDrawer.post.status }}</dd></div><div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span></dd></div><div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div><div v-if="newsDrawerAuthorFull"><dt>Author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div><div><dt>Created</dt><dd>{{ formatDate(newsDrawer.post.created_at) }}</dd></div><div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div><div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div></dl><div class="nrd-v28-lifecycle-history"><span>Lifecycle</span><div v-for="ev in newsDrawerLifecycle" :key="ev.label+ev.date"><b>{{ ev.label }}</b><time>{{ formatDate(ev.date) }}</time></div><small>Lifecycle timestamps available from the current backend record. This is not a fabricated version audit trail.</small></div><button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button></aside>
+            <aside v-if="newsDrawer.detailsOpen" class="nrd-v24-details nrd-v27-details"><button @click="newsDrawer.detailsOpen=false" aria-label="Close details">×</button><span class="nrd-v24-details-kicker">Record details</span><dl><div><dt>Type</dt><dd>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</dd></div><div><dt>Status</dt><dd>{{ newsDrawer.post.status }}</dd></div><div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span></dd></div><div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div><div v-if="newsDrawerAuthorFull"><dt>Author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div><div v-if="newsDrawerKeywords.length"><dt>Index terms</dt><dd>{{ newsDrawerKeywords.join(' · ') }}</dd></div><div><dt>Created</dt><dd>{{ formatDate(newsDrawer.post.created_at) }}</dd></div><div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div><div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div></dl><div class="nrd-v28-lifecycle-history"><span>Lifecycle</span><div v-for="ev in newsDrawerLifecycle" :key="ev.label+ev.date"><b>{{ ev.label }}</b><time>{{ formatDate(ev.date) }}</time></div><small>Lifecycle timestamps available from the current backend record. This is not a fabricated version audit trail.</small></div><button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button></aside>
           </section>
         </template>
 
@@ -12291,7 +12349,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=41"></script>
+    <script src="app.js?v=43"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -12393,13 +12451,13 @@ Use Section heading to structure longer clinical or research articles."></textar
 
         function animate(){
             frame++;
-            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5; 
+            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;
             drawTree(breath);
             if(!REDUCED) raf = requestAnimationFrame(animate);
         }
 
         resize();
-        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });
+        window.addEventListener('resize', function(){ resize(); if(REDUCED) drawTree(0.5); });  
         if(REDUCED){ drawTree(0.5); } else { raf = requestAnimationFrame(animate); }
     })();
     </script>
