@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {   
+document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
@@ -721,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
       analytics_dashboard:   'Research',
       analytics_performance: 'Research',
       analytics_partners:    'Research',
-      news:                  'Publications',
+      news:                  'Research Library',
       system_settings:       'Settings'
     }
     
@@ -6214,7 +6214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         show: false,
         mode: 'add',
         stage: 'choose',          // choose | compose
-        previewMode: 'internal',  // internal | public
+        previewMode: 'library',   // library | reader | public
         saveState: '',
         busy: false,
         _hydrating: false,
@@ -6235,7 +6235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = newsModal.form.body || ''
         return t.trim() === '' ? 0 : t.trim().split(/\s+/).length
       })
-      const newsWordLimit  = computed(() => newsModal.form.post_type === 'update' ? 80 : newsModal.form.post_type === 'highlight' ? 120 : 400)
+      const newsWordLimit  = computed(() => newsModal.form.post_type === 'update' ? 80 : newsModal.form.post_type === 'highlight' ? 120 : newsModal.form.post_type === 'article' ? 1500 : 0)
 
       // ── Helpers ─────────────────────────────────────────────
       const formatAuthorName = (staffId) => {
@@ -6268,7 +6268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
-      // Quiet document-state feedback for the studio. This is intentionally not a toast:
+      // Quiet document-state feedback for the Research Editor. This is intentionally not a toast:
       // editing should feel like working on one document, not triggering a chain of alerts.
       watch(() => newsModal.form, () => {
         if (!newsModal.show || newsModal.stage !== 'compose' || newsModal._hydrating) return
@@ -6300,7 +6300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         newsModal.form.post_type = t
         newsModal.form.expires_at = t === 'publication' ? '' : autoExpiry(t)
         newsModal.stage = 'compose'
-        newsModal.previewMode = newsModal.form.is_public ? 'public' : 'internal'
+        newsModal.previewMode = 'library'
         Vue.nextTick(() => {
           const el = document.querySelector('.news-v24-title-input, .news-v24-note-title')
           if (el) el.focus()
@@ -6337,7 +6337,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // fallback would flatten the nested author/research_line join objects.
           const res = await API.request('/api/news')
           newsPosts.value = res?.data || Utils.ensureArray(res) || []
-        } catch (e) { newsPosts.value = []; console.error('[neumDesk] loadNews failed:', e); showToast('Error', 'Could not load publications', 'error') }
+        } catch (e) { newsPosts.value = []; console.error('[neumDesk] loadNews failed:', e); showToast('Error', 'Could not load the Research Library', 'error') }
         finally { newsLoading.value = false; newsLoaded.value = true }
       }
       const preloadNews = async () => {
@@ -6357,7 +6357,7 @@ document.addEventListener('DOMContentLoaded', () => {
           journal_name: '', authors_text: '', doi: '', is_featured: false, _imageInput: ''
         }, 'add')
         newsModal.stage = 'choose'
-        newsModal.previewMode = 'internal'
+        newsModal.previewMode = 'library'
         newsModal.show = true
       }
 
@@ -6379,7 +6379,7 @@ document.addEventListener('DOMContentLoaded', () => {
           _imageInput: ''
         }, 'edit')
         newsModal.stage = 'compose'
-        newsModal.previewMode = post.is_public ? 'public' : 'internal'
+        newsModal.previewMode = 'library'
         newsModal.show = true
       }
 
@@ -6426,7 +6426,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Save inside the studio and return the fresh object. Publishing callers can then
+      // Save inside the Research Editor and return the fresh object. Publishing callers can then
       // transition directly from the composer into the final reader — creation and
       // consumption are two states of the same record, not unrelated screens.
       const saveNews = async ({ publishNow=false } = {}) => {
@@ -6506,7 +6506,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Update local state
           const idx = newsPosts.value.findIndex(p => p.id === post.id)
           if (idx !== -1) newsPosts.value[idx] = { ...newsPosts.value[idx], is_featured: featuring }
-          showToast('Updated', featuring ? 'Post featured on homepage' : 'Post removed from homepage', 'success')
+          showToast('Updated', featuring ? 'Record featured on homepage' : 'Record removed from homepage', 'success')
         } catch (e) {
           showToast('Error', 'Failed to update feature status', 'error')
         }
@@ -7611,6 +7611,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const newsLibraryHeaderOpen = ref(true)
         const newsLibraryFiltersOpen = ref(false)
         const newsReturnFocusId = ref(null)
+        const newsEditorDetailsOpen = ref(false)
+        const newsPublishReview = ref(false)
+        const newsReadingProgress = ref(0)
+        const newsReaderCompact = ref(false)
+        const newsLibraryContextLabel = computed(() => {
+          const t = newsFilters.type
+          return t === 'publication' ? 'Publications' : t === 'article' ? 'Articles' : t === 'highlight' ? 'Highlights' : t === 'update' ? 'Updates' : 'Research Library'
+        })
+        const newsVisualSide = (post) => {
+          const key = String(post?.id || post?.title || '')
+          let hash = 0
+          for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash + key.charCodeAt(i)) | 0
+          return Math.abs(hash) % 2 ? 'is-copy-right' : 'is-copy-left'
+        }
 
         // V26 — actions live at viewport level, never inside a card.
         // This fixes clipped/overlapped menus and guarantees the menu belongs to
@@ -7622,15 +7636,22 @@ document.addEventListener('DOMContentLoaded', () => {
           evt?.stopPropagation?.()
           const rect = evt?.currentTarget?.getBoundingClientRect?.()
           const menuW = 238
-          const menuH = 260
-          let x = rect ? rect.right - menuW : window.innerWidth - menuW - 24
-          let y = rect ? rect.bottom + 8 : 96
-          x = Math.max(14, Math.min(window.innerWidth - menuW - 14, x))
-          if (y + menuH > window.innerHeight - 14 && rect) y = Math.max(14, rect.top - menuH - 8)
-          newsActionMenu.x = x
-          newsActionMenu.y = y
           newsActionMenu.post = post
+          newsActionMenu.x = Math.max(14, Math.min(window.innerWidth - menuW - 14, rect ? rect.right - menuW : window.innerWidth - menuW - 24))
+          newsActionMenu.y = Math.max(14, rect ? rect.bottom + 8 : 96)
           newsActionMenu.show = true
+          Vue.nextTick(() => {
+            const pop = document.querySelector('.news-v26-action-popover')
+            if (!pop) return
+            const pr = pop.getBoundingClientRect()
+            let x = rect ? rect.right - pr.width : newsActionMenu.x
+            let y = rect ? rect.bottom + 8 : newsActionMenu.y
+            x = Math.max(14, Math.min(window.innerWidth - pr.width - 14, x))
+            if (y + pr.height > window.innerHeight - 14 && rect) y = Math.max(14, rect.top - pr.height - 8)
+            else y = Math.max(14, Math.min(window.innerHeight - pr.height - 14, y))
+            newsActionMenu.x = x
+            newsActionMenu.y = y
+          })
         }
 
         const _rectPlain = (rect) => rect ? ({ left:rect.left, top:rect.top, right:rect.right, bottom:rect.bottom, width:rect.width, height:rect.height }) : null
@@ -7669,16 +7690,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const openNewsDrawer = (post, sourceRect = null) => {
           if (!post) return
           const content = document.querySelector('.content-area')
-          newsDrawer.returnWindowY = window.scrollY || 0
-          newsDrawer.returnContentY = content?.scrollTop || 0
-          newsDrawer.sourceRect = sourceRect || newsDrawer.sourceRect || null
+          // Preserve the Library return position only when entering the reader from the Library.
+          // Related/previous/next navigation keeps the original return position.
+          if (!newsDrawer.show) {
+            newsDrawer.returnWindowY = window.scrollY || 0
+            newsDrawer.returnContentY = content?.scrollTop || 0
+          }
+          // Never inherit geometry from a different record. That caused compact Update
+          // readers to anchor to the previous card after related-record navigation.
+          newsDrawer.sourceRect = sourceRect ? { ...sourceRect } : null
           closeNewsPeek()
           closeNewsActionMenu()
           newsDrawer.post = post
           newsDrawer.manageOpen = false
           newsDrawer.detailsOpen = false
           newsDrawer.publicPreview = false
+          newsReadingProgress.value = 0
+          newsReaderCompact.value = false
           newsDrawer.show = true
+          Vue.nextTick(() => {
+            const scroller = document.querySelector('.nrd-v27-scroll')
+            if (scroller) scroller.scrollTop = 0
+          })
         }
         const closeNewsDrawer = () => {
           const returnId = newsDrawer.post?.id || null
@@ -7690,6 +7723,8 @@ document.addEventListener('DOMContentLoaded', () => {
           newsDrawer.detailsOpen = false
           newsDrawer.publicPreview = false
           newsDrawer.sourceRect = null
+          newsReadingProgress.value = 0
+          newsReaderCompact.value = false
           Vue.nextTick(() => {
             const content = document.querySelector('.content-area')
             if (content && Number.isFinite(contentY)) content.scrollTop = contentY
@@ -7722,13 +7757,22 @@ document.addEventListener('DOMContentLoaded', () => {
           if (y > 120) newsLibraryHeaderOpen.value = false
           else if (y < 22) newsLibraryHeaderOpen.value = true
         }
+        const _newsKeyboard = (e) => {
+          if (currentView.value !== 'news' || newsModal.show || newsDrawer.show) return
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault()
+            focusNewsSearch()
+          }
+        }
         onMounted(() => {
           window.addEventListener('resize', _closeNewsFloatingUI)
           window.addEventListener('scroll', _newsScrollChrome, true)
+          window.addEventListener('keydown', _newsKeyboard)
         })
         onUnmounted(() => {
           window.removeEventListener('resize', _closeNewsFloatingUI)
           window.removeEventListener('scroll', _newsScrollChrome, true)
+          window.removeEventListener('keydown', _newsKeyboard)
         })
         const newsDrawerPrev = computed(() => {
           if (!newsDrawer.post) return null
@@ -7769,7 +7813,9 @@ document.addEventListener('DOMContentLoaded', () => {
           return name[0]?.toUpperCase() || '?'
         })
         const newsDrawerReadMins = computed(() => {
-          const wc = newsDrawer.post?.word_count
+          const explicit = Number(newsDrawer.post?.word_count || 0)
+          const derived = (newsDrawer.post?.body || '').trim().split(/\s+/).filter(Boolean).length
+          const wc = explicit || derived
           return wc ? Math.max(1, Math.round(wc / 200)) : null
         })
         const newsDrawerLineName = computed(() => {
@@ -7777,6 +7823,36 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!id) return ''
           return newsOps.getLineName(id)
         })
+        const updateNewsReadingProgress = (evt) => {
+          const el = evt?.currentTarget
+          if (!el) return
+          const max = Math.max(1, el.scrollHeight - el.clientHeight)
+          newsReadingProgress.value = Math.max(0, Math.min(100, (el.scrollTop / max) * 100))
+          newsReaderCompact.value = el.scrollTop > 96
+        }
+        const focusNewsSearch = () => {
+          Vue.nextTick(() => document.querySelector('.news-v25-search input')?.focus())
+        }
+        const openGroundedForNews = (post) => {
+          if (!post) return
+          openAskBar()
+          askBar.subject = { type: 'research_record', id: post.id, name: post.title }
+          askBar.view = 'conversation'
+          askBar.query = ''
+        }
+        const openNewsEditorFromReader = (post) => {
+          if (!post) return
+          newsDrawer.manageOpen = false
+          newsDrawer.detailsOpen = false
+          newsEditorDetailsOpen.value = false
+          newsPublishReview.value = false
+          newsOps.editNews(post)
+        }
+        const closeNewsEditor = () => {
+          newsPublishReview.value = false
+          newsEditorDetailsOpen.value = false
+          newsModal.show = false
+        }
         // ── END NEWS READER DRAWER ────────────────────────────────────
 
         const { newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
@@ -7785,20 +7861,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic: toggleNewsPublic,
                 formatAuthorName: newsAuthorName, getLineName: newsLineName } = newsOps
 
-        const saveNewsStudio = async (publishNow = false) => {
+        const saveNewsEditor = async (publishNow = false) => {
           const saved = await newsOps.saveNews({ publishNow })
           if (saved && publishNow) {
             newsModal.show = false
-            openNewsDrawer(saved)
+            newsPublishReview.value = false
+            newsEditorDetailsOpen.value = false
+            if (newsDrawer.show) {
+              newsDrawer.post = saved
+              newsDrawer.manageOpen = false
+              newsDrawer.detailsOpen = false
+              newsReadingProgress.value = 0
+              newsReaderCompact.value = false
+              Vue.nextTick(() => { const scroller = document.querySelector('.nrd-v27-scroll'); if (scroller) scroller.scrollTop = 0 })
+            } else {
+              openNewsDrawer(saved, null)
+            }
           }
           return saved
         }
-        const closeNewsStudioToReader = () => {
+        const closeNewsEditorToReader = () => {
           const id = newsModal.form.id
           newsModal.show = false
+          newsPublishReview.value = false
+          newsEditorDetailsOpen.value = false
           if (!id) return
           const fresh = (newsPosts.value || []).find(p => p.id === id)
-          if (fresh) openNewsDrawer(fresh)
+          if (!fresh) return
+          if (newsDrawer.show) newsDrawer.post = fresh
+          else openNewsDrawer(fresh, null)
         }
 
         const openAssignRotationFromUnit = (unit, startDate) => {
@@ -10346,7 +10437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { t: 'Who is absent right now?',             d: 'Coverage · today',           icon: 'absence',  intent: 'absent_now' },
         { t: 'What can you do?',                     d: 'Help · all capabilities',    icon: 'briefing', intent: 'help' },
       ]
-      const _SUGGEST_LABELS = { dashboard:'For today, you might', resident_rotations:'For rotations, you might', training_units:'For clinical units, you might', oncall_schedule:'For on-call, you might', staff_absence:'For leave & coverage, you might', medical_staff:'For staff, you might', research_hub:'For research, you might', news:'For publications, you might', system_settings:'Try asking' }
+      const _SUGGEST_LABELS = { dashboard:'For today, you might', resident_rotations:'For rotations, you might', training_units:'For clinical units, you might', oncall_schedule:'For on-call, you might', staff_absence:'For leave & coverage, you might', medical_staff:'For staff, you might', research_hub:'For research, you might', news:'For the Research Library, you might', system_settings:'Try asking' }
       const askBarSuggestLabel = Vue.computed(() => {
         if (askBar.subject && askBar.subject.name) return 'For ' + askBar.subject.name + ', you might'
         const v = currentView.value
@@ -14223,15 +14314,15 @@ document.addEventListener('DOMContentLoaded', () => {
           getStageColor: (s) => Utils.getStageColor(s), loadStaffCertificates, loadStaffUnits,
           newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
           newsWordCount, newsWordLimit,
-          loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews, saveNewsStudio, closeNewsStudioToReader,
+          loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews, saveNewsEditor, closeNewsEditorToReader,
           publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
           newsLibraryHeaderOpen, newsLibraryFiltersOpen, newsReturnFocusId,
-          newsActionMenu, openNewsActionMenu, closeNewsActionMenu,
+          newsActionMenu, openNewsActionMenu, closeNewsActionMenu, newsVisualSide, newsLibraryContextLabel,
           newsPeek, openNewsPeek, closeNewsPeek,
-          newsDrawer, newsDrawerPositionStyle, openNewsDrawer, closeNewsDrawer, exploreNewsLine,
+          newsDrawer, newsDrawerPositionStyle, openNewsDrawer, closeNewsDrawer, exploreNewsLine, newsReadingProgress, newsReaderCompact, updateNewsReadingProgress, openGroundedForNews,
           newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
-          newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName,
+          newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName, newsEditorDetailsOpen, newsPublishReview, openNewsEditorFromReader, closeNewsEditor,
           drillToTrials, drillToProjects,
           portfolioKPIs,
           getLineAccent:     getLineAccentGlobal,
