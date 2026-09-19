@@ -21392,171 +21392,297 @@ html body #app .nrd-v38-reading-context>strong{max-width:min(48vw,680px) !import
 }
 
 /* ========================================================================== 
-   V43 · GROUNDED INTELLIGENCE & EXPERIENCE
-   Context first · answer archetypes · navigation · calm provenance
+   V43 · GROUNDED INTELLIGENCE WORKSPACE
+   Context-first, evidence-led, calmer response grammar. No backend changes.
    ========================================================================== */
 
-/* Active context is explicit, compact, and never confused with chat history. */
-html body #app .askbar-context-bar {
-  position:relative !important;
-  z-index:2 !important;
-  min-height:46px !important;
-  padding:8px 20px !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  gap:16px !important;
-  border-bottom:1px solid #e2e9eb !important;
-  background:rgba(248,251,251,.98) !important;
+/* Grounded is a departmental intelligence surface, not a floating chatbot. */
+html body #app .grounded-overlay{
+  background:rgba(8,22,35,.24)!important;
+  backdrop-filter:blur(2px)!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:22px!important;
 }
-html body #app .askbar-context-left { min-width:0 !important; display:flex !important; align-items:baseline !important; gap:9px !important; }
-html body #app .askbar-context-kicker {
-  flex:0 0 auto !important;
-  color:#0b7d82 !important;
-  -webkit-text-fill-color:#0b7d82 !important;
-  font:750 10px/1.2 'DM Sans',sans-serif !important;
-  letter-spacing:.08em !important;
-  text-transform:uppercase !important;
+html body #app .askbar-panel.grounded-cloud{
+  width:min(780px,calc(100vw - 44px))!important;
+  max-width:780px!important;
+  min-height:min(560px,calc(100vh - 44px))!important;
+  max-height:calc(100vh - 44px)!important;
+  border-radius:22px!important;
+  border:1px solid rgba(180,204,210,.72)!important;
+  box-shadow:0 28px 80px rgba(5,24,38,.22)!important;
+  background:#f8fbfb!important;
 }
-html body #app .askbar-context-title {
-  min-width:0 !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-  white-space:nowrap !important;
-  color:#334b60 !important;
-  -webkit-text-fill-color:#334b60 !important;
-  font:650 12px/1.25 'DM Sans',sans-serif !important;
+html body #app .grounded-head{
+  min-height:72px!important;
+  padding:11px 14px 11px 16px!important;
+  background:linear-gradient(108deg,#0b263d 0%,#0d3549 58%,#0b5960 100%)!important;
 }
-html body #app .askbar-context-right { flex:0 0 auto !important; display:flex !important; align-items:center !important; gap:10px !important; }
-html body #app .askbar-context-live { display:flex !important; align-items:center !important; gap:6px !important; color:#728392 !important; font:650 10.5px/1 'DM Sans',sans-serif !important; }
-html body #app .askbar-context-live i { width:6px !important; height:6px !important; border-radius:50% !important; background:#2bc995 !important; box-shadow:0 0 0 3px rgba(43,201,149,.10) !important; }
-html body #app .askbar-context-clear {
-  border:0 !important; background:transparent !important; color:#587083 !important;
-  padding:4px 0 !important; font:650 10.5px/1 'DM Sans',sans-serif !important; cursor:pointer !important;
+html body #app .grounded-head-orb{width:36px!important;height:36px!important;flex-basis:36px!important}
+html body #app .askbar-head-t{font-size:15px!important;font-weight:720!important}
+html body #app .askbar-head-s{font-family:'DM Sans',system-ui,sans-serif!important;font-size:9.5px!important;letter-spacing:.018em!important}
+html body #app .grounded-head-tools{border-left:0!important;padding-left:0!important}
+html body #app .askbar-newchat,
+html body #app .askbar-history-btn,
+html body #app .askbar-teach-btn{
+  min-height:32px!important;height:32px!important;padding:0 8px!important;border-radius:8px!important;
+  background:transparent!important;border-color:rgba(255,255,255,.08)!important;color:rgba(236,248,249,.76)!important;
+  box-shadow:none!important;
 }
-html body #app .askbar-context-clear:hover { color:#0b777d !important; text-decoration:underline !important; }
+html body #app .askbar-close{width:32px!important;height:32px!important;flex-basis:32px!important;border-radius:8px!important;background:rgba(255,255,255,.06)!important;color:#e8f4f5!important;box-shadow:none!important}
 
-/* Answer identity: every response type announces what it is, without another card. */
-html body #app .askbar-answer-label {
-  min-height:18px !important;
-  margin:0 0 5px !important;
-  display:flex !important;
-  align-items:center !important;
-  gap:8px !important;
-  color:#6b7f90 !important;
-  -webkit-text-fill-color:#6b7f90 !important;
-  font:750 9.8px/1 'DM Sans',sans-serif !important;
-  letter-spacing:.08em !important;
-  text-transform:uppercase !important;
+/* One explicit object context. Grounded always tells the user what it is grounded on. */
+html body #app .askbar-conv{
+  padding:16px 22px 14px!important;
+  max-height:calc(100vh - 158px)!important;
+  background:linear-gradient(180deg,#fbfdfd 0%,#f8fbfb 54%,#f6f9f9 100%)!important;
 }
-html body #app .askbar-answer-label i { width:18px !important; height:1px !important; background:#b8d7d7 !important; }
-
-/* Simple facts should look like answers, not little modal windows. */
-html body #app .askbar-turn--fact .askbar-a-card {
-  padding:5px 5px 4px 16px !important;
-  border:0 !important;
-  border-left:2px solid #67c8c6 !important;
-  border-radius:0 !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  overflow:visible !important;
+html body #app .askbar-v43-context{
+  position:relative!important;display:grid!important;grid-template-columns:28px minmax(0,1fr) auto!important;gap:12px!important;align-items:start!important;
+  margin:0 0 18px!important;padding:13px 0 14px!important;border:0!important;border-bottom:1px solid #dce6e8!important;background:transparent!important;box-shadow:none!important;
 }
-html body #app .askbar-turn--fact .askbar-a-card::before { display:none !important; }
-html body #app .askbar-turn--fact .askbar-a-tx {
-  color:#1e374d !important;
-  -webkit-text-fill-color:#1e374d !important;
-  font:500 14.5px/1.55 'DM Sans',sans-serif !important;
-  letter-spacing:-.006em !important;
+html body #app .askbar-v43-context-mark{width:28px!important;height:28px!important;display:grid!important;place-items:center!important;margin-top:1px!important}
+html body #app .askbar-v43-context-mark::before{content:'';width:11px;height:11px;border-radius:50%;background:#118f90;box-shadow:0 0 0 5px rgba(17,143,144,.09)}
+html body #app .askbar-v43-context--study .askbar-v43-context-mark::before{background:#2b718c;box-shadow:0 0 0 5px rgba(43,113,140,.09)}
+html body #app .askbar-v43-context--project .askbar-v43-context-mark::before{background:#a77a2b;box-shadow:0 0 0 5px rgba(167,122,43,.09)}
+html body #app .askbar-v43-context--staff .askbar-v43-context-mark::before{background:#5f7184;box-shadow:0 0 0 5px rgba(95,113,132,.09)}
+html body #app .askbar-v43-context-body{min-width:0!important}
+html body #app .askbar-v43-context-kicker{font:750 8.8px/1 'DM Sans',system-ui,sans-serif!important;letter-spacing:.085em!important;text-transform:uppercase!important;color:#118386!important}
+html body #app .askbar-v43-context-title{margin-top:5px!important;font:400 20px/1.12 'Instrument Serif',Georgia,serif!important;font-style:normal!important;color:#14364c!important;letter-spacing:-.018em!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+html body #app .askbar-v43-context-sub{margin-top:5px!important;max-width:560px!important;color:#657d8b!important;font:500 10.5px/1.38 'DM Sans',system-ui,sans-serif!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+html body #app .askbar-v43-context-facts{display:flex!important;align-items:center!important;gap:6px 12px!important;flex-wrap:wrap!important;margin-top:8px!important}
+html body #app .askbar-v43-context-facts span{position:relative!important;color:#70838f!important;font:600 9.4px/1 'DM Sans',system-ui,sans-serif!important}
+html body #app .askbar-v43-context-facts span+span::before{content:'·';position:absolute;left:-8px;color:#aeb9bf}
+html body #app .askbar-v43-context-clear{align-self:center!important;padding:6px 0!important;border:0!important;border-bottom:1px solid transparent!important;border-radius:0!important;background:transparent!important;color:#718591!important;font:650 9.5px/1 'DM Sans',system-ui,sans-serif!important;box-shadow:none!important;cursor:pointer!important}
+html body #app .askbar-v43-context-clear:hover{color:#0b8184!important;border-bottom-color:#8fc5c4!important}
+
+/* Landing should feel like an intelligence console, not a chatbot prompt. */
+html body #app .askbar-greeting{padding:1px 1px 4px!important}
+html body #app .askbar-greeting-t{font:400 28px/1.08 'Instrument Serif',Georgia,serif!important;font-style:normal!important;color:#15364b!important;letter-spacing:-.032em!important}
+html body #app .askbar-greeting-s{max-width:610px!important;margin-top:8px!important;font-size:12px!important;line-height:1.5!important;color:#647988!important}
+html body #app .askbar-sug-label{margin:17px 0 6px!important;font-size:9px!important;letter-spacing:.065em!important;text-transform:none!important;color:#86949e!important}
+html body #app .askbar-sug{gap:0!important;border-top:1px solid #e1e8ea!important}
+html body #app .askbar-sug-item{
+  min-height:52px!important;padding:9px 2px!important;border:0!important;border-bottom:1px solid #e3e9eb!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;transform:none!important;gap:11px!important;
 }
-html body #app .askbar-turn--fact.askbar-turn--unresolved .askbar-a-card {
-  border-left-color:#b8c4cb !important;
+html body #app .askbar-sug-item:hover{background:rgba(13,134,136,.035)!important;border-color:#d8e4e6!important;box-shadow:none!important;transform:none!important}
+html body #app .askbar-sug-ic{width:30px!important;height:30px!important;flex-basis:30px!important;border-radius:9px!important;background:#edf5f4!important;color:#2a6570!important}
+html body #app .askbar-sug-t{font-size:11.5px!important;color:#29485b!important;font-weight:680!important}
+html body #app .askbar-sug-d{margin-top:2px!important;font-size:9.5px!important;color:#81919b!important}
+html body #app .askbar-sug-arrow{color:#a2afb6!important}
+
+/* Answers: stronger hierarchy without recreating generic white cards. */
+html body #app .askbar-v43-answer-kicker{margin:0 0 7px!important;color:#138486!important;font:750 8.8px/1 'DM Sans',system-ui,sans-serif!important;letter-spacing:.075em!important;text-transform:uppercase!important}
+html body #app .askbar-a-bub{margin-bottom:20px!important;min-width:0!important}
+html body #app .askbar-a-card{min-width:0!important;overflow:visible!important}
+html body #app .askbar-turn--fact .askbar-a-tx{max-width:680px!important;font-size:13px!important;line-height:1.62!important;color:#28465a!important}
+html body #app .askbar-turn--unresolved .askbar-a-tx{background:transparent!important;border-left:2px solid #c1ccd1!important;padding:6px 0 6px 12px!important;color:#5c6f7b!important}
+html body #app .askbar-empty-state{border-radius:0!important;border:0!important;border-left:2px solid #c7d1d5!important;background:transparent!important;padding:7px 0 7px 12px!important}
+html body #app .askbar-empty-mark{display:none!important}
+
+/* Reusable evidence object for Study / Innovation / Research Line / Library answers. */
+html body #app .askbar-v43-facts{margin:10px 0 2px!important;border-top:1px solid #dce5e7!important;border-bottom:1px solid #dfe7e9!important;background:rgba(255,255,255,.48)!important}
+html body #app .askbar-v43-facts>header{display:grid!important;grid-template-columns:110px minmax(0,1fr)!important;gap:14px!important;align-items:baseline!important;padding:11px 0 10px!important;border-bottom:1px solid #e4eaeb!important}
+html body #app .askbar-v43-facts>header span{color:#168789!important;font:750 8.6px/1 'DM Sans',system-ui,sans-serif!important;letter-spacing:.07em!important;text-transform:uppercase!important}
+html body #app .askbar-v43-facts>header strong{min-width:0!important;color:#173b50!important;font:650 11.5px/1.35 'DM Sans',system-ui,sans-serif!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+html body #app .askbar-v43-facts-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html body #app .askbar-v43-fact{min-width:0!important;padding:10px 14px 10px 0!important;border-bottom:1px solid #edf1f2!important}
+html body #app .askbar-v43-fact:nth-child(odd){border-right:1px solid #e9eeef!important;margin-right:14px!important}
+html body #app .askbar-v43-fact span{display:block!important;color:#83919a!important;font:650 8.6px/1 'DM Sans',system-ui,sans-serif!important;letter-spacing:.035em!important;text-transform:uppercase!important}
+html body #app .askbar-v43-fact strong{display:block!important;margin-top:5px!important;color:#344f60!important;font:620 10.5px/1.38 'DM Sans',system-ui,sans-serif!important;overflow-wrap:anywhere!important}
+html body #app .askbar-v43-fact:nth-last-child(-n+2){border-bottom:0!important}
+
+/* Collections and provenance must never look clipped at the side. */
+html body #app .askbar-reslist,
+html body #app .askbar-board,
+html body #app .askbar-profile,
+html body #app .askbar-publications,
+html body #app .askbar-v43-facts{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important}
+html body #app .askbar-reslist-row,
+html body #app .askbar-pubrow,
+html body #app .askbar-profile-row{min-width:0!important}
+html body #app .askbar-reslist-title,
+html body #app .askbar-pubrow-body h4{overflow-wrap:anywhere!important}
+html body #app .askbar-trust{margin-top:9px!important;padding-top:7px!important}
+html body #app .askbar-trust-state{font-weight:620!important}
+html body #app .askbar-trust-src{text-transform:none!important}
+
+/* The question composer is a command dock, not another rounded search card. */
+html body #app .askbar-input-wrap{padding:9px 18px 12px!important;background:rgba(248,251,251,.98)!important;border-top:1px solid #dfe7e9!important;box-shadow:none!important}
+html body #app .askbar-input{min-height:48px!important;padding:5px 5px 5px 11px!important;border-radius:11px!important;border:1px solid #d5e0e2!important;background:#fff!important;box-shadow:none!important}
+html body #app .askbar-input:focus-within{border-color:#7fb9bb!important;box-shadow:0 0 0 3px rgba(17,143,144,.055)!important}
+html body #app .askbar-input input{font-size:12.5px!important}
+html body #app .askbar-send{width:36px!important;height:36px!important;border-radius:9px!important}
+
+@media(max-width:720px){
+  html body #app .grounded-overlay{align-items:flex-end!important;padding:0!important;backdrop-filter:none!important}
+  html body #app .askbar-panel.grounded-cloud{width:100vw!important;max-width:none!important;height:min(94vh,900px)!important;max-height:94vh!important;border-radius:18px 18px 0 0!important}
+  html body #app .askbar-conv{padding:14px 14px 10px!important;max-height:calc(94vh - 150px)!important}
+  html body #app .askbar-v43-context{grid-template-columns:22px minmax(0,1fr)!important}
+  html body #app .askbar-v43-context-clear{display:none!important}
+  html body #app .askbar-v43-context-title{font-size:18px!important}
+  html body #app .askbar-v43-facts-grid{grid-template-columns:1fr!important}
+  html body #app .askbar-v43-fact:nth-child(odd){border-right:0!important;margin-right:0!important}
+  html body #app .askbar-v43-fact{border-bottom:1px solid #edf1f2!important}
+  html body #app .askbar-v43-fact:last-child{border-bottom:0!important}
 }
-html body #app .askbar-turn--fact.askbar-turn--unresolved .askbar-a-tx { color:#5c7182 !important; -webkit-text-fill-color:#5c7182 !important; }
 
-/* Portfolio/count answers deserve information architecture, not prose with commas. */
-html body #app .askbar-metric-summary {
-  margin-top:2px !important;
-  padding:15px 16px 13px !important;
-  border:1px solid #dce6e8 !important;
-  border-radius:16px !important;
-  background:linear-gradient(180deg,#fff 0%,#fbfdfd 100%) !important;
-  box-shadow:0 10px 26px rgba(7,22,37,.035) !important;
+/* ========================================================================
+   V44 · INSTITUTIONAL LOGIN / SESSION HARDENING
+   neumDesk is the product. Grounded is the intelligence layer inside it.
+   ======================================================================== */
+
+/* Short first-paint identity: neumDesk, not the assistant. */
+html body #app .nd-splash-mark--neumdesk{
+  display:grid!important;place-items:center!important;width:58px!important;height:58px!important;
+  border-radius:17px!important;background:#0e314f!important;border:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:none!important;
 }
-html body #app .askbar-metric-summary-head { display:flex !important; align-items:flex-end !important; justify-content:space-between !important; gap:14px !important; margin-bottom:13px !important; }
-html body #app .askbar-metric-summary-head > div { display:flex !important; flex-direction:column !important; gap:3px !important; }
-html body #app .askbar-metric-summary-head span { color:#0b7d82 !important; font:750 9.5px/1 'DM Sans',sans-serif !important; letter-spacing:.09em !important; text-transform:uppercase !important; }
-html body #app .askbar-metric-summary-head strong { color:#163149 !important; font:700 15px/1.2 'DM Sans',sans-serif !important; letter-spacing:-.015em !important; }
-html body #app .askbar-metric-summary-head small { color:#7d8e9c !important; font:550 10.5px/1.2 'DM Sans',sans-serif !important; }
-html body #app .askbar-metric-grid { display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important; border-top:1px solid #e8edef !important; border-bottom:1px solid #e8edef !important; }
-html body #app .askbar-metric { min-width:0 !important; min-height:82px !important; padding:13px 12px 11px !important; border-right:1px solid #e8edef !important; position:relative !important; }
-html body #app .askbar-metric:last-child { border-right:0 !important; }
-html body #app .askbar-metric::before { content:'' !important; position:absolute !important; left:12px !important; top:0 !important; width:28px !important; height:2px !important; background:#9bb4c5 !important; }
-html body #app .askbar-metric--teal::before { background:#2a9f9e !important; }
-html body #app .askbar-metric--blue::before { background:#496f9a !important; }
-html body #app .askbar-metric--navy::before { background:#173f5d !important; }
-html body #app .askbar-metric--quiet::before { background:#b8c5cc !important; }
-html body #app .askbar-metric strong { display:block !important; color:#16344d !important; font:400 28px/1 'Instrument Serif',Georgia,serif !important; }
-html body #app .askbar-metric span { display:block !important; margin-top:6px !important; color:#415b70 !important; font:700 10.8px/1.25 'DM Sans',sans-serif !important; }
-html body #app .askbar-metric small { display:block !important; margin-top:3px !important; color:#80909d !important; font:500 9.8px/1.3 'DM Sans',sans-serif !important; }
-html body #app .askbar-metric-note { padding-top:10px !important; color:#687d8d !important; font:500 10.8px/1.4 'DM Sans',sans-serif !important; }
-
-/* Collection rows are now genuine navigation surfaces when a specific record exists. */
-html body #app .askbar-reslist-row--actionable { cursor:pointer !important; position:relative !important; }
-html body #app .askbar-reslist-row--actionable:hover { background:#f5faf9 !important; border-color:#b8d8d8 !important; }
-html body #app .askbar-reslist-row--actionable:focus-visible { outline:2px solid rgba(16,143,148,.32) !important; outline-offset:2px !important; }
-html body #app .askbar-reslist-go { margin-left:auto !important; color:#0b858a !important; font:700 12px/1 'DM Sans',sans-serif !important; opacity:.72 !important; }
-html body #app .askbar-pubrow--actionable { cursor:pointer !important; }
-html body #app .askbar-pubrow--actionable:hover { background:#f7fbfa !important; }
-html body #app .askbar-pubrow--actionable:focus-visible { outline:2px solid rgba(16,143,148,.28) !important; outline-offset:-2px !important; }
-
-/* Provenance becomes a compact signature rather than a second card/footer. */
-html body #app .askbar-trust {
-  min-height:28px !important;
-  margin-top:8px !important;
-  padding:7px 1px 0 !important;
-  border-top:1px solid #e8edef !important;
-  background:transparent !important;
-  box-shadow:none !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  gap:10px !important;
+html body #app .nd-splash-neumdesk-svg{width:43px!important;height:43px!important;display:block!important}
+html body #app .nd-splash-wordmark--neumdesk{
+  font-family:'DM Sans',system-ui,sans-serif!important;font-style:normal!important;font-weight:650!important;
+  letter-spacing:-.045em!important;color:#f7fbfc!important;
 }
-html body #app .askbar-turn--fact .askbar-trust { margin-left:0 !important; margin-right:0 !important; }
-html body #app .askbar-trust-main,html body #app .askbar-trust-meta { min-height:20px !important; display:flex !important; align-items:center !important; gap:5px !important; }
-html body #app .askbar-trust-dot { width:5px !important; height:5px !important; box-shadow:none !important; }
-html body #app .askbar-trust-state { color:#587182 !important; -webkit-text-fill-color:#587182 !important; font-size:9.8px !important; font-weight:700 !important; }
-html body #app .askbar-trust-src { color:#778a98 !important; -webkit-text-fill-color:#778a98 !important; font-size:9.8px !important; }
-html body #app .askbar-trust-time { color:#98a4ae !important; -webkit-text-fill-color:#98a4ae !important; font:550 9.5px/1 'DM Mono',monospace !important; }
-html body #app .askbar-trust-checks { color:#647b8c !important; font-size:9.6px !important; }
-html body #app .askbar-trust-copy { width:24px !important; height:24px !important; border-radius:7px !important; }
 
-/* Follow-ups are next actions, not a cloud of low-contrast microtext. */
-html body #app .askbar-followups { margin-top:1px !important; padding:3px 2px 0 !important; gap:7px !important; }
-html body #app .askbar-followup-questions { display:flex !important; flex-wrap:wrap !important; align-items:center !important; gap:6px !important; }
-html body #app .askbar-followup-label { color:#8795a2 !important; font:700 9.5px/1 'DM Sans',sans-serif !important; letter-spacing:.06em !important; text-transform:uppercase !important; }
-html body #app .askbar-fu {
-  min-height:30px !important; padding:6px 9px !important; border:1px solid #dfe7e9 !important; border-radius:9px !important;
-  background:#fff !important; color:#526b7d !important; font:650 10.5px/1.15 'DM Sans',sans-serif !important;
+/* One full-screen institutional threshold. No floating SaaS card. */
+html body #app .login-container--v44{
+  position:relative!important;isolation:isolate!important;display:grid!important;
+  grid-template-columns:minmax(0,1.42fr) minmax(420px,.82fr)!important;
+  width:100%!important;min-height:100vh!important;min-height:100dvh!important;overflow:hidden!important;
+  background:#0a2338!important;color:#eef7f8!important;
 }
-html body #app .askbar-fu:hover { border-color:#a9cfd0 !important; color:#0b777d !important; background:#f8fbfb !important; }
-html body #app .askbar-fu--act { border-color:#b9dada !important; color:#0b777d !important; background:#f4fbfa !important; }
+html body #app .login-container--v44::before,
+html body #app .login-container--v44::after{content:none!important;display:none!important}
+html body #app .lc-v44-atmosphere{position:absolute!important;inset:0!important;z-index:0!important;pointer-events:none!important;overflow:hidden!important}
+html body #app .lc-v44-atmosphere::before{
+  content:'';position:absolute;inset:0 34% 0 0;
+  background:
+    radial-gradient(820px 620px at 22% 20%,rgba(25,129,143,.14),transparent 62%),
+    radial-gradient(760px 600px at 65% 84%,rgba(55,160,149,.08),transparent 64%),
+    linear-gradient(145deg,#081f34 0%,#0b2b44 58%,#0a3446 100%);
+}
+html body #app .login-container--v44 #loginTreeCanvas{position:absolute!important;inset:0 34% 0 0!important;width:66%!important;height:100%!important;opacity:.008!important}
+html body #app .lc-v44-flow{position:absolute!important;left:-8%!important;bottom:-11%!important;width:78%!important;height:83%!important;opacity:.10!important}
+html body #app .lc-v44-flow path{stroke:#6cd7d2!important;stroke-width:1.05!important;stroke-linecap:round!important}
 
-/* Empty / unverified answers should be quiet, precise and compact. */
-html body #app .askbar-empty-state { padding:8px 2px !important; border:0 !important; background:transparent !important; box-shadow:none !important; }
-html body #app .askbar-empty-title { color:#314a5e !important; font-size:13.5px !important; line-height:1.45 !important; }
-html body #app .askbar-empty-sub { color:#7a8c99 !important; font-size:10.8px !important; line-height:1.4 !important; }
+/* Institutional / product story. */
+html body #app .lc-v44-story{
+  position:relative!important;z-index:1!important;min-width:0!important;min-height:100dvh!important;
+  display:flex!important;flex-direction:column!important;justify-content:space-between!important;
+  padding:clamp(42px,6vh,70px) clamp(52px,6.2vw,102px) clamp(34px,4.8vh,56px)!important;
+}
+html body #app .lc-v44-mast{display:flex!important;align-items:center!important;gap:15px!important;min-height:24px!important}
+html body #app .lc-v44-neumac{
+  font-family:'DM Sans',system-ui,sans-serif!important;font-size:14px!important;line-height:1!important;font-weight:650!important;
+  letter-spacing:-.035em!important;color:#eef8fa!important;text-transform:none!important;
+}
+html body #app .lc-v44-neumac span{color:#6ed4d1!important;text-transform:none!important}
+html body #app .lc-v44-mast-rule{width:30px!important;height:1px!important;background:rgba(193,220,229,.25)!important}
+html body #app .lc-v44-area{font:520 10.5px/1.2 'DM Sans',system-ui,sans-serif!important;letter-spacing:.02em!important;color:rgba(204,226,233,.56)!important}
+html body #app .lc-v44-hero{margin:auto 0!important;padding:5vh 0 7vh!important;max-width:790px!important}
+html body #app .lc-v44-product{display:flex!important;align-items:center!important;gap:11px!important;margin-bottom:31px!important;min-width:0!important}
+html body #app .lc-v44-product-mark{
+  width:38px!important;height:38px!important;flex:0 0 38px!important;display:grid!important;place-items:center!important;
+  border-radius:12px!important;background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.07)!important;
+}
+html body #app .lc-v44-product-mark svg{width:31px!important;height:31px!important}
+html body #app .lc-v44-wordmark{font:520 22px/1 'DM Sans',system-ui,sans-serif!important;letter-spacing:-.055em!important;color:#e7f7f8!important;white-space:nowrap!important}
+html body #app .lc-v44-wordmark strong{font-weight:760!important;color:#8be5d5!important}
+html body #app .lc-v44-product-kicker{margin-left:4px!important;padding-left:15px!important;border-left:1px solid rgba(190,219,228,.18)!important;font:650 9px/1.2 'DM Sans',system-ui,sans-serif!important;letter-spacing:.10em!important;text-transform:uppercase!important;color:rgba(195,220,228,.48)!important}
+html body #app .lc-v44-title{
+  margin:0!important;max-width:730px!important;font:400 clamp(58px,5.65vw,88px)/.94 'Instrument Serif',Georgia,serif!important;
+  font-style:normal!important;letter-spacing:-.047em!important;color:#f7fbfc!important;-webkit-text-fill-color:#f7fbfc!important;
+}
+html body #app .lc-v44-copy{margin:27px 0 0!important;max-width:670px!important;font:440 clamp(16px,1.25vw,19px)/1.56 'DM Sans',system-ui,sans-serif!important;letter-spacing:-.012em!important;color:rgba(207,226,233,.70)!important}
+html body #app .lc-v44-scope{display:flex!important;flex-wrap:wrap!important;gap:0!important;margin-top:31px!important;color:rgba(211,231,236,.52)!important}
+html body #app .lc-v44-scope span{font:600 10px/1.3 'DM Sans',system-ui,sans-serif!important;letter-spacing:.015em!important;white-space:nowrap!important}
+html body #app .lc-v44-scope span+span::before{content:'·';display:inline-block;margin:0 11px!important;color:rgba(117,198,198,.54)!important}
+html body #app .lc-v44-grounded{
+  display:flex!important;align-items:center!important;gap:12px!important;margin-top:34px!important;padding-top:24px!important;
+  width:min(100%,560px)!important;border-top:1px solid rgba(193,220,228,.12)!important;
+}
+html body #app .lc-v44-grounded-mark{width:28px!important;height:28px!important;flex:0 0 28px!important;display:grid!important;place-items:center!important}
+html body #app .lc-v44-grounded-mark .grounded-mark-svg{width:25px!important;height:25px!important}
+html body #app .lc-v44-grounded>div{display:flex!important;align-items:baseline!important;gap:9px!important;min-width:0!important}
+html body #app .lc-v44-grounded strong{font:700 11.5px/1.2 'DM Sans',system-ui,sans-serif!important;color:#d9f2f0!important}
+html body #app .lc-v44-grounded span{font:470 11px/1.4 'DM Sans',system-ui,sans-serif!important;color:rgba(190,215,223,.50)!important}
+html body #app .lc-v44-story-foot{font:580 9.5px/1.3 'DM Sans',system-ui,sans-serif!important;letter-spacing:.035em!important;text-transform:none!important;color:rgba(182,208,218,.40)!important}
 
-/* Slightly more comfortable conversation rhythm. */
-html body #app .askbar-conv { gap:12px !important; }
-html body #app .askbar-q-bub { box-shadow:none !important; }
-html body #app .askbar-turn--insight .askbar-a-tx { margin-bottom:2px !important; }
+/* Access plane: a quiet work surface rather than a login card. */
+html body #app .lc-v44-access{
+  position:relative!important;z-index:2!important;min-width:0!important;min-height:100dvh!important;
+  display:flex!important;flex-direction:column!important;justify-content:space-between!important;
+  padding:clamp(34px,5vh,58px) clamp(38px,4.4vw,68px) clamp(28px,4vh,44px)!important;
+  background:#f8faf9!important;color:#142a3f!important;border-left:1px solid #e3eaec!important;box-shadow:none!important;
+}
+html body #app .lc-v44-access-inner{width:100%!important;max-width:405px!important;margin:auto!important}
+html body #app .lc-v44-access-brand{display:flex!important;align-items:center!important;gap:12px!important;margin-bottom:clamp(68px,10vh,106px)!important}
+html body #app .lc-v44-access-mark{width:40px!important;height:40px!important;flex:0 0 40px!important;display:grid!important;place-items:center!important;border-radius:12px!important;background:#0f304d!important}
+html body #app .lc-v44-access-mark svg{width:31px!important;height:31px!important}
+html body #app .lc-v44-access-name{font:520 19px/1 'DM Sans',system-ui,sans-serif!important;letter-spacing:-.05em!important;color:#12304a!important}
+html body #app .lc-v44-access-name strong{font-weight:780!important;color:#167f83!important}
+html body #app .lc-v44-access-sub{margin-top:5px!important;font:600 9px/1 'DM Sans',system-ui,sans-serif!important;letter-spacing:.09em!important;text-transform:none!important;color:#82919c!important}
+html body #app .lc-v44-signin-head{margin-bottom:29px!important}
+html body #app .lc-v44-eyebrow{margin-bottom:10px!important;font:700 9px/1 'DM Sans',system-ui,sans-serif!important;letter-spacing:.13em!important;text-transform:uppercase!important;color:#16878a!important}
+html body #app .lc-v44-signin-head h2{margin:0!important;font:400 35px/1.04 'Instrument Serif',Georgia,serif!important;font-style:normal!important;letter-spacing:-.03em!important;color:#142e43!important}
+html body #app .lc-v44-signin-head p{margin:8px 0 0!important;font:450 13px/1.5 'DM Sans',system-ui,sans-serif!important;color:#7c8b96!important}
+html body #app .login-container--v44 .lc-form{display:flex!important;flex-direction:column!important;gap:16px!important}
+html body #app .login-container--v44 .lc-field{display:flex!important;flex-direction:column!important;gap:7px!important}
+html body #app .login-container--v44 .lc-label{font:620 11.5px/1.3 'DM Sans',system-ui,sans-serif!important;letter-spacing:0!important;text-transform:none!important;color:#526878!important}
+html body #app .login-container--v44 .lc-input-wrap{position:relative!important;display:flex!important;align-items:center!important}
+html body #app .login-container--v44 .lc-input-wrap>svg{position:absolute!important;left:15px!important;top:50%!important;transform:translateY(-50%)!important;color:#9baab4!important;z-index:2!important}
+html body #app .login-container--v44 .lc-input{
+  width:100%!important;height:51px!important;padding:0 45px 0 43px!important;border:1px solid #d5dfe3!important;border-radius:9px!important;
+  background:#fff!important;box-shadow:none!important;outline:0!important;font:510 14px/1 'DM Sans',system-ui,sans-serif!important;color:#163149!important;
+  transition:border-color .15s ease,box-shadow .15s ease,background .15s ease!important;
+}
+html body #app .login-container--v44 .lc-input::placeholder{color:#a7b1b8!important}
+html body #app .login-container--v44 .lc-input:hover{border-color:#c2d0d5!important}
+html body #app .login-container--v44 .lc-input:focus{border-color:#6cafb1!important;box-shadow:0 0 0 3px rgba(21,135,138,.055)!important;background:#fff!important}
+html body #app .login-container--v44 .lc-input-wrap:focus-within>svg{color:#14868a!important}
+html body #app .login-container--v44 .lc-eye{position:absolute!important;right:10px!important;top:50%!important;transform:translateY(-50%)!important;width:32px!important;height:32px!important;border:0!important;background:transparent!important;border-radius:7px!important;color:#93a2ad!important;cursor:pointer!important}
+html body #app .login-container--v44 .lc-eye:hover{background:#f2f6f6!important;color:#426174!important}
+html body #app .lc-v44-session-row{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;margin-top:1px!important}
+html body #app .login-container--v44 .lc-remember{display:inline-flex!important;align-items:center!important;gap:8px!important;font:500 11.5px/1.35 'DM Sans',system-ui,sans-serif!important;color:#72838f!important;cursor:pointer!important}
+html body #app .login-container--v44 .lc-remember input{width:14px!important;height:14px!important;margin:0!important;accent-color:#167f83!important}
+html body #app .login-container--v44 .lc-forgot{font:600 11.5px/1.35 'DM Sans',system-ui,sans-serif!important;color:#356d7d!important;text-decoration:none!important;white-space:nowrap!important}
+html body #app .login-container--v44 .lc-forgot:hover{color:#0d7e82!important}
+html body #app .lc-v44-submit{
+  width:100%!important;height:51px!important;margin-top:8px!important;border:0!important;border-radius:9px!important;background:#123a5b!important;color:#fff!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:10px!important;box-shadow:none!important;
+  font:700 13.5px/1 'DM Sans',system-ui,sans-serif!important;cursor:pointer!important;transition:background .15s ease,transform .15s ease!important;
+}
+html body #app .lc-v44-submit:hover:not(:disabled){background:#0e4962!important;transform:translateY(-1px)!important}
+html body #app .lc-v44-submit:active:not(:disabled){transform:none!important}
+html body #app .lc-v44-submit:disabled{opacity:.56!important;cursor:not-allowed!important}
+html body #app .lc-v44-session-note{margin:0!important;font:450 10.25px/1.45 'DM Sans',system-ui,sans-serif!important;color:#9aa6ae!important}
+html body #app .lc-v44-login-error{margin:0 0 18px!important;border-radius:9px!important;box-shadow:none!important}
+html body #app .lc-v44-access-foot{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;color:#97a3ab!important;font:520 9.75px/1.35 'DM Sans',system-ui,sans-serif!important}
+html body #app .lc-v44-lock{display:inline-flex!important;align-items:center!important;gap:7px!important}
+html body #app .lc-v44-lock svg{color:#7894a0!important}
 
-@media (max-width:760px) {
-  html body #app .askbar-context-bar { padding:8px 13px !important; }
-  html body #app .askbar-context-title { max-width:48vw !important; }
-  html body #app .askbar-context-live { display:none !important; }
-  html body #app .askbar-metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
-  html body #app .askbar-metric:nth-child(2) { border-right:0 !important; }
-  html body #app .askbar-metric:nth-child(-n+2) { border-bottom:1px solid #e8edef !important; }
+@media(max-width:1080px){
+  html body #app .login-container--v44{grid-template-columns:minmax(0,1fr) minmax(410px,45vw)!important}
+  html body #app .lc-v44-story{padding-left:52px!important;padding-right:44px!important}
+  html body #app .lc-v44-title{font-size:58px!important}
+  html body #app .lc-v44-product-kicker{display:none!important}
+}
+@media(max-width:840px){
+  html body #app .login-container--v44{display:block!important;background:#f8faf9!important;overflow:auto!important}
+  html body #app .lc-v44-story{display:none!important}
+  html body #app .lc-v44-atmosphere{display:none!important}
+  html body #app .lc-v44-access{min-height:100dvh!important;border-left:0!important;padding:30px 28px 24px!important}
+  html body #app .lc-v44-access-inner{max-width:430px!important}
+  html body #app .lc-v44-access-brand{margin-bottom:76px!important}
+  html body #app .lc-v44-access::before{content:'neumAC · Área Sanitaria de A Coruña y Cee'!important;position:absolute!important;top:25px!important;right:28px!important;font:600 8.7px/1.25 'DM Sans',system-ui,sans-serif!important;letter-spacing:.045em!important;color:#93a1aa!important;text-transform:none!important}
+}
+@media(max-width:520px){
+  html body #app .lc-v44-access{padding:25px 20px 20px!important}
+  html body #app .lc-v44-access::before{right:20px!important;font-size:8px!important}
+  html body #app .lc-v44-access-brand{margin-bottom:59px!important}
+  html body #app .lc-v44-signin-head h2{font-size:32px!important}
+  html body #app .lc-v44-session-row{align-items:flex-start!important;flex-direction:column!important;gap:9px!important}
+  html body #app .lc-v44-access-foot{align-items:flex-start!important;flex-direction:column!important;gap:6px!important}
 }
