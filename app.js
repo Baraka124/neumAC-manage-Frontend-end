@@ -15507,7 +15507,7 @@ document.addEventListener('DOMContentLoaded', () => {
     app.config.errorHandler = (err, instance, info) => {
       console.error('[neumDesk render error]', err, info)
       const viewName = instance?.setupState?.currentView?.value
-      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)   
+      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info) 
     }
 
     app.mount('#app')
