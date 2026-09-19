@@ -1804,8 +1804,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function useAuth() {
       const currentUser = ref(null)
       const loginForm = reactive({ email: '', password: '', remember_me: false })
-      const devBannerHidden = ref(false)
-        const loginLoading = ref(false)
+      const loginLoading = ref(false)
 
       // hasPermission reads from the explicit permissions array returned by the backend
       // at login and /api/auth/me — no static matrix, no role inference.
@@ -7081,6 +7080,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const ui = useUI()
         const { showToast, showConfirmation, currentView, userMenuOpen, userProfileModal } = ui
 
+        // One-time internal-workspace orientation note. This replaces the persistent
+        // Beta banner: it communicates the Public/Internal boundary once, then gets
+        // out of the working surface permanently for that user/browser.
+        const previewIntro = reactive({ show: false, storageKey: '' })
+        const previewIntroKey = (user) => `neumdesk_workspace_intro_v41_${user?.id || user?.email || 'user'}`
+        const maybeShowPreviewIntro = (user) => {
+          if (!user) return
+          const key = previewIntroKey(user)
+          previewIntro.storageKey = key
+          try { previewIntro.show = localStorage.getItem(key) !== 'seen' } catch (e) { previewIntro.show = true }
+        }
+        const dismissPreviewIntro = () => {
+          previewIntro.show = false
+          try { if (previewIntro.storageKey) localStorage.setItem(previewIntro.storageKey, 'seen') } catch (e) {}
+        }
+
         const { sortState, sortBy, sortIcon, applySort } = makeSort({
           medical_staff: { field: 'full_name', dir: 'asc' },
           rotations: { field: 'start_date', dir: 'desc' },
@@ -8138,6 +8153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         const newsLensInitials = (name='') => name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase() || 'R'
         const newsLensOrdinal = (g) => { const m=String(g?.label||'').match(/L\s*(\d+)/i); return m ? `L${m[1]}` : 'R&I' }
+        const newsLensDisplayLabel = (g) => String(g?.label || '').replace(/^\s*L\s*\d+\s*[—–-]\s*/i, '').trim() || String(g?.label || '')
         const newsLensBreakdownLabel = (g) => {
           const b=g?.breakdown||{}
           const labels={publication:['publication','publications'],article:['article','articles'],highlight:['highlight','highlights'],update:['update','updates']}
@@ -8538,8 +8554,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const openGroundedForNews = (post) => {
           if (!post) return
+          const sameContext = askBar.context?.type === 'research_record' && String(askBar.context.id) === String(post.id)
           const related = (newsPosts.value||[]).filter(x => x.id!==post.id && ((post.research_line_id && String(x.research_line_id)===String(post.research_line_id)) || (post.author_id && String(x.author_id)===String(post.author_id))))
           openAskBar()
+          // Opening Grounded from a different Library object starts a clean contextual
+          // thread. Re-opening it from the same object preserves the conversation.
+          if (!sameContext) { askBar.turns = []; askBar.query = '' }
           askBar.subject = { type:'research_record', id:post.id, name:post.title, postType:post.post_type, researchLineId:post.research_line_id||null, authorId:post.author_id||null, visibility:post.is_public?'Public':'Internal', status:post.status, relatedIds:related.slice(0,12).map(x=>x.id) }
           // Carry the scholarly metadata with the active object so follow-ups such as
           // “same author”, “same line”, “what is the DOI?” and “anything else in 2026?”
@@ -8554,6 +8574,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           askBar.view = 'conversation'
           askBar.query = ''
+          Vue.nextTick(() => document.querySelector('.askbar-input input')?.focus())
         }
         const openResearchLineLibrary = (lineId) => {
           if (!lineId) return
@@ -9022,6 +9043,7 @@ document.addEventListener('DOMContentLoaded', () => {
           try {
             const response = await API.login(loginForm.email, loginForm.password)
             currentUser.value = response.user; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
+            maybeShowPreviewIntro(response.user)
             showToast('Success', `Welcome, ${response.user.full_name}!`, 'success')
             // FIX: set currentView BEFORE loadAllData — currentUser already triggers the
             // app-layout (v-else on !currentUser), so leaving currentView at 'login' here
@@ -10193,6 +10215,7 @@ document.addEventListener('DOMContentLoaded', () => {
               API.request('/api/auth/me').then(data => {
                 if (data && data.id) {
                   currentUser.value = { ...parsed, ...data }
+                  maybeShowPreviewIntro(currentUser.value)
                   loadAllData()
                   loadBrain()  // department-curated agent knowledge (Supabase-backed)
                 } else {
@@ -11288,7 +11311,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (askBar.view === 'teach') loadBrain()
       }
       const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.subject = null; askBar.view = (askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation' }
-      const runSuggestion = (s) => { askBar.query = s.t; askBarResolve(s.intent) }
+      const runSuggestion = (s) => {
+        if (!s) return
+        // Contextual suggestions (Research Library object, staff follow-up, etc.)
+        // must preserve their action metadata rather than being flattened into an
+        // undefined generic intent. This was the reason V40 repeatedly answered
+        // “I don't have a grounded answer” to its own suggested Research questions.
+        if (s.followupKind) { askBarRunFollowup({ ...s, label: s.t || s.label }); return }
+        askBar.query = s.t || s.q || ''
+        askBarResolve(s.intent)
+      }
       const askBarSnooze = (alert) => {
         if (alert._key && !askBar.snoozed.includes(alert._key)) askBar.snoozed.push(alert._key)
       }
@@ -13218,6 +13250,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const taughtIntent = askBarMatchTaught(asked)
             if (taughtIntent) intent = taughtIntent
           }
+          // Research Library object context: short natural follow-ups should work
+          // whether they were typed or clicked. Keep this deterministic and tied to
+          // the active Research Library record.
+          if (!followup && !intent && askBar.context?.type === 'research_record') {
+            let action = null
+            if (/\b(show|find|open)?\s*(related|connected)\s+(output|records?|work)\b|\bwhat else is connected\b/i.test(q)) action = 'connections'
+            else if (/\b(which|what)\s+research\s+line\b|\bthis research line\b/i.test(q)) action = 'line'
+            else if (/\bwho is connected\b|\bwho is linked\b|\blinked contributor\b/i.test(q)) action = 'author'
+            else if (/\bis this public\b|\bpublic or internal\b|\bvisibility\b/i.test(q)) action = 'visibility'
+            else if (askBar.context.postType === 'publication' && /\b(publication|paper) details\b/i.test(q)) action = 'profile'
+            if (action) followup = { kind:'research_record_context', id:askBar.context.id, name:askBar.context.name, action, q:asked }
+          }
+
           // 1b. A specific staff attribute question ("does X have a phd?", "X's certificates")
           //     → resolve as a deep person-attribute query, before generic intents.
           if (!followup && !intent) {
@@ -13559,7 +13604,8 @@ document.addEventListener('DOMContentLoaded', () => {
           else if(fu.action==='author') text=author ? `${author} is the linked internal contributor for ${p.title}.` : `No internal contributor is linked to ${p.title}.`
           else if(fu.action==='visibility') text=p.is_public ? `${p.title} is Public. It is reflected in the public view on the web.` : `${p.title} is Internal. It is not reflected in the public web view.`
           else text=`${p.title} is a ${p.post_type} in the Research Library.`
-          return { text, chips:related.slice(0,4).map(x=>({label:x.title,id:x.id})), actions:[], sources:['Research Library'], followups:[], confidence:'high' }
+          const visual = fu.action==='connections' && related.length ? { type:'reslist', items:related.slice(0,6).map(x=>({ title:x.title || 'Untitled record', meta:`${_toTitle(x.post_type || 'record')}${newsOps.getLineName(x.research_line_id) ? ' · ' + newsOps.getLineName(x.research_line_id) : ''}`, badge:x.is_public ? 'Public' : 'Internal', tone:x.is_public ? 'ok' : 'default' })) } : null
+          return { text, visual, chips:[], actions:[], sources:['Research Library'], followups:[], confidence:'high' }
         }
         if (fu.kind === 'staff_summary' || fu.kind === 'staff_attr') {
           const s = (medicalStaff.value || []).find(x => x.id === fu.id)
@@ -15048,11 +15094,14 @@ document.addEventListener('DOMContentLoaded', () => {
           } else if (/(history|last (week|month|year)|previous|past|used to|before)/.test(uq)) {
             text = "I answer from current records — I don't have historical snapshots to look back through yet."
           } else {
-            text = "I'm not sure how to answer that yet. Try one of these — or rephrase:"
+            text = "I don't have a grounded answer for that yet. Try one of the contextual questions below, or rephrase with the person, unit, study, project or Research Library record you mean."
             // #19 Teach-from-usage: record what we couldn't answer so an admin can teach it.
             try { brainLogFailed(askBar.lastAsked || askBar.query || '') } catch (e) {}
-            // Offer tappable, relevant starting points instead of a wall of text.
-            const fu = (askBarSuggestions.value || []).slice(0, 4).map(s => ({ label: s.t, intent: s.intent, q: s.q }))
+            // Preserve the FULL contextual follow-up metadata. V40 collapsed these
+            // suggestions to label/intent/q, which made Research Library chips such as
+            // “Show related output” lose their research_record_context action and fall
+            // straight back into the unknown-answer path.
+            const fu = (askBarSuggestions.value || []).slice(0, 4).map(s => ({ ...s, label: s.t || s.label }))
             return { text, chips: [], actions: [], sources: [], followups: fu, confidence: 'low' }
           }
           return { text, chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
@@ -15272,6 +15321,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
           // Existing returns
           loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, isAdmin,
+          previewIntro, dismissPreviewIntro,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
           ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
@@ -15375,7 +15425,7 @@ document.addEventListener('DOMContentLoaded', () => {
           publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
           newsLibraryHeaderOpen, newsLibraryFiltersOpen, newsReturnFocusId,
-          newsLensMode, setNewsLensMode, newsLensGroups, applyNewsLensGroup, newsDisplayPosts, newsShowRecordList, newsShownLabel, toggleNewsLibraryHeader, newsReviewQueue, newsReviewReadiness, newsReviewStage, newsLensInitials, newsLensOrdinal, newsLensBreakdownLabel,
+          newsLensMode, setNewsLensMode, newsLensGroups, applyNewsLensGroup, newsDisplayPosts, newsShowRecordList, newsShownLabel, toggleNewsLibraryHeader, newsReviewQueue, newsReviewReadiness, newsReviewStage, newsLensInitials, newsLensOrdinal, newsLensDisplayLabel, newsLensBreakdownLabel,
           newsSavedIds, newsFollowedLines, newsResearchSets, newsActiveSetId, newsIsSaved, newsIsFollowingLine, toggleNewsFollowLine, toggleNewsSaved, newsSetComposer, openNewsSetComposer, saveNewsSet, deleteNewsSet, applyNewsSet,
           newsCommand, newsCommandResults, openNewsCommand, closeNewsCommand, runNewsCommand,
           newsActionMenu, openNewsActionMenu, closeNewsActionMenu, newsVisualSide, newsLibraryContextLabel,
