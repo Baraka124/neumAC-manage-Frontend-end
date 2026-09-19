@@ -5621,7 +5621,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const clinicalTrialModal = reactive({ show: false, mode: 'add', form: {
         protocol_id: '', title: '', research_line_id: '',
-        phase: 'Phase III', status: 'Reclutando',
+        phase: '', status: 'Reclutando',
         description: '', inclusion_criteria: '', exclusion_criteria: '',
         principal_investigator_id: '', co_investigators: [], sub_investigators: [],
         contact_email: '', featured_in_website: true, display_order: 0,
@@ -5636,11 +5636,13 @@ document.addEventListener('DOMContentLoaded', () => {
         scope_type: 'specific', scope_note: '',
         is_multicentre: false, participating_centres: null,
         population_type: 'adult',
+        // V33 UI-ready institutional relationship fields. Intentionally not persisted yet.
+        research_origin: '', delivery_model: '', institutional_role: '',
         // Team fields
         data_manager_id: '',
         team_roles: {},        // { staffId: 'Co-PI', staffId2: 'Research Nurse' }
         external_team: [],     // [{ name, institution, role, email }]
-        _diseaseInput: '',
+        _diseaseInput: '', _milestoneLabel: '', _milestoneDate: '',
         _extMemberDraft: { name: '', institution: '', role: '', email: '' },
       }})
 
@@ -5660,6 +5662,8 @@ document.addEventListener('DOMContentLoaded', () => {
         scope_finalized: false, target_diseases: [],
         scope_type: 'specific', scope_note: '',
         regulatory_pathway: 'none', population_type: 'adult',
+        // V33 UI-ready institutional relationship fields. Intentionally not persisted yet.
+        research_origin: '', delivery_model: '', institutional_role: '',
         team_roles: {}, external_team: [],
         // New fields
         project_nature: 'clinical_innovation',  // 'clinical_study' | 'clinical_innovation' | 'hybrid'
@@ -5667,7 +5671,7 @@ document.addEventListener('DOMContentLoaded', () => {
         repo_url:       '',   // GitHub repository
         demo_url:       '',   // Live demo / deployed domain
         is_featured:    false,
-        _diseaseInput: '',
+        _diseaseInput: '', _milestoneLabel: '', _milestoneDate: '',
         _extMemberDraft: { name: '', institution: '', role: '', email: '' },
       }})
 
@@ -5721,7 +5725,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (trialFilters.line) f = f.filter(t => t.research_line_id === trialFilters.line)
         if (trialFilters.phase) f = f.filter(t => t.phase === trialFilters.phase)
         if (trialFilters.status) f = f.filter(t => trialStatusKey(t) === trialFilters.status)
-        if (trialFilters.search) { const q = trialFilters.search.toLowerCase(); f = f.filter(t => t.protocol_id?.toLowerCase().includes(q) || t.title?.toLowerCase().includes(q)) }
+        if (trialFilters.search) { const q = trialFilters.search.toLowerCase(); f = f.filter(t => [t.protocol_id,t.title,t.sponsor_name,t.study_type,(t.target_diseases||[]).join(' '),getResearchLineName(t.research_line_id)].filter(Boolean).join(' ').toLowerCase().includes(q)) }
         return applySort(f, 'trials')
       })
       const filteredTrials = computed(() => paginate(filteredTrialsAll.value, 'trials'))
@@ -5733,7 +5737,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (projectFilters.category) f = f.filter(p => p.category === projectFilters.category)
         if (projectFilters.stage) f = f.filter(p => (p.current_stage || p.development_stage) === projectFilters.stage)
         if (projectFilters.funding_status) f = f.filter(p => (p.funding_status || 'not_applicable') === projectFilters.funding_status)
-        if (projectFilters.search) { const q = projectFilters.search.toLowerCase(); f = f.filter(p => p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q) || (Array.isArray(p.keywords) && p.keywords.some(k => k.toLowerCase().includes(q)))) }
+        if (projectFilters.search) { const q = projectFilters.search.toLowerCase(); f = f.filter(p => [p.title,p.description,p.clinical_rationale,p.partner_name,(p.partner_needs||[]).join(' '),(p.target_diseases||[]).join(' '),(p.keywords||[]).join(' '),getResearchLineName(p.research_line_id)].filter(Boolean).join(' ').toLowerCase().includes(q)) }
         return applySort(f, 'projects')
       })
       const filteredProjects = computed(() => paginate(filteredProjectsAll.value, 'projects'))
@@ -5866,8 +5870,39 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const showAddResearchLineModal = () => { clearAll('research'); researchLineModal.mode = 'add'; Object.assign(researchLineModal.form, { line_number: researchLines.value.length + 1, name: '', description: '', capabilities: '', sort_order: researchLines.value.length + 1, active: true, keywords: [], keywordsInput: '' }); researchLineModal.show = true }
-      const showAddTrialModal = (line = null) => { clinicalTrialModal.mode = 'add'; Object.assign(clinicalTrialModal.form, { protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '', phase: 'Phase III', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '', principal_investigator_id: '', co_investigators: [], sub_investigators: [], contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1, start_date: '', end_date: '', additional_line_ids: [] }); clinicalTrialModal.show = true }
-      const showAddProjectModal = (line = null) => { innovationProjectModal.mode = 'add'; Object.assign(innovationProjectModal.form, { title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '', research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [], partner_found: false, partner_name: '', funding_status: 'not_applicable', keywords: [], keywordsInput: '', featured_in_website: true, is_featured: false, display_order: innovationProjects.value.length + 1, additional_line_ids: [] }); innovationProjectModal.show = true }
+      const showAddTrialModal = (line = null) => {
+        clinicalTrialModal.mode = 'add'
+        Object.assign(clinicalTrialModal.form, {
+          protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '',
+          phase: '', status: 'Reclutando', description: '', inclusion_criteria: '', exclusion_criteria: '',
+          principal_investigator_id: '', co_investigators: [], sub_investigators: [], data_manager_id: '',
+          contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1,
+          start_date: '', end_date: '', estimated_end_date: '', actual_end_date: '', sponsor_name: '', sponsor_type: '',
+          study_type: 'Observational', enrollment_target: null, actual_enrollment: null, funding_amount: null,
+          tags: [], milestones: [], additional_line_ids: [], protocol_finalized: false, ethics_status: null,
+          funding_status: 'not_applicable', target_diseases: [], scope_type: 'specific', scope_note: '',
+          is_multicentre: false, participating_centres: null, population_type: 'adult', team_roles: {}, external_team: [],
+          research_origin: '', delivery_model: '', institutional_role: '', _diseaseInput: '', _milestoneLabel: '', _milestoneDate: '',
+          _extMemberDraft: { name: '', institution: '', role: '', email: '' }
+        })
+        clinicalTrialModal.show = true
+      }
+      const showAddProjectModal = (line = null) => {
+        innovationProjectModal.mode = 'add'
+        Object.assign(innovationProjectModal.form, {
+          title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '',
+          research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [],
+          partner_found: false, partner_name: '', funding_status: 'not_applicable', funding_source: '', budget: null,
+          trl_level: null, ip_status: '', keywords: [], keywordsInput: '', tags: [], milestones: [], additional_line_ids: [],
+          featured_in_website: true, is_featured: false, display_order: innovationProjects.value.length + 1,
+          start_date: '', estimated_end_date: '', scope_finalized: false, target_diseases: [], scope_type: 'specific',
+          scope_note: '', regulatory_pathway: 'none', population_type: 'adult', team_roles: {}, external_team: [],
+          project_nature: 'clinical_innovation', project_url: '', repo_url: '', demo_url: '',
+          research_origin: '', delivery_model: '', institutional_role: '', _diseaseInput: '', _milestoneLabel: '', _milestoneDate: '',
+          _extMemberDraft: { name: '', institution: '', role: '', email: '' }
+        })
+        innovationProjectModal.show = true
+      }
 
       const openAssignCoordinatorModal = (line) => { assignCoordinatorModal.lineId = line.id; assignCoordinatorModal.lineName = line.research_line_name || line.name; assignCoordinatorModal.selectedCoordinatorId = line.coordinator_id || ''; assignCoordinatorModal.show = true }
       const editResearchLine = (l) => { researchLineModal.mode = 'edit'; researchLineModal.form = { ...l, research_line_name: l.research_line_name || l.name || '', keywordsInput: Array.isArray(l.keywords) ? l.keywords.join(', ') : (l.keywordsInput || '') }; researchLineModal.show = true }
@@ -5886,11 +5921,15 @@ document.addEventListener('DOMContentLoaded', () => {
           // re-initialising them the template dereferences undefined and the whole modal
           // throws on every render. Always provide them in edit mode too.
           _extMemberDraft: { name: '', institution: '', role: '', email: '' },
-          _diseaseInput: t._diseaseInput || ''
+          _diseaseInput: t._diseaseInput || '',
+          _milestoneLabel: '', _milestoneDate: '',
+          research_origin: t.research_origin || '',
+          delivery_model: t.delivery_model || '',
+          institutional_role: t.institutional_role || ''
         }
         clinicalTrialModal.show = true
       }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' } }; innovationProjectModal.show = true }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '' }; innovationProjectModal.show = true }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.study = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
@@ -5933,6 +5972,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (payload.end_date) payload.estimated_end_date = payload.end_date
           delete payload.co_investigator_id // legacy field
           delete payload.sub_investigator_id // legacy field
+          // V33 backend boundary: relationship controls are UI-ready but not part of the current API schema.
+          delete payload.research_origin
+          delete payload.delivery_model
+          delete payload.institutional_role
+          delete payload._diseaseInput
+          delete payload._milestoneLabel
+          delete payload._milestoneDate
+          delete payload._extMemberDraft
           if (clinicalTrialModal.mode === 'add') { clinicalTrials.value.unshift(await API.createClinicalTrial(payload)); showToast('Success', 'Clinical study created', 'success') }
           else { const result = await API.updateClinicalTrial(payload.id, payload); const idx = clinicalTrials.value.findIndex(t => t.id === result.id); if (idx !== -1) clinicalTrials.value[idx] = result; showToast('Success', 'Clinical study updated', 'success') }
           clinicalTrialModal.show = false; await loadClinicalTrials(); loadAnalyticsSummary()
@@ -5949,6 +5996,14 @@ document.addEventListener('DOMContentLoaded', () => {
           // Parse keywords from comma-separated string into array
           payload.keywords = f.keywordsInput ? f.keywordsInput.split(',').map(k => k.trim()).filter(Boolean) : (Array.isArray(f.keywords) ? f.keywords : [])
           delete payload.keywordsInput
+          // V33 backend boundary: relationship controls are UI-ready but not part of the current API schema.
+          delete payload.research_origin
+          delete payload.delivery_model
+          delete payload.institutional_role
+          delete payload._diseaseInput
+          delete payload._milestoneLabel
+          delete payload._milestoneDate
+          delete payload._extMemberDraft
           // m3 FIX: removed legacy co_leads/tags mirroring — backend B6 whitelist
           // no longer passes these through to Supabase, so mirroring was silently dropped anyway.
           // co_investigators and keywords are sent directly under their correct column names.
@@ -6228,7 +6283,7 @@ document.addEventListener('DOMContentLoaded', () => {
           _imageInput: ''  // local draft input
         }
       })
-      const newsFilters    = reactive({ type: '', status: '', search: '', scope: '' })
+      const newsFilters    = reactive({ type: '', status: '', search: '', scope: '', line: '', author: '', year: '' })
       const debouncedNewsSearch = ref('')
       watch(() => newsFilters.search, Utils.debounce(v => { debouncedNewsSearch.value = v }, 250))
       const newsWordCount  = computed(() => {
@@ -6246,7 +6301,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `Dr. ${last}`
       }
       const getLineName = (lineId) => {
-        const l = (researchLines.value || []).find(r => r.id === lineId)
+        const l = (researchLines.value || []).find(r => String(r.id) === String(lineId))
         return l ? `L${l.line_number} — ${l.short_name || l.research_line_name || l.name}` : '—'
       }
       const autoExpiry = (type) => {
@@ -6314,6 +6369,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (newsFilters.status) posts = posts.filter(p => p.status === newsFilters.status)
         if (newsFilters.scope === 'public')   posts = posts.filter(p => p.is_public)
         if (newsFilters.scope === 'internal') posts = posts.filter(p => !p.is_public)
+        if (newsFilters.line)   posts = posts.filter(p => String(p.research_line_id || '') === String(newsFilters.line))
+        if (newsFilters.author) posts = posts.filter(p => String(p.author_id || '') === String(newsFilters.author))
+        if (newsFilters.year)   posts = posts.filter(p => String((p.published_at || p.created_at || '').slice(0,4)) === String(newsFilters.year))
         if (debouncedNewsSearch.value) {
           const q = debouncedNewsSearch.value.toLowerCase()
           posts = posts.filter(p =>
@@ -7140,6 +7198,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
 
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
+        // V31 — programme-level Research navigation. Kept outside useResearch so
+        // the existing CRUD/data composable remains untouched.
+        const lineTab = ref('overview')
 
         // ══════════════════════════════════════════════════════════════════
         // §1 CANONICAL KNOWLEDGE MODEL — adopted (inlined, reads live arrays)
@@ -7432,6 +7493,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const newsOps = useNews({ showToast, showConfirmation, medicalStaff, allStaffLookup, researchLines: researchOps.researchLines })
 
+        // ══════════════════════════════════════════════════════════════════
+        // V31 · RESEARCH PORTFOLIO INTELLIGENCE
+        // View-model only. Uses fields already present in the existing research
+        // endpoints and Research Library. No schema/API mutations are introduced.
+        // ══════════════════════════════════════════════════════════════════
+        const researchLineStudies = (lineId) => {
+          if (!lineId) return []
+          const rank = { recruiting:0, active:1, prep:2, other:3, done:4 }
+          return (researchOps.clinicalTrials.value || [])
+            .filter(t => String(t.research_line_id) === String(lineId))
+            .slice()
+            .sort((a,b) => (rank[researchOps.trialStatusKey(a)] ?? 9) - (rank[researchOps.trialStatusKey(b)] ?? 9))
+        }
+        const researchLineProjects = (lineId) => {
+          if (!lineId) return []
+          const stageRank = (p) => {
+            const s = String(p?.current_stage || p?.development_stage || '').toLowerCase()
+            if (/implement|deployment|scale|escal|comercial/.test(s)) return 0
+            if (/valid/.test(s)) return 1
+            if (/pilot|piloto/.test(s)) return 2
+            if (/develop|prototype|prototipo/.test(s)) return 3
+            if (/defin|design/.test(s)) return 4
+            if (/idea|concept/.test(s)) return 5
+            if (/complete|closed|finaliz/.test(s)) return 9
+            return 6
+          }
+          return (researchOps.innovationProjects.value || [])
+            .filter(p => String(p.research_line_id) === String(lineId))
+            .slice().sort((a,b) => stageRank(a)-stageRank(b))
+        }
+        const researchLineOutputs = (lineId) => {
+          if (!lineId) return []
+          return (newsOps.newsPosts.value || [])
+            .filter(p => String(p.research_line_id || '') === String(lineId) && p.status !== 'archived')
+            .slice()
+            .sort((a,b) => new Date(b.published_at || b.created_at || 0) - new Date(a.published_at || a.created_at || 0))
+        }
+        const _isLateInnovationStage = (project) => /valid|implement|deployment|scale|escal|comercial|pilot|piloto/i.test(String(project?.current_stage || project?.development_stage || ''))
+        const _isCompletedInnovation = (project) => /complete|completed|closed|finaliz|conclu/i.test(String(project?.current_stage || project?.development_stage || ''))
+        const studyGovernance = (study) => {
+          const protocolApplicable = study?.protocol_applicable !== false
+          const protocolGap = protocolApplicable && !study?.protocol_finalized
+          const ethics = String(study?.ethics_status || '').toLowerCase()
+          const ethicsGap = !ethics || ethics === 'pending'
+          const piGap = !study?.principal_investigator_id
+          return { protocolApplicable, protocolGap, ethicsGap, piGap, any: protocolGap || ethicsGap || piGap }
+        }
+        const researchLinePortfolio = (line) => {
+          if (!line?.id) return { studies:0,recruiting:0,activeStudies:0,enrolled:0,target:0,enrollmentPct:0,projects:0,lateProjects:0,fundedProjects:0,partnerNeeds:0,outputs:0,publications:0,articles:0,publicOutputs:0,governance:0,protocolGaps:0,ethicsGaps:0,piGaps:0 }
+          const studies = researchLineStudies(line.id)
+          const projects = researchLineProjects(line.id)
+          const outputs = researchLineOutputs(line.id)
+          const target = studies.reduce((n,t)=>n+(Number(t.enrollment_target)||0),0)
+          const enrolled = studies.reduce((n,t)=>n+(Number(t.actual_enrollment)||0),0)
+          const gov = studies.map(studyGovernance)
+          return {
+            studies: studies.length,
+            recruiting: studies.filter(t=>researchOps.trialStatusKey(t)==='recruiting').length,
+            activeStudies: studies.filter(t=>['recruiting','active'].includes(researchOps.trialStatusKey(t))).length,
+            enrolled, target, enrollmentPct: target ? Math.min(100,Math.round((enrolled/target)*100)) : 0,
+            projects: projects.length,
+            lateProjects: projects.filter(_isLateInnovationStage).length,
+            fundedProjects: projects.filter(p=>String(p.funding_status||'').toLowerCase()==='funded').length,
+            partnerNeeds: projects.filter(p=>!p.partner_found && Array.isArray(p.partner_needs) && p.partner_needs.length).length,
+            outputs: outputs.length,
+            publications: outputs.filter(p=>p.post_type==='publication').length,
+            articles: outputs.filter(p=>p.post_type==='article').length,
+            publicOutputs: outputs.filter(p=>p.is_public).length,
+            governance: gov.filter(g=>g.any).length,
+            protocolGaps: gov.filter(g=>g.protocolGap).length,
+            ethicsGaps: gov.filter(g=>g.ethicsGap).length,
+            piGaps: gov.filter(g=>g.piGap).length,
+          }
+        }
+        const researchPortfolioSummary = computed(() => {
+          const lines = researchOps.researchLines.value || []
+          const studies = researchOps.clinicalTrials.value || []
+          const projects = researchOps.innovationProjects.value || []
+          const totalTarget = studies.reduce((n,t)=>n+(Number(t.enrollment_target)||0),0)
+          const totalEnrolled = studies.reduce((n,t)=>n+(Number(t.actual_enrollment)||0),0)
+          return {
+            activeLines: lines.filter(l=>l.active!==false).length,
+            activeStudies: studies.filter(t=>['recruiting','active'].includes(researchOps.trialStatusKey(t))).length,
+            recruitingStudies: studies.filter(t=>researchOps.trialStatusKey(t)==='recruiting').length,
+            totalEnrolled, totalTarget,
+            enrollmentPct: totalTarget ? Math.min(100,Math.round((totalEnrolled/totalTarget)*100)) : 0,
+            activeProjects: projects.filter(p=>!_isCompletedInnovation(p)).length,
+            lateStageProjects: projects.filter(_isLateInnovationStage).length,
+            governanceAttention: studies.filter(t=>studyGovernance(t).any).length,
+          }
+        })
+
         // ── EMERGENCY CALLOUTS (DUTY LOG) ─────────────────────────────
         const callouts        = ref([])
         const calloutsLoading = ref(false)
@@ -7615,7 +7768,161 @@ document.addEventListener('DOMContentLoaded', () => {
         const newsPublishReview = ref(false)
         const newsReadingProgress = ref(0)
         const newsReaderCompact = ref(false)
+        const newsEditorFocusMode = ref(false)
+
+        // V28 — Research Library lenses, personal reading tools and command layer.
+        // Personal saved items/sets are deliberately user-browser scoped; institutional
+        // review/version history is never fabricated client-side.
+        const newsLensMode = ref('browse')
+        const newsCommand = reactive({ show:false, query:'', selected:0 })
+        const newsSetComposer = reactive({ show:false, name:'' })
+        const newsSavedIds = ref([])
+        const newsFollowedLines = ref([])
+        const newsResearchSets = ref([])
+        const newsActiveSetId = ref('')
+        const _newsPersonalKey = (suffix) => {
+          const who = currentUser.value?.id || currentUser.value?.email || 'local'
+          return `neumdesk.researchLibrary.${who}.${suffix}`
+        }
+        const loadNewsPersonalState = () => {
+          try { newsSavedIds.value = JSON.parse(localStorage.getItem(_newsPersonalKey('saved')) || '[]') || [] } catch { newsSavedIds.value = [] }
+          try { newsFollowedLines.value = JSON.parse(localStorage.getItem(_newsPersonalKey('followedLines')) || '[]') || [] } catch { newsFollowedLines.value = [] }
+          try { newsResearchSets.value = JSON.parse(localStorage.getItem(_newsPersonalKey('sets')) || '[]') || [] } catch { newsResearchSets.value = [] }
+        }
+        const saveNewsPersonalState = () => {
+          try { localStorage.setItem(_newsPersonalKey('saved'), JSON.stringify(newsSavedIds.value || [])) } catch {}
+          try { localStorage.setItem(_newsPersonalKey('followedLines'), JSON.stringify(newsFollowedLines.value || [])) } catch {}
+          try { localStorage.setItem(_newsPersonalKey('sets'), JSON.stringify(newsResearchSets.value || [])) } catch {}
+        }
+        watch(() => currentUser.value?.id || currentUser.value?.email, loadNewsPersonalState)
+        loadNewsPersonalState()
+        watch(() => newsCommand.query, () => { newsCommand.selected = 0 })
+        const newsIsSaved = (id) => newsSavedIds.value.includes(id)
+        const newsIsFollowingLine = (id) => newsFollowedLines.value.includes(String(id))
+        const toggleNewsFollowLine = (id) => {
+          if (!id) return
+          const key=String(id)
+          newsFollowedLines.value = newsIsFollowingLine(key) ? newsFollowedLines.value.filter(x=>x!==key) : [...newsFollowedLines.value,key]
+          saveNewsPersonalState()
+        }
+        const toggleNewsSaved = (post) => {
+          if (!post?.id) return
+          newsSavedIds.value = newsIsSaved(post.id) ? newsSavedIds.value.filter(id => id !== post.id) : [...newsSavedIds.value, post.id]
+          saveNewsPersonalState()
+        }
+        const openNewsSetComposer = () => {
+          newsSetComposer.name = `${newsLibraryContextLabel.value} set`
+          newsSetComposer.show = true
+        }
+        const saveNewsSet = () => {
+          const name = (newsSetComposer.name || '').trim()
+          if (!name) return
+          const ids = (newsOps.filteredNews.value || []).map(p => p.id)
+          if (!ids.length) return
+          newsResearchSets.value = [...newsResearchSets.value, { id:`set-${Date.now()}`, name, ids, created_at:new Date().toISOString() }]
+          saveNewsPersonalState()
+          newsSetComposer.show = false
+        }
+        const deleteNewsSet = (id) => { newsResearchSets.value = newsResearchSets.value.filter(s => s.id !== id); saveNewsPersonalState() }
+        const applyNewsSet = (set) => {
+          if (!set) return
+          newsLensMode.value = 'saved'
+          newsActiveSetId.value = set.id
+          newsFilters.type=''; newsFilters.status=''; newsFilters.scope=''; newsFilters.line=''; newsFilters.author=''; newsFilters.year=''; newsFilters.search=''
+        }
+
+        const newsReviewReadiness = (post) => {
+          if (!post) return { score:0, missing:[] }
+          const checks = [ ['title', !!String(post.title||'').trim()], ['research line', !!post.research_line_id] ]
+          if (post.post_type === 'publication') {
+            checks.push(['authors', !!String(post.authors_text||'').trim()])
+            checks.push(['journal/DOI', !!(post.journal_name || post.doi)])
+            checks.push(['publication date', !!(post.published_at || post.created_at)])
+          } else {
+            checks.push(['author', !!post.author_id])
+            checks.push(['content', !!String(post.body||'').trim()])
+            if (post.post_type === 'highlight') checks.push(['visual', !!(post.image_urls?.[0] || post.featured_image_url)])
+          }
+          const ok = checks.filter(c=>c[1]).length
+          return { score:Math.round(ok/checks.length*100), missing:checks.filter(c=>!c[1]).map(c=>c[0]) }
+        }
+        const newsReviewStage = (post) => {
+          if (!post) return { step:1, label:'Draft' }
+          if (post.status === 'published') return { step:4, label:'Published' }
+          const ready = newsReviewReadiness(post).score === 100
+          return ready ? { step:2, label:'Ready for review' } : { step:1, label:'Draft' }
+        }
+        const newsReviewQueue = computed(() => {
+          let rows=(newsPosts.value || []).filter(p=>p.status==='draft')
+          if(newsFilters.type) rows=rows.filter(p=>p.post_type===newsFilters.type)
+          if(newsFilters.scope==='public') rows=rows.filter(p=>p.is_public)
+          if(newsFilters.scope==='internal') rows=rows.filter(p=>!p.is_public)
+          const q=(newsFilters.search||'').trim().toLowerCase()
+          if(q) rows=rows.filter(p=>((p.title||'')+' '+(p.body||'')+' '+newsOps.getLineName(p.research_line_id)).toLowerCase().includes(q))
+          return rows.sort((a,b)=>newsReviewReadiness(b).score-newsReviewReadiness(a).score)
+        })
+
+        const _topicStop = new Set('the and for with from into over under this that these those article update research neumac neumact study studies clinical department new use using used our their your about between through beyond more less how what when where why who has have had was were are is be been being a an of to in on at by as or not can may will would could should'.split(/\s+/))
+        const _newsGroupBreakdown = (rows=[]) => rows.reduce((acc,p)=>{ const k=p.post_type||'other'; acc[k]=(acc[k]||0)+1; return acc }, {})
+        const _newsNewestFirst = (rows=[]) => [...rows].sort((a,b)=>new Date(b.published_at||b.created_at||0)-new Date(a.published_at||a.created_at||0))
+        const newsLensGroups = computed(() => {
+          const posts = newsPosts.value || []
+          if (newsLensMode.value === 'lines') {
+            const m = new Map(); posts.forEach(p=>{ if(!p.research_line_id) return; const k=String(p.research_line_id); const row=m.get(k)||{key:k,label:newsOps.getLineName(p.research_line_id),kind:'line',posts:[]}; row.posts.push(p); m.set(k,row) }); return [...m.values()].map(r=>({...r,posts:_newsNewestFirst(r.posts),count:r.posts.length,breakdown:_newsGroupBreakdown(r.posts)})).sort((a,b)=>b.count-a.count)
+          }
+          if (newsLensMode.value === 'people') {
+            const m = new Map(); posts.forEach(p=>{ if(!p.author_id) return; const k=String(p.author_id); const row=m.get(k)||{key:k,label:newsOps.formatAuthorName(p.author_id),kind:'author',posts:[]}; row.posts.push(p); m.set(k,row) }); return [...m.values()].map(r=>({...r,posts:_newsNewestFirst(r.posts),count:r.posts.length,breakdown:_newsGroupBreakdown(r.posts)})).sort((a,b)=>b.count-a.count)
+          }
+          if (newsLensMode.value === 'years') {
+            const m = new Map(); posts.forEach(p=>{ const y=(p.published_at||p.created_at||'').slice(0,4); if(!y) return; const row=m.get(y)||{key:y,label:y,kind:'year',posts:[]}; row.posts.push(p); m.set(y,row) }); return [...m.values()].map(r=>({...r,posts:_newsNewestFirst(r.posts),count:r.posts.length,breakdown:_newsGroupBreakdown(r.posts)})).sort((a,b)=>String(b.key).localeCompare(String(a.key)))
+          }
+          if (newsLensMode.value === 'topics') {
+            const map = new Map()
+            posts.forEach(p=>{ const words=((p.title||'')+' '+(p.body||'')).toLowerCase().match(/[a-záéíóúñü]{5,}/gi)||[]; new Set(words.filter(w=>!_topicStop.has(w))).forEach(w=>{ const row=map.get(w)||{key:w,label:w.charAt(0).toUpperCase()+w.slice(1),kind:'topic',posts:[]}; row.posts.push(p); map.set(w,row) }) })
+            return [...map.values()].filter(r=>r.posts.length>1).map(r=>({...r,posts:_newsNewestFirst(r.posts),count:r.posts.length,breakdown:_newsGroupBreakdown(r.posts)})).sort((a,b)=>b.count-a.count).slice(0,16)
+          }
+          return []
+        })
+        const newsLensInitials = (name='') => name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase() || 'R'
+        const newsLensOrdinal = (g) => { const m=String(g?.label||'').match(/L\s*(\d+)/i); return m ? `L${m[1]}` : 'R&I' }
+        const newsLensBreakdownLabel = (g) => { const b=g?.breakdown||{}; return [['publication','publications'],['article','articles'],['highlight','highlights'],['update','updates']].filter(([k])=>b[k]).map(([k,l])=>`${b[k]} ${l}`).join(' · ') }
+        const clearNewsStructuredFilters = () => { newsFilters.line=''; newsFilters.author=''; newsFilters.year='' }
+        const setNewsLensMode = (mode) => {
+          const prev = newsLensMode.value
+          newsLensMode.value = mode
+          newsActiveSetId.value = ''
+          clearNewsStructuredFilters()
+          if (mode === 'review') { newsFilters.status='draft'; newsFilters.type=''; newsFilters.scope=''; newsFilters.search='' }
+          else if (mode === 'saved') { newsFilters.status=''; newsFilters.type=''; newsFilters.scope=''; newsFilters.search='' }
+          else if (mode === 'browse') { if (prev === 'review') newsFilters.status=''; newsFilters.scope=''; newsFilters.search='' }
+          else { newsFilters.status=''; newsFilters.scope=''; newsFilters.search='' }
+        }
+        const applyNewsLensGroup = (g) => {
+          if (!g) return
+          clearNewsStructuredFilters(); newsFilters.search=''; newsFilters.status=''; newsFilters.scope=''; newsFilters.type=''
+          if (g.kind==='line') newsFilters.line=g.key
+          else if (g.kind==='author') newsFilters.author=g.key
+          else if (g.kind==='year') newsFilters.year=g.key
+          else if (g.kind==='topic') newsFilters.search=g.key
+        }
+        const newsDisplayPosts = computed(() => {
+          const base = newsOps.filteredNews.value || []
+          if (newsLensMode.value === 'review') return []
+          if (newsLensMode.value === 'saved') {
+            const active = newsResearchSets.value.find(s=>s.id===newsActiveSetId.value)
+            const ids = active ? (active.ids || []) : newsSavedIds.value
+            return base.filter(p=>ids.includes(p.id))
+          }
+          return base
+        })
+
         const newsLibraryContextLabel = computed(() => {
+          if (newsLensMode.value === 'lines') return 'Research lines'
+          if (newsLensMode.value === 'people') return 'Contributors'
+          if (newsLensMode.value === 'years') return 'Chronology'
+          if (newsLensMode.value === 'topics') return 'Topics'
+          if (newsLensMode.value === 'review') return 'Review queue'
+          if (newsLensMode.value === 'saved') return 'My Library'
           const t = newsFilters.type
           return t === 'publication' ? 'Publications' : t === 'article' ? 'Articles' : t === 'highlight' ? 'Highlights' : t === 'update' ? 'Updates' : 'Research Library'
         })
@@ -7672,7 +7979,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const newsDrawer = reactive({
-          show: false, post: null, manageOpen: false, detailsOpen: false, publicPreview: false,
+          show: false, post: null, manageOpen: false, detailsOpen: false, publicPreview: false, connectionMode: '',
           sourceRect: null, returnWindowY: 0, returnContentY: 0
         })
         const newsDrawerPositionStyle = computed(() => {
@@ -7705,6 +8012,7 @@ document.addEventListener('DOMContentLoaded', () => {
           newsDrawer.manageOpen = false
           newsDrawer.detailsOpen = false
           newsDrawer.publicPreview = false
+          newsDrawer.connectionMode = ''
           newsReadingProgress.value = 0
           newsReaderCompact.value = false
           newsDrawer.show = true
@@ -7722,6 +8030,7 @@ document.addEventListener('DOMContentLoaded', () => {
           newsDrawer.manageOpen = false
           newsDrawer.detailsOpen = false
           newsDrawer.publicPreview = false
+          newsDrawer.connectionMode = ''
           newsDrawer.sourceRect = null
           newsReadingProgress.value = 0
           newsReaderCompact.value = false
@@ -7737,13 +8046,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const exploreNewsLine = (lineId) => {
           if (!lineId) return
+          newsLensMode.value = 'lines'
           newsFilters.type = ''
           newsFilters.status = ''
           newsFilters.scope = ''
-          newsFilters.search = newsOps.getLineName(lineId)
+          newsFilters.search = ''
+          newsFilters.author = ''
+          newsFilters.year = ''
+          newsFilters.line = String(lineId)
           closeNewsDrawer()
           newsLibraryHeaderOpen.value = false
           Vue.nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+        }
+        const exploreNewsAuthor = (authorId) => {
+          if (!authorId) return
+          newsLensMode.value='people'; newsFilters.type='';newsFilters.status='';newsFilters.scope='';newsFilters.search='';newsFilters.line='';newsFilters.year='';newsFilters.author=String(authorId)
+          closeNewsDrawer(); newsLibraryHeaderOpen.value=false; Vue.nextTick(()=>window.scrollTo({top:0,behavior:'smooth'}))
+        }
+        const exploreNewsYear = (year) => {
+          if (!year) return
+          newsLensMode.value='years'; newsFilters.type='';newsFilters.status='';newsFilters.scope='';newsFilters.search='';newsFilters.line='';newsFilters.author='';newsFilters.year=String(year)
+          closeNewsDrawer(); newsLibraryHeaderOpen.value=false; Vue.nextTick(()=>window.scrollTo({top:0,behavior:'smooth'}))
         }
 
         const _closeNewsFloatingUI = () => {
@@ -7757,12 +8080,34 @@ document.addEventListener('DOMContentLoaded', () => {
           if (y > 120) newsLibraryHeaderOpen.value = false
           else if (y < 22) newsLibraryHeaderOpen.value = true
         }
-        const _newsKeyboard = (e) => {
-          if (currentView.value !== 'news' || newsModal.show || newsDrawer.show) return
-          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-            e.preventDefault()
-            focusNewsSearch()
+        const openNewsCommand = () => { newsCommand.show=true; newsCommand.query=''; newsCommand.selected=0; Vue.nextTick(()=>document.querySelector('.news-v28-command input')?.focus()) }
+        const closeNewsCommand = () => { newsCommand.show=false; newsCommand.query=''; newsCommand.selected=0 }
+        const newsCommandResults = computed(() => {
+          const q=(newsCommand.query||'').trim().toLowerCase()
+          const items=[]
+          const add=(id,label,meta,run)=>items.push({id,label,meta,run})
+          if (hasPermission('news_posts','create')) {
+            add('new-publication','New publication','Create scholarly record',()=>{closeNewsCommand(); showAddNewsModal(); Vue.nextTick(()=>chooseNewsType('publication'))})
+            add('new-article','New article','Create clinical/research article',()=>{closeNewsCommand(); showAddNewsModal(); Vue.nextTick(()=>chooseNewsType('article'))})
           }
+          add('drafts','Drafts awaiting review',`${newsReviewQueue.value.length} draft${newsReviewQueue.value.length===1?'':'s'}`,()=>{closeNewsCommand();setNewsLensMode('review')})
+          add('public','Public records','Reflected in the public web view',()=>{closeNewsCommand();setNewsLensMode('browse');newsFilters.scope='public'})
+          add('saved','My Library',`${newsSavedIds.value.length} saved`,()=>{closeNewsCommand();setNewsLensMode('saved')})
+          add('lines','Browse by research line','Institutional research lens',()=>{closeNewsCommand();setNewsLensMode('lines')})
+          ;(researchLines.value||[]).slice(0,12).forEach(l=>add(`line-${l.id}`,`L${l.line_number} · ${l.short_name||l.research_line_name||l.name}`,'Research line',()=>{closeNewsCommand();setNewsLensMode('lines');applyNewsLensGroup({kind:'line',key:String(l.id)})}))
+          ;(newsPosts.value||[]).slice(0,80).forEach(p=>add(`record-${p.id}`,p.title,p.post_type,()=>{closeNewsCommand();openNewsDrawer(p,null)}))
+          const filtered = q ? items.filter(i=>(i.label+' '+i.meta).toLowerCase().includes(q)) : items
+          return filtered.slice(0,14)
+        })
+        const runNewsCommand = (item) => { if(item?.run) item.run() }
+        const _newsKeyboard = (e) => {
+          if (currentView.value !== 'news') return
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!newsModal.show && !newsDrawer.show) openNewsCommand(); return }
+          if (!newsCommand.show) return
+          if (e.key==='Escape') { e.preventDefault(); closeNewsCommand(); return }
+          if (e.key==='ArrowDown') { e.preventDefault(); newsCommand.selected=Math.min(newsCommandResults.value.length-1,newsCommand.selected+1); return }
+          if (e.key==='ArrowUp') { e.preventDefault(); newsCommand.selected=Math.max(0,newsCommand.selected-1); return }
+          if (e.key==='Enter') { e.preventDefault(); runNewsCommand(newsCommandResults.value[newsCommand.selected]); return }
         }
         onMounted(() => {
           window.addEventListener('resize', _closeNewsFloatingUI)
@@ -7786,19 +8131,88 @@ document.addEventListener('DOMContentLoaded', () => {
           const idx = list.findIndex(p => p.id === newsDrawer.post.id)
           return idx < list.length - 1 ? list[idx + 1] : null
         })
-        const newsDrawerBodyParagraphs = computed(() => {
-          const body = newsDrawer.post?.body
-          if (!body) return []
-          const chunks = body.split(/\n{2,}/).map(s => s.trim()).filter(Boolean)
-          if (chunks.length <= 1) {
-            const sentences = body.match(/[^.!?]+[.!?]+/g) || [body]
-            const paras = []
-            for (let i = 0; i < sentences.length; i += 3)
-              paras.push(sentences.slice(i, i + 3).join(' ').trim())
-            return paras
-          }
-          return chunks
+        const parseResearchBody = (body='') => {
+          const chunks=String(body||'').split(/\n{2,}/).map(v=>v.trim()).filter(Boolean)
+          return chunks.map(text => {
+            let m=text.match(/^##\s+(.+)$/); if(m) return {type:'heading',text:m[1].trim()}
+            m=text.match(/^Key finding\s*[—:-]\s*([\s\S]+)$/i); if(m) return {type:'key_finding',text:m[1].trim()}
+            m=text.match(/^Clinical implication\s*[—:-]\s*([\s\S]+)$/i); if(m) return {type:'clinical_implication',text:m[1].trim()}
+            m=text.match(/^Key number\s+([^—:-]+)\s*[—:-]\s*([\s\S]+)$/i); if(m) return {type:'key_number',number:m[1].trim(),text:m[2].trim()}
+            m=text.match(/^Related publication\s*[—:-]\s*([\s\S]+)$/i); if(m) return {type:'related_publication',text:m[1].trim()}
+            m=text.match(/^Quote\s*[—:-]\s*([\s\S]+)$/i); if(m) return {type:'quote',text:m[1].trim()}
+            return {type:'paragraph',text}
+          })
+        }
+        const newsPlainBody = (body='') => String(body||'')
+          .replace(/^(Key finding|Clinical implication|Related publication|Quote)\s*[—:-]\s*/gim,'')
+          .replace(/^Key number\s+([^—:-]+)\s*[—:-]\s*/gim,'$1 — ')
+          .replace(/\s+/g,' ').trim()
+        const newsDrawerSegments = computed(() => parseResearchBody(newsDrawer.post?.body || ''))
+        const newsDrawerBodyParagraphs = computed(() => newsDrawerSegments.value.filter(x=>x.type==='paragraph').map(x=>x.text))
+        const newsEditorPreviewSegments = computed(() => parseResearchBody(newsModal.form.body || ''))
+        const newsEditorOutline = computed(() => {
+          const body=String(newsModal.form.body||'')
+          const out=[]; const re=/^##\s+(.+)$/gm; let m; let order=1
+          while((m=re.exec(body))) out.push({ label:m[1].trim(), index:m.index, order:order++ })
+          return out
         })
+        const newsJumpToOutline = (item) => {
+          if (!item) return
+          Vue.nextTick(()=>{ const el=document.querySelector('.news-v27-writing-area'); if(!el)return; el.focus(); const pos=Math.max(0,Number(item.index)||0); el.setSelectionRange(pos,pos); const ratio=pos/Math.max(1,el.value.length); el.scrollTop=Math.max(0,(el.scrollHeight-el.clientHeight)*ratio-40) })
+        }
+        const newsInsertEvidence = (kind) => {
+          const templates={
+            heading:'## Section heading',
+            key_finding:'Key finding — State the principal finding and why it matters.',
+            clinical_implication:'Clinical implication — Explain the clinical relevance or consequence.',
+            key_number:'Key number 00% — Describe what this number represents.',
+            related_publication:'Related publication — Add the related publication or evidence source.',
+            quote:'Quote — Add a short attributed quotation or statement.'
+          }
+          const block=templates[kind]; if(!block) return
+          const body=String(newsModal.form.body||'').trimEnd(); newsModal.form.body=(body?body+'\n\n':'')+block+'\n\n'
+          Vue.nextTick(()=>{const el=document.querySelector('.news-v27-writing-area'); if(el){el.focus(); el.selectionStart=el.selectionEnd=el.value.length}})
+        }
+        const newsDrawerConnections = computed(() => {
+          const p=newsDrawer.post; if(!p) return {line:[],author:[],year:[],total:0}
+          const all=(newsPosts.value||[]).filter(x=>x.id!==p.id)
+          const y=(p.published_at||p.created_at||'').slice(0,4)
+          const line=p.research_line_id?all.filter(x=>String(x.research_line_id)===String(p.research_line_id)):[]
+          const author=p.author_id?all.filter(x=>String(x.author_id)===String(p.author_id)):[]
+          const year=y?all.filter(x=>String((x.published_at||x.created_at||'').slice(0,4))===String(y)):[]
+          return {line,author,year,total:new Set([...line,...author,...year].map(x=>x.id)).size}
+        })
+        const newsActiveConnections = computed(() => {
+          const mode=newsDrawer.connectionMode
+          return mode && newsDrawerConnections.value[mode] ? newsDrawerConnections.value[mode] : []
+        })
+        const newsConnectionLabel = computed(() => newsDrawer.connectionMode==='line' ? newsDrawerLineName.value : newsDrawer.connectionMode==='author' ? newsDrawerAuthorFull.value : newsDrawer.connectionMode==='year' ? String((newsDrawer.post?.published_at||newsDrawer.post?.created_at||'').slice(0,4)) : 'Connected output')
+        const openNewsConnectionTray = (mode) => { newsDrawer.connectionMode = newsDrawer.connectionMode===mode ? '' : mode }
+        const exploreActiveNewsConnection = () => {
+          const mode=newsDrawer.connectionMode
+          if(mode==='line') return exploreNewsLine(newsDrawer.post?.research_line_id)
+          if(mode==='author') return exploreNewsAuthor(newsDrawer.post?.author_id)
+          if(mode==='year') return exploreNewsYear((newsDrawer.post?.published_at||newsDrawer.post?.created_at||'').slice(0,4))
+        }
+        const newsDrawerLifecycle = computed(() => {
+          const p=newsDrawer.post; if(!p) return []
+          const ev=[]
+          if(p.created_at) ev.push({label:'Created',date:p.created_at})
+          if(p.published_at) ev.push({label:'Published',date:p.published_at})
+          if(p.updated_at && p.updated_at!==p.created_at) ev.push({label:'Last updated',date:p.updated_at})
+          if(p.expires_at) ev.push({label:'Expiry',date:p.expires_at})
+          return ev.sort((a,b)=>new Date(a.date)-new Date(b.date))
+        })
+        const newsCitation = (post) => {
+          if(!post) return ''
+          const y=(post.published_at||post.created_at||'').slice(0,4)
+          const authors=(post.authors_text||newsOps.formatAuthorName(post.author_id)||'').trim()
+          const journal=(post.journal_name||'').trim()
+          const doi=(post.doi||'').trim()
+          return [authors?authors+'.':'',post.title?post.title+'.':'',journal?journal+'.':'',y?y+'.':'',doi?`doi:${doi}`:''].filter(Boolean).join(' ')
+        }
+        const copyNewsCitation = async (post) => { const t=newsCitation(post); if(!t)return; try{await navigator.clipboard.writeText(t); showToast('Copied','Citation copied','success')}catch{showToast('Copy failed','Could not copy citation','error')} }
+        const copyNewsDoi = async (post) => { if(!post?.doi)return; try{await navigator.clipboard.writeText(post.doi); showToast('Copied','DOI copied','success')}catch{showToast('Copy failed','Could not copy DOI','error')} }
         // FIX: newsDrawerAuthorFull must be declared BEFORE newsDrawerInitials uses it
         const newsDrawerAuthorFull = computed(() => {
           const id = newsDrawer.post?.author_id
@@ -7835,22 +8249,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const openGroundedForNews = (post) => {
           if (!post) return
+          const related = (newsPosts.value||[]).filter(x => x.id!==post.id && ((post.research_line_id && String(x.research_line_id)===String(post.research_line_id)) || (post.author_id && String(x.author_id)===String(post.author_id))))
           openAskBar()
-          askBar.subject = { type: 'research_record', id: post.id, name: post.title }
+          askBar.subject = { type:'research_record', id:post.id, name:post.title, postType:post.post_type, researchLineId:post.research_line_id||null, authorId:post.author_id||null, visibility:post.is_public?'Public':'Internal', status:post.status, relatedIds:related.slice(0,12).map(x=>x.id) }
+          // Carry the scholarly metadata with the active object so follow-ups such as
+          // “same author”, “same line”, “what is the DOI?” and “anything else in 2026?”
+          // resolve without asking the user to repeat the publication title.
+          askBar.context = {
+            type:'research_record', id:post.id, name:post.title, postType:post.post_type,
+            researchLineId:post.research_line_id||null, authorId:post.author_id||null,
+            visibility:post.is_public?'Public':'Internal', status:post.status||null,
+            journal:post.journal_name||null, doi:post.doi||null, authors:post.authors_text||null,
+            publishedAt:post.published_at||post.created_at||null,
+            relatedIds:related.slice(0,12).map(x=>x.id)
+          }
           askBar.view = 'conversation'
           askBar.query = ''
         }
+        const openResearchLineLibrary = (lineId) => {
+          if (!lineId) return
+          currentView.value = 'news'
+          if (!newsOps.newsLoaded.value && !newsOps.newsLoading.value) newsOps.loadNews()
+          Vue.nextTick(() => exploreNewsLine(lineId))
+        }
+        const openResearchLibraryRecord = (post) => {
+          if (!post) return
+          currentView.value = 'news'
+          if (!newsOps.newsLoaded.value && !newsOps.newsLoading.value) newsOps.loadNews()
+          Vue.nextTick(() => openNewsDrawer(post, null))
+        }
+
         const openNewsEditorFromReader = (post) => {
           if (!post) return
           newsDrawer.manageOpen = false
           newsDrawer.detailsOpen = false
           newsEditorDetailsOpen.value = false
+          newsEditorFocusMode.value = false
           newsPublishReview.value = false
           newsOps.editNews(post)
         }
         const closeNewsEditor = () => {
           newsPublishReview.value = false
           newsEditorDetailsOpen.value = false
+          newsEditorFocusMode.value = false
           newsModal.show = false
         }
         // ── END NEWS READER DRAWER ────────────────────────────────────
@@ -10465,6 +10906,20 @@ document.addEventListener('DOMContentLoaded', () => {
               { t: `${nm}'s trials`,                  d: 'This attending · research', icon: 'research', intent: 'trials_by_person', q: `${nm} trials` },
             ]
           }
+          if (subj.type === 'research_record') {
+            if (subj.postType === 'publication') return [
+              { t:'Publication details', d:'This paper · scholarly record', icon:'research', followupKind:'research_record_context', action:'profile', subjectId:subj.id, q:'publication details' },
+              { t:'Same author', d:'This paper · contributor', icon:'staff', followupKind:'research_record_context', action:'same_author', subjectId:subj.id, q:'same author publications' },
+              { t:'Same research line', d:'This paper · context', icon:'research', followupKind:'research_record_context', action:'same_line', subjectId:subj.id, q:'same line publications' },
+              { t:'Is this Public?', d:'This paper · visibility', icon:'briefing', followupKind:'research_record_context', action:'visibility', subjectId:subj.id, q:'is this Public' },
+            ]
+            return [
+              { t: 'Show related output', d: 'This record · connections', icon: 'research', followupKind: 'research_record_context', action: 'connections', subjectId: subj.id, q: 'show related output' },
+              { t: 'Which research line?', d: 'This record · context', icon: 'research', followupKind: 'research_record_context', action: 'line', subjectId: subj.id, q: 'which research line' },
+              { t: 'Who is connected?', d: 'This record · contributor', icon: 'staff', followupKind: 'research_record_context', action: 'author', subjectId: subj.id, q: 'who is connected' },
+              { t: 'Is this Public?', d: 'This record · visibility', icon: 'briefing', followupKind: 'research_record_context', action: 'visibility', subjectId: subj.id, q: 'is this Public' },
+            ]
+          }
           if (subj.type === 'unit') return [
             { t: `Who is in ${nm}?`,                  d: 'This unit · residents',     icon: 'staff',    intent: 'unit_status',      q: `who is in ${nm}` },
             { t: `Assign a resident to ${nm}`,        d: 'This unit · rotation',      icon: 'briefing', intent: 'assign_rotation',  q: `put ` },
@@ -11597,10 +12052,13 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'staff_can_pi', priority: 85, patterns: [/(who|which|how many).*(can be |be a |become )?(pi|principal investigator)\b/, /\bpi.eligible\b/, /eligible.*\bpi\b/] },
         { intent: 'staff_with_phd', priority: 85, patterns: [/(who|which|how many).*(phd|doctorate)/, /phd.*(staff|have|hold)/, /whose? .* phd/] },
         { intent: 'residents_by_year', priority: 85, patterns: [/(how many|number of).*resident/, /residents.*(do we have|are there|by year)/, /residents.*\br[1-4]\b/] },
+        { intent: 'study_governance', priority: 100, patterns: [/(stud(y|ies)|trials?).*(missing|without|pending).*(ethics|protocol|pi|principal investigator)/i, /(ethics|protocol|pi).*(missing|pending|gap).*(stud(y|ies)|trials?)/i, /research governance.*(gap|attention|missing|pending)/i, /which studies.*(ethics|protocol|pi)/i] },
+        { intent: 'innovation_attention', priority: 96, patterns: [/(projects?|innovation).*(need|missing|without).*(partner|scope)/i, /(partner needed|partner needs|scope pending)/i, /innovation.*attention/i] },
         { intent: 'trials_by_person', priority: 84, patterns: [/(which|what|list).*(trials?|studies).*(pi|investigator|lead)/, /(trials?|studies).*(is|are)\s+\w+.*(pi|on|leading)/, /(trials?|studies).*(by|led by|of)\s+\w+/, /(what|which) trials?.*\bon\b/] },
         // — Entity overviews —
         { intent: 'rotations_deep', priority: 80, patterns: [/who.*rotating/, /which residents.*rotat/, /residents.*where/, /rotating where/, /under whom/] },
         { intent: 'departments_overview', priority: 78, patterns: [/\bdepartment/, /which dept/, /list.*department/, /who (heads|leads|runs|is (the )?head of)/, /head of (the )?[a-zñáéíóú]/, /(jefe|responsable) de/] },
+        { intent: 'publication_profile', priority: 101, patterns: [/\bdoi\s*[:#]?\s*10\.\d{4,9}\//i, /\b10\.\d{4,9}\/[-._;()/:a-z0-9]+/i, /(tell me about|details? (of|for|on)|profile of)\s+.*\b(publication|paper)\b/i, /\b(publication|paper)\b.*(details?|profile|doi|metadata)/i, /\b(what|which)\s+journal\b/i], anti: [/how many|list|which publications|which papers|recent publications|recent papers/] },
         { intent: 'publications', priority: 79, patterns: [/publications?/i, /papers?/i, /published/i, /what have we published/i, /recent (papers|articles|publications)/i, /(articles?|abstracts?) (published|in)/i, /publicaci[óo]n/i, /journal/i], anti: [/put|assign|cancel/] },
         { intent: 'trial_profile', priority: 98, patterns: [/(tell me about|about|details? (of|for|on)|profile of|show me|status of|info on)\s+.*\b(trial|study|ensayo)\b/i, /\b(trial|study|ensayo)\b.*(status|enrollment|details?|about|phase)/i, /(nct|eudract)[-\s]?\d/i], anti: [/put|assign|cancel|how many|list.*trial|recruiting|which trials|clinical trials\?/] },
         { intent: 'project_profile', priority: 98, patterns: [/(tell me about|about|details? (of|for|on)|profile of|show me|status of)\s+.*\b(project|proyecto)\b/i, /\b(project|proyecto|innovation)\b.*(status|trl|stage|details?|about)/i], anti: [/put|assign|cancel|how many|list.*project|which projects/] },
@@ -11791,7 +12249,8 @@ document.addEventListener('DOMContentLoaded', () => {
           research_line_profile: 'Connecting this research line…',
           trial_profile: 'Connecting this clinical trial…',
           project_profile: 'Connecting this innovation project…',
-          publications: 'Reviewing recent publications…',
+          publications: 'Reviewing the scholarly record…',
+          publication_profile: 'Connecting this publication…',
           oncall_upcoming: 'Reviewing on-call coverage…',
           oncall_week: 'Reviewing this week’s on-call coverage…',
           oncall_fairness: 'Comparing on-call distribution…',
@@ -11816,8 +12275,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const askBarLoadingKindFor = (intent) => {
-        if (/^(staff_summary|staff_attr|research_line_profile|trial_profile|project_profile|unit_profile)$/.test(intent || '')) return 'profile'
-        if (/^(oncall_week|oncall_upcoming|absent_now|absence_upcoming|trials_recruiting|trials_overview|research_lines|publications|staff_roster|residents_board|units_board|rotations_active|rotations_upcoming)$/.test(intent || '')) return 'collection'
+        if (/^(staff_summary|staff_attr|research_line_profile|trial_profile|project_profile|publication_profile|unit_profile)$/.test(intent || '')) return 'profile'
+        if (/^(oncall_week|oncall_upcoming|absent_now|absence_upcoming|trials_recruiting|trials_overview|study_governance|innovation_attention|research_lines|publications|staff_roster|residents_board|units_board|rotations_active|rotations_upcoming)$/.test(intent || '')) return 'collection'
         if (/^(issues|risk_scan|today_snapshot|this_week_ahead|dept_health|briefing|coverage_gaps|research_summary|workload_analysis|oncall_fairness|oncall_no_backup)$/.test(intent || '')) return 'insight'
         if (/^(record_leave|record_oncall|assign_rotation|draft_rota|return_leave|cancel_leave|remove_oncall|cancel_rotation|edit_rotation|edit_oncall|edit_leave|extend_rotation)$/.test(intent || '')) return 'proposal'
         return 'fact'
@@ -11879,8 +12338,8 @@ document.addEventListener('DOMContentLoaded', () => {
         staff_oncall: 'oncall_schedule', staff_rotation: 'resident_rotations',
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
         count_rotations_ending: 'resident_rotations', rotations_upcoming: 'resident_rotations', rotation_overdue: 'resident_rotations', supervisor_load: 'resident_rotations', resident_progress: 'resident_rotations', residents_free: 'resident_rotations', oncall_by_person: 'oncall_schedule', oncall_fairness: 'oncall_schedule', oncall_no_backup: 'oncall_schedule', oncall_week: 'oncall_schedule', oncall_swap: 'oncall_schedule',
-        trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', trials_by_person: 'clinical_trials',
-        research_lines: 'research_lines', research_line_profile: 'research_lines', trial_profile: 'clinical_trials', project_profile: 'innovation_projects', publications: 'news_posts', research_summary: 'research_lines', research_activity: 'research_lines', innovation_projects: 'innovation_projects',
+        trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', study_governance: 'clinical_trials', trials_by_person: 'clinical_trials',
+        research_lines: 'research_lines', research_line_profile: 'research_lines', trial_profile: 'clinical_trials', project_profile: 'innovation_projects', publication_profile: 'news_posts', publications: 'news_posts', research_summary: 'research_lines', research_activity: 'research_lines', innovation_projects: 'innovation_projects', innovation_attention: 'innovation_projects',
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
         certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', unit_load: 'training_units', unit_supervisor_gap: 'training_units', unit_by_specialty: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
@@ -11929,6 +12388,8 @@ document.addEventListener('DOMContentLoaded', () => {
           oncall_upcoming: [['Reading the on-call schedule','on-call'], ['Resolving physician names','staff']],
           absent_now:      [['Scanning leave records','leave'], ['Filtering to today','leave']],
           trials_recruiting:[['Reviewing trials','research'], ['Computing enrollment health','research']],
+          publications:   [['Reading scholarly records','publications'], ['Applying publication filters','publications']],
+          publication_profile:[['Resolving the publication','publications'], ['Connecting scholarly metadata','publications'], ['Checking related output','research']],
           coverage_gaps:   [['Checking unit staffing','rotations'], ['Comparing to expected levels','synthesis']],
           rank_oncall:     [['Reading the on-call schedule','on-call'], ['Counting shifts per physician','on-call'], ['Ranking by load','synthesis']],
           pis_oncall:      [['Pulling principal investigators','research'], ['Cross-referencing on-call','on-call'], ['Joining the two','synthesis']],
@@ -12148,6 +12609,205 @@ document.addEventListener('DOMContentLoaded', () => {
         return askBarResolveOne(asked0, forcedIntent)
       }
 
+      // ══ SCHOLARLY RETRIEVAL — publication-aware Grounded layer ══════════════
+      // UI-neutral on purpose: these helpers only improve retrieval/context. Existing
+      // Grounded profile + publication-list renderers remain untouched.
+      const askBarNormScholar = (v) => (v || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[“”"'`]/g,' ').replace(/[^a-z0-9./-]+/g,' ').replace(/\s+/g,' ').trim()
+      const askBarPublicationRecords = () => (newsPosts.value || [])
+        .filter(p => p && (p.post_type === 'publication' || !!p.doi || !!p.journal_name))
+        .slice()
+        .sort((a,b) => String(b.published_at || b.created_at || '').localeCompare(String(a.published_at || a.created_at || '')))
+      const askBarPublicationYear = (p) => String(p?.published_at || p?.created_at || '').slice(0,4)
+      const askBarPublicationLine = (p) => p?.research_line_id ? (researchOps.researchLines.value || []).find(l => String(l.id) === String(p.research_line_id)) : null
+      const askBarPublicationLineLabel = (p) => p?.research_line_id ? newsLineName(p.research_line_id) : null
+      const askBarPublicationAuthorName = (p) => p?.author_id ? getStaffName(p.author_id) : null
+      const askBarJournalAcronym = (name) => {
+        const ignore = new Set(['of','the','and','in','for','de','la','el','y'])
+        return (name || '').split(/[^A-Za-zÀ-ÿ0-9]+/).filter(w => w && !ignore.has(w.toLowerCase())).map(w => w[0]).join('').toUpperCase()
+      }
+      const askBarPublicationMissing = (p) => {
+        const missing = []
+        if (!String(p?.title || '').trim()) missing.push('title')
+        if (!String(p?.authors_text || '').trim()) missing.push('authors')
+        if (!String(p?.journal_name || '').trim()) missing.push('journal')
+        if (!String(p?.doi || '').trim()) missing.push('DOI')
+        if (!String(p?.published_at || p?.created_at || '').trim()) missing.push('publication date')
+        if (!p?.research_line_id) missing.push('research line')
+        return missing
+      }
+      const askBarScholarTokens = (v) => {
+        const stop = new Set(['the','a','an','and','or','of','in','on','for','to','from','with','without','by','about','this','that','our','show','find','list','publication','publications','paper','papers','published','recent','record','records','article','articles','journal','study','studies','research'])
+        return askBarNormScholar(v).split(/\s+/).filter(w => w.length > 2 && !stop.has(w) && !/^20\d\d$/.test(w))
+      }
+      const askBarResolvePublicationRecord = (qRaw) => {
+        const pubs = askBarPublicationRecords()
+        if (!pubs.length) return null
+        const qn = askBarNormScholar(qRaw)
+        const doiM = qn.match(/10\.\d{4,9}\/[-._;()/:a-z0-9]+/i)
+        if (doiM) {
+          const doi = doiM[0].replace(/[.,;:)]+$/,'').toLowerCase()
+          const exact = pubs.find(p => String(p.doi || '').trim().toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//,'') === doi)
+          if (exact) return exact
+        }
+        // Exact/contained title is authoritative when the title itself is substantial.
+        const exactTitle = pubs.find(p => {
+          const t = askBarNormScholar(p.title)
+          return t.length >= 12 && (qn === t || qn.includes(t))
+        })
+        if (exactTitle) return exactTitle
+        const qTokens = askBarScholarTokens(qRaw)
+        if (qTokens.length < 2) return null
+        let best = null, bestScore = 0, bestHits = 0
+        for (const p of pubs) {
+          const tTokens = [...new Set(askBarScholarTokens(p.title))]
+          if (!tTokens.length) continue
+          const hits = qTokens.filter(w => tTokens.includes(w)).length
+          const score = hits / Math.max(2, Math.min(qTokens.length, tTokens.length))
+          if (hits > bestHits || (hits === bestHits && score > bestScore)) { best = p; bestScore = score; bestHits = hits }
+        }
+        return (best && bestHits >= 3 && bestScore >= 0.6) ? best : null
+      }
+      const askBarResolveLineForPublicationQuery = (qRaw) => {
+        const qn = askBarNormScholar(qRaw)
+        const lines = researchOps.researchLines.value || []
+        const m = qn.match(/(?:\bline\s*|\bl)(\d+)\b/)
+        if (m) {
+          const byNum = lines.find(l => String(l.line_number || '') === String(m[1]))
+          if (byNum) return byNum
+        }
+        return lines.find(l => {
+          const names = [l.name,l.short_name,l.research_line_name].filter(Boolean).map(askBarNormScholar)
+          return names.some(n => n.length >= 5 && qn.includes(n))
+        }) || null
+      }
+      const askBarPublicationSearchText = (p) => askBarNormScholar([
+        p?.title, p?.body, p?.journal_name, p?.authors_text, askBarPublicationLineLabel(p)
+      ].filter(Boolean).join(' '))
+      const askBarPublicationTopicOverlap = (a,b) => {
+        const A = [...new Set(askBarScholarTokens(`${a?.title || ''} ${a?.body || ''}`))]
+        const B = new Set(askBarScholarTokens(`${b?.title || ''} ${b?.body || ''}`))
+        return A.filter(w => B.has(w)).length
+      }
+      const askBarBuildPublicationCollection = (pubs, opts={}) => {
+        const total = pubs.length
+        if (!total) return { text: opts.empty || 'No publications match those criteria.', chips: [], actions: [{ label:'Open Research Library', view:'news' }], sources:['publications'], followups:[], confidence:'high' }
+        const isCount = !!opts.countOnly
+        const qualifier = opts.qualifier ? ` ${opts.qualifier}` : ''
+        if (isCount) return { text: `${total} publication${total===1?'':'s'}${qualifier}.`, chips: opts.chips||[], actions:[{label:'Open Research Library',view:'news',primary:true}], sources:['publications'], followups:opts.followups||[], confidence:'high' }
+        const items = pubs.slice(0,8).map(p => ({
+          id:p.id, title:p.title, journal:p.journal_name || null, authors:p.authors_text || null, doi:p.doi || null,
+          date:p.published_at || p.created_at || null, line:askBarPublicationLineLabel(p)
+        }))
+        return { text:`${total} publication${total===1?'':'s'}${qualifier}${total>8?' (showing 8)':''}:`, visual:{type:'publication_list',items,total}, chips:opts.chips||[], actions:[{label:'Open Research Library',view:'news',primary:true}], sources:['publications'], followups:opts.followups||[], confidence:'high' }
+      }
+      const askBarBuildPublicationProfile = (p) => {
+        if (!p) return { text:'I could not find that publication in the Research Library.', chips:[], actions:[{label:'Open Research Library',view:'news'}], sources:['publications'], followups:[], confidence:'low' }
+        const line = askBarPublicationLine(p)
+        const lineLabel = askBarPublicationLineLabel(p)
+        const author = askBarPublicationAuthorName(p)
+        const missing = askBarPublicationMissing(p)
+        const related = (newsPosts.value || []).filter(x => x && String(x.id)!==String(p.id) && ((p.research_line_id && String(x.research_line_id)===String(p.research_line_id)) || (p.author_id && String(x.author_id)===String(p.author_id))))
+        const overview = [
+          p.journal_name ? {label:'Journal',value:p.journal_name} : null,
+          (p.published_at || p.created_at) ? {label:'Publication date',value:Utils.formatDateShort(p.published_at || p.created_at)} : null,
+          p.authors_text ? {label:'Authors',value:p.authors_text} : null,
+          p.doi ? {label:'DOI',value:p.doi} : null,
+          lineLabel ? {label:'Research line',value:lineLabel} : null,
+          author ? {label:'Internal contributor',value:author} : null,
+          {label:'Visibility',value:p.is_public ? 'Public' : 'Internal'}
+        ].filter(Boolean)
+        const links = []
+        if (lineLabel) links.push({label:'Research line',detail:lineLabel,kind:'research'})
+        if (author) links.push({label:'Internal contributor',detail:author,kind:'people'})
+        if (related.length) links.push({label:`${related.length} connected Research Library record${related.length===1?'':'s'}`,detail:related.slice(0,3).map(x=>x.title).join(' · '),kind:'research'})
+        const complete = Math.round(((6-missing.length)/6)*100)
+        const profile = {
+          id:p.id, name:p.title || 'Untitled publication', kind:'publication', avatar:'P',
+          static:{role:'Scholarly publication',specialty:p.journal_name||null,residency:askBarPublicationYear(p)||null,email:null,phone:null,department:lineLabel||null,experience:null,credentials:[],roleFlags:[]},
+          active:{status:p.is_public?'Public':'Internal',statusKind:p.is_public?'ok':'rotation',onLeave:null,nextOnCall:null,rotation:null,supervises:0},
+          overview, links, completeness:complete, missing
+        }
+        const metaGap = missing.length ? ` Metadata still missing: ${missing.join(', ')}.` : ' Scholarly metadata is complete across the fields Grounded checks.'
+        const text = `${p.title || 'This publication'}${p.journal_name ? ` — ${p.journal_name}` : ''}${askBarPublicationYear(p)?`, ${askBarPublicationYear(p)}`:''}.${p.doi?` DOI: ${p.doi}.`:''}${metaGap}`
+        const followups = []
+        if (author) followups.push({label:'Same author publications',intent:'publications',q:`publications by ${author}`})
+        if (line) followups.push({label:'Same research line',intent:'publications',q:`publications from L${line.line_number || ''}`.trim()})
+        followups.push({label:'Public publications',intent:'publications',q:'Public publications'})
+        askBar.context = {type:'research_record',id:p.id,name:p.title,postType:'publication',researchLineId:p.research_line_id||null,authorId:p.author_id||null,visibility:p.is_public?'Public':'Internal',status:p.status||null,journal:p.journal_name||null,doi:p.doi||null,authors:p.authors_text||null,publishedAt:p.published_at||p.created_at||null,relatedIds:related.slice(0,12).map(x=>x.id)}
+        askBar.subject = {type:'research_record',id:p.id,name:p.title,postType:'publication',researchLineId:p.research_line_id||null,authorId:p.author_id||null,visibility:p.is_public?'Public':'Internal',status:p.status||null,relatedIds:related.slice(0,12).map(x=>x.id)}
+        return {text,visual:{type:'profile',profile},chips:author&&p.author_id?[{label:author,id:p.author_id}]:[],actions:[{label:'Open Research Library',view:'news',primary:true}],sources:['publications'],followups,confidence:'high'}
+      }
+      const askBarFilterPublications = (qRaw) => {
+        const q = (qRaw || '').toLowerCase()
+        const qn = askBarNormScholar(qRaw)
+        const ctx = askBar.context?.type === 'research_record' ? askBar.context : null
+        let pubs = askBarPublicationRecords()
+        const labels = []
+        let person = null, line = null, journal = null, year = null, visibility = null, missing = null, topic = null
+        // Person — only when the language actually refers to an author/contributor.
+        if (/\b(by|author|authored|written by|papers? of|publications? of|same author|this author)\b/i.test(q)) {
+          if (/\b(same|this) author\b/i.test(q) && ctx?.authorId) person = (medicalStaff.value||[]).find(s=>String(s.id)===String(ctx.authorId)) || null
+          if (!person) person = askBarResolveStaff(q.replace(/\b(publications?|papers?|published|by|author|authored|written|of|same|this|show|list|find|what|else|has|have)\b/gi,' ').replace(/\b(19\d{2}|20\d{2})\b/g,' '))
+          if (person) { pubs = pubs.filter(p => String(p.author_id||'')===String(person.id) || askBarNormScholar(p.authors_text).includes(askBarNormScholar(person.full_name).split(' ')[0])); labels.push(`by ${person.full_name}`) }
+        }
+        // Research line — explicit L#/name, or remembered “this/same line”.
+        line = askBarResolveLineForPublicationQuery(qRaw)
+        if (!line && /\b(same|this) (research )?line\b/i.test(q) && ctx?.researchLineId) line = (researchOps.researchLines.value||[]).find(l=>String(l.id)===String(ctx.researchLineId)) || null
+        if (line) { pubs = pubs.filter(p=>String(p.research_line_id||'')===String(line.id)); labels.push(`from L${line.line_number || ''}`.trim()) }
+        // Calendar facet.
+        const yearM = q.match(/\b(19\d{2}|20\d{2})\b/)
+        year = yearM ? yearM[1] : (/\bthis year\b/i.test(q) ? String(new Date().getFullYear()) : null)
+        if (year) { pubs = pubs.filter(p=>askBarPublicationYear(p)===year); labels.push(`in ${year}`) }
+        // Visibility facet — Public/Internal wording remains canonical.
+        if (/\bpublic\b/i.test(q) && !/publication/i.test(q.replace(/publications?/gi,''))) visibility='Public'
+        if (/\binternal\b/i.test(q)) visibility='Internal'
+        if (visibility) { pubs = pubs.filter(p=>visibility==='Public' ? !!p.is_public : !p.is_public); labels.push(visibility) }
+        // Metadata completeness facets.
+        if (/(missing|without|no)\s+(?:a\s+)?doi\b/i.test(q)) missing='DOI'
+        else if (/(missing|without|no)\s+(?:a\s+)?journal\b/i.test(q)) missing='journal'
+        else if (/(missing|without|no)\s+(?:a\s+)?(?:publication )?date\b/i.test(q)) missing='publication date'
+        else if (/(missing|without|no)\s+(?:an?\s+)?authors?\b/i.test(q)) missing='authors'
+        else if (/(missing|without|no)\s+(?:a\s+)?(?:research )?line\b/i.test(q)) missing='research line'
+        else if (/\b(incomplete|missing)\s+(metadata|fields?)\b/i.test(q)) missing='any'
+        if (missing) { pubs = pubs.filter(p=> missing==='any' ? askBarPublicationMissing(p).length>0 : askBarPublicationMissing(p).includes(missing)); labels.push(missing==='any'?'with incomplete metadata':`missing ${missing}`) }
+        // Journal — exact recorded name or a deterministic acronym (e.g. ERJ).
+        const journals = [...new Set(askBarPublicationRecords().map(p=>String(p.journal_name||'').trim()).filter(Boolean))].sort((a,b)=>b.length-a.length)
+        journal = journals.find(j => {
+          const jn = askBarNormScholar(j), ac = askBarJournalAcronym(j)
+          return (jn.length>=3 && qn.includes(jn)) || (ac.length>=2 && new RegExp(`\\b${ac.toLowerCase()}\\b`).test(qn))
+        }) || null
+        if (journal) { pubs = pubs.filter(p=>String(p.journal_name||'').trim()===journal); labels.push(`in ${journal}`) }
+        // Contextual related publication set.
+        if (/\b(related|connected) (publications?|papers?)\b/i.test(q) && ctx) {
+          const source = (newsPosts.value||[]).find(x=>String(x.id)===String(ctx.id))
+          if (source) {
+            pubs = pubs.filter(p => String(p.id)!==String(source.id) && ((source.research_line_id&&String(p.research_line_id)===String(source.research_line_id)) || (source.author_id&&String(p.author_id)===String(source.author_id))))
+            labels.push('related to this record')
+          }
+        }
+        // “Same topic” is deterministic lexical overlap with the active record, not AI inference.
+        if (/\b(same|similar|related) topic\b/i.test(q) && ctx) {
+          const source=(newsPosts.value||[]).find(x=>String(x.id)===String(ctx.id))
+          if (source) {
+            pubs = pubs.filter(p=>String(p.id)!==String(source.id) && askBarPublicationTopicOverlap(source,p)>=2).sort((a,b)=>askBarPublicationTopicOverlap(source,b)-askBarPublicationTopicOverlap(source,a))
+            labels.push('with shared topic terms')
+          }
+        } else {
+          const topicM = q.match(/\b(?:about|on|topic|related to|connected to)\s+(.+)$/i)
+          let rawTopic = topicM ? topicM[1] : ''
+          if (!rawTopic && !person && !line && !journal && /\b(publications?|papers?)\b/i.test(q)) {
+            rawTopic = q.replace(/\b(show|list|find|recent|all|our|the|public|internal|publications?|papers?|published|by|from|in|with|without|missing|doi|journal|authors?|research|line|this year|count|how many|number of|related|connected|same|else)\b/gi,' ').replace(/\b(19\d{2}|20\d{2})\b/g,' ')
+          }
+          const toks = askBarScholarTokens(rawTopic).filter(w => !person || !askBarNormScholar(person.full_name).includes(w))
+          if (toks.length) {
+            topic = toks.join(' ')
+            pubs = pubs.filter(p=>{ const hay=askBarPublicationSearchText(p); return toks.every(t=>hay.includes(t)) })
+            labels.push(`about ${topic}`)
+          }
+        }
+        return {pubs,person,line,journal,year,visibility,missing,topic,labels}
+      }
+
       const askBarResolveOne = (asked0Arg, forcedIntent) => {
         if (!currentUser.value) return   // never resolve/fire requests unauthenticated
         const asked = (asked0Arg !== undefined ? asked0Arg : askBar.query).trim()
@@ -12271,6 +12931,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           if (followup) intent = followup.kind
           else if (!intent) intent = 'unknown'
+          // A publication already in context should support natural short follow-ups
+          // without forcing the user to repeat “publication”. Exact/near-exact titles
+          // also resolve to a scholarly profile when no other domain claimed them.
+          if (intent === 'unknown' && askBar.context?.type === 'research_record' && askBar.context?.postType === 'publication' && /\b(same author|this author|same line|this line|same topic|related|anything else|what else|doi|journal|metadata|complete|missing)\b/i.test(q)) intent = /\b(doi|journal|metadata|complete|missing)\b/i.test(q) ? 'publication_profile' : 'publications'
+          if (intent === 'unknown' && askBarResolvePublicationRecord(asked)) intent = 'publication_profile'
         }
         askBar.lastResolvedIntent = intent
         askBarLog('ask', { q: asked || `[${intent}]`, intent })
@@ -12555,6 +13220,23 @@ document.addEventListener('DOMContentLoaded', () => {
           const initials = (n) => (n||'').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()
           const roleLine = (s) => { const bits = [_toTitle(s.staff_type||'staff')]; if (s.specialization) bits.push(s.specialization); else if (s.residency_year_override||s.training_year) bits.push((s.residency_year_override||s.training_year)+' resident'); return bits.join(' · ') }
           return { text, chips: opts.slice(0,5).map(s => ({ label: s.full_name, id: s.id, clarifyAttr: fu.attr || null, av: initials(s.full_name), meta: roleLine(s) })), actions: [], sources: ['staff'], followups: [], confidence: 'high', isClarify: true }
+        }
+        if (fu.kind === 'research_record_context') {
+          const p=(newsPosts.value||[]).find(x=>String(x.id)===String(fu.id))
+          if(!p) return { text:`I couldn't find that Research Library record.`, chips:[], actions:[], sources:['Research Library'], followups:[], confidence:'low' }
+          const line=p.research_line_id?newsOps.getLineName(p.research_line_id):''
+          const author=p.author_id?newsOps.formatAuthorName(p.author_id):''
+          const related=(newsPosts.value||[]).filter(x=>x.id!==p.id && ((p.research_line_id&&String(x.research_line_id)===String(p.research_line_id)) || (p.author_id&&String(x.author_id)===String(p.author_id))))
+          if (fu.action==='profile' && p.post_type==='publication') return askBarBuildPublicationProfile(p)
+          if (fu.action==='same_author' && p.post_type==='publication') return askBarBuildPublicationCollection(askBarPublicationRecords().filter(x=>String(x.id)!==String(p.id) && p.author_id && String(x.author_id)===String(p.author_id)),{qualifier:author?`— by ${author}`:'',empty:author?`No other publications are linked to ${author}.`:'No internal contributor is linked to this publication.'})
+          if (fu.action==='same_line' && p.post_type==='publication') return askBarBuildPublicationCollection(askBarPublicationRecords().filter(x=>String(x.id)!==String(p.id) && p.research_line_id && String(x.research_line_id)===String(p.research_line_id)),{qualifier:line?`— ${line}`:'',empty:line?`No other publications are linked to ${line}.`:'No research line is linked to this publication.'})
+          let text=''
+          if(fu.action==='connections') text=related.length ? `${p.title} has ${related.length} connected Research Library record${related.length===1?'':'s'} through ${line?'its research line':''}${line&&author?' and ':''}${author?'its contributor':''}.` : `No connected Research Library records are currently linked through the same research line or contributor.`
+          else if(fu.action==='line') text=line ? `${p.title} is connected to ${line}.` : `No research line is recorded for ${p.title}.`
+          else if(fu.action==='author') text=author ? `${author} is the linked internal contributor for ${p.title}.` : `No internal contributor is linked to ${p.title}.`
+          else if(fu.action==='visibility') text=p.is_public ? `${p.title} is Public. It is reflected in the public view on the web.` : `${p.title} is Internal. It is not reflected in the public web view.`
+          else text=`${p.title} is a ${p.post_type} in the Research Library.`
+          return { text, chips:related.slice(0,4).map(x=>({label:x.title,id:x.id})), actions:[], sources:['Research Library'], followups:[], confidence:'high' }
         }
         if (fu.kind === 'staff_summary' || fu.kind === 'staff_attr') {
           const s = (medicalStaff.value || []).find(x => x.id === fu.id)
@@ -12887,6 +13569,27 @@ document.addEventListener('DOMContentLoaded', () => {
           const items = ranked.slice(0,8).map(r => ({ title: r.name, badge: r.n+' pts', tone:'research', meta: '' }))
           return { text: `Most research-active (PI, coordinator, lead, author weighted): ${ranked.slice(0,3).map(r=>r.name).join(', ')}.`, visual: { type: 'reslist', items }, chips: ranked.slice(0,4).map(r=>({label:r.name,id:r.id})), actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research','staff'], followups: [], confidence: 'high' }
         }
+        if (intent === 'study_governance') {
+          const trials = researchOps.clinicalTrials.value || []
+          const q = String(askBar.lastAsked || askBar.query || '').toLowerCase()
+          let rows = trials.filter(t => !t.protocol_finalized || !t.ethics_status || t.ethics_status === 'pending' || !t.principal_investigator_id)
+          if (/ethic|ceim/.test(q)) rows = rows.filter(t => !t.ethics_status || t.ethics_status === 'pending')
+          else if (/protocol/.test(q)) rows = rows.filter(t => !t.protocol_finalized)
+          else if (/\bpi\b|principal investigator/.test(q)) rows = rows.filter(t => !t.principal_investigator_id)
+          if (!rows.length) return { text: 'No matching governance gaps are recorded in the current clinical study data.', chips: [], actions: [{ label: 'Open Research', view: 'research_hub', primary: true }], sources: ['research'], followups: [{ label: 'Which trials are recruiting?', intent: 'trials_recruiting' }], confidence: 'high' }
+          const items = rows.slice(0,8).map(t => ({ title:t.title, badge:[!t.protocol_finalized?'protocol':null,(!t.ethics_status||t.ethics_status==='pending')?'ethics':null,!t.principal_investigator_id?'PI':null].filter(Boolean).join(' · '), tone:'warning', meta:t.protocol_id || researchOps.getResearchLineName(t.research_line_id) }))
+          return { text: `${rows.length} clinical stud${rows.length===1?'y':'ies'} match the governance attention requested.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open Research',view:'research_hub',primary:true}], sources:['research'], followups:[{label:'Which are recruiting?',intent:'trials_recruiting'}], confidence:'high' }
+        }
+        if (intent === 'innovation_attention') {
+          const projects = researchOps.innovationProjects.value || []
+          const q = String(askBar.lastAsked || askBar.query || '').toLowerCase()
+          let rows = projects.filter(p => !p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found))
+          if (/partner/.test(q)) rows = rows.filter(p => (p.partner_needs||[]).length && !p.partner_found)
+          else if (/scope/.test(q)) rows = rows.filter(p => !p.scope_finalized)
+          if (!rows.length) return { text:'No matching innovation attention items are recorded.', chips:[], actions:[{label:'Open Research',view:'research_hub',primary:true}], sources:['research'], followups:[], confidence:'high' }
+          const items = rows.slice(0,8).map(p => ({ title:p.title, badge:!p.scope_finalized?'scope pending':`${(p.partner_needs||[]).length} partner need${(p.partner_needs||[]).length===1?'':'s'}`, tone:'warning', meta:[p.current_stage||p.development_stage,p.category].filter(Boolean).join(' · ') }))
+          return { text:`${rows.length} innovation project${rows.length===1?'':'s'} match the requested attention criteria.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open Research',view:'research_hub',primary:true}], sources:['research'], followups:[], confidence:'high' }
+        }
         if (intent === 'trials_recruiting') {
           const trials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialStatusKey && researchOps.trialStatusKey(t) === 'recruiting')
           if (!trials.length) return { text: 'No trials are actively recruiting right now.', chips: [], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
@@ -12927,23 +13630,47 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!trials.length) return { text: `${person.full_name} is not listed as PI on any trial.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open research hub', view: 'research_hub' }], sources: ['research'], followups: [], confidence: 'high' }
           return { text: `${person.full_name} is PI on ${trials.length} trial${trials.length===1?'':'s'}: ${trials.slice(0,4).map(t=>t.title).join(', ')}.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open research hub', view: 'research_hub', primary: true }], sources: ['research'], followups: [], confidence: 'high' }
         }
+        if (intent === 'publication_profile') {
+          const q = askBar.lastAsked || askBar.query || ''
+          let pub = askBarResolvePublicationRecord(q)
+          // “this publication / its DOI / missing metadata?” uses the remembered record.
+          if (!pub && askBar.context?.type === 'research_record' && askBar.context?.postType === 'publication') pub = askBarPublicationRecords().find(p=>String(p.id)===String(askBar.context.id)) || null
+          if (!pub) return { text:'Which publication did you mean? Use part of the title or its DOI.', chips:[], actions:[{label:'Open Research Library',view:'news'}], sources:['publications'], followups:[{label:'Recent publications',intent:'publications',q:'recent publications'}], confidence:'low' }
+          return askBarBuildPublicationProfile(pub)
+        }
         if (intent === 'publications') {
-          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
-          let pubs = (newsPosts.value || []).filter(p => p.post_type === 'publication' || !!p.doi || !!p.journal_name)
-          // filter by person if named
-          const person = askBarResolveStaff(q.replace(/\b(publications?|papers?|published|by|of|recent|what|have|we|show|list)\b/gi,' '))
-          if (person && /\bby\b|\bof\b/.test(q)) {
-            pubs = pubs.filter(p => p.author_id === person.id || (p.authors_text||'').toLowerCase().includes((person.full_name||'').toLowerCase().split(' ')[0]))
+          const qRaw = askBar.lastAsked || askBar.query || ''
+          const q = qRaw.toLowerCase()
+          const f = askBarFilterPublications(qRaw)
+          let pubs = f.pubs
+
+          // Aggregate scholarly questions stay deterministic and explain their scope.
+          if (/\b(research )?line\b.*\b(most|highest|largest|top)\b|\b(most|highest|largest|top)\b.*\b(research )?line\b/i.test(q)) {
+            const counts = new Map()
+            pubs.forEach(p=>{ if(p.research_line_id) counts.set(String(p.research_line_id),(counts.get(String(p.research_line_id))||0)+1) })
+            const ranked=[...counts.entries()].sort((a,b)=>b[1]-a[1])
+            if(!ranked.length) return {text:'No matching publications have a research line recorded.',chips:[],actions:[{label:'Open Research Library',view:'news'}],sources:['publications'],followups:[],confidence:'high'}
+            const items=ranked.slice(0,6).map(([id,n])=>{ const line=(researchOps.researchLines.value||[]).find(l=>String(l.id)===id); return {title:line?`L${line.line_number} · ${line.short_name||line.name||line.research_line_name}`:'Research line',badge:String(n),tone:'research',meta:`${n} publication${n===1?'':'s'}`} })
+            const lead=items[0]
+            return {text:`Among the matching scholarly records, ${lead.title} has the most publications (${lead.badge}).`,visual:{type:'reslist',items},chips:[],actions:[{label:'Open Research Library',view:'news',primary:true}],sources:['publications'],followups:[],confidence:'high'}
           }
-          if (!pubs.length) return { text: person ? `No publications on record for ${person.full_name}.` : 'No publications on record yet.', chips: [], actions: [{ label: 'Open publications', view: 'news' }], sources: ['publications'], followups: [], confidence: 'high' }
-          const isCount = /(how many|number of|count)/.test(q)
-          if (isCount) return { text: `${pubs.length} publication${pubs.length===1?'':'s'} on record${person?` for ${person.full_name}`:''}.`, chips: [], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [{ label: 'List them', intent: 'publications', q: 'list publications' }], confidence: 'high' }
-          const top = pubs.slice(0, 8)
-          const items = top.map(p => ({
-            id:p.id, title:p.title, journal:p.journal_name || null, authors:p.authors_text || null, doi:p.doi || null,
-            date:p.published_at || p.created_at || null, line:p.research_line_id ? newsLineName(p.research_line_id) : null
-          }))
-          return { text: `${pubs.length} publication${pubs.length===1?'':'s'}${person?` by ${person.full_name}`:''}${pubs.length>8?' (showing 8)':''}:`, visual: { type: 'publication_list', items, total:pubs.length }, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open publications', view: 'news', primary: true }], sources: ['publications'], followups: [], confidence: 'high' }
+          if (/\b(who|which (person|author|contributor)).*\b(most|highest|top)\b.*\b(publish|publication|paper)|\b(most|highest|top)\b.*\b(author|contributor)\b/i.test(q)) {
+            const counts=new Map()
+            pubs.forEach(p=>{ if(p.author_id) counts.set(String(p.author_id),(counts.get(String(p.author_id))||0)+1) })
+            const ranked=[...counts.entries()].sort((a,b)=>b[1]-a[1])
+            if(!ranked.length) return {text:'The matching publications do not have linked internal contributors, so I cannot rank contributors reliably.',chips:[],actions:[{label:'Open Research Library',view:'news'}],sources:['publications'],followups:[],confidence:'high'}
+            const items=ranked.slice(0,6).map(([id,n])=>({title:getStaffName(id),badge:String(n),tone:'research',meta:`${n} linked publication${n===1?'':'s'}`}))
+            return {text:`Among records with a linked internal contributor, ${items[0].title} has the most matching publications (${items[0].badge}).`,visual:{type:'reslist',items},chips:[],actions:[{label:'Open Research Library',view:'news',primary:true}],sources:['publications','staff'],followups:[],confidence:'high'}
+          }
+
+          const isCount = /(how many|number of|count)/i.test(q)
+          const qualifier = f.labels.length ? f.labels.join(' · ') : (/(recent|latest)/i.test(q) ? 'recent' : '')
+          const chips = f.person ? [{label:f.person.full_name,id:f.person.id}] : []
+          const followups=[]
+          if (!f.visibility) followups.push({label:'Public only',intent:'publications',q:'Public publications'})
+          if (!f.missing) followups.push({label:'Missing DOI',intent:'publications',q:'publications missing DOI'})
+          if (!f.year) followups.push({label:'This year',intent:'publications',q:'publications this year'})
+          return askBarBuildPublicationCollection(pubs,{countOnly:isCount,qualifier:qualifier?`— ${qualifier}`:'',chips,followups:followups.slice(0,3),empty:f.labels.length?`No publications match: ${f.labels.join(' · ')}.`:'No publications are on record.'})
         }
         if (intent === 'trial_profile') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
@@ -14269,12 +14996,12 @@ document.addEventListener('DOMContentLoaded', () => {
           selectedLine:     researchOps.selectedLine,
           selectedStudy:    researchOps.selectedStudy,
           selectedProject:  researchOps.selectedProject,
-          openLine: (line) => { researchOps.openLine(line); },
-          openStudy:        researchOps.openStudy,
-          openProject:      researchOps.openProject,
+          openLine: (line) => { lineTab.value = 'overview'; researchOps.openLine(line); },
+          openStudy: (study) => { lineTab.value = 'studies'; researchOps.openStudy(study); },
+          openProject: (project) => { lineTab.value = 'projects'; researchOps.openProject(project); },
           goToOverview:     researchOps.goToOverview,
           goToLine:         researchOps.goToLine,
-          lineTab:          ref('studies'),
+          lineTab,
           // Option constants for dropdowns
           DISEASE_OPTIONS, ETHICS_STATUS_OPTS, FUNDING_STATUS_OPTS,
           SPONSOR_TYPE_OPTS, STUDY_TYPE_OPTS, POPULATION_OPTS, REGULATORY_OPTS,
@@ -14295,6 +15022,8 @@ document.addEventListener('DOMContentLoaded', () => {
           getStudyCompleteness: researchOps.getStudyCompleteness,
           getProjectCompleteness: researchOps.getProjectCompleteness,
           researchLoading: researchOps.researchLoading,
+          researchPortfolioSummary, researchLinePortfolio, researchLineStudies, researchLineProjects, researchLineOutputs, studyGovernance,
+          openResearchLineLibrary, openResearchLibraryRecord,
           saveResearchLine: () => researchOps.saveResearchLine(saving),
           saveClinicalTrial: () => researchOps.saveClinicalTrial(saving),
           saveInnovationProject: () => researchOps.saveInnovationProject(saving),
@@ -14318,11 +15047,14 @@ document.addEventListener('DOMContentLoaded', () => {
           publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
           newsLibraryHeaderOpen, newsLibraryFiltersOpen, newsReturnFocusId,
+          newsLensMode, setNewsLensMode, newsLensGroups, applyNewsLensGroup, newsDisplayPosts, newsReviewQueue, newsReviewReadiness, newsReviewStage, newsLensInitials, newsLensOrdinal, newsLensBreakdownLabel,
+          newsSavedIds, newsFollowedLines, newsResearchSets, newsActiveSetId, newsIsSaved, newsIsFollowingLine, toggleNewsFollowLine, toggleNewsSaved, newsSetComposer, openNewsSetComposer, saveNewsSet, deleteNewsSet, applyNewsSet,
+          newsCommand, newsCommandResults, openNewsCommand, closeNewsCommand, runNewsCommand,
           newsActionMenu, openNewsActionMenu, closeNewsActionMenu, newsVisualSide, newsLibraryContextLabel,
           newsPeek, openNewsPeek, closeNewsPeek,
-          newsDrawer, newsDrawerPositionStyle, openNewsDrawer, closeNewsDrawer, exploreNewsLine, newsReadingProgress, newsReaderCompact, updateNewsReadingProgress, openGroundedForNews,
-          newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs,
-          newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName, newsEditorDetailsOpen, newsPublishReview, openNewsEditorFromReader, closeNewsEditor,
+          newsDrawer, newsDrawerPositionStyle, openNewsDrawer, closeNewsDrawer, exploreNewsLine, exploreNewsAuthor, exploreNewsYear, newsReadingProgress, newsReaderCompact, updateNewsReadingProgress, openGroundedForNews, newsActiveConnections, newsConnectionLabel, openNewsConnectionTray, exploreActiveNewsConnection,
+          newsDrawerPrev, newsDrawerNext, newsDrawerBodyParagraphs, newsDrawerSegments, newsEditorPreviewSegments, newsPlainBody, newsInsertEvidence, newsDrawerConnections, newsDrawerLifecycle, newsCitation, copyNewsCitation, copyNewsDoi,
+          newsDrawerInitials, newsDrawerAuthorFull, newsDrawerReadMins, newsDrawerLineName, newsEditorDetailsOpen, newsEditorFocusMode, newsEditorOutline, newsJumpToOutline, newsPublishReview, openNewsEditorFromReader, closeNewsEditor,
           drillToTrials, drillToProjects,
           portfolioKPIs,
           getLineAccent:     getLineAccentGlobal,
