@@ -20109,3 +20109,102 @@ html body #app .news-v27-article-editor{position:relative}
 #app .rv35-section-intro>small{font:500 10.5px/1.35 'DM Sans',sans-serif;color:#84939c;text-align:right}
 @media(max-width:900px){#app .rv35-section-intro{margin-left:24px;margin-right:24px;grid-template-columns:1fr}.rv35-section-intro>small{text-align:left!important}}
 @media(max-width:620px){#app .rv35-section-intro{margin-left:18px;margin-right:18px}}
+
+/* ========================================================================== 
+   V36 · RESEARCH POLISH / SCROLL & NAVIGATION HARDENING
+   Fixes full-height Research scrolling, keeps long research records navigable,
+   and improves focus/filter feedback without changing the visual system.
+   ========================================================================== */
+
+/* The main column is already a flex column. Let the full-height workspace take
+   the *remaining* space below navbar + beta banner instead of recomputing 100vh
+   from the navbar alone. This prevents clipping at the bottom of Research. */
+#app .main-content > .content-area.content-area--fullheight{
+  flex:1 1 0 !important;
+  height:auto !important;
+  max-height:none !important;
+  min-height:0 !important;
+}
+
+/* Research owns its vertical scroll. V35 inherited overflow:hidden from the
+   original full-height shell, which could make long portfolio/detail pages
+   impossible to move back up/down. */
+#app .content-area--fullheight > .research-hub{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overscroll-behavior-y:contain;
+  scrollbar-gutter:stable;
+  scroll-behavior:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#app .research-hub{scrollbar-width:thin;scrollbar-color:#b9c6cc transparent}
+#app .research-hub::-webkit-scrollbar{width:8px}
+#app .research-hub::-webkit-scrollbar-track{background:transparent}
+#app .research-hub::-webkit-scrollbar-thumb{background:#c5d0d5;border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+#app .research-hub::-webkit-scrollbar-thumb:hover{background:#aebdc4;background-clip:padding-box}
+
+/* Keep orientation controls available on long pages without adding a large
+   sticky header. They remain intentionally quiet. */
+#app .rv31-nav,
+#app .rv31-line-context,
+#app .rv32-context-bar{
+  position:sticky;
+  top:0;
+  z-index:24;
+  background:rgba(247,248,248,.96);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+#app .rv31-nav{border-bottom:1px solid rgba(213,222,226,.9)}
+#app .rv31-line-context,#app .rv32-context-bar{box-shadow:0 1px 0 rgba(220,227,230,.8)}
+
+/* Keyboard users should get the same affordance as mouse users on editorial
+   programme/register rows. */
+#app .rv31-programme:focus-visible,
+#app .rv33-study-row:focus-visible,
+#app .rv33-project-row:focus-visible,
+#app .rv32-study-row:focus-visible,
+#app .rv32-project-row:focus-visible{
+  outline:2px solid rgba(21,127,130,.52);
+  outline-offset:-2px;
+  background:#f8fbfb;
+}
+
+/* Result feedback belongs in the filter rail, not another KPI card. */
+#app .rv36-filter-count{
+  margin-left:auto;
+  white-space:nowrap;
+  font:650 10.5px/1 'DM Sans',system-ui,sans-serif;
+  color:#718590;
+  letter-spacing:-.005em;
+}
+
+/* Give long detail pages a little breathing room after the last record section
+   so the final management actions are never flush against the viewport edge. */
+#app .rv31-page,#app .rv32-page,#app .rv33-intelligence{scroll-margin-top:52px}
+
+@media(max-width:620px){
+  #app .rv36-filter-count{width:100%;margin-left:0;text-align:right;padding-top:2px}
+  #app .rv31-nav,#app .rv31-line-context,#app .rv32-context-bar{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+}
+
+
+/* ==========================================================================
+   V36 · RESEARCH POLISH / BUG HARDENING
+   Governance status should inform without blocking legitimate workflows.
+   ========================================================================== */
+#app .rv36-governance-warning{
+  grid-column:1/-1;
+  display:flex;align-items:flex-start;gap:10px;
+  margin:0;padding:10px 12px;
+  border:1px solid rgba(176,111,16,.22);
+  border-left:2px solid #b06f10;
+  border-radius:4px;background:rgba(176,111,16,.055);
+  color:#6e4b17;
+}
+#app .rv36-governance-warning>span{
+  width:18px;height:18px;flex:0 0 18px;display:grid;place-items:center;
+  border-radius:50%;background:rgba(176,111,16,.12);font:700 10px/1 'DM Sans',sans-serif;
+}
+#app .rv36-governance-warning strong{display:block;font:650 11px/1.35 'DM Sans',sans-serif;color:#66430f;}
+#app .rv36-governance-warning small{display:block;margin-top:2px;font:500 10.5px/1.45 'DM Sans',sans-serif;color:#87632a;}
