@@ -20730,3 +20730,210 @@ html body #app .knowledge-card--v23[role="button"]:focus-visible{
 }
 html body #app .news-v38-peek-action{color:#587181 !important}
 html body #app .news-v38-peek-action:hover{color:#087f82 !important;background:#edf6f5 !important}
+
+/* ========================================================================== 
+   V39 · AUTHORING & STEWARDSHIP
+   Research Library creation + clinical research record editors.
+   The objective is not more chrome: it is better orientation, stronger text,
+   deliberate metadata stewardship and protection from accidental data loss.
+   ========================================================================== */
+
+/* ---------- Research Library · Research Editor ---------- */
+html body #app .news-v27-editor-head{
+  min-height:62px!important;height:62px!important;flex-basis:62px!important;
+  padding:0 24px!important;background:#fff!important;border-bottom:1px solid #dfe7e8!important;
+}
+html body #app .news-v27-editor-head .news-v24-studio-mark{
+  width:32px!important;height:32px!important;border-radius:50%!important;
+  background:#0e354c!important;color:#fff!important;display:grid!important;place-items:center!important;
+  font:650 12px/1 'DM Sans',system-ui,sans-serif!important;
+}
+html body #app .news-v27-editor-head .news-v24-studio-kicker{
+  color:#0a7e82!important;font-size:9px!important;letter-spacing:.12em!important;text-transform:uppercase!important;
+}
+html body #app .news-v27-editor-head .news-v24-studio-brand strong{
+  font:650 14px/1.15 'DM Sans',system-ui,sans-serif!important;color:#15384e!important;text-transform:none!important;
+}
+html body #app .news-v39-object-chip{
+  display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border:1px solid #dce6e7;
+  border-radius:999px;background:#f7faf9;color:#5d7483;
+  font:650 9.5px/1 'DM Sans',system-ui,sans-serif;white-space:nowrap;
+}
+html body #app .news-v24-save-state{font-size:10px!important;color:#647a88!important}
+html body #app .news-v24-save-state.is-dirty{color:#9a651f!important}
+
+/* Keep the author aware of completeness without turning the editor into a dashboard. */
+html body #app .news-v39-readiness{
+  position:sticky;top:48px;z-index:7;
+  display:grid;grid-template-columns:auto minmax(90px,180px) minmax(0,1fr);align-items:center;gap:12px;
+  min-height:42px;padding:0 38px;background:rgba(249,251,251,.97);backdrop-filter:blur(10px);
+  border-bottom:1px solid #e8eeee;color:#5d7483;
+}
+html body #app .news-v39-readiness-copy{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+html body #app .news-v39-readiness-copy span{font:650 9.5px/1 'DM Sans',system-ui,sans-serif;color:#657b89}
+html body #app .news-v39-readiness-copy strong{font:500 18px/1 'Instrument Serif',Georgia,serif;color:#143c52}
+html body #app .news-v39-readiness-meter{height:3px;background:#e2e9e9;overflow:hidden;border-radius:99px}
+html body #app .news-v39-readiness-meter i{display:block;height:100%;background:#12898a;transition:width .2s ease}
+html body #app .news-v39-readiness small{font:500 9.5px/1.35 'DM Sans',system-ui,sans-serif;color:#718592;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Stewardship is a centred working sheet, not a detached bottom popover. */
+html body #app .news-v27-editor-canvas{position:relative!important}
+html body #app .news-v27-record-inspector{
+  position:absolute!important;top:104px!important;left:50%!important;right:auto!important;bottom:auto!important;
+  transform:translateX(-50%)!important;width:min(700px,calc(100% - 80px))!important;
+  margin:0!important;padding:20px 22px 22px!important;border-radius:16px!important;
+  background:rgba(252,253,253,.985)!important;border:1px solid #dce6e7!important;
+  box-shadow:0 28px 82px rgba(7,28,42,.18)!important;z-index:30!important;
+}
+html body #app .news-v27-record-inspector>header{margin-bottom:16px!important;padding-bottom:11px!important;border-bottom:1px solid #e7eded!important}
+html body #app .news-v27-record-inspector>header span{font-size:11.5px!important;color:#153a50!important}
+html body #app .news-v27-record-inspector>header strong{font-size:9.5px!important;letter-spacing:.06em!important;color:#728692!important;text-transform:uppercase!important}
+html body #app .news-v27-inspector-fields{gap:14px 18px!important}
+html body #app .news-v27-inspector-fields label>span{font-size:10px!important;color:#5c7483!important}
+html body #app .news-v27-inspector-fields input,
+html body #app .news-v27-inspector-fields select{min-height:38px!important;font-size:11.5px!important;border-color:#cfdbde!important;background:#fff!important}
+
+/* More explicit, less ghost-like header controls. */
+html body #app .news-v27-details-trigger,
+html body #app .news-v29-focus-trigger{
+  min-height:30px!important;padding:0 9px!important;border-radius:8px!important;color:#536d7e!important;
+}
+html body #app .news-v27-details-trigger:hover,
+html body #app .news-v27-details-trigger.is-active,
+html body #app .news-v29-focus-trigger:hover,
+html body #app .news-v29-focus-trigger.is-active{background:#eef6f5!important;color:#0a777b!important}
+html body #app .news-v24-close{width:30px!important;height:30px!important;border-radius:50%!important;background:#f4f7f7!important;border:1px solid #e1e8e9!important}
+html body #app .news-v24-close:hover{background:#eaf2f2!important;border-color:#cbd9db!important}
+
+/* Give each object a stronger authored surface. */
+html body #app .news-v27-publication-editor,
+html body #app .news-v24-editor-highlight,
+html body #app .news-v24-editor-update{max-width:940px!important;margin:0 auto!important;padding-left:58px!important;padding-right:58px!important}
+html body #app .news-v24-object-label{font-size:10px!important;letter-spacing:.09em!important;color:#0a7d80!important}
+html body #app .news-v27-publication-editor .news-v24-title-input,
+html body #app .news-v24-editor-highlight .news-v24-title-input{color:#102f45!important}
+html body #app .news-v24-citation-grid label>span{font-size:10px!important;color:#5d7483!important}
+html body #app .news-v24-citation-grid input,
+html body #app .news-v24-citation-grid select{color:#173a50!important;border-color:#d2dde0!important;background:#fff!important}
+html body #app .news-v24-live-preview>header>div>span{font-size:10.5px!important;color:#163b52!important;font-weight:700!important}
+html body #app .news-v24-live-preview>header small{color:#718693!important;font-size:9.5px!important}
+
+/* Footer reads like stewardship: current scope on the left, one clear primary action. */
+html body #app .news-v27-editor-foot{background:#fbfcfc!important;border-top:1px solid #dfe7e8!important}
+html body #app .news-v24-foot-public{font-size:10px!important;color:#607786!important}
+html body #app .news-v24-save,
+html body #app .news-v24-publish,
+html body #app .news-v24-done{min-height:34px!important;border-radius:9px!important;font-size:10.8px!important}
+
+/* ---------- Clinical Study · guided record workspace ---------- */
+#app .rv32-study-editor{
+  width:min(95vw,1260px)!important;max-width:1260px!important;height:min(94vh,960px)!important;max-height:94vh!important;
+  border-radius:18px!important;overflow:hidden!important;background:#fff!important;
+}
+#app .rv32-study-editor .sm-left{width:292px!important;background:linear-gradient(180deg,#123a4d 0%,#0f3143 100%)!important;overflow-y:auto!important}
+#app .rv32-study-editor .sm-left::-webkit-scrollbar{width:4px}
+#app .rv32-study-editor .sm-left::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:99px}
+#app .rv32-study-editor .sm-right{min-width:0!important}
+#app .rv32-study-editor .sm-form-header{min-height:68px!important;height:auto!important;padding:11px 22px!important;background:#fff!important}
+#app .rv39-editor-title{display:flex!important;align-items:center!important;gap:10px!important}
+#app .rv39-editor-title>div{display:grid;gap:2px}
+#app .rv39-editor-title>div>span{font:750 9px/1 'DM Sans',system-ui,sans-serif;color:#0a7e82;text-transform:uppercase;letter-spacing:.09em}
+#app .rv39-editor-title>div>strong{font:650 13px/1.15 'DM Sans',system-ui,sans-serif;color:#15384e}
+#app .rv39-editor-title>div>small{font:500 9.5px/1.25 'DM Sans',system-ui,sans-serif;color:#748894}
+#app .rv32-study-editor .sm-preview{padding-bottom:18px!important}
+#app .rv39-study-stewardship{padding:17px 18px 16px;border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09)}
+#app .rv39-completeness-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#app .rv39-completeness-head span{font:650 9.5px/1 'DM Sans',system-ui,sans-serif;color:rgba(231,242,245,.62)}
+#app .rv39-completeness-head strong{font:400 21px/1 'Instrument Serif',Georgia,serif;color:#fff}
+#app .rv39-completeness-bar{height:3px;margin:8px 0 7px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}
+#app .rv39-completeness-bar i{display:block;height:100%;background:#32c1bd;transition:width .2s ease}
+#app .rv39-study-stewardship>small{display:block;min-height:24px;font:500 9px/1.35 'DM Sans',system-ui,sans-serif;color:rgba(231,242,245,.58)}
+#app .rv39-record-map{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:11px;border-top:1px solid rgba(255,255,255,.08)}
+#app .rv39-record-map button{display:flex;align-items:center;gap:7px;min-height:34px;padding:0;border:0!important;border-bottom:1px solid rgba(255,255,255,.07)!important;background:transparent!important;color:rgba(239,247,249,.78)!important;box-shadow:none!important;text-align:left;cursor:pointer}
+#app .rv39-record-map button:nth-child(odd){padding-right:8px}
+#app .rv39-record-map button:nth-child(even){padding-left:8px;border-left:1px solid rgba(255,255,255,.07)!important}
+#app .rv39-record-map button b{font:600 8.5px/1 'DM Mono',monospace;color:#35beba}
+#app .rv39-record-map button span{font:600 9.5px/1 'DM Sans',system-ui,sans-serif}
+#app .rv39-record-map button:hover{color:#fff!important;background:rgba(255,255,255,.035)!important}
+#app .rv32-study-editor .rv34-editor-section{scroll-margin-top:20px!important}
+#app .rv32-study-editor .rv34-editor-section>header{margin-bottom:13px!important}
+#app .rv32-study-editor .rv34-editor-section>header span{color:#0b7c80!important;font-size:10px!important;letter-spacing:.055em!important}
+#app .rv32-study-editor .rv34-editor-section>header strong{color:#183d52!important;font-size:12px!important;line-height:1.4!important}
+#app .rv32-study-editor .sm-form-body{padding:22px 28px 34px!important;scroll-behavior:smooth!important}
+#app .rv39-unsaved-indicator{margin-right:auto;display:inline-flex;align-items:center;gap:6px;font:650 10px/1 'DM Sans',system-ui,sans-serif;color:#96641f}
+#app .rv39-unsaved-indicator::before{content:"";width:6px;height:6px;border-radius:50%;background:#d99a3d}
+#app .rv32-study-editor .sm-form-footer{min-height:58px!important;padding:10px 22px!important;background:#fbfcfc!important}
+
+/* ---------- Clinical Innovation · record workspace ---------- */
+#app .rv32-project-editor{
+  width:min(96vw,1260px)!important;max-width:1260px!important;height:min(94vh,970px)!important;max-height:94vh!important;
+  border-radius:18px!important;overflow:hidden!important;background:#fff!important;
+}
+#app .rv32-project-editor>.modal-header{min-height:68px!important;padding:10px 22px!important;background:#fff!important}
+#app .rv32-project-editor>.modal-body{padding:0 26px 34px!important;overflow-y:auto!important;scroll-behavior:smooth!important;background:#fbfcfc!important}
+#app .rv39-project-stewardship{
+  position:sticky;top:0;z-index:8;margin:0 -26px 22px;padding:18px 26px 13px;
+  display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:12px 28px;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid #dde6e8;
+}
+#app .rv39-project-stewardship-copy>span{font:750 9px/1 'DM Sans',system-ui,sans-serif;color:#0b7d80;text-transform:uppercase;letter-spacing:.09em}
+#app .rv39-project-stewardship-copy h2{margin:5px 0 3px;font:400 25px/1.02 'Instrument Serif',Georgia,serif;color:#13384e;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .rv39-project-stewardship-copy p{margin:0;font:500 9.8px/1.35 'DM Sans',system-ui,sans-serif;color:#687e8b}
+#app .rv39-project-completeness>div:first-child{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#app .rv39-project-completeness span{font:650 9.5px/1 'DM Sans',system-ui,sans-serif;color:#677d8a}
+#app .rv39-project-completeness strong{font:400 20px/1 'Instrument Serif',Georgia,serif;color:#153c52}
+#app .rv39-project-completeness small{display:block;margin-top:6px;font:500 9px/1.3 'DM Sans',system-ui,sans-serif;color:#718593;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app .rv39-project-map{grid-column:1/-1;display:flex;align-items:center;gap:0;border-top:1px solid #e8eeee;padding-top:10px}
+#app .rv39-project-map button{border:0!important;border-left:1px solid #e1e8ea!important;background:transparent!important;padding:1px 14px!important;color:#657b89!important;box-shadow:none!important;font:650 9.5px/1 'DM Sans',system-ui,sans-serif!important;cursor:pointer}
+#app .rv39-project-map button:first-child{border-left:0!important;padding-left:0!important}
+#app .rv39-project-map button:hover{color:#0b7d80!important}
+#app .rv32-project-editor .ipm-stage-picker{margin-bottom:20px!important;background:#fff!important;border-color:#dce5e7!important;padding:15px 17px!important}
+#app .rv32-project-editor .rv34-editor-section,
+#app #rv39-project-identity,
+#app #rv39-project-team,
+#app #rv39-project-publishing{scroll-margin-top:118px!important}
+#app .rv32-project-editor .rv34-editor-section>header span{color:#0a7b7f!important;font-size:10px!important;letter-spacing:.045em!important}
+#app .rv32-project-editor .rv34-editor-section>header strong{color:#183d52!important;font-size:12px!important;line-height:1.4!important}
+#app .rv32-project-editor>.modal-footer{min-height:58px!important;padding:10px 22px!important;background:#fbfcfc!important;border-top:1px solid #dfe7e8!important}
+
+/* Form text: clearer hierarchy, no ghost labels. */
+#app .rv32-study-editor .sm-label,
+#app .rv32-project-editor .sm-label,
+#app .rv32-project-editor .form-label{color:#536d7c!important;font-size:10.5px!important;font-weight:650!important}
+#app .rv32-study-editor .sm-input,
+#app .rv32-study-editor .sm-select,
+#app .rv32-project-editor .sm-input,
+#app .rv32-project-editor .sm-select,
+#app .rv32-project-editor .form-control,
+#app .rv32-project-editor .form-select{color:#17394f!important;border-color:#cfdadd!important;background:#fff!important;font-size:11.5px!important}
+#app .rv32-study-editor .sm-input::placeholder,
+#app .rv32-project-editor input::placeholder,
+#app .rv32-project-editor textarea::placeholder{color:#8b9aa4!important;opacity:1!important}
+#app .rv32-study-editor .sm-input:focus,
+#app .rv32-study-editor .sm-select:focus,
+#app .rv32-project-editor .sm-input:focus,
+#app .rv32-project-editor .sm-select:focus,
+#app .rv32-project-editor .form-control:focus,
+#app .rv32-project-editor .form-select:focus{border-color:#6ea9aa!important;box-shadow:0 0 0 3px rgba(18,137,138,.08)!important}
+
+@media(max-width:980px){
+  html body #app .news-v39-readiness{grid-template-columns:auto 110px minmax(0,1fr);padding:0 24px}
+  #app .rv32-study-editor{width:98vw!important}.rv32-study-editor .sm-left{width:250px!important}
+  #app .rv39-project-stewardship{grid-template-columns:1fr}.rv39-project-map{overflow-x:auto;white-space:nowrap}
+}
+@media(max-width:720px){
+  html body #app .news-v39-object-chip{display:none}
+  html body #app .news-v39-readiness{position:static;grid-template-columns:1fr auto;gap:7px;padding:9px 18px}.news-v39-readiness-meter{grid-column:1/-1}.news-v39-readiness small{grid-column:1/-1;white-space:normal}
+  #app .rv32-study-editor{height:100vh!important;max-height:100vh!important;border-radius:0!important}.rv32-study-editor .sm-left{display:none!important}
+  #app .rv32-project-editor{height:100vh!important;max-height:100vh!important;border-radius:0!important}.rv39-project-stewardship{position:static}.rv39-project-map{display:none!important}
+}
+html body #app .news-v39-preview-trigger{
+  min-height:30px;display:inline-flex;align-items:center;gap:6px;padding:0 9px;border:0!important;border-radius:8px!important;
+  background:transparent!important;box-shadow:none!important;color:#607686!important;font:650 10px/1 'DM Sans',system-ui,sans-serif!important;cursor:pointer;
+}
+html body #app .news-v39-preview-trigger i{font-size:9.5px;color:#7a8d98}
+html body #app .news-v39-preview-trigger:hover,html body #app .news-v39-preview-trigger.is-active{background:#eef6f5!important;color:#0a777b!important}
+html body #app .news-v39-preview-trigger.is-active i{color:#0a8587!important}
+html body #app .news-v29-editor.is-preview-off .news-v27-live-preview{display:none!important}
+html body #app .news-v29-editor.is-preview-off .news-v27-compose-shell{grid-template-columns:1fr!important}
+html body #app .news-v29-editor.is-preview-off:not(.is-focus) .news-v27-editor-canvas{max-width:1180px;width:100%;margin:0 auto}
