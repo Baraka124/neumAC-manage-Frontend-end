@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=40">
+    <link rel="stylesheet" href="style.css?v=41">
 
     
 </head>
@@ -265,7 +265,7 @@
                 </div>
                 <div v-if="!askBar.turns.length" class="askbar-sug-label">{{ askBarSuggestLabel }}</div>
                 <div v-if="!askBar.turns.length" class="askbar-sug">
-                    <div v-for="s in askBarSuggestions" :key="s.intent" class="askbar-sug-item" @click="runSuggestion(s)">
+                    <div v-for="s in askBarSuggestions" :key="s.intent || (s.followupKind + ':' + (s.action || s.t))" class="askbar-sug-item" @click="runSuggestion(s)">
                         <span class="askbar-sug-ic" :class="'askbar-sug-ic--' + s.icon">
                             <svg v-if="s.icon==='oncall'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
                             <svg v-else-if="s.icon==='research'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3"/></svg>
@@ -279,7 +279,7 @@
                 </div>
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
                     <div v-if="turn.q" class="askbar-q-bub" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
-                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
+                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
                         <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
                             <div v-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state">
                                 <span class="askbar-empty-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg></span>
@@ -751,7 +751,7 @@
                                 <div v-else-if="turn.chips && turn.chips.length" class="askbar-chips">
                                     <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click.stop="c.clarifyAttr !== undefined ? askBarResolveClarified(c) : askBarEntityMenu(c, $event)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
                                 </div>
-                                <div class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
+                                <div v-if="turn.confidence!=='low' || (turn.sources && turn.sources.length) || (turn.evidence && turn.evidence.length)" class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
                                     <div class="askbar-trust-main">
                                         <span class="askbar-trust-dot" :title="turn.confidence==='high' ? 'Grounded in department records' : turn.confidence==='medium' ? 'Some records may be missing' : 'Limited grounding'"></span>
                                         <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Grounded in' : turn.confidence==='medium' ? 'Partial · grounded in' : 'Limited · checked' }}</span>
@@ -1646,16 +1646,17 @@
                         </div>
                     </div>
             </header>
-            <!-- Dev Banner -->
-            <div class="dev-banner" :class="{'dev-banner--hidden': devBannerHidden}" role="status" aria-live="polite">
-              <div class="dev-banner-inner">
-                <span class="dev-banner-dot"></span>
-                <span class="dev-banner-label">Beta</span>
-                <span class="dev-banner-text">Clinical operations platform · Internal preview · Feedback welcome</span>
-                <a href="mailto:baraka@enkiama.com" class="dev-banner-cta">Send feedback →</a><button @click="devBannerHidden=true"  title="Dismiss" class="nd-l299 nd-v273">×</button>
+            <!-- One-time internal workspace note: appears once per signed-in user/browser. -->
+            <aside v-if="previewIntro.show" class="preview-intro-card" role="status" aria-live="polite">
+              <button class="preview-intro-close" @click="dismissPreviewIntro" aria-label="Dismiss workspace note">×</button>
+              <div class="preview-intro-kicker">Internal workspace</div>
+              <strong>Welcome to neumDesk</strong>
+              <p>Operational and research records stay internal unless a record is explicitly marked <b>Public</b>. Public records can feed the outward-facing neumAC experience.</p>
+              <div class="preview-intro-actions">
+                <button @click="dismissPreviewIntro">Got it</button>
+                <a href="mailto:baraka@enkiama.com">Send feedback ↗</a>
               </div>
-            </div>
-
+            </aside>
 
 <!-- Content Area -->
             <div class="content-area" :class="{'content-area--dash': currentView === 'dashboard', 'content-area--fullheight': ['research_hub','news'].includes(currentView)}">
@@ -6018,7 +6019,7 @@
                         <div class="news-v29-line-chapters">
                             <button v-for="g in newsLensGroups" :key="'line-'+g.key" @click="applyNewsLensGroup(g)">
                                 <div class="news-v29-line-no">{{ newsLensOrdinal(g) }}</div>
-                                <div class="news-v29-line-copy"><h3>{{ g.label }}</h3><div class="news-v29-breakdown"><span v-if="g.breakdown.publication">{{ g.breakdown.publication }} publications</span><span v-if="g.breakdown.article">{{ g.breakdown.article }} articles</span><span v-if="g.breakdown.highlight">{{ g.breakdown.highlight }} highlights</span><span v-if="g.breakdown.update">{{ g.breakdown.update }} updates</span></div><p v-if="g.posts?.length">{{ g.posts.slice(0,2).map(p=>p.title).join(' · ') }}</p></div>
+                                <div class="news-v29-line-copy"><h3>{{ newsLensDisplayLabel(g) }}</h3><div class="news-v29-breakdown"><span v-if="g.breakdown.publication">{{ g.breakdown.publication }} publications</span><span v-if="g.breakdown.article">{{ g.breakdown.article }} articles</span><span v-if="g.breakdown.highlight">{{ g.breakdown.highlight }} highlights</span><span v-if="g.breakdown.update">{{ g.breakdown.update }} updates</span></div><p v-if="g.posts?.length">{{ g.posts.slice(0,2).map(p=>p.title).join(' · ') }}</p></div>
                                 <div class="news-v29-line-total"><strong>{{ g.count }}</strong><span>records</span><i>→</i></div>
                             </button>
                         </div>
@@ -12290,7 +12291,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=40"></script>
+    <script src="app.js?v=41"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
@@ -12392,7 +12393,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
         function animate(){
             frame++;
-            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5;
+            var breath = Math.sin(frame * 0.018) * 0.5 + 0.5; 
             drawTree(breath);
             if(!REDUCED) raf = requestAnimationFrame(animate);
         }
