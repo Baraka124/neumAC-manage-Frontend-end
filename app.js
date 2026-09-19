@@ -1204,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       get isOnline() { return this._isOnline }
 
-      get token() { return sessionStorage.getItem(CONFIG.TOKEN_KEY) || localStorage.getItem(CONFIG.TOKEN_KEY) }
+      get token() { return localStorage.getItem(CONFIG.TOKEN_KEY) }
 
       headers() {
         const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' }
@@ -1230,30 +1230,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       clearCache() { this.cache.clear() }
 
-      clearAuthStorage() {
-        for (const store of [sessionStorage, localStorage]) {
-          try {
-            store.removeItem(CONFIG.TOKEN_KEY)
-            store.removeItem(CONFIG.USER_KEY)
-          } catch {}
-        }
-      }
-
-      storeAuth(data, remember = false) {
-        this.clearAuthStorage()
-        const store = remember ? localStorage : sessionStorage
-        if (data?.token) store.setItem(CONFIG.TOKEN_KEY, data.token)
-        if (data?.user) store.setItem(CONFIG.USER_KEY, JSON.stringify(data.user))
-      }
-
-      storeUser(user) {
-        if (!user) return
-        try {
-          const store = sessionStorage.getItem(CONFIG.TOKEN_KEY) ? sessionStorage : localStorage
-          if (this.token) store.setItem(CONFIG.USER_KEY, JSON.stringify(user))
-        } catch {}
-      }
-
       async request(endpoint, options = {}) {
         const method = options.method || 'GET'
         const isGet = method === 'GET'
@@ -1272,20 +1248,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res.status === 204) return null
           if (!res.ok) {
             if (res.status === 401) {
-              // A rejected sign-in is not an expired application session. Treating it as
-              // one used to fire a global session-expired event while the user was still
-              // on the login screen and made authentication failures feel like app errors.
-              if (endpoint === '/api/auth/login') {
-                throw new Error('Email or password not recognised.')
-              }
               if (!this._sessionExpired) {
                 this._sessionExpired = true
-                this.clearAuthStorage()
+                localStorage.removeItem(CONFIG.TOKEN_KEY)
+                localStorage.removeItem(CONFIG.USER_KEY)
                 window.dispatchEvent(new CustomEvent('neumax:session-expired'))
               }
-              throw new Error('Your session has ended. Sign in again to continue.')
+              throw new Error('Session expired. Please log in again.')
             }
-            if (res.status === 429) throw new Error('Too many sign-in attempts. Please wait a moment and try again.')
             if (res.status === 403) throw new Error('You do not have permission to perform this action.')
             if (res.status === 404) throw new Error('The requested resource was not found.')
             if (res.status === 503) {
@@ -1341,18 +1311,21 @@ document.addEventListener('DOMContentLoaded', () => {
         try { return Utils.ensureArray(await this.request(path)) } catch { return [] }
       }
 
-      async login(email, password, { remember = false } = {}) {
+      async login(email, password) {
         const data = await this.request('/api/auth/login', { method: 'POST', body: { email, password } })
-        if (!data?.token || !data?.user) throw new Error('Authentication service returned incomplete session data.')
-        this.storeAuth(data, remember)
-        this.clearCache()
-        this._sessionExpired = false
+        if (data.token) {
+          localStorage.setItem(CONFIG.TOKEN_KEY, data.token)
+          localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(data.user))
+          this.clearCache()
+          this._sessionExpired = false
+        }
         return data
       }
 
       async logout() {
         try { await this.request('/api/auth/logout', { method: 'POST' }) } finally {
-          this.clearAuthStorage()
+          localStorage.removeItem(CONFIG.TOKEN_KEY)
+          localStorage.removeItem(CONFIG.USER_KEY)
           this.clearCache()
         }
       }
@@ -1875,7 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Splash screen ──────────────────────────────────────────────
       const splashVisible = ref(true)
-      setTimeout(() => { splashVisible.value = false }, 1000)
+      setTimeout(() => { splashVisible.value = false }, 1800)
 
       // ── Dashboard expand drawers ────────────────────────────────────
       const dbDrawer = reactive({ show: false, panel: null }) // panel: 'oncall' | 'rotations'
@@ -7153,7 +7126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const loginError = ref('')
         const loginFieldErrors = reactive({ email: '', password: '' })
         const clearLoginError = (field) => { if (field === 'email') loginFieldErrors.email = ''; if (field === 'password') loginFieldErrors.password = ''; loginError.value = '' }
-        const handleForgotPassword = () => { showToast('Access help', 'Self-service password reset is not connected yet. Contact a neumDesk administrator for access support.', 'info', 5200) }
+        const handleForgotPassword = () => { showToast('Info', 'Password reset link sent', 'info') }
 
         const auth = useAuth()
         const { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings } = auth
@@ -9148,7 +9121,7 @@ document.addEventListener('DOMContentLoaded', () => {
               currentUser.value.full_name = userProfileModal.form.full_name
               currentUser.value.department_id = userProfileModal.form.department_id
             }
-            API.storeUser(currentUser.value)
+            localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value))
             // If this user has a linked staff record, open it for full profile editing
             if (userProfileModal.form.linked_staff_id) {
               const staffRecord = medicalStaff.value.find(s => s.id === userProfileModal.form.linked_staff_id)
@@ -9171,9 +9144,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (loginFieldErrors.email || loginFieldErrors.password) { loginError.value = 'Please fill all required fields'; return }
           loginLoading.value = true; loginError.value = ''
           try {
-            const response = await API.login(loginForm.email, loginForm.password, { remember: !!loginForm.remember_me })
-            currentUser.value = response.user
-            API.storeUser(response.user)
+            const response = await API.login(loginForm.email, loginForm.password)
+            currentUser.value = response.user; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
             maybeShowPreviewIntro(response.user)
             showToast('Success', `Welcome, ${response.user.full_name}!`, 'success')
             // FIX: set currentView BEFORE loadAllData — currentUser already triggers the
@@ -9182,9 +9154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // breadcrumb falling back to 'neumDesk' until loadAllData fully resolved.
             currentView.value = 'dashboard'
             await loadAllData()
-          } catch (e) {
-            loginError.value = e.message || 'Unable to sign in. Check your details and try again.'
-          }
+          } catch (e) { loginError.value = e.message || 'Invalid email or password'; showToast('Error', 'Login failed', 'error') }
           finally { loginLoading.value = false }
         }
 
@@ -9948,7 +9918,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form.image_urls.length >= 5) { showToast('Limit reached', 'Maximum 5 images per post', 'warning'); return }
         newsImageUploading.value = true
         try {
-          const token = API.token || ''
+          const token = localStorage.getItem(CONFIG.TOKEN_KEY) || ''
           const fd = new FormData()
           fd.append('file', file)
           const res = await fetch(CONFIG.API_BASE_URL + '/api/upload/news-image', {
@@ -9978,7 +9948,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!file) return
         staffPhotoUploading.value = true
         try {
-          const token = API.token || ''
+          const token = localStorage.getItem(CONFIG.TOKEN_KEY) || ''
           const fd = new FormData()
           fd.append('file', file)
           const res = await fetch(CONFIG.API_BASE_URL + '/api/upload/staff-photo', {
@@ -10335,9 +10305,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('neumax:offline', () => { isOnline.value = false })
 
         onMounted(() => {
-          const sessionToken = sessionStorage.getItem(CONFIG.TOKEN_KEY)
-          const token = sessionToken || localStorage.getItem(CONFIG.TOKEN_KEY)
-          const user = sessionToken ? sessionStorage.getItem(CONFIG.USER_KEY) : localStorage.getItem(CONFIG.USER_KEY)
+          const token = localStorage.getItem(CONFIG.TOKEN_KEY)
+          const user = localStorage.getItem(CONFIG.USER_KEY)
           if (token && user) {
             try {
               // Validate token with backend before showing the app.
@@ -10387,7 +10356,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }, 300000)
 
           window.addEventListener('neumax:session-expired', () => {
-            API.clearAuthStorage()
             currentUser.value = null
             currentView.value = 'login'
             // Close all open panels/modals
@@ -11291,91 +11259,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const vt = turn.visual && turn.visual.type
         if (vt === 'profile') return 'profile'
         if (vt === 'risklist') return 'alert'
-        if (['workload','occupancy','bars','enroll','scenario','grounded_facts'].includes(vt)) return 'insight'
+        if (['workload','occupancy','bars','enroll','scenario'].includes(vt)) return 'insight'
         if (['board','reslist','roster','absence','publication_list'].includes(vt)) return 'collection'
         return 'fact'
-      }
-
-
-      // V43 — one explicit context model for Grounded. The interface should always
-      // make it obvious WHAT record or department surface is being interrogated.
-      const askBarContextCard = Vue.computed(() => {
-        const subj = askBar.subject || askBar.context
-        if (!subj || !subj.id) return null
-        try {
-          if (subj.type === 'research_record') {
-            const p = (newsPosts.value || []).find(x => String(x.id) === String(subj.id))
-            if (!p) return { kind:'Research Library', title:subj.name || 'Research record', subtitle:'Current Research Library context', facts:[] }
-            const line = p.research_line_id ? newsOps.getLineName(p.research_line_id) : ''
-            const author = p.author_id ? newsOps.formatAuthorName(p.author_id) : ''
-            const kws = newsOps.normaliseNewsKeywords(p.keywords)
-            const type = _toTitle(p.post_type || 'record')
-            return {
-              kind: type,
-              title: p.title || 'Untitled record',
-              subtitle: [line, author].filter(Boolean).join(' · ') || 'Research Library record',
-              facts: [p.is_public ? 'Public' : 'Internal', kws.length ? `${kws.length} index term${kws.length===1?'':'s'}` : null].filter(Boolean),
-              tone:'research'
-            }
-          }
-          if (subj.type === 'research_study') {
-            const t = (researchOps.clinicalTrials.value || []).find(x => String(x.id) === String(subj.id))
-            if (!t) return null
-            const enr = researchOps.trialEnrollment(t)
-            const line = researchOps.getResearchLineName(t.research_line_id)
-            const status = _toTitle(researchOps.trialStatusKey(t) || t.status || 'study')
-            return {
-              kind:'Clinical study', title:t.title || t.protocol_id || 'Clinical study',
-              subtitle:[line, t.study_type, t.phase && (/^phase/i.test(t.phase)?t.phase:`Phase ${t.phase}`)].filter(Boolean).join(' · '),
-              facts:[status, enr ? `${enr.actual}/${enr.target} enrolled` : null, t.ethics_status ? `Ethics: ${formatEthicsStatus(t.ethics_status)}` : null].filter(Boolean), tone:'study'
-            }
-          }
-          if (subj.type === 'research_project') {
-            const pr = (researchOps.innovationProjects.value || []).find(x => String(x.id) === String(subj.id))
-            if (!pr) return null
-            const line = researchOps.getResearchLineName(pr.research_line_id)
-            return {
-              kind:'Clinical innovation', title:pr.title || 'Innovation project',
-              subtitle:[line, formatInnovationCategory(pr.category)].filter(Boolean).join(' · '),
-              facts:[formatInnovationStage(pr.current_stage || pr.development_stage), pr.funding_status ? formatFundingStatus(pr.funding_status) : null, pr.partner_found ? 'Partner confirmed' : null].filter(Boolean), tone:'project'
-            }
-          }
-          if (subj.type === 'research_line') {
-            const line = (researchOps.researchLines.value || []).find(x => String(x.id) === String(subj.id))
-            if (!line) return null
-            const pf = researchLinePortfolio(line)
-            return {
-              kind:`Research line L${line.line_number || ''}`.trim(), title:line.research_line_name || line.name || 'Research programme',
-              subtitle:(line.description || '').trim(),
-              facts:[`${pf.studies} stud${pf.studies===1?'y':'ies'}`, `${pf.projects} innovation project${pf.projects===1?'':'s'}`, `${pf.outputs} output${pf.outputs===1?'':'s'}`], tone:'line'
-            }
-          }
-          if (subj.type === 'staff') {
-            const st=(medicalStaff.value||[]).find(x=>String(x.id)===String(subj.id))
-            if (!st) return null
-            return { kind:'Person', title:st.full_name || subj.name, subtitle:[_toTitle(st.staff_type||'staff'),st.specialization||st.specialty].filter(Boolean).join(' · '), facts:[st.can_be_pi?'PI-eligible':null,st.has_phd?'PhD':null].filter(Boolean), tone:'staff' }
-          }
-        } catch (_) {}
-        return null
-      })
-      const askBarTurnLabel = (turn) => {
-        if (!turn) return ''
-        if (turn.confidence === 'low' && (!turn.sources || !turn.sources.length) && !turn.visual) return 'Not found in current records'
-        const t = askBarTurnType(turn)
-        if (t === 'profile') return 'Profile'
-        if (t === 'collection') return 'Connected records'
-        if (t === 'insight') return turn.visual?.type === 'grounded_facts' ? (turn.visual.eyebrow || 'Current record') : 'Insight'
-        if (t === 'alert') return 'Attention'
-        if (t === 'proposal') return 'Proposed change'
-        if (t === 'clarification') return 'Clarify'
-        return ''
-      }
-      const askBarClearContext = () => {
-        askBar.subject = null
-        askBar.context = null
-        askBar.turns = []
-        askBar.query = ''
-        askBar.view = 'conversation'
       }
 
       // Anticipatory suggestions: react to the module/subject in view so the agent
@@ -11442,6 +11328,102 @@ document.addEventListener('DOMContentLoaded', () => {
         { t: 'What can you do?',                     d: 'Help · all capabilities',    icon: 'briefing', intent: 'help' },
       ]
       const _SUGGEST_LABELS = { dashboard:'For today, you might', resident_rotations:'For rotations, you might', training_units:'For clinical units, you might', oncall_schedule:'For on-call, you might', staff_absence:'For leave & coverage, you might', medical_staff:'For staff, you might', research_hub:'For research, you might', news:'For the Research Library, you might', system_settings:'Try asking' }
+
+      // V43 · Grounded context intelligence. The assistant should understand the object
+      // the user is already looking at instead of asking them to repeat its name. This
+      // is a read-only context layer over existing refs; it does not change any backend
+      // contract or existing Research / Library navigation state.
+      const askBarResearchLineLabel = (lineId) => {
+        if (!lineId) return ''
+        const l = (researchOps.researchLines.value || []).find(x => String(x.id) === String(lineId))
+        if (!l) return ''
+        return `${l.line_number ? 'L'+l.line_number+' · ' : ''}${l.research_line_name || l.name || l.short_name || 'Research programme'}`
+      }
+      const askBarInferVisibleSubject = () => {
+        try {
+          if (staffOps.staffProfileModal?.show && staffOps.staffProfileModal?.staff) {
+            const x = staffOps.staffProfileModal.staff
+            return { type:'staff', id:x.id, name:x.full_name }
+          }
+          if (currentView.value === 'research_hub') {
+            const page = researchOps.researchHubPage?.value
+            if (page === 'study' && researchOps.selectedStudy?.value) {
+              const x = researchOps.selectedStudy.value
+              return { type:'trial', id:x.id, name:x.title, researchLineId:x.research_line_id || null }
+            }
+            if (page === 'project' && researchOps.selectedProject?.value) {
+              const x = researchOps.selectedProject.value
+              return { type:'project', id:x.id, name:x.title, researchLineId:x.research_line_id || null }
+            }
+            if (page === 'line' && researchOps.selectedLine?.value) {
+              const x = researchOps.selectedLine.value
+              return { type:'research_line', id:x.id, name:x.research_line_name || x.name, lineNumber:x.line_number || null }
+            }
+          }
+          if (currentView.value === 'news' && newsDrawer?.show && newsDrawer?.post) {
+            const x = newsDrawer.post
+            return { type:'research_record', id:x.id, name:x.title, postType:x.post_type, researchLineId:x.research_line_id || null, authorId:x.author_id || null, visibility:x.is_public ? 'Public' : 'Internal', status:x.status || null }
+          }
+        } catch (e) {}
+        return null
+      }
+      const askBarContextCard = Vue.computed(() => {
+        const s = askBar.subject || askBar.context
+        if (!s || !s.id) return null
+        try {
+          if (s.type === 'staff') {
+            const x = (medicalStaff.value || []).find(v => String(v.id) === String(s.id))
+            const bits = [x?.staff_type ? _toTitle(x.staff_type) : 'Staff', x?.specialization || x?.specialty].filter(Boolean)
+            return { type:'staff', noun:'person', label:'Department person', title:x?.full_name || s.name || 'Staff record', meta:bits.join(' · '), mark:(x?.full_name || s.name || 'S').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() }
+          }
+          if (s.type === 'research_record') {
+            const x = (newsPosts.value || []).find(v => String(v.id) === String(s.id))
+            const pt = _toTitle(x?.post_type || s.postType || 'Research record')
+            const line = askBarResearchLineLabel(x?.research_line_id || s.researchLineId)
+            const visibility = (x?.is_public ?? (s.visibility === 'Public')) ? 'Public' : 'Internal'
+            return { type:'research_record', noun:(x?.post_type || s.postType || 'record').replace('_',' '), label:pt, title:x?.title || s.name || 'Research Library record', meta:[line, visibility].filter(Boolean).join(' · '), mark:pt.slice(0,1).toUpperCase() }
+          }
+          if (s.type === 'trial') {
+            const x = (researchOps.clinicalTrials.value || []).find(v => String(v.id) === String(s.id))
+            const line = askBarResearchLineLabel(x?.research_line_id || s.researchLineId)
+            const status = x ? (researchOps.TRIAL_STATUS_LABEL?.[researchOps.trialStatusKey(x)] || x.status) : null
+            return { type:'trial', noun:'clinical study', label:'Clinical study', title:x?.title || s.name || 'Clinical study', meta:[line, status, x?.protocol_id].filter(Boolean).join(' · '), mark:'S' }
+          }
+          if (s.type === 'project') {
+            const x = (researchOps.innovationProjects.value || []).find(v => String(v.id) === String(s.id))
+            const line = askBarResearchLineLabel(x?.research_line_id || s.researchLineId)
+            const stage = x?.current_stage || x?.development_stage || null
+            return { type:'project', noun:'innovation project', label:'Clinical innovation', title:x?.title || s.name || 'Innovation project', meta:[line, stage].filter(Boolean).join(' · '), mark:'I' }
+          }
+          if (s.type === 'research_line') {
+            const x = (researchOps.researchLines.value || []).find(v => String(v.id) === String(s.id))
+            const coord = x?.coordinator_id ? getStaffName(x.coordinator_id) : null
+            return { type:'research_line', noun:'research programme', label:'Research programme', title:x?.research_line_name || x?.name || s.name || 'Research programme', meta:[x?.line_number ? 'L'+x.line_number : null, coord ? 'Coordinator · '+coord : null].filter(Boolean).join(' · '), mark:x?.line_number ? 'L'+x.line_number : 'R' }
+          }
+          if (s.type === 'unit') return { type:'unit', noun:'clinical unit', label:'Clinical unit', title:s.name || 'Clinical unit', meta:'Live operational context', mark:'U' }
+          if (s.type === 'rotation') return { type:'rotation', noun:'rotation', label:'Resident rotation', title:s.name || 'Rotation', meta:'Current assignment', mark:'R' }
+        } catch (e) {}
+        return null
+      })
+      const askBarOpenContext = () => {
+        const c = askBarContextCard.value
+        if (!c) return
+        const s = askBar.subject || askBar.context
+        try {
+          if (c.type === 'staff') { askBarOpenStaff(s.id); return }
+          if (c.type === 'research_line') { const x=(researchOps.researchLines.value||[]).find(v=>String(v.id)===String(s.id)); if(x){ closeAskBar(); currentView.value='research_hub'; Vue.nextTick(()=>researchOps.openLine(x)); return } }
+          if (c.type === 'trial') { const x=(researchOps.clinicalTrials.value||[]).find(v=>String(v.id)===String(s.id)); if(x){ closeAskBar(); currentView.value='research_hub'; Vue.nextTick(()=>researchOps.openStudy(x,'allstudies')); return } }
+          if (c.type === 'project') { const x=(researchOps.innovationProjects.value||[]).find(v=>String(v.id)===String(s.id)); if(x){ closeAskBar(); currentView.value='research_hub'; Vue.nextTick(()=>researchOps.openProject(x,'allprojects')); return } }
+          if (c.type === 'research_record') {
+            const x=(newsPosts.value||[]).find(v=>String(v.id)===String(s.id))
+            closeAskBar(); currentView.value='news'
+            if (x) Vue.nextTick(()=>openNewsDrawer(x,null))
+            return
+          }
+        } catch (e) {}
+        closeAskBar()
+      }
+
       const askBarSuggestLabel = Vue.computed(() => {
         if (askBar.subject && askBar.subject.name) return 'For ' + askBar.subject.name + ', you might'
         const v = currentView.value
@@ -11469,18 +11451,30 @@ document.addEventListener('DOMContentLoaded', () => {
               { t: `${nm}'s trials`,                  d: 'This attending · research', icon: 'research', intent: 'trials_by_person', q: `${nm} trials` },
             ]
           }
+          if (subj.type === 'trial') return [
+            { t:'Study snapshot', d:'Status · line · enrolment', icon:'research', followupKind:'research_subject_context', subjectType:'trial', action:'snapshot', subjectId:subj.id, q:'study snapshot' },
+            { t:'Protocol & ethics', d:'Execution requirements', icon:'briefing', followupKind:'research_subject_context', subjectType:'trial', action:'procedures', subjectId:subj.id, q:'protocol and ethics clearance' },
+            { t:'Recruitment', d:'Target · enrolled · status', icon:'research', followupKind:'research_subject_context', subjectType:'trial', action:'recruitment', subjectId:subj.id, q:'recruitment status' },
+            { t:'Who is involved?', d:'PI · study team', icon:'staff', followupKind:'research_subject_context', subjectType:'trial', action:'team', subjectId:subj.id, q:'who is involved' },
+          ]
+          if (subj.type === 'project') return [
+            { t:'Project snapshot', d:'Stage · line · clinical focus', icon:'research', followupKind:'research_subject_context', subjectType:'project', action:'snapshot', subjectId:subj.id, q:'project snapshot' },
+            { t:'Protocol & ethics', d:'Clinical execution clearance', icon:'briefing', followupKind:'research_subject_context', subjectType:'project', action:'procedures', subjectId:subj.id, q:'protocol and ethics clearance' },
+            { t:'Readiness', d:'TRL · regulatory · funding', icon:'gap', followupKind:'research_subject_context', subjectType:'project', action:'readiness', subjectId:subj.id, q:'project readiness' },
+            { t:'Who is involved?', d:'Lead · collaborators', icon:'staff', followupKind:'research_subject_context', subjectType:'project', action:'team', subjectId:subj.id, q:'who is involved' },
+          ]
+          if (subj.type === 'research_line') return [
+            { t:'Programme snapshot', d:'Evidence · innovation · output', icon:'research', followupKind:'research_subject_context', subjectType:'research_line', action:'snapshot', subjectId:subj.id, q:'programme snapshot' },
+            { t:'Recruiting studies', d:'Current clinical evidence', icon:'research', followupKind:'research_subject_context', subjectType:'research_line', action:'studies', subjectId:subj.id, q:'recruiting studies' },
+            { t:'Innovation pipeline', d:'Projects · development stage', icon:'briefing', followupKind:'research_subject_context', subjectType:'research_line', action:'innovation', subjectId:subj.id, q:'innovation pipeline' },
+            { t:'Research output', d:'Library records · publications', icon:'research', followupKind:'research_subject_context', subjectType:'research_line', action:'output', subjectId:subj.id, q:'research output' },
+          ]
           if (subj.type === 'research_record') {
             if (subj.postType === 'publication') return [
               { t:'Publication details', d:'This paper · scholarly record', icon:'research', followupKind:'research_record_context', action:'profile', subjectId:subj.id, q:'publication details' },
               { t:'Same author', d:'This paper · contributor', icon:'staff', followupKind:'research_record_context', action:'same_author', subjectId:subj.id, q:'same author publications' },
               { t:'Same research line', d:'This paper · context', icon:'research', followupKind:'research_record_context', action:'same_line', subjectId:subj.id, q:'same line publications' },
               { t:'Is this Public?', d:'This paper · visibility', icon:'briefing', followupKind:'research_record_context', action:'visibility', subjectId:subj.id, q:'is this Public' },
-            ]
-            if (subj.postType === 'article') return [
-              { t:'Brief me on this article', d:'This article · stored text', icon:'research', followupKind:'research_record_context', action:'summary', subjectId:subj.id, q:'brief me on this article' },
-              { t:'Index terms', d:'This article · topics', icon:'research', followupKind:'research_record_context', action:'keywords', subjectId:subj.id, q:'what are the index terms' },
-              { t:'Show related output', d:'This article · connections', icon:'research', followupKind:'research_record_context', action:'connections', subjectId:subj.id, q:'show related output' },
-              { t:'Who is connected?', d:'This article · contributor', icon:'staff', followupKind:'research_record_context', action:'author', subjectId:subj.id, q:'who is connected' },
             ]
             return [
               { t: 'Show related output', d: 'This record · connections', icon: 'research', followupKind: 'research_record_context', action: 'connections', subjectId: subj.id, q: 'show related output' },
@@ -11489,24 +11483,6 @@ document.addEventListener('DOMContentLoaded', () => {
               { t: 'Is this Public?', d: 'This record · visibility', icon: 'briefing', followupKind: 'research_record_context', action: 'visibility', subjectId: subj.id, q: 'is this Public' },
             ]
           }
-          if (subj.type === 'research_study') return [
-            { t:'Study summary', d:'This study · current record', icon:'research', followupKind:'research_entity_context', entityType:'study', action:'summary', subjectId:subj.id, q:'study summary' },
-            { t:'Protocol & ethics', d:'This study · procedural status', icon:'briefing', followupKind:'research_entity_context', entityType:'study', action:'procedures', subjectId:subj.id, q:'protocol and ethics status' },
-            { t:'Recruitment status', d:'This study · enrolment', icon:'research', followupKind:'research_entity_context', entityType:'study', action:'recruitment', subjectId:subj.id, q:'recruitment status' },
-            { t:'Who leads this study?', d:'This study · PI', icon:'staff', followupKind:'research_entity_context', entityType:'study', action:'lead', subjectId:subj.id, q:'who leads this study' },
-          ]
-          if (subj.type === 'research_project') return [
-            { t:'Project summary', d:'This project · current record', icon:'research', followupKind:'research_entity_context', entityType:'project', action:'summary', subjectId:subj.id, q:'project summary' },
-            { t:'Protocol & ethics', d:'Clinical execution · clearance', icon:'briefing', followupKind:'research_entity_context', entityType:'project', action:'procedures', subjectId:subj.id, q:'protocol and ethics clearance' },
-            { t:'Partners & funding', d:'This project · delivery', icon:'staff', followupKind:'research_entity_context', entityType:'project', action:'delivery', subjectId:subj.id, q:'partners and funding' },
-            { t:'Clinical focus', d:'This project · scope', icon:'research', followupKind:'research_entity_context', entityType:'project', action:'focus', subjectId:subj.id, q:'clinical focus' },
-          ]
-          if (subj.type === 'research_line') return [
-            { t:'Programme summary', d:'This line · portfolio', icon:'research', followupKind:'research_entity_context', entityType:'line', action:'summary', subjectId:subj.id, q:'programme summary' },
-            { t:'Active studies', d:'This line · evidence', icon:'research', followupKind:'research_entity_context', entityType:'line', action:'studies', subjectId:subj.id, q:'active studies' },
-            { t:'Innovation projects', d:'This line · innovation', icon:'briefing', followupKind:'research_entity_context', entityType:'line', action:'projects', subjectId:subj.id, q:'innovation projects' },
-            { t:'Research output', d:'This line · library', icon:'research', followupKind:'research_entity_context', entityType:'line', action:'outputs', subjectId:subj.id, q:'research output' },
-          ]
           if (subj.type === 'unit') return [
             { t: `Who is in ${nm}?`,                  d: 'This unit · residents',     icon: 'staff',    intent: 'unit_status',      q: `who is in ${nm}` },
             { t: `Assign a resident to ${nm}`,        d: 'This unit · rotation',      icon: 'briefing', intent: 'assign_rotation',  q: `put ` },
@@ -11528,47 +11504,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const openAskBar  = () => {
         if (!currentUser.value) return
+        const visibleSubject = askBarInferVisibleSubject()
+        const oldCtx = askBar.subject || askBar.context
+        const oldKey = oldCtx?.id ? `${oldCtx.type}:${oldCtx.id}` : ''
+        const newKey = visibleSubject?.id ? `${visibleSubject.type}:${visibleSubject.id}` : ''
+        // Moving from one visible object to another starts a clean contextual thread.
+        // Re-opening Grounded on the same object preserves the conversation.
+        if (newKey && oldKey && newKey !== oldKey) { askBar.turns = []; askBar.query = '' }
+        if (visibleSubject) {
+          askBar.subject = { ...visibleSubject }
+          askBar.context = { ...visibleSubject }
+        } else {
+          // A global open must not inherit an entity that is no longer on screen.
+          // Keep the conversation history, but drop stale entity scoping.
+          askBar.subject = null
+          askBar.context = null
+        }
         askBar.open = true
-        // V43: Grounded follows the object the user is actually looking at. This is
-        // deterministic context, not inferred intent. A contextual object opens
-        // straight into conversation; department digest remains the default elsewhere.
-        try {
-          let subject = null, context = null
-          if (newsDrawer && newsDrawer.show && newsDrawer.post) {
-            const p = newsDrawer.post
-            subject = { type:'research_record', id:p.id, name:p.title, postType:p.post_type, researchLineId:p.research_line_id||null, authorId:p.author_id||null, visibility:p.is_public?'Public':'Internal', status:p.status||null }
-            context = { ...subject, journal:p.journal_name||null, doi:p.doi||null, authors:p.authors_text||null, publishedAt:p.published_at||p.created_at||null }
-          } else if (staffOps.staffProfileModal && staffOps.staffProfileModal.show && staffOps.staffProfileModal.staff) {
-            const st = staffOps.staffProfileModal.staff
-            subject = context = { type:'staff', id:st.id, name:st.full_name }
-          } else if (researchOps.selectedStudy && researchOps.selectedStudy.value) {
-            const st = researchOps.selectedStudy.value
-            subject = context = { type:'research_study', id:st.id, name:st.title || st.protocol_id || 'Clinical study', researchLineId:st.research_line_id||null }
-          } else if (researchOps.selectedProject && researchOps.selectedProject.value) {
-            const pr = researchOps.selectedProject.value
-            subject = context = { type:'research_project', id:pr.id, name:pr.title || 'Innovation project', researchLineId:pr.research_line_id||null }
-          } else if (researchOps.selectedLine && researchOps.selectedLine.value && researchOps.researchHubPage?.value === 'line') {
-            const ln = researchOps.selectedLine.value
-            subject = context = { type:'research_line', id:ln.id, name:ln.research_line_name || ln.name || 'Research programme' }
-          }
-          askBar.subject = subject
-          if (context) askBar.context = context
-          else if (!askBar.turns.length) askBar.context = null
-        } catch (e) { askBar.subject = null }
-        askBar.view = askBar.subject ? 'conversation' : ((askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation')
+        // Targeted interrogation should open directly in conversation. The proactive
+        // digest remains the entry point only when Grounded was opened globally.
+        askBar.view = visibleSubject ? 'conversation' : ((askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation')
         // Pull fresh data so the agent never answers from a stale local snapshot.
-        // Best-effort and silent — if a loader is missing or fails, we just use what we have.
+        // Best-effort and silent — loaders may run in parallel with the current view.
         try { staffOps.loadMedicalStaff && staffOps.loadMedicalStaff() } catch (e) {}
         try { onCallOps.loadOnCallSchedule && onCallOps.loadOnCallSchedule() } catch (e) {}
         try { absenceOps.loadAbsences && absenceOps.loadAbsences() } catch (e) {}
         try { rotationOps.loadRotations && rotationOps.loadRotations() } catch (e) {}
+        try { visibleSubject && /^(trial|project|research_line)$/.test(visibleSubject.type) && researchOps.loadAllResearch && researchOps.loadAllResearch() } catch (e) {}
+        try { visibleSubject?.type === 'research_record' && !newsOps.newsLoaded.value && newsOps.loadNews && newsOps.loadNews() } catch (e) {}
+        Vue.nextTick(() => { if (askBar.view === 'conversation') document.querySelector('.askbar-input input')?.focus() })
       }
       const closeAskBar = () => { askBar.open = false; askBar.query = '' }
       const askBarToggleTeach = () => {
         askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
         if (askBar.view === 'teach') loadBrain()
       }
-      const askBarReset = () => { askBar.turns = []; askBar.query = ''; if (askBar.subject) askBar.context = { ...askBar.subject }; else askBar.context = null; askBar.view = askBar.subject ? 'conversation' : ((askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation') }
+      const askBarReset = () => { askBar.turns = []; askBar.context = null; askBar.subject = null; askBar.view = (askBarScanCount.value || askBarChanges.value.length) ? 'digest' : 'conversation' }
       const runSuggestion = (s) => {
         if (!s) return
         // Contextual suggestions (Research Library object, staff follow-up, etc.)
@@ -12888,7 +12859,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const askBarLoadingKindFor = (intent) => {
-        if (/^(staff_summary|staff_attr|research_line_profile|trial_profile|project_profile|publication_profile|unit_profile)$/.test(intent || '')) return 'profile'
+        if (/^(staff_summary|staff_attr|research_line_profile|trial_profile|project_profile|publication_profile|unit_profile|research_subject_context|research_record_context)$/.test(intent || '')) return 'profile'
         if (/^(oncall_week|oncall_upcoming|absent_now|absence_upcoming|trials_recruiting|trials_overview|study_governance|innovation_attention|research_lines|publications|staff_roster|residents_board|units_board|rotations_active|rotations_upcoming)$/.test(intent || '')) return 'collection'
         if (/^(issues|risk_scan|today_snapshot|this_week_ahead|dept_health|briefing|coverage_gaps|research_summary|workload_analysis|oncall_fairness|oncall_no_backup)$/.test(intent || '')) return 'insight'
         if (/^(record_leave|record_oncall|assign_rotation|draft_rota|return_leave|cancel_leave|remove_oncall|cancel_rotation|edit_rotation|edit_oncall|edit_leave|extend_rotation)$/.test(intent || '')) return 'proposal'
@@ -13003,6 +12974,8 @@ document.addEventListener('DOMContentLoaded', () => {
           trials_recruiting:[['Reviewing trials','research'], ['Computing enrollment health','research']],
           publications:   [['Reading scholarly records','publications'], ['Applying publication filters','publications']],
           publication_profile:[['Resolving the publication','publications'], ['Connecting scholarly metadata','publications'], ['Checking related output','research']],
+          research_subject_context:[['Resolving the active research record','research'], ['Reading connected programme data','research'], ['Checking linked people and output','synthesis']],
+          research_record_context:[['Resolving the active Library record','publications'], ['Checking connected research context','research']],
           coverage_gaps:   [['Checking unit staffing','rotations'], ['Comparing to expected levels','synthesis']],
           rank_oncall:     [['Reading the on-call schedule','on-call'], ['Counting shifts per physician','on-call'], ['Ranking by load','synthesis']],
           pis_oncall:      [['Pulling principal investigators','research'], ['Cross-referencing on-call','on-call'], ['Joining the two','synthesis']],
@@ -13508,6 +13481,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const taughtIntent = askBarMatchTaught(asked)
             if (taughtIntent) intent = taughtIntent
           }
+          // Research object context: typed questions should be as capable as
+          // clicking the contextual suggestions. Resolve only a small, explicit
+          // vocabulary so this cannot steal unrelated departmental questions.
+          if (!followup && !intent && /^(trial|project|research_line)$/.test(askBar.context?.type || '')) {
+            const subjectType = askBar.context.type
+            let action = null
+            if (subjectType === 'trial') {
+              if (/\b(protocol|ethics|ethical|ceim|clearance|consent|regulatory|missing|required|requirement)\b/i.test(q)) action = 'procedures'
+              else if (/\b(recruit|recruitment|enrol|enroll|participant|target)\b/i.test(q)) action = 'recruitment'
+              else if (/\b(who|team|pi|principal investigator|investigator|people|involved)\b/i.test(q)) action = 'team'
+              else if (/\b(snapshot|summary|overview|status|about this|this study)\b/i.test(q)) action = 'snapshot'
+            } else if (subjectType === 'project') {
+              if (/\b(protocol|ethics|ethical|ceim|clearance|clinical execution)\b/i.test(q)) action = 'procedures'
+              else if (/\b(readiness|trl|regulatory|funding|stage|maturity|partner|validation|missing|before|ready)\b/i.test(q)) action = 'readiness'
+              else if (/\b(who|team|lead|investigator|collaborator|people|involved)\b/i.test(q)) action = 'team'
+              else if (/\b(snapshot|summary|overview|status|about this|this project)\b/i.test(q)) action = 'snapshot'
+            } else if (subjectType === 'research_line') {
+              if (/\b(recruit|recruiting|stud(y|ies)|trial|clinical evidence)\b/i.test(q)) action = 'studies'
+              else if (/\b(innovation|project|pipeline|development)\b/i.test(q)) action = 'innovation'
+              else if (/\b(output|publication|article|library|research output)\b/i.test(q)) action = 'output'
+              else if (/\b(snapshot|summary|overview|programme|program|about this|this line|happening)\b/i.test(q)) action = 'snapshot'
+            }
+            if (action) followup = { kind:'research_subject_context', subjectType, subjectId:askBar.context.id, action, q:asked }
+          }
+
           // Research Library object context: short natural follow-ups should work
           // whether they were typed or clicked. Keep this deterministic and tied to
           // the active Research Library record.
@@ -13515,28 +13513,10 @@ document.addEventListener('DOMContentLoaded', () => {
             let action = null
             if (/\b(show|find|open)?\s*(related|connected)\s+(output|records?|work)\b|\bwhat else is connected\b/i.test(q)) action = 'connections'
             else if (/\b(which|what)\s+research\s+line\b|\bthis research line\b/i.test(q)) action = 'line'
-            else if (/\bwho is connected\b|\bwho is linked\b|\blinked contributor\b|\bwho (wrote|authored)\b/i.test(q)) action = 'author'
+            else if (/\bwho is connected\b|\bwho is linked\b|\blinked contributor\b/i.test(q)) action = 'author'
             else if (/\bis this public\b|\bpublic or internal\b|\bvisibility\b/i.test(q)) action = 'visibility'
-            else if (/\b(summar|brief me|what is this (article|record) about|tell me about this (article|record))\b/i.test(q)) action = 'summary'
-            else if (/\b(keywords?|index terms?|topics?)\b/i.test(q)) action = 'keywords'
-            else if (/\b(when.*published|publication date|published when|date published)\b/i.test(q)) action = 'date'
             else if (askBar.context.postType === 'publication' && /\b(publication|paper) details\b/i.test(q)) action = 'profile'
             if (action) followup = { kind:'research_record_context', id:askBar.context.id, name:askBar.context.name, action, q:asked }
-          }
-          if (!followup && !intent && ['research_study','research_project','research_line'].includes(askBar.context?.type)) {
-            const entityType = askBar.context.type === 'research_study' ? 'study' : askBar.context.type === 'research_project' ? 'project' : 'line'
-            let action = null
-            if (/\b(summary|overview|brief|tell me about|what is this)\b/i.test(q)) action = 'summary'
-            else if (entityType === 'study' && /\b(protocol|ethics|ceim|clearance)\b/i.test(q)) action = 'procedures'
-            else if (entityType === 'study' && /\b(recruit|enrol|enroll|target|participant)\b/i.test(q)) action = 'recruitment'
-            else if (entityType === 'study' && /\b(who.*lead|pi|principal investigator)\b/i.test(q)) action = 'lead'
-            else if (entityType === 'project' && /\b(protocol|ethics|ceim|clearance)\b/i.test(q)) action = 'procedures'
-            else if (entityType === 'project' && /\b(partner|funding|funder|budget)\b/i.test(q)) action = 'delivery'
-            else if (entityType === 'project' && /\b(clinical focus|scope|disease|population|rationale|need)\b/i.test(q)) action = 'focus'
-            else if (entityType === 'line' && /\b(stud(y|ies)|trial)\b/i.test(q)) action = 'studies'
-            else if (entityType === 'line' && /\b(innovation|projects?)\b/i.test(q)) action = 'projects'
-            else if (entityType === 'line' && /\b(output|publication|article|library)\b/i.test(q)) action = 'outputs'
-            if (action) followup = { kind:'research_entity_context', entityType, id:askBar.context.id, name:askBar.context.name, action, q:asked }
           }
 
           // 1b. A specific staff attribute question ("does X have a phd?", "X's certificates")
@@ -13853,9 +13833,133 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 0)
       }
 
+      // V43 · Semantic research answers for the object currently in context.
+      // These are intentionally deterministic: every displayed field is read from the
+      // current Study / Innovation / Research Line / Research Library records.
+      const askBarList = (value) => Array.isArray(value) ? value : (value === null || value === undefined || value === '' ? [] : String(value).split(/[,;]/).map(v=>v.trim()).filter(Boolean))
+      const askBarResearchBriefVisual = (kind, eyebrow, title, status, rows, note=null, tags=[]) => ({
+        type:'research_brief', kind, eyebrow, title, status:status || '', rows:(Array.isArray(rows)?rows:[]).filter(r=>r && r.value !== undefined && r.value !== null && r.value !== ''), note, tags:askBarList(tags).filter(Boolean).slice(0,6)
+      })
+      const askBarProjectStageLabel = (p) => {
+        const raw = p?.current_stage || p?.development_stage || 'Not recorded'
+        return ({Prototipo:'Prototype',Piloto:'Pilot','Validación':'Validation',Escalamiento:'Scale-up','Comercialización':'Commercialisation'})[raw] || raw
+      }
+      const askBarEthicsLabel = (v) => ({approved:'Approved',pending:'Pending',exempt:'Exempt',not_required:'Not required'})[String(v||'').toLowerCase()] || (v ? _toTitle(String(v).replace(/_/g,' ')) : 'Not recorded')
+      const askBarBuildResearchSubjectFollowup = (fu) => {
+        const subjectType = fu.subjectType || askBar.subject?.type || askBar.context?.type
+        const id = fu.id || fu.subjectId || askBar.subject?.id || askBar.context?.id
+        const action = fu.action || 'snapshot'
+        if (subjectType === 'trial') {
+          const x = (researchOps.clinicalTrials.value || []).find(v=>String(v.id)===String(id))
+          if (!x) return { text:'I could not find that clinical study in the current research records.', chips:[], actions:[], sources:['research'], followups:[], confidence:'low' }
+          const line = askBarResearchLineLabel(x.research_line_id)
+          const pi = x.principal_investigator_id ? getStaffName(x.principal_investigator_id) : 'Not assigned'
+          const status = researchOps.TRIAL_STATUS_LABEL?.[researchOps.trialStatusKey(x)] || x.status || 'Not recorded'
+          const enrollment = researchOps.trialEnrollment ? researchOps.trialEnrollment(x) : null
+          const openAction = [{ label:'Open study', researchType:'study', id:x.id, primary:true }]
+          if (action === 'procedures') {
+            const protocol = x.protocol_applicable === false ? 'Not applicable' : (x.protocol_finalized ? 'Finalised' : (x.protocol_id ? 'Recorded · not marked final' : 'Not recorded'))
+            const rows = [
+              {label:'Protocol', value:protocol, detail:x.protocol_id || (x.protocol_applicable===false ? 'No protocol required recorded' : 'No protocol ID recorded'), tone:(x.protocol_applicable===false||x.protocol_finalized)?'ok':'attention'},
+              {label:'Ethics / CEIm clearance', value:askBarEthicsLabel(x.ethics_status), detail:x.ethics_reference || 'No ethics reference recorded', tone:String(x.ethics_status||'').toLowerCase()==='approved'?'ok':(!x.ethics_status||String(x.ethics_status).toLowerCase()==='pending'?'attention':'neutral')},
+              {label:'Principal investigator', value:pi, tone:x.principal_investigator_id?'ok':'attention'},
+              {label:'Consent / regulatory', value:x.consent_version ? `Consent ${x.consent_version}` : (x.regulatory_status || 'Not recorded'), tone:'neutral'}
+            ]
+            const missing = [x.protocol_applicable!==false && !x.protocol_finalized ? 'protocol not marked final' : null, !x.ethics_status ? 'ethics / CEIm status not recorded' : null, !x.principal_investigator_id ? 'PI not assigned' : null].filter(Boolean)
+            return { text:missing.length ? `I found ${missing.length} execution requirement${missing.length===1?'':'s'} to check in this study record.` : 'The tracked protocol, ethics / CEIm and PI requirements are recorded for this study.', visual:askBarResearchBriefVisual('study','Clinical execution',x.title,status,rows, missing.length ? `Check: ${missing.join(' · ')}.` : 'This reflects the fields currently recorded in neumDesk; it is not an independent regulatory assessment.'), actions:openAction, chips:x.principal_investigator_id?[{label:pi,id:x.principal_investigator_id}]:[], sources:['research','staff'], followups:[{label:'Recruitment',followupKind:'research_subject_context',subjectType:'trial',subjectId:x.id,action:'recruitment',q:'recruitment status'}], confidence:'high' }
+          }
+          if (action === 'recruitment') {
+            const rows = [
+              {label:'Recruitment status', value:researchOps.trialRecruitmentKey ? _toTitle(String(researchOps.trialRecruitmentKey(x)||'not recorded').replace(/_/g,' ')) : (x.recruitment_status || 'Not independently recorded')},
+              {label:'Target', value:enrollment?.target ?? x.enrollment_target ?? 'Not recorded'},
+              {label:'Enrolled', value:enrollment?.actual ?? x.actual_enrollment ?? 'Not recorded'},
+              {label:'To target', value:enrollment?.remaining ?? (x.enrollment_target != null && x.actual_enrollment != null ? Math.max(0,x.enrollment_target-x.actual_enrollment) : 'Not recorded')},
+              ...(x.screened_count!=null ? [{label:'Screened',value:x.screened_count}] : []),
+              ...(x.active_participants!=null ? [{label:'Currently active',value:x.active_participants}] : [])
+            ]
+            const txt = enrollment?.target ? `${enrollment.actual} of ${enrollment.target} participants are enrolled (${enrollment.pct}%).` : 'Recruitment data are shown from the fields currently recorded for this study.'
+            return { text:txt, visual:askBarResearchBriefVisual('study','Study delivery',x.title,status,rows), actions:openAction, sources:['research'], followups:[{label:'Protocol & ethics',followupKind:'research_subject_context',subjectType:'trial',subjectId:x.id,action:'procedures',q:'protocol and ethics clearance'}], confidence:'high' }
+          }
+          if (action === 'team') {
+            const ids = [x.principal_investigator_id, ...askBarList(x.co_investigators), ...askBarList(x.sub_investigators)].filter(Boolean)
+            const seen = new Set(); const items=[]
+            ids.forEach(pid=>{ const k=String(pid); if(seen.has(k)) return; seen.add(k); const nm=getStaffName(pid); if(nm) items.push({title:nm,meta:String(pid)===String(x.principal_investigator_id)?'Principal Investigator':(x.team_roles?.[pid]||'Investigator'),tone:'research'}) })
+            ;(Array.isArray(x.external_team)?x.external_team:[]).forEach(v=>items.push({title:v.name||v.institution||'External collaborator',meta:[v.role,v.institution].filter(Boolean).join(' · ')||'External collaborator',tone:'default'}))
+            return { text:items.length ? `${items.length} study team member${items.length===1?' is':'s are'} recorded.` : 'No study team members are recorded beyond the current study metadata.', visual:items.length?{type:'reslist',items}:null, actions:openAction, sources:['research','staff'], followups:[], confidence:'high' }
+          }
+          const rows = [
+            {label:'Status',value:status}, {label:'Research programme',value:line||'Not assigned'},
+            {label:'Study type',value:x.study_type||'Not recorded'}, ...(x.phase ? [{label:'Phase',value:x.phase}] : []),
+            {label:'Principal investigator',value:pi}, ...(enrollment?.target ? [{label:'Enrolment',value:`${enrollment.actual} / ${enrollment.target} · ${enrollment.pct}%`}] : [])
+          ]
+          return { text:`${x.title} is ${String(status).toLowerCase()}${line ? ` in ${line}` : ''}.`, visual:askBarResearchBriefVisual('study','Clinical study',x.title,status,rows,null,askBarList(x.target_diseases)), chips:x.principal_investigator_id?[{label:pi,id:x.principal_investigator_id}]:[], actions:openAction, sources:['research','staff'], followups:[{label:'Protocol & ethics',followupKind:'research_subject_context',subjectType:'trial',subjectId:x.id,action:'procedures',q:'protocol and ethics clearance'},{label:'Recruitment',followupKind:'research_subject_context',subjectType:'trial',subjectId:x.id,action:'recruitment',q:'recruitment status'}], confidence:'high' }
+        }
+        if (subjectType === 'project') {
+          const x = (researchOps.innovationProjects.value || []).find(v=>String(v.id)===String(id))
+          if (!x) return { text:'I could not find that clinical innovation project in the current research records.', chips:[], actions:[], sources:['research'], followups:[], confidence:'low' }
+          const line = askBarResearchLineLabel(x.research_line_id)
+          const lead = x.lead_investigator_id ? getStaffName(x.lead_investigator_id) : 'Not assigned'
+          const stage = askBarProjectStageLabel(x)
+          const openAction = [{label:'Open project',researchType:'project',id:x.id,primary:true}]
+          if (action === 'procedures') {
+            const hasProtocolField = x.validation_protocol_id || x.validation_protocol_finalized !== undefined
+            const protocolValue = x.validation_protocol_id ? (x.validation_protocol_finalized ? 'Finalised' : 'Recorded · not marked final') : (hasProtocolField ? 'Not recorded' : 'Not recorded')
+            const rows = [
+              {label:'Clinical protocol',value:protocolValue,detail:x.validation_protocol_id || 'No validation protocol ID recorded',tone:x.validation_protocol_finalized?'ok':'attention'},
+              {label:'Ethics / CEIm clearance',value:askBarEthicsLabel(x.ethics_status),detail:x.ethics_reference || 'No ethics reference recorded',tone:String(x.ethics_status||'').toLowerCase()==='approved'?'ok':'attention'},
+              {label:'Validation scope',value:x.scope_finalized ? 'Confirmed' : (x.scope_note ? 'Recorded · not confirmed' : 'Not recorded'),detail:x.scope_note || '',tone:x.scope_finalized?'ok':'neutral'},
+              {label:'Regulatory pathway',value:x.regulatory_pathway && x.regulatory_pathway!=='none' ? x.regulatory_pathway : 'Not defined / not applicable',tone:'neutral'}
+            ]
+            return { text:'These are the procedural fields currently recorded for clinical execution / validation of this project.', visual:askBarResearchBriefVisual('project','Clinical execution',x.title,stage,rows,'Protocol and ethics / CEIm clearance are shown as recorded fields only. Grounded does not infer clearance when a field is missing.'), actions:openAction, sources:['research'], followups:[{label:'Readiness',followupKind:'research_subject_context',subjectType:'project',subjectId:x.id,action:'readiness',q:'project readiness'}], confidence:'high' }
+          }
+          if (action === 'readiness') {
+            const needs = Array.isArray(x.partner_needs) ? x.partner_needs : (x.partner_needs ? [x.partner_needs] : [])
+            const rows=[
+              {label:'Development stage',value:stage}, {label:'TRL',value:x.trl_level ? `TRL ${x.trl_level}` : 'Not recorded'},
+              {label:'Regulatory pathway',value:x.regulatory_pathway && x.regulatory_pathway!=='none' ? x.regulatory_pathway : 'Not defined / not applicable'},
+              {label:'Funding',value:x.funding_status ? _toTitle(String(x.funding_status).replace(/_/g,' ')) : 'Not recorded',detail:x.funding_source||''},
+              {label:'Partner',value:x.partner_found ? (x.partner_name || 'Confirmed') : (needs.length ? 'Need recorded' : 'Not recorded'),detail:needs.join(' · ')}
+            ]
+            return { text:`${x.title} is currently at ${stage}${x.trl_level ? `, TRL ${x.trl_level}` : ''}.`, visual:askBarResearchBriefVisual('project','Readiness',x.title,stage,rows), actions:openAction, sources:['research'], followups:[{label:'Protocol & ethics',followupKind:'research_subject_context',subjectType:'project',subjectId:x.id,action:'procedures',q:'protocol and ethics clearance'}], confidence:'high' }
+          }
+          if (action === 'team') {
+            const items=[]
+            if(x.lead_investigator_id) items.push({title:lead,meta:'Clinical / project lead',tone:'research'})
+            ;askBarList(x.co_investigators).forEach(pid=>items.push({title:getStaffName(pid),meta:x.team_roles?.[pid]||'Internal collaborator',tone:'research'}))
+            ;(Array.isArray(x.external_team)?x.external_team:[]).forEach(v=>items.push({title:v.name||v.institution||'External collaborator',meta:[v.role,v.institution].filter(Boolean).join(' · ')||'External collaborator',tone:'default'}))
+            return { text:items.length ? `${items.length} project team member${items.length===1?' is':'s are'} recorded.` : 'No project team members are recorded.', visual:items.length?{type:'reslist',items}:null, actions:openAction, sources:['research','staff'], followups:[], confidence:'high' }
+          }
+          const rows=[
+            {label:'Development stage',value:stage},{label:'Research programme',value:line||'Not assigned'},{label:'Clinical / project lead',value:lead},
+            {label:'Clinical focus',value:askBarList(x.target_diseases).join(' · ') || x.scope_note || 'Not recorded'},
+            ...(x.trl_level ? [{label:'Maturity',value:`TRL ${x.trl_level}`}] : [])
+          ]
+          return { text:`${x.title} is at ${stage}${line ? ` in ${line}` : ''}.`, visual:askBarResearchBriefVisual('project','Clinical innovation',x.title,stage,rows,null,askBarList(x.keywords)), chips:x.lead_investigator_id?[{label:lead,id:x.lead_investigator_id}]:[], actions:openAction, sources:['research','staff'], followups:[{label:'Protocol & ethics',followupKind:'research_subject_context',subjectType:'project',subjectId:x.id,action:'procedures',q:'protocol and ethics clearance'},{label:'Readiness',followupKind:'research_subject_context',subjectType:'project',subjectId:x.id,action:'readiness',q:'project readiness'}], confidence:'high' }
+        }
+        if (subjectType === 'research_line') {
+          const x=(researchOps.researchLines.value||[]).find(v=>String(v.id)===String(id))
+          if(!x) return {text:'I could not find that research programme in the current records.',chips:[],actions:[],sources:['research'],followups:[],confidence:'low'}
+          const studies=(researchOps.clinicalTrials.value||[]).filter(v=>String(v.research_line_id)===String(x.id))
+          const projects=(researchOps.innovationProjects.value||[]).filter(v=>String(v.research_line_id)===String(x.id))
+          const outputs=(newsPosts.value||[]).filter(v=>String(v.research_line_id)===String(x.id))
+          const recruiting=studies.filter(v=>researchOps.trialStatusKey(v)==='recruiting')
+          const coord=x.coordinator_id?getStaffName(x.coordinator_id):'Not assigned'
+          const openAction=[{label:'Open research programme',researchType:'line',id:x.id,primary:true}]
+          if(action==='studies') { const items=recruiting.map(v=>({title:v.title,meta:[v.protocol_id,v.actual_enrollment!=null&&v.enrollment_target!=null?`${v.actual_enrollment}/${v.enrollment_target} enrolled`:null].filter(Boolean).join(' · '),badge:'Recruiting',tone:'active'})); return {text:items.length?`${items.length} study${items.length===1?' is':'ies are'} recruiting in this programme.`:'No studies in this programme are currently marked as recruiting.',visual:items.length?{type:'reslist',items}:null,actions:openAction,sources:['research'],followups:[],confidence:'high'} }
+          if(action==='innovation') { const items=projects.map(v=>({title:v.title,meta:[askBarProjectStageLabel(v),v.trl_level?`TRL ${v.trl_level}`:null].filter(Boolean).join(' · '),badge:v.current_stage||v.development_stage||'',tone:'project'})); return {text:items.length?`${items.length} innovation project${items.length===1?' is':'s are'} linked to this programme.`:'No innovation projects are linked to this programme.',visual:items.length?{type:'reslist',items}:null,actions:openAction,sources:['research'],followups:[],confidence:'high'} }
+          if(action==='output') { const items=outputs.slice(0,8).map(v=>({title:v.title||'Untitled record',meta:_toTitle(v.post_type||'record'),badge:v.is_public?'Public':'Internal',tone:v.post_type==='publication'?'research':'default'})); return {text:outputs.length?`${outputs.length} Research Library record${outputs.length===1?' is':'s are'} linked to this programme.`:'No Research Library output is linked to this programme.',visual:items.length?{type:'reslist',items}:null,actions:[...openAction,{label:'Open Research Library',view:'news'}],sources:['research','Research Library'],followups:[],confidence:'high'} }
+          const enrolled=studies.reduce((n,v)=>n+(Number(v.actual_enrollment)||0),0)
+          const target=studies.reduce((n,v)=>n+(Number(v.enrollment_target)||0),0)
+          const rows=[{label:'Coordinator',value:coord},{label:'Clinical studies',value:String(studies.length),detail:recruiting.length?`${recruiting.length} recruiting`:''},{label:'Clinical innovation',value:String(projects.length)},{label:'Research output',value:String(outputs.length)},{label:'Enrolment',value:target?`${enrolled} / ${target}`:String(enrolled)}]
+          return {text:`${x.research_line_name||x.name} connects ${studies.length} clinical stud${studies.length===1?'y':'ies'}, ${projects.length} innovation project${projects.length===1?'':'s'} and ${outputs.length} Library record${outputs.length===1?'':'s'}.`,visual:askBarResearchBriefVisual('line','Research programme',x.research_line_name||x.name,x.active===false?'Inactive':'Active',rows,x.description||null,(Array.isArray(x.keywords)?x.keywords:String(x.keywords||'').split(/[,;]/)).filter(Boolean)),chips:x.coordinator_id?[{label:coord,id:x.coordinator_id}]:[],actions:openAction,sources:['research','Research Library','staff'],followups:[{label:'Recruiting studies',followupKind:'research_subject_context',subjectType:'research_line',subjectId:x.id,action:'studies',q:'recruiting studies'},{label:'Research output',followupKind:'research_subject_context',subjectType:'research_line',subjectId:x.id,action:'output',q:'research output'}],confidence:'high'}
+        }
+        return { text:'I have the current object in context, but this specific view is not mapped yet.', chips:[], actions:[], sources:[], followups:[], confidence:'low' }
+      }
+
       // Follow-up answers that use remembered context
       const askBarBuildFollowup = (fu) => {
         const today = Utils.normalizeDate(new Date())
+        if (fu.kind === 'research_subject_context') return askBarBuildResearchSubjectFollowup(fu)
         if (fu.kind === 'clarify_staff') {
           // #7 Ambiguous name → ask which person, offering each with role context.
           const opts = fu.options || []
@@ -13874,77 +13978,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (fu.action==='profile' && p.post_type==='publication') return askBarBuildPublicationProfile(p)
           if (fu.action==='same_author' && p.post_type==='publication') return askBarBuildPublicationCollection(askBarPublicationRecords().filter(x=>String(x.id)!==String(p.id) && p.author_id && String(x.author_id)===String(p.author_id)),{qualifier:author?`— by ${author}`:'',empty:author?`No other publications are linked to ${author}.`:'No internal contributor is linked to this publication.'})
           if (fu.action==='same_line' && p.post_type==='publication') return askBarBuildPublicationCollection(askBarPublicationRecords().filter(x=>String(x.id)!==String(p.id) && p.research_line_id && String(x.research_line_id)===String(p.research_line_id)),{qualifier:line?`— ${line}`:'',empty:line?`No other publications are linked to ${line}.`:'No research line is linked to this publication.'})
-          const keywords = newsOps.normaliseNewsKeywords(p.keywords)
-          const cleanBody = String(p.body || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()
-          const brief = String(p.excerpt || '').trim() || (cleanBody ? (cleanBody.length > 520 ? cleanBody.slice(0,517).replace(/\s+\S*$/,'') + '…' : cleanBody) : '')
           let text=''
-          let visual = null
           if(fu.action==='connections') text=related.length ? `${p.title} has ${related.length} connected Research Library record${related.length===1?'':'s'} through ${line?'its research line':''}${line&&author?' and ':''}${author?'its contributor':''}.` : `No connected Research Library records are currently linked through the same research line or contributor.`
           else if(fu.action==='line') text=line ? `${p.title} is connected to ${line}.` : `No research line is recorded for ${p.title}.`
           else if(fu.action==='author') text=author ? `${author} is the linked internal contributor for ${p.title}.` : `No internal contributor is linked to ${p.title}.`
           else if(fu.action==='visibility') text=p.is_public ? `${p.title} is Public. It is reflected in the public view on the web.` : `${p.title} is Internal. It is not reflected in the public web view.`
-          else if(fu.action==='summary') text=brief ? `In brief, the stored ${p.post_type || 'record'} says: ${brief}` : `There is no article body or excerpt stored for ${p.title}.`
-          else if(fu.action==='keywords') text=keywords.length ? `${p.title} is indexed with ${keywords.length} term${keywords.length===1?'':'s'}: ${keywords.join(', ')}.` : `No explicit index terms are recorded for ${p.title}.`
-          else if(fu.action==='date') text=(p.published_at||p.created_at) ? `${p.title} is dated ${new Date(p.published_at||p.created_at).toLocaleDateString([], {day:'numeric',month:'long',year:'numeric'})}.` : `No publication date is recorded for ${p.title}.`
           else text=`${p.title} is a ${p.post_type} in the Research Library.`
-          if (fu.action==='connections' && related.length) visual = { type:'reslist', items:related.slice(0,6).map(x=>({ title:x.title || 'Untitled record', meta:`${_toTitle(x.post_type || 'record')}${newsOps.getLineName(x.research_line_id) ? ' · ' + newsOps.getLineName(x.research_line_id) : ''}`, badge:x.is_public ? 'Public' : 'Internal', tone:x.is_public ? 'ok' : 'default' })) }
-          else if (['summary','keywords','date','line','author','visibility'].includes(fu.action)) visual = { type:'grounded_facts', eyebrow:_toTitle(p.post_type||'Research Library'), title:p.title, rows:[
-            {label:'Research line', value:line || 'Not linked'},
-            {label:'Contributor', value:author || 'Not linked'},
-            {label:'Visibility', value:p.is_public ? 'Public' : 'Internal'},
-            ...(keywords.length ? [{label:'Index terms', value:keywords.slice(0,5).join(' · ')}] : [])
-          ] }
-          return { text, visual, chips:[], actions:[{label:`Open ${p.post_type || 'record'}`, view:'news', recordId:p.id}], sources:['Research Library'], followups:[], confidence:'high' }
-        }
-        if (fu.kind === 'research_entity_context') {
-          const et = fu.entityType
-          if (et === 'study') {
-            const t=(researchOps.clinicalTrials.value||[]).find(x=>String(x.id)===String(fu.id))
-            if(!t) return {text:`I couldn't find that clinical study.`,chips:[],actions:[],sources:['Clinical studies'],followups:[],confidence:'low'}
-            const line=researchOps.getResearchLineName(t.research_line_id)||'Not linked'
-            const enr=researchOps.trialEnrollment(t)
-            const pi=t.principal_investigator_id?getStaffName(t.principal_investigator_id):'Not recorded'
-            const protocol=t.protocol_applicable===false?'Not required':(t.protocol_finalized?'Finalised':(t.protocol_id?`Recorded · ${t.protocol_id}`:'Not finalised / not recorded'))
-            const ethics=formatEthicsStatus(t.ethics_status)
-            const status=_toTitle(researchOps.trialStatusKey(t)||t.status||'study')
-            let text=''
-            if(fu.action==='procedures') text=`Protocol: ${protocol}. Ethics / CEIm: ${ethics}.`
-            else if(fu.action==='recruitment') text=enr?`${t.title} has enrolled ${enr.actual} of ${enr.target} participants (${enr.pct}%). ${enr.remaining} remain to target.`:`No enrolment target is recorded for ${t.title}.`
-            else if(fu.action==='lead') text=pi!=='Not recorded'?`${pi} is recorded as Principal Investigator for ${t.title}.`:`No Principal Investigator is recorded for ${t.title}.`
-            else text=`${t.title} is a ${t.study_type || 'clinical study'} in ${line}. Current study status: ${status}.`
-            const rows=[{label:'Status',value:status},{label:'Research line',value:line},{label:'Principal investigator',value:pi},{label:'Protocol',value:protocol},{label:'Ethics / CEIm',value:ethics}]
-            if(enr) rows.splice(2,0,{label:'Enrolment',value:`${enr.actual}/${enr.target} · ${enr.pct}%`})
-            return {text,visual:{type:'grounded_facts',eyebrow:'Clinical study',title:t.title,rows},chips:[],actions:[{label:'Open study',view:'research_hub',recordType:'study',recordId:t.id}],sources:['Clinical studies','Research programmes'],followups:[],confidence:'high'}
-          }
-          if (et === 'project') {
-            const pr=(researchOps.innovationProjects.value||[]).find(x=>String(x.id)===String(fu.id))
-            if(!pr) return {text:`I couldn't find that innovation project.`,chips:[],actions:[],sources:['Clinical innovation'],followups:[],confidence:'low'}
-            const line=researchOps.getResearchLineName(pr.research_line_id)||'Not linked'
-            const stage=formatInnovationStage(pr.current_stage||pr.development_stage)
-            const focus=(pr.target_diseases||[]).join(', ') || pr.scope_note || 'Not recorded'
-            const funding=formatFundingStatus(pr.funding_status)
-            const partner=pr.partner_found ? (pr.partner_name || 'Partner confirmed') : ((pr.partner_needs||[]).length ? `Needs: ${(pr.partner_needs||[]).map(formatPartnerNeed).join(', ')}` : 'Not recorded')
-            const proto=pr.validation_protocol_id ? `${pr.validation_protocol_finalized?'Finalised':'Recorded'} · ${pr.validation_protocol_id}` : 'Not persisted in current project schema'
-            const ethics=pr.ethics_status ? formatEthicsStatus(pr.ethics_status) : 'Not persisted in current project schema'
-            let text=''
-            if(fu.action==='procedures') text=`For clinical execution, the project record currently shows protocol: ${proto}; ethics / CEIm clearance: ${ethics}.`
-            else if(fu.action==='delivery') text=`Funding: ${funding}. Partner position: ${partner}.`
-            else if(fu.action==='focus') text=`Clinical focus: ${focus}. ${pr.clinical_rationale ? pr.clinical_rationale : ''}`.trim()
-            else text=`${pr.title} is a ${formatInnovationCategory(pr.category)} project in ${line}, currently at ${stage}.`
-            return {text,visual:{type:'grounded_facts',eyebrow:'Clinical innovation',title:pr.title,rows:[{label:'Stage',value:stage},{label:'Research line',value:line},{label:'Clinical focus',value:focus},{label:'Funding',value:funding},{label:'Partner position',value:partner},{label:'Protocol',value:proto},{label:'Ethics / CEIm',value:ethics}]},chips:[],actions:[{label:'Open project',view:'research_hub',recordType:'project',recordId:pr.id}],sources:['Clinical innovation','Research programmes'],followups:[],confidence:'high'}
-          }
-          if (et === 'line') {
-            const ln=(researchOps.researchLines.value||[]).find(x=>String(x.id)===String(fu.id))
-            if(!ln) return {text:`I couldn't find that research programme.`,chips:[],actions:[],sources:['Research programmes'],followups:[],confidence:'low'}
-            const pf=researchLinePortfolio(ln), studies=researchLineStudies(ln.id), projects=researchLineProjects(ln.id), outputs=researchLineOutputs(ln.id)
-            let text=''
-            let visual={type:'grounded_facts',eyebrow:`Research line L${ln.line_number||''}`.trim(),title:ln.research_line_name||ln.name,rows:[{label:'Clinical studies',value:String(pf.studies)},{label:'Recruiting',value:String(pf.recruiting)},{label:'Innovation projects',value:String(pf.projects)},{label:'Research output',value:String(pf.outputs)},{label:'Enrolment',value:pf.target?`${pf.enrolled}/${pf.target} · ${pf.enrollmentPct}%`:'No target recorded'}]}
-            if(fu.action==='studies') { text=studies.length?`${ln.research_line_name||ln.name} has ${studies.length} linked clinical stud${studies.length===1?'y':'ies'}, with ${pf.recruiting} recruiting.`:'No clinical studies are currently linked to this programme.'; visual=studies.length?{type:'reslist',items:studies.slice(0,8).map(t=>({title:t.title,meta:[t.protocol_id,_toTitle(researchOps.trialStatusKey(t))].filter(Boolean).join(' · '),badge:researchOps.trialStatusKey(t)==='recruiting'?'Recruiting':'Study',tone:researchOps.trialStatusKey(t)==='recruiting'?'ok':'default'}))}:visual }
-            else if(fu.action==='projects') { text=projects.length?`${ln.research_line_name||ln.name} has ${projects.length} linked innovation project${projects.length===1?'':'s'}.`:'No innovation projects are currently linked to this programme.'; visual=projects.length?{type:'reslist',items:projects.slice(0,8).map(pr=>({title:pr.title,meta:formatInnovationCategory(pr.category),badge:formatInnovationStage(pr.current_stage||pr.development_stage),tone:'default'}))}:visual }
-            else if(fu.action==='outputs') { text=outputs.length?`${ln.research_line_name||ln.name} has ${outputs.length} connected Research Library output${outputs.length===1?'':'s'} (${pf.publications} publication${pf.publications===1?'':'s'}, ${pf.articles} article${pf.articles===1?'':'s'}).`:'No Research Library output is currently linked to this programme.'; visual=outputs.length?{type:'reslist',items:outputs.slice(0,8).map(o=>({title:o.title,meta:_toTitle(o.post_type||'record'),badge:o.is_public?'Public':'Internal',tone:o.is_public?'ok':'default'}))}:visual }
-            else text=`${ln.research_line_name||ln.name} is Research Line L${ln.line_number||''}. ${ln.description || ''}`.trim()
-            return {text,visual,chips:[],actions:[{label:'Open programme',view:'research_hub',recordType:'line',recordId:ln.id}],sources:['Research programmes','Clinical studies','Clinical innovation','Research Library'],followups:[],confidence:'high'}
-          }
+          const visual = fu.action==='connections' && related.length ? { type:'reslist', items:related.slice(0,6).map(x=>({ title:x.title || 'Untitled record', meta:`${_toTitle(x.post_type || 'record')}${newsOps.getLineName(x.research_line_id) ? ' · ' + newsOps.getLineName(x.research_line_id) : ''}`, badge:x.is_public ? 'Public' : 'Internal', tone:x.is_public ? 'ok' : 'default' })) } : null
+          return { text, visual, chips:[], actions:[], sources:['Research Library'], followups:[], confidence:'high' }
         }
         if (fu.kind === 'staff_summary' || fu.kind === 'staff_attr') {
           const s = (medicalStaff.value || []).find(x => x.id === fu.id)
@@ -15489,20 +15530,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarGoTo = (action) => {
         if (!action) return
-        if (action.view === 'research_hub' && action.recordType && action.recordId) {
-          askBarLog('action', { label:action.label, view:'research_hub', recordType:action.recordType, recordId:action.recordId })
-          switchView('research_hub')
-          Vue.nextTick(() => {
-            if (action.recordType === 'study') { const x=(researchOps.clinicalTrials.value||[]).find(r=>String(r.id)===String(action.recordId)); if(x) researchOps.openStudy(x,'allstudies') }
-            else if (action.recordType === 'project') { const x=(researchOps.innovationProjects.value||[]).find(r=>String(r.id)===String(action.recordId)); if(x) researchOps.openProject(x,'allprojects') }
-            else if (action.recordType === 'line') { const x=(researchOps.researchLines.value||[]).find(r=>String(r.id)===String(action.recordId)); if(x) researchOps.openLine(x) }
-          })
-          closeAskBar(); return
-        }
-        if (action.view === 'news' && action.recordId) {
-          askBarLog('action', { label:action.label, view:'news', recordId:action.recordId })
-          const x=(newsPosts.value||[]).find(r=>String(r.id)===String(action.recordId))
-          switchView('news'); closeAskBar(); if(x) Vue.nextTick(()=>openNewsDrawer(x,null)); return
+        if (action.researchType && action.id) {
+          askBarLog('action', { label:action.label, researchType:action.researchType, id:action.id })
+          try {
+            currentView.value = 'research_hub'
+            if (action.researchType === 'line') { const x=(researchOps.researchLines.value||[]).find(v=>String(v.id)===String(action.id)); if(x){ closeAskBar(); Vue.nextTick(()=>researchOps.openLine(x)); return } }
+            if (action.researchType === 'study') { const x=(researchOps.clinicalTrials.value||[]).find(v=>String(v.id)===String(action.id)); if(x){ closeAskBar(); Vue.nextTick(()=>researchOps.openStudy(x,'allstudies')); return } }
+            if (action.researchType === 'project') { const x=(researchOps.innovationProjects.value||[]).find(v=>String(v.id)===String(action.id)); if(x){ closeAskBar(); Vue.nextTick(()=>researchOps.openProject(x,'allprojects')); return } }
+          } catch (e) {}
         }
         if (action.view) { askBarLog('action', { label: action.label, view: action.view }); switchView(action.view); closeAskBar() }
       }
@@ -15518,8 +15553,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!s) { askBarOpenStaff(c.id); return }
         // toggle: same chip closes it
         if (askBar.entityMenu && askBar.entityMenu.id === c.id) { askBar.entityMenu = null; return }
-        let x = 0, y = 0
-        try { const r = ev.currentTarget.getBoundingClientRect(); x = r.left; y = r.bottom + 6 } catch (e) {}
+        let x = 12, y = 84
+        try {
+          const r = ev.currentTarget.getBoundingClientRect()
+          const panel = document.querySelector('.askbar-panel.grounded-cloud')
+          const p = panel?.getBoundingClientRect()
+          if (p) {
+            x = Math.max(12, Math.min(r.left - p.left, Math.max(12, p.width - 230)))
+            y = Math.max(72, Math.min(r.bottom - p.top + 6, Math.max(72, p.height - 190)))
+          } else { x = r.left; y = r.bottom + 6 }
+        } catch (e) {}
         askBar.entityMenu = { id: s.id, name: s.full_name, x, y }
       }
       const askBarEntityAction = (action) => {
@@ -15806,7 +15849,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarSuggestLabel, askBarContextCard, askBarTurnLabel, askBarClearContext, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarSuggestLabel, askBarContextCard, askBarOpenContext, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           askBarContinuity, askBarChanges, askBarWatchedChanges, askBarTimeline, askBarWatchlist, askBarIsWatched, askBarToggleWatch, askBarToggleTimeline,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, teachTopicLabels, askBarToggleTeach,
           askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarConfirmExtendRotation, askBarConfirmRotationEdit, askBarConfirmOncallEdit, askBarConfirmLeaveEdit, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
@@ -15996,7 +16039,7 @@ document.addEventListener('DOMContentLoaded', () => {
     app.config.errorHandler = (err, instance, info) => {
       console.error('[neumDesk render error]', err, info)
       const viewName = instance?.setupState?.currentView?.value
-      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info) 
+      showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info)   
     }
 
     app.mount('#app')
@@ -16015,6 +16058,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;      
+    throw error;    
   }
 });
