@@ -3,15 +3,16 @@
 <html lang="en">   
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Grounded — by neumAC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>neumDesk — neumAC workspace</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=43.1">
+    <link rel="stylesheet" href="style.css?v=44">
 
     
 </head>
@@ -64,7 +65,7 @@
 
     <!-- ============ ASK BAR — Intelligence surface (proactive · conversational · sourced) ============ -->
     <!-- Floating trigger with proactive badge -->
-    <button v-if="currentUser && !askBar.open" class="grounded-orb-wrap" :class="{ 'grounded-orb--alert': askBarScanCount }" @click="openAskBar()" :title="askBarScanCount ? askBarScanCount + ' things need attention' : 'Ask Grounded'">
+    <button v-if="currentUser && entry.state === 'ready' && !askBar.open" class="grounded-orb-wrap" :class="{ 'grounded-orb--alert': askBarScanCount }" @click="openAskBar()" :title="askBarScanCount ? askBarScanCount + ' things need attention' : 'Ask Grounded'">
         <span class="grounded-orb" aria-hidden="true">
             <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
@@ -80,7 +81,7 @@
     </button>
 
     <!-- Expanded cloud -->
-    <div v-if="currentUser && askBar.open" class="grounded-overlay" @click.self="closeAskBar()" @click="askBar.entityMenu = null">
+    <div v-if="currentUser && entry.state === 'ready' && askBar.open" class="grounded-overlay" @click.self="closeAskBar()" @click="askBar.entityMenu = null">
         <div class="askbar-panel grounded-cloud">
             <span class="grounded-mist grounded-mist1"></span>
             <span class="grounded-mist grounded-mist2"></span>
@@ -898,121 +899,82 @@
         </div>
     </div>
 
-    <!-- ============ LOGIN SCREEN · V22 institutional minimal ============ -->
-    <div v-if="!currentUser" class="login-container login-container--v22">
-        <div class="lc-v22-atmosphere" aria-hidden="true">
-            <canvas id="loginTreeCanvas"></canvas>
-            <svg class="lc-v22-flow" viewBox="0 0 1200 820" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-                <path d="M-80 536C118 426 240 384 378 394C517 405 588 476 730 473C861 471 1003 399 1260 253"/>
-                <path d="M-40 430C126 343 263 322 383 352C502 382 591 430 718 421C868 411 1015 327 1240 195"/>
-                <path d="M115 624C273 580 373 594 459 648C547 703 620 753 752 754C894 755 1027 703 1235 608"/>
-            </svg>
-        </div>
-
-        <section class="lc-v22-story" aria-label="Grounded">
-            <header class="lc-v22-mast">
-                <div class="lc-v22-neumac">neum<span>AC</span></div>
-                <span class="lc-v22-mast-rule"></span>
-                <div class="lc-v22-area">Área Sanitaria de A Coruña y Cee</div>
+    <!-- V44 · Institutional entry. Unverified sessions never render the workspace. -->
+    <main v-if="!currentUser || entry.state !== 'ready'" class="entry44">
+        <section class="entry44-identity" aria-label="neumAC department workspace">
+            <header class="entry44-mast">
+                <span class="entry44-institution">neum<span>AC</span></span>
+                <span class="entry44-location">Pneumology<br>Área Sanitaria de A Coruña y Cee</span>
             </header>
-
-            <div class="lc-v22-hero">
-                <div class="lc-v22-product-line">
-                    <span class="lc-v22-mini-mark" aria-hidden="true">
-                        <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--b" d="M19.2 23.5C23.5 19.1 28.1 17.4 32.7 18.1C37.2 18.7 41 21.1 44.5 24.1"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
-                        </svg>
-                    </span>
-                    <span>Grounded</span>
-                </div>
-                <h1 class="lc-v22-title">A clear view<br>of the department.</h1>
-                <p class="lc-v22-copy">People, coverage, rotations and research — connected.</p>
+            <div class="entry44-intro">
+                <span class="entry44-eyebrow">The departmental workspace</span>
+                <h1>neum<span>Desk</span><i aria-hidden="true">.</i></h1>
+                <p class="entry44-statement">A shared view.<br>A connected department.</p>
+                <p class="entry44-description">People, clinical operations and research,<br>in one working environment.</p>
             </div>
-
-            <footer class="lc-v22-story-foot">Pneumology · Research &amp; operations</footer>
+            <div class="entry44-index" aria-label="Workspace areas">
+                <div><span>01</span><strong>People &amp; teams</strong><small>Our departmental community</small></div>
+                <div><span>02</span><strong>Clinical operations</strong><small>Coverage, leave &amp; rotations</small></div>
+                <div><span>03</span><strong>Research &amp; innovation</strong><small>Studies, projects &amp; knowledge</small></div>
+            </div>
+            <footer class="entry44-identity-foot"><span>neumAC · Internal workspace</span><span>A Coruña, Galicia</span></footer>
         </section>
-
-        <aside class="lc-v22-access" aria-label="Sign in to Grounded">
-            <div class="lc-v22-access-inner">
-                <header class="lc-v22-access-brand">
-                    <span class="lc-v22-access-mark" aria-hidden="true">
-                        <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--a" d="M17.5 31.3C23.3 26.9 27.9 25.9 32.5 26.7C37.4 27.5 41.7 29.9 47.5 32.2"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--b" d="M19.2 23.5C23.5 19.1 28.1 17.4 32.7 18.1C37.2 18.7 41 21.1 44.5 24.1"/>
-                            <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <div class="lc-v22-access-name">Grounded</div>
-                        <div class="lc-v22-access-sub">Department workspace</div>
-                    </div>
-                </header>
-
-                <div class="lc-v22-signin-head">
-                    <h2>Sign in</h2>
-                    <p>Use your authorised account to continue.</p>
-                </div>
-
-                <div v-if="loginError" class="login-error" :class="{'login-error--warn': loginError.includes('expired') || loginError.includes('session')}">
-                    <i class="fas" :class="loginError.includes('expired') || loginError.includes('session') ? 'fa-clock' : 'fa-exclamation-circle'"></i>
-                    <span>{{ loginError }}</span>
-                </div>
-
-                <form class="lc-form lc-v22-form" @submit.prevent="handleLogin" autocomplete="on">
-                    <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.email }">
-                        <label class="lc-label">Email</label>
-                        <div class="lc-input-wrap">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
-                            <input type="email" class="lc-input" v-model="loginForm.email"
-                                   placeholder="name@sergas.es" autocomplete="email"
-                                   @input="clearLoginError('email')"
-                                   @keyup.enter="handleLogin">
+        <section class="entry44-access" aria-labelledby="entry-title">
+            <div class="entry44-access-top"><span class="entry44-access-label">Department access</span><span class="entry44-lock" aria-hidden="true">↗</span></div>
+            <div class="entry44-form-area">
+                <template v-if="entry.state === 'checking' || entry.state === 'opening'">
+                    <span class="entry44-kicker">Welcome to neumDesk</span>
+                    <h2 id="entry-title">{{ entry.state === 'checking' ? 'Checking your session.' : 'Preparing your workspace.' }}</h2>
+                    <p class="entry44-subtitle">{{ entry.state === 'checking' ? 'Verifying your account before opening departmental records.' : 'Connecting your departmental records and permissions.' }}</p>
+                    <div class="entry44-progress" role="status" aria-live="polite"><span></span>{{ entry.state === 'checking' ? 'Validating access…' : 'Opening neumDesk…' }}</div>
+                </template>
+                <template v-else-if="entry.state === 'unavailable'">
+                    <span class="entry44-kicker">Connection interrupted</span>
+                    <h2 id="entry-title">Let’s reconnect.</h2>
+                    <p class="entry44-subtitle" role="alert">{{ entry.message }}</p>
+                    <button type="button" class="entry44-submit" @click="validateEntrySession()">Try again <span aria-hidden="true">→</span></button>
+                    <button type="button" class="entry44-text-button" @click="useAnotherEntryAccount()">Use another account</button>
+                </template>
+                <template v-else-if="entry.mode === 'help'">
+                    <span class="entry44-kicker">Account support</span>
+                    <h2 id="entry-title">Help with access.</h2>
+                    <p class="entry44-subtitle">For a forgotten password, a disabled account or first-time access, contact your departmental neumDesk administrator.</p>
+                    <div class="entry44-help-note">Ask your administrator to verify your account and arrange password recovery. Self-service recovery is not available from this screen.</div>
+                    <button type="button" class="entry44-submit" @click="backToSignIn()">Back to sign in <span aria-hidden="true">→</span></button>
+                </template>
+                <template v-else>
+                    <span class="entry44-kicker">Your working environment</span>
+                    <h2 id="entry-title">Welcome back.</h2>
+                    <p class="entry44-subtitle">Sign in with your authorised departmental account.</p>
+                    <div v-if="loginError" class="entry44-error" role="alert">{{ loginError }}</div>
+                    <form class="entry44-form" @submit.prevent="handleLogin" novalidate :aria-busy="loginLoading">
+                        <div class="entry44-field">
+                            <label for="entry-email">Email address</label>
+                            <input id="entry-email" name="username" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" v-model="loginForm.email" placeholder="Your account email" :disabled="entryBusy" :aria-invalid="!!loginFieldErrors.email" aria-describedby="entry-email-error" @input="clearLoginError('email')">
+                            <span id="entry-email-error" class="entry44-field-error">{{ loginFieldErrors.email }}</span>
                         </div>
-                        <span v-if="loginFieldErrors.email" class="lc-field-err">{{ loginFieldErrors.email }}</span>
-                    </div>
-
-                    <div class="lc-field" :class="{ 'lc-field--error': loginFieldErrors.password }">
-                        <label class="lc-label">Password</label>
-                        <div class="lc-input-wrap">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            <input :type="showPassword ? 'text' : 'password'" class="lc-input"
-                                   v-model="loginForm.password" placeholder="••••••••"
-                                   autocomplete="current-password"
-                                   @input="clearLoginError('password')"
-                                   @keyup.enter="handleLogin">
-                            <button type="button" class="lc-eye" @click="showPassword = !showPassword" tabindex="-1" aria-label="Toggle password visibility" title="Toggle password visibility">
-                                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                            </button>
+                        <div class="entry44-field">
+                            <label for="entry-password">Password</label>
+                            <div class="entry44-password">
+                                <input id="entry-password" name="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" v-model="loginForm.password" placeholder="Your password" :disabled="entryBusy" :aria-invalid="!!loginFieldErrors.password" aria-describedby="entry-password-error entry-caps" @input="clearLoginError('password')" @keydown="entry.capsLock = $event.getModifierState ? $event.getModifierState('CapsLock') : false" @keyup="entry.capsLock = $event.getModifierState ? $event.getModifierState('CapsLock') : false">
+                                <button type="button" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'" :aria-pressed="showPassword">{{ showPassword ? 'Hide' : 'Show' }}</button>
+                            </div>
+                            <span id="entry-password-error" class="entry44-field-error">{{ loginFieldErrors.password }}</span>
+                            <span id="entry-caps" class="entry44-caps" role="status">{{ entry.capsLock ? 'Caps Lock is on' : '' }}</span>
                         </div>
-                        <span v-if="loginFieldErrors.password" class="lc-field-err">{{ loginFieldErrors.password }}</span>
-                    </div>
-
-                    <div class="lc-meta-row">
-                        <label class="lc-remember">
-                            <input type="checkbox" v-model="loginForm.remember_me">
-                            <span>Remember me</span>
-                        </label>
-                        <a href="#" class="lc-forgot" @click.prevent="handleForgotPassword">Reset password</a>
-                    </div>
-
-                    <button class="lc-submit lc-v22-submit" @click="handleLogin" :disabled="loginLoading">
-                        <i v-if="loginLoading" class="fas fa-spinner fa-spin"></i>
-                        <span>{{ loginLoading ? 'Opening Grounded…' : 'Enter Grounded' }}</span>
-                        <i v-if="!loginLoading" class="fas fa-arrow-right lc-submit-arrow"></i>
-                    </button>
-                </form>
+                        <div class="entry44-form-meta">
+                            <label><input type="checkbox" v-model="loginForm.remember_me"> Remember my email</label>
+                            <button type="button" @click="handleForgotPassword()">Need help?</button>
+                        </div>
+                        <button type="submit" class="entry44-submit" :disabled="entryBusy">{{ loginLoading ? 'Signing in…' : 'Enter workspace' }}<span v-if="!loginLoading" aria-hidden="true">→</span></button>
+                        <p class="entry44-session-note">Using a shared computer? Sign out when you finish.</p>
+                    </form>
+                </template>
+                <div class="entry44-grounded"><span class="entry44-g-mark" aria-hidden="true">G</span><p><strong>With Grounded</strong><span>Explore connected records from within your workspace.</span></p></div>
             </div>
-
-            <footer class="lc-v22-access-foot">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                <span>Authorised departmental access</span>
-            </footer>
-        </aside>
-    </div>
+            <footer class="entry44-access-foot"><span>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
+        </section>
+    </main>
 
     <!-- ============ MAIN APPLICATION ============ -->
     <div v-else class="app-layout">
@@ -1053,7 +1015,7 @@
                     <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
                 </svg>
             </div>
-            <div class="als-wordmark">Grounded</div>
+            <div class="als-wordmark">neumDesk</div>
             <div class="als-sub">Preparing your department view</div>
             <div class="als-bar-wrap"><div class="als-bar"></div></div>
             <div class="als-tagline">Connecting staff, on-call, leave, rotations and research…</div>
@@ -12353,7 +12315,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=43.1"></script>
+    <script src="app.js?v=44"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
