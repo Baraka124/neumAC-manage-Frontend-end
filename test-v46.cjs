@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const E=require('./entry46.js');
+const stories=require('./entry-highlights.js');
+const now=Date.parse('2026-09-20T12:00:00Z');
+const item={id:'a',enabled:true,audience:'public',title:'Public announcement'};
+let n=0;function test(name,fn){fn();console.log('PASS '+name);n++}
+test('default perspectives are enabled and explicitly public',()=>{assert.equal(E.active(stories,now).length,3);assert(stories.every(s=>s.audience==='public'&&s.enabled))});
+test('disabled and nonpublic entries are excluded from presentation',()=>{assert.equal(E.active([{...item,enabled:false}],now)[0].id,'welcome');assert.equal(E.active([{...item,audience:'internal'}],now)[0].id,'welcome')});
+test('publication boundaries are inclusive at start and exclusive at expiry',()=>{assert.equal(E.active([{...item,startsAt:'2026-09-20T12:00:00Z',expiresAt:'2026-09-20T13:00:00Z'}],now)[0].id,'a');assert.equal(E.active([{...item,expiresAt:'2026-09-20T12:00:00Z'}],now)[0].id,'welcome')});
+test('future announcements wait',()=>assert.equal(E.active([{...item,startsAt:'2026-09-21T00:00:00Z'}],now)[0].id,'welcome'));
+test('invalid dates, reversed windows and missing time zones fail closed',()=>{for(const bad of [{startsAt:'2026-02-30T00:00:00Z'},{startsAt:'2026-09-01'},{startsAt:'2026-09-20T00:00:00'},{startsAt:'2026-09-01T00:00:00Z',expiresAt:'2026-08-01T00:00:00Z'}])assert.equal(E.active([{...item,...bad}],now)[0].id,'welcome')});
+test('duplicate IDs and empty titles are rejected; maximum three stories',()=>{assert.equal(E.active([item,item,{...item,id:'b',title:''}],now).length,1);assert.equal(E.active(Array.from({length:5},(_,i)=>({...item,id:String(i)})),now).length,3)});
+test('missing and malformed configuration has a fallback',()=>{for(const input of [null,undefined,{},[],[null]])assert.equal(E.active(input,now)[0].id,'welcome')});
+test('image paths stay local and cannot traverse directories',()=>{for(const bad of ['https://host/image.png','../image.png','/image.png','data:image/svg+xml,a','x.svg?x=1'])assert.equal(E.safeImage(bad),'');assert.equal(E.safeImage('assets/highlight.webp'),'assets/highlight.webp')});
+test('links require HTTPS without embedded credentials',()=>{assert.equal(E.safeLink('javascript:alert(1)'), '');assert.equal(E.safeLink('https://user:pass@example.test'),'');assert.equal(E.safeLink('https://example.test/story'),'https://example.test/story')});
+test('long copy is bounded and input config is not modified',()=>{const x={...item,title:'A'.repeat(200),summary:'B'.repeat(300)};const out=E.active([x],now)[0];assert.equal(out.title.length,110);assert.equal(out.summary.length,240);assert.equal(x.title.length,200)});
+test('login and editorial sections are independent siblings, login first in source',()=>{const html=fs.readFileSync(__dirname+'/index.html','utf8');const start=html.indexOf('<main v-if="!currentUser');const finish=html.indexOf('</main>',start);const entry=html.slice(start,finish);assert(entry.indexOf('class="entry44-access"')<entry.indexOf('class="entry46-editorial"'));const login=entry.slice(entry.indexOf('class="entry44-access"'),entry.indexOf('class="entry46-editorial"'));assert(!login.includes('entry46-art'));assert(!login.includes('entry44-grounded'));assert(!entry.includes('v-html'));assert(entry.includes('aria-pressed="entry46Story.id===story.id"'))});
+test('manual selection leaves credentials and session untouched',()=>{const src=fs.readFileSync(__dirname+'/app.js','utf8');const start=src.indexOf('        const entry46Clock =');const end=src.indexOf('\n',src.indexOf('        watch(()=>entry.state',start));const c={Date,Entry46:E,window:{NEUMDESK_ENTRY_HIGHLIGHTS:stories},ref:v=>({value:v}),computed:fn=>({get value(){return fn()}}),reactive:v=>v,watch:()=>{},entry:{state:'signin'},loginForm:{email:'unchanged',password:'unchanged'}};vm.createContext(c);vm.runInContext(src.slice(start,end)+'\nthis.choose=entry46Select;this.selected=entry46Story;',c);c.choose('innovation');assert.equal(c.selected.value.id,'innovation');assert.equal(c.loginForm.password,'unchanged');assert.equal(c.entry.state,'signin')});
+console.log(`${n} V46 checks passed. Browser rendering remains unverified.`);

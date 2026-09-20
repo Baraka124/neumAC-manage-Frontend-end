@@ -7138,6 +7138,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const handleForgotPassword = () => { entry.mode = 'help'; loginError.value = '' }
         const backToSignIn = () => { entry.mode = 'signin'; loginError.value = ''; Vue.nextTick(() => document.getElementById('entry-email')?.focus()) }
         const entryBusy = computed(() => loginLoading.value || entry.state === 'checking' || entry.state === 'opening')
+        // V46 editorial state is independent of authentication and private records.
+        const entry46Clock = ref(Date.now())
+        const entry46Selection = ref('')
+        const entry46Expanded = ref(false)
+        const entry46ImageErrors = reactive({})
+        const entry46Stories = computed(() => Entry46.active(window.NEUMDESK_ENTRY_HIGHLIGHTS,entry46Clock.value))
+        const entry46Story = computed(() => entry46Stories.value.find(s=>s.id===entry46Selection.value)||entry46Stories.value[0])
+        const entry46Select = id => { entry46Clock.value=Date.now(); entry46Selection.value=id; entry46Expanded.value=false }
+        watch(()=>entry.state,()=>{ entry46Clock.value=Date.now() })
 
         const auth = useAuth()
         const { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings } = auth
@@ -11062,7 +11071,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Subject-aware anticipation: when a staff profile opens, tell the agent so it
       // offers actions for THAT person; clear the subject when it closes.
       // Auto-scroll the conversation to the newest turn whenever one is added.
-      watch(() => askBar.turns.length, () => { if (askBar.view === 'conversation') askBarScrollToBottom(true) })
+      // V45: new answers never take the reader's scroll position away.
       watch(() => staffOps.staffProfileModal.show, (open) => {
         if (open && staffOps.staffProfileModal.staff) {
           const s = staffOps.staffProfileModal.staff
@@ -11579,6 +11588,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (generation !== askBarRefreshGeneration || currentUser.value?.id !== userId) return
           specs.forEach(([, target, normalize], i) => { target.value = normalize ? normalize(results[i]) : results[i] })
           askBar.refreshedAt = askBarNow()
+          askBar.snapshotCapturedAt = new Date().toISOString()
         } catch (e) {
           controller.abort()
           if (generation === askBarRefreshGeneration && currentUser.value?.id === userId) {
@@ -12987,35 +12997,17 @@ document.addEventListener('DOMContentLoaded', () => {
           const c = document.querySelector('.askbar-conv')
           if (!c) return
           try { c.scrollTo({ top: c.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }) } catch (e) { c.scrollTop = c.scrollHeight }
-          // second pass after async answer/visual renders
-          setTimeout(() => { const c2 = document.querySelector('.askbar-conv'); if (c2) c2.scrollTop = c2.scrollHeight }, 120)
-          setTimeout(() => { const c3 = document.querySelector('.askbar-conv'); if (c3) c3.scrollTop = c3.scrollHeight }, 400)
         })
       }
       const askBarStreamTurn = (turn, fullText, done) => {
-        // Operational answers should feel resolved, not generated token-by-token.
-        // Keep streaming only for authored drafts where progressive writing is meaningful.
-        if (!turn.isDraft) {
-          turn.text = fullText || ''
-          turn.streaming = false
-          turn.revealing = true
-          askBarScrollToBottom(false)
-          setTimeout(() => { turn.revealing = false }, 320)
-          if (done) done()
-          return
-        }
-        turn.text = ''
-        turn.streaming = true
-        const step = Math.max(1, Math.round((fullText || '').length / 36))
-        let i = 0
-        const tick = () => {
-          i = Math.min((fullText || '').length, i + step)
-          turn.text = (fullText || '').slice(0, i)
-          Vue.nextTick(() => { const c = document.querySelector('.askbar-conv'); if (c) c.scrollTop = c.scrollHeight })
-          if (i < (fullText || '').length) { setTimeout(tick, 18) }
-          else { turn.streaming = false; turn.revealing = true; setTimeout(() => { turn.revealing = false }, 320); if (done) done() }
-        }
-        tick()
+        turn.text = fullText || ''
+        turn.streaming = false
+        turn.revealing = false
+        turn.reviewOpen = false
+        turn.snapshotAt = askBar.refreshedAt ? (askBar.snapshotCapturedAt || askBar.refreshedAt) : null
+        turn.reviewScope = (askBar.context || askBar.subject)?.name || 'Department records'
+        // Completion is immediate. Reading and expanding evidence remain user controlled.
+        if (done) done()
       }
 
       // ── Phase 1: permission map + audit (#37, #36) ──
@@ -13928,7 +13920,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Keep the working surface visible for one calm beat, then replace it in place.
           const now = (typeof performance !== 'undefined' ? performance.now() : Date.now())
           const elapsed = now - askBar.loadingStartedAt
-          const settleDelay = Math.max(0, 320 - elapsed)
+          const settleDelay = 0
           setTimeout(() => {
             if (answerGeneration !== askBarRefreshGeneration) return
             askBar.loading = false
@@ -15260,10 +15252,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const dr = askBarExtractDates(q)
           const dutyDate = dr.start || null
           const available = askBarWorkforceAvailable(dutyDate, { excludeId: outPerson ? outPerson.id : null }).slice(0, 5)
-          if (!available.length) return { text: `No eligible staff are free${dutyDate?' on '+Utils.formatDateShort(dutyDate):''} to cover${outPerson?' for '+outPerson.full_name:''}.`, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['staff','on-call schedule','leave records'], followups: [], confidence: 'high' }
+          if (!available.length) return { text: `No candidates matched the recorded staffing, duty and leave filters${dutyDate?' on '+Utils.formatDateShort(dutyDate):''}. This does not establish that no cover is possible.`, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['staff','on-call schedule','leave records'], followups: [], confidence: 'medium' }
           const whoFor = outPerson ? ` for ${outPerson.full_name}` : ''
           const whenFor = dutyDate ? ` on ${Utils.formatDateShort(dutyDate)}` : ''
-          return { text: `Best cover${whoFor}${whenFor} (fewest shifts first): ${available.slice(0,3).map(a=>`${a.name} (${a.shifts} shift${a.shifts===1?'':'s'})`).join(', ')}.`, chips: available.slice(0,4).map(a=>({label:a.name,id:a.id})), actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['staff','on-call schedule','leave records'], followups: [], confidence: 'high' }
+          return { text: `Candidates to review${whoFor}${whenFor}, ordered by recorded shift count: ${available.slice(0,3).map(a=>`${a.name} (${a.shifts} shift${a.shifts===1?'':'s'})`).join(', ')}. Confirm availability, required competencies and rest constraints before assigning cover.`, chips: available.slice(0,4).map(a=>({label:a.name,id:a.id})), actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['staff','on-call schedule','leave records'], followups: [], confidence: 'medium' }
         }
         if (intent === 'workload_analysis') {
           const wl = askBarWorkloadProfile()
@@ -15511,17 +15503,16 @@ document.addEventListener('DOMContentLoaded', () => {
           if (intent==='dept_health') {
             // health = staff + coverage + risk snapshot
             const active=(medicalStaff.value||[]).filter(s=>s.employment_status==='active'&&!s.deleted_at)
-            const onCallToday=(onCallSchedule.value||[]).some(o=>Utils.normalizeDate(o.duty_date)===today)
+            const onCallToday=(onCallSchedule.value||[]).some(o=>Utils.normalizeDate(o.duty_date)===today && o.primary_physician_id)
             const items=[
               { title:'Staff', badge:active.length+'', tone:'active', meta:`${active.filter(s=>s.staff_type==='attending_physician').length} attending · ${active.filter(s=>askBarIsResident(s)).length} residents` },
-              { title:'On-call today', badge: onCallToday?'covered':'⚠ gap', tone: onCallToday?'active':'project', meta: onCallToday?'coverage in place':'no coverage today' },
-              { title:'Open risks', badge: risks.length+'', tone: risks.length?'project':'active', meta: risks.length? risks.map(r=>r.title).slice(0,2).join('; ') : 'none — all clear' },
+              { title:'On-call today', badge: onCallToday?'assignment recorded':'review', tone: onCallToday?'active':'project', meta: onCallToday?'At least one primary assignment; full service coverage not established':'No primary assignment found in today’s records' },
+              { title:'Rule findings', badge: risks.length+'', tone: risks.length?'project':'default', meta: risks.length? risks.map(r=>r.title).slice(0,2).join('; ') : 'No findings in the implemented checks; coverage completeness is unverified' },
             ]
-            const score = risks.length===0 && onCallToday ? 'Good' : risks.length<=2 ? 'Watch' : 'Needs attention'
-            return { text: `Department health: ${score}. ${active.length} active staff, ${risks.length} open risk${risks.length===1?'':'s'}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard', primary: true }], sources: ['staff','on-call schedule','rotations','leave records'], followups: risks.length?[{ label: 'See all risks', intent: 'risk_scan' }]:[], confidence: 'high' }
+            return { text: `Recorded operations: ${active.length} active staff; ${risks.length} ${risks.length===1?'category':'categories'} of rule findings. This is not a department-wide health assessment.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard', primary: true }], sources: ['staff','on-call schedule','rotations','leave records'], followups: risks.length?[{ label: 'Review findings', intent: 'risk_scan' }]:[], confidence: 'medium' }
           }
           // risk_scan
-          if (!risks.length) return { text: '✓ No open risks detected — coverage, supervision, rotations and leave all look clean.', chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard' }], sources: ['on-call schedule','rotations','leave records','units'], followups: [], confidence: 'high' }
+          if (!risks.length) return { text: 'No findings in the implemented checks of active rotations, recorded future duties, leave overlaps and unit capacity. Missing duty dates, service requirements and unrecorded constraints have not been ruled out.', chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard' }], sources: ['on-call schedule','rotations','leave records','units'], followups: [], confidence: 'medium' }
           return { text: `${risks.length} thing${risks.length===1?'':'s'} need attention:`, visual: { type: 'reslist', items: risks.map(r=>({...r, badge:'⚠'})) }, chips: [], actions: [{ label: 'Open dashboard', view: 'dashboard', primary: true }], sources: ['on-call schedule','rotations','leave records','units','staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'issues') {
@@ -15739,10 +15730,6 @@ document.addEventListener('DOMContentLoaded', () => {
             catch (e) { c.scrollTop = top }
           }
           reveal()
-          // Rich Vue content can increase the turn height after the first paint.
-          // Re-anchor to the question, not the bottom, after those layouts settle.
-          setTimeout(reveal, 120)
-          setTimeout(reveal, 380)
         })
       }
 
@@ -15822,14 +15809,89 @@ document.addEventListener('DOMContentLoaded', () => {
             revealing: false
           })
           askBar.turns.push(turn)
-          askBarStreamTurn(turn, ans.text || '', () => askBarRevealLatestTurn(true))
-        }, 320)
+          askBarStreamTurn(turn, ans.text || '')
+        }, 0)
       }
 
+      // V45 personal activity documents use their own permission-scoped snapshot.
+      // No mutation, account inference, or dependency on Grounded's all-source gate.
+      const activity45 = reactive({open:false,busy:false,error:'',personId:'',start:'',end:'',people:[],sources:{},html:'',filename:'',selected:{oncall:true,rotations:true,studies:true,projects:true,lines:true}})
+      let activity45Generation=0, activity45Controller=null, activity45ReturnFocus=null
+      const activity45Invalidate = () => { activity45.html=''; activity45.error='' }
+      const activity45Close = () => {
+        ++activity45Generation; activity45Controller?.abort(); activity45Controller=null
+        activity45.open=false; activity45.busy=false; activity45.html=''; activity45.sources={}; activity45.people=[]
+        Vue.nextTick(()=>activity45ReturnFocus?.isConnected && activity45ReturnFocus.focus())
+      }
+      const activity45Read = async (scope={}) => {
+        const generation=++activity45Generation, userId=currentUser.value?.id
+        activity45Controller?.abort(); const controller=new AbortController(); activity45Controller=controller
+        activity45.busy=true; activity45.error=''; activity45.html=''
+        const timeout=setTimeout(()=>controller.abort(),15000)
+        try {
+          const sources=await Activity45.load((path,options)=>API.request(path,options),hasPermission,controller.signal,scope)
+          if(generation!==activity45Generation||currentUser.value?.id!==userId||!activity45.open) return false
+          activity45.sources=sources
+          activity45.people=(sources.staff.rows||[]).slice().sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||'')))
+          if(sources.staff.state!=='ready') throw Error('The staff directory could not be retrieved with your current access. Retry when it is available.')
+          return true
+        } catch(e) { if(generation===activity45Generation) activity45.error=e.message||'Unable to prepare the activity view.'; return false }
+        finally { clearTimeout(timeout); if(generation===activity45Generation) activity45.busy=false }
+      }
+      const activity45Open = async (personId='') => {
+        if(!hasPermission('medical_staff','read')) return
+        activity45ReturnFocus=document.activeElement
+        activity45.personId=personId||''
+        const now=new Date(), y=now.getFullYear(), m=now.getMonth()
+        activity45.start=`${y}-${String(m+1).padStart(2,'0')}-01`
+        activity45.end=`${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
+        activity45.open=true
+        Vue.nextTick(()=>document.querySelector('.activity45-dialog .activity45-close')?.focus())
+        await activity45Read({directoryOnly:true})
+      }
+      const activity45Generate = async () => {
+        if(activity45.busy) return
+        activity45.html=''; activity45.error=''
+        const selectedId=activity45.personId
+        if(!selectedId) { activity45.error='Select a staff member.'; return }
+        try {
+          Activity45.build({id:selectedId},activity45.start,activity45.end,{},activity45.selected)
+          if(!Object.values(activity45.selected).some(Boolean)) throw Error('Include at least one activity section.')
+          if(!await activity45Read({personId:selectedId,start:activity45.start,end:activity45.end,selected:{...activity45.selected}})) return
+          const person=activity45.people.find(p=>Activity45.same(p.id,selectedId))
+          if(!person) throw Error('This person is no longer in the accessible staff directory. Select a current record.')
+          const model=Activity45.build(person,activity45.start,activity45.end,activity45.sources,activity45.selected)
+          activity45.html=Activity45.render(model)
+          activity45.filename='neumDesk-activity-'+String(person.full_name||'staff').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').slice(0,70)+'-'+activity45.start+'.html'
+        } catch(e) { activity45.error=e.message||'Unable to create the document.' }
+      }
+      const activity45Download = () => {
+        if(!activity45.html||!currentUser.value) return
+        const url=URL.createObjectURL(new Blob([activity45.html],{type:'text/html;charset=utf-8'}))
+        const a=document.createElement('a'); a.href=url; a.download=activity45.filename; document.body.appendChild(a); a.click(); a.remove()
+        setTimeout(()=>URL.revokeObjectURL(url),30000)
+      }
+      const activity45Print = () => {
+        if(!activity45.html) return
+        const frame=document.querySelector('#activity45-preview')
+        try { frame.contentWindow.focus(); frame.contentWindow.print() }
+        catch(e) { activity45.error='Download the document, open it in your browser, and use Print → Save as PDF.' }
+      }
+      const activity45Key = ev => {
+        if(ev.key==='Escape') { ev.preventDefault(); activity45Close(); return }
+        if(ev.key!=='Tab') return
+        const controls=[...ev.currentTarget.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled)')].filter(x=>x.getClientRects().length && x.tabIndex>=0)
+        const first=controls[0],last=controls[controls.length-1]
+        if(ev.shiftKey&&document.activeElement===first) { ev.preventDefault(); last?.focus() }
+        else if(!ev.shiftKey&&document.activeElement===last) { ev.preventDefault(); first?.focus() }
+      }
+      watch(()=>currentUser.value?.id,(id,old)=>{ if(id!==old && activity45.open) activity45Close() })
 
         return {
+          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn,
           // Existing returns
           entry, entryBusy, backToSignIn, validateEntrySession, useAnotherEntryAccount,
+          entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,
           askBarRefreshRecords,
           loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, isAdmin,
           previewIntro, dismissPreviewIntro,

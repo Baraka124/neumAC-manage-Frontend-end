@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>       
 <html lang="en">   
 <head>
@@ -12,7 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=44">
+    <link rel="stylesheet" href="style.css?v=45">
+    <link rel="stylesheet" href="activity45-ui.css?v=45">
+    <link rel="stylesheet" href="entry46.css?v=46">
 
     
 </head>
@@ -82,7 +83,7 @@
 
     <!-- Expanded cloud -->
     <div v-if="currentUser && entry.state === 'ready' && askBar.open" class="grounded-overlay" @click.self="closeAskBar()" @click="askBar.entityMenu = null">
-        <div class="askbar-panel grounded-cloud">
+        <div class="askbar-panel grounded-cloud" :class="{'gr45-expanded': askBar.reviewWide}">
             <span class="grounded-mist grounded-mist1"></span>
             <span class="grounded-mist grounded-mist2"></span>
             <div v-if="askBar.entityMenu" class="askbar-entmenu" :style="{ left: askBar.entityMenu.x + 'px', top: askBar.entityMenu.y + 'px' }" @click.stop>
@@ -107,6 +108,8 @@
                     </div>
                 </div>
                 <div class="grounded-head-tools">
+                    <button class="askbar-newchat" @click="askBar.reviewWide = !askBar.reviewWide" :aria-pressed="!!askBar.reviewWide" title="Toggle expanded review"><span>{{ askBar.reviewWide ? 'Compact' : 'Expand' }}</span></button>
+                    <button v-if="hasPermission('medical_staff','read')" class="askbar-newchat" @click="activity45Open(askBar.context?.type === 'staff' ? askBar.context.id : '')" title="Prepare a personal activity document"><span>Personal brief</span></button>
                     <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()" title="Start a new Grounded conversation">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>New</span>
                     </button>
@@ -276,6 +279,7 @@
 
             <!-- CONVERSATION -->
             <div v-if="askBar.view === 'conversation'" class="askbar-conv">
+                <button v-if="askBar.turns.length" class="gr45-latest" @click="askBarRevealLatestTurn(false)">Go to latest answer ↓</button>
                 <div v-if="!askBar.turns.length" class="askbar-greeting">
                     <div class="askbar-greeting-t">{{ askBarContextCard ? 'What do you need from this ' + askBarContextCard.noun + '?' : 'What would you like to know?' }}</div>
                     <div class="askbar-greeting-s">{{ askBarContextCard ? 'Grounded is using this record plus the connected department records it can verify.' : 'Ask across live operations, people, rotations and research — Grounded connects the records for you.' }}</div>
@@ -302,7 +306,11 @@
                                 <span class="askbar-empty-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg></span>
                                 <div><div class="askbar-empty-title">{{ turn.text }}</div><div class="askbar-empty-sub">No matching current record was found in the sources Grounded checked.</div></div>
                             </div>
-                            <div v-else-if="!(turn.visual && turn.visual.type === 'profile')" class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
+                            <div v-else class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
+                            <div v-if="turn.visual && !turn.isClarify" class="gr45-review-control">
+                                <div><span>Review scope</span><strong>{{ turn.reviewScope || 'Department records' }}</strong><small>{{ turn.snapshotAt ? 'Snapshot retrieved ' + turn.snapshotAt : 'Source refresh time not recorded for this answer' }}</small></div>
+                                <button @click="turn.reviewOpen = !turn.reviewOpen" :aria-expanded="!!turn.reviewOpen">{{ turn.reviewOpen ? 'Hide detail' : 'Review detail' }}</button>
+                            </div>
 
                             <!-- §3 clarify: pick leave reason -->
                             <div v-if="turn.leaveClarify" class="askbar-leave-reasons">
@@ -533,6 +541,7 @@
                                 <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
                             </div>
 
+                            <template v-if="turn.reviewOpen || turn.isClarify || !turn.visual">
                             <div v-if="!turn.streaming && turn.visual && turn.visual.type === 'enroll'" class="askbar-viz">
                                 <div v-for="(it, vi) in turn.visual.items" :key="vi" class="askbar-viz-row">
                                     <div class="askbar-viz-top"><span class="askbar-viz-name">{{ it.title }}</span><span class="askbar-viz-num">{{ it.label }}</span></div>
@@ -775,6 +784,7 @@
                                     <span class="askbar-absence-cov" :class="r.covered ? 'askbar-absence-cov--ok' : 'askbar-absence-cov--gap'">{{ r.covered ? 'covered' : 'no cover' }}</span>
                                 </div>
                             </div>
+                            </template>
                             <template v-if="!turn.streaming">
                                 <div v-if="turn.isClarify && turn.chips && turn.chips.length" class="askbar-clarify-opts">
                                     <button v-for="c in turn.chips" :key="c.id" class="askbar-clarify-opt" @click="askBarResolveClarified(c)">
@@ -788,23 +798,23 @@
                                 </div>
                                 <div v-if="turn.confidence!=='low' || (turn.sources && turn.sources.length) || (turn.evidence && turn.evidence.length)" class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
                                     <div class="askbar-trust-main">
-                                        <span class="askbar-trust-dot" :title="turn.confidence==='high' ? 'Grounded in department records' : turn.confidence==='medium' ? 'Some records may be missing' : 'Limited grounding'"></span>
-                                        <span class="askbar-trust-state">{{ turn.confidence==='high' ? 'Grounded in' : turn.confidence==='medium' ? 'Partial · grounded in' : 'Limited · checked' }}</span>
+                                        <span class="askbar-trust-state">{{ turn.sources && turn.sources.length ? 'Source scope' : 'Source scope not established' }}</span>
                                         <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src">
                                             <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ src }}<span v-if="si < turn.sources.length-1" class="askbar-source-sep"> · </span></span>
                                         </span>
                                     </div>
                                     <div class="askbar-trust-meta">
-                                        <button v-if="turn.trace && turn.trace.length" class="askbar-trust-checks" @click="turn.traceOpen = !turn.traceOpen">{{ turn.traceOpen ? 'Hide checks' : turn.trace.length + ' check' + (turn.trace.length===1?'':'s') }}</button>
+                                        <button v-if="turn.trace && turn.trace.length" class="askbar-trust-checks" @click="turn.traceOpen = !turn.traceOpen">{{ turn.traceOpen ? 'Hide method' : 'Method' }}</button>
                                         <button v-if="turn.evidence && turn.evidence.length" class="askbar-trust-checks" @click="turn.evidenceOpen = !turn.evidenceOpen">{{ turn.evidenceOpen ? 'Hide records' : 'Records' }}</button>
-                                        <span v-if="turn.asOf" class="askbar-trust-time">as of {{ turn.asOf }}</span>
+                                        <span v-if="turn.asOf" class="askbar-trust-time">Prepared {{ turn.asOf }}</span>
                                         <button class="askbar-trust-copy" @click="askBarCopyAnswer(turn, $event)" title="Copy answer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
                                     </div>
                                 </div>
                                 <div v-if="turn.traceOpen && turn.trace && turn.trace.length" class="askbar-trace askbar-trace--expanded askbar-trace--footnote">
-                                    <div class="askbar-evidence-h">How Grounded checked</div>
+                                    <div class="askbar-evidence-h">Configured retrieval method</div>
+                                    <p class="gr45-method-note">These describe the configured answer method. They are not individually verified checks or a completeness guarantee.</p>
                                     <div v-for="(step, si) in turn.trace" :key="si" class="askbar-trace-step askbar-trace-step--done">
-                                        <span class="askbar-trace-ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                                        <span class="askbar-trace-ic" aria-hidden="true">·</span>
                                         <span class="askbar-trace-label">{{ step.label }}</span>
                                         <span class="askbar-trace-src">{{ step.src }}</span>
                                     </div>
@@ -899,28 +909,10 @@
         </div>
     </div>
 
-    <!-- V44 · Institutional entry. Unverified sessions never render the workspace. -->
-    <main v-if="!currentUser || entry.state !== 'ready'" class="entry44">
-        <section class="entry44-identity" aria-label="neumAC department workspace">
-            <header class="entry44-mast">
-                <span class="entry44-institution">neum<span>AC</span></span>
-                <span class="entry44-location">Pneumology<br>Área Sanitaria de A Coruña y Cee</span>
-            </header>
-            <div class="entry44-intro">
-                <span class="entry44-eyebrow">The departmental workspace</span>
-                <h1>neum<span>Desk</span><i aria-hidden="true">.</i></h1>
-                <p class="entry44-statement">A shared view.<br>A connected department.</p>
-                <p class="entry44-description">People, clinical operations and research,<br>in one working environment.</p>
-            </div>
-            <div class="entry44-index" aria-label="Workspace areas">
-                <div><span>01</span><strong>People &amp; teams</strong><small>Our departmental community</small></div>
-                <div><span>02</span><strong>Clinical operations</strong><small>Coverage, leave &amp; rotations</small></div>
-                <div><span>03</span><strong>Research &amp; innovation</strong><small>Studies, projects &amp; knowledge</small></div>
-            </div>
-            <footer class="entry44-identity-foot"><span>neumAC · Internal workspace</span><span>A Coruña, Galicia</span></footer>
-        </section>
+    <!-- V46 · Separate editorial and access panels; V44 session protection retained. -->
+    <main v-if="!currentUser || entry.state !== 'ready'" class="entry44 entry46">
         <section class="entry44-access" aria-labelledby="entry-title">
-            <div class="entry44-access-top"><span class="entry44-access-label">Department access</span><span class="entry44-lock" aria-hidden="true">↗</span></div>
+            <div class="entry44-access-top"><span class="entry46-wordmark">neum<span>Desk</span><i>.</i></span><span class="entry44-access-label">Department access</span></div>
             <div class="entry44-form-area">
                 <template v-if="entry.state === 'checking' || entry.state === 'opening'">
                     <span class="entry44-kicker">Welcome to neumDesk</span>
@@ -970,9 +962,26 @@
                         <p class="entry44-session-note">Using a shared computer? Sign out when you finish.</p>
                     </form>
                 </template>
-                <div class="entry44-grounded"><span class="entry44-g-mark" aria-hidden="true">G</span><p><strong>With Grounded</strong><span>Explore connected records from within your workspace.</span></p></div>
             </div>
-            <footer class="entry44-access-foot"><span>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
+            <footer class="entry44-access-foot"><span>neumDesk · V46<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
+        </section>
+        <section class="entry46-editorial" aria-label="At neumAC — public highlights" :class="'entry46-editorial--'+entry46Story.accent">
+            <img v-if="entry46Story.image && !entry46ImageErrors[entry46Story.image]" class="entry46-art" :src="entry46Story.image" :alt="entry46Story.imageAlt" @error="entry46ImageErrors[entry46Story.image]=true">
+            <div class="entry46-shade" aria-hidden="true"></div>
+            <header class="entry46-mast"><span class="entry46-institution">neum<span>AC</span></span><span class="entry46-location">Pneumology<br>Área Sanitaria de A Coruña y Cee</span></header>
+            <div class="entry46-story" id="entry46-story" role="region" aria-label="Selected highlight">
+                <div class="entry46-overline"><span class="entry46-dot" aria-hidden="true"></span><span>At neumAC</span><span class="entry46-rule" aria-hidden="true"></span><span>{{ entry46Story.category }}</span></div>
+                <h1>{{ entry46Story.title }}</h1>
+                <p class="entry46-summary">{{ entry46Story.summary }}</p>
+                <button v-if="entry46Story.detail" class="entry46-read" type="button" @click="entry46Expanded=!entry46Expanded" :aria-expanded="entry46Expanded" aria-controls="entry46-detail">{{ entry46Expanded ? 'Close perspective' : 'Read the perspective' }} <span aria-hidden="true">{{ entry46Expanded ? '−' : '↗' }}</span></button>
+                <p v-if="entry46Expanded" id="entry46-detail" class="entry46-detail">{{ entry46Story.detail }}</p>
+                <a v-if="entry46Story.linkUrl" class="entry46-read entry46-link" :href="entry46Story.linkUrl" target="_blank" rel="noopener noreferrer">{{ entry46Story.linkLabel }} <span aria-hidden="true">↗</span><span class="entry46-sr">(opens a new tab)</span></a>
+            </div>
+            <div class="entry46-bottom">
+                <div class="entry46-selection-label"><span>Explore perspectives</span><span>{{ String(entry46Stories.findIndex(s=>s.id===entry46Story.id)+1).padStart(2,'0') }} / {{ String(entry46Stories.length).padStart(2,'0') }}</span></div>
+                <nav class="entry46-selector" aria-label="Choose a highlight"><button v-for="(story,i) in entry46Stories" :key="story.id" type="button" @click="entry46Select(story.id)" :aria-pressed="entry46Story.id===story.id" aria-controls="entry46-story"><span class="entry46-number">{{ String(i+1).padStart(2,'0') }}</span><span>{{ story.navTitle }}</span></button></nav>
+                <footer class="entry46-foot"><span>A Coruña · Galicia</span><span>{{ entry46Story.imageCredit }}</span></footer>
+            </div>
         </section>
     </main>
 
@@ -2093,6 +2102,7 @@
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                     CSV
                                 </button>
+                                <button class="btn btn-secondary btn-sm" @click="activity45Open()">Personal brief</button>
                                 <button class="btn btn-secondary btn-sm" @click="printView('Medical Staff')" title="Print" aria-label="Print staff list">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                                 </button>
@@ -6659,6 +6669,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
                     <!-- ── HERO HEADER ── -->
                     <div class="pd-hero">
+                        <button class="activity45-profile-btn" @click="activity45Open(staffProfileModal.staff.id)">Calendar & activity brief</button>
                         <button class="pd-close" @click="staffProfileModal.show = false" title="Close" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
 
                         <!-- Avatar — real photo if set, initials otherwise -->
@@ -12313,9 +12324,37 @@ Use Section heading to structure longer clinical or research articles."></textar
 
 </teleport>
 
+    <teleport to="body">
+        <div v-if="activity45.open && currentUser" class="activity45-backdrop" @click.self="activity45Close">
+            <section class="activity45-dialog" role="dialog" aria-modal="true" aria-labelledby="activity45-title" @keydown="activity45Key">
+                <header class="activity45-header"><div><span>neumDesk · Personal activity</span><h2 id="activity45-title">A considered view of someone’s work.</h2><p>Choose a person, a period and the sections to include.</p></div><button class="activity45-close" @click="activity45Close" aria-label="Close personal activity">×</button></header>
+                <div class="activity45-layout">
+                    <form class="activity45-controls" @submit.prevent="activity45Generate" @change="activity45Invalidate">
+                        <fieldset :disabled="activity45.busy">
+                            <legend>Document scope</legend>
+                            <label for="activity45-person">Staff member</label><select id="activity45-person" v-model="activity45.personId"><option value="">Select a person</option><option v-for="p in activity45.people" :key="p.id" :value="p.id">{{ p.full_name }}</option></select>
+                            <label for="activity45-start">From</label><input id="activity45-start" type="date" v-model="activity45.start" required>
+                            <label for="activity45-end">Through</label><input id="activity45-end" type="date" v-model="activity45.end" :min="activity45.start" required>
+                            <p class="activity45-hint">Up to 366 days. Longer periods produce longer documents.</p>
+                            <div class="activity45-options"><label><input type="checkbox" v-model="activity45.selected.oncall"> On-call duties</label><label><input type="checkbox" v-model="activity45.selected.rotations"> Rotations & supervision</label><label><input type="checkbox" v-model="activity45.selected.studies"> Research studies</label><label><input type="checkbox" v-model="activity45.selected.projects"> Innovation projects</label><label><input type="checkbox" v-model="activity45.selected.lines"> Programme coordination</label></div>
+                        </fieldset>
+                        <button class="activity45-primary" type="submit" :disabled="activity45.busy">{{ activity45.busy ? 'Retrieving records…' : 'Prepare fresh preview' }}</button>
+                        <p v-if="activity45.busy" role="status" class="activity45-hint">Checking the sources available to your account.</p>
+                        <p v-if="activity45.error" role="alert" class="activity45-error">{{ activity45.error }}</p>
+                        <div v-if="activity45.html" class="activity45-export"><button type="button" @click="activity45Download">Download document</button><button type="button" @click="activity45Print">Print / Save as PDF</button><p class="activity45-hint">The downloaded HTML opens offline. Review its contents before sharing.</p></div>
+                        <p class="activity45-hint">Leave reasons, contact details and private staff notes are excluded. Blank calendar dates do not establish availability.</p>
+                    </form>
+                    <div class="activity45-preview-area"><iframe v-if="activity45.html" id="activity45-preview" title="Personal activity document preview" tabindex="-1" :srcdoc="activity45.html" sandbox="allow-same-origin allow-modals"></iframe><div v-else class="activity45-placeholder"><span>Calendar · Research · Innovation</span><h3>One person.<br>A clearer picture.</h3><p>The preview will bring together dated activities and explicitly linked responsibilities, with source coverage visible.</p></div></div>
+                </div>
+            </section>
+        </div>
+    </teleport>
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="app.js?v=44"></script>
+    <script src="activity45.js?v=45"></script>
+    <script src="entry-highlights.js?v=46"></script>
+    <script src="entry46.js?v=46"></script>
+    <script src="app.js?v=46"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
