@@ -1241,6 +1241,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const config = { method, headers: this.headers(), mode: 'cors', cache: 'no-cache', credentials: 'include', ...(options.signal ? { signal: options.signal } : {}) }
+        const timeoutController = options.timeoutMs && !options.signal ? new AbortController() : null
+        const timeoutId = timeoutController ? setTimeout(() => timeoutController.abort(), options.timeoutMs) : null
+        if (timeoutController) config.signal = timeoutController.signal
         if (options.body) config.body = JSON.stringify(options.body)
 
         try {
@@ -1248,6 +1251,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res.status === 204) return null
           if (!res.ok) {
             if (res.status === 401) {
+              if (endpoint === '/api/auth/login') throw new Error('Email or password not recognised. Please try again.')
               if (!this._sessionExpired) {
                 this._sessionExpired = true
                 localStorage.removeItem(CONFIG.TOKEN_KEY)
@@ -1256,7 +1260,8 @@ document.addEventListener('DOMContentLoaded', () => {
               }
               throw new Error('Session expired. Please log in again.')
             }
-            if (res.status === 403) throw new Error('You do not have permission to perform this action.')
+            if (res.status === 403) throw new Error(endpoint === '/api/auth/login' ? 'This account cannot sign in. Contact your departmental administrator.' : 'You do not have permission to perform this action.')
+            if (res.status === 429) throw new Error('Too many attempts. Please wait a few minutes before trying again.')
             if (res.status === 404) throw new Error('The requested resource was not found.')
             if (res.status === 503) {
               window.dispatchEvent(new CustomEvent('neumax:maintenance'))
@@ -1301,9 +1306,12 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return result
         } catch (e) {
+          if (e.name === 'AbortError') throw new Error('The connection took too long. Please try again.')
           if (e.message.includes('fetch') || e.message.includes('NetworkError'))
             throw new Error('Cannot connect to server. Check your network connection.')
           throw e
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId)
         }
       }
 
@@ -1312,8 +1320,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       async login(email, password) {
-        const data = await this.request('/api/auth/login', { method: 'POST', body: { email, password } })
-        if (data.token) {
+        const data = await this.request('/api/auth/login', { method: 'POST', body: { email, password }, timeoutMs:15000 })
+        if (data?.token && data?.user?.id) {
           localStorage.setItem(CONFIG.TOKEN_KEY, data.token)
           localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(data.user))
           this.clearCache()
@@ -1847,8 +1855,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const mobileMenuOpen = ref(false)
 
       // ── Splash screen ──────────────────────────────────────────────
-      const splashVisible = ref(true)
-      setTimeout(() => { splashVisible.value = false }, 1800)
+      // V44 entry has a real validation state; no timed branding interstitial.
+      const splashVisible = ref(false)
 
       // ── Dashboard expand drawers ────────────────────────────────────
       const dbDrawer = reactive({ show: false, panel: null }) // panel: 'oncall' | 'rotations'
@@ -7126,7 +7134,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const loginError = ref('')
         const loginFieldErrors = reactive({ email: '', password: '' })
         const clearLoginError = (field) => { if (field === 'email') loginFieldErrors.email = ''; if (field === 'password') loginFieldErrors.password = ''; loginError.value = '' }
-        const handleForgotPassword = () => { showToast('Info', 'Password reset link sent', 'info') }
+        const entry = reactive({ state:'checking', mode:'signin', message:'', capsLock:false })
+        const handleForgotPassword = () => { entry.mode = 'help'; loginError.value = '' }
+        const backToSignIn = () => { entry.mode = 'signin'; loginError.value = ''; Vue.nextTick(() => document.getElementById('entry-email')?.focus()) }
+        const entryBusy = computed(() => loginLoading.value || entry.state === 'checking' || entry.state === 'opening')
 
         const auth = useAuth()
         const { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings } = auth
@@ -9139,12 +9150,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const handleLogin = async () => {
+          if (entryBusy.value) return
+          loginForm.email = loginForm.email.trim().toLowerCase()
           loginFieldErrors.email = !loginForm.email ? 'Email required' : ''
+          if (loginForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginForm.email)) loginFieldErrors.email = 'Enter a valid email address'
           loginFieldErrors.password = !loginForm.password ? 'Password required' : ''
           if (loginFieldErrors.email || loginFieldErrors.password) { loginError.value = 'Please fill all required fields'; return }
-          loginLoading.value = true; loginError.value = ''
+          loginLoading.value = true; loginError.value = ''; entry.state = 'signin'
           try {
             const response = await API.login(loginForm.email, loginForm.password)
+            if (!response?.token || !response?.user?.id) throw new Error('The server returned an incomplete sign-in response. Please try again.')
+            try { if (loginForm.remember_me) localStorage.setItem('neumdesk_entry_email',loginForm.email); else localStorage.removeItem('neumdesk_entry_email') } catch (_) {}
+            loginForm.password = ''; showPassword.value = false; entry.capsLock = false
+            entry.state = 'opening'
             currentUser.value = response.user; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
             maybeShowPreviewIntro(response.user)
             showToast('Success', `Welcome, ${response.user.full_name}!`, 'success')
@@ -9154,15 +9172,46 @@ document.addEventListener('DOMContentLoaded', () => {
             // breadcrumb falling back to 'neumDesk' until loadAllData fully resolved.
             currentView.value = 'dashboard'
             await loadAllData()
-          } catch (e) { loginError.value = e.message || 'Invalid email or password'; showToast('Error', 'Login failed', 'error') }
+            if (currentUser.value) { entry.state = 'ready'; loadBrain() }
+          } catch (e) { entry.state = 'signin'; loginError.value = e.message || 'Sign-in could not be completed. Please try again.' }
           finally { loginLoading.value = false }
+        }
+
+        // Cached identity is never used to grant or render workspace access.
+        let entryAttempt = 0
+        const validateEntrySession = async () => {
+          const attempt = ++entryAttempt
+          entry.state = 'checking'; entry.message = ''; loginError.value = ''
+          if (!API.token) { entry.state = 'signin'; currentView.value = 'login'; return }
+          try {
+            const data = await API.request('/api/auth/me', {skipCache:true, timeoutMs:15000})
+            if (attempt !== entryAttempt) return
+            if (!data?.id || data.account_status !== 'active') throw new Error('Your session could not be validated. Please sign in again.')
+            entry.state = 'opening'; currentUser.value = data; currentView.value = 'dashboard'
+            localStorage.setItem(CONFIG.USER_KEY,JSON.stringify(data))
+            maybeShowPreviewIntro(data)
+            await loadAllData()
+            if (attempt !== entryAttempt) return
+            if (currentUser.value) { entry.state = 'ready'; loadBrain() }
+          } catch (e) {
+            if (attempt !== entryAttempt) return
+            currentUser.value = null; currentView.value = 'login'
+            if (!API.token) { entry.state = 'signin'; loginError.value = 'Your session has expired. Please sign in again.' }
+            else { entry.state = 'unavailable'; entry.message = e.message || 'We could not verify your session. Please retry.' }
+          }
+        }
+        const useAnotherEntryAccount = () => {
+          ++entryAttempt
+          localStorage.removeItem(CONFIG.TOKEN_KEY); localStorage.removeItem(CONFIG.USER_KEY)
+          API.clearCache(); currentUser.value = null; currentView.value = 'login'
+          entry.state = 'signin'; entry.message = ''; entry.mode = 'signin'; loginForm.password = ''
         }
 
         const handleLogout = () => showConfirmation({
           title: 'Logout', message: 'Are you sure you want to logout?',
           icon: 'fa-sign-out-alt', confirmButtonText: 'Logout', confirmButtonClass: 'btn-danger',
           onConfirm: async () => {
-            try { await API.logout() } finally { currentUser.value = null; currentView.value = 'login'; userMenuOpen.value = false; showToast('Info', 'Logged out successfully', 'info') }
+            try { await API.logout() } finally { useAnotherEntryAccount(); closeAskBar(); askBar.turns = []; askBar.context = null; askBar.subject = null; userMenuOpen.value = false; showToast('Info', 'Logged out successfully', 'info') }
           }
         })
 
@@ -10305,31 +10354,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('neumax:offline', () => { isOnline.value = false })
 
         onMounted(() => {
-          const token = localStorage.getItem(CONFIG.TOKEN_KEY)
-          const user = localStorage.getItem(CONFIG.USER_KEY)
-          if (token && user) {
-            try {
-              // Validate token with backend before showing the app.
-              // This blocks access from shared/QR sessions with expired tokens.
-              const parsed = JSON.parse(user)
-              currentUser.value = parsed  // optimistic — show splash while validating
-              currentView.value = 'dashboard'
-              // Validate in background — if invalid, session-expired event fires
-              API.request('/api/auth/me').then(data => {
-                if (data && data.id) {
-                  currentUser.value = { ...parsed, ...data }
-                  maybeShowPreviewIntro(currentUser.value)
-                  loadAllData()
-                  loadBrain()  // department-curated agent knowledge (Supabase-backed)
-                } else {
-                  window.dispatchEvent(new CustomEvent('neumax:session-expired'))
-                }
-              }).catch(() => {
-                window.dispatchEvent(new CustomEvent('neumax:session-expired'))
-              })
-            }
-            catch { currentView.value = 'login' }
-          } else { currentView.value = 'login' }
+          try {
+            const remembered = localStorage.getItem('neumdesk_entry_email')
+            if (remembered) { loginForm.email = remembered; loginForm.remember_me = true }
+          } catch (_) {}
+          validateEntrySession()
+
 
           // Session expiry — redirect to login cleanly from anywhere in the app
           // ── Online / offline / maintenance ──
@@ -10356,6 +10386,8 @@ document.addEventListener('DOMContentLoaded', () => {
           }, 300000)
 
           window.addEventListener('neumax:session-expired', () => {
+            entry.state = 'signin'; entry.mode = 'signin'; loginForm.password = ''; showPassword.value = false
+            closeAskBar(); askBar.turns = []; askBar.context = null; askBar.subject = null
             currentUser.value = null
             currentView.value = 'login'
             // Close all open panels/modals
@@ -15797,6 +15829,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return {
           // Existing returns
+          entry, entryBusy, backToSignIn, validateEntrySession, useAnotherEntryAccount,
           askBarRefreshRecords,
           loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, isAdmin,
           previewIntro, dismissPreviewIntro,
