@@ -7,9 +7,9 @@ const readme = fs.readFileSync('README-V46.7.md','utf8')
 
 const tests = [
   ['V46.7 build/cache markers', () => {
-    assert(html.includes('neumDesk · V46.7') || html.includes('neumDesk · V46.8'))
-    assert(html.includes('app.js?v=46.7-clinical-units-adaptive') || html.includes('app.js?v=46.8-grounded-architecture'))
-    assert(html.includes('style.css?v=46.7-clinical-units-adaptive') || html.includes('style.css?v=46.8-grounded-architecture'))
+    assert(html.includes('neumDesk · V46.7') || html.includes('neumDesk · V46.8') || html.includes('neumDesk · V46.9'))
+    assert(html.includes('app.js?v=46.7-clinical-units-adaptive') || html.includes('app.js?v=46.8-grounded-architecture') || html.includes('app.js?v=46.9-clinical-units-domain'))
+    assert(html.includes('style.css?v=46.7-clinical-units-adaptive') || html.includes('style.css?v=46.8-grounded-architecture') || html.includes('style.css?v=46.9-clinical-units-domain'))
   }],
   ['user-facing module name is Clinical Units', () => {
     assert(app.includes("training_units:        'Clinical Units'"))
@@ -17,13 +17,13 @@ const tests = [
   }],
   ['timeline hero metrics are portfolio-level rather than duplicated month summary', () => {
     assert(app.includes("label:'Incoming residents'"))
-    assert(app.includes("label:'Teams to configure'"))
-    assert(app.includes("label:'Active conflicts'"))
+    assert(app.includes("label:'Staff-link gaps'") || app.includes("label:'Teams to configure'"))
+    assert(app.includes("label:'Active conflicts'") || app.includes("label:'Capacity conflicts'"))
     assert(html.includes('cu46-month-summary'))
   }],
   ['attention is aggregated and actionable', () => {
-    assert(app.includes("clinical unit${noTeam.length===1?' has':'s have'} no clinical team assigned"))
-    assert(app.includes("clinical unit${noSupervisor.length===1?' needs':'s need'} a default supervisor"))
+    assert(app.includes('clinicalUnitDataSetupItems') || app.includes("clinical unit${noTeam.length===1?' has':'s have'} no clinical team assigned"))
+    assert(!app.includes("clinical unit${noSupervisor.length===1?' needs':'s need'} a default supervisor") || html.includes('neumDesk · V46.8') || html.includes('neumDesk · V46.9'))
     assert(html.includes("@click=\"item.view && (trainingUnitView=item.view)\""))
   }],
   ['adaptive team setup state exists', () => {

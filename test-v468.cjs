@@ -16,10 +16,10 @@ const arch = fs.readFileSync('GROUNDED-ARCHITECTURE.md','utf8')
 
 const tests = [
   ['V46.8 build and core load order', () => {
-    assert(html.includes('neumDesk · V46.8'))
+    assert(html.includes('neumDesk · V46.8') || html.includes('neumDesk · V46.9'))
     assert(html.includes('grounded-core.js?v=46.8-grounded-architecture'))
-    assert(html.includes('app.js?v=46.8-grounded-architecture'))
-    assert(html.indexOf('grounded-core.js?v=46.8-grounded-architecture') < html.indexOf('app.js?v=46.8-grounded-architecture'))
+    assert(html.includes('app.js?v=46.8-grounded-architecture') || html.includes('app.js?v=46.9-clinical-units-domain'))
+    assert(html.indexOf('grounded-core.js?v=46.8-grounded-architecture') < (html.indexOf('app.js?v=46.9-clinical-units-domain') >= 0 ? html.indexOf('app.js?v=46.9-clinical-units-domain') : html.indexOf('app.js?v=46.8-grounded-architecture')))
   }],
   ['core exposes architecture contracts', () => {
     assert.strictEqual(Core.VERSION,'46.8')

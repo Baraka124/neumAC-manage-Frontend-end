@@ -226,3 +226,14 @@ Module
 ```
 
 Clinical Units is the first reference module. Rotations, Leave, On-call, Staff and Research can follow as their operational surfaces mature.
+
+## V46.9 Clinical Units domain contract
+
+Clinical Units is the first adapter where the architecture explicitly distinguishes a **hard operational constraint** from **contextual clinical structure**.
+
+- Resident capacity and resident-rotation overlap can block a placement.
+- Attending physicians linked through `unit_staff` describe who normally works in the unit; they do not define resident capacity.
+- Formal resident supervision belongs to the rotation / department context and is not inferred from Clinical Unit membership.
+- Missing attending links are surfaced as data completeness, not as proof that the unit cannot accept a resident.
+
+This pattern should be preserved when future modules join Grounded: module adapters must identify which facts are constraints, which are context, and which are merely incomplete data rather than allowing the model to infer those semantics itself.
