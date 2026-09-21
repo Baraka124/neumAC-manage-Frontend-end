@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.7-clinical-units-adaptive">
+    <link rel="stylesheet" href="style.css?v=46.8-grounded-architecture">
     <link rel="stylesheet" href="activity45-ui.css?v=45">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -116,6 +116,9 @@
                     <button class="askbar-history-btn" @click="askBarToggleTimeline()" :class="{ 'askbar-history-btn--on': askBar.view === 'timeline' }" title="Department activity">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Activity</span><span v-if="askBarChanges.length" class="askbar-tool-count">{{ askBarChanges.length }}</span>
                     </button>
+                    <button v-if="hasPermission('audit_logs','read')" class="askbar-history-btn" @click="askBarToggleTrace()" :class="{ 'askbar-history-btn--on': askBar.view === 'trace' }" title="Grounded execution traces">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/><path d="M2 21h20"/></svg><span>Trace</span><span v-if="groundedTraceRows.length" class="askbar-tool-count">{{ groundedTraceRows.length }}</span>
+                    </button>
                     <button class="askbar-teach-btn" @click="askBarToggleTeach()" :class="{ 'askbar-teach-btn--on': askBar.view === 'teach' }" title="Teach Grounded">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg><span>Teach</span>
                     </button>
@@ -210,6 +213,49 @@
                     <strong>No meaningful changes recorded yet.</strong>
                     <span>Grounded will build this history as departmental state changes.</span>
                 </div>
+            </div>
+
+            <!-- GROUNDED TRACE — operational observability, never chain-of-thought -->
+            <div v-if="askBar.view === 'trace'" class="grounded-trace-view">
+                <div class="grounded-trace-head">
+                    <div>
+                        <div class="grounded-trace-kicker">Grounded observability</div>
+                        <div class="grounded-trace-title">Execution traces</div>
+                        <div class="grounded-trace-sub">Context, tools, permissions, latency and outcomes. Hidden reasoning is never recorded.</div>
+                    </div>
+                    <div class="grounded-trace-actions">
+                        <span>{{ groundedToolCatalog.length }} registered tools</span>
+                        <button @click="groundedClearTraces()">Clear session traces</button>
+                        <button @click="askBar.view='conversation'">Back to Grounded</button>
+                    </div>
+                </div>
+                <div class="grounded-arch-strip">
+                    <div><strong>Context</strong><span>Current object + task window</span></div>
+                    <div><strong>Tools</strong><span>Small domain contracts</span></div>
+                    <div><strong>Guardrails</strong><span>Read · propose · write</span></div>
+                    <div><strong>Human approval</strong><span>Required for writes</span></div>
+                    <div><strong>Trace</strong><span>Source + latency + outcome</span></div>
+                </div>
+                <div v-if="groundedTraceRows.length" class="grounded-trace-list">
+                    <details v-for="tr in groundedTraceRows" :key="tr.id" class="grounded-trace-row">
+                        <summary>
+                            <span class="grounded-trace-status" :class="'grounded-trace-status--'+(tr.status||'running')"></span>
+                            <div class="grounded-trace-main"><strong>{{ tr.query || tr.intent || 'Grounded run' }}</strong><small>{{ tr.intent || 'unrouted' }} · {{ tr.view || 'department' }}</small></div>
+                            <span class="grounded-trace-duration">{{ tr.durationMs === null ? 'running' : tr.durationMs + ' ms' }}</span>
+                        </summary>
+                        <div class="grounded-trace-detail">
+                            <div><span>Context</span><strong>{{ tr.context?.subject?.name || tr.context?.view || 'Department context' }}</strong></div>
+                            <div><span>Tools</span><strong>{{ (tr.events || []).filter(e=>e.type==='tool_start').length }}</strong></div>
+                            <div><span>Sources</span><strong>{{ tr.outcome?.sources?.length ? tr.outcome.sources.join(' · ') : '—' }}</strong></div>
+                            <div><span>Confidence</span><strong>{{ tr.outcome?.confidence || '—' }}</strong></div>
+                            <div><span>Action class</span><strong>{{ tr.outcome?.actionClass || 'read' }}</strong></div>
+                        </div>
+                        <div v-if="(tr.events || []).length" class="grounded-trace-events">
+                            <div v-for="(ev,ei) in tr.events.slice(-10)" :key="ei"><span>{{ ev.type }}</span><code>{{ ev.data?.tool || ev.data?.intent || ev.data?.module || ev.data?.status || '' }}</code></div>
+                        </div>
+                    </details>
+                </div>
+                <div v-else class="grounded-trace-empty"><strong>No execution traces in this session.</strong><span>Ask Grounded a question to create the first trace.</span></div>
             </div>
 
             <!-- TEACH GROUNDED — department language layer -->
@@ -964,7 +1010,7 @@
                     </form>
                 </template>
             </div>
-            <footer class="entry44-access-foot"><span>neumDesk · V46.7<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
+            <footer class="entry44-access-foot"><span>neumDesk · V46.8<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
         </section>
         <section class="entry46-editorial" aria-label="At neumAC — public highlights" :class="'entry46-editorial--'+entry46Story.accent">
             <img v-if="entry46Story.image && !entry46ImageErrors[entry46Story.image]" class="entry46-art" :src="entry46Story.image" :alt="entry46Story.imageAlt" @error="entry46ImageErrors[entry46Story.image]=true">
@@ -12232,7 +12278,8 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=45"></script>
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
-    <script src="app.js?v=46.7-clinical-units-adaptive"></script>
+    <script src="grounded-core.js?v=46.8-grounded-architecture"></script>
+    <script src="app.js?v=46.8-grounded-architecture"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

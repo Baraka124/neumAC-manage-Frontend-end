@@ -11542,8 +11542,20 @@ document.addEventListener('DOMContentLoaded', () => {
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
         snoozed: [],       // dismissed alert keys (#16)
         entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
-        view: 'digest'     // 'digest' | 'conversation' | 'timeline' | 'teach'
+        coreTraceId: null, // V46.8 execution trace id (operational telemetry, never chain-of-thought)
+        view: 'digest'     // 'digest' | 'conversation' | 'timeline' | 'trace' | 'teach'
       })
+
+      // V46.8 · Grounded architecture harness. This strengthens the existing Grounded
+      // product without changing its user-facing identity. The core provides compact
+      // context envelopes, permission-aware tool contracts, bounded execution, session
+      // memory policy and operational traces. It never stores hidden reasoning.
+      const GroundedCore = (typeof window !== 'undefined' && window.neumGroundedCore) ? window.neumGroundedCore : null
+      const groundedTraceRows = ref(GroundedCore ? GroundedCore.recentTraces(30) : [])
+      const groundedToolCatalog = ref([])
+      const groundedRefreshTraces = () => { groundedTraceRows.value = GroundedCore ? GroundedCore.recentTraces(30) : [] }
+      const groundedClearTraces = () => { GroundedCore?.clearTraces(); groundedRefreshTraces() }
+      const askBarToggleTrace = () => { askBar.view = askBar.view === 'trace' ? 'conversation' : 'trace'; groundedRefreshTraces() }
 
       // Subject-aware anticipation: when a staff profile opens, tell the agent so it
       // offers actions for THAT person; clear the subject when it closes.
@@ -11937,6 +11949,79 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
         return null
       })
+      // V46.8 · Explicit context engineering. Grounded receives a compact task
+      // envelope instead of a dump of application state. Authoritative operational
+      // facts remain in their source refs/APIs; session memory stores task context only.
+      const askBarBuildContextEnvelope = () => {
+        if (!GroundedCore) return null
+        const subject = askBar.subject || askBar.context || askBarInferVisibleSubject()
+        let timeScope = null
+        let moduleContext = null
+        try {
+          if (currentView.value === 'training_units') {
+            if (trainingUnitView.value === 'timeline') {
+              const m = getPlanningMonths(1)[0]
+              timeScope = m ? { kind:'resident_rotation_month', start:m.start, end:m.end, label:m.longLabel || m.label } : null
+            } else if (trainingUnitView.value === 'weekly') {
+              const days = clinicalUnitWeeklyTeamGrid.value?.days || []
+              if (days.length) timeScope = { kind:'clinical_team_week', start:days[0].iso, end:days[days.length-1].iso, label:`${days[0].label} – ${days[days.length-1].label}` }
+            }
+            if (subject?.type === 'unit') {
+              const u = (trainingUnits.value || []).find(x=>String(x.id)===String(subject.id))
+              if (u) {
+                const today = Utils.normalizeDate(new Date())
+                const cap = getUnitCapacityWindow(u.id,today,today)
+                const next = getNextFreeWindow(u.id,today,24)
+                moduleContext = {
+                  unitId:u.id, unitName:u.unit_name, unitCode:u.unit_code || null,
+                  capacity:cap?.capacity ?? u.maximum_residents ?? null, occupiedToday:cap?.peak ?? null,
+                  minimumFreeToday:cap?.minFree ?? null, teamMembers:(unitStaffCache.value[u.id] || []).length,
+                  nextOpening:next ? { start:next.start, end:next.end, label:next.label, free:next.minFree } : null
+                }
+              }
+            }
+          }
+        } catch (e) {}
+        const permissions = Array.isArray(currentUser.value?.permissions)
+          ? currentUser.value.permissions.filter(p=>p && (p.can_read || p.can_write)).map(p=>({module:p.module,read:!!p.can_read,write:!!p.can_write}))
+          : []
+        const envelope = GroundedCore.buildContextEnvelope({
+          view: currentView.value,
+          lens: currentView.value === 'training_units' ? trainingUnitView.value : null,
+          subject: subject ? { type:subject.type, id:subject.id, name:subject.name || null } : null,
+          timeScope,
+          user: { role: currentUser.value?.user_role || currentUser.value?.role || null, adminLevel: currentUser.value?.admin_level || 0 },
+          permissions,
+          sourceHealth: (askBar.sourceHealth || []).map(x=>({label:x.label,ready:!!x.ready,error:x.ready?null:(x.error||'Unavailable')})),
+          module: moduleContext
+        })
+        GroundedCore.sessionMemory.set('currentContext', envelope)
+        return envelope
+      }
+
+      const groundedStartExecutionTrace = (question, intent=null, extra={}) => {
+        if (!GroundedCore) return null
+        const traceId = GroundedCore.startTrace({
+          query: question || '', intent: intent || null, view: currentView.value,
+          context: askBarBuildContextEnvelope(),
+          userRole: currentUser.value?.user_role || currentUser.value?.role || null
+        })
+        askBar.coreTraceId = traceId
+        GroundedCore.addTraceEvent(traceId,'route_selected',{intent:intent || null,followup:extra.followup || null})
+        groundedRefreshTraces()
+        return traceId
+      }
+      const groundedFinishExecutionTrace = (traceId, answer={}, status='ok', error=null, intent=null) => {
+        if (!GroundedCore || !traceId) return
+        GroundedCore.finishTrace(traceId,{
+          status, intent: intent || null, confidence: answer?.confidence || null, sources: answer?.sources || [],
+          emptyState: !!answer?.emptyState, error: error ? (error.message || String(error)) : null,
+          actionClass: answer?.isDraft || answer?.proposal ? 'propose' : 'read'
+        })
+        if (askBar.coreTraceId === traceId) askBar.coreTraceId = null
+        groundedRefreshTraces()
+      }
+
       const askBarOpenContext = () => {
         const c = askBarContextCard.value
         if (!c) return
@@ -13159,6 +13244,93 @@ document.addEventListener('DOMContentLoaded', () => {
         return null
       }
 
+      // V46.8 · Domain tool contracts. Clinical Units is the first mature module
+      // connected to the harness. Tools are deliberately small and semantic; Grounded
+      // should not need raw unrestricted access to application internals.
+      const groundedToolRegistry = GroundedCore ? GroundedCore.createToolRegistry({
+        permissionCheck: (module, action) => !module || hasPermission(module, action)
+      }) : null
+
+      const groundedInvokeTool = (name, input={}) => {
+        if (!groundedToolRegistry) throw new Error('Grounded tool harness unavailable')
+        return groundedToolRegistry.invoke(name, input, { traceId: askBar.coreTraceId, confirmed:false })
+      }
+
+      if (groundedToolRegistry) {
+        groundedToolRegistry.register({
+          name:'clinical_units.capacity_window', access:GroundedCore.ACCESS.READ, module:'training_units',
+          description:'Return exact concurrent resident occupancy and free-capacity windows for one clinical unit and date interval.',
+          inputSchema:{unitId:'uuid',start:'date',end:'date'},
+          run:({unitId,start,end}) => {
+            const unit=(trainingUnits.value||[]).find(u=>String(u.id)===String(unitId))
+            if(!unit) throw new Error('Clinical unit not found')
+            const state=getUnitCapacityWindow(unit.id,start,end)
+            return { unit:{id:unit.id,name:unit.unit_name,code:unit.unit_code||null}, state, detail:formatCapacityWindows(state) }
+          }
+        })
+        groundedToolRegistry.register({
+          name:'resident_rotations.conflicts', access:GroundedCore.ACCESS.READ, module:'resident_rotations',
+          description:'Check whether a resident already has active or scheduled rotations overlapping an interval.',
+          inputSchema:{residentId:'uuid',start:'date',end:'date'},
+          run:({residentId,start,end}) => (rotations.value||[]).filter(r=>
+            String(r.resident_id)===String(residentId) && ['active','scheduled'].includes(r.rotation_status) &&
+            Utils.normalizeDate(r.start_date)<=end && Utils.normalizeDate(r.end_date)>=start
+          ).map(r=>({id:r.id,unitId:r.training_unit_id,start:r.start_date,end:r.end_date,status:r.rotation_status}))
+        })
+        groundedToolRegistry.register({
+          name:'clinical_units.team_readiness', access:GroundedCore.ACCESS.READ, module:'training_units',
+          description:'Summarise recorded clinical-team membership and designated supervisor for a clinical unit.',
+          inputSchema:{unitId:'uuid',date:'date?'},
+          run:({unitId}) => {
+            const unit=(trainingUnits.value||[]).find(u=>String(u.id)===String(unitId))
+            if(!unit) throw new Error('Clinical unit not found')
+            const members=unitStaffCache.value[unit.id]||[]
+            const supervisorId=unit.supervising_attending_id||unit.supervisor_id||unit.default_supervisor_id||null
+            const supervisor=supervisorId ? (medicalStaff.value||[]).find(s=>String(s.id)===String(supervisorId)) : null
+            return { unitId:unit.id, teamCount:members.length, supervisor:supervisor?{id:supervisor.id,name:supervisor.full_name}:null, ready:members.length>0 && !!supervisor }
+          }
+        })
+        groundedToolRegistry.register({
+          name:'clinical_units.available_units', access:GroundedCore.ACCESS.READ, module:'training_units',
+          description:'Find active clinical units with resident capacity throughout an exact rotation interval.',
+          inputSchema:{start:'date',end:'date',residentId:'uuid?'},
+          run:({start,end,residentId=null}) => {
+            const units=(trainingUnits.value||[]).filter(u=>(u.unit_status||'active')!=='inactive')
+            const beenTo=residentId ? new Set((rotations.value||[]).filter(r=>String(r.resident_id)===String(residentId)).map(r=>String(r.training_unit_id))) : new Set()
+            return units.map(u=>{
+              const state=getUnitCapacityWindow(u.id,start,end)
+              const team=groundedToolRegistry.invoke('clinical_units.team_readiness',{unitId:u.id},{traceId:askBar.coreTraceId,confirmed:false})
+              let score=0
+              const capacityFit=!state.overCapacity && state.minFree>0
+              if(capacityFit) score+=5
+              if(team.supervisor) score+=2
+              if(team.teamCount>0) score+=2
+              if(residentId && !beenTo.has(String(u.id))) score+=1
+              if(state.status==='free') score+=1
+              return {unit:{id:u.id,name:u.unit_name,code:u.unit_code||null},state,team,capacityFit,isNew:residentId?!beenTo.has(String(u.id)):null,score,detail:formatCapacityWindows(state)}
+            }).filter(x=>x.capacityFit).sort((a,b)=>b.score-a.score || b.state.minFree-a.state.minFree)
+          }
+        })
+        groundedToolRegistry.register({
+          name:'resident_rotations.propose_assignment', access:GroundedCore.ACCESS.PROPOSE, module:'resident_rotations',
+          description:'Build a non-destructive resident-rotation proposal after checking overlap, unit capacity and unit readiness.',
+          inputSchema:{residentId:'uuid',unitId:'uuid',start:'date',end:'date'},
+          run:({residentId,unitId,start,end}) => {
+            const resident=(medicalStaff.value||[]).find(s=>String(s.id)===String(residentId))
+            const unit=(trainingUnits.value||[]).find(u=>String(u.id)===String(unitId))
+            if(!resident||!unit) throw new Error('Resident or clinical unit not found')
+            const conflicts=groundedToolRegistry.invoke('resident_rotations.conflicts',{residentId,start,end},{traceId:askBar.coreTraceId,confirmed:false})
+            const capacity=groundedToolRegistry.invoke('clinical_units.capacity_window',{unitId,start,end},{traceId:askBar.coreTraceId,confirmed:false})
+            const team=groundedToolRegistry.invoke('clinical_units.team_readiness',{unitId},{traceId:askBar.coreTraceId,confirmed:false})
+            const blocked=[]
+            if(conflicts.length) blocked.push('resident_overlap')
+            if(capacity.state.overCapacity || capacity.state.minFree<1) blocked.push('unit_capacity')
+            return {kind:'rotation_proposal',resident:{id:resident.id,name:resident.full_name},unit:capacity.unit,start,end,conflicts,capacity:capacity.state,team,blocked,requiresHumanConfirmation:true}
+          }
+        })
+        groundedToolCatalog.value = groundedToolRegistry.list()
+      }
+
       // #3 / #7 retrieval helpers
       const askBarCountResidentsEndingBy = (endIso) => (rotations.value || []).filter(r => r.rotation_status === 'active' && r.end_date && Utils.normalizeDate(r.end_date) <= endIso).length
       const askBarOnCallLoad = () => {
@@ -13576,6 +13748,18 @@ document.addEventListener('DOMContentLoaded', () => {
             arr.unshift({ type, title, detail: detail?.detail || detail?.summary || '', at: entry.at, kind: detail?.kind || null, entityKeys: detail?.entityKeys || [] })
             localStorage.setItem(key, JSON.stringify(arr.slice(0,120)))
             askBarTimelineVersion.value++
+          } catch {}
+        }
+        // Confirmed Grounded writes are also represented in the execution trace stream.
+        // This is observability metadata only: human approval + action outcome, never
+        // hidden reasoning or full record payloads.
+        if (type === 'change' && GroundedCore) {
+          try {
+            const traceId = GroundedCore.startTrace({ query:detail?.title || 'Confirmed Grounded action', intent:detail?.kind || 'write_action', view:currentView.value, context:askBarBuildContextEnvelope(), userRole:currentUser.value?.user_role || currentUser.value?.role || null })
+            GroundedCore.addTraceEvent(traceId,'human_confirmation',{confirmed:true})
+            GroundedCore.addTraceEvent(traceId,'action_committed',{kind:detail?.kind || null,title:detail?.title || null,entityKeys:detail?.entityKeys || []})
+            GroundedCore.finishTrace(traceId,{status:'ok',intent:detail?.kind || 'write_action',confidence:'high',sources:[],actionClass:'write'})
+            groundedRefreshTraces()
           } catch {}
         }
       }
@@ -14437,6 +14621,11 @@ document.addEventListener('DOMContentLoaded', () => {
           askBar.turns.push(Vue.reactive({ q: asked, text: `I can't delete ${who} — that's a permanent HR action. Did you mean to cancel their leave, remove them from on-call, or end a rotation?`, chips: [], actions: person ? [{ label: 'Open staff management', view: 'medical_staff', primary: true }] : [], sources: [], followups, confidence: 'high', asOf: askBarNow(), streaming: false }))
           return
         }
+        // V46.8 trace begins only after routing is stable. Write/proposal flows above
+        // retain their existing human-confirmation UI; read/decision-support runs are
+        // traced through the new harness from context → tools → outcome.
+        const coreTraceId = groundedStartExecutionTrace(asked, intent, { followup: followup?.kind || null })
+
         // #37 permission-aware: if the intent's module is one the user can't read, decline.
         // Permission module: brain's intent.permission wins; else legacy map.
         const bIntent = (getBrain().intents || {})[intent]
@@ -14446,6 +14635,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const turn = Vue.reactive({ q: asked, text: `You don't have access to that information. Ask an administrator if you need ${mod.replace(/_/g,' ')} access.`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })
           askBar.turns.push(turn)
           askBar.query = ''
+          if (coreTraceId) { GroundedCore?.addTraceEvent(coreTraceId,'permission_block',{module:mod,access:'read'}); groundedFinishExecutionTrace(coreTraceId, turn, 'blocked', new Error('Permission denied'), intent) }
           return
         }
         // Calm acknowledgement → record check → settled answer.
@@ -14466,15 +14656,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const answerGeneration = askBarRefreshGeneration
         setTimeout(() => {
           if (answerGeneration !== askBarRefreshGeneration) return
-          let ans
+          let ans, answerError = null
           try {
             ans = followup ? askBarBuildFollowup(followup) : askBarBuildAnswer(forcedIntent || askBarMatchIntent(asked))
           } catch (e) {
+            answerError = e
             ans = { text: "Sorry — I couldn't pull that together. Try rephrasing, or check the relevant view directly.", chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
           }
           const completedTrace = askBar.trace.map(step => ({ ...step, done: true }))
           const full = ans.text || ''
-          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, asOf: askBarNow(), streaming: true, revealing: false })
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, coreTraceId, asOf: askBarNow(), streaming: true, revealing: false })
+          groundedFinishExecutionTrace(coreTraceId, ans, answerError ? 'error' : 'ok', answerError, intent)
 
           // Keep the working surface visible for one calm beat, then replace it in place.
           const now = (typeof performance !== 'undefined' ? performance.now() : Date.now())
@@ -15469,30 +15661,16 @@ document.addEventListener('DOMContentLoaded', () => {
           const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
           const rots = rotations.value || []
           const range = askBarParseRange(asked) || (()=>{ const d=new Date(); const s=new Date(d.getFullYear(),d.getMonth()+1,1), e=new Date(d.getFullYear(),d.getMonth()+2,0); return {start:Utils.normalizeDate(s),end:Utils.normalizeDate(e),label:s.toLocaleDateString('en-GB',{month:'long',year:'numeric'})} })()
-          const beenTo = person ? new Set(rots.filter(r=>r.resident_id===person.id).map(r=>r.training_unit_id)) : new Set()
-          const residentConflicts = person ? rots.filter(r=>r.resident_id===person.id && ['active','scheduled'].includes(r.rotation_status) && Utils.normalizeDate(r.start_date)<=range.end && Utils.normalizeDate(r.end_date)>=range.start) : []
+          const residentConflicts = person ? groundedInvokeTool('resident_rotations.conflicts',{residentId:person.id,start:range.start,end:range.end}) : []
           if (person && residentConflicts.length) {
-            const c=residentConflicts[0], u=units.find(x=>x.id===c.training_unit_id)
-            return { text:`${person.full_name} already has a recorded rotation overlapping ${range.label}${u?` in ${u.unit_name}`:''} (${Utils.formatDateShort(c.start_date)} – ${Utils.formatDateShort(c.end_date)}). Resolve that assignment before planning another overlapping rotation.`, chips:[{label:person.full_name,id:person.id}], actions:[{label:'Open rotations',view:'resident_rotations',primary:true}], sources:['rotations','units'], followups:[{label:'Which units are free in that period?',intent:'unit_forecast',q:`which units are free in ${range.label}`}], confidence:'high' }
+            const c=residentConflicts[0], u=units.find(x=>String(x.id)===String(c.unitId))
+            return { text:`${person.full_name} already has a recorded rotation overlapping ${range.label}${u?` in ${u.unit_name}`:''} (${Utils.formatDateShort(c.start)} – ${Utils.formatDateShort(c.end)}). Resolve that assignment before planning another overlapping rotation.`, chips:[{label:person.full_name,id:person.id}], actions:[{label:'Open rotations',view:'resident_rotations',primary:true}], sources:['rotations','units'], followups:[{label:'Which units are free in that period?',intent:'unit_forecast',q:`which units are free in ${range.label}`}], confidence:'high' }
           }
-          const ranked = units.map(u => {
-            const state=getUnitCapacityWindow(u.id,range.start,range.end)
-            const supId=u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id||null
-            const sup=supId ? (medicalStaff.value||[]).find(s=>String(s.id)===String(supId))?.full_name : null
-            const teamCount=(unitStaffCache.value[u.id]||[]).length
-            const capacityFit=!state.overCapacity && state.minFree>0
-            let score=0
-            if(capacityFit) score+=5
-            if(sup) score+=2
-            if(teamCount>0) score+=2
-            if(!beenTo.has(u.id)) score+=1
-            if(state.status==='free') score+=1
-            return {unit:u,state,sup,teamCount,capacityFit,isNew:!beenTo.has(u.id),score,detail:formatCapacityWindows(state)}
-          }).filter(r=>r.capacityFit).sort((a,b)=>b.score-a.score || b.state.minFree-a.state.minFree)
+          const ranked = groundedInvokeTool('clinical_units.available_units',{start:range.start,end:range.end,residentId:person?.id || null})
           if (!ranked.length) return { text:`No clinical unit has resident capacity throughout ${range.label}${person?` for ${person.full_name}`:''}.`, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open rotation capacity',view:'training_units',primary:true}], sources:['units','rotations'], followups:[{label:'Show partial openings',intent:'unit_forecast',q:`which units have capacity in ${range.label}`}], confidence:'high' }
           const who=person?person.full_name:'a resident', top=ranked.slice(0,6)
-          const rows=top.map(r=>({name:r.unit.unit_name+(r.isNew?' · new for them':''),n:r.state.peak,cap:r.state.capacity,pct:Math.min(100,Math.round(r.state.peak/Math.max(1,r.state.capacity)*100)),full:false,detail:`${r.detail}${r.sup?' · supervisor '+r.sup:' · supervisor needed'}${r.teamCount?` · ${r.teamCount} clinicians`:' · no team assigned'}`}))
-          return { text:`For ${range.label}, ${top.length} unit${top.length===1?'':'s'} fit the full resident-rotation window for ${who}. Strongest operational fits: ${top.slice(0,3).map(r=>`${r.unit.unit_name} (${r.state.minFree}+ guaranteed free)`).join(', ')}.`, visual:{type:'occupancy',rows}, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open Clinical Units',view:'training_units',primary:true}], sources:['units','rotations','staff'], followups:person&&top[0]?[{label:`Plan ${person.full_name.split(' ')[0]} in ${top[0].unit.unit_name}`,intent:'assign_rotation',q:`put ${person.full_name} in ${top[0].unit.unit_name} from ${range.start} to ${range.end}${top[0].sup?` under ${top[0].sup}`:''}`}]:[], confidence:'high' }
+          const rows=top.map(r=>({name:r.unit.name+(r.isNew?' · new for them':''),n:r.state.peak,cap:r.state.capacity,pct:Math.min(100,Math.round(r.state.peak/Math.max(1,r.state.capacity)*100)),full:false,detail:`${r.detail}${r.team.supervisor?' · supervisor '+r.team.supervisor.name:' · supervisor needed'}${r.team.teamCount?` · ${r.team.teamCount} clinicians`:' · no team assigned'}`}))
+          return { text:`For ${range.label}, ${top.length} unit${top.length===1?'':'s'} fit the full resident-rotation window for ${who}. Strongest operational fits: ${top.slice(0,3).map(r=>`${r.unit.name} (${r.state.minFree}+ guaranteed free)`).join(', ')}.`, visual:{type:'occupancy',rows}, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open Clinical Units',view:'training_units',primary:true}], sources:['units','rotations','staff'], followups:person&&top[0]?[{label:`Plan ${person.full_name.split(' ')[0]} in ${top[0].unit.name}`,intent:'assign_rotation',q:`put ${person.full_name} in ${top[0].unit.name} from ${range.start} to ${range.end}${top[0].team.supervisor?` under ${top[0].team.supervisor.name}`:''}`}]:[], confidence:'high' }
         }
         if (intent === 'unit_load') {
           const q = (askBar.lastAsked || '').toLowerCase()
@@ -16351,6 +16529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const asked = (fu.q || fu.label || '').trim()
         askBar.lastAsked = asked
         askBar.query = ''
+        const followCoreTraceId = groundedStartExecutionTrace(asked, intent, { followup:intent })
         askBar.thinking = askBarThinkingFor(intent)
         askBar.loadingKind = askBarLoadingKindFor(intent)
         const followTrace = askBarTraceFor(intent).map(([label, src]) => ({ label, src, done: true }))
@@ -16395,10 +16574,12 @@ document.addEventListener('DOMContentLoaded', () => {
             emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans),
             trace: followTrace,
             traceOpen: false,
+            coreTraceId: followCoreTraceId,
             asOf: askBarNow(),
             streaming: true,
             revealing: false
           })
+          groundedFinishExecutionTrace(followCoreTraceId, ans, ans?.confidence === 'low' ? 'partial' : 'ok', null, intent)
           askBar.turns.push(turn)
           askBarStreamTurn(turn, ans.text || '')
         }, 0)
@@ -16622,6 +16803,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Ask bar (RAG intelligence surface)
           askBar, askBarSuggestions, askBarSuggestLabel, askBarContextCard, askBarOpenContext, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           askBarContinuity, askBarChanges, askBarWatchedChanges, askBarTimeline, askBarWatchlist, askBarIsWatched, askBarToggleWatch, askBarToggleTimeline,
+          groundedTraceRows, groundedToolCatalog, askBarToggleTrace, groundedClearTraces,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, teachTopicLabels, askBarToggleTeach,
           askBarPickLeaveReason, askBarConfirmLeave, askBarCancelLeave, askBarConfirmOncall, askBarCancelOncall, askBarPickReplacement, askBarRotaSwap, askBarConfirmRota, askBarCancelRota, askBarConfirmReturn, askBarCancelReturn, askBarConfirmRotation, askBarConfirmExtendRotation, askBarConfirmRotationEdit, askBarConfirmOncallEdit, askBarConfirmLeaveEdit, askBarCancelRotation, askBarConfirmMultiRotation, askBarCancelMultiRotation, askBarSourceDesc, askBarConfirmRemove, askBarCancelRemove,
           onboarding, ONBOARDING_STEPS, startOnboarding, nextOnboardingStep, finishOnboarding,

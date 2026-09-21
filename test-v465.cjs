@@ -6,7 +6,7 @@ const css = fs.readFileSync('style.css','utf8')
 const readme = fs.readFileSync('README-V46.5.md','utf8')
 
 const tests = [
-  ['V46.5 build marker and cache key', () => { assert(html.includes('neumDesk · V46.5') || html.includes('neumDesk · V46.6') || html.includes('neumDesk · V46.7')); assert(html.includes('app.js?v=46.5-clinical-units') || html.includes('app.js?v=46.6-clinical-units-detail') || html.includes('app.js?v=46.7-clinical-units-adaptive')); assert(html.includes('style.css?v=46.5-clinical-units') || html.includes('style.css?v=46.6-clinical-units-detail') || html.includes('style.css?v=46.7-clinical-units-adaptive')) }],
+  ['V46.5 build marker and cache key', () => { assert(html.includes('neumDesk · V46.5') || html.includes('neumDesk · V46.6') || html.includes('neumDesk · V46.7') || html.includes('neumDesk · V46.8')); assert(html.includes('app.js?v=46.5-clinical-units') || html.includes('app.js?v=46.6-clinical-units-detail') || html.includes('app.js?v=46.7-clinical-units-adaptive') || html.includes('app.js?v=46.8-grounded-architecture')); assert(html.includes('style.css?v=46.5-clinical-units') || html.includes('style.css?v=46.6-clinical-units-detail') || html.includes('style.css?v=46.7-clinical-units-adaptive') || html.includes('style.css?v=46.8-grounded-architecture')) }],
   ['getUnitAttendingCount render crash is wired through root setup', () => {
     assert(app.includes('loadUnitStaff, getUnitAttendingCount'))
     const rootReturn = app.lastIndexOf('unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount')

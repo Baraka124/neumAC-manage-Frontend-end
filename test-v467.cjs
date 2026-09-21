@@ -7,9 +7,9 @@ const readme = fs.readFileSync('README-V46.7.md','utf8')
 
 const tests = [
   ['V46.7 build/cache markers', () => {
-    assert(html.includes('neumDesk · V46.7'))
-    assert(html.includes('app.js?v=46.7-clinical-units-adaptive'))
-    assert(html.includes('style.css?v=46.7-clinical-units-adaptive'))
+    assert(html.includes('neumDesk · V46.7') || html.includes('neumDesk · V46.8'))
+    assert(html.includes('app.js?v=46.7-clinical-units-adaptive') || html.includes('app.js?v=46.8-grounded-architecture'))
+    assert(html.includes('style.css?v=46.7-clinical-units-adaptive') || html.includes('style.css?v=46.8-grounded-architecture'))
   }],
   ['user-facing module name is Clinical Units', () => {
     assert(app.includes("training_units:        'Clinical Units'"))
