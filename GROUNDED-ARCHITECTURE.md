@@ -353,3 +353,9 @@ The formal supervisor is a rotation/department responsibility and is not constra
 `pendingRotation` is task-only session state and can safely resume missing resident, unit, dates or supervisor.
 
 Multi-unit creation remains sequential at the API layer; atomic batch rotation writes require backend transactional support and remain explicit architectural debt.
+
+
+## V46.13 — Reporting / Portfolio Intelligence client
+Personal Activity is deliberately **not converted into an autonomous Grounded agent**. Its snapshot builder is deterministic and permission-scoped. The interactive Portfolio Intelligence UI and formal document are two clients of the same structured model.
+
+Grounded may later consume this reporting capability as a READ tool (for example, “summarize Marina’s recorded activity this month”), but it must receive the same source-health/provenance contract and must not reinterpret unavailable sources as no activity. The canonical Personal Activity model therefore becomes a candidate reusable structured output, not a parallel truth store.

@@ -2,19 +2,25 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v1.4 · Implementation checkpoint: V46.12 · Supersedes Vision v0.1
+**Status:** Architecture v1.6 · Implementation checkpoint: V46.13 · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
 ---
 
-## Current implementation ledger — V46.12
+## Current implementation ledger — V46.13
 
 This is the **living checkpoint** and is authoritative over older status statements below.
 
 ### Canonical baseline
-- Baseline entering this release: **V46.11 · Resident Rotation Action Integrity**.
-- Current release: **V46.12 · Clinical Units Consolidation**.
+- Baseline entering this release: **V46.12 · Clinical Units Consolidation**.
+- Current release: **V46.13 · Personal Activity / Portfolio Intelligence**.
+
+### Preserved implementation milestones
+- **V46.9 · Grounded Action Integrity** — On-call migrated to guarded semantic tools, pending action state, human confirmation and commit-time revalidation.
+- **V46.10 · Leave Action Integrity** — leave creation migrated to the same guarded action path with ambiguity-safe identity and overlap validation.
+- **V46.11 · Resident Rotation Action Integrity** — primary resident rotation assignment migrated to guarded tools, exact capacity/overlap validation and formal supervisor context.
+- **V46.12 · Clinical Units Consolidation** — Clinical Unit semantics and visual shell consolidated on the action-integrity baseline.
 
 ### What is real now
 | Layer | Status |
@@ -31,7 +37,7 @@ This is the **living checkpoint** and is authoritative over older status stateme
 | Human in loop | Built pattern |
 | Observability | Built foundation |
 | Permissions | Operational |
-| Structured outputs | Partial but proven |
+| Structured outputs | Mature reporting client proven; broader universal adoption pending |
 | Operational memory | Partial; task-only Grounded memory |
 | Multi-agent | Intentionally deferred |
 
@@ -57,13 +63,37 @@ Consequences:
 3. Many Grounded reads still live in the monolithic router instead of capability modules.
 4. The Canonical Knowledge Layer is not yet the exclusive operational interface.
 5. Role-first permissions remain a future onboarding improvement.
-6. Personal Activity is still document-first rather than a first-class Reporting / Portfolio Intelligence workspace.
+6. Personal Activity now has a first-class Portfolio Intelligence workspace; a Grounded READ adapter for this reporting capability remains future integration work.
 
 ### What comes next
-**V46.13 · Personal Activity / Portfolio Intelligence** — promote the existing verified personal activity brief into an interactive reporting surface with structured summary, timeline, source coverage and export as an output rather than the primary experience.
+**Next checkpoint:** live browser validation of Portfolio Intelligence, then continue module-by-module refinement and Grounded READ integration without changing the deterministic reporting source of truth.
 
 ---
 
+
+## Implementation checkpoint — V46.13 (2026-09-21)
+
+### Personal Activity becomes Portfolio Intelligence
+The existing permission-scoped personal-activity snapshot is now a first-class **Reporting / structured-output capability**, not merely an export dialog. A single verified model powers Overview, Timeline, Portfolio, Sources and the offline formal Document.
+
+**Implemented now**
+- explicit-person, explicit-period snapshot;
+- permission-aware independent source retrieval;
+- structured summary over duties, rotations, research, innovation and programme roles;
+- interactive timeline and portfolio views;
+- provenance/source-health view;
+- formal offline HTML / Print-to-PDF generated from the same model;
+- truthfulness invariant: unavailable/restricted source != zero activity.
+
+**Architectural significance**
+This is a concrete implementation of §9 Structured Outputs: UI and document are two renderers over the same verified record model. It also establishes the Reporting capability without requiring a separate agent or LLM.
+
+**Still next**
+1. Continue migrating legacy Grounded read builders behind semantic capabilities / Knowledge Objects.
+2. Consider Knowledge Layer adoption for Personal Activity behind an eval-guarded feature flag; output must remain identical before switching.
+3. Extend Portfolio Intelligence only when source semantics are explicit (e.g. publications, teaching, grants), never by inference.
+
+---
 ## 0. The one idea everything else derives from
 
 > **The operating system defines the knowledge model. The knowledge model defines the data model. Storage is the last decision, not the first.**

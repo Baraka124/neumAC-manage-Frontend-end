@@ -16793,18 +16793,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // V45 personal activity documents use their own permission-scoped snapshot.
       // No mutation, account inference, or dependency on Grounded's all-source gate.
-      const activity45 = reactive({open:false,busy:false,error:'',personId:'',start:'',end:'',people:[],sources:{},html:'',filename:'',selected:{oncall:true,rotations:true,studies:true,projects:true,lines:true}})
+      const activity45 = reactive({open:false,busy:false,error:'',personId:'',start:'',end:'',people:[],sources:{},model:null,summary:null,view:'overview',html:'',filename:'',selected:{oncall:true,rotations:true,studies:true,projects:true,lines:true}})
       let activity45Generation=0, activity45Controller=null, activity45ReturnFocus=null
-      const activity45Invalidate = () => { activity45.html=''; activity45.error='' }
+      const activity45Invalidate = () => { activity45.model=null; activity45.summary=null; activity45.html=''; activity45.error=''; activity45.view='overview' }
       const activity45Close = () => {
         ++activity45Generation; activity45Controller?.abort(); activity45Controller=null
-        activity45.open=false; activity45.busy=false; activity45.html=''; activity45.sources={}; activity45.people=[]
+        activity45.open=false; activity45.busy=false; activity45.model=null; activity45.summary=null; activity45.view='overview'; activity45.html=''; activity45.sources={}; activity45.people=[]
         Vue.nextTick(()=>activity45ReturnFocus?.isConnected && activity45ReturnFocus.focus())
       }
       const activity45Read = async (scope={}) => {
         const generation=++activity45Generation, userId=currentUser.value?.id
         activity45Controller?.abort(); const controller=new AbortController(); activity45Controller=controller
-        activity45.busy=true; activity45.error=''; activity45.html=''
+        activity45.busy=true; activity45.error=''; activity45.model=null; activity45.summary=null; activity45.html=''
         const timeout=setTimeout(()=>controller.abort(),15000)
         try {
           const sources=await Activity45.load((path,options)=>API.request(path,options),hasPermission,controller.signal,scope)
@@ -16829,7 +16829,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const activity45Generate = async () => {
         if(activity45.busy) return
-        activity45.html=''; activity45.error=''
+        activity45.model=null; activity45.summary=null; activity45.html=''; activity45.error=''
         const selectedId=activity45.personId
         if(!selectedId) { activity45.error='Select a staff member.'; return }
         try {
@@ -16839,9 +16839,28 @@ document.addEventListener('DOMContentLoaded', () => {
           const person=activity45.people.find(p=>Activity45.same(p.id,selectedId))
           if(!person) throw Error('This person is no longer in the accessible staff directory. Select a current record.')
           const model=Activity45.build(person,activity45.start,activity45.end,activity45.sources,activity45.selected)
+          activity45.model=model
+          activity45.summary=model.summary||Activity45.summarize(model)
+          activity45.view='overview'
           activity45.html=Activity45.render(model)
           activity45.filename='neumDesk-activity-'+String(person.full_name||'staff').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').slice(0,70)+'-'+activity45.start+'.html'
         } catch(e) { activity45.error=e.message||'Unable to create the document.' }
+      }
+      const activity45PrettyDate = value => {
+        if(!value) return '—'
+        const d=new Date(String(value).slice(0,10)+'T00:00:00Z')
+        return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})
+      }
+      const activity45DateRange = item => {
+        if(!item?.start) return 'Dates not established'
+        const first=activity45PrettyDate(item.start), last=activity45PrettyDate(item.end||item.start)
+        return item.end && item.end!==item.start ? `${first} — ${last}` : first
+      }
+      const activity45SourceTone = state => state==='ready'?'ready':state==='restricted'?'restricted':state==='not included'?'neutral':'unavailable'
+      const activity45SetView = view => {
+        if(!['overview','timeline','portfolio','sources','document'].includes(view)) return
+        activity45.view=view
+        Vue.nextTick(()=>document.querySelector(`.activity45-tab[data-view=\"${view}\"]`)?.focus())
       }
       const activity45Download = () => {
         if(!activity45.html||!currentUser.value) return
@@ -16866,7 +16885,7 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(()=>currentUser.value?.id,(id,old)=>{ if(id!==old && activity45.open) activity45Close() })
 
         return {
-          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn,
+          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn,
           // Existing returns
           entry, entryBusy, backToSignIn, validateEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,

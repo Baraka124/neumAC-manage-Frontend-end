@@ -123,7 +123,31 @@
     if(selected.lines) model.lines=rows('lines').filter(r=>same(r.coordinator_id,person.id)).map(r=>({title:r.name||r.research_line_name||'Research programme',role:'Coordinator',status:r.active===false?'Inactive':'Recorded assignment',ref:String(r.id)}));
     model.events.sort((a,b)=>a.start.localeCompare(b.start)||a.kind.localeCompare(b.kind)||a.title.localeCompare(b.title));
     model.issues=[...new Set(model.issues)];
+    model.summary=summarize(model);
     return model;
+  }
+  function summarize(m) {
+    const events=Array.isArray(m?.events)?m.events:[];
+    const sources=Array.isArray(m?.sources)?m.sources:[];
+    const ready=sources.filter(x=>x.state==='ready').length;
+    const degraded=sources.filter(x=>x.state!=='ready');
+    const rotations=events.filter(x=>x.kind==='rotation');
+    return {
+      oncall:events.filter(x=>x.kind==='oncall').length,
+      rotations:rotations.length,
+      residentRotations:rotations.filter(x=>String(x.role||'').includes('Resident')).length,
+      supervisedRotations:rotations.filter(x=>String(x.role||'').includes('Supervisor')).length,
+      studies:Array.isArray(m?.studies)?m.studies.length:0,
+      projects:Array.isArray(m?.projects)?m.projects.length:0,
+      programmes:Array.isArray(m?.lines)?m.lines.length:0,
+      milestones:events.filter(x=>x.kind==='study'||x.kind==='project').length,
+      sourceReady:ready,
+      sourceTotal:sources.length,
+      sourceCoverage:sources.length?Math.round((ready/sources.length)*100):0,
+      degradedSources:degraded.length,
+      issues:Array.isArray(m?.issues)?m.issues.length:0,
+      status:degraded.length?'partial':'verified'
+    };
   }
   function render(m,demo=false) {
     const e=escape;
@@ -161,5 +185,5 @@
     ${m.selected.lines?`<section><div class="section-title"><span>05</span><h2>Programme coordination</h2></div><p class="muted">Current recorded coordinator assignments; historical period membership is not established.</p>${m.lines.length?m.lines.map(x=>`<article class="portfolio"><div><h3>${e(x.title)}</h3><p>${e(x.role)}</p></div><div>${e(x.status)}<br><small>Record ${e(x.ref)}</small></div></article>`).join(''):`<p class="empty">${e(empty('lines'))}</p>`}</section>`:''}
     <section><div class="section-title"><span>06</span><h2>Scope & source coverage</h2></div><p>Explicit staff identifiers establish involvement. This is a record snapshot, not a complete account of workload or a confirmation of availability. Leave reasons, contact details and free-text staff notes are excluded.</p>${table(['Source','Snapshot state','Checked (UTC)'],m.sources.map(s=>`<tr><td>${e(s.label)}</td><td>${s.state==='ready'?'Retrieved':e(s.state)}</td><td>${s.checkedAt?e(s.checkedAt.replace('T',' ').slice(0,16)):'—'}</td></tr>`).join(''))}${m.issues.length?'<div class="notice"><b>Information to review</b><ul>'+m.issues.map(x=>'<li>'+e(x)+'</li>').join('')+'</ul></div>':''}</section><footer>neumAC · neumDesk · Personal activity brief<br>Prepared for deliberate review. Check the selected sections before sharing. Changes made after this snapshot are not reflected here.</footer></main></body></html>`;
   }
-  return {escape,date,addDay,pretty,same,list,specs,fetchRows,load,build,render};
+  return {escape,date,addDay,pretty,same,list,specs,fetchRows,load,build,summarize,render};
 });

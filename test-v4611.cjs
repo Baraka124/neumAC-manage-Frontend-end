@@ -2,7 +2,7 @@ const fs=require('fs'),assert=require('assert')
 global.sessionStorage=(()=>{const m=new Map();return{getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k),clear:()=>m.clear()}})()
 const Core=require('./grounded-core.js'),app=fs.readFileSync('app.js','utf8'),html=fs.readFileSync('index.html','utf8'),arch=fs.readFileSync('DepartmentOS_Architecture.md','utf8'),garch=fs.readFileSync('GROUNDED-ARCHITECTURE.md','utf8')
 const tests=[
-['V46.11 markers',()=>{assert(html.includes('neumDesk · V46.11')||html.includes('neumDesk · V46.12'));assert(html.includes('46.11-rotation-action-integrity')||html.includes('46.12-clinical-units'));assert(['46.11','46.12'].includes(Core.VERSION))}],
+['V46.11 markers',()=>{assert(html.includes('neumDesk · V46.11')||html.includes('neumDesk · V46.12')||html.includes('neumDesk · V46.13'));assert(html.includes('46.11-rotation-action-integrity')||html.includes('46.12-clinical-units')||html.includes('46.13-portfolio-intelligence'));assert(['46.11','46.12'].includes(Core.VERSION))}],
 ['pendingRotation is explicit and consumed',()=>{assert(app.includes('pendingRotation: null'));assert(app.includes("pend.awaiting==='date'"));assert(app.includes("pend.awaiting==='unit'"));assert(app.includes("pend.awaiting==='supervisor'"))}],
 ['role-scoped ambiguity resolution exists',()=>{assert(app.includes('askBarResolveStaffRoleClarified'));assert(app.includes('rotationClarifyIdentity'))}],
 ['unit resolver does not blindly first-match writes',()=>{assert(app.includes('askBarResolveRotationUnit'));assert(app.includes('ambiguous:hits'))}],
@@ -14,6 +14,6 @@ const tests=[
 ['commit uses confirmed WRITE tool and revalidates',()=>{assert(app.includes("groundedInvokeTool('resident_rotations.commit_assignment'"));const b=app.slice(app.indexOf("name:'resident_rotations.commit_assignment'"),app.indexOf('// V46.10 · Leave'));assert(b.includes('resident_rotations.propose_assignment'));assert(b.indexOf('resident_rotations.propose_assignment')<b.indexOf("API.request('/api/rotations'"))}],
 ['blocked rotation cannot confirm',()=>{assert(html.includes(':disabled="turn.writing || turn.rotationProposal.blocked"'));assert(html.includes('turn.rotationProposal.blockReason'))}],
 ['trace spans confirmation',()=>{assert(app.includes("human_confirmation',{confirmed:true,action:'assign_rotation'"));assert(app.includes("kind:'rotation',entityKeys"))}],
-['living architecture updated',()=>{assert(arch.includes('Implementation checkpoint: V46.11')||arch.includes('Implementation checkpoint: V46.12'));assert(arch.includes('Resident Rotation Action Integrity'));assert(garch.includes('V46.11 · Resident Rotation action integrity'))}]
+['living architecture updated',()=>{assert(arch.includes('Implementation checkpoint: V46.11')||arch.includes('Implementation checkpoint: V46.12')||arch.includes('Implementation checkpoint: V46.13'));assert(arch.includes('Resident Rotation Action Integrity'));assert(garch.includes('V46.11 · Resident Rotation action integrity'))}]
 ]
 let n=0;for(const [name,fn] of tests){try{fn();console.log('PASS',name);n++}catch(e){console.error('FAIL',name,e.stack||e);process.exit(1)}}console.log(`${n} V46.11 Resident Rotation Action Integrity checks passed.`)

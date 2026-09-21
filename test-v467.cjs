@@ -7,8 +7,8 @@ const readme = fs.readFileSync('README-V46.7.md','utf8')
 
 const tests = [
   ['V46.7 build/cache markers', () => {
-    assert(html.includes('neumDesk · V46.7') || html.includes('neumDesk · V46.8') || html.includes('neumDesk · V46.9') || html.includes('neumDesk · V46.10') || html.includes('neumDesk · V46.11') || html.includes('neumDesk · V46.12'))
-    assert(html.includes('app.js?v=46.7-clinical-units-adaptive') || html.includes('app.js?v=46.8-grounded-architecture') || html.includes('app.js?v=46.9-grounded-action-integrity') || html.includes('app.js?v=46.10-leave-action-integrity') || html.includes('app.js?v=46.11-rotation-action-integrity') || html.includes('app.js?v=46.12-clinical-units'))
+    assert(html.includes('neumDesk · V46.7') || html.includes('neumDesk · V46.8') || html.includes('neumDesk · V46.9') || html.includes('neumDesk · V46.10') || html.includes('neumDesk · V46.11') || html.includes('neumDesk · V46.12') || html.includes('neumDesk · V46.13'))
+    assert(html.includes('app.js?v=46.7-clinical-units-adaptive') || html.includes('app.js?v=46.8-grounded-architecture') || html.includes('app.js?v=46.9-grounded-action-integrity') || html.includes('app.js?v=46.10-leave-action-integrity') || html.includes('app.js?v=46.11-rotation-action-integrity') || html.includes('app.js?v=46.12-clinical-units') || html.includes('app.js?v=46.13-portfolio-intelligence'))
     assert(html.includes('style.css?v=46.7-clinical-units-adaptive') || html.includes('style.css?v=46.8-grounded-architecture') || html.includes('style.css?v=46.9-grounded-action-integrity') || html.includes('style.css?v=46.10-leave-action-integrity') || html.includes('style.css?v=46.11-rotation-action-integrity') || html.includes('style.css?v=46.12-clinical-units'))
   }],
   ['user-facing module name is Clinical Units', () => {
