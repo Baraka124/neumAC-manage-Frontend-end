@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>       
 <html lang="en">   
 <head>
@@ -965,7 +964,7 @@
                     </form>
                 </template>
             </div>
-            <footer class="entry44-access-foot"><span>neumDesk · V46.3<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
+            <footer class="entry44-access-foot"><span>neumDesk · V46.4<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
         </section>
         <section class="entry46-editorial" aria-label="At neumAC — public highlights" :class="'entry46-editorial--'+entry46Story.accent">
             <img v-if="entry46Story.image && !entry46ImageErrors[entry46Story.image]" class="entry46-art" :src="entry46Story.image" :alt="entry46Story.imageAlt" @error="entry46ImageErrors[entry46Story.image]=true">
@@ -3537,408 +3536,185 @@
                         </div>
                     </div>
                 </div><!-- /resident_rotations -->
-                <!-- ============ TRAINING UNITS VIEW ============ -->
-                <div v-if="currentView === 'training_units'">
+                <!-- ============ CLINICAL UNITS · V46.4 OPERATIONAL WORKSPACE ============ -->
+                <div v-if="currentView === 'training_units'" class="cu46-page">
+                    <section class="cu46-hero">
+                        <div class="cu46-hero-copy">
+                            <div class="cu46-eyebrow"><span></span>Clinical operations · Resident rotations</div>
+                            <h1>Clinical Units</h1>
+                            <p>See where residents can rotate, when capacity opens, and whether each unit's clinical team is ready to support the work.</p>
+                        </div>
+                        <div class="cu46-hero-actions">
+                            <button class="cu46-action cu46-action--quiet" @click="occupancyPanel.show = true">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/></svg>
+                                12-month overview
+                            </button>
+                            <button v-if="hasPermission('training_units','create')" class="cu46-action cu46-action--primary" @click="showAddTrainingUnitModal">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                                Add clinical unit
+                            </button>
+                        </div>
+                    </section>
 
-                    <div class="card mb-6">
-                        <div class="card-header">
-                            <div  class="nd-l278">
-                                <button class="btn btn-primary" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units', 'create')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Unit</button>
-                            </div>
-                        </div>
-                        <!-- ── Always-visible KPI strip ── -->
-                        <div class="tu-kpi-strip">
-                            <div class="tu-kpi tu-kpi--ok tu-kpi--clickable" @click="trainingUnitFilters.status = trainingUnitFilters.status === 'available' ? '' : 'available'" :class="{ 'tu-kpi--active': trainingUnitFilters.status === 'available' }">
-                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) < u.maximum_residents).length }}</div>
-                                <div class="tu-kpi-label">Available</div>
-                                <div class="tu-kpi-sub">slots open now</div>
-                            </div>
-                            <div class="tu-kpi-div"></div>
-                            <div class="tu-kpi tu-kpi--warn" :class="{'tu-kpi--zero': filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) > 0 && getUnitActiveRotationCount(u.id) < u.maximum_residents && getUnitActiveRotationCount(u.id) / u.maximum_residents > 0.5).length === 0}">
-                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) > 0 && getUnitActiveRotationCount(u.id) < u.maximum_residents && getUnitActiveRotationCount(u.id) / u.maximum_residents > 0.5).length }}</div>
-                                <div class="tu-kpi-label">Filling up</div>
-                                <div class="tu-kpi-sub">&gt;50% occupied</div>
-                            </div>
-                            <div class="tu-kpi-div"></div>
-                            <div class="tu-kpi tu-kpi--full tu-kpi--clickable" :class="{ 'tu-kpi--active': trainingUnitFilters.status === 'full', 'tu-kpi--zero': filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) >= u.maximum_residents).length === 0 }" @click="trainingUnitFilters.status = trainingUnitFilters.status === 'full' ? '' : 'full'">
-                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => getUnitActiveRotationCount(u.id) >= u.maximum_residents).length }}</div>
-                                <div class="tu-kpi-label">Full</div>
-                                <div class="tu-kpi-sub">no slots now</div>
-                            </div>
-                            <div class="tu-kpi-div"></div>
-                            <div class="tu-kpi tu-kpi--danger" :class="{'tu-kpi--zero': filteredTrainingUnits.filter(u => !!getUnitOverlapWarning(u.id)).length === 0}">
-                                <div class="tu-kpi-num">{{ filteredTrainingUnits.filter(u => !!getUnitOverlapWarning(u.id)).length }}</div>
-                                <div class="tu-kpi-label">Overlap alert</div>
-                                <div class="tu-kpi-sub">scheduled conflict</div>
-                            </div>
-                            <div  class="nd-l285">
-                                <button class="btn btn-ghost nd-l284 nd-v008"  @click="occupancyPanel.show = true">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg> Full overview
-                                </button>
-                            </div>
-                        </div>
-                        <div class="filter-bar">
-                            <input type="text" class="form-control" v-model="trainingUnitFilters.search" placeholder="Search units...">
-                            <!-- Clear dept filter chip if navigated from dept -->
-                            <span v-if="trainingUnitFilters.department" class="nav-context-chip"
-                                  @click="trainingUnitFilters.department = ''">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="2" y="14" width="8" height="4" rx="1"/><rect x="14" y="14" width="8" height="4" rx="1"/><path d="M12 6v4M6 14v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg>
-                                {{ departments.find(d => d.id === trainingUnitFilters.department)?.name || 'Department' }}
-                                <span  class="nd-l005 nd-v268">×</span>
-                            </span>
-                            <select class="form-select" v-model="trainingUnitFilters.department">
-                                <option value="">All Departments</option>
-                                <option v-for="dept in departments.filter(d => d.status !== 'inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
-                            </select>
-                            <select class="form-select" v-model="trainingUnitFilters.status">
-                                <option value="">All Status</option>
-                                <option value="available">Has open slots</option>
-                                <option value="full">Full</option>
-                                <option value="active">Active (unit)</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                            <!-- View mode toggle -->
-                            <div class="tuc-view-toggle">
-                                <button class="tuc-view-btn" :class="{ active: trainingUnitView === 'timeline' }"
-                                        @click="trainingUnitView = 'timeline'" title="Timeline view">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6H20M4 12H20M4 18H14"/></svg>
-                                </button>
-                                <button class="tuc-view-btn" :class="{ active: trainingUnitView === 'weekly' }"
-                                        @click="trainingUnitView = 'weekly'" title="Weekly staffing view">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                                </button>
-                                <button class="tuc-view-btn" :class="{ active: trainingUnitView === 'detail' }"
-                                        @click="trainingUnitView = 'detail'" title="Detail view">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-                                </button>
-                            </div>
-                            <!-- Horizon selector for timeline view -->
-                            <!-- ══ WEEKLY STAFFING GRID ══ -->
-                            <div v-if="trainingUnitView === 'weekly'" class="tuc-weekly-view">
-                                <!-- Header: nav + week label -->
-                                <div class="tuc-weekly-nav">
-                                    <button class="tuc-weekly-nav-btn" @click="weeklyGridOffset--" aria-label="Previous week" title="Previous week">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-                                    </button>
-                                    <span class="tuc-weekly-nav-label">
-                                        {{ weeklyStaffingGrid.monday?.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}
-                                        — {{ new Date(weeklyStaffingGrid.monday?.getTime() + 6*86400000).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}) }}
-                                    </span>
-                                    <button class="tuc-weekly-nav-btn" @click="weeklyGridOffset++" aria-label="Next week" title="Next week">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
-                                    </button>
-                                    <button v-if="weeklyGridOffset !== 0" class="tuc-weekly-today-btn" @click="weeklyGridOffset = 0">Today</button>
+                    <nav class="cu46-lenses" aria-label="Clinical Units views">
+                        <button :class="['cu46-lens',{'is-active':trainingUnitView==='timeline'}]" @click="trainingUnitView='timeline'">
+                            <span class="cu46-lens-kicker">Residents</span><strong>Rotation capacity</strong><small>Month-by-month</small>
+                        </button>
+                        <button :class="['cu46-lens',{'is-active':trainingUnitView==='weekly'}]" @click="trainingUnitView='weekly'">
+                            <span class="cu46-lens-kicker">Clinical team</span><strong>Team & availability</strong><small>Day-by-day</small>
+                        </button>
+                        <button :class="['cu46-lens',{'is-active':trainingUnitView==='detail'}]" @click="trainingUnitView='detail'">
+                            <span class="cu46-lens-kicker">Structure</span><strong>Unit directory</strong><small>People · details · actions</small>
+                        </button>
+                    </nav>
+
+                    <section class="cu46-filterbar">
+                        <label class="cu46-search">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                            <input v-model="trainingUnitFilters.search" type="search" placeholder="Find a clinical unit">
+                        </label>
+                        <select v-model="trainingUnitFilters.department" class="cu46-select">
+                            <option value="">All departments</option>
+                            <option v-for="dept in departments.filter(d=>d.status!=='inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                        </select>
+                        <select v-model="trainingUnitFilters.status" class="cu46-select">
+                            <option value="">All unit states</option>
+                            <option value="available">Open now</option>
+                            <option value="full">Full now</option>
+                            <option value="active">Active units</option>
+                            <option value="inactive">Inactive units</option>
+                        </select>
+                        <span class="cu46-filter-count">{{ filteredTrainingUnits.length }} unit{{ filteredTrainingUnits.length===1?'':'s' }}</span>
+                    </section>
+
+                    <div v-if="loading" class="cu46-loading"><div v-for="i in 4" :key="i" class="cu46-skeleton"></div></div>
+                    <template v-else>
+                        <!-- RESIDENT ROTATION CAPACITY: MONTH SCALE -->
+                        <section v-if="trainingUnitView==='timeline'" class="cu46-planning">
+                            <header class="cu46-section-head">
+                                <div>
+                                    <div class="cu46-section-kicker">Resident manager · planning horizon</div>
+                                    <h2>Where can the next rotation fit?</h2>
+                                    <p>Capacity is calculated from exact overlapping rotation dates. Sequential residents in the same month can reuse the same slot.</p>
                                 </div>
-
-                                <!-- Grid -->
-                                <div class="tuc-weekly-grid">
-                                    <!-- Column headers: day names -->
-                                    <div class="tuc-wg-unit-col"></div>
-                                    <div v-for="day in weeklyStaffingGrid.days" :key="day.iso"
-                                         class="tuc-wg-day-hdr"
-                                         :class="{ 'tuc-wg-day-hdr--today': day.isToday, 'tuc-wg-day-hdr--weekend': day.isWeekend }">
-                                        {{ day.label }}
-                                    </div>
-
-                                    <!-- Empty state -->
-                                    <template v-if="weeklyStaffingGrid.rows.length === 0">
-                                        <div class="tuc-wg-empty" :style="{ gridColumn: '1 / ' + (weeklyStaffingGrid.days.length + 2) }">
-                                            No units with assigned clinical teams yet
-                                        </div>
-                                    </template>
-
-                                    <!-- Unit rows -->
-                                    <template v-for="row in weeklyStaffingGrid.rows" :key="row.unitId">
-                                        <!-- Unit name -->
-                                        <div class="tuc-wg-unit-label">
-                                            <span class="tuc-wg-unit-name">{{ row.unitName }}</span>
-                                            <span class="tuc-wg-unit-total">{{ row.team.length }} attending</span>
-                                        </div>
-                                        <!-- Day cells -->
-                                        <div v-for="(cell, ci) in row.cells" :key="ci"
-                                             class="tuc-wg-cell"
-                                             :class="{
-                                               'tuc-wg-cell--full': cell.present === cell.total,
-                                               'tuc-wg-cell--warn': cell.warn,
-                                               'tuc-wg-cell--critical': cell.critical,
-                                               'tuc-wg-cell--today': weeklyStaffingGrid.days[ci].isToday,
-                                               'tuc-wg-cell--weekend': weeklyStaffingGrid.days[ci].isWeekend
-                                             }"
-                                             :title="cell.present + '/' + cell.total + ' present' + (cell.absent > 0 ? ' · ' + cell.absent + ' absent' : '')">
-                                            <span class="tuc-wg-cell-num">{{ cell.present }}</span>
-                                            <span class="tuc-wg-cell-den">/{{ cell.total }}</span>
-                                        </div>
-                                    </template>
-                                </div>
-
-                                <div class="tuc-weekly-legend">
-                                    <span class="tuc-wl-item tuc-wl-item--full">Full team</span>
-                                    <span class="tuc-wl-item tuc-wl-item--warn">Under 50%</span>
-                                    <span class="tuc-wl-item tuc-wl-item--critical">No cover</span>
-                                </div>
-                            </div>
-
-                                                        <div v-if="trainingUnitView === 'timeline'" class="tuc-horizon-row">
-                                <span class="tuc-horizon-label">Showing</span>
-                                <button v-for="m in [3,6,12]" :key="m"
-                                        class="tuc-horizon-btn"
-                                        :class="{ active: trainingUnitHorizon === m }"
-                                        @click="trainingUnitHorizon = m">{{ m }}mo</button>
-                            </div>
-                        </div>
-                        <!-- Skeleton loading -->
-                        <div v-if="loading"  class="nd-l283">
-                            <div v-for="i in 6" :key="i" class="nm-skel-card nm-skeleton nd-l282" ></div>
-                        </div>
-                        <div v-else class="training-units-grid-wrapper nd-l281" >
-                            <!-- Shared legend -->
-                            <div v-if="trainingUnitView === 'timeline'" class="tuc-shared-legend nd-l280" >
-                                <span class="tuc-tl-leg-item"><span class="tuc-tl-leg-dot tuc-tl-leg-dot--occupied"></span>Occupied</span>
-                                <span class="tuc-tl-leg-item"><span class="tuc-tl-leg-dot tuc-tl-leg-dot--partial"></span>Partial</span>
-                                <span class="tuc-tl-leg-item"><span class="tuc-tl-leg-dot tuc-tl-leg-dot--free"></span>Available</span>
-                                <!-- Shared month header labels — right-aligned to match card internals -->
-                                <div class="tuc-shared-month-header">
-                                    <div v-for="m in getTimelineMonths(trainingUnitHorizon)" :key="m.key"
-                                         class="tuc-tl-month-label"
-                                         :class="{ 'tuc-tl-month-label--current': m.isCurrent }">
-                                        {{ m.label }}
+                                <div class="cu46-month-nav">
+                                    <button @click="shiftPlanningWindow(-1)" aria-label="Previous month">←</button>
+                                    <button v-if="trainingUnitPlanningOffset!==0" class="cu46-month-today" @click="resetPlanningWindow">Current month</button>
+                                    <span>{{ getPlanningMonths(1)[0]?.longLabel }}</span>
+                                    <button @click="shiftPlanningWindow(1)" aria-label="Next month">→</button>
+                                    <div class="cu46-horizon">
+                                        <button v-for="m in [3,6,12]" :key="m" :class="{'is-active':trainingUnitHorizon===m}" @click="trainingUnitHorizon=m">{{ m }}m</button>
                                     </div>
                                 </div>
+                            </header>
+
+                            <div class="cu46-month-summary">
+                                <article><span>Units with space</span><strong>{{ clinicalUnitPlanningSummary.withSpace }}</strong><small>of {{ clinicalUnitPlanningSummary.units }} in {{ clinicalUnitPlanningSummary.month?.label }}</small></article>
+                                <article><span>Guaranteed free slots</span><strong>{{ clinicalUnitPlanningSummary.guaranteedSlots }}</strong><small>available throughout the month</small></article>
+                                <article><span>Completely free</span><strong>{{ clinicalUnitPlanningSummary.completelyFree }}</strong><small>no resident rotation recorded</small></article>
+                                <article :class="{'is-alert':clinicalUnitPlanningSummary.over>0}"><span>Capacity conflicts</span><strong>{{ clinicalUnitPlanningSummary.over }}</strong><small>{{ clinicalUnitPlanningSummary.over ? 'requires attention' : 'none in selected month' }}</small></article>
                             </div>
-                            <!-- Group by department — section header + cards -->
-                            <template v-for="deptGroup in unitsByDepartment" :key="deptGroup.deptId">
-                                <div class="tu-dept-header">
-                                    <span class="tu-dept-header-name">
-                                        {{ deptGroup.deptName === 'Department of Pulmonology' ? 'Neumología' : deptGroup.deptName || 'Sin departamento' }}
-                                    </span>
-                                    <span class="tu-dept-header-count">{{ deptGroup.units.length }} unit{{ deptGroup.units.length !== 1 ? 's' : '' }}</span>
-                                </div>
-                                <div class="training-units-grid nd-l090" >
-                            <div v-for="unit in deptGroup.units" :key="unit.id"
-                                 class="tuc nd-l161"
-                                 :class="{
-                                   'tuc--full':   getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
-                                   'tuc--warn':   getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) / unit.maximum_residents > 0.5,
-                                   'tuc--active': getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) / unit.maximum_residents <= 0.5,
-                                   'tuc--timeline-mode': trainingUnitView === 'timeline'
-                                 }"
-                                 @click="openUnitDetail(unit)"
-                                 >
 
-                                <!-- ── Overlap warning ── -->
-                                <div v-if="getUnitOverlapWarning(unit.id)" class="tuc-overlap-strip">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
-                                    Scheduling overlap · {{ formatDateShort(getUnitOverlapWarning(unit.id).date) }}
-                                </div>
-
-                                <!-- ── TIMELINE MODE ── -->
-                                <template v-if="trainingUnitView === 'timeline'">
-                                    <div class="tuc-head">
-                                        <div class="tuc-name-row">
-                                            <div>
-                                                <div class="tuc-name">{{ unit.unit_name }}</div>
-                                                <div class="tuc-sub">
-                                                    <span class="tuc-specialty">{{ unit.department?.name || unit.department_name || unit.specialty || '—' }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="tuc-head-right">
-                                            <div class="tuc-cap-block">
-                                                <div class="tuc-cap-nums">
-                                                    <span class="tuc-cap-current" :style="getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? 'color:#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? 'color:#ef9f27' : 'color:#10b981'">{{ getUnitActiveRotationCount(unit.id) }}</span>
-                                                    <span class="tuc-cap-sep">/</span>
-                                                    <span class="tuc-cap-max">{{ unit.maximum_residents }}</span>
-                                                </div>
-                                                <div class="tuc-cap-bar">
-                                                    <div class="tuc-cap-fill" :style="{ width: Math.min(100, Math.round((getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100))+'%', background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? '#ef9f27' : '#10b981' }"></div>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div v-if="clinicalUnitPlanningRows.length" class="cu46-matrix-wrap">
+                                <div class="cu46-matrix" :style="{'--cu-months':trainingUnitHorizon}">
+                                    <div class="cu46-matrix-corner"><span>Clinical unit</span><small>Resident capacity</small></div>
+                                    <div v-for="m in getPlanningMonths()" :key="m.key" class="cu46-matrix-month" :class="{'is-current':m.isCurrent}">
+                                        <strong>{{ m.label }}</strong><small>{{ m.yearLabel }}</small>
                                     </div>
-                                    <!-- Attending team strip in timeline view -->
-                                    <div v-if="unitStaffCache[unit.id] && unitStaffCache[unit.id].length > 0"
-                                         class="tuc-tl-team-strip">
-                                        <div class="tuc-tl-team-avs">
-                                            <div v-for="member in unitStaffCache[unit.id]" :key="member.id"
-                                                 :class="[nmAv(member.staff.full_name, member.staff.staff_type, 'xs'), isStaffAbsentToday(member.staff.id) ? 'nm-av--absent' : '']"
-                                                 :title="member.staff.full_name + (isStaffAbsentToday(member.staff.id) ? ' — absent today' : '')">
-                                                {{ nmAvI(member.staff.full_name) }}
-                                            </div>
-                                        </div>
-                                        <span v-if="isUnitUnderstaffed(unit.id)" class="tuc-tl-team-warn">
-                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                                            Understaffed
-                                        </span>
-                                        <button v-else class="tuc-tl-team-manage"
-                                                @click.stop="openUnitClinicians(unit, medicalStaff)"
-                                                title="Manage clinical team">
-                                            {{ getUnitPresentAttendingCount(unit.id) }}/{{ getUnitAttendingCount(unit.id) }} attending
+                                    <template v-for="row in clinicalUnitPlanningRows" :key="row.unit.id">
+                                        <button class="cu46-unit-cell" @click="openUnitDetail(row.unit)">
+                                            <span class="cu46-unit-name">{{ row.unit.unit_name }}</span>
+                                            <span class="cu46-unit-meta">{{ row.unit.unit_code || row.unit.specialty || 'Clinical unit' }} · cap {{ row.capacity }}</span>
+                                            <span v-if="getUnitOverlapWarning(row.unit.id)" class="cu46-unit-alert">Scheduling conflict</span>
                                         </button>
+                                        <button v-for="month in row.months" :key="month.key" class="cu46-cap-cell" :class="['is-'+month.state.status,{'is-current':month.isCurrent}]" @click="openUnitDetail(row.unit)" :title="month.longLabel+' · '+formatCapacityWindows(month.state)">
+                                            <span class="cu46-cap-ratio"><strong>{{ month.state.peak }}</strong>/{{ month.state.capacity }}</span>
+                                            <span class="cu46-cap-state" v-if="month.state.overCapacity">over capacity</span>
+                                            <span class="cu46-cap-state" v-else-if="month.state.status==='full'">full</span>
+                                            <span class="cu46-cap-state" v-else-if="month.state.status==='free'">{{ month.state.capacity }} free</span>
+                                            <span class="cu46-cap-state" v-else>{{ month.state.minFree }}+ free</span>
+                                            <span class="cu46-cap-window">{{ formatCapacityWindows(month.state) }}</span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            <div v-else class="cu46-empty"><strong>No clinical units match this view.</strong><span>Adjust the filters or add a clinical unit.</span></div>
+                            <footer class="cu46-legend">
+                                <span><i class="is-free"></i>Free</span><span><i class="is-open"></i>Space throughout</span><span><i class="is-mixed"></i>Opens/closes during month</span><span><i class="is-full"></i>Full</span><span><i class="is-over"></i>Over capacity</span>
+                            </footer>
+                        </section>
+
+                        <!-- CLINICAL TEAM: WEEK SCALE -->
+                        <section v-if="trainingUnitView==='weekly'" class="cu46-team">
+                            <header class="cu46-section-head">
+                                <div>
+                                    <div class="cu46-section-kicker">Clinical team · recorded availability</div>
+                                    <h2>Who is actually available this week?</h2>
+                                    <p>Unit membership is stable; availability changes with recorded leave and assignment dates. Resident rotations are intentionally not counted here.</p>
+                                </div>
+                                <div class="cu46-week-nav">
+                                    <button @click="clinicalUnitWeekOffset--">←</button>
+                                    <button v-if="clinicalUnitWeekOffset!==0" @click="clinicalUnitWeekOffset=0">This week</button>
+                                    <span>{{ clinicalUnitWeeklyTeamGrid.monday?.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}) }}</span>
+                                    <button @click="clinicalUnitWeekOffset++">→</button>
+                                </div>
+                            </header>
+
+                            <div class="cu46-team-grid">
+                                <div class="cu46-team-head cu46-team-head--unit">Clinical team</div>
+                                <div v-for="day in clinicalUnitWeeklyTeamGrid.days" :key="day.iso" class="cu46-team-head" :class="{'is-today':day.isToday,'is-weekend':day.isWeekend}">{{ day.label }}</div>
+                                <template v-for="row in clinicalUnitWeeklyTeamGrid.rows" :key="row.unitId">
+                                    <div class="cu46-team-unit">
+                                        <div class="cu46-team-unit-top"><strong>{{ row.unitName }}</strong><span>{{ row.team.length }} clinician{{ row.team.length===1?'':'s' }}</span></div>
+                                        <div v-if="unitStaffLoading[row.unitId]" class="cu46-team-message">Loading team…</div>
+                                        <div v-else-if="unitStaffErrors[row.unitId]" class="cu46-team-message is-error">
+                                            Team unavailable
+                                            <button @click="loadUnitStaff(row.unitId,{force:true})">Retry</button>
+                                        </div>
+                                        <div v-else-if="row.team.length" class="cu46-team-avatars">
+                                            <span v-for="member in row.team.slice(0,6)" :key="member.id" :class="[nmAv(member.staff?.full_name,member.staff?.staff_type,'xs'),isStaffAbsentToday(member.staff?.id)?'nm-av--absent':'']" :title="member.staff?.full_name">{{ nmAvI(member.staff?.full_name) }}</span>
+                                            <button v-if="hasPermission('training_units','update')" class="cu46-team-edit" @click="openUnitClinicians(row.unitId ? trainingUnits.find(u=>u.id===row.unitId) : null)">Manage</button>
+                                        </div>
+                                        <button v-else-if="hasPermission('training_units','update')" class="cu46-team-empty-action" @click="openUnitClinicians(trainingUnits.find(u=>u.id===row.unitId))">Assign clinical team</button>
                                     </div>
-                                    <div v-else class="tuc-tl-team-strip tuc-tl-team-strip--empty"
-                                         @click.stop="openUnitClinicians(unit, medicalStaff)">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                                        Assign clinical team
-                                    </div>
-
-                                    <div class="tuc-timeline-body">
-                                        <div v-for="(slot, idx) in getUnitSlots(unit.id, unit.maximum_residents, trainingUnitHorizon)" :key="idx" class="tuc-tl-row">
-                                            <div class="tuc-tl-slot-label">
-                                                <div class="tuc-tl-avatar" v-if="slot.initials">{{ slot.initials }}</div>
-                                                <div class="tuc-tl-slot-num" v-else>{{ idx + 1 }}</div>
-                                            </div>
-                                            <div class="tuc-tl-months">
-                                                <div v-for="m in slot.months" :key="m.key"
-                                                     class="tuc-tl-cell"
-                                                     :class="{
-                                                       'tuc-tl-cell-name':      m.status === 'occupied',
-                                                       'tuc-tl-cell-scheduled': m.status === 'partial',
-                                                       'tuc-tl-cell-free':      m.status === 'free'
-                                                     }"
-                                                     :title="m.tooltip">
-                                                    <span v-if="m.showName" class="tuc-tl-cell-label">{{ m.initials }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template><template v-else>
-                                    <div class="tuc-card-body">
-
-                                        <!-- Card header: name + capacity badge -->
-                                        <div class="tuc-card-header">
-                                            <div class="tuc-card-header-left">
-                                                <div class="tuc-name">{{ unit.unit_name }}</div>
-                                                <div class="tuc-card-meta-row">
-                                                    <span class="tuc-type-badge" :class="'tuc-type--' + (unit.unit_type || 'training_unit')">
-                                                        {{ {'clinical_unit':'Sala','icu':'UCI','outpatient':'Consultas','surgical':'Quirófano','research':'Investigación','training_unit':'Unidad'}[unit.unit_type] || 'Unidad' }}
-                                                    </span>
-                                                    <span v-if="unit.supervisor_id || unit.supervising_attending_id" class="tuc-supervisor-chip">
-                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
-                                                        {{ formatDrName(allStaffLookup.find(s=>s.id===(unit.supervisor_id||unit.supervising_attending_id))?.full_name || '') }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div class="tuc-cap-badge"
-                                                 :class="getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? 'tuc-cap-badge--full' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? 'tuc-cap-badge--warn' : 'tuc-cap-badge--ok'">
-                                                <span class="tuc-cap-badge-num">{{ getUnitActiveRotationCount(unit.id) }}</span>
-                                                <span class="tuc-cap-badge-denom">/{{ unit.maximum_residents }}</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Slim capacity bar -->
-                                        <div class="tuc-cap-track">
-                                            <div class="tuc-cap-track-fill"
-                                                 :style="{ width: Math.min(100, Math.round(getUnitActiveRotationCount(unit.id)/unit.maximum_residents*100))+ '%', background: getUnitActiveRotationCount(unit.id) >= unit.maximum_residents ? '#e24b4a' : getUnitActiveRotationCount(unit.id)/unit.maximum_residents > 0.5 ? '#ef9f27' : '#10b981' }">
-                                            </div>
-                                        </div>
-
-                                        <!-- Attending team for this unit -->
-                                        <div v-if="unitStaffCache[unit.id] && unitStaffCache[unit.id].length > 0"
-                                             class="tuc-attending-team">
-                                            <div class="tuc-team-hdr">
-                                                <span class="tuc-team-label">Clinical team</span>
-                                                <span class="tuc-team-count"
-                                                      :class="isUnitUnderstaffed(unit.id) ? 'tuc-team-count--warn' : ''"
-                                                      :title="(unitStaffCache[unit.id]||[]).map(m => (isStaffAbsentToday(m.staff.id) ? '✗ ' : '✓ ') + m.staff.full_name).join('\n')">
-                                                    {{ getUnitPresentAttendingCount(unit.id) }}/{{ getUnitAttendingCount(unit.id) }} present
-                                                    <span v-if="getUnitAbsentAttendingCount(unit.id) > 0"  class="nd-l279">
-                                                        · {{ getUnitAbsentAttendingCount(unit.id) }} absent
-                                                    </span>
-                                                </span>
-                                            </div>
-                                            <div class="tuc-team-row">
-                                                <template v-for="member in unitStaffCache[unit.id]" :key="member.id">
-                                                    <div class="tuc-team-av-wrap">
-                                                        <div :class="[nmAv(member.staff.full_name, member.staff.staff_type, 'xs'), isStaffAbsentToday(member.staff.id) ? 'nm-av--absent' : '']"
-                                                             :title="member.staff.full_name + (member.role === 'secondary' ? ' (secondary)' : '')">
-                                                            {{ nmAvI(member.staff.full_name) }}
-                                                        </div>
-                                                    </div>
-                                                </template>
-                                                <button v-if="hasPermission('training_units','update')"
-                                                        class="tuc-team-add"
-                                                        @click.stop="openUnitClinicians(unit, medicalStaff)"
-                                                        title="Manage clinical team">+</button>
-                                            </div>
-                                        </div>
-                                        <div v-else-if="hasPermission('training_units','update')"
-                                             class="tuc-team-empty"
-                                             @click.stop="openUnitClinicians(unit, medicalStaff)">
-                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                                            Assign clinical team
-                                        </div>
-
-                                        <!-- Understaffed warning banner -->
-                                        <div v-if="isUnitUnderstaffed(unit.id)" class="tuc-understaffed-banner">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
-                                            Unit understaffed · {{ getUnitAbsentAttendingCount(unit.id) }} of {{ getUnitAttendingCount(unit.id) }} attending absent
-                                        </div>
-
-                                        <!-- Resident slots -->
-                                        <div class="tuc-resident-slots">
-                                            <!-- Active rotations -->
-                                            <div v-for="rot in getUnitRotations(unit.id).filter(r => r.rotation_status === 'active')" :key="'a-'+rot.id" class="tuc-resident-row tuc-resident-row--active">
-                                                <div :class="nmAv(getResidentShortName(rot.resident_id), 'medical_resident', 'sm')"  class="nd-l003">{{ nmAvI(getResidentShortName(rot.resident_id)) }}</div>
-                                                <div class="tuc-res-info"
-                                                     @mouseenter="showIntelPopover(rot.resident_id, $event)"
-                                                     @mouseleave="hideIntelPopover()">
-                                                    <span class="tuc-res-name intel-name">{{ getResidentShortName(rot.resident_id) || '—' }}</span>
-                                                </div>
-                                                <div class="tuc-res-right">
-                                                    <span class="tuc-res-dates">→ {{ new Date(rot.end_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}</span>
-                                                    <span v-if="getDaysUntilFree(rot.end_date) <= 45 && getDaysUntilFree(rot.end_date) > 0" class="tuc-free-chip">{{ getDaysUntilFree(rot.end_date) }}d</span>
-                                                </div>
-                                            </div>
-                                            <!-- Scheduled rotations -->
-                                            <div v-for="rot in getUnitRotations(unit.id).filter(r => r.rotation_status === 'scheduled')" :key="'s-'+rot.id" class="tuc-resident-row tuc-resident-row--scheduled">
-                                                <div :class="nmAv(getResidentShortName(rot.resident_id), 'medical_resident', 'sm')"  class="nd-l003 nd-v268">{{ nmAvI(getResidentShortName(rot.resident_id)) }}</div>
-                                                <div class="tuc-res-info"
-                                                     @mouseenter="showIntelPopover(rot.resident_id, $event)"
-                                                     @mouseleave="hideIntelPopover()">
-                                                    <span class="tuc-res-name intel-name nd-v267" >{{ getResidentShortName(rot.resident_id) || '—' }}</span>
-                                                </div>
-                                                <div class="tuc-res-right">
-                                                    <span class="tuc-res-dates nd-v266" >{{ new Date(rot.start_date+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}</span>
-                                                </div>
-                                            </div>
-                                            <!-- Vacant slots -->
-                                            <div v-for="i in Math.max(0, unit.maximum_residents - getUnitActiveRotationCount(unit.id))" :key="'free-'+i"
-                                                 class="tuc-resident-row tuc-resident-row--free"
-                                                 @click.stop="hasPermission('resident_rotations','create') && showAddRotationModal()"
-                                                 :title="hasPermission('resident_rotations','create') ? 'Assign resident' : 'Open slot'">
-                                                <div class="tuc-slot-open">
-                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                                                </div>
-                                                <span class="tuc-res-name nd-v265" >Open slot</span>
-                                                <span v-if="hasPermission('resident_rotations','create')" class="tuc-assign-hint">Assign →</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- 30-day occupancy sparkline -->
-                                        <div class="tuc-30d-strip">
-                                            <div v-for="(day, i) in getUnit30DayTimeline(unit.id)" :key="i"
-                                                 class="tuc-30d-bar"
-                                                 :class="{ 'tuc-30d-bar--full': day.full, 'tuc-30d-bar--partial': day.active > 0 && !day.full, 'tuc-30d-bar--today': day.isToday }"
-                                                 :title="(day.isToday ? 'Today · ' : '') + day.active + ' resident' + (day.active !== 1 ? 's' : '')">
-                                            </div>
-                                        </div>
+                                    <div v-for="(cell,ci) in row.cells" :key="ci" class="cu46-team-day" :class="{'is-today':clinicalUnitWeeklyTeamGrid.days[ci].isToday,'is-weekend':clinicalUnitWeeklyTeamGrid.days[ci].isWeekend,'is-warn':cell.warn,'is-critical':cell.critical,'is-empty':cell.noTeam}" :title="cell.noTeam?'No clinical team assigned':cell.present+'/'+cell.total+' available'+(cell.absent?' · '+cell.absent+' absent':'')">
+                                        <template v-if="!cell.noTeam"><strong>{{ cell.present }}</strong><span>/{{ cell.total }}</span><small v-if="cell.absent">{{ cell.absent }} absent</small><small v-else>available</small></template>
+                                        <template v-else><strong>—</strong><small>no team</small></template>
                                     </div>
                                 </template>
-
-                                </div><!-- /tuc unit card -->
-                                </div><!-- /training-units-grid for dept -->
-                            </template><!-- /dept group -->
-                            <!-- Empty state when no units at all -->
-                            <div v-if="filteredTrainingUnits.length === 0" class="empty-state nd-l254" >
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg>
-                                <div class="empty-state-title">No clinical units found</div>
-                                <div class="empty-state-description">Add your first clinical rotation unit to get started</div>
-                                <button class="btn btn-primary btn-sm" @click="showAddTrainingUnitModal" v-if="hasPermission('training_units','create')">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Unit
-                                </button>
                             </div>
-                        </div><!-- end grouped view -->
-                    </div>
+                            <footer class="cu46-legend cu46-team-legend"><span><i class="team-ok"></i>Recorded available</span><span><i class="team-warn"></i>Under 50% available</span><span><i class="team-critical"></i>No recorded cover</span><span class="cu46-note">Availability reflects recorded data only.</span></footer>
+                        </section>
+
+                        <!-- UNIT DIRECTORY / DETAIL -->
+                        <section v-if="trainingUnitView==='detail'" class="cu46-directory">
+                            <header class="cu46-section-head"><div><div class="cu46-section-kicker">Unit structure</div><h2>Clinical units, people and current state</h2><p>Open a unit for full detail, or manage its clinical team directly.</p></div></header>
+                            <div v-if="filteredTrainingUnits.length" class="cu46-directory-grid">
+                                <article v-for="unit in filteredTrainingUnits" :key="unit.id" class="cu46-directory-card" @click="openUnitDetail(unit)">
+                                    <header>
+                                        <div><span class="cu46-dir-code">{{ unit.unit_code || 'UNIT' }}</span><h3>{{ unit.unit_name }}</h3><p>{{ unit.department?.name || unit.department_name || unit.specialty || 'Clinical unit' }}</p></div>
+                                        <span class="cu46-dir-cap" :class="{'is-full':getUnitActiveRotationCount(unit.id)>=unit.maximum_residents}"><strong>{{ getUnitActiveRotationCount(unit.id) }}</strong>/{{ unit.maximum_residents }}<small>residents now</small></span>
+                                    </header>
+                                    <div class="cu46-dir-facts">
+                                        <span><b>{{ getUnitAttendingCount(unit.id) }}</b> clinical team</span>
+                                        <span :class="{'is-alert':getUnitAbsentAttendingCount(unit.id)>0}"><b>{{ getUnitAbsentAttendingCount(unit.id) }}</b> absent today</span>
+                                        <span><b>{{ getUnitScheduledCount(unit.id) }}</b> scheduled</span>
+                                    </div>
+                                    <div v-if="unitStaffErrors[unit.id]" class="cu46-dir-error">Clinical team could not be loaded.</div>
+                                    <div v-else class="cu46-dir-roster">
+                                        <span v-for="member in (unitStaffCache[unit.id]||[]).slice(0,5)" :key="member.id" :class="[nmAv(member.staff?.full_name,member.staff?.staff_type,'xs'),isStaffAbsentToday(member.staff?.id)?'nm-av--absent':'']" :title="member.staff?.full_name">{{ nmAvI(member.staff?.full_name) }}</span>
+                                        <small v-if="!(unitStaffCache[unit.id]||[]).length">No clinical team assigned</small>
+                                    </div>
+                                    <div class="cu46-dir-next"><span>Next recorded space</span><strong>{{ getNextFreeMonth(unit.id)?.label || 'No opening in horizon' }}</strong><small v-if="getNextFreeMonth(unit.id)">{{ getNextFreeMonth(unit.id).freeSlots }} slot{{ getNextFreeMonth(unit.id).freeSlots===1?'':'s' }} free</small></div>
+                                    <footer>
+                                        <button v-if="hasPermission('training_units','update')" @click.stop="openUnitClinicians(unit)">Manage team</button>
+                                        <button @click.stop="openUnitDetail(unit)">Open unit →</button>
+                                    </footer>
+                                </article>
+                            </div>
+                            <div v-else class="cu46-empty"><strong>No clinical units match this view.</strong><span>Adjust the filters or add a clinical unit.</span></div>
+                        </section>
+                    </template>
                 </div><!-- /training_units -->
                 <!-- ============ STAFF ABSENCE VIEW ============ -->
                 <div v-if="currentView === 'staff_absence'">
@@ -12356,7 +12132,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=45"></script>
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
-    <script src="app.js?v=46.3-staff-loader"></script>
+    <script src="app.js?v=46.4-clinical-units"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

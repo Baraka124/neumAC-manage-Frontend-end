@@ -4686,17 +4686,24 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(() => trainingUnitFilters.search, Utils.debounce(v => { debouncedTrainingSearch.value = v }, 250))
       
       // ── Unit staff (attendings who work in each unit) ─────────────────────
-      const unitStaffCache  = ref({})   // { [unitId]: [{ id, role, staff: {...} }] }
-      const unitStaffLoading = ref({})  // { [unitId]: true/false }
+      const unitStaffCache   = ref({})   // { [unitId]: [{ id, role, staff: {...} }] }
+      const unitStaffLoading = ref({})   // { [unitId]: true/false }
+      const unitStaffErrors  = ref({})   // V46.4: empty team and failed team load are not the same state
 
-      const loadUnitStaff = async (unitId) => {
+      const loadUnitStaff = async (unitId, { force = false } = {}) => {
         if (unitStaffLoading.value[unitId]) return
-        unitStaffLoading.value[unitId] = true
+        if (!force && Object.prototype.hasOwnProperty.call(unitStaffCache.value, unitId) && !unitStaffErrors.value[unitId]) return
+        unitStaffLoading.value = { ...unitStaffLoading.value, [unitId]: true }
+        unitStaffErrors.value = { ...unitStaffErrors.value, [unitId]: null }
         try {
           const res = await API.request(`/api/training-units/${unitId}/staff`)
-          unitStaffCache.value = { ...unitStaffCache.value, [unitId]: res?.data || [] }
-        } catch { unitStaffCache.value[unitId] = [] }
-        finally { unitStaffLoading.value[unitId] = false }
+          unitStaffCache.value = { ...unitStaffCache.value, [unitId]: Array.isArray(res?.data) ? res.data : [] }
+        } catch (e) {
+          unitStaffErrors.value = { ...unitStaffErrors.value, [unitId]: e?.message || 'Could not load the clinical team' }
+          console.error('[neumDesk] unit staff load failed', unitId, e)
+        } finally {
+          unitStaffLoading.value = { ...unitStaffLoading.value, [unitId]: false }
+        }
       }
 
       const getUnitAttendingCount = (unitId) => (unitStaffCache.value[unitId] || []).length
@@ -4859,9 +4866,145 @@ document.addEventListener('DOMContentLoaded', () => {
         return parts.length > 1 ? `${parts[0]} ${parts[parts.length-1][0]}.` : s.full_name
       }
 
-      // ── Timeline view state ─────────────────────────────────────────────
-      const trainingUnitView    = ref('timeline')  // 'timeline' | 'detail'
-      const trainingUnitHorizon = ref(6)            // months to show: 3 | 6 | 12
+      // ── V46.4 Clinical Units: two time scales, one operational model ──────
+      // Residents are planned in month-scale rotation windows; clinical-team readiness
+      // is shown separately in a weekly/day-scale view. Do not mix those semantics.
+      const trainingUnitView           = ref('timeline')  // timeline | weekly | detail
+      const trainingUnitHorizon        = ref(6)           // months to show: 3 | 6 | 12
+      const trainingUnitPlanningOffset = ref(0)           // month offset from the current month
+      const clinicalUnitWeekOffset     = ref(0)           // team-availability week offset
+
+      const _unitDate = (value) => {
+        const normalized = Utils.normalizeDate(value)
+        return normalized ? new Date(normalized + 'T00:00:00') : null
+      }
+      const _unitIso = (date) => {
+        const y = date.getFullYear()
+        const m = String(date.getMonth() + 1).padStart(2, '0')
+        const d = String(date.getDate()).padStart(2, '0')
+        return `${y}-${m}-${d}`
+      }
+      const _unitAddDays = (date, days) => { const d = new Date(date); d.setDate(d.getDate() + days); return d }
+
+      const getPlanningMonths = (horizon = trainingUnitHorizon.value, offset = trainingUnitPlanningOffset.value) => {
+        const now = new Date()
+        return Array.from({ length: horizon }, (_, i) => {
+          const d = new Date(now.getFullYear(), now.getMonth() + offset + i, 1)
+          const end = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+          return {
+            key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+            label: d.toLocaleDateString('es-ES', { month:'short' }),
+            longLabel: d.toLocaleDateString('es-ES', { month:'long', year:'numeric' }),
+            yearLabel: (i === 0 || d.getMonth() === 0) ? String(d.getFullYear()) : '',
+            year: d.getFullYear(), month: d.getMonth(),
+            start: _unitIso(d), end: _unitIso(end),
+            isCurrent: offset + i === 0
+          }
+        })
+      }
+
+      // Exact interval-capacity model for a unit. This is deliberately date-based
+      // rather than simply counting every rotation that touches a month: two sequential
+      // residents in the same month may reuse one physical slot without overlapping.
+      const getUnitCapacityWindow = (unitId, startDate, endDate) => {
+        const unit = trainingUnits.value.find(u => u.id === unitId)
+        const capacity = Math.max(1, Number(unit?.maximum_residents || 1))
+        const start = _unitDate(startDate), end = _unitDate(endDate)
+        if (!unit || !start || !end || end < start) {
+          return { capacity, peak:0, minFree:capacity, status:'free', hasAvailability:true, overCapacity:false, segments:[], residents:[] }
+        }
+        const endExclusive = _unitAddDays(end, 1)
+        const rotationsInRange = (rotations.value || []).filter(r => {
+          if (r.training_unit_id !== unitId || !['active','scheduled'].includes(r.rotation_status)) return false
+          const rs = _unitDate(r.start_date), re = _unitDate(r.end_date)
+          return rs && re && rs < endExclusive && _unitAddDays(re,1) > start
+        })
+        const boundaries = new Set([start.getTime(), endExclusive.getTime()])
+        rotationsInRange.forEach(r => {
+          const rs = _unitDate(r.start_date), reX = _unitAddDays(_unitDate(r.end_date), 1)
+          const clippedStart = new Date(Math.max(start.getTime(), rs.getTime()))
+          const clippedEndX  = new Date(Math.min(endExclusive.getTime(), reX.getTime()))
+          boundaries.add(clippedStart.getTime()); boundaries.add(clippedEndX.getTime())
+        })
+        const points = [...boundaries].sort((a,b)=>a-b)
+        const raw = []
+        for (let i=0; i<points.length-1; i++) {
+          const segStart = new Date(points[i])
+          const segEndX  = new Date(points[i+1])
+          if (segEndX <= segStart) continue
+          const occupants = rotationsInRange.filter(r => {
+            const rs = _unitDate(r.start_date), reX = _unitAddDays(_unitDate(r.end_date),1)
+            return rs < segEndX && reX > segStart
+          })
+          const occupied = occupants.length
+          raw.push({
+            start:_unitIso(segStart), end:_unitIso(_unitAddDays(segEndX,-1)),
+            occupied, free:Math.max(0, capacity-occupied), over:occupied>capacity,
+            residentIds:[...new Set(occupants.map(r=>r.resident_id).filter(Boolean))]
+          })
+        }
+        // Merge adjacent intervals with the same occupancy so the UI/Grounded can say
+        // “1–14 Nov · 1 slot free” rather than emitting day-by-day noise.
+        const segments = []
+        raw.forEach(seg => {
+          const prev = segments[segments.length-1]
+          if (prev && prev.occupied === seg.occupied && prev.free === seg.free && prev.over === seg.over && _unitIso(_unitAddDays(_unitDate(prev.end),1)) === seg.start) {
+            prev.end = seg.end
+            prev.residentIds = [...new Set(prev.residentIds.concat(seg.residentIds))]
+          } else segments.push({ ...seg })
+        })
+        const peak = segments.reduce((m,s)=>Math.max(m,s.occupied),0)
+        const minFree = segments.length ? segments.reduce((m,s)=>Math.min(m,s.free),capacity) : capacity
+        const overCapacity = peak > capacity
+        const hasAvailability = segments.length ? segments.some(s=>s.free>0) : true
+        const allFree = segments.length ? segments.every(s=>s.occupied===0) : true
+        const allFull = segments.length ? segments.every(s=>s.free===0) : false
+        const status = overCapacity ? 'over' : allFull ? 'full' : allFree ? 'free' : segments.some(s=>s.free===0) ? 'mixed' : 'open'
+        return {
+          capacity, peak, minFree, status, hasAvailability, overCapacity, segments,
+          residents:[...new Set(rotationsInRange.map(r=>r.resident_id).filter(Boolean))],
+          rotations:rotationsInRange
+        }
+      }
+
+      const formatCapacityWindows = (state) => {
+        if (!state) return 'No availability data'
+        if (state.overCapacity) return `Capacity exceeded · peak ${state.peak}/${state.capacity}`
+        if (!state.segments?.length || state.status === 'free') return `Entire period · ${state.capacity} slot${state.capacity===1?'':'s'} free`
+        if (state.status === 'full') return 'No free interval'
+        if (state.minFree > 0) return `Space throughout · at least ${state.minFree} slot${state.minFree===1?'':'s'} free`
+        const fmt = (iso) => _unitDate(iso)?.toLocaleDateString('es-ES',{day:'numeric',month:'short'}) || iso
+        const free = state.segments.filter(s=>s.free>0)
+        return free.slice(0,2).map(s=>`${fmt(s.start)}–${fmt(s.end)} · ${s.free} free`).join(' · ') + (free.length>2?' · …':'')
+      }
+
+      const shiftPlanningWindow = (months) => { trainingUnitPlanningOffset.value += months }
+      const resetPlanningWindow = () => { trainingUnitPlanningOffset.value = 0 }
+
+      const clinicalUnitPlanningRows = computed(() => {
+        const months = getPlanningMonths()
+        return filteredTrainingUnits.value
+          .filter(u => u.unit_status !== 'inactive')
+          .map(unit => ({
+            unit, capacity:Math.max(1, Number(unit.maximum_residents || 1)),
+            months:months.map(month => ({ ...month, state:getUnitCapacityWindow(unit.id, month.start, month.end) }))
+          }))
+      })
+
+      const clinicalUnitPlanningSummary = computed(() => {
+        const month = getPlanningMonths(1)[0]
+        const rows = clinicalUnitPlanningRows.value
+        const states = rows.map(r => r.months[0]?.state).filter(Boolean)
+        return {
+          month,
+          units:rows.length,
+          withSpace:states.filter(s=>s.hasAvailability).length,
+          completelyFree:states.filter(s=>s.status==='free').length,
+          full:states.filter(s=>s.status==='full').length,
+          over:states.filter(s=>s.overCapacity).length,
+          guaranteedSlots:states.reduce((sum,s)=>sum + Math.max(0,s.minFree),0)
+        }
+      })
 
       // Generate the array of month objects for the timeline header
       const getTimelineMonths = (horizonMonths) => {
@@ -4891,21 +5034,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Assign rotations to physical slots using a greedy bin-packing algorithm
         // so sequential rotations reuse the same slot (e.g. Slot 1: R1 Jan-Mar, then R3 Apr-Jun)
-        const slots = Array.from({ length: maxResidents }, () => ({ rotations: [] }))
+        const slots = Array.from({ length: Math.max(1, maxResidents) }, () => ({ rotations: [], overflow:false }))
 
         for (const rot of unitRots) {
           const rotStart = new Date(rot.start_date)
           const rotEnd   = new Date(rot.end_date)
-          // Find first slot where no existing rotation overlaps this one
-          const targetSlot = slots.find(slot =>
+          let targetSlot = slots.find(slot =>
             slot.rotations.every(existing => {
               const eEnd = new Date(existing.end_date)
               const eStart = new Date(existing.start_date)
-              return rotEnd < eStart || rotStart > eEnd  // no overlap
+              return rotEnd < eStart || rotStart > eEnd
             })
           )
-          if (targetSlot) targetSlot.rotations.push(rot)
-          // If no slot available (over-capacity), rotation not shown — capacity exceeded
+          // V46.4: an over-capacity assignment must remain visible. Add an overflow
+          // lane rather than silently dropping the resident from the planning surface.
+          if (!targetSlot) { targetSlot = { rotations:[], overflow:true }; slots.push(targetSlot) }
+          targetSlot.rotations.push(rot)
         }
 
         return slots.map((slot, slotIdx) => {
@@ -4954,6 +5098,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           return {
             slotIdx,
+            overflow:     !!slot.overflow || slotIdx >= maxResidents,
             residentId:   primaryRot?.resident_id || null,
             residentName: primaryName,
             initials:     primaryInitials,
@@ -5038,47 +5183,35 @@ document.addEventListener('DOMContentLoaded', () => {
       const unitDetailDrawer = reactive({ show: false, unit: null })
 
       const getUnitMonthOccupancy = (unitId, year, month) => {
-        const mStart = new Date(year, month, 1)
-        const mEnd   = new Date(year, month + 1, 0)
-        const unit   = trainingUnits.value.find(u => u.id === unitId)
-        if (!unit) return { status: 'free', occupied: 0, scheduled: 0, total: 0 }
-        const maxSlots = unit.maximum_residents
-        const touching = (rotations.value || []).filter(r =>
-          r.training_unit_id === unitId &&
-          ['active','scheduled'].includes(r.rotation_status) &&
-          new Date(r.start_date + 'T00:00:00') <= mEnd && new Date(r.end_date + 'T00:00:00') >= mStart
-        )
-        // Separate truly active (date range covers any day in month) from scheduled future
-        const today = new Date(); today.setHours(0,0,0,0)
-        const isCurrentMonth = mStart <= today && mEnd >= today
-        const active    = isCurrentMonth
-          ? touching.filter(r => r.rotation_status === 'active' && new Date(r.start_date + 'T00:00:00') <= today && new Date(r.end_date + 'T00:00:00') >= today).length
-          : touching.filter(r => ['active','scheduled'].includes(r.rotation_status)).length
-        const scheduled = touching.filter(r => r.rotation_status === 'scheduled').length
-        const occupied  = isCurrentMonth ? active : touching.length
-        if (occupied === 0) return { status: 'free', occupied: 0, total: maxSlots }
-        const isClosing = touching.some(r => {
-          const e = new Date(r.end_date + 'T00:00:00')
-          return e.getFullYear() === year && e.getMonth() === month && e < mEnd
-        })
-        if (occupied >= maxSlots) return { status: isClosing ? 'closing' : 'occupied', occupied, total: maxSlots }
-        return { status: isClosing ? 'closing' : 'partial', occupied, total: maxSlots }
+        const start = new Date(year, month, 1)
+        const end   = new Date(year, month + 1, 0)
+        const state = getUnitCapacityWindow(unitId, _unitIso(start), _unitIso(end))
+        const legacyStatus = state.status === 'free' ? 'free'
+          : state.status === 'mixed' ? 'closing'
+          : state.status === 'open' ? 'partial'
+          : 'occupied'
+        return {
+          status:legacyStatus, occupied:state.peak, scheduled:state.rotations?.filter(r=>r.rotation_status==='scheduled').length || 0,
+          total:state.capacity, hasAvailability:state.hasAvailability, overCapacity:state.overCapacity,
+          minFree:state.minFree, exactStatus:state.status, windows:state.segments
+        }
       }
 
       const getNextFreeMonth = (unitId) => {
-        const today = new Date()
-        const unit  = trainingUnits.value.find(u => u.id === unitId)
+        const now = new Date()
+        const unit = trainingUnits.value.find(u => u.id === unitId)
         if (!unit) return null
-        for (let i = 0; i < 24; i++) {
-          const d = new Date(today.getFullYear(), today.getMonth() + i, 1)
-          const occ = getUnitMonthOccupancy(unitId, d.getFullYear(), d.getMonth())
-          if (occ.occupied < occ.total) {
+        for (let i=0; i<24; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth()+i, 1)
+          const end = new Date(d.getFullYear(), d.getMonth()+1, 0)
+          const state = getUnitCapacityWindow(unitId, _unitIso(d), _unitIso(end))
+          if (state.hasAvailability) {
+            const maxFree = state.segments?.length ? Math.max(...state.segments.map(seg=>seg.free)) : state.capacity
             return {
-              label:      d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
-              shortLabel: d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }),
-              date:       `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`,
-              monthsAway: i,
-              freeSlots:  occ.total - occ.occupied
+              label:d.toLocaleDateString('es-ES',{month:'long',year:'numeric'}),
+              shortLabel:d.toLocaleDateString('es-ES',{month:'short',year:'2-digit'}),
+              date:_unitIso(d), monthsAway:i, freeSlots:maxFree,
+              guaranteedFreeSlots:state.minFree, detail:formatCapacityWindows(state), status:state.status
             }
           }
         }
@@ -5333,36 +5466,12 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
-      // ── Weekly Staffing Grid ─────────────────────────────────────────
-      // Used in the Training Units weekly view tab
-      const weeklyStaffingGrid = computed(() => {
-        const today = new Date(); today.setHours(0,0,0,0)
-        // Find Monday of current week
-        const monday = new Date(today)
-        monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
-        const days = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date(monday); d.setDate(monday.getDate() + i)
-          const iso = d.toISOString().split('T')[0]
-          return { iso, date: d, isToday: iso === today.toISOString().split('T')[0], isWeekend: d.getDay() === 0 || d.getDay() === 6, label: d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }) }
-        })
-        const activeUnits = trainingUnits.value.filter(u => u.unit_status === 'active')
-        const rows = activeUnits.map(unit => {
-          const cells = days.map(day => {
-            const activeRots = (rotations.value || []).filter(r =>
-              r.training_unit_id === unit.id &&
-              ['active','scheduled'].includes(r.rotation_status) &&
-              r.start_date <= day.iso && r.end_date >= day.iso
-            )
-            return { rots: activeRots, count: activeRots.length, full: activeRots.length >= unit.maximum_residents }
-          })
-          return { unitId: unit.id, unitName: unit.unit_name, maxResidents: unit.maximum_residents, cells }
-        })
-        return { monday, days, rows }
-      })
+      // Weekly clinical-team availability is composed at root level after absences load.
 
-      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit, trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover, unitStaffCache, loadUnitStaff, getUnitAttendingCount, addStaffToUnit, removeStaffFromUnit,
-        occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail,
-        weeklyStaffingGrid }
+      return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit,
+        trainingUnitView, trainingUnitHorizon, trainingUnitPlanningOffset, clinicalUnitWeekOffset, getTimelineMonths, getPlanningMonths, getUnitCapacityWindow, formatCapacityWindows, shiftPlanningWindow, resetPlanningWindow, clinicalUnitPlanningRows, clinicalUnitPlanningSummary, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
+        unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount, addStaffToUnit, removeStaffFromUnit,
+        occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
     }
 
     // ============ 6.9 useComms ============
@@ -7286,12 +7395,12 @@ document.addEventListener('DOMContentLoaded', () => {
           editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians,
           assignAttendingToUnit,
           viewUnitResidents, saveTrainingUnit,
-          trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree,
+          trainingUnitView, trainingUnitHorizon, trainingUnitPlanningOffset, clinicalUnitWeekOffset,
+          getTimelineMonths, getPlanningMonths, getUnitCapacityWindow, formatCapacityWindows, shiftPlanningWindow, resetPlanningWindow, clinicalUnitPlanningRows, clinicalUnitPlanningSummary, getUnitSlots, getDaysUntilFree,
           tlPopover, openCellPopover, closeCellPopover,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail,
-          unitStaffCache,
-          weeklyStaffingGrid
+          unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff
         } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, medicalStaff, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
@@ -7357,6 +7466,38 @@ document.addEventListener('DOMContentLoaded', () => {
             ab.start_date <= today && ab.end_date >= today
           )
         }
+
+
+        // ── V46.4 weekly TEAM readiness (not resident rotation planning) ─────
+        const clinicalUnitWeeklyTeamGrid = computed(() => {
+          const today = new Date(); today.setHours(0,0,0,0)
+          const baseMonday = new Date(today)
+          baseMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7) + clinicalUnitWeekOffset.value * 7)
+          const days = Array.from({ length:7 }, (_,i) => {
+            const d = new Date(baseMonday); d.setDate(baseMonday.getDate()+i)
+            const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+            return { iso, date:d, isToday:iso === Utils.normalizeDate(today), isWeekend:[0,6].includes(d.getDay()), label:d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric'}) }
+          })
+          const rows = filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive').map(unit => {
+            const team = unitStaffCache.value[unit.id] || []
+            const cells = days.map(day => {
+              const activeMembers = team.filter(m => {
+                const from = m.assigned_from ? Utils.normalizeDate(m.assigned_from) : null
+                const until = m.assigned_until ? Utils.normalizeDate(m.assigned_until) : null
+                return (!from || from <= day.iso) && (!until || until >= day.iso)
+              })
+              const absentMembers = activeMembers.filter(m => absences.value.some(ab =>
+                ab.staff_member_id === m.staff?.id &&
+                !['cancelled','returned_to_duty'].includes(ab.current_status) &&
+                Utils.normalizeDate(ab.start_date) <= day.iso && Utils.normalizeDate(ab.end_date) >= day.iso
+              ))
+              const total = activeMembers.length, absent = absentMembers.length, present = Math.max(0,total-absent)
+              return { total, present, absent, noTeam:total===0, warn:total>0 && present/total < .5, critical:total>0 && present===0, absentMembers }
+            })
+            return { unitId:unit.id, unitName:unit.unit_name, unitCode:unit.unit_code, team, cells }
+          })
+          return { monday:baseMonday, days, rows }
+        })
 
         // ── Dashboard alert: units that are understaffed today ───────────────
         const understaffedUnitAlerts = computed(() => {
@@ -12841,7 +12982,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'unit_load', priority: 97, patterns: [/(which )?units? (are )?(most|least|under|over) (used|utilis|utiliz|busy|full|occupied|staffed)/i, /unit (load|utilis|utiliz|occupancy) (ranking|by|most|least)/i, /(busiest|emptiest|most used) units?/i, /units? (needing|need) (more )?(residents?|staff)/i], anti: [/put|assign|cancel/] },
         { intent: 'unit_supervisor_gap', priority: 93, patterns: [/units? (with |without )?(no |missing )?(a )?supervisor/i, /units? (that )?(need|lack|missing) (a )?supervisor/i, /which units.*no supervisor/i, /unsupervised units?/i], anti: [/put|assign|resident/] },
         { intent: 'unit_by_specialty', priority: 92, patterns: [/units? (for|covering|in|by)\s+(the )?(asthma|copd|epoc|transplant|trasplante|sleep|sueño|critical|intensive|cardio|thoracic|toracica|bronch|respiratory|[a-zñáéíóú]+ specialty)/i, /(which|what) units? cover/i, /units? by specialty/i], anti: [/put|assign|free|full|how many/] },
-        { intent: 'unit_forecast', priority: 94, patterns: [/(which )?units? (will be|are going to be|become)\s+(empty|free|covered|full|vacant|uncovered)/i, /units? (empty|free|covered|uncovered|vacant)\s+(next|this|in)\s+(month|week|\w+)/i, /(coverage|unit) forecast/i, /(empty|uncovered|vacant) units? (next|this|in)/i, /which units.*(next month|next week|coming)/i], anti: [/put|assign|cancel/] },
+        { intent: 'unit_forecast', priority: 94, patterns: [/(which )?units? (will be|are going to be|become)\s+(empty|free|available|covered|full|vacant|uncovered)/i, /units? (empty|free|available|covered|uncovered|vacant)\s+(next|this|in)\s+(month|week|\w+)/i, /(coverage|unit|rotation) (forecast|availability)/i, /(empty|free|available|uncovered|vacant) units? (next|this|in)/i, /which units.*(next month|next week|coming|which month)/i, /which (clinical )?units?.*(free|available).*(month|when|from)/i, /when (is|will) .*unit.*(free|available|open)/i, /(what|which) month.*unit.*(free|available|open)/i, /(from when|until when).*(unit|rotation).*(free|available|capacity)/i], anti: [/put|assign|cancel/] },
         { intent: 'unit_profile', priority: 95, patterns: [/(tell me about|about the|about|details? (of|for|on)|profile of|show me the?)\s+(the\s+)?(uci|ucri|asma\s?grave|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|radiolog\w*|externa)\b/i, /(tell me about|details? (of|for|on)|profile of|show me the?)\s+[a-zñáéíóú]+.*unit/i, /(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*) (unit )?(details?|profile|status|info)/i, /how (full|busy|occupied) is\s+(the\s+)?(uci|ucri|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa|[a-zñáéíóú]+ unit)/i, /is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+(full|at capacity|free|empty|available)/i, /does\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+have\s+(space|room|capacity|a resident)/i, /(who is|whos|who's|residents?) (in|at|assigned to|rotating in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa)/i, /how many residents? (in|at|are in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /list residents? (in|at)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /what (specialty|department|type|floor|building) is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i], anti: [/put|assign|cancel|move|transfer|which units|all units|free units|trial|study|ensayo|project|proyecto/i] },
         { intent: 'unit_status', priority: 91, patterns: [/(which|what|any) units? (are )?(free|open|available|empty|unassigned|scheduled|booked|occupied|in use|taken)/i, /units? (with|without) (a )?(resident|supervisor|space|room)/i, /(free|available|open|empty|scheduled|occupied) (clinical |training )?units?/i, /units? (in|on) (building|floor|the)/i, /who (runs|supervises|is in charge of|leads) (the )?[a-zñáéíóú]+ unit/i, /unit (overview|status|breakdown|occupancy|map)/i, /where can .* rotate/i, /rotation (slots|openings|availability|capacity)/i], anti: [/put|assign|cancel/] },
         { intent: 'units_at_capacity', priority: 90, patterns: [/units? at capacity/, /\bcapacity\b/, /full unit/, /units? full/, /occupancy/, /overcrowded/] },
@@ -15095,22 +15236,46 @@ document.addEventListener('DOMContentLoaded', () => {
           return { text: `${matched.length} unit${matched.length===1?'':'s'} for ${kw}: ${matched.slice(0,4).map(u=>u.unit_name).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
         }
         if (intent === 'unit_forecast') {
-          const q = (askBar.lastAsked || '').toLowerCase()
-          const range = askBarParseRange(q) || { start: Utils.normalizeDate(new Date()), end: Utils.normalizeDate(new Date(Date.now()+30*864e5)), label: 'the next 30 days' }
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
           const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
-          const rots = rotations.value || []
-          const overlaps = (r) => r.start_date && Utils.normalizeDate(r.start_date) <= range.end && (!r.end_date || Utils.normalizeDate(r.end_date) >= range.start)
-          const rows = units.map(u => {
-            const covering = rots.filter(r => r.training_unit_id===u.id && ['active','scheduled'].includes(r.rotation_status) && overlaps(r))
-            return { name: u.unit_name, n: covering.length, cap: u.maximum_residents||5, pct: Math.min(100,Math.round(covering.length/(u.maximum_residents||5)*100)), full: false, covered: covering.length>0, detail: covering.length ? covering.map(r=>getStaffName(r.resident_id)).filter(Boolean).join(', ') : 'no coverage' }
-          })
-          const empty = rows.filter(r => !r.covered)
-          const wantEmpty = /(empty|free|uncovered|vacant)/.test(q)
-          if (wantEmpty) {
-            if (!empty.length) return { text: `Every unit has coverage in ${range.label}.`, chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units','rotations'], followups: [], confidence: 'high' }
-            return { text: `${empty.length} unit${empty.length===1?'':'s'} with no coverage in ${range.label}: ${empty.slice(0,6).map(r=>r.name).join(', ')}${empty.length>6?'…':''}.`, visual: { type: 'occupancy', rows: empty.slice(0,8) }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [{ label: 'Where to place a resident?', intent: 'place_resident', q: 'where should i place a resident' }], confidence: 'high' }
+          if (!units.length) return { text:'No clinical units are defined.', chips:[], actions:[{label:'Open units',view:'training_units'}], sources:['units'], followups:[], confidence:'high' }
+          const normal = (x) => (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          const namedUnit = units.find(u => normal(q).includes(normal(u.unit_name)) || (u.unit_code && normal(q).includes(normal(u.unit_code))))
+          const parsedRange = askBarParseRange(q)
+          const asksWhichMonth = /(which|what) month|when (is|will)|from when|until when|availability calendar|which units.*which month/i.test(q)
+
+          // “When is UCRI free?” — scan the next 12 resident-rotation months.
+          if (namedUnit && asksWhichMonth && !parsedRange) {
+            const months = getPlanningMonths(12, 0)
+            const options = months.map(m => ({ month:m, state:getUnitCapacityWindow(namedUnit.id,m.start,m.end) })).filter(x=>x.state.hasAvailability)
+            if (!options.length) return { text:`${namedUnit.unit_name} has no recorded capacity in the next 12 months.`, chips:[], actions:[{label:'Open units',view:'training_units',primary:true}], sources:['units','rotations'], followups:[], confidence:'high' }
+            const items = options.slice(0,8).map(x=>({ title:x.month.longLabel, badge:`${x.state.minFree}+ free`, tone:x.state.status==='mixed'?'project':'active', meta:formatCapacityWindows(x.state) }))
+            return { text:`${namedUnit.unit_name} first has recorded space in ${options[0].month.longLabel}: ${formatCapacityWindows(options[0].state)}.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open rotation capacity',view:'training_units',primary:true}], sources:['units','rotations'], followups:[{label:'Which units are free next month?',intent:'unit_forecast',q:'which units are free next month'}], confidence:'high' }
           }
-          return { text: `Coverage for ${range.label}: ${rows.filter(r=>r.covered).length}/${rows.length} units covered, ${empty.length} empty.`, visual: { type: 'occupancy', rows: rows.slice(0,10) }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [], confidence: 'high' }
+
+          // “Which units are free and which month?” — next free month for every unit.
+          if (!namedUnit && asksWhichMonth && !parsedRange) {
+            const months = getPlanningMonths(12, 0)
+            const nextByUnit = units.map(u => {
+              const hit = months.map(m=>({month:m,state:getUnitCapacityWindow(u.id,m.start,m.end)})).find(x=>x.state.hasAvailability)
+              return hit ? { unit:u, ...hit } : null
+            }).filter(Boolean).sort((a,b)=>a.month.start.localeCompare(b.month.start) || b.state.minFree-a.state.minFree)
+            if (!nextByUnit.length) return { text:'No recorded unit capacity is available in the next 12 months.', chips:[], actions:[{label:'Open units',view:'training_units'}], sources:['units','rotations'], followups:[], confidence:'high' }
+            const items = nextByUnit.slice(0,10).map(x=>({ title:x.unit.unit_name, badge:x.month.label, tone:x.state.status==='mixed'?'project':'active', meta:formatCapacityWindows(x.state) }))
+            return { text:`Next recorded resident-rotation availability: ${nextByUnit.slice(0,5).map(x=>`${x.unit.unit_name} — ${x.month.longLabel} (${Math.max(0,x.state.minFree)} free)`).join('; ')}${nextByUnit.length>5?'; …':''}.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open rotation capacity',view:'training_units',primary:true}], sources:['units','rotations'], followups:[], confidence:'high' }
+          }
+
+          const range = parsedRange || { start:Utils.normalizeDate(new Date()), end:Utils.normalizeDate(new Date(Date.now()+30*864e5)), label:'the next 30 days' }
+          const scopedUnits = namedUnit ? [namedUnit] : units
+          const rows = scopedUnits.map(u => {
+            const state = getUnitCapacityWindow(u.id, range.start, range.end)
+            return { unit:u, state, hasSpace:state.hasAvailability, detail:formatCapacityWindows(state) }
+          })
+          const wantsFull = /full|no space|at capacity/.test(q)
+          const filtered = wantsFull ? rows.filter(r=>!r.hasSpace || r.state.overCapacity) : rows.filter(r=>r.hasSpace)
+          if (!filtered.length) return { text:wantsFull?`No units are continuously full in ${range.label}.`:`No unit has recorded resident capacity in ${range.label}.`, chips:[], actions:[{label:'Open units',view:'training_units'}], sources:['units','rotations'], followups:[], confidence:'high' }
+          const viz = filtered.slice(0,10).map(r=>({ name:r.unit.unit_name, n:r.state.peak, cap:r.state.capacity, pct:Math.min(100,Math.round(r.state.peak/r.state.capacity*100)), full:!r.hasSpace, detail:r.detail }))
+          return { text:`${filtered.length} unit${filtered.length===1?'':'s'} ${wantsFull?'at/full beyond':'with'} resident capacity in ${range.label}: ${filtered.slice(0,6).map(r=>`${r.unit.unit_name} — ${r.detail}`).join('; ')}${filtered.length>6?'; …':''}.`, visual:{type:'occupancy',rows:viz}, chips:[], actions:[{label:'Open rotation capacity',view:'training_units',primary:true}], sources:['units','rotations'], followups:[{label:'Which unit is free first?',intent:'unit_forecast',q:'which units are free and which month'}], confidence:'high' }
         }
         if (intent === 'unit_profile') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
@@ -16048,9 +16213,8 @@ document.addEventListener('DOMContentLoaded', () => {
           getUnitSupervisorName, rotDaysLeft,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
           getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
-        trainingUnitView, trainingUnitHorizon, getTimelineMonths, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
-          unitStaffCache,
-          weeklyStaffingGrid,
+        trainingUnitView, trainingUnitHorizon, trainingUnitPlanningOffset, clinicalUnitWeekOffset, getTimelineMonths, getPlanningMonths, getUnitCapacityWindow, formatCapacityWindows, shiftPlanningWindow, resetPlanningWindow, clinicalUnitPlanningRows, clinicalUnitPlanningSummary, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
+          unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, clinicalUnitWeeklyTeamGrid,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
           editTrainingUnit, deleteTrainingUnit, saveTrainingUnit, assignAttendingToUnit,
@@ -16361,6 +16525,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;  
+    throw error;    
   }
 });
