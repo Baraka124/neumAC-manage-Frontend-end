@@ -5068,21 +5068,34 @@ document.addEventListener('DOMContentLoaded', () => {
       const placementRecommendations = computed(() => {
         const start = placementAdvisor.startDate, end = placementAdvisor.endDate
         if (!start || !end || end < start) return []
+        const selectedResidentId = placementAdvisor.residentId || null
+        const residentConflicts = selectedResidentId ? (rotations.value || []).filter(r =>
+          r.resident_id === selectedResidentId &&
+          ['active','scheduled'].includes(r.rotation_status) &&
+          Utils.normalizeDate(r.start_date) <= end && Utils.normalizeDate(r.end_date) >= start
+        ) : []
         return filteredTrainingUnits.value
           .filter(u => u.unit_status !== 'inactive')
           .map(unit => {
             const state = getUnitCapacityWindow(unit.id, start, end)
-            const fullFit = !state.overCapacity && state.minFree > 0
-            const partial = !fullFit && state.hasAvailability && !state.overCapacity
+            const capacityFit = !state.overCapacity && state.minFree > 0
+            const partial = !capacityFit && state.hasAvailability && !state.overCapacity
             const teamCount = (unitStaffCache.value[unit.id] || []).length
             const supervisorId = unit.supervising_attending_id || unit.supervisor_id || unit.default_supervisor_id || null
-            const fit = fullFit ? 'fit' : partial ? 'partial' : state.overCapacity ? 'conflict' : 'full'
-            return { unit, state, fit, fullFit, partial, teamCount, supervisorReady:!!supervisorId, detail:formatCapacityWindows(state) }
+            const supervisorReady = !!supervisorId
+            const residentConflict = residentConflicts.length > 0
+            const fullFit = capacityFit && !residentConflict
+            const operationalReady = fullFit && supervisorReady && teamCount > 0
+            const fit = residentConflict ? 'resident-conflict' : capacityFit ? 'fit' : partial ? 'partial' : state.overCapacity ? 'conflict' : 'full'
+            const conflictText = residentConflict
+              ? `Resident already assigned ${residentConflicts.map(r=>`${getResidentShortName(r.resident_id)} · ${Utils.normalizeDate(r.start_date)}–${Utils.normalizeDate(r.end_date)}`).join('; ')}`
+              : null
+            return { unit, state, fit, fullFit, capacityFit, partial, operationalReady, teamCount, supervisorReady, residentConflict, residentConflicts, conflictText, detail:conflictText || formatCapacityWindows(state) }
           })
           .filter(r => !placementAdvisor.onlyFullFit || r.fullFit)
           .sort((a,b) => {
-            const rank={fit:0,partial:1,full:2,conflict:3}
-            return (rank[a.fit]-rank[b.fit]) || (b.state.minFree-a.state.minFree) || (a.unit.unit_name||'').localeCompare(b.unit.unit_name||'')
+            const rank={fit:0,partial:1,full:2,conflict:3,'resident-conflict':4}
+            return (Number(b.operationalReady)-Number(a.operationalReady)) || (rank[a.fit]-rank[b.fit]) || (b.state.minFree-a.state.minFree) || (a.unit.unit_name||'').localeCompare(b.unit.unit_name||'')
           })
       })
 
@@ -7667,6 +7680,48 @@ document.addEventListener('DOMContentLoaded', () => {
           filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive' && !(u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id)).slice(0,2)
             .forEach(u=>items.push({tone:'amber',text:`${u.unit_name} has no default supervisor`}))
           return items.slice(0,4)
+        })
+
+
+        // ── V46.6 canonical unit operational record ──────────────────────────
+        // One derived object feeds the drawer and contextual Grounded view so capacity,
+        // team readiness and attention states cannot drift apart across surfaces.
+        const unitDetailSnapshot = computed(() => {
+          const unit = unitDetailDrawer.unit
+          if (!unit?.id) return null
+          const today = Utils.normalizeDate(new Date())
+          const team = unitStaffCache.value[unit.id] || []
+          const teamError = unitStaffErrors.value[unit.id] || null
+          const absentMembers = team.filter(m => m.staff?.id && absences.value.some(ab =>
+            ab.staff_member_id === m.staff.id &&
+            !['cancelled','returned_to_duty'].includes(ab.current_status) &&
+            Utils.normalizeDate(ab.start_date) <= today && Utils.normalizeDate(ab.end_date) >= today
+          ))
+          const absentIds = new Set(absentMembers.map(m=>m.staff?.id).filter(Boolean))
+          const presentMembers = team.filter(m=>!absentIds.has(m.staff?.id))
+          const unitRots = getUnitRotations(unit.id)
+          const active = unitRots.filter(r=>r.rotation_status==='active')
+          const scheduled = unitRots.filter(r=>r.rotation_status==='scheduled')
+          const supervisorId = unit.supervising_attending_id || unit.supervisor_id || unit.default_supervisor_id || null
+          const supervisor = (medicalStaff.value || []).find(s=>String(s.id)===String(supervisorId)) || null
+          const currentCapacity = getUnitCapacityWindow(unit.id, today, today)
+          const nextOpening = getNextFreeWindow(unit.id, today, 24)
+          const alerts=[]
+          if (currentCapacity.overCapacity) alerts.push({tone:'red',title:'Resident capacity exceeded',detail:`${currentCapacity.peak}/${currentCapacity.capacity} residents recorded today`})
+          const overlap = getUnitOverlapWarning(unit.id)
+          if (overlap) alerts.push({tone:'red',title:'Rotation overlap',detail:`Capacity conflict around ${Utils.formatDateShort(overlap.date)}`})
+          if (!supervisorId) alerts.push({tone:'amber',title:'Supervisor not assigned',detail:'Resident placement needs a designated supervisor.'})
+          if (teamError) alerts.push({tone:'red',title:'Clinical team unavailable',detail:'The team roster could not be loaded.'})
+          else if (!team.length) alerts.push({tone:'amber',title:'No clinical team assigned',detail:'Unit membership has not been recorded.'})
+          else if (!presentMembers.length) alerts.push({tone:'red',title:'No recorded clinical cover today',detail:`${absentMembers.length} of ${team.length} assigned clinicians are absent.`})
+          else if (absentMembers.length) alerts.push({tone:'amber',title:'Reduced clinical team today',detail:`${presentMembers.length}/${team.length} assigned clinicians recorded available.`})
+          return { unit, team, teamError, absentMembers, presentMembers, active, scheduled, supervisorId, supervisor, currentCapacity, nextOpening, alerts }
+        })
+
+        const unitDetailCapacityMonths = computed(() => {
+          const unit = unitDetailDrawer.unit
+          if (!unit?.id) return []
+          return getPlanningMonths(12,0).map(m=>({ ...m, state:getUnitCapacityWindow(unit.id,m.start,m.end) }))
         })
 
         // ── Dashboard alert: units that are understaffed today ───────────────
@@ -11787,6 +11842,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const x = staffOps.staffProfileModal.staff
             return { type:'staff', id:x.id, name:x.full_name }
           }
+          if (currentView.value === 'training_units' && unitDetailDrawer?.show && unitDetailDrawer?.unit) {
+            const x = unitDetailDrawer.unit
+            return { type:'unit', id:x.id, name:x.unit_name, unitCode:x.unit_code || null }
+          }
           if (currentView.value === 'research_hub') {
             const page = researchOps.researchHubPage?.value
             if (page === 'study' && researchOps.selectedStudy?.value) {
@@ -11842,7 +11901,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const coord = x?.coordinator_id ? getStaffName(x.coordinator_id) : null
             return { type:'research_line', noun:'research programme', label:'Research programme', title:x?.research_line_name || x?.name || s.name || 'Research programme', meta:[x?.line_number ? 'L'+x.line_number : null, coord ? 'Coordinator · '+coord : null].filter(Boolean).join(' · '), mark:x?.line_number ? 'L'+x.line_number : 'R' }
           }
-          if (s.type === 'unit') return { type:'unit', noun:'clinical unit', label:'Clinical unit', title:s.name || 'Clinical unit', meta:'Live operational context', mark:'U' }
+          if (s.type === 'unit') {
+            const x = (trainingUnits.value || []).find(v=>String(v.id)===String(s.id))
+            const today = Utils.normalizeDate(new Date())
+            const st = x ? getUnitCapacityWindow(x.id,today,today) : null
+            const next = x ? getNextFreeWindow(x.id,today,24) : null
+            const meta = [st ? `${st.peak}/${st.capacity} residents today` : null, next ? `Next opening · ${next.label}` : null].filter(Boolean).join(' · ') || 'Live operational context'
+            return { type:'unit', noun:'clinical unit', label:'Clinical unit', title:x?.unit_name || s.name || 'Clinical unit', meta, mark:(x?.unit_code || 'U').slice(0,3).toUpperCase() }
+          }
           if (s.type === 'rotation') return { type:'rotation', noun:'rotation', label:'Resident rotation', title:s.name || 'Rotation', meta:'Current assignment', mark:'R' }
         } catch (e) {}
         return null
@@ -11860,6 +11926,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const x=(newsPosts.value||[]).find(v=>String(v.id)===String(s.id))
             closeAskBar(); currentView.value='news'
             if (x) Vue.nextTick(()=>openNewsDrawer(x,null))
+            return
+          }
+          if (c.type === 'unit') {
+            const x=(trainingUnits.value||[]).find(v=>String(v.id)===String(s.id))
+            closeAskBar(); currentView.value='training_units'; trainingUnitView.value='detail'
+            if (x) Vue.nextTick(()=>openUnitDetail(x))
             return
           }
         } catch (e) {}
@@ -13031,7 +13103,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (/next week|próxima semana|proxima semana/.test(q)) { const day = today.getDay() || 7; return { start: iso(addDays(today, 8-day)), end: iso(addDays(today, 14-day)), label: 'next week' } }
         if (/weekend|fin de semana/.test(q)) { const day = today.getDay(); const sat = addDays(today, (6-day+7)%7); return { start: iso(sat), end: iso(addDays(sat,1)), label: 'this weekend' } }
         if (/this month|este mes/.test(q)) { const s = new Date(d.getFullYear(), d.getMonth(), 1), e = new Date(d.getFullYear(), d.getMonth()+1, 0); return { start: iso(s), end: iso(e), label: 'this month' } }
+        if (/next month|pr[oó]ximo mes|mes que viene/.test(q)) { const s = new Date(d.getFullYear(), d.getMonth()+1, 1), e = new Date(d.getFullYear(), d.getMonth()+2, 0); return { start: iso(s), end: iso(e), label: s.toLocaleDateString('en-GB',{month:'long',year:'numeric'}) } }
+        const nextMonths = q.match(/next\s+(\d{1,2})\s+months?|pr[oó]ximos?\s+(\d{1,2})\s+meses?/)
+        if (nextMonths) { const n=Math.max(1,Math.min(24,Number(nextMonths[1]||nextMonths[2]||1))); const s=new Date(d.getFullYear(),d.getMonth()+1,1), e=new Date(d.getFullYear(),d.getMonth()+1+n,0); return {start:iso(s),end:iso(e),label:`the next ${n} months`} }
         if (/this quarter|este trimestre/.test(q)) { const qm = Math.floor(d.getMonth()/3)*3; const s = new Date(d.getFullYear(), qm, 1), e = new Date(d.getFullYear(), qm+3, 0); return { start: iso(s), end: iso(e), label: 'this quarter' } }
+        // Resident rotations are normally month-based. Understand named month windows
+        // such as “November”, “November 2026”, and “November to January”.
+        const qn = q.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        const monthDefs = [
+          ['january','jan','enero','ene'],['february','feb','febrero'],['march','mar','marzo'],['april','apr','abril','abr'],
+          ['may','mayo'],['june','jun','junio'],['july','jul','julio'],['august','aug','agosto','ago'],
+          ['september','sep','sept','septiembre','setiembre'],['october','oct','octubre'],['november','nov','noviembre'],['december','dec','diciembre','dic']
+        ]
+        const hits=[]
+        monthDefs.forEach((aliases,mi)=>aliases.forEach(alias=>{ const re=new RegExp(`\\b${alias}\\b`,'g'); let m; while((m=re.exec(qn))) hits.push({mi,pos:m.index,name:monthDefs[mi][0]}) }))
+        hits.sort((a,b)=>a.pos-b.pos)
+        const monthHits=[]; hits.forEach(h=>{ if(!monthHits.length || monthHits[monthHits.length-1].mi!==h.mi || monthHits[monthHits.length-1].pos!==h.pos) monthHits.push(h) })
+        if (monthHits.length) {
+          const explicitYear = Number((qn.match(/\b(20\d{2})\b/)||[])[1] || 0)
+          const first=monthHits[0], last=monthHits.length>1?monthHits[1]:first
+          let y1=explicitYear || d.getFullYear()
+          if (!explicitYear && first.mi < d.getMonth()) y1++
+          const y2=y1 + (last.mi < first.mi ? 1 : 0)
+          const s=new Date(y1,first.mi,1), e=new Date(y2,last.mi+1,0)
+          const label = first.mi===last.mi && y1===y2 ? s.toLocaleDateString('en-GB',{month:'long',year:'numeric'}) : `${s.toLocaleDateString('en-GB',{month:'short',year:'numeric'})} – ${e.toLocaleDateString('en-GB',{month:'short',year:'numeric'})}`
+          return {start:iso(s),end:iso(e),label}
+        }
         // named weekday → next occurrence
         const wd = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
         for (let i=0;i<7;i++){ if (q.includes(wd[i])) { const delta = (i - today.getDay() + 7) % 7 || 7; const t = addDays(today, delta); return { start: iso(t), end: iso(t), label: wd[i] } } }
@@ -15343,28 +15440,35 @@ document.addEventListener('DOMContentLoaded', () => {
           return { text: `${residents.length} residents — ${rotating} on rotation, ${onleave} on leave, ${free} unassigned.`, visual: { type: 'board', mode: 'residents', tiles }, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['staff','rotations','leave records'], followups: [{ label: 'Units board', intent: 'units_board' }, { label: 'Unsupervised residents?', intent: 'unsupervised_residents' }], confidence: 'high' }
         }
         if (intent === 'place_resident') {
-          const person = askBarResolveStaffRole(askBar.lastAsked || askBar.query, 'resident') || askBarResolveStaff(askBar.lastAsked || askBar.query)
+          const asked = askBar.lastAsked || askBar.query || ''
+          const person = askBarResolveStaffRole(asked, 'resident') || askBarResolveStaff(asked)
           const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
           const rots = rotations.value || []
-          const nm = (id) => (medicalStaff.value||[]).find(s=>s.id===id)?.full_name || null
-          // rank units: has space, has a supervisor, resident hasn't been there yet
+          const range = askBarParseRange(asked) || (()=>{ const d=new Date(); const s=new Date(d.getFullYear(),d.getMonth()+1,1), e=new Date(d.getFullYear(),d.getMonth()+2,0); return {start:Utils.normalizeDate(s),end:Utils.normalizeDate(e),label:s.toLocaleDateString('en-GB',{month:'long',year:'numeric'})} })()
           const beenTo = person ? new Set(rots.filter(r=>r.resident_id===person.id).map(r=>r.training_unit_id)) : new Set()
+          const residentConflicts = person ? rots.filter(r=>r.resident_id===person.id && ['active','scheduled'].includes(r.rotation_status) && Utils.normalizeDate(r.start_date)<=range.end && Utils.normalizeDate(r.end_date)>=range.start) : []
+          if (person && residentConflicts.length) {
+            const c=residentConflicts[0], u=units.find(x=>x.id===c.training_unit_id)
+            return { text:`${person.full_name} already has a recorded rotation overlapping ${range.label}${u?` in ${u.unit_name}`:''} (${Utils.formatDateShort(c.start_date)} – ${Utils.formatDateShort(c.end_date)}). Resolve that assignment before planning another overlapping rotation.`, chips:[{label:person.full_name,id:person.id}], actions:[{label:'Open rotations',view:'resident_rotations',primary:true}], sources:['rotations','units'], followups:[{label:'Which units are free in that period?',intent:'unit_forecast',q:`which units are free in ${range.label}`}], confidence:'high' }
+          }
           const ranked = units.map(u => {
-            const active = rots.filter(r=>r.rotation_status==='active' && r.training_unit_id===u.id).length
-            const cap = u.maximum_residents || 5
-            const sup = nm(u.default_supervisor_id||u.supervisor_id)
-            let score = 0
-            if (active < cap) score += 3            // has space
-            if (sup) score += 2                     // has a supervisor
-            if (!beenTo.has(u.id)) score += 2       // new experience for this resident
-            if (active === 0) score += 1            // completely free
-            return { name: u.unit_name, active, cap, sup, hasSpace: active<cap, isNew: !beenTo.has(u.id), score }
-          }).filter(u => u.hasSpace).sort((a,b)=>b.score-a.score)
-          if (!ranked.length) return { text: `No units have space right now${person?` for ${person.full_name}`:''}. All are at capacity.`, chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units','rotations'], followups: [], confidence: 'high' }
-          const who = person ? person.full_name : 'a resident'
-          const top = ranked.slice(0,4)
-          const rows = top.map(u => ({ name: u.name + (u.isNew?' · new for them':''), n: u.active, cap: u.cap, pct: Math.round(u.active/u.cap*100), full: false, detail: u.sup ? 'supervisor '+u.sup : 'no supervisor yet' }))
-          return { text: `Best placement for ${who} (space + supervisor + new experience): ${top.slice(0,3).map(u=>`${u.name} (${u.active}/${u.cap})`).join(', ')}.`, visual: { type: 'occupancy', rows }, chips: person?[{label:person.full_name,id:person.id}]:[], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary: true }], sources: ['units','rotations','staff'], followups: person?[{ label: `Put ${person.full_name.split(' ')[0]} in ${top[0].name}`, intent: 'assign_rotation', q: `put ${person.full_name} in ${top[0].name} under ${top[0].sup||''}` }]:[], confidence: 'high' }
+            const state=getUnitCapacityWindow(u.id,range.start,range.end)
+            const supId=u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id||null
+            const sup=supId ? (medicalStaff.value||[]).find(s=>String(s.id)===String(supId))?.full_name : null
+            const teamCount=(unitStaffCache.value[u.id]||[]).length
+            const capacityFit=!state.overCapacity && state.minFree>0
+            let score=0
+            if(capacityFit) score+=5
+            if(sup) score+=2
+            if(teamCount>0) score+=2
+            if(!beenTo.has(u.id)) score+=1
+            if(state.status==='free') score+=1
+            return {unit:u,state,sup,teamCount,capacityFit,isNew:!beenTo.has(u.id),score,detail:formatCapacityWindows(state)}
+          }).filter(r=>r.capacityFit).sort((a,b)=>b.score-a.score || b.state.minFree-a.state.minFree)
+          if (!ranked.length) return { text:`No clinical unit has resident capacity throughout ${range.label}${person?` for ${person.full_name}`:''}.`, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open rotation capacity',view:'training_units',primary:true}], sources:['units','rotations'], followups:[{label:'Show partial openings',intent:'unit_forecast',q:`which units have capacity in ${range.label}`}], confidence:'high' }
+          const who=person?person.full_name:'a resident', top=ranked.slice(0,6)
+          const rows=top.map(r=>({name:r.unit.unit_name+(r.isNew?' · new for them':''),n:r.state.peak,cap:r.state.capacity,pct:Math.min(100,Math.round(r.state.peak/Math.max(1,r.state.capacity)*100)),full:false,detail:`${r.detail}${r.sup?' · supervisor '+r.sup:' · supervisor needed'}${r.teamCount?` · ${r.teamCount} clinicians`:' · no team assigned'}`}))
+          return { text:`For ${range.label}, ${top.length} unit${top.length===1?'':'s'} fit the full resident-rotation window for ${who}. Strongest operational fits: ${top.slice(0,3).map(r=>`${r.unit.unit_name} (${r.state.minFree}+ guaranteed free)`).join(', ')}.`, visual:{type:'occupancy',rows}, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open Clinical Units',view:'training_units',primary:true}], sources:['units','rotations','staff'], followups:person&&top[0]?[{label:`Plan ${person.full_name.split(' ')[0]} in ${top[0].unit.unit_name}`,intent:'assign_rotation',q:`put ${person.full_name} in ${top[0].unit.unit_name} from ${range.start} to ${range.end}${top[0].sup?` under ${top[0].sup}`:''}`}]:[], confidence:'high' }
         }
         if (intent === 'unit_load') {
           const q = (askBar.lastAsked || '').toLowerCase()
@@ -16389,6 +16493,7 @@ document.addEventListener('DOMContentLoaded', () => {
           unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount, clinicalUnitWeeklyTeamGrid,
           clinicalUnitTeamDayDetail, openClinicalUnitTeamDay, closeClinicalUnitTeamDay,
           clinicalUnitHeaderContext, clinicalUnitHeaderMetrics, clinicalUnitAttentionItems,
+          unitDetailSnapshot, unitDetailCapacityMonths,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
           editTrainingUnit, deleteTrainingUnit, saveTrainingUnit, assignAttendingToUnit,
