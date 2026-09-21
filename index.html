@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.10-leave-action-integrity">
+    <link rel="stylesheet" href="style.css?v=46.11-rotation-action-integrity">
     <link rel="stylesheet" href="activity45-ui.css?v=45">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -564,7 +564,7 @@
                                 <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
                             </div>
 
-                            <div v-if="turn.rotationProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': (turn.rotationProposal.noSup || turn.rotationProposal.supWarn) && !turn.committed }">
+                            <div v-if="turn.rotationProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': turn.rotationProposal.blocked && !turn.committed }">
                                 <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>rotation</b></span><span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span></div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.rotationProposal.resident.name }}</span></div>
@@ -572,14 +572,11 @@
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Under</span><span class="askbar-proposal-v">{{ turn.rotationProposal.supervisor ? turn.rotationProposal.supervisor.name : '— not set —' }}</span></div>
                                     <div v-if="turn.rotationProposal.startLabel" class="askbar-proposal-row"><span class="askbar-proposal-k">From</span><span class="askbar-proposal-v">{{ turn.rotationProposal.startLabel }}</span></div>
                                 </div>
-                                <div v-if="turn.rotationProposal.noSup" class="askbar-proposal-block">⛔ No supervisor named — a rotation needs a supervising attending. Add one, e.g. "…under Antelo."</div>
-                                <div v-else-if="turn.rotationProposal.supWarn" class="askbar-proposal-block">⛔ That supervisor isn't eligible to supervise residents. Pick an attending.</div>
-                                <div v-else-if="turn.rotationProposal.atCapacity" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.unit.name }} is at capacity ({{ turn.rotationProposal.occ }}) — this exceeds it.</div>
-                                <div v-if="turn.rotationProposal.leaveOverlap && !turn.committed" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.resident.name }} is on leave {{ turn.rotationProposal.leaveOverlap }} — this rotation overlaps their absence.</div>
-                                <div v-if="turn.rotationProposal.rotationOverlap && !turn.committed" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.resident.name }} already has a rotation in this period ({{ turn.rotationProposal.rotationOverlap }}) — they can't be in two places at once.</div>
-                                <div v-if="!turn.rotationProposal.startLabel && !turn.committed" class="askbar-proposal-warn">⚠ No start date given — add one, e.g. "from next Monday."</div>
+                                <div v-if="turn.rotationProposal.blocked" class="askbar-proposal-block">⛔ {{ turn.rotationProposal.blockReason || 'This rotation is blocked by a recorded constraint.' }}</div>
+                                <div v-if="turn.rotationProposal.warnings && turn.rotationProposal.warnings.length && !turn.committed" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.warnings.join(' · ') }}. Review this before confirming.</div>
+                                
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.rotationProposal.noSup || turn.rotationProposal.supWarn || !turn.rotationProposal.start" @click="askBarConfirmRotation(turn.rotationProposal, turn)">{{ turn.writing ? 'Saving…' : ((turn.rotationProposal.noSup||turn.rotationProposal.supWarn) ? 'Blocked' : 'Confirm & schedule') }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.rotationProposal.blocked" @click="askBarConfirmRotation(turn.rotationProposal, turn)">{{ turn.rotationProposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : 'Confirm & schedule') }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelRotation(turn)">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -1009,7 +1006,7 @@
                     </form>
                 </template>
             </div>
-            <footer class="entry44-access-foot"><span>neumDesk · V46.10<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
+            <footer class="entry44-access-foot"><span>neumDesk · V46.11<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
         </section>
         <section class="entry46-editorial" aria-label="At neumAC — public highlights" :class="'entry46-editorial--'+entry46Story.accent">
             <img v-if="entry46Story.image && !entry46ImageErrors[entry46Story.image]" class="entry46-art" :src="entry46Story.image" :alt="entry46Story.imageAlt" @error="entry46ImageErrors[entry46Story.image]=true">
@@ -12277,8 +12274,8 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=45"></script>
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
-    <script src="grounded-core.js?v=46.10-leave-action-integrity"></script>
-    <script src="app.js?v=46.10-leave-action-integrity"></script>
+    <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
+    <script src="app.js?v=46.11-rotation-action-integrity"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

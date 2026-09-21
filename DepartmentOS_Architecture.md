@@ -2,80 +2,64 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v1.2 · Implementation checkpoint: V46.10 · Supersedes Vision v0.1
+**Status:** Architecture v1.3 · Implementation checkpoint: V46.11 · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
 ---
 
-## Current implementation ledger — V46.10
+## Current implementation ledger — V46.11
 
-This section is the **living checkpoint**. When implementation and an older status statement elsewhere in this document disagree, this ledger is authoritative. Every complete neumDesk release must update this section before packaging.
+This is the **living checkpoint** and is authoritative over older status statements below.
 
 ### Canonical baseline
-
-- **Baseline entering this release:** V46.9 · Grounded Action Integrity.
-- **Current release:** V46.10 · **Leave Action Integrity**.
-- The system remains retrieval-first and deterministic; no runtime LLM is required for the capabilities described here.
+- Baseline entering this release: **V46.10 · Leave Action Integrity**.
+- Current release: **V46.11 · Resident Rotation Action Integrity**.
 
 ### What is real now
-
-| Layer | V46.10 implementation status |
+| Layer | Status |
 |---|---|
-| Canonical Knowledge Model | **Partial, adopted** — Person, Activity and Event Knowledge Objects are live in selected builders. |
-| Canonical Knowledge Layer | **Partial / transitional** — not every capability consumes it yet; backend canonical exclusivity remains future work. |
-| Semantic Layer | **Strong deterministic implementation** — fuzzy/role-aware entity resolution, ambiguity handling, date/month parsing and contextual subject resolution exist. |
-| Intent Engine | **Mature but monolithic** — broad coverage exists; capability-module decomposition remains architectural debt. |
-| Grounded Harness | **Built** — context envelopes, semantic tool registry, READ/PROPOSE/WRITE classes, permission checks, bounded plans, session task memory and traces. |
-| Tool adapters | **Advancing** — Clinical Units, On-call and now Leave are integrated. |
-| READ | **Mature** for structured departmental operations/research sources. |
-| PROPOSE | **Strong** — operational proposals are structured and reviewable. |
-| ACT | **Partial, real** — On-call and Leave creation now commit through guarded WRITE tools with commit-time revalidation. Rotation creation is next. |
-| Human in the loop | **Built pattern** — consequential writes require explicit confirmation. |
-| Observability | **Built foundation** — proposal → confirmation → tool → outcome can share one operational trace. |
-| Permissions | **Operational** — module permissions are enforced; role-first/exception-second remains the target for broad staff onboarding. |
-| Structured outputs | **Partial but proven** — proposal cards, boards, profiles, Personal Activity artifacts and reporting surfaces establish the pattern. |
-| Operational memory | **Partial** — authoritative state remains in source systems; Grounded memory is task-only. |
-| Multi-agent orchestration | **Intentionally deferred** — one orchestrator + semantic tools remains preferred. |
+| Canonical Knowledge Model | Partial, adopted |
+| Canonical Knowledge Layer | Partial / transitional |
+| Semantic Layer | Strong deterministic implementation |
+| Intent Engine | Mature but monolithic |
+| Grounded Harness | Built |
+| Tool adapters | Clinical Units + On-call + Leave + Resident Rotations |
+| READ | Mature |
+| PROPOSE | Strong |
+| ACT | Partial, real — on-call, leave creation and primary rotation assignment use guarded WRITE tools |
+| Human in loop | Built pattern |
+| Observability | Built foundation |
+| Permissions | Operational |
+| Structured outputs | Partial but proven |
+| Operational memory | Partial; task-only Grounded memory |
+| Multi-agent | Intentionally deferred |
 
-### V46.10 — Leave Action Integrity
-
-Leave creation now follows:
-
+### V46.11 — Resident Rotation Action Integrity
+Primary rotation assignment now follows:
 ```text
-resolve exact subject / covering clinician
-  → clarify ambiguity
-  → resolve dates + leave type
-  → reject duplicate/overlapping leave
-  → surface on-call / rotation / cover collisions
-  → build proposal
-  → human confirmation
-  → revalidate immediately before write
-  → commit through leave.commit_absence WRITE tool
-  → refresh leave data
-  → trace + audit outcome
+write-safe resident resolution
+→ deterministic unit resolution
+→ exact date window
+→ formal department/rotation supervisor
+→ resident overlap + exact unit-capacity checks
+→ leave-context warnings
+→ proposal
+→ human confirmation
+→ commit-time revalidation
+→ resident_rotations.commit_assignment WRITE tool
+→ refresh + trace + audit
 ```
 
-Semantic tools added:
-
-- `leave.person_records`
-- `leave.check_window`
-- `leave.propose_absence`
-- `leave.commit_absence`
-
-### Known architectural debt at V46.10
-
-1. Resident-rotation creation still has legacy proposal/write logic and is the next migration.
-2. Leave return/cancel/edit flows already have human confirmation but are not yet all routed through semantic WRITE tools.
-3. Many read intents still live in the monolithic `app.js` router rather than named capability modules.
-4. The Canonical Knowledge Layer is still incremental and frontend-adapted rather than the exclusive backend interface.
-5. Role-first permissions remain desirable if broad staff login is introduced.
+### Known debt
+1. Multi-unit rotation writes are sequential because there is no atomic backend batch transaction.
+2. Rotation edit/extend/cancel and leave return/edit/cancel are still legacy lifecycle writes.
+3. Many reads remain in the monolithic router rather than capability modules.
+4. Canonical Knowledge Layer is not yet the exclusive backend interface.
+5. Role-first permissions remain a future onboarding improvement.
 
 ### What comes next
-
-**V46.11 — Resident Rotation Action Integrity.**
-
-Then continue module/UI maturity work (Clinical Units, Personal Activity/Portfolio Intelligence) while migrating remaining action flows incrementally.
+Return to **Clinical Units UI refinement** and **Personal Activity / Portfolio Intelligence**, while migrating remaining lifecycle writes when those workflows are touched.
 
 ---
 

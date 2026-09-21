@@ -5,11 +5,11 @@
 })(typeof window !== 'undefined' ? window : globalThis, function(){
   'use strict'
 
-  const VERSION = '46.10'
+  const VERSION = '46.11'
   const ACCESS = Object.freeze({ READ:'read', PROPOSE:'propose', WRITE:'write' })
-  const TRACE_KEY = 'neumdesk:grounded:traces:v4610'
+  const TRACE_KEY = 'neumdesk:grounded:traces:v4611'
   const TRACE_LIMIT = 80
-  const SESSION_MEMORY_KEY = 'neumdesk:grounded:session:v4610'
+  const SESSION_MEMORY_KEY = 'neumdesk:grounded:session:v4611'
 
   const nowIso = () => new Date().toISOString()
   const makeId = (prefix='gr') => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`

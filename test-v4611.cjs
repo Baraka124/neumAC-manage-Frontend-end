@@ -1,0 +1,19 @@
+const fs=require('fs'),assert=require('assert')
+global.sessionStorage=(()=>{const m=new Map();return{getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k),clear:()=>m.clear()}})()
+const Core=require('./grounded-core.js'),app=fs.readFileSync('app.js','utf8'),html=fs.readFileSync('index.html','utf8'),arch=fs.readFileSync('DepartmentOS_Architecture.md','utf8'),garch=fs.readFileSync('GROUNDED-ARCHITECTURE.md','utf8')
+const tests=[
+['V46.11 markers',()=>{assert(html.includes('neumDesk · V46.11'));assert(html.includes('46.11-rotation-action-integrity'));assert.strictEqual(Core.VERSION,'46.11')}],
+['pendingRotation is explicit and consumed',()=>{assert(app.includes('pendingRotation: null'));assert(app.includes("pend.awaiting==='date'"));assert(app.includes("pend.awaiting==='unit'"));assert(app.includes("pend.awaiting==='supervisor'"))}],
+['role-scoped ambiguity resolution exists',()=>{assert(app.includes('askBarResolveStaffRoleClarified'));assert(app.includes('rotationClarifyIdentity'))}],
+['unit resolver does not blindly first-match writes',()=>{assert(app.includes('askBarResolveRotationUnit'));assert(app.includes('ambiguous:hits'))}],
+['rotation semantic tool set',()=>{['resident_rotations.check_supervisor','resident_rotations.check_assignment','resident_rotations.propose_assignment','resident_rotations.commit_assignment'].forEach(n=>assert(app.includes(`name:'${n}'`)))}],
+['hard constraints include overlap and capacity',()=>{['resident_overlap','unit_capacity','supervisor_not_eligible','resident_not_eligible','invalid_date_window'].forEach(x=>assert(app.includes(x)))}],
+['leave overlap is warning not hard block',()=>{const b=app.slice(app.indexOf("name:'resident_rotations.check_assignment'"),app.indexOf("name:'resident_rotations.propose_assignment'"));assert(b.includes('leaveConflicts'));assert(!b.includes("blocked.push('leave"))}],
+['formal supervisor is independent of unit membership',()=>{assert(app.includes('Unit membership is contextual and is not a supervision requirement'));assert(app.includes('they do not have to be linked to'))}],
+['proposal uses PROPOSE tool',()=>{assert(app.includes("groundedInvokeTool('resident_rotations.propose_assignment'"));assert(app.includes("access:GroundedCore.ACCESS.PROPOSE"))}],
+['commit uses confirmed WRITE tool and revalidates',()=>{assert(app.includes("groundedInvokeTool('resident_rotations.commit_assignment'"));const b=app.slice(app.indexOf("name:'resident_rotations.commit_assignment'"),app.indexOf('// V46.10 · Leave'));assert(b.includes('resident_rotations.propose_assignment'));assert(b.indexOf('resident_rotations.propose_assignment')<b.indexOf("API.request('/api/rotations'"))}],
+['blocked rotation cannot confirm',()=>{assert(html.includes(':disabled="turn.writing || turn.rotationProposal.blocked"'));assert(html.includes('turn.rotationProposal.blockReason'))}],
+['trace spans confirmation',()=>{assert(app.includes("human_confirmation',{confirmed:true,action:'assign_rotation'"));assert(app.includes("kind:'rotation',entityKeys"))}],
+['living architecture updated',()=>{assert(arch.includes('Implementation checkpoint: V46.11'));assert(arch.includes('Resident Rotation Action Integrity'));assert(garch.includes('V46.11 · Resident Rotation action integrity'))}]
+]
+let n=0;for(const [name,fn] of tests){try{fn();console.log('PASS',name);n++}catch(e){console.error('FAIL',name,e.stack||e);process.exit(1)}}console.log(`${n} V46.11 Resident Rotation Action Integrity checks passed.`)

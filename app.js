@@ -3530,7 +3530,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (residentId) {
           out.overlap = (rotations.value || []).find(r =>
             r.resident_id === residentId && r.id !== excludeId &&
-            ['active','scheduled'].includes(r.rotation_status) && r.start_date && r.end_date && within(r)) || null
+            ['active','scheduled','extended'].includes(r.rotation_status) && r.start_date && r.end_date && within(r)) || null
         }
         // unit capacity: count rotations overlapping the proposed window (not just "active now")
         if (unitId) {
@@ -11542,13 +11542,14 @@ document.addEventListener('DOMContentLoaded', () => {
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
         pendingOncall: null, // V46.9 multi-turn on-call action state; session-only, never authoritative data
         pendingLeave: null,  // V46.10 multi-turn leave action state; session-only, never authoritative data
+        pendingRotation: null, // V46.11 multi-turn resident-rotation action state; task-only
         snoozed: [],       // dismissed alert keys (#16)
         entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
-        coreTraceId: null, // V46.10 execution trace id (operational telemetry, never chain-of-thought)
+        coreTraceId: null, // V46.11 execution trace id (operational telemetry, never chain-of-thought)
         view: 'digest'     // 'digest' | 'conversation' | 'timeline' | 'trace' | 'teach'
       })
 
-      // V46.10 · Grounded architecture harness. This strengthens the existing Grounded
+      // V46.11 · Grounded architecture harness. This strengthens the existing Grounded
       // product without changing its user-facing identity. The core provides compact
       // context envelopes, permission-aware tool contracts, bounded execution, session
       // memory policy and operational traces. It never stores hidden reasoning.
@@ -12228,7 +12229,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarReset = () => {
         if (askBar.loading) return
         askBar.turns = []; askBar.query = ''; askBar.lastAsked = ''; askBar.entityMenu = null
-        askBar.subject = null; askBar.context = null; askBar.pendingLeave = null; askBar.pendingOncall = null
+        askBar.subject = null; askBar.context = null; askBar.pendingLeave = null; askBar.pendingOncall = null; askBar.pendingRotation = null
         openAskBar()
       }
       const runSuggestion = (s) => {
@@ -12810,6 +12811,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return { resident, dates: askBarExtractDates(q), segments }
       }
 
+      const askBarResolveRotationUnit = (qRaw) => {
+        const q=(qRaw||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        const units=(trainingUnits.value||[]).filter(u=>(u.unit_status||'active')!=='inactive')
+        const norm=x=>(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        const direct=units.filter(u=>q.includes(norm(u.unit_name)))
+        if(direct.length===1) return {unit:direct[0]}
+        if(direct.length>1) return {ambiguous:direct}
+        const aliases=[[/\b(icu|intensive care|uci)\b/,'uci'],[/\bucri\b/,'ucri'],[/\b(sleep|sleep lab|sueno)\b/,'sueno'],[/\b(ward|hospitali[sz]ation|inpatient)\b/,'hospitaliz'],[/\b(pft|lung function|pfr)\b/,'pfr'],[/\b(thoracic|toracica)\b/,'torac'],[/\btransplant|trasplante\b/,'trasplante'],[/\bcardiolog/,'cardiolog'],[/\binternal medicine|interna\b/,'interna'],[/\bbronch\w*|broncopleural\b/,'bronco'],[/\bexternal|externa\b/,'externa'],[/\bsevere asthma|asma\b/,'asma']]
+        for(const [rx,frag] of aliases){if(rx.test(q)){const hits=units.filter(u=>norm(u.unit_name).includes(frag));if(hits.length===1)return{unit:hits[0]};if(hits.length>1)return{ambiguous:hits}}}
+        const sig=q.split(/\s+/).filter(w=>w.length>3)
+        const hits=units.filter(u=>norm(u.unit_name).split(/\s+/).some(w=>w.length>3&&sig.includes(w)))
+        if(hits.length===1)return{unit:hits[0]}
+        if(hits.length>1)return{ambiguous:hits}
+        return {unit:null}
+      }
+      const askBarRotationIdentityTurn=(asked,options,role,pending)=>{
+        askBar.pendingRotation={...(pending||{}),awaiting:role,original:pending?.original||asked}
+        askBar.turns.push(Vue.reactive({q:asked,text:`I found more than one ${role==='resident'?'resident':'supervising attending'} matching that name. Which one did you mean?`,chips:(options||[]).map(x=>({label:x.full_name,id:x.id,rotationClarifyIdentity:role})),actions:[],sources:['staff'],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}))
+      }
+
       const askBarStartRotationFlow = (asked) => {
         // Multi-unit path: if the query names 2+ units, propose them as a set.
         const parsed = askBarParseRotationSegments(asked)
@@ -12871,88 +12892,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarCancelMultiRotation = (turn) => { turn.cancelled = true }
 
       const askBarStartSingleRotationFlow = (asked) => {
-        askBar.view = 'conversation'
-        const q = asked.toLowerCase()
-        // supervisor: "under X", "supervised by X", "with X"
-        let supervisor = null
-        const sM = q.match(/(?:under|supervised by|with)\s+([a-zñáéíóú]+)/i)
-        if (sM) supervisor = askBarResolveStaffRole(sM[1], 'supervisor') || askBarResolveStaff(sM[1])
-        // unit: match a training-unit name mentioned — handle Spanish names + aliases
-        const units = (trainingUnits.value || []).filter(u => (u.unit_status || 'active') !== 'inactive')
-        const _norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        // common English→department aliases mapping to real unit-name fragments
-        const UNIT_ALIASES = [
-          [/\b(icu|intensive care)\b/, 'uci'], [/\b(sleep|sleep lab)\b/, 'sueño'],
-          [/\b(ward|hospitali[sz]ation|inpatient)\b/, 'hospitaliz'], [/\bpft|lung function|respiratory function\b/, 'pfr'],
-          [/\bthoracic surgery\b/, 'torácica'], [/\btransplant\b/, 'trasplante'],
-          [/\bcardiology\b/, 'cardiolog'], [/\bradiology\b/, 'radiolog'],
-          [/\binternal medicine\b/, 'interna'], [/\bbronch\w*\b/, 'broncopleural'],
-          [/\bexternal\b/, 'externa'], [/\bsevere asthma\b/, 'asma']
-        ]
-        let unit = units.find(u => _norm(q).includes(_norm(u.unit_name)))  // direct name match
-        if (!unit) {  // alias match
-          for (const [rx, frag] of UNIT_ALIASES) {
-            if (rx.test(q)) { unit = units.find(u => _norm(u.unit_name).includes(frag)); if (unit) break }
-          }
-        }
-        if (!unit) {  // loose: any significant unit word appears in the query
-          unit = units.find(u => _norm(u.unit_name).split(/\s+/).some(w => w.length > 3 && _norm(q).includes(w)))
-        }
-        // resident: strip supervisor PHRASE first, then unit, then filler words
-        let rq = q
-          .replace(/(?:under|supervised by|with)\s+[a-zñáéíóú]+/gi, ' ')
-          .replace(/\b(uci|ucri|icu|ward|sleep lab|sleep|sueño|clinic|bronch\w*|asma|hospitaliz\w*|interna|torácica|toracica|trasplante|cardiolog\w*|externa|pfr|grave)\b/gi, ' ')
-          .replace(/\b(put|place|assign|move|rotate|schedule|set|book|send|in|into|the|rotation|to|for|next|this|from|on|and|today|tomorrow|yesterday)\b/g, ' ')
-          .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g, ' ')
-          .replace(/\b\d{1,2}\b/g, ' ')
-          .replace(/\s+/g,' ').trim()
-        // prefer a resident-role match; fall back to any-role only if nothing found
-        let resident = askBarResolveStaffRole(rq, 'resident')
-        if (!resident) resident = askBarResolveStaffRole(q, 'resident')
-        if (!resident) resident = askBarResolveStaff(rq)
-        if (!resident) { const r = askBarResolveStaff(q); if (r && (!supervisor || r.id !== supervisor.id)) resident = r }
-        const dates = askBarExtractDates(q)
-        if (!resident) { askBar.turns.push(Vue.reactive({ q: asked, text: "Which resident? Name them, e.g. \u201cput Santalla in the ICU rotation under Antelo.\u201d", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
-        if (!unit) { askBar.turns.push(Vue.reactive({ q: asked, text: `Which unit should ${resident.full_name} rotate into? (e.g. ICU, Sleep Lab)`, chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
-        if (!dates.start) {
-          // remember what we have so far — ask only for the missing date
-          askBar.pendingRotation = { resident, unit, supervisor, asked }
-          askBar.turns.push(Vue.reactive({ q: asked, text: `When does ${resident.full_name}'s rotation in ${unit.unit_name} start and end? (e.g. "from 1 Oct to 31 Oct")`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
-          return
-        }
-        // supervisor eligibility check (must be able to supervise)
-        const supOk = supervisor && (supervisor.can_supervise_residents !== false) && isOnCallEligible(supervisor.staff_type)
-        // unit capacity + resident overlap — SHARED date-aware logic (same as the GUI form)
-        const conflicts = (rotationOps.rotationConflicts ? rotationOps.rotationConflicts(resident.id, unit.id, dates.start, dates.end || dates.start, null) : { capacityCount: 0, cap: unit.maximum_residents||5, overlap: null })
-        const activeInUnit = conflicts.capacityCount
-        const cap = conflicts.cap || unit.maximum_residents || 5
-        const rotationOverlap = conflicts.overlap ? (getTrainingUnitName ? (getTrainingUnitName(conflicts.overlap.training_unit_id) || 'another unit') : 'another unit') : null
-        const fmt = (d) => { try { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) } catch(e){ return d } }
-        // #10 cross-record validation: does this rotation overlap the resident's leave?
-        let leaveOverlap = null
-        if (dates.start) {
-          const rs = dates.start, re = dates.end || dates.start
-          const clash = (absences.value || []).find(a => a.staff_member_id === resident.id
-            && !['returned_to_duty','cancelled'].includes(a.current_status)
-            && Utils.normalizeDate(a.start_date) <= re && Utils.normalizeDate(a.end_date) >= rs)
-          if (clash) leaveOverlap = `${fmt(clash.start_date)}–${fmt(clash.end_date)}`
-        }
-        askBar.turns.push(Vue.reactive({
-          q: '', text: '', rotationProposal: {
-            resident: { id: resident.id, name: resident.full_name },
-            unit: { id: unit.id, name: unit.unit_name },
-            supervisor: supervisor ? { id: supervisor.id, name: supervisor.full_name } : null,
-            supWarn: supervisor && !supOk,
-            noSup: !supervisor,
-            start: dates.start, end: dates.end,
-            startLabel: dates.start ? fmt(dates.start) : null,
-            atCapacity: activeInUnit >= cap, occ: `${activeInUnit}/${cap}`,
-            rotationOverlap,
-            leaveOverlap
-          },
-          chips: [], actions: [], sources: ['staff','units','rotations','leave records'], followups: [],
-          confidence: (!supervisor || activeInUnit >= cap || leaveOverlap) ? 'medium' : 'high', asOf: askBarNow(), streaming: false
-        }))
+        askBar.view='conversation'
+        const q=asked.toLowerCase()
+        let supervisor=null, supervisorAmbiguous=null
+        const sm=q.match(/(?:under|supervised by|with)\s+([a-zñáéíóú][a-zñáéíóú\s'-]{1,60}?)(?=\s+(?:from|on|next|this|until|till|to|for|today|tomorrow|in|at)\b|$)/i)
+        if(sm){const rr=askBarResolveStaffRoleClarified(sm[1],'supervisor');supervisor=rr.person||null;supervisorAmbiguous=rr.ambiguous||null}
+        const ur=askBarResolveRotationUnit(q)
+        const unit=ur.unit||null
+        let rq=q.replace(/(?:under|supervised by|with)\s+[a-zñáéíóú][a-zñáéíóú\s'-]{1,60}?(?=\s+(?:from|on|next|this|until|till|to|for|today|tomorrow|in|at)\b|$)/gi,' ')
+          .replace(/\b(put|place|assign|move|rotate|schedule|set|book|send|in|into|the|rotation|to|for|next|this|from|on|and|today|tomorrow|yesterday|unit|clinic|ward|grave)\b/g,' ')
+          .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g,' ').replace(/\b\d{1,2}\b/g,' ').replace(/\s+/g,' ').trim()
+        if(unit) rq=rq.replace(new RegExp((unit.unit_name||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'ig'),' ').trim()
+        const rr=askBarResolveStaffRoleClarified(rq||q,'resident')
+        const resident=rr.person||null, residentAmbiguous=rr.ambiguous||null
+        const dates=askBarExtractDates(q)
+        const pending={resident,unit,supervisor,start:dates.start,end:dates.end||dates.start,original:asked}
+        if(residentAmbiguous?.length){askBarRotationIdentityTurn(asked,residentAmbiguous,'resident',pending);return}
+        if(!resident){askBar.pendingRotation={...pending,awaiting:'resident'};askBar.turns.push(Vue.reactive({q:asked,text:'Which resident is this for?',chips:[],actions:[],sources:['staff'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+        if(ur.ambiguous?.length){askBar.pendingRotation={...pending,awaiting:'unit',unitOptions:ur.ambiguous.map(u=>({id:u.id,name:u.unit_name}))};askBar.turns.push(Vue.reactive({q:asked,text:`Which clinical unit should ${resident.full_name} rotate into? I found: ${ur.ambiguous.map(u=>u.unit_name).join(', ')}.`,chips:[],actions:[{label:'Open units',view:'training_units'}],sources:['units'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+        if(!unit){askBar.pendingRotation={...pending,awaiting:'unit'};askBar.turns.push(Vue.reactive({q:asked,text:`Which clinical unit should ${resident.full_name} rotate into?`,chips:[],actions:[{label:'Open units',view:'training_units'}],sources:['units'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+        if(!dates.start){askBar.pendingRotation={...pending,awaiting:'date'};askBar.turns.push(Vue.reactive({q:asked,text:`When does ${resident.full_name}'s rotation in ${unit.unit_name} start and end?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+        if(supervisorAmbiguous?.length){askBarRotationIdentityTurn(asked,supervisorAmbiguous,'supervisor',pending);return}
+        if(!supervisor){askBar.pendingRotation={...pending,awaiting:'supervisor'};askBar.turns.push(Vue.reactive({q:asked,text:`Who is the formal resident supervisor for this rotation? This can be a department-level supervising attending; they do not have to be linked to ${unit.unit_name}.`,chips:[],actions:[],sources:['staff'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+        askBarProposeRotation(pending,asked)
+      }
+
+      const askBarProposeRotation=(ex,asked='Assign resident rotation')=>{
+        askBar.pendingRotation=null
+        const traceId=groundedStartExecutionTrace(asked,'assign_rotation')
+        let checked
+        try{checked=groundedInvokeTool('resident_rotations.propose_assignment',{residentId:ex.resident.id,unitId:ex.unit.id,supervisorId:ex.supervisor.id,start:ex.start,end:ex.end||ex.start},{traceId})}
+        catch(err){groundedFinishExecutionTrace(traceId,{sources:['staff','units','rotations','leave records'],confidence:'low'},'error',err,'assign_rotation');askBar.turns.push(Vue.reactive({q:asked,text:`I couldn't prepare that rotation: ${err?.message||'validation failed'}.`,chips:[],actions:[],sources:['staff','units','rotations'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+        const fmt=d=>{try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}catch(e){return d}}
+        const labels={resident_not_found:'Resident record not found',resident_inactive:'Resident is inactive',resident_not_eligible:'Selected person is not a resident/fellow',unit_not_found:'Clinical unit not found',unit_inactive:'Clinical unit is inactive',supervisor_not_found:'Supervisor record not found',supervisor_inactive:'Supervisor is inactive',supervisor_not_eligible:'Selected supervisor is not eligible to supervise residents',invalid_date_window:'Invalid rotation date range',resident_overlap:'Resident already has a rotation in this period',unit_capacity:'Clinical unit has no resident capacity for the full period'}
+        const warnings=[]
+        if(checked.leaveConflicts?.length) warnings.push(`${checked.leaveConflicts.length} recorded leave period${checked.leaveConflicts.length===1?'':'s'} overlaps this rotation`)
+        if(checked.supervisorLeave?.length) warnings.push(`Supervisor has ${checked.supervisorLeave.length} recorded leave period${checked.supervisorLeave.length===1?'':'s'} during the rotation`)
+        const proposal={kind:'rotation',traceId,resident:{id:ex.resident.id,name:ex.resident.full_name},unit:{id:ex.unit.id,name:ex.unit.unit_name},supervisor:{id:ex.supervisor.id,name:ex.supervisor.full_name},start:ex.start,end:ex.end||ex.start,startLabel:fmt(ex.start),endLabel:fmt(ex.end||ex.start),blocked:(checked.blocked||[]).length>0,blockReasons:checked.blocked||[],blockReason:(checked.blocked||[]).map(x=>labels[x]||x).join(' · '),warnings,occ:`${checked.capacity?.state?.peak??0}/${checked.capacity?.state?.capacity??ex.unit.maximum_residents??'—'}`,atCapacity:(checked.blocked||[]).includes('unit_capacity'),rotationOverlap:(checked.blocked||[]).includes('resident_overlap')?'existing rotation':null,leaveOverlap:checked.leaveConflicts?.length?checked.leaveConflicts.map(x=>`${fmt(x.start)}–${fmt(x.end)}`).join(', '):null}
+        askBar.turns.push(Vue.reactive({q:'',text:'',rotationProposal:proposal,chips:[],actions:[],sources:['staff','units','rotations','leave records'],followups:[],confidence:proposal.blocked?'low':(warnings.length?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
       }
       const askBarConfirmRotationEdit = async (p, turn) => {
         turn.writing = true
@@ -13009,25 +12986,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const askBarConfirmRotation = async (p, turn) => {
-        if (p.noSup || p.supWarn || !p.start) return  // guardrails: need valid supervisor + dates
-        turn.writing = true
-        const body = {
-          resident_id: p.resident.id, training_unit_id: p.unit.id,
-          supervising_attending_id: p.supervisor.id,
-          start_date: p.start, end_date: p.end || p.start,
-          rotation_status: 'scheduled', rotation_category: 'clinical_rotation'
-        }
-        try {
-          await API.request('/api/rotations', { method: 'POST', body })
-          turn.writing = false; turn.committed = true
-          try { if (rotationOps && rotationOps.loadRotations) rotationOps.loadRotations() } catch (e) {}
-          turn.commitText = `\u2713 ${p.resident.name} scheduled in ${p.unit.name} under ${p.supervisor.name}.`
-        } catch (err) {
-          turn.writing = false
-          turn.commitError = (err && err.message) ? err.message : 'Could not save.'
-        }
+        if(p.blocked) return
+        turn.writing=true;turn.commitError=''
+        const traceId=p.traceId||turn.coreTraceId||null
+        try{
+          if(traceId)GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:true,action:'assign_rotation'})
+          await groundedInvokeTool('resident_rotations.commit_assignment',{residentId:p.resident.id,unitId:p.unit.id,supervisorId:p.supervisor.id,start:p.start,end:p.end||p.start},{traceId,confirmed:true})
+          turn.writing=false;turn.committed=true
+          try{await rotationOps.loadRotations()}catch(e){}
+          turn.commitText=`✓ ${p.resident.name} scheduled in ${p.unit.name} under ${p.supervisor.name}.`
+          askBarLog('change',{title:'Resident rotation scheduled',detail:`${p.resident.name} · ${p.unit.name} · ${p.start} → ${p.end||p.start}`,kind:'rotation',entityKeys:[`staff:${p.resident.id}`,`unit:${p.unit.id}`],_traceId:traceId})
+          if(askBar.coreTraceId===traceId)askBar.coreTraceId=null
+        }catch(err){turn.writing=false;const msg=err?.message||'Could not save.';turn.commitError=/blocked|overlap|capacity|changed/i.test(msg)?`The rotation state changed before confirmation. ${msg}`:msg;if(traceId){GroundedCore?.addTraceEvent(traceId,'action_failed',{action:'assign_rotation',error:msg});groundedFinishExecutionTrace(traceId,{sources:['staff','units','rotations','leave records'],confidence:'low'},'error',err,'assign_rotation')}}
       }
-      const askBarCancelRotation = (turn) => { turn.cancelled = true }
+      const askBarCancelRotation = (turn) => { turn.cancelled=true; const traceId=turn?.rotationProposal?.traceId||turn?.coreTraceId||null; if(traceId){GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:false,action:'assign_rotation'});GroundedCore?.finishTrace(traceId,{status:'cancelled',intent:'assign_rotation',confidence:turn.confidence||'medium',sources:turn.sources||[],actionClass:'propose'});if(askBar.coreTraceId===traceId)askBar.coreTraceId=null;groundedRefreshTraces()} }
 
       const askBarExtractLeave = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
@@ -13242,6 +13214,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return { person: ranked[0].s }
       }
 
+      const askBarResolveStaffRoleClarified = (qRaw, role) => {
+        const ranked=askBarRankStaffMatches(qRaw).filter(x=>{
+          const t=(x.s.staff_type||'').toLowerCase()
+          if(role==='resident') return /resident|medical_resident|fellow|mir/.test(t)
+          if(role==='supervisor') return /attending|physician|fellow/.test(t)
+          return true
+        })
+        if(!ranked.length) return {person:null}
+        if(ranked.length>=2 && ranked[0].score===ranked[1].score){
+          const tied=ranked.filter(r=>r.score===ranked[0].score)
+          if(tied.length>=2) return {ambiguous:tied.map(r=>r.s)}
+        }
+        return {person:ranked[0].s}
+      }
+
       // Write-safe resolver: for write flows, ask "which one?" on ambiguity instead of guessing
       const askBarResolveStaffForWrite = (qRaw, asked) => {
         const result = askBarResolveStaffClarified(qRaw)
@@ -13367,21 +13354,40 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         })
         groundedToolRegistry.register({
-          name:'resident_rotations.propose_assignment', access:GroundedCore.ACCESS.PROPOSE, module:'resident_rotations',
-          description:'Build a non-destructive resident-rotation proposal after checking overlap, unit capacity and unit readiness.',
-          inputSchema:{residentId:'uuid',unitId:'uuid',start:'date',end:'date'},
-          run:({residentId,unitId,start,end}) => {
-            const resident=(medicalStaff.value||[]).find(s=>String(s.id)===String(residentId))
-            const unit=(trainingUnits.value||[]).find(u=>String(u.id)===String(unitId))
-            if(!resident||!unit) throw new Error('Resident or clinical unit not found')
-            const conflicts=groundedToolRegistry.invoke('resident_rotations.conflicts',{residentId,start,end},{traceId:askBar.coreTraceId,confirmed:false})
-            const capacity=groundedToolRegistry.invoke('clinical_units.capacity_window',{unitId,start,end},{traceId:askBar.coreTraceId,confirmed:false})
-            const team=groundedToolRegistry.invoke('clinical_units.team_readiness',{unitId},{traceId:askBar.coreTraceId,confirmed:false})
-            const blocked=[]
-            if(conflicts.length) blocked.push('resident_overlap')
-            if(capacity.state.overCapacity || capacity.state.minFree<1) blocked.push('unit_capacity')
-            return {kind:'rotation_proposal',resident:{id:resident.id,name:resident.full_name},unit:capacity.unit,start,end,conflicts,capacity:capacity.state,team,blocked,requiresHumanConfirmation:true}
+          name:'resident_rotations.check_supervisor', access:GroundedCore.ACCESS.READ, module:'resident_rotations',
+          description:'Validate the formal supervising attending for a resident rotation. Unit membership is contextual and is not a supervision requirement.',
+          inputSchema:{supervisorId:'uuid'},
+          run:({supervisorId})=>{const p=(medicalStaff.value||[]).find(x=>String(x.id)===String(supervisorId));if(!p)return{eligible:false,reason:'supervisor_not_found',person:null};const active=(p.employment_status||'active')==='active';const role=/attending|physician|fellow/.test((p.staff_type||'').toLowerCase());const capable=p.can_supervise_residents!==false;return{eligible:active&&role&&capable,reason:!active?'supervisor_inactive':(!(role&&capable)?'supervisor_not_eligible':null),person:{id:p.id,name:p.full_name,staffType:p.staff_type}}}
+        })
+        groundedToolRegistry.register({
+          name:'resident_rotations.check_assignment', access:GroundedCore.ACCESS.READ, module:'resident_rotations',
+          description:'Validate resident, unit, formal supervisor, exact capacity and overlapping assignments for a proposed rotation.',
+          inputSchema:{residentId:'uuid',unitId:'uuid',supervisorId:'uuid',start:'date',end:'date'},
+          run:({residentId,unitId,supervisorId,start,end},opts={})=>{
+            const traceId=opts.traceId||askBar.coreTraceId||null
+            const resident=(medicalStaff.value||[]).find(x=>String(x.id)===String(residentId));const unit=(trainingUnits.value||[]).find(x=>String(x.id)===String(unitId));const blocked=[]
+            if(!resident)blocked.push('resident_not_found');else{if((resident.employment_status||'active')!=='active')blocked.push('resident_inactive');if(!/resident|medical_resident|fellow|mir/.test((resident.staff_type||'').toLowerCase()))blocked.push('resident_not_eligible')}
+            if(!unit)blocked.push('unit_not_found');else if((unit.unit_status||'active')==='inactive')blocked.push('unit_inactive')
+            const ss=Utils.normalizeDate(start),ee=Utils.normalizeDate(end);if(!ss||!ee||ss>ee)blocked.push('invalid_date_window')
+            const supervisor=groundedToolRegistry.invoke('resident_rotations.check_supervisor',{supervisorId},{traceId,confirmed:false});if(!supervisor.eligible)blocked.push(supervisor.reason||'supervisor_not_eligible')
+            const conflicts=resident&&ss&&ee?groundedToolRegistry.invoke('resident_rotations.conflicts',{residentId,start:ss,end:ee},{traceId,confirmed:false}):[];if(conflicts.length)blocked.push('resident_overlap')
+            const capacity=unit&&ss&&ee?groundedToolRegistry.invoke('clinical_units.capacity_window',{unitId,start:ss,end:ee},{traceId,confirmed:false}):null;if(capacity&&(capacity.state.overCapacity||capacity.state.minFree<1))blocked.push('unit_capacity')
+            const leaveConflicts=resident&&ss&&ee?(absences.value||[]).filter(a=>String(a.staff_member_id)===String(residentId)&&!['returned_to_duty','cancelled'].includes(a.current_status)&&Utils.normalizeDate(a.start_date)<=ee&&Utils.normalizeDate(a.end_date)>=ss).map(a=>({id:a.id,start:a.start_date,end:a.end_date,type:a.absence_reason||a.absence_type||null})):[]
+            const supervisorLeave=supervisor?.person&&ss&&ee?(absences.value||[]).filter(a=>String(a.staff_member_id)===String(supervisorId)&&!['returned_to_duty','cancelled'].includes(a.current_status)&&Utils.normalizeDate(a.start_date)<=ee&&Utils.normalizeDate(a.end_date)>=ss).map(a=>({id:a.id,start:a.start_date,end:a.end_date,type:a.absence_reason||a.absence_type||null})):[]
+            return{resident:resident?{id:resident.id,name:resident.full_name}:null,unit:unit?{id:unit.id,name:unit.unit_name}:null,supervisor,capacity,conflicts,leaveConflicts,supervisorLeave,blocked:[...new Set(blocked)],start:ss,end:ee}
           }
+        })
+        groundedToolRegistry.register({
+          name:'resident_rotations.propose_assignment', access:GroundedCore.ACCESS.PROPOSE, module:'resident_rotations',
+          description:'Build a non-destructive resident-rotation proposal using formal supervision, exact date overlap and resident-capacity validation.',
+          inputSchema:{residentId:'uuid',unitId:'uuid',supervisorId:'uuid',start:'date',end:'date'},
+          run:({residentId,unitId,supervisorId,start,end},opts={})=>{const traceId=opts.traceId||askBar.coreTraceId||null;const checked=groundedToolRegistry.invoke('resident_rotations.check_assignment',{residentId,unitId,supervisorId,start,end},{traceId,confirmed:false});return{kind:'rotation_proposal',...checked,requiresHumanConfirmation:true}}
+        })
+        groundedToolRegistry.register({
+          name:'resident_rotations.commit_assignment', access:GroundedCore.ACCESS.WRITE, module:'resident_rotations',
+          description:'Commit a human-confirmed resident rotation after re-validating resident overlap, unit capacity and formal supervisor immediately before write.',
+          inputSchema:{residentId:'uuid',unitId:'uuid',supervisorId:'uuid',start:'date',end:'date'},
+          run:async({residentId,unitId,supervisorId,start,end},opts={})=>{const traceId=opts.traceId||askBar.coreTraceId||null;const proposal=groundedToolRegistry.invoke('resident_rotations.propose_assignment',{residentId,unitId,supervisorId,start,end},{traceId,confirmed:false});if(proposal.blocked.length){const er=new Error(`Rotation assignment blocked: ${proposal.blocked.join(', ')}`);er.code='ROTATION_ASSIGNMENT_BLOCKED';er.reasons=proposal.blocked;throw er}const body={resident_id:residentId,training_unit_id:unitId,supervising_attending_id:supervisorId,start_date:start,end_date:end,rotation_status:'scheduled',rotation_category:'clinical_rotation'};const saved=await API.request('/api/rotations',{method:'POST',body});return{saved,proposal}}
         })
         // V46.10 · Leave is the third module migrated onto the Grounded harness.
         // Recording leave is validated as a departmental event: identity + window +
@@ -14445,6 +14451,20 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = 'conversation'
         // Scenario mode is explicitly non-destructive and takes priority over normal intent routing.
         if (!forcedIntent && askBarLooksScenario(asked)) { askBarStartScenario(asked); return }
+        // V46.11 · Multi-turn resident-rotation action memory. Resident,
+        // unit, dates and formal supervisor can be clarified independently.
+        if(!forcedIntent && askBar.pendingRotation && askBar.pendingRotation.awaiting){
+          const pend=askBar.pendingRotation,q=asked.toLowerCase();const clearlyNew=/\b(cancel|remove|delete|on.?call|leave|absence|trial|research|show|who|which|list)\b/.test(q)
+          if(!clearlyNew){
+            if(pend.awaiting==='date'){const dr=askBarExtractDates(q);if(dr.start){pend.start=dr.start;pend.end=dr.end||dr.start;pend.awaiting=pend.supervisor?'ready':'supervisor'}}
+            else if(pend.awaiting==='unit'){const ur=askBarResolveRotationUnit(q);if(ur.ambiguous?.length){askBar.turns.push(Vue.reactive({q:asked,text:`Which unit did you mean: ${ur.ambiguous.map(u=>u.unit_name).join(', ')}?`,chips:[],actions:[{label:'Open units',view:'training_units'}],sources:['units'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}if(ur.unit){pend.unit=ur.unit;pend.awaiting=pend.start?(pend.supervisor?'ready':'supervisor'):'date'}}
+            else if(pend.awaiting==='resident'||pend.awaiting==='supervisor'){const role=pend.awaiting;const rr=askBarResolveStaffRoleClarified(asked,role);if(rr.ambiguous){askBarRotationIdentityTurn(asked,rr.ambiguous,role,pend);return}if(rr.person){pend[role]=rr.person;pend.awaiting=!pend.resident?'resident':(!pend.unit?'unit':(!pend.start?'date':(!pend.supervisor?'supervisor':'ready')))}}
+            if(pend.awaiting==='ready'){askBar.pendingRotation=null;askBarProposeRotation(pend,`${pend.original||'Assign rotation'} → ${asked}`);return}
+            if(pend.awaiting==='supervisor'&&pend.resident&&pend.unit&&pend.start&&!pend.supervisor){askBar.pendingRotation=pend;askBar.turns.push(Vue.reactive({q:asked,text:`Who is the formal resident supervisor for ${pend.resident.full_name}'s rotation?`,chips:[],actions:[],sources:['staff'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+            if(pend.awaiting==='date'&&pend.resident&&pend.unit&&!pend.start){askBar.pendingRotation=pend;askBar.turns.push(Vue.reactive({q:asked,text:`When does ${pend.resident.full_name}'s rotation in ${pend.unit.unit_name} start and end?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+          }
+          if(clearlyNew)askBar.pendingRotation=null
+        }
         // V46.9 · Multi-turn on-call action memory. This is task state only — not
         // authoritative schedule data. A clearly new command abandons the pending action.
         if (!forcedIntent && askBar.pendingOncall && askBar.pendingOncall.awaiting) {
@@ -16676,6 +16696,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarResolveClarified = (c) => {
         const s = (medicalStaff.value || []).find(x => String(x.id) === String(c.id))
         if (!s) return
+        if(c.rotationClarifyIdentity && askBar.pendingRotation){const pend=askBar.pendingRotation;if(c.rotationClarifyIdentity==='resident')pend.resident=s;else pend.supervisor=s;pend.awaiting=!pend.resident?'resident':(!pend.unit?'unit':(!pend.start?'date':(!pend.supervisor?'supervisor':'ready')));if(pend.awaiting==='ready'){askBar.pendingRotation=null;askBarProposeRotation(pend,`${pend.original||'Assign rotation'} → ${s.full_name}`);return}askBar.pendingRotation=pend;if(pend.awaiting==='date'){askBar.turns.push(Vue.reactive({q:'',text:`When does ${pend.resident.full_name}'s rotation in ${pend.unit.unit_name} start and end?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}if(pend.awaiting==='supervisor'){askBar.turns.push(Vue.reactive({q:'',text:`Who is the formal resident supervisor for this rotation?`,chips:[],actions:[],sources:['staff'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}}
         if (c.leaveClarifyIdentity && askBar.pendingLeave) {
           const pend=askBar.pendingLeave
           if(c.leaveClarifyIdentity==='subject') pend.subject=s

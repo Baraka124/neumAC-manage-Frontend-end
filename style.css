@@ -22026,7 +22026,7 @@ html body #app .askbar-entmenu{max-width:min(260px,calc(100% - 20px)) !important
 
 
 /* ================================================================
-   V46.10 · LEAVE ACTION INTEGRITY
+   V46.11 · ROTATION ACTION INTEGRITY
    On-call proposal cards reuse the established Grounded visual system.
    The release is primarily semantic/tooling hardening, not decorative UI.
    ================================================================ */

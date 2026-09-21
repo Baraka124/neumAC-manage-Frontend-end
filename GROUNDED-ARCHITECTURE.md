@@ -225,7 +225,7 @@ Module
 └─ source-of-truth mapping
 ```
 
-Clinical Units is the first reference module. **On-call is the second integrated module (V46.9), and Leave is the third (V46.10).** Both write-heavy workflows now follow the same action-integrity contract. Resident Rotations is next; Staff and Research follow incrementally as their workflows mature.
+Clinical Units is the first reference module. **On-call (V46.9), Leave (V46.10), and Resident Rotations (V46.11)** now follow the same action-integrity contract. Staff and Research follow incrementally as their workflows mature.
 
 
 ## V46.9 · On-call action integrity
@@ -273,7 +273,7 @@ A module is not considered fully migrated merely because it has a confirmation b
 8. refresh authoritative state;
 9. close one coherent trace/audit trajectory.
 
-**Next migration:** Resident Rotations.
+**Next focus:** remaining lifecycle writes + module/UI intelligence surfaces.
 
 
 ## V46.10 · Leave action integrity
@@ -308,3 +308,32 @@ On-call and rotation collisions are warnings, not automatic blocks: leave may le
 `pendingLeave` is short-lived task state only. It supports natural clarification while preserving the selected subject, dates or covering clinician without storing hospital facts in Grounded memory.
 
 **Next migration:** Resident Rotation Action Integrity.
+
+
+## V46.11 · Resident Rotation action integrity
+
+The primary resident-assignment flow now uses semantic tools and one coherent trace:
+
+- `resident_rotations.check_supervisor` (READ)
+- `resident_rotations.check_assignment` (READ)
+- `resident_rotations.propose_assignment` (PROPOSE)
+- `resident_rotations.commit_assignment` (WRITE)
+
+Trajectory:
+
+```text
+resident identity → unit → exact dates → formal supervisor
+→ overlap/capacity validation
+→ leave-context warnings
+→ proposal
+→ human confirmation
+→ commit-time revalidation
+→ WRITE tool
+→ refresh → trace/audit
+```
+
+The formal supervisor is a rotation/department responsibility and is not constrained to the unit's linked attending physicians.
+
+`pendingRotation` is task-only session state and can safely resume missing resident, unit, dates or supervisor.
+
+Multi-unit creation remains sequential at the API layer; atomic batch rotation writes require backend transactional support and remain explicit architectural debt.
