@@ -1075,8 +1075,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
       static ensureArray(data) {
         if (Array.isArray(data)) return data
-        if (data?.data && Array.isArray(data.data)) return data.data
-        if (data && typeof data === 'object') return Object.values(data)
+        if (!data || typeof data !== 'object') return []
+
+        // Normalise the common list envelopes used by REST APIs.  The previous
+        // Object.values() fallback could turn a paginated payload such as
+        // { count, next, previous, results: [...] } into four bogus "rows".
+        const directKeys = ['data', 'results', 'items', 'records', 'rows']
+        for (const key of directKeys) {
+          if (Array.isArray(data[key])) return data[key]
+        }
+        // Some endpoints wrap the list one level deeper, e.g.
+        // { success:true, data:{ results:[...] } }.
+        for (const key of ['data', 'payload', 'response']) {
+          const nested = data[key]
+          if (!nested || typeof nested !== 'object' || Array.isArray(nested)) continue
+          for (const inner of directKeys) {
+            if (Array.isArray(nested[inner])) return nested[inner]
+          }
+        }
+
+        // Preserve support for genuine id->record maps, but never treat API
+        // pagination metadata/scalars as records.
+        const values = Object.values(data)
+        if (values.length && values.every(v => v && typeof v === 'object' && !Array.isArray(v))) return values
         return []
       }
 
@@ -1316,7 +1337,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       async getList(path) {
-        try { return Utils.ensureArray(await this.request(path)) } catch { return [] }
+        try { return Utils.ensureArray(await this.request(path)) }
+        catch (e) {
+          // Keep legacy callers resilient, but do not hide the real reason in
+          // the console anymore. Critical loaders use getListStrict below.
+          console.error(`[neumDesk API] list load failed for ${path}:`, e)
+          return []
+        }
+      }
+
+      async getListStrict(path, options = {}) {
+        const payload = await this.request(path, options)
+        return Utils.ensureArray(payload)
       }
 
       async login(email, password) {
@@ -1340,12 +1372,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ============ 4.1 MEDICAL STAFF ENDPOINTS ============
       
-      async getMedicalStaff() { 
-        // B9 FIX: Removed redundant .filter(employment_status !== 'inactive') —
-        // the backend already excludes inactive staff by default (neq query).
-        // Keeping it here would silently drop inactive staff even when fetched intentionally.
-        const data = await this.getList('/api/medical-staff?limit=500');
+      async getMedicalStaff(options = {}) { 
+        // Staff is a critical dataset. Do NOT use the forgiving getList()
+        // wrapper here: a 401/5xx/network failure must remain distinguishable
+        // from a legitimate empty staff table.
+        const data = await this.getListStrict('/api/medical-staff?limit=500', {
+          skipCache: options.skipCache ?? false,
+          timeoutMs: options.timeoutMs ?? 20000
+        })
         return data
+          .filter(staff => staff && typeof staff === 'object' && !Array.isArray(staff))
           .map(staff => ({
           ...staff,
           resident_category: staff.resident_category || null,
@@ -2139,25 +2175,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
       watch(staffFilters, () => resetPage('medical_staff'), { deep: true })
 
-      const loadMedicalStaff = async () => {
+      const loadMedicalStaff = async (force = false) => {
+        // V46.3 STAFF-LOAD HARDENING
+        // 1) Load the critical staff dataset first and publish it immediately.
+        // 2) Load historical lookup + hospitals + units independently afterwards.
+        // A failure in an auxiliary source must never blank the staff UI.
         try {
-          const [raw, hospitals, units] = await Promise.all([
-            API.getList('/api/medical-staff?limit=500&employment_status=all'),
-            API.getHospitals(),
-            API.getClinicalUnits()
-          ])
-          if (Array.isArray(raw)) {
-            // Defensive: never surface soft-deleted staff (backend filter is the real fix)
-            allStaffLookup.value = raw
-              .filter(s => !s.deleted_at)
-              .map(s => ({ id: s.id, full_name: s.full_name, staff_type: s.staff_type, employment_status: s.employment_status }))
+          let staff
+          try {
+            staff = await API.getMedicalStaff({ skipCache: !!force, timeoutMs: 20000 })
+          } catch (firstError) {
+            // Railway can occasionally be cold on the first request. Retry once
+            // after a short pause, bypassing any stale cache.
+            console.warn('[neumDesk] medical staff first attempt failed; retrying once', firstError)
+            await new Promise(resolve => setTimeout(resolve, 900))
+            staff = await API.getMedicalStaff({ skipCache: true, timeoutMs: 25000 })
           }
-          hospitalsList.value = hospitals
-          clinicalUnits.value = units
-          const staff = await API.getMedicalStaff()
-          medicalStaff.value = Array.isArray(staff) ? staff.filter(s => !s.deleted_at) : staff
+
+          const cleanStaff = Array.isArray(staff)
+            ? staff.filter(s => s && typeof s === 'object' && !s.deleted_at)
+            : []
+          medicalStaff.value = cleanStaff
+
+          // Give name resolution a valid baseline immediately, even if the
+          // all-status lookup below fails.
+          allStaffLookup.value = cleanStaff.map(s => ({
+            id: s.id,
+            full_name: s.full_name,
+            staff_type: s.staff_type,
+            employment_status: s.employment_status
+          }))
+
+          if (!cleanStaff.length) {
+            console.warn('[neumDesk] /api/medical-staff returned a valid but empty list')
+          }
+        } catch (e) {
+          console.error('[neumDesk] CRITICAL medical staff load failed:', e)
+          showOnScreenError('Medical staff load failed', e, '/api/medical-staff')
+          showToast('Staff data unavailable', e?.message || 'Failed to load medical staff', 'error', 0)
+          return false
         }
-        catch { showToast('Error', 'Failed to load medical staff', 'error') }
+
+        // Auxiliary staff context. None of these may clear medicalStaff.
+        const [allStaffResult, hospitalsResult, unitsResult] = await Promise.allSettled([
+          API.getListStrict('/api/medical-staff?limit=500&employment_status=all', { timeoutMs: 20000 }),
+          API.getHospitals(),
+          API.getClinicalUnits()
+        ])
+
+        if (allStaffResult.status === 'fulfilled' && Array.isArray(allStaffResult.value) && allStaffResult.value.length) {
+          allStaffLookup.value = allStaffResult.value
+            .filter(s => s && typeof s === 'object' && !s.deleted_at)
+            .map(s => ({ id: s.id, full_name: s.full_name, staff_type: s.staff_type, employment_status: s.employment_status }))
+        } else if (allStaffResult.status === 'rejected') {
+          console.warn('[neumDesk] all-status staff lookup unavailable; using active staff fallback', allStaffResult.reason)
+        }
+
+        if (hospitalsResult.status === 'fulfilled') hospitalsList.value = hospitalsResult.value || []
+        else console.warn('[neumDesk] hospitals load failed without blocking staff', hospitalsResult.reason)
+
+        if (unitsResult.status === 'fulfilled') clinicalUnits.value = unitsResult.value || []
+        else console.warn('[neumDesk] clinical units load failed without blocking staff', unitsResult.reason)
+
+        return true
       }
 
       const loadHospitals = async () => {
@@ -10310,30 +10390,37 @@ document.addEventListener('DOMContentLoaded', () => {
             // loadStaffTypes needs ONE network call — run it in parallel with the
             // first main batch. staffTypeMap will be populated by the time any
             // staff dropdown renders because Vue defers rendering until microtasks settle.
-            await Promise.all([
+            const primaryLoads = await Promise.allSettled([
               loadStaffTypes(),
               loadAcademicDegrees(),
               loadRotationServices(),
               onCallOps.loadCoverageAreas(),
               loadSystemSettings(),
-              staffOps.loadMedicalStaff(),
+              staffOps.loadMedicalStaff(true),
               loadDepartments(),
               loadTrainingUnits()
             ])
+            primaryLoads.forEach((result, i) => {
+              if (result.status === 'rejected') console.error(`[neumDesk] primary loader ${i} failed without cancelling startup:`, result.reason)
+            })
 
-            // Second batch: depends on staff + units being loaded
-            await Promise.all([
+            // Second batch: depends on staff + units being loaded. Keep each
+            // source isolated so a schedule/absence problem cannot blank the app.
+            const operationalLoads = await Promise.allSettled([
               rotationOps.loadRotations(),
               onCallOps.loadOnCallSchedule(),
               absenceOps.loadAbsences()
             ])
+            operationalLoads.forEach((result, i) => {
+              if (result.status === 'rejected') console.error(`[neumDesk] operational loader ${i} failed:`, result.reason)
+            })
 
             updateDashboardStats()
             // Compare this live operational state with the previous visit once per session.
             try { askBarRefreshContinuity() } catch (e) {}
 
             // Third batch: non-critical, fire and forget
-            Promise.all([
+            Promise.allSettled([
               onCallOps.loadTodaysOnCall(),
               commsOps.loadAnnouncements(),
               liveOps.loadClinicalStatus(),
@@ -10344,7 +10431,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ]).then(() => updateDashboardStats())
 
             // Low priority — research analytics
-            Promise.all([
+            Promise.allSettled([
               researchOps.loadClinicalTrials(),
               researchOps.loadInnovationProjects(),
               analyticsOps.loadAnalyticsSummary()
@@ -16274,6 +16361,6 @@ document.addEventListener('DOMContentLoaded', () => {
           🔄 Refresh Page
         </button>
       </div>`;
-    throw error;    
+    throw error;  
   }
 });
