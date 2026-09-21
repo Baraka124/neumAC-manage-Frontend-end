@@ -2,25 +2,26 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v1.6 · Implementation checkpoint: V46.13 · Supersedes Vision v0.1
+**Status:** Architecture v1.7 · Implementation checkpoint: V46.14 · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
 ---
 
-## Current implementation ledger — V46.13
+## Current implementation ledger — V46.14
 
 This is the **living checkpoint** and is authoritative over older status statements below.
 
 ### Canonical baseline
-- Baseline entering this release: **V46.12 · Clinical Units Consolidation**.
-- Current release: **V46.13 · Personal Activity / Portfolio Intelligence**.
+- Baseline entering this release: **V46.13 · Personal Activity / Portfolio Intelligence**.
+- Current release: **V46.14 · Personal Activity / Portfolio Intelligence Workspace**.
 
 ### Preserved implementation milestones
 - **V46.9 · Grounded Action Integrity** — On-call migrated to guarded semantic tools, pending action state, human confirmation and commit-time revalidation.
 - **V46.10 · Leave Action Integrity** — leave creation migrated to the same guarded action path with ambiguity-safe identity and overlap validation.
 - **V46.11 · Resident Rotation Action Integrity** — primary resident rotation assignment migrated to guarded tools, exact capacity/overlap validation and formal supervisor context.
 - **V46.12 · Clinical Units Consolidation** — Clinical Unit semantics and visual shell consolidated on the action-integrity baseline.
+- **V46.13 · Personal Activity / Portfolio Intelligence** — deterministic reporting snapshot promoted from document export into an interactive structured-output client.
 
 ### What is real now
 | Layer | Status |
@@ -37,7 +38,7 @@ This is the **living checkpoint** and is authoritative over older status stateme
 | Human in loop | Built pattern |
 | Observability | Built foundation |
 | Permissions | Operational |
-| Structured outputs | Mature reporting client proven; broader universal adoption pending |
+| Structured outputs | Mature Personal Activity client proven across interactive + formal renderers; broader universal adoption pending |
 | Operational memory | Partial; task-only Grounded memory |
 | Multi-agent | Intentionally deferred |
 
@@ -63,13 +64,42 @@ Consequences:
 3. Many Grounded reads still live in the monolithic router instead of capability modules.
 4. The Canonical Knowledge Layer is not yet the exclusive operational interface.
 5. Role-first permissions remain a future onboarding improvement.
-6. Personal Activity now has a first-class Portfolio Intelligence workspace; a Grounded READ adapter for this reporting capability remains future integration work.
+6. Personal Activity now has a full Portfolio Intelligence workspace and structured context handoff into Grounded; a universal free-form, period-aware Grounded READ adapter over this snapshot remains future integration work.
 
 ### What comes next
-**Next checkpoint:** live browser validation of Portfolio Intelligence, then continue module-by-module refinement and Grounded READ integration without changing the deterministic reporting source of truth.
+**Next checkpoint:** live browser validation of V46.14 Portfolio Intelligence, then return to operational UI consistency (On-call → Leave → Resident Rotations → Staff) while continuing staged Grounded READ migration behind the deterministic source of truth.
 
 ---
 
+
+## Implementation checkpoint — V46.14 (2026-09-21)
+
+### Personal Activity becomes a complete Portfolio Intelligence workspace
+V46.14 completes the product architecture around the deterministic Personal Activity snapshot. The feature is now a full-screen departmental workspace rather than a document-preparation modal.
+
+**A → H completed in this checkpoint**
+1. **Product architecture** — full-screen workspace; person, period and included activity are first-class context.
+2. **Overview intelligence** — deterministic narrative, dated-activity metrics, portfolio-relationship metrics and source-quality status.
+3. **Timeline** — month-grouped chronology for on-call, rotations and shared milestones.
+4. **Portfolio** — resident assignments, formal supervision, research, innovation and programme coordination remain semantically distinct.
+5. **Evidence** — source health, match counts, provenance and information caveats are first-class UI.
+6. **Document** — offline HTML / Print-to-PDF remains a renderer of the same verified model; it is no longer the primary experience.
+7. **Contextual integration** — Staff and Grounded can open the same workspace; the workspace can hand person + period + structured snapshot context back to Grounded.
+8. **Visual hardening** — crisp full-screen shell, compact scope controls, responsive states, no haze/backdrop blur, truthful empty/loading/error treatment.
+
+**Semantic invariants**
+- dated activity is not conflated with persistent professional relationships;
+- a shared study/project milestone does not establish personal ownership;
+- unavailable/restricted sources are never converted to zero activity;
+- the Personal Activity model remains deterministic and permission-scoped;
+- Grounded receives this model as context but does not become a second truth store.
+
+**Still next**
+- live authenticated browser validation and print review;
+- operational UI consistency across On-call, Leave, Rotations and Staff;
+- staged Knowledge Layer / Grounded READ adoption with output-equivalence evals.
+
+---
 
 ## Implementation checkpoint — V46.13 (2026-09-21)
 

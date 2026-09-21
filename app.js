@@ -16791,11 +16791,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 0)
       }
 
-      // V45 personal activity documents use their own permission-scoped snapshot.
+      // V46.14 Personal Activity / Portfolio Intelligence uses its own permission-scoped deterministic snapshot.
       // No mutation, account inference, or dependency on Grounded's all-source gate.
-      const activity45 = reactive({open:false,busy:false,error:'',personId:'',start:'',end:'',people:[],sources:{},model:null,summary:null,view:'overview',html:'',filename:'',selected:{oncall:true,rotations:true,studies:true,projects:true,lines:true}})
+      const activity45 = reactive({open:false,busy:false,error:'',personId:'',start:'',end:'',periodPreset:'month',people:[],sources:{},model:null,summary:null,view:'overview',html:'',filename:'',selected:{oncall:true,rotations:true,studies:true,projects:true,lines:true}})
       let activity45Generation=0, activity45Controller=null, activity45ReturnFocus=null
       const activity45Invalidate = () => { activity45.model=null; activity45.summary=null; activity45.html=''; activity45.error=''; activity45.view='overview' }
+      const activity45PeriodPresets = [
+        {id:'month',label:'This month'}, {id:'previous_month',label:'Previous month'}, {id:'last3',label:'Last 3 months'}, {id:'ytd',label:'Year to date'}, {id:'custom',label:'Custom'}
+      ]
+      const activity45IsoDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      const activity45ApplyPreset = preset => {
+        activity45.periodPreset=preset
+        if(preset==='custom') return
+        const now=new Date(), y=now.getFullYear(), m=now.getMonth(); let start,end
+        if(preset==='previous_month'){start=new Date(y,m-1,1);end=new Date(y,m,0)}
+        else if(preset==='last3'){start=new Date(y,m-2,1);end=new Date(y,m+1,0)}
+        else if(preset==='ytd'){start=new Date(y,0,1);end=now}
+        else {start=new Date(y,m,1);end=new Date(y,m+1,0)}
+        activity45.start=activity45IsoDate(start); activity45.end=activity45IsoDate(end); activity45Invalidate()
+      }
+      const activity45ToggleSection = key => {
+        if(!Object.prototype.hasOwnProperty.call(activity45.selected,key)) return
+        const enabled=Object.values(activity45.selected).filter(Boolean).length
+        if(activity45.selected[key] && enabled===1) { activity45.error='Keep at least one activity area included.'; return }
+        activity45.selected[key]=!activity45.selected[key]; activity45Invalidate()
+      }
+      const activity45SelectedCount = () => Object.values(activity45.selected||{}).filter(Boolean).length
+      const activity45TimelineGroups = () => Activity45.timelineGroups(activity45.model||{events:[]})
       const activity45Close = () => {
         ++activity45Generation; activity45Controller?.abort(); activity45Controller=null
         activity45.open=false; activity45.busy=false; activity45.model=null; activity45.summary=null; activity45.view='overview'; activity45.html=''; activity45.sources={}; activity45.people=[]
@@ -16819,13 +16841,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const activity45Open = async (personId='') => {
         if(!hasPermission('medical_staff','read')) return
         activity45ReturnFocus=document.activeElement
-        activity45.personId=personId||''
+        activity45.personId=personId||''; activity45.periodPreset='month'
         const now=new Date(), y=now.getFullYear(), m=now.getMonth()
         activity45.start=`${y}-${String(m+1).padStart(2,'0')}-01`
-        activity45.end=`${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
+        activity45.end=`${y}-${String(m+1).padStart(2,'0')}-${String(new Date(y,m+1,0).getDate()).padStart(2,'0')}`
         activity45.open=true
         Vue.nextTick(()=>document.querySelector('.activity45-dialog .activity45-close')?.focus())
         await activity45Read({directoryOnly:true})
+        if(personId && activity45.people.some(p=>Activity45.same(p.id,personId))) await activity45Generate()
       }
       const activity45Generate = async () => {
         if(activity45.busy) return
@@ -16857,6 +16880,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return item.end && item.end!==item.start ? `${first} — ${last}` : first
       }
       const activity45SourceTone = state => state==='ready'?'ready':state==='restricted'?'restricted':state==='not included'?'neutral':'unavailable'
+      const activity45OpenSource = source => {
+        if(!source?.key) return
+        const map={staff:'medical_staff',oncall:'oncall_schedule',rotations:'resident_rotations',units:'training_units',studies:'clinical_trials',projects:'innovation_projects',lines:'research_hub'}
+        const target=map[source.key]; if(!target) return
+        activity45Close(); switchView(target)
+      }
+      const activity45AskGrounded = () => {
+        const model=activity45.model, summary=activity45.summary
+        if(!model||!summary) return
+        const ctx={type:'staff',id:model.person.id||activity45.personId,name:model.person.name,activityStart:model.start,activityEnd:model.end,activitySnapshot:{summary:{...summary},events:model.events.slice(0,80),studies:model.studies.slice(0,40),projects:model.projects.slice(0,40),lines:model.lines.slice(0,40),supervision:(model.supervision||[]).slice(0,40),sources:model.sources.map(x=>({key:x.key,label:x.label,state:x.state,matchCount:x.matchCount}))}}
+        const text=`Portfolio Intelligence context loaded for ${model.person.name}, ${activity45PrettyDate(model.start)} — ${activity45PrettyDate(model.end)}. ${summary.narrative||''}`
+        activity45Close()
+        askBar.subject=ctx; askBar.context=ctx; askBar.open=true; askBar.view='conversation'; askBar.query=''
+        askBar.turns.push(Vue.reactive({q:'',text,chips:[{label:ctx.name,id:ctx.id}],actions:[],sources:ctx.activitySnapshot.sources.filter(x=>x.state==='ready').map(x=>x.key),followups:[{label:'On-call in this period',q:`${ctx.name} on call between ${ctx.activityStart} and ${ctx.activityEnd}`},{label:'Rotations in this period',q:`${ctx.name} rotations between ${ctx.activityStart} and ${ctx.activityEnd}`},{label:'Research involvement',q:`${ctx.name} research activity`}],confidence:summary.status==='verified'?'high':'medium',asOf:askBarNow(),streaming:false}))
+        askBarRefreshRecords(); Vue.nextTick(()=>document.querySelector('.askbar-input input')?.focus())
+      }
       const activity45SetView = view => {
         if(!['overview','timeline','portfolio','sources','document'].includes(view)) return
         activity45.view=view
@@ -16885,7 +16924,7 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(()=>currentUser.value?.id,(id,old)=>{ if(id!==old && activity45.open) activity45Close() })
 
         return {
-          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn,
+          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45PeriodPresets, activity45ApplyPreset, activity45ToggleSection, activity45SelectedCount, activity45TimelineGroups, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45OpenSource, activity45AskGrounded, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn,
           // Existing returns
           entry, entryBusy, backToSignIn, validateEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,

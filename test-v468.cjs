@@ -16,7 +16,7 @@ const arch = fs.readFileSync('GROUNDED-ARCHITECTURE.md','utf8')
 
 const tests = [
   ['V46.8 build and core load order', () => {
-    assert(/neumDesk · V46\.(8|9|10|11|12|13)/.test(html))
+    assert(/neumDesk · V46\.(8|9|10|11|12|13|14)/.test(html))
     const coreSrc=(html.match(/grounded-core\.js\?v=([^"']+)/)||[])[0]
     const appSrc=(html.match(/app\.js\?v=([^"']+)/)||[])[0]
     assert(coreSrc && appSrc)

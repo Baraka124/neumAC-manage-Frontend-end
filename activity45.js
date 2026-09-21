@@ -1,4 +1,4 @@
-/* neumDesk V45. Pure record projection and self-contained activity document. */
+/* neumDesk V46.14. Deterministic Portfolio Intelligence projection + formal document renderer. */
 (function (root, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -27,7 +27,7 @@
     {key:'staff',label:'Staff directory',module:'medical_staff',path:'/api/medical-staff?limit=500&employment_status=all'},
     {key:'oncall',label:'On-call duties',module:'oncall_schedule',path:'/api/oncall'},
     {key:'rotations',label:'Rotations',module:'resident_rotations',path:'/api/rotations?limit=500'},
-    {key:'units',label:'Training units',module:'resident_rotations',path:'/api/training-units'},
+    {key:'units',label:'Clinical units',module:'resident_rotations',path:'/api/training-units'},
     {key:'studies',label:'Research studies',module:'clinical_trials',path:'/api/clinical-trials?limit=500'},
     {key:'projects',label:'Innovation projects',module:'innovation_projects',path:'/api/innovation-projects?limit=500'},
     {key:'lines',label:'Research programmes',module:'research_lines',path:'/api/research-lines'}
@@ -71,11 +71,12 @@
     if(!start||!end||end<start) throw Error('Choose a valid start and end date.');
     if((new Date(end)-new Date(start))/86400000>365) throw Error('Choose a period of up to 366 days.');
     const rows=k=>sources[k]?.state==='ready' ? sources[k].rows : [];
-    const model={person:{name:person.full_name||'Unnamed staff member',role:nice(person.staff_type)},start,end,generatedAt:new Date().toISOString(),events:[],studies:[],projects:[],lines:[],issues:[],sources:[],selected:{...selected}};
+    const model={person:{id:String(person.id),name:person.full_name||'Unnamed staff member',role:nice(person.staff_type)},start,end,generatedAt:new Date().toISOString(),events:[],studies:[],projects:[],lines:[],supervision:[],residentAssignments:[],issues:[],sources:[],selected:{...selected}};
     const includeKeys=['staff',...Object.keys(selected).filter(k=>selected[k]),...(selected.rotations?['units']:[])];
     model.sources=specs.filter(s=>includeKeys.includes(s.key)).map(s=>({key:s.key,label:s.label,state:sources[s.key]?.state||'unavailable',checkedAt:sources[s.key]?.checkedAt||null}));
-    const unitName=id=>rows('units').find(u=>same(u.id,id))?.unit_name || 'Training unit not available';
+    const unitName=id=>rows('units').find(u=>same(u.id,id))?.unit_name || 'Clinical unit not available';
     const lineName=id=>rows('lines').find(l=>same(l.id,id))?.name || rows('lines').find(l=>same(l.id,id))?.research_line_name || '';
+    const staffName=id=>rows('staff').find(x=>same(x.id,id))?.full_name || 'Staff member not available';
     function event(r,kind,title,role,s,e,detail) {
       const from=date(s),to=date(e)||from;
       if(!from||to<from) { model.issues.push(`${title}: missing or invalid dates; not placed on the calendar.`); return; }
@@ -92,7 +93,10 @@
         if(r.rotation_status==='terminated_early') { model.issues.push(`${unitName(r.training_unit_id)}: terminated rotation omitted from the calendar because an actual termination date is not established.`); return; }
         const s=r.start_date||r.rotation_start_date, e=r.end_date||r.rotation_end_date;
         if(!date(e)) { model.issues.push(`${unitName(r.training_unit_id)}: rotation end date missing; not placed on the calendar.`); return; }
-        event(r,'rotation',unitName(r.training_unit_id),roles.join(' · '),s,e,nice(r.rotation_status));
+        const unit=unitName(r.training_unit_id), status=nice(r.rotation_status);
+        event(r,'rotation',unit,roles.join(' · '),s,e,status);
+        if(same(r.resident_id,person.id)) model.residentAssignments.push({title:unit,role:'Resident',supervisor:staffName(r.supervising_attending_id),start:date(s),end:date(e),status,ref:String(r.id)});
+        if(same(r.supervising_attending_id,person.id)) model.supervision.push({title:unit,role:'Formal resident supervisor',resident:staffName(r.resident_id),start:date(s),end:date(e),status,ref:String(r.id)});
       }
     });
     function portfolio(key,leadField,leadRole) {
@@ -120,11 +124,48 @@
     }
     portfolio('studies','principal_investigator_id','Principal investigator');
     portfolio('projects','lead_investigator_id','Project lead');
-    if(selected.lines) model.lines=rows('lines').filter(r=>same(r.coordinator_id,person.id)).map(r=>({title:r.name||r.research_line_name||'Research programme',role:'Coordinator',status:r.active===false?'Inactive':'Recorded assignment',ref:String(r.id)}));
+    if(selected.lines) model.lines=rows('lines').filter(r=>same(r.coordinator_id,person.id)).map(r=>({title:r.name||r.research_line_name||'Research programme',role:'Coordinator',status:r.active===false?'Inactive':'Recorded assignment',timing:'Current recorded relationship; historical period membership is not established',ref:String(r.id)}));
     model.events.sort((a,b)=>a.start.localeCompare(b.start)||a.kind.localeCompare(b.kind)||a.title.localeCompare(b.title));
+    const matches={staff:1,oncall:model.events.filter(x=>x.kind==='oncall').length,rotations:model.events.filter(x=>x.kind==='rotation').length,units:new Set(model.events.filter(x=>x.kind==='rotation').map(x=>x.title)).size,studies:model.studies.length,projects:model.projects.length,lines:model.lines.length};
+    model.sources=model.sources.map(source=>({...source,matchCount:source.state==='ready'?(matches[source.key]||0):null}));
     model.issues=[...new Set(model.issues)];
     model.summary=summarize(model);
     return model;
+  }
+  function narrative(m) {
+    const events=Array.isArray(m?.events)?m.events:[];
+    const selected=m?.selected||{};
+    const sources=Object.fromEntries((m?.sources||[]).map(x=>[x.key,x]));
+    const parts=[];
+    const oncall=events.filter(x=>x.kind==='oncall').length;
+    const rotations=events.filter(x=>x.kind==='rotation');
+    const resident=rotations.filter(x=>String(x.role||'').includes('Resident')).length;
+    const supervised=rotations.filter(x=>String(x.role||'').includes('Supervisor')).length;
+    if(selected.oncall && sources.oncall?.state==='ready') parts.push(oncall?`${oncall} on-call dut${oncall===1?'y was':'ies were'} recorded in the selected period.`:'No on-call duty is recorded in the successfully retrieved schedule for the selected period.');
+    if(selected.rotations && sources.rotations?.state==='ready') {
+      if(rotations.length) {
+        const bits=[]; if(resident) bits.push(`${resident} resident assignment${resident===1?'':'s'}`); if(supervised) bits.push(`${supervised} supervised rotation${supervised===1?'':'s'}`);
+        parts.push(`${bits.join(' and ')} overlap the selected period.`);
+      } else parts.push('No resident or supervision rotation overlaps the selected period in the retrieved rotation records.');
+    }
+    const rel=[];
+    if(selected.studies && sources.studies?.state==='ready') rel.push(`${m.studies.length} linked stud${m.studies.length===1?'y':'ies'}`);
+    if(selected.projects && sources.projects?.state==='ready') rel.push(`${m.projects.length} innovation project${m.projects.length===1?'':'s'}`);
+    if(selected.lines && sources.lines?.state==='ready') rel.push(`${m.lines.length} programme coordination role${m.lines.length===1?'':'s'}`);
+    if(rel.length) parts.push(`The portfolio view establishes ${rel.join(', ')} from explicit recorded relationships.`);
+    const degraded=(m?.sources||[]).filter(x=>x.state!=='ready');
+    if(degraded.length) parts.push(`${degraded.length} included source${degraded.length===1?' was':'s were'} not fully available, so this snapshot must be read as partial.`);
+    return parts.join(' ');
+  }
+  function timelineGroups(m) {
+    const events=Array.isArray(m?.events)?m.events:[];
+    const groups=[]; const by=new Map();
+    for(const item of events) {
+      const key=String(item.start||'').slice(0,7)||'undated';
+      if(!by.has(key)) { const g={key,label:key==='undated'?'Undated':new Date(key+'-01T00:00:00Z').toLocaleDateString('en-GB',{month:'long',year:'numeric',timeZone:'UTC'}),events:[]}; by.set(key,g); groups.push(g); }
+      by.get(key).events.push(item);
+    }
+    return groups;
   }
   function summarize(m) {
     const events=Array.isArray(m?.events)?m.events:[];
@@ -132,22 +173,24 @@
     const ready=sources.filter(x=>x.state==='ready').length;
     const degraded=sources.filter(x=>x.state!=='ready');
     const rotations=events.filter(x=>x.kind==='rotation');
-    return {
+    const summary={
       oncall:events.filter(x=>x.kind==='oncall').length,
       rotations:rotations.length,
       residentRotations:rotations.filter(x=>String(x.role||'').includes('Resident')).length,
       supervisedRotations:rotations.filter(x=>String(x.role||'').includes('Supervisor')).length,
+      supervision:Array.isArray(m?.supervision)?m.supervision.length:0,
+      residentAssignments:Array.isArray(m?.residentAssignments)?m.residentAssignments.length:0,
       studies:Array.isArray(m?.studies)?m.studies.length:0,
       projects:Array.isArray(m?.projects)?m.projects.length:0,
       programmes:Array.isArray(m?.lines)?m.lines.length:0,
       milestones:events.filter(x=>x.kind==='study'||x.kind==='project').length,
-      sourceReady:ready,
-      sourceTotal:sources.length,
-      sourceCoverage:sources.length?Math.round((ready/sources.length)*100):0,
-      degradedSources:degraded.length,
-      issues:Array.isArray(m?.issues)?m.issues.length:0,
-      status:degraded.length?'partial':'verified'
+      datedActivity:events.filter(x=>x.kind==='oncall'||x.kind==='rotation'||x.kind==='study'||x.kind==='project').length,
+      portfolioRelationships:(m?.studies?.length||0)+(m?.projects?.length||0)+(m?.lines?.length||0)+(m?.supervision?.length||0),
+      sourceReady:ready,sourceTotal:sources.length,sourceCoverage:sources.length?Math.round((ready/sources.length)*100):0,
+      degradedSources:degraded.length,issues:Array.isArray(m?.issues)?m.issues.length:0,status:degraded.length?'partial':'verified'
     };
+    summary.narrative=narrative(m);
+    return summary;
   }
   function render(m,demo=false) {
     const e=escape;
@@ -173,11 +216,11 @@
     const portfolio=(key,title,no)=>!m.selected[key]?'':`<section><div class="section-title"><span>${no}</span><h2>${title}</h2></div><p class="muted">Linked roles and recorded status. Incomplete dates remain visible and are labelled.</p>${m[key].length?m[key].map(x=>`<article class="portfolio"><div><span class="tag">${e(x.status)}</span><h3>${e(x.title)}</h3><p>${e(x.role)}${x.line?' · '+e(x.line):''}</p></div><div class="record-meta"><p>${pretty(x.start)} — ${pretty(x.end)}</p><p>${e(x.timing)}</p><small>Record ${e(x.ref)}</small></div></article>`).join(''):`<p class="empty">${e(empty(key))}</p>`}</section>`;
     const unavailable=m.sources.filter(s=>s.state!=='ready');
     return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; base-uri 'none'; form-action 'none'"><title>${e(m.person.name)} · Activity brief</title><style>
-    :root{color-scheme:light;--ink:#183d38;--muted:#586b66;--line:#d9e1dc}*{box-sizing:border-box}body{margin:0;background:#edece7;color:var(--ink);font:14px/1.55 Arial,sans-serif}.paper{max-width:1120px;margin:28px auto;padding:52px 56px;background:#fffefa}header{border-top:5px solid var(--ink);padding-top:24px}.brand{display:flex;justify-content:space-between;font-size:12px;letter-spacing:2px;text-transform:uppercase}.eyebrow{margin:38px 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}h1{font:48px/1.1 Georgia,serif;letter-spacing:-1.3px;margin:0 0 12px;overflow-wrap:anywhere}h2{font:28px/1.2 Georgia,serif;margin:0}h3{font-size:16px;margin:0 0 12px}p{margin:6px 0 12px}.intro{font-size:17px}.period{display:flex;justify-content:space-between;gap:20px;border-block:1px solid var(--line);padding:18px 0;margin:25px 0}.period span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}.stats{display:flex;flex-wrap:wrap;gap:22px;margin:25px 0}.stat b{display:block;font:30px Georgia,serif}.stat span{font-size:12px;color:var(--muted)}section{margin-top:34px}.section-title{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}.section-title>span{font:12px Arial;color:var(--muted)}.muted,small{color:var(--muted)}.notice{border-left:3px solid #b58132;background:#f9f2e6;padding:14px 18px;margin:20px 0}.notice p:last-child{margin-bottom:0}.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;margin:12px 0}.legend span{padding:3px 7px;border-radius:3px}.oncall{background:#e6efec;border-left:2px solid #316b5b}.rotation{background:#edf0f5;border-left:2px solid #687c9c}.study{background:#f4ecdf;border-left:2px solid #b58132}.project{background:#efe9f0;border-left:2px solid #907394}table{border-collapse:collapse;width:100%;text-align:left}th{font-size:11px;letter-spacing:.3px;color:var(--muted);background:#f3f5f1}td,th{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}td{font-size:12px}thead{display:table-header-group}.calendar{table-layout:fixed}.calendar td{height:82px;padding:6px;border:1px solid var(--line)}.calendar th{padding:6px;text-align:center}.calendar .outside{background:#f5f5f1;color:#9baba4}.day{font-size:11px;font-weight:normal}.event{display:block;font-size:9px;line-height:1.3;padding:3px;margin-top:4px;overflow-wrap:anywhere}.event small{display:block;font-size:8px}.month{margin-top:24px}.portfolio{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;padding:20px 0;border-bottom:1px solid var(--line);break-inside:avoid}.portfolio h3{font:21px/1.3 Georgia,serif;margin:8px 0}.record-meta{font-size:12px}.tag{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}.empty{padding:20px;border:1px dashed var(--line);color:var(--muted)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:16px;font-size:11px;color:var(--muted)}li{margin-bottom:8px}.print-hint{font-size:12px;text-align:center;padding:14px;color:var(--muted)}.reference{font-size:10px;color:var(--muted)}
+    :root{color-scheme:light;--ink:#183d38;--muted:#586b66;--line:#d9e1dc}*{box-sizing:border-box}body{margin:0;background:#edece7;color:var(--ink);font:14px/1.55 Arial,sans-serif}.paper{max-width:1120px;margin:28px auto;padding:52px 56px;background:#fffefa}header{border-top:5px solid var(--ink);padding-top:24px}.brand{display:flex;justify-content:space-between;font-size:12px;letter-spacing:2px;text-transform:uppercase}.eyebrow{margin:38px 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}h1{font:48px/1.1 Georgia,serif;letter-spacing:-1.3px;margin:0 0 12px;overflow-wrap:anywhere}h2{font:28px/1.2 Georgia,serif;margin:0}h3{font-size:16px;margin:0 0 12px}p{margin:6px 0 12px}.intro{font-size:17px}.summary-copy{font-size:15px;line-height:1.7;max-width:900px}.period{display:flex;justify-content:space-between;gap:20px;border-block:1px solid var(--line);padding:18px 0;margin:25px 0}.period span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px}.stats{display:flex;flex-wrap:wrap;gap:22px;margin:25px 0}.stat b{display:block;font:30px Georgia,serif}.stat span{font-size:12px;color:var(--muted)}section{margin-top:34px}.section-title{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}.section-title>span{font:12px Arial;color:var(--muted)}.muted,small{color:var(--muted)}.notice{border-left:3px solid #b58132;background:#f9f2e6;padding:14px 18px;margin:20px 0}.notice p:last-child{margin-bottom:0}.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;margin:12px 0}.legend span{padding:3px 7px;border-radius:3px}.oncall{background:#e6efec;border-left:2px solid #316b5b}.rotation{background:#edf0f5;border-left:2px solid #687c9c}.study{background:#f4ecdf;border-left:2px solid #b58132}.project{background:#efe9f0;border-left:2px solid #907394}table{border-collapse:collapse;width:100%;text-align:left}th{font-size:11px;letter-spacing:.3px;color:var(--muted);background:#f3f5f1}td,th{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}td{font-size:12px}thead{display:table-header-group}.calendar{table-layout:fixed}.calendar td{height:82px;padding:6px;border:1px solid var(--line)}.calendar th{padding:6px;text-align:center}.calendar .outside{background:#f5f5f1;color:#9baba4}.day{font-size:11px;font-weight:normal}.event{display:block;font-size:9px;line-height:1.3;padding:3px;margin-top:4px;overflow-wrap:anywhere}.event small{display:block;font-size:8px}.month{margin-top:24px}.portfolio{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;padding:20px 0;border-bottom:1px solid var(--line);break-inside:avoid}.portfolio h3{font:21px/1.3 Georgia,serif;margin:8px 0}.record-meta{font-size:12px}.tag{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}.empty{padding:20px;border:1px dashed var(--line);color:var(--muted)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:16px;font-size:11px;color:var(--muted)}li{margin-bottom:8px}.print-hint{font-size:12px;text-align:center;padding:14px;color:var(--muted)}.reference{font-size:10px;color:var(--muted)}
     @media(max-width:650px){.paper{margin:0;padding:24px 16px}h1{font-size:36px}.period,.portfolio{display:block}.period>div+div{margin-top:12px}.calendar td{padding:3px}.event{font-size:8px}.table-wrap{overflow-x:auto}.table-wrap table{min-width:540px}}
     @page{size:A4 portrait;margin:14mm}@media print{body{background:white;font-size:11px}.paper{margin:0;padding:0;max-width:none}h1{font-size:36px}h2{font-size:24px}.print-hint{display:none}.calendar td{height:62px}.month{break-inside:avoid}tr{break-inside:avoid}h2,h3,.section-title{break-after:avoid}section{margin-top:25px}.event{font-size:8px}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}.table-wrap{overflow:visible}.table-wrap table{min-width:0}}
     </style></head><body><div class="print-hint">Use your browser’s Print → Save as PDF to share a PDF copy. This document also opens offline.</div><main class="paper"><header><div class="brand"><b>neumAC</b><span>neumDesk / Personal activity</span></div>${demo?'<div class="notice"><b>Illustrative example — fictional records, not a live staff report.</b></div>':''}<p class="eyebrow">Calendar & professional portfolio</p><h1>${e(m.person.name)}</h1><p class="intro">${e(m.person.role)}</p><div class="period"><div><span>Reporting period</span>${pretty(m.start)} — ${pretty(m.end)}</div><div><span>Snapshot generated (UTC)</span>${e(m.generatedAt.replace('T',' ').slice(0,16))}</div></div></header>
-    <p>A consolidated view of recorded duties, training and linked research activity for the selected period.</p><div class="stats">${stat('oncall',m.events.filter(x=>x.kind==='oncall').length,'Recorded duties')}${stat('rotations',m.events.filter(x=>x.kind==='rotation').length,'Rotation assignments')}${stat('studies',m.studies.length,'Linked studies')}${stat('projects',m.projects.length,'Innovation projects')}</div>
+    <p class="summary-copy">${e((m.summary||summarize(m)).narrative||'A consolidated view of recorded duties, training and explicitly linked professional activity for the selected period.')}</p><div class="stats">${stat('oncall',m.events.filter(x=>x.kind==='oncall').length,'Recorded duties')}${stat('rotations',m.events.filter(x=>x.kind==='rotation').length,'Rotation assignments')}${stat('studies',m.studies.length,'Linked studies')}${stat('projects',m.projects.length,'Innovation projects')}</div>
     ${unavailable.length?`<div class="notice"><b>Partial view</b><p>${unavailable.map(s=>e(s.label)+': '+e(s.state)).join(' · ')}. Missing sources are not evidence of no activity.</p></div>`:''}
     <section><div class="section-title"><span>01</span><h2>Calendar</h2></div><p class="muted">Blank dates mean no dated activities appear in the included records; they do not establish availability. Rotation spans indicate an assignment, not daily attendance. Milestones belong to a linked study or project.</p><div class="legend"><span class="oncall">On-call</span><span class="rotation">Rotation</span><span class="study">Study milestone</span><span class="project">Innovation milestone</span></div>${months}</section>
     <section><div class="section-title"><span>02</span><h2>Activity agenda</h2></div>${m.events.length?table(['Date / period','Activity','Recorded role','Detail / source'],m.events.map(x=>`<tr><td>${pretty(x.start)}${x.end!==x.start?' – '+pretty(x.end):''}</td><td><b>${e(x.title)}</b></td><td>${e(x.role)}</td><td>${e(x.detail)}<br><span class="reference">${e(x.source)} · Record ${e(x.ref)}</span></td></tr>`).join('')):'<p class="empty">No dated activities found in the included records. Review source coverage below.</p>'}</section>
@@ -185,5 +228,5 @@
     ${m.selected.lines?`<section><div class="section-title"><span>05</span><h2>Programme coordination</h2></div><p class="muted">Current recorded coordinator assignments; historical period membership is not established.</p>${m.lines.length?m.lines.map(x=>`<article class="portfolio"><div><h3>${e(x.title)}</h3><p>${e(x.role)}</p></div><div>${e(x.status)}<br><small>Record ${e(x.ref)}</small></div></article>`).join(''):`<p class="empty">${e(empty('lines'))}</p>`}</section>`:''}
     <section><div class="section-title"><span>06</span><h2>Scope & source coverage</h2></div><p>Explicit staff identifiers establish involvement. This is a record snapshot, not a complete account of workload or a confirmation of availability. Leave reasons, contact details and free-text staff notes are excluded.</p>${table(['Source','Snapshot state','Checked (UTC)'],m.sources.map(s=>`<tr><td>${e(s.label)}</td><td>${s.state==='ready'?'Retrieved':e(s.state)}</td><td>${s.checkedAt?e(s.checkedAt.replace('T',' ').slice(0,16)):'—'}</td></tr>`).join(''))}${m.issues.length?'<div class="notice"><b>Information to review</b><ul>'+m.issues.map(x=>'<li>'+e(x)+'</li>').join('')+'</ul></div>':''}</section><footer>neumAC · neumDesk · Personal activity brief<br>Prepared for deliberate review. Check the selected sections before sharing. Changes made after this snapshot are not reflected here.</footer></main></body></html>`;
   }
-  return {escape,date,addDay,pretty,same,list,specs,fetchRows,load,build,summarize,render};
+  return {escape,date,addDay,pretty,same,list,specs,fetchRows,load,build,narrative,timelineGroups,summarize,render};
 });

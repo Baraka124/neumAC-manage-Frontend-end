@@ -1,0 +1,41 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('index.html','utf8');
+const app=fs.readFileSync('app.js','utf8');
+const activity=fs.readFileSync('activity45.js','utf8');
+const css=fs.readFileSync('activity45-ui.css','utf8');
+const dept=fs.readFileSync('DepartmentOS_Architecture.md','utf8');
+const grounded=fs.readFileSync('GROUNDED-ARCHITECTURE.md','utf8');
+const checks=[]; const test=(n,fn)=>checks.push([n,fn]);
+function loadActivity(){const sandbox={module:{exports:{}},exports:{},globalThis:{},Date,Intl,Map,Set};vm.runInNewContext(activity,sandbox);return sandbox.module.exports}
+const A=loadActivity();
+
+test('V46.14 cache and visible build markers',()=>{assert(html.includes('neumDesk · V46.14'));assert(html.includes('activity45-ui.css?v=46.14'));assert(html.includes('activity45.js?v=46.14'));assert(html.includes('app.js?v=46.14-personal-activity-workspace'))});
+test('A full-screen workspace shell replaces export-first composition',()=>{assert(html.includes('activity45-workspace-shell'));assert(css.includes('width:100vw;height:100dvh'));assert(html.includes('Activity scope'));assert(html.includes('Portfolio Intelligence'))});
+test('A period presets include month previous three-month ytd custom',()=>['This month','Previous month','Last 3 months','Year to date','Custom'].forEach(x=>assert(app.includes(x))));
+test('A scope uses compact semantic areas',()=>['On-call','Rotations','Research','Innovation','Programme roles'].forEach(x=>assert(html.includes(x))));
+test('B deterministic narrative helper is part of model summary',()=>{assert.equal(typeof A.narrative,'function');assert(activity.includes('summary.narrative=narrative(m)'));assert(html.includes('activity45.summary?.narrative'))});
+test('B overview separates dated record and professional portfolio',()=>{assert(html.includes('Recorded in this period'));assert(html.includes('Dated activity only'));assert(html.includes('Professional portfolio'));assert(html.includes('Explicit relationships'))});
+test('C timeline groups events by month',()=>{assert.equal(typeof A.timelineGroups,'function');const g=A.timelineGroups({events:[{start:'2026-09-01',kind:'oncall'},{start:'2026-10-02',kind:'rotation'}]});assert.equal(g.length,2);assert.equal(g[0].key,'2026-09');assert.equal(g[1].key,'2026-10');assert(html.includes('activity45TimelineGroups()'))});
+test('D model keeps resident assignment and supervision distinct',()=>{assert(activity.includes('residentAssignments:[]'));assert(activity.includes('supervision:[]'));assert(html.includes('Resident assignments'));assert(html.includes('Residents supervised'))});
+test('D formal supervision is rotation-derived not unit-attending inference',()=>{assert(activity.includes("same(r.supervising_attending_id,person.id)"));assert(activity.includes("role:'Formal resident supervisor'"));assert(!activity.includes('default supervisor'))});
+test('E source match counts are model data',()=>{assert(activity.includes('matchCount:'));assert(html.includes('source.matchCount'));assert(html.includes('Open source ↗'))});
+test('E unavailable source truthfulness remains explicit',()=>{assert(html.includes('cannot establish whether activity exists there'));assert(html.includes('never interpreted as zero activity'))});
+test('F document is generated from same model',()=>{assert(app.includes('activity45.html=Activity45.render(model)'));assert(html.includes('Generated from exactly the same verified snapshot'));assert(activity.includes('summary-copy'))});
+test('F printable renderer uses deterministic narrative',()=>assert(activity.includes('(m.summary||summarize(m)).narrative')));
+test('G staff entry auto-builds contextual snapshot',()=>assert(app.includes("if(personId && activity45.people.some(p=>Activity45.same(p.id,personId))) await activity45Generate()")));
+test('G Grounded handoff carries person period structured snapshot',()=>{['activityStart:model.start','activityEnd:model.end','activitySnapshot:{summary'].forEach(x=>assert(app.includes(x)));assert(html.includes('Ask Grounded about this view'))});
+test('G source navigation maps reporting evidence back to modules',()=>{assert(app.includes("oncall:'oncall_schedule'"));assert(app.includes("rotations:'resident_rotations'"));assert(app.includes("studies:'clinical_trials'"))});
+test('H crisp visual system has no backdrop blur or glass haze',()=>{assert(!/backdrop-filter\s*:/.test(css));assert(css.includes('background:#0a3549'));assert(css.includes('background:#fff'));assert(css.includes('border-right:1px solid #dbe5e2'))});
+test('H responsive workspace keeps mobile single-column behavior',()=>{assert(css.includes('@media(max-width:820px)'));assert(css.includes('.activity45-layout{display:block;overflow:auto}'))});
+test('privacy boundary remains explicit',()=>{assert(html.includes('Private notes, contact details and leave reasons are excluded'));assert(activity.includes('contact details'))});
+test('clinical unit label is user-facing Clinical units',()=>assert(activity.includes("label:'Clinical units'")));
+test('DepartmentOS living ledger advances to V46.14',()=>{assert(dept.includes('Architecture v1.7 · Implementation checkpoint: V46.14'));assert(dept.includes('A → H completed in this checkpoint'));assert(dept.includes('operational UI consistency'))});
+test('Grounded architecture records contextual integration honestly',()=>{assert(grounded.includes('V46.14 — Portfolio Intelligence contextual integration'));assert(grounded.includes('stops short of claiming a universal free-form Personal Activity READ adapter'))});
+test('Activity45 build remains executable with rich summary helpers',()=>{assert.equal(typeof A.build,'function');assert.equal(typeof A.summarize,'function');assert.equal(typeof A.render,'function')});
+test('period and relationship semantics survive a synthetic build',()=>{
+ const sources={staff:{state:'ready',rows:[{id:'r1',full_name:'Resident One',staff_type:'resident'},{id:'a1',full_name:'Attending One',staff_type:'attending'}]},oncall:{state:'ready',rows:[]},rotations:{state:'ready',rows:[{id:'rot1',resident_id:'r1',supervising_attending_id:'a1',training_unit_id:'u1',start_date:'2026-09-01',end_date:'2026-09-30',rotation_status:'active'}]},units:{state:'ready',rows:[{id:'u1',unit_name:'Severe Asthma'}]},studies:{state:'ready',rows:[]},projects:{state:'ready',rows:[]},lines:{state:'ready',rows:[]}};
+ const m=A.build(sources.staff.rows[0],'2026-09-01','2026-09-30',sources,{oncall:true,rotations:true,studies:true,projects:true,lines:true});
+ assert.equal(m.residentAssignments.length,1);assert.equal(m.supervision.length,0);assert.equal(m.summary.residentRotations,1);assert.equal(m.sources.find(x=>x.key==='rotations').matchCount,1);
+ const ms=A.build(sources.staff.rows[1],'2026-09-01','2026-09-30',sources,{oncall:true,rotations:true,studies:true,projects:true,lines:true});assert.equal(ms.supervision.length,1);assert.equal(ms.supervision[0].resident,'Resident One');
+});
+let passed=0;for(const [n,fn] of checks){try{fn();console.log('PASS',n);passed++}catch(e){console.error('FAIL',n);throw e}}console.log(`${passed} V46.14 Personal Activity A-H checks passed.`);

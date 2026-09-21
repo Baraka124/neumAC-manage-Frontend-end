@@ -359,3 +359,22 @@ Multi-unit creation remains sequential at the API layer; atomic batch rotation w
 Personal Activity is deliberately **not converted into an autonomous Grounded agent**. Its snapshot builder is deterministic and permission-scoped. The interactive Portfolio Intelligence UI and formal document are two clients of the same structured model.
 
 Grounded may later consume this reporting capability as a READ tool (for example, “summarize Marina’s recorded activity this month”), but it must receive the same source-health/provenance contract and must not reinterpret unavailable sources as no activity. The canonical Personal Activity model therefore becomes a candidate reusable structured output, not a parallel truth store.
+
+## V46.14 — Portfolio Intelligence contextual integration
+Personal Activity remains a deterministic reporting capability, not an autonomous agent. V46.14 adds a structured context handoff from the Portfolio Intelligence workspace into Grounded.
+
+The handoff contains:
+- selected staff identity;
+- exact reporting period;
+- structured summary metrics and deterministic narrative;
+- dated events;
+- research / innovation / programme relationships;
+- formal resident-supervision relationships;
+- source health and relevant-record counts.
+
+Grounded may use this context to continue a conversation, but the snapshot remains authoritative for the reporting period. Missing sources remain missing; Grounded must not reinterpret them as zero activity. The handoff is session context only and is discarded with the conversation context.
+
+V46.14 deliberately stops short of claiming a universal free-form Personal Activity READ adapter. Period-aware questions should migrate incrementally behind a semantic reporting tool with equivalence evals against the deterministic snapshot.
+
+**Product integration rule:** Personal Activity can be entered from Staff, Grounded or direct workspace actions, but every path must converge on the same snapshot builder and evidence contract.
+
