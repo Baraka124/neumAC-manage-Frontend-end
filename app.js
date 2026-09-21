@@ -3633,11 +3633,17 @@ document.addEventListener('DOMContentLoaded', () => {
         checkRotationAvailability()
       })
 
-      // Unit selection never auto-assigns a resident supervisor. Formal resident
-      // supervision belongs to the rotation / department, not to the clinical-unit
-      // staff link. The selected unit only triggers the capacity check.
+      // Auto-fill supervisor when unit is selected — reads supervisor_id from the unit
       watch(() => rotationModal.form.training_unit_id, (unitId) => {
         if (!unitId) return
+        const unit = trainingUnits.value.find(u => u.id === unitId)
+        if (unit && (unit.supervisor_id || unit.default_supervisor_id)) {
+          // Only auto-fill if supervisor is not already manually set
+          if (!rotationModal.form.supervising_attending_id) {
+            rotationModal.form.supervising_attending_id = unit.supervisor_id || unit.default_supervisor_id
+          }
+        }
+        // Trigger availability check when unit changes
         checkRotationAvailability()
       })
 
@@ -4645,6 +4651,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // deptPanelRotations is defined in the main setup after rotationOps loads
       // (rotations ref not available here at construction time)
 
+      // Get supervisor name for a unit
+      const getUnitSupervisorName = (unit) => {
+        if (!unit) return null
+        const supId = unit.supervisor_id || unit.default_supervisor_id
+        if (!supId) return null
+        return ((allStaffLookup?.value || []).find(s => s.id === supId) || medicalStaff.value.find(s => s.id === supId))?.full_name || null
+      }
+
       // Days remaining for a rotation
       const rotDaysLeft = (r) => {
         const diff = Math.ceil((new Date(r.end_date) - new Date()) / 86400000)
@@ -4659,7 +4673,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
         deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
         deptPanel, openDeptPanel, closeDeptPanel,
-        deptPanelAttending, deptPanelResidents, deptPanelUnits
+        deptPanelAttending, deptPanelResidents, deptPanelUnits,
+        getUnitSupervisorName
       }
     }
 
@@ -4721,9 +4736,9 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast('Error', e?.message || 'Failed to remove', 'error')
         }
       }
-      const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 2, unit_status: 'active', unit_type: 'clinical_unit', unit_description: '', specialty: '', location_building: '', location_floor: '' } })
+      const trainingUnitModal = reactive({ show: false, mode: 'add', form: { unit_name: '', unit_code: '', department_id: '', maximum_residents: 2, unit_status: 'active', unit_type: 'clinical_unit', supervising_attending_id: '', unit_description: '', specialty: '', location_building: '', location_floor: '' } })
       const unitResidentsModal = reactive({ show: false, unit: null, rotations: [] })
-      const unitCliniciansModal = reactive({ show: false, unit: null, clinicians: [], allStaff: [] })
+      const unitCliniciansModal = reactive({ show: false, unit: null, clinicians: [], supervisorId: '', allStaff: [] })
 
       const filteredTrainingUnits = computed(() => {
         // Only show units linked to Neumología/Pulmonology — filter out rotation destinations
@@ -5066,22 +5081,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const capacityFit = !state.overCapacity && state.minFree > 0
             const partial = !capacityFit && state.hasAvailability && !state.overCapacity
             const teamCount = (unitStaffCache.value[unit.id] || []).length
-            const departmentSupervisorCount = (medicalStaff.value || []).filter(s =>
-              s.employment_status === 'active' && String(s.department_id || '') === String(unit.department_id || '') &&
-              !isResidentType(s.staff_type) && (s.is_resident_manager || s.can_supervise_residents)
-            ).length
+            const supervisorId = unit.supervising_attending_id || unit.supervisor_id || unit.default_supervisor_id || null
+            const supervisorReady = !!supervisorId
             const residentConflict = residentConflicts.length > 0
             const fullFit = capacityFit && !residentConflict
+            const operationalReady = fullFit && supervisorReady && teamCount > 0
             const fit = residentConflict ? 'resident-conflict' : capacityFit ? 'fit' : partial ? 'partial' : state.overCapacity ? 'conflict' : 'full'
             const conflictText = residentConflict
               ? `Resident already assigned ${residentConflicts.map(r=>`${getResidentShortName(r.resident_id)} · ${Utils.normalizeDate(r.start_date)}–${Utils.normalizeDate(r.end_date)}`).join('; ')}`
               : null
-            return { unit, state, fit, fullFit, capacityFit, partial, teamCount, departmentSupervisorCount, residentConflict, residentConflicts, conflictText, detail:conflictText || formatCapacityWindows(state) }
+            return { unit, state, fit, fullFit, capacityFit, partial, operationalReady, teamCount, supervisorReady, residentConflict, residentConflicts, conflictText, detail:conflictText || formatCapacityWindows(state) }
           })
           .filter(r => !placementAdvisor.onlyFullFit || r.fullFit)
           .sort((a,b) => {
             const rank={fit:0,partial:1,full:2,conflict:3,'resident-conflict':4}
-            return (rank[a.fit]-rank[b.fit]) || (b.state.minFree-a.state.minFree) || (a.unit.unit_name||'').localeCompare(b.unit.unit_name||'')
+            return (Number(b.operationalReady)-Number(a.operationalReady)) || (rank[a.fit]-rank[b.fit]) || (b.state.minFree-a.state.minFree) || (a.unit.unit_name||'').localeCompare(b.unit.unit_name||'')
           })
       })
 
@@ -5287,8 +5301,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (state.hasAvailability) {
             const maxFree = state.segments?.length ? Math.max(...state.segments.map(seg=>seg.free)) : state.capacity
             return {
-              label:d.toLocaleDateString('en-GB',{month:'long',year:'numeric'}),
-              shortLabel:d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}),
+              label:d.toLocaleDateString('es-ES',{month:'long',year:'numeric'}),
+              shortLabel:d.toLocaleDateString('es-ES',{month:'short',year:'2-digit'}),
               date:_unitIso(d), monthsAway:i, freeSlots:maxFree,
               guaranteedFreeSlots:state.minFree, detail:formatCapacityWindows(state), status:state.status
             }
@@ -5363,12 +5377,12 @@ document.addEventListener('DOMContentLoaded', () => {
           unit_name: '', unit_code: '',
           department_id: opts.department_id || '',
           maximum_residents: 2, unit_status: 'active',
-          unit_type: 'clinical_unit',
+          unit_type: 'clinical_unit', supervising_attending_id: '',
           unit_description: '', specialty: '', location_building: '', location_floor: ''
         })
         trainingUnitModal.show = true
       }
-      const editTrainingUnit = (u) => { const { supervisor_id, default_supervisor_id, supervising_attending_id, ...unitFields } = u || {}; trainingUnitModal.mode = 'edit'; trainingUnitModal.form = { ...unitFields }; trainingUnitModal.show = true }
+      const editTrainingUnit = (u) => { trainingUnitModal.mode = 'edit'; trainingUnitModal.form = { ...u }; trainingUnitModal.show = true }
 
       const deleteTrainingUnit = (unit) => {
         const activeRotations = rotations.value.filter(r =>
@@ -5410,6 +5424,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Pre-populate from unitStaffCache (the new source of truth)
         const cachedStaff = unitStaffCache.value[unit.id] || []
         unitCliniciansModal.clinicians = cachedStaff.map(m => m.staff?.id).filter(Boolean)
+        unitCliniciansModal.supervisorId = unit.supervisor_id || unit.supervising_attending_id || ''
         // Filter to same-department attendings/fellows only
         // If unit has a department_id, only show staff from that department
         const deptFilter = unit.department_id
@@ -5434,12 +5449,13 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast('No Units', 'No active units in this department', 'warning')
           return
         }
-        // Prefer a unit this attending is already linked to; otherwise start with the first unit.
-        const currentUnit = deptUnits.find(u => (unitStaffCache.value[u.id] || []).some(m => String(m.staff?.id) === String(staff.id)))
+        // If attending already supervises a unit, open that unit's clinicians modal
+        const currentUnit = deptUnits.find(u => u.supervisor_id === staff.id)
         const targetUnit = currentUnit || deptUnits[0]
         // Pre-select this attending
         unitCliniciansModal.unit = targetUnit
         unitCliniciansModal.clinicians = (unitStaffCache.value[targetUnit.id] || []).map(m => m.staff?.id).filter(Boolean)
+        unitCliniciansModal.supervisorId = staff.id  // pre-select this attending
         const deptFilter = targetUnit.department_id
           ? s => s.department_id === targetUnit.department_id
           : () => true
@@ -5456,31 +5472,52 @@ document.addEventListener('DOMContentLoaded', () => {
         const u = unitCliniciansModal.unit
         if (!u?.id) { showToast('Error', 'No unit selected', 'error'); return }
         try {
-          // Unit staff is a structural link: which attending physicians work in this
-          // clinical unit. It does NOT assign formal resident supervision.
+          // 1. Update the unit's designated supervisor (backward compat field)
+          const payload = {
+            unit_name: u.unit_name, unit_code: u.unit_code, department_id: u.department_id,
+            maximum_residents: u.maximum_residents || 5, unit_status: u.unit_status || 'active',
+          }
+          if (unitCliniciansModal.supervisorId) payload.supervising_attending_id = unitCliniciansModal.supervisorId
+          if (u.specialty)         payload.specialty         = u.specialty
+          if (u.location_building) payload.location_building = u.location_building
+          if (u.location_floor)    payload.location_floor    = u.location_floor
+          await API.updateTrainingUnit(u.id, payload)
+
+          // 2. Sync clinical team to unit_staff table
           const selectedIds  = unitCliniciansModal.clinicians || []
           const currentStaff = unitStaffCache.value[u.id] || []
           const currentIds   = currentStaff.map(m => m.staff?.id).filter(Boolean)
 
+          // Add newly selected clinicians
           const toAdd = selectedIds.filter(id => !currentIds.includes(id))
           await Promise.all(toAdd.map(staffId =>
             API.request(`/api/training-units/${u.id}/staff`, {
-              method: 'POST', body: JSON.stringify({ staff_id: staffId, role: 'primary' })
-            }).catch(err => { if (err?.status !== 409) throw err; return null })
+              method: 'POST',
+              body: JSON.stringify({ staff_id: staffId, role: staffId === unitCliniciansModal.supervisorId ? 'primary' : 'secondary' })
+            }).catch(() => null)  // ignore 409 duplicates
           ))
 
+          // Remove deselected clinicians
           const toRemove = currentIds.filter(id => !selectedIds.includes(id))
           await Promise.all(toRemove.map(staffId =>
-            API.request(`/api/training-units/${u.id}/staff/${staffId}`, { method: 'DELETE' })
+            API.request(`/api/training-units/${u.id}/staff/${staffId}`, { method: 'DELETE' }).catch(() => null)
           ))
 
-          await loadUnitStaff(u.id, { force:true })
+          // Refresh cache for this unit
+          await loadUnitStaff(u.id)
+
+          // Update local trainingUnits record
+          const idx = trainingUnits.value.findIndex(x => x.id === u.id)
+          if (idx !== -1) {
+            trainingUnits.value[idx] = {
+              ...trainingUnits.value[idx],
+              supervising_attending_id: unitCliniciansModal.supervisorId || null,
+              supervisor_id: unitCliniciansModal.supervisorId || null,
+            }
+          }
           unitCliniciansModal.show = false
-          showToast('Saved', `Attending links updated · ${selectedIds.length} physician${selectedIds.length !== 1 ? 's' : ''}`, 'success')
-        } catch(e) {
-          showToast('Error', e?.message || 'Failed to save attending links', 'error')
-          try { await loadUnitStaff(u.id, { force:true }) } catch {}
-        }
+          showToast('Saved', `Clinical team updated · ${selectedIds.length} clinician${selectedIds.length !== 1 ? 's' : ''}`, 'success')
+        } catch(e) { showToast('Error', e?.message || 'Failed to save unit staff', 'error') }
       }
 
       const viewUnitResidents = (unit, allRotations) => {
@@ -5512,6 +5549,8 @@ document.addEventListener('DOMContentLoaded', () => {
             specialty: f.specialty || '',
             location_building: f.location_building || '',
             location_floor: f.location_floor || '',
+            supervisor_id: f.supervising_attending_id || null,
+            supervising_attending_id: f.supervising_attending_id || null,
           }
           if (trainingUnitModal.mode === 'add') { trainingUnits.value.unshift(await API.createTrainingUnit(data)); showToast('Success', 'Training unit created', 'success') }
           else { const result = await API.updateTrainingUnit(f.id, data); const idx = trainingUnits.value.findIndex(u => u.id === result.id); if (idx !== -1) trainingUnits.value[idx] = result; showToast('Success', 'Training unit updated', 'success') }
@@ -7461,15 +7500,6 @@ document.addEventListener('DOMContentLoaded', () => {
           unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount
         } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, medicalStaff, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
-        // Structural Clinical Unit membership comes from unit_staff, not legacy supervisor fields.
-        const getStaffLinkedClinicalUnits = (staffId, departmentId = null) => {
-          if (!staffId) return []
-          return (trainingUnits.value || []).filter(u =>
-            (!departmentId || u.department_id === departmentId) &&
-            (unitStaffCache.value[u.id] || []).some(m => String(m.staff?.id) === String(staffId))
-          )
-        }
-
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
         const openPlacementRotation = (unit) => {
@@ -7490,7 +7520,8 @@ document.addEventListener('DOMContentLoaded', () => {
           loadDepartments, showAddDepartmentModal, editDepartment, saveDepartment,
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
           deptPanel, openDeptPanel, closeDeptPanel,
-          deptPanelAttending, deptPanelResidents, deptPanelUnits } = useDepartments({
+          deptPanelAttending, deptPanelResidents, deptPanelUnits,
+          getUnitSupervisorName } = useDepartments({
           showToast, showConfirmation, medicalStaff, trainingUnits, rotations
         })
 
@@ -7607,7 +7638,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (trainingUnitView.value === 'weekly') {
             const days=clinicalUnitWeeklyTeamGrid.value.days || []
             const a=days[0]?.date, b=days[6]?.date
-            return a && b ? `${a.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${b.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}` : 'Attending-physician context'
+            return a && b ? `${a.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${b.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}` : 'Clinical team readiness'
           }
           if (trainingUnitView.value === 'detail') return `${filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive').length} active clinical units`
           const months=getPlanningMonths()
@@ -7615,41 +7646,43 @@ document.addEventListener('DOMContentLoaded', () => {
           return a && b ? `${a.longLabel} – ${b.longLabel}` : 'Resident rotation planning'
         })
 
-        const clinicalUnitHeroModel = computed(() => {
-          const units=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive')
-          if (trainingUnitView.value === 'weekly') {
-            return { kicker:'Unit staff', title:clinicalUnitHeaderContext.value, meta:`Attending physicians linked to ${units.length} clinical unit${units.length===1?'':'s'} · recorded leave is contextual` }
-          }
-          if (trainingUnitView.value === 'detail') {
-            return { kicker:'Unit structure', title:`${units.length} clinical unit${units.length===1?'':'s'}`, meta:'Attending physicians · current residents · incoming rotations · resident capacity' }
-          }
-          return { kicker:'Resident rotations', title:clinicalUnitHeaderContext.value, meta:`Month-by-month resident capacity · ${units.length} active clinical unit${units.length===1?'':'s'}` }
-        })
-
         const clinicalUnitHeaderMetrics = computed(() => {
-          const units=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive')
-          const activeResidents=(rotations.value||[]).filter(r=>r.rotation_status==='active').length
-          const incoming=(rotations.value||[]).filter(r=>r.rotation_status==='scheduled').length
-          const uniqueAttendings=new Set(units.flatMap(u=>(unitStaffCache.value[u.id]||[]).map(m=>m.staff?.id).filter(Boolean))).size
-          const unitsLinked=units.filter(u=>(unitStaffCache.value[u.id]||[]).length>0).length
           if (trainingUnitView.value === 'weekly') {
             const grid=clinicalUnitWeeklyTeamGrid.value
             const todayIndex=Math.max(0,grid.days.findIndex(d=>d.isToday))
             const todayCells=grid.rows.map(r=>r.cells[todayIndex]).filter(Boolean)
+            const assigned=new Set(grid.rows.flatMap(r=>r.team.map(m=>m.staff?.id).filter(Boolean))).size
             return [
-              {label:'Linked attendings',value:uniqueAttendings,sub:'unique physicians',tone:'teal'},
-              {label:'Units with links',value:`${unitsLinked}/${units.length}`,sub:'structural staff links',tone:'plain'},
-              {label:'Recorded away today',value:todayCells.reduce((n,c)=>n+c.absent,0),sub:'across linked units',tone:'plain'},
-              {label:'Staff-link gaps',value:Math.max(0,units.length-unitsLinked),sub:'data setup only',tone:'plain'}
+              {label:'Clinical team',value:assigned,sub:'unique clinicians',tone:'teal'},
+              {label:'Available today',value:todayCells.reduce((n,c)=>n+c.present,0),sub:'recorded available',tone:'plain'},
+              {label:'Reduced cover',value:todayCells.filter(c=>c.warn||c.critical).length,sub:'units today',tone:todayCells.some(c=>c.warn||c.critical)?'amber':'plain'},
+              {label:'Teams to configure',value:clinicalUnitTeamSetupState.value.missingCount,sub:'units unassigned',tone:clinicalUnitTeamSetupState.value.missingCount?'amber':'plain'}
             ]
           }
+          if (trainingUnitView.value === 'detail') {
+            const units=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive')
+            const teamAssignments=units.reduce((n,u)=>n+(unitStaffCache.value[u.id]||[]).length,0)
+            const unsupervised=units.filter(u=>!(u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id)).length
+            const activeResidents=rotations.value.filter(r=>r.rotation_status==='active').length
+            return [
+              {label:'Active units',value:units.length,sub:'in directory',tone:'teal'},
+              {label:'Team assignments',value:teamAssignments,sub:'across units',tone:'plain'},
+              {label:'Residents now',value:activeResidents,sub:'active rotations',tone:'plain'},
+              {label:'No supervisor',value:unsupervised,sub:'needs review',tone:unsupervised?'amber':'plain'}
+            ]
+          }
+          // Keep the command header portfolio-level. The month-specific figures are
+          // deliberately kept in the planner summary below so we do not repeat them.
+          const units=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive')
           const today=Utils.normalizeDate(new Date())
+          const scheduled=(rotations.value||[]).filter(r=>r.rotation_status==='scheduled').length
+          const noTeam=units.filter(u=>!unitStaffErrors.value[u.id] && !(unitStaffCache.value[u.id]||[]).length).length
           const activeConflicts=units.filter(u=>getUnitCapacityWindow(u.id,today,today).overCapacity || !!getUnitOverlapWarning(u.id)).length
           return [
             {label:'Active units',value:units.length,sub:'clinical structure',tone:'teal'},
-            {label:'Current residents',value:activeResidents,sub:'active rotations',tone:'plain'},
-            {label:'Incoming residents',value:incoming,sub:'scheduled rotations',tone:'plain'},
-            {label:'Capacity conflicts',value:activeConflicts,sub:activeConflicts?'requires attention':'none recorded',tone:activeConflicts?'red':'plain'}
+            {label:'Incoming residents',value:scheduled,sub:'scheduled rotations',tone:'plain'},
+            {label:'Teams to configure',value:noTeam,sub:'units unassigned',tone:noTeam?'amber':'plain'},
+            {label:'Active conflicts',value:activeConflicts,sub:activeConflicts?'requires attention':'none recorded',tone:activeConflicts?'red':'plain'}
           ]
         })
 
@@ -7658,37 +7691,25 @@ document.addEventListener('DOMContentLoaded', () => {
           const firstMonth=getPlanningMonths(1)[0]
           const overRows = firstMonth ? clinicalUnitPlanningRows.value.filter(row=>row.months[0]?.state?.overCapacity) : []
           if (overRows.length) items.push({tone:'red',view:'timeline',text:`${overRows.length} clinical unit${overRows.length===1?'':'s'} exceed resident capacity in ${firstMonth.label}`})
-          const overlapUnits=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive' && !!getUnitOverlapWarning(u.id))
-          if (overlapUnits.length) items.push({tone:'red',view:'timeline',text:`${overlapUnits.length} clinical unit${overlapUnits.length===1?' has':'s have'} a recorded rotation overlap`})
+
           const grid=clinicalUnitWeeklyTeamGrid.value
           const todayIndex=grid.days.findIndex(d=>d.isToday)
-          const noCover=grid.rows.filter(row=>todayIndex>=0 && row.cells[todayIndex]?.critical && !row.cells[todayIndex]?.noTeam)
-          if (noCover.length) items.push({tone:'amber',view:'weekly',text:`${noCover.length} linked unit${noCover.length===1?' has':'s have'} all recorded attendings away today`})
+          const todayRows=grid.rows.map(row=>({row,cell:todayIndex>=0?row.cells[todayIndex]:null}))
+          const noTeam=todayRows.filter(x=>x.cell?.noTeam)
+          const noCover=todayRows.filter(x=>x.cell?.critical && !x.cell?.noTeam)
+          if (noCover.length) items.push({tone:'red',view:'weekly',text:`${noCover.length} clinical unit${noCover.length===1?' has':'s have'} no recorded clinical cover today`})
+          if (noTeam.length) items.push({tone:'amber',view:'weekly',text:`${noTeam.length} clinical unit${noTeam.length===1?' has':'s have'} no clinical team assigned`})
+
+          const noSupervisor=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive' && !(u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id))
+          if (noSupervisor.length) items.push({tone:'amber',view:'detail',text:`${noSupervisor.length} clinical unit${noSupervisor.length===1?' needs':'s need'} a default supervisor`})
           return items.slice(0,4)
         })
 
-        const clinicalUnitDataSetupItems = computed(() => {
-          const items=[]
-          const units=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive')
-          const missing=units.filter(u=>!unitStaffErrors.value[u.id] && !(unitStaffCache.value[u.id]||[]).length)
-          const failed=units.filter(u=>!!unitStaffErrors.value[u.id])
-          if (missing.length) items.push({view:'weekly',text:`${missing.length} clinical unit${missing.length===1?' has':'s have'} no attending physicians linked`})
-          if (failed.length) items.push({view:'weekly',text:`${failed.length} unit staff-link load${failed.length===1?'':'s'} failed`})
-          return items
-        })
 
 
         // ── V46.6 canonical unit operational record ──────────────────────────
         // One derived object feeds the drawer and contextual Grounded view so capacity,
         // team readiness and attention states cannot drift apart across surfaces.
-        const getDepartmentResidentSupervisors = (departmentId) => {
-          if (!departmentId) return []
-          return (medicalStaff.value || []).filter(s =>
-            s.employment_status === 'active' && String(s.department_id || '') === String(departmentId) &&
-            !isResidentType(s.staff_type) && (s.is_resident_manager || s.can_supervise_residents)
-          ).slice().sort((a,b)=>Number(!!b.is_resident_manager)-Number(!!a.is_resident_manager) || (a.full_name||'').localeCompare(b.full_name||''))
-        }
-
         const unitDetailSnapshot = computed(() => {
           const unit = unitDetailDrawer.unit
           if (!unit?.id) return null
@@ -7705,19 +7726,20 @@ document.addEventListener('DOMContentLoaded', () => {
           const unitRots = getUnitRotations(unit.id)
           const active = unitRots.filter(r=>r.rotation_status==='active')
           const scheduled = unitRots.filter(r=>r.rotation_status==='scheduled')
-          const departmentSupervisors = getDepartmentResidentSupervisors(unit.department_id)
+          const supervisorId = unit.supervising_attending_id || unit.supervisor_id || unit.default_supervisor_id || null
+          const supervisor = (medicalStaff.value || []).find(s=>String(s.id)===String(supervisorId)) || null
           const currentCapacity = getUnitCapacityWindow(unit.id, today, today)
           const nextOpening = getNextFreeWindow(unit.id, today, 24)
           const alerts=[]
-          const dataNotes=[]
           if (currentCapacity.overCapacity) alerts.push({tone:'red',title:'Resident capacity exceeded',detail:`${currentCapacity.peak}/${currentCapacity.capacity} residents recorded today`})
           const overlap = getUnitOverlapWarning(unit.id)
           if (overlap) alerts.push({tone:'red',title:'Rotation overlap',detail:`Capacity conflict around ${Utils.formatDateShort(overlap.date)}`})
-          if (teamError) dataNotes.push({tone:'red',title:'Attending links unavailable',detail:'The unit staff links could not be loaded.'})
-          else if (!team.length) dataNotes.push({tone:'plain',title:'No attending physicians linked',detail:'Unit staff membership has not yet been recorded.'})
-          else if (!presentMembers.length) alerts.push({tone:'amber',title:'All linked attendings away today',detail:`${absentMembers.length} of ${team.length} linked attending physicians have recorded leave.`})
-          else if (absentMembers.length) alerts.push({tone:'plain',title:'Recorded leave today',detail:`${absentMembers.length} of ${team.length} linked attending physicians are away.`})
-          return { unit, team, teamError, absentMembers, presentMembers, active, scheduled, departmentSupervisors, currentCapacity, nextOpening, alerts, dataNotes }
+          if (!supervisorId) alerts.push({tone:'amber',title:'Supervisor not assigned',detail:'Resident placement needs a designated supervisor.'})
+          if (teamError) alerts.push({tone:'red',title:'Clinical team unavailable',detail:'The team roster could not be loaded.'})
+          else if (!team.length) alerts.push({tone:'amber',title:'No clinical team assigned',detail:'Unit membership has not been recorded.'})
+          else if (!presentMembers.length) alerts.push({tone:'red',title:'No recorded clinical cover today',detail:`${absentMembers.length} of ${team.length} assigned clinicians are absent.`})
+          else if (absentMembers.length) alerts.push({tone:'amber',title:'Reduced clinical team today',detail:`${presentMembers.length}/${team.length} assigned clinicians recorded available.`})
+          return { unit, team, teamError, absentMembers, presentMembers, active, scheduled, supervisorId, supervisor, currentCapacity, nextOpening, alerts }
         })
 
         const unitDetailCapacityMonths = computed(() => {
@@ -11518,13 +11540,15 @@ document.addEventListener('DOMContentLoaded', () => {
         trace: [],         // checks used to explain the answer after it settles
         turns: [],         // conversation history: [{ q, text, chips, actions, sources, followups, confidence, asOf, streaming }]
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
+        pendingOncall: null, // V46.9 multi-turn on-call action state; session-only, never authoritative data
+        pendingLeave: null,  // V46.10 multi-turn leave action state; session-only, never authoritative data
         snoozed: [],       // dismissed alert keys (#16)
         entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
-        coreTraceId: null, // V46.8 execution trace id (operational telemetry, never chain-of-thought)
+        coreTraceId: null, // V46.10 execution trace id (operational telemetry, never chain-of-thought)
         view: 'digest'     // 'digest' | 'conversation' | 'timeline' | 'trace' | 'teach'
       })
 
-      // V46.8 · Grounded architecture harness. This strengthens the existing Grounded
+      // V46.10 · Grounded architecture harness. This strengthens the existing Grounded
       // product without changing its user-facing identity. The core provides compact
       // context envelopes, permission-aware tool contracts, bounded execution, session
       // memory policy and operational traces. It never stores hidden reasoning.
@@ -11794,7 +11818,7 @@ document.addEventListener('DOMContentLoaded', () => {
         training_units: [
           { t: 'Units board',                        d: 'Units · at a glance',        icon: 'oncall',   intent: 'units_board' },
           { t: 'Which units are least used?',        d: 'Units · capacity',           icon: 'gap',      intent: 'unit_load', q: 'which units are least used' },
-          { t: 'Units without attending links',      d: 'Units · data setup',         icon: 'gap',      intent: 'unit_attending_links_gap' },
+          { t: 'Units without a supervisor',         d: 'Units · risk',               icon: 'gap',      intent: 'unit_supervisor_gap' },
           { t: 'Units by specialty',                 d: 'Units · grouped',            icon: 'oncall',   intent: 'unit_by_specialty', q: 'units by specialty' },
         ],
         oncall_schedule: [
@@ -11953,8 +11977,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 moduleContext = {
                   unitId:u.id, unitName:u.unit_name, unitCode:u.unit_code || null,
                   capacity:cap?.capacity ?? u.maximum_residents ?? null, occupiedToday:cap?.peak ?? null,
-                  minimumFreeToday:cap?.minFree ?? null, attendingPhysicians:(unitStaffCache.value[u.id] || []).length,
-                  departmentResidentSupervisors:getDepartmentResidentSupervisors(u.department_id).map(s=>({id:s.id,name:s.full_name})),
+                  minimumFreeToday:cap?.minFree ?? null, teamMembers:(unitStaffCache.value[u.id] || []).length,
                   nextOpening:next ? { start:next.start, end:next.end, label:next.label, free:next.minFree } : null
                 }
               }
@@ -12205,7 +12228,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarReset = () => {
         if (askBar.loading) return
         askBar.turns = []; askBar.query = ''; askBar.lastAsked = ''; askBar.entityMenu = null
-        askBar.subject = null; askBar.context = null
+        askBar.subject = null; askBar.context = null; askBar.pendingLeave = null; askBar.pendingOncall = null
         openAskBar()
       }
       const runSuggestion = (s) => {
@@ -12294,204 +12317,236 @@ document.addEventListener('DOMContentLoaded', () => {
       // absence_reason vacation|conference|sick_leave|training|personal|other.
       // ── §6 §7 §9 Leave-entry write flow: extract → (clarify reason) → propose → confirm → write ──
       const _reasonLabels = { vacation: 'vacation', conference: 'conference', sick_leave: 'sick leave', training: 'training', personal: 'personal', other: 'other' }
+      const askBarLeaveAmbiguityTurn = (asked, options, role, pending) => {
+        askBar.pendingLeave = { ...(pending||{}), awaiting: role === 'covering' ? 'covering' : 'subject', original: pending?.original || asked }
+        askBar.turns.push(Vue.reactive({
+          q: asked,
+          text: `I found more than one person matching that ${role === 'covering' ? 'covering clinician' : 'name'}. Which one did you mean?`,
+          chips: (options||[]).map(s=>({label:s.full_name,id:s.id,leaveClarifyIdentity:role})),
+          actions: [], sources: ['staff'], followups: [], confidence: 'low', isClarify:true,
+          asOf: askBarNow(), streaming:false
+        }))
+      }
+
       const askBarStartLeaveFlow = (asked) => {
         const ex = askBarExtractLeave(asked)
         askBar.view = 'conversation'
-        // Missing subject or dates → can't propose; ask plainly.
+        const basePending = { subject:ex.subject||null, reason:ex.reason, covering:ex.covering||null, start:ex.start, end:ex.end, type:ex.type, original:asked }
+        if (ex.subjectAmbiguous?.length) { askBarLeaveAmbiguityTurn(asked, ex.subjectAmbiguous, 'subject', basePending); return }
+        if (ex.coveringAmbiguous?.length) { askBarLeaveAmbiguityTurn(asked, ex.coveringAmbiguous, 'covering', basePending); return }
         if (!ex.subject) {
-          // remember we're mid-leave-request, waiting for a name
-          askBar.pendingLeave = { subject: null, reason: ex.reason, covering: ex.covering, start: ex.start, end: ex.end, type: ex.type, awaiting: 'subject' }
-          askBar.turns.push(Vue.reactive({ q: asked, text: "I couldn't tell who this is for. Try naming the person, e.g. \u201cput Marcos on leave next Thursday.\u201d", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+          askBar.pendingLeave = { ...basePending, awaiting: 'subject' }
+          askBar.turns.push(Vue.reactive({ q: asked, text: "I couldn't tell who this is for. Try naming the person, e.g. “put Marcos on leave next Thursday.”", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
           return
         }
         if (!ex.start) {
-          // remember the subject + reason; we're waiting for a date
-          askBar.pendingLeave = { subject: ex.subject, reason: ex.reason, covering: ex.covering, start: null, end: null, type: ex.type, awaiting: 'date' }
-          askBar.turns.push(Vue.reactive({ q: asked, text: `When is ${ex.subject.full_name} away? Give a day or range, e.g. \u201cnext Thursday and Friday.\u201d`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+          askBar.pendingLeave = { ...basePending, awaiting: 'date' }
+          askBar.turns.push(Vue.reactive({ q: asked, text: `When is ${ex.subject.full_name} away? Give a day or range, e.g. “next Thursday and Friday.”`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
           return
         }
-        // Reason missing → CLARIFY before proposing (never guess a clinical fact).
         if (!ex.reason) {
           const pending = { subject: ex.subject, covering: ex.covering, start: ex.start, end: ex.end, type: ex.type }
           askBar.turns.push(Vue.reactive({
-            q: asked,
-            text: `What type of leave is this for ${ex.subject.full_name}?`,
-            chips: [], actions: [], sources: [], followups: [], confidence: 'high',
+            q: asked, text: `What type of leave is this for ${ex.subject.full_name}?`, chips: [], actions: [], sources: [], followups: [], confidence: 'high',
             leaveClarify: pending,
             leaveReasons: [ ['vacation','Vacation'], ['sick_leave','Sick'], ['conference','Conference'], ['training','Training'], ['personal','Personal'] ],
             asOf: askBarNow(), streaming: false
           }))
           return
         }
-        askBarProposeLeave(ex)
+        askBarProposeLeave(ex, asked)
       }
 
-      // A reason chip was tapped on the clarify turn → now propose.
       const askBarPickLeaveReason = (pending, reason) => {
-        askBarProposeLeave({ subject: pending.subject, covering: pending.covering, start: pending.start, end: pending.end, type: pending.type, reason })
+        askBarProposeLeave({ subject: pending.subject, covering: pending.covering, start: pending.start, end: pending.end, type: pending.type, reason }, `Record ${pending.subject?.full_name||'leave'}`)
       }
 
-      // Build the structured PROPOSAL (§9) with inline on-call conflict check (§7).
-      const askBarProposeLeave = (ex) => { askBar.pendingLeave = null;
-        // Days
-        const s = new Date(ex.start), e = new Date(ex.end)
-        const days = Math.max(1, Math.round((e - s) / 86400000) + 1)
-        // On-call conflict: is the subject on duty on any day in the range?
-        const conflicts = (onCallSchedule.value || []).filter(o => {
-          if (o.primary_physician_id !== ex.subject.id) return false
-          const d = Utils.normalizeDate(o.duty_date)
-          return d >= ex.start && d <= ex.end
-        }).map(o => Utils.normalizeDate(o.duty_date))
+      // V46.10 · Build a structured leave proposal through the Grounded tool harness.
+      // Operational collisions are warnings; duplicate/overlapping leave and invalid
+      // identity/window conditions are hard blocks.
+      const askBarProposeLeave = (ex, asked='Record leave') => {
+        askBar.pendingLeave = null
+        const traceId = groundedStartExecutionTrace(asked,'record_leave')
+        let checked
+        try {
+          checked = groundedInvokeTool('leave.propose_absence',{
+            staffId:ex.subject.id,start:ex.start,end:ex.end,reason:ex.reason,type:ex.type,
+            coveringStaffId:ex.covering?.id||null
+          },{traceId})
+        } catch(err) {
+          groundedFinishExecutionTrace(traceId,{sources:['staff','leave records','on-call schedule','rotations'],confidence:'low'},'error',err,'record_leave')
+          askBar.turns.push(Vue.reactive({q:asked,text:`I couldn't prepare that leave change: ${err?.message||'validation failed'}.`,chips:[],actions:[],sources:['staff','leave records'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}))
+          return
+        }
         const fmt = (iso) => { try { return new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) } catch (e) { return iso } }
         const dateLabel = ex.start === ex.end ? fmt(ex.start) : `${fmt(ex.start)} – ${fmt(ex.end)}`
-        const proposal = {
-          kind: 'leave',
-          subject: { id: ex.subject.id, name: ex.subject.full_name },
-          reason: ex.reason, reasonLabel: _reasonLabels[ex.reason] || ex.reason,
-          type: ex.type,
-          start: ex.start, end: ex.end, days, dateLabel,
-          covering: ex.covering ? { id: ex.covering.id, name: ex.covering.full_name } : null,
-          conflicts,
-          impact: askBarEvaluatePersonUnavailable(ex.subject, ex.start, ex.end)
+        const blockLabel={staff_not_found:'Staff record not found',inactive_staff:'Staff member is inactive',invalid_date_window:'Invalid leave date range',overlapping_leave:'An existing leave record overlaps this period',covering_same_as_subject:'Covering clinician cannot be the person on leave',covering_staff_not_found:'Covering staff record not found',covering_staff_inactive:'Covering clinician is inactive'}
+        const warnings=[]
+        if(checked.onCallConflicts?.length) warnings.push(`${checked.onCallConflicts.length} on-call duty${checked.onCallConflicts.length===1?'':'ies'} overlap`)
+        if(checked.rotationConflicts?.length) warnings.push(`${checked.rotationConflicts.length} resident-supervision/rotation duty${checked.rotationConflicts.length===1?'':'ies'} overlap`)
+        if(checked.coveringConflicts?.length) warnings.push(`Covering clinician has ${checked.coveringConflicts.length} recorded conflict${checked.coveringConflicts.length===1?'':'s'}`)
+        const proposal={
+          kind:'leave',traceId,
+          subject:{id:ex.subject.id,name:ex.subject.full_name},
+          reason:ex.reason,reasonLabel:_reasonLabels[ex.reason]||ex.reason,type:ex.type,
+          start:ex.start,end:ex.end,days:checked.days,dateLabel,
+          covering:ex.covering?{id:ex.covering.id,name:ex.covering.full_name}:null,
+          conflicts:checked.onCallConflicts||[],rotationConflicts:checked.rotationConflicts||[],warnings,
+          blocked:(checked.blocked||[]).length>0,blockReasons:checked.blocked||[],blockReason:(checked.blocked||[]).map(r=>blockLabel[r]||r).join(' · '),
+          impact:askBarEvaluatePersonUnavailable(ex.subject,ex.start,ex.end)
         }
-        askBar.turns.push(Vue.reactive({
-          q: '', text: '', proposal, chips: [], actions: [], sources: ['staff', 'leave records', 'on-call schedule'],
-          followups: [], confidence: conflicts.length ? 'medium' : 'high', asOf: askBarNow(), streaming: false
-        }))
+        askBar.turns.push(Vue.reactive({q:'',text:'',proposal,chips:[],actions:[],sources:['staff','leave records','on-call schedule','rotations'],followups:[],confidence:proposal.blocked?'low':(warnings.length?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
       }
 
-      // §6 EXECUTE: confirm tapped → write through the existing knowledge-layer capability.
       const askBarConfirmLeave = async (proposal, turn) => {
-        turn.writing = true
-        const body = {
-          staff_member_id: proposal.subject.id,
-          absence_type: proposal.type,
-          absence_reason: proposal.reason,
-          start_date: proposal.start,
-          end_date: proposal.end,
-          coverage_arranged: !!proposal.covering,
-          covering_staff_id: proposal.covering ? proposal.covering.id : null,
-          coverage_notes: proposal.covering ? `Covered by ${proposal.covering.name}` : ''
-        }
+        if(proposal.blocked) return
+        turn.writing = true; turn.commitError=''
+        const traceId=proposal.traceId||turn.coreTraceId||null
         try {
-          const saved = await API.request('/api/absence-records', { method: 'POST', body })
-          turn.writing = false
-          turn.committed = true
-          // refresh local absence data so the rest of the app reflects it immediately
-          try { absenceOps.loadAbsences() } catch (e) {}
-          turn.commitText = `\u2713 Recorded: ${proposal.subject.name} \u2014 ${proposal.reasonLabel}, ${proposal.dateLabel}${proposal.covering ? `, covered by ${proposal.covering.name}` : ''}.`
-          askBarLog('change', { title:'Leave recorded', detail:`${proposal.subject.name} · ${proposal.reasonLabel} · ${proposal.dateLabel}`, kind:'leave', entityKeys:[`staff:${proposal.subject.id}`] })
-        } catch (err) {
-          turn.writing = false
-          turn.commitError = (err && err.message) ? err.message : 'Could not save. Check permissions or try again.'
+          if(traceId) GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:true,action:'record_leave'})
+          const out=await groundedInvokeTool('leave.commit_absence',{
+            staffId:proposal.subject.id,start:proposal.start,end:proposal.end,reason:proposal.reason,type:proposal.type,
+            coveringStaffId:proposal.covering?.id||null
+          },{traceId,confirmed:true})
+          turn.writing=false; turn.committed=true
+          try { await absenceOps.loadAbsences() } catch(e) {}
+          turn.commitText=`✓ Recorded: ${proposal.subject.name} — ${proposal.reasonLabel}, ${proposal.dateLabel}${proposal.covering?`, covered by ${proposal.covering.name}`:''}.`
+          askBarLog('change',{title:'Leave recorded',detail:`${proposal.subject.name} · ${proposal.reasonLabel} · ${proposal.dateLabel}`,kind:'leave',entityKeys:[`staff:${proposal.subject.id}`],_traceId:traceId})
+          if(askBar.coreTraceId===traceId) askBar.coreTraceId=null
+        } catch(err) {
+          turn.writing=false
+          const msg=err?.message||'Could not save. Check permissions or try again.'
+          turn.commitError=/overlap|changed|blocked|duplicate/i.test(msg)?`The leave state changed before confirmation. ${msg}`:msg
+          if(traceId){GroundedCore?.addTraceEvent(traceId,'action_failed',{action:'record_leave',error:msg}); groundedFinishExecutionTrace(traceId,{sources:['staff','leave records','on-call schedule','rotations'],confidence:'low'},'error',err,'record_leave')}
         }
       }
-      const askBarCancelLeave = (turn) => { turn.cancelled = true }
+      const askBarCancelLeave = (turn) => {
+        turn.cancelled=true
+        const traceId=turn?.proposal?.traceId||turn?.coreTraceId||null
+        if(traceId){GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:false,action:'record_leave'}); GroundedCore?.finishTrace(traceId,{status:'cancelled',intent:'record_leave',confidence:turn.confidence||'medium',sources:turn.sources||[],actionClass:'propose'}); if(askBar.coreTraceId===traceId) askBar.coreTraceId=null; groundedRefreshTraces()}
+      }
 
-      // ── §3 Extract an on-call assignment from natural language ──
+      // ── V46.9 · ON-CALL ACTION INTEGRITY ────────────────────────────────
+      // Identity is resolved with the write-safe resolver, then the Grounded tool
+      // harness performs eligibility/leave/duplicate/slot checks before any proposal.
       const askBarExtractOncall = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
-        // backup: "with X as backup", "backup Y"
-        let backup = null
-        const bM = q.match(/(?:backup|back-up|second)\s+(?:is\s+)?([a-zñáéíóú]+)/i) || q.match(/with\s+([a-zñáéíóú]+)\s+(?:as\s+)?backup/i)
-        if (bM) backup = askBarResolveStaff(bM[1])
-        // subject: strip verbs/oncall words/dates/backup, resolve remainder
-        let subjectQ = q
-          .replace(/\b(put|assign|schedule|book|set|add|give|make|cover|covering|takes?|does?|doing)\b/g, ' ')
-          .replace(/\b(on call|on-call|oncall|duty|guardia|call|shift|for|the|is|as)\b/g, ' ')
-          .replace(/(?:backup|back-up|second)\s+(?:is\s+)?[a-zñáéíóú]+/gi, ' ')
-          .replace(/with\s+[a-zñáéíóú]+\s+(?:as\s+)?backup/gi, ' ')
-          .replace(/\b(from|on|next|this|until|till|to|and)\b/g, ' ')
-          .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g, ' ')
-          .replace(/\d{1,4}[-/:]\d{1,2}([-/:]\d{1,4})?/g, ' ')
-          .replace(/\s+/g, ' ').trim()
-        const subject = askBarResolveStaff(subjectQ) || askBarResolveStaff(q)
-        const dates = askBarExtractDates(q)
-        return { subject, backup, start: dates.start, end: dates.end, raw: qRaw }
+        const resolveWriteCandidate = (text) => {
+          const r=askBarResolveStaffClarified(text)
+          return {person:r.person||null,ambiguous:r.ambiguous||null}
+        }
+        let backup=null, backupAmbiguous=null
+        const bM=q.match(/(?:backup|back-up|second)\s+(?:is\s+)?([a-zñáéíóú][a-zñáéíóú\s'-]{1,60})/i) || q.match(/with\s+([a-zñáéíóú][a-zñáéíóú\s'-]{1,60})\s+(?:as\s+)?backup/i)
+        if(bM){ const br=resolveWriteCandidate(bM[1].replace(/\b(on|for|this|next|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b.*$/i,'').trim()); backup=br.person; backupAmbiguous=br.ambiguous }
+        let subjectQ=q
+          .replace(/\b(put|assign|schedule|book|set|add|give|make|cover|covering|takes?|does?|doing|place)\b/g,' ')
+          .replace(/\b(on call|on-call|oncall|duty|guardia|call|shift|for|the|is|as)\b/g,' ')
+          .replace(/(?:backup|back-up|second)\s+(?:is\s+)?[a-zñáéíóú][a-zñáéíóú\s'-]*/gi,' ')
+          .replace(/with\s+[a-zñáéíóú][a-zñáéíóú\s'-]*\s+(?:as\s+)?backup/gi,' ')
+          .replace(/\b(from|on|next|this|until|till|to|and|week|today|tomorrow)\b/g,' ')
+          .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g,' ')
+          .replace(/\d{1,4}[-/:]\d{1,2}([-/:]\d{1,4})?/g,' ')
+          .replace(/\s+/g,' ').trim()
+        let sr=resolveWriteCandidate(subjectQ)
+        if(!sr.person && !sr.ambiguous) sr=resolveWriteCandidate(q)
+        const dates=askBarExtractDates(q)
+        return {subject:sr.person,subjectAmbiguous:sr.ambiguous,backup,backupAmbiguous,start:dates.start,end:dates.end,raw:qRaw}
       }
 
-      const askBarStartOncallFlow = (asked) => {
-        const ex = askBarExtractOncall(asked)
-        askBar.view = 'conversation'
-        if (!ex.subject) {
-          askBar.turns.push(Vue.reactive({ q: asked, text: "Who should be on call? Try naming them, e.g. \u201cput Antelo on call next Friday.\u201d", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
-          return
-        }
-        if (!ex.start) {
-          askBar.turns.push(Vue.reactive({ q: asked, text: `Which day is ${ex.subject.full_name} on call? Give a date, e.g. \u201cnext Friday.\u201d`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
-          return
-        }
-        askBarProposeOncall(ex)
+      const askBarOncallAmbiguityTurn = (asked, options, role, partial) => {
+        askBar.pendingOncall={...partial,awaiting:role==='backup'?'backup_choice':'subject_choice',options:(options||[]).map(s=>s.id)}
+        askBar.turns.push(Vue.reactive({q:asked,text:`I found more than one person matching that ${role==='backup'?'backup':'name'}. Which one did you mean?`,chips:(options||[]).map(s=>({label:s.full_name,id:s.id,oncallClarify:role})),actions:[],sources:['staff'],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}))
       }
 
-      const askBarProposeOncall = (ex) => {
-        const fmt = (iso) => { try { return new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) } catch (e) { return iso } }
-        // §7 CONFLICT PREVENTION: is the subject on LEAVE on this day?
-        const onLeave = (absences.value || []).filter(a => {
-          if (a.staff_member_id !== ex.subject.id) return false
-          const s = Utils.normalizeDate(a.start_date), e = Utils.normalizeDate(a.end_date)
-          return ex.start >= s && ex.start <= e
-        })
-        // Already on call that day? (from local schedule)
-        const already = (onCallSchedule.value || []).some(o => o.primary_physician_id === ex.subject.id && Utils.normalizeDate(o.duty_date) === ex.start)
-        const proposal = {
-          kind: 'oncall',
-          subject: { id: ex.subject.id, name: ex.subject.full_name },
-          backup: ex.backup ? { id: ex.backup.id, name: ex.backup.full_name } : null,
-          date: ex.start, dateLabel: fmt(ex.start),
-          blocked: onLeave.length > 0,
-          alreadyOnCall: already,
-          noBackup: !ex.backup,
-          // §8 PROACTIVE: if blocked, the Workforce Agent suggests who CAN cover instead.
-          alternatives: (onLeave.length > 0)
-            ? askBarWorkforceAvailable(ex.start, { excludeId: ex.subject.id }).slice(0, 3)
-            : [],
-          impact: {
-            items: [
-              { label:'Availability', value:onLeave.length ? 'Blocked by leave' : 'Available', tone:onLeave.length?'attention':'clear', detail:onLeave.length ? 'An active leave record overlaps this duty date' : 'No leave conflict found' },
-              { label:'Existing duty', value:already ? 'Already scheduled' : 'No duplicate duty', tone:already?'attention':'clear', detail:already ? 'A primary on-call record already exists for this person on this date' : 'No duplicate assignment found for this person' },
-              { label:'Backup', value:ex.backup ? ex.backup.full_name : 'Not assigned', tone:ex.backup?'clear':'attention', detail:ex.backup ? 'Named backup will be stored with the duty record' : 'Coverage resilience is lower without a backup' }
-            ],
-            alternatives: (onLeave.length > 0) ? askBarWorkforceAvailable(ex.start, { excludeId: ex.subject.id }).slice(0, 3) : []
+      const askBarStartOncallFlow = (asked, carry=null) => {
+        const ex=askBarExtractOncall(asked)
+        if(carry){ if(!ex.subject) ex.subject=carry.subject||null; if(!ex.backup) ex.backup=carry.backup||null; if(!ex.start) ex.start=carry.start||null }
+        askBar.view='conversation'
+        if(ex.subjectAmbiguous){ askBarOncallAmbiguityTurn(asked,ex.subjectAmbiguous,'subject',{backup:ex.backup,start:ex.start,end:ex.end,original:asked}); return }
+        if(!ex.subject){
+          askBar.pendingOncall={subject:null,backup:ex.backup,start:ex.start,end:ex.end,awaiting:'subject',original:asked}
+          askBar.turns.push(Vue.reactive({q:asked,text:'Who should be on call? Name the person, e.g. “put Antelo on call next Friday.”',chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}))
+          return
+        }
+        // Validate the selected identity before asking the user for more details. A
+        // non-eligible person should never progress into an on-call write workflow.
+        try {
+          const eg=groundedInvokeTool('oncall.check_eligibility',{staffId:ex.subject.id},{traceId:null})
+          if(!eg.eligible){
+            const why=eg.reason==='inactive_staff'?'is not an active staff member':'is not configured as on-call eligible'
+            askBar.pendingOncall=null
+            askBar.turns.push(Vue.reactive({q:asked,text:`${ex.subject.full_name} ${why}. I won't prepare an on-call change for this person.`,chips:[{label:ex.subject.full_name,id:ex.subject.id}],actions:[{label:'Open on-call schedule',view:'oncall_schedule'}],sources:['staff','on-call schedule'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false}))
+            return
           }
+        } catch(e) {}
+        if(ex.backupAmbiguous){ askBarOncallAmbiguityTurn(asked,ex.backupAmbiguous,'backup',{subject:ex.subject,start:ex.start,end:ex.end,original:asked}); return }
+        if(!ex.start){
+          askBar.pendingOncall={subject:ex.subject,backup:ex.backup,start:null,end:null,awaiting:'date',original:asked}
+          askBar.turns.push(Vue.reactive({q:asked,text:`What date should I schedule ${ex.subject.full_name} for on-call? For example, “next Friday.”`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}))
+          return
         }
-        askBar.turns.push(Vue.reactive({
-          q: '', text: '', oncallProposal: proposal, chips: [], actions: [],
-          sources: ['staff', 'on-call schedule', 'leave records'], followups: [],
-          confidence: proposal.blocked ? 'low' : (proposal.noBackup ? 'medium' : 'high'),
-          asOf: askBarNow(), streaming: false
-        }))
+        askBar.pendingOncall=null
+        askBarProposeOncall(ex,asked)
+      }
+
+      const askBarProposeOncall = (ex, asked='Schedule on-call') => {
+        const fmt=(iso)=>{try{return new Date(iso).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}catch(e){return iso}}
+        const traceId=groundedStartExecutionTrace(asked,'record_oncall')
+        let checked
+        try {
+          checked=groundedInvokeTool('oncall.propose_assignment',{staffId:ex.subject.id,date:ex.start,backupId:ex.backup?.id||null,coverageAreaId:null},{traceId})
+        } catch(err) {
+          groundedFinishExecutionTrace(traceId,{sources:['staff','on-call schedule','leave records'],confidence:'low'},'error',err,'record_oncall')
+          askBar.turns.push(Vue.reactive({q:asked,text:`I couldn't safely prepare that on-call change: ${err.message||err}`,chips:[],actions:[{label:'Open on-call schedule',view:'oncall_schedule'}],sources:['staff','on-call schedule','leave records'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}))
+          return
+        }
+        const reasons=checked.blocked||[]
+        const blockLabel={
+          staff_not_found:'Staff record not found',inactive_staff:'Staff member is inactive',not_oncall_eligible:'Not eligible for on-call',date_in_past:'Duty date is in the past',leave_conflict:'On leave that day',duplicate_person_duty:'Already scheduled that day',slot_occupied:'That on-call slot is already occupied',backup_not_eligible:'Backup is not eligible for on-call',backup_same_as_primary:'Primary and backup cannot be the same person'
+        }
+        const proposal={
+          kind:'oncall',traceId,
+          subject:{id:ex.subject.id,name:ex.subject.full_name},
+          backup:ex.backup?{id:ex.backup.id,name:ex.backup.full_name}:null,
+          date:ex.start,dateLabel:fmt(ex.start),blocked:reasons.length>0,blockReasons:reasons,blockReason:reasons.map(r=>blockLabel[r]||r).join(' · '),
+          alreadyOnCall:!!checked.slot?.duplicatePerson,noBackup:!ex.backup,alternatives:checked.alternatives||[],
+          impact:{items:[
+            {label:'Eligibility',value:checked.eligibility?.eligible?'Eligible':(blockLabel[checked.eligibility?.reason]||'Not eligible'),tone:checked.eligibility?.eligible?'clear':'attention',detail:'Based on active staff status and configured on-call eligibility'},
+            {label:'Availability',value:checked.slot?.onLeave?'Blocked by leave':'Available',tone:checked.slot?.onLeave?'attention':'clear',detail:checked.slot?.onLeave?'An active leave record overlaps this duty date':'No leave conflict found'},
+            {label:'Existing duty',value:checked.slot?.duplicatePerson?'Already scheduled':(checked.slot?.slotOccupied?'Slot occupied':'No duplicate duty'),tone:(checked.slot?.duplicatePerson||checked.slot?.slotOccupied)?'attention':'clear',detail:checked.slot?.slotOccupied?`Primary already recorded: ${checked.slot?.existingSlot?.primaryName||'another clinician'}`:'No conflicting primary duty found in the checked slot'},
+            {label:'Backup',value:ex.backup?ex.backup.full_name:'Not assigned',tone:ex.backup?'clear':'attention',detail:ex.backup?'Named backup passed eligibility check':'Backup remains optional but improves coverage resilience'}
+          ]}
+        }
+        askBar.turns.push(Vue.reactive({q:'',text:'',oncallProposal:proposal,chips:[],actions:[],sources:['staff','on-call schedule','leave records'],followups:[],confidence:proposal.blocked?'low':(proposal.noBackup?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
       }
 
       const askBarConfirmOncall = async (proposal, turn) => {
-        turn.writing = true
-        const body = {
-          duty_date: proposal.date,
-          primary_physician_id: proposal.subject.id,
-          shift_type: 'primary_call',
-          start_time: '08:00',
-          end_time: '08:00',
-          backup_physician_id: proposal.backup ? proposal.backup.id : null,
-          coverage_notes: proposal.backup ? `Backup: ${proposal.backup.name}` : ''
-        }
+        turn.writing=true; turn.commitError=''
+        const traceId=proposal.traceId||turn.coreTraceId||null
         try {
-          await API.request('/api/oncall', { method: 'POST', body })
-          turn.writing = false; turn.committed = true
-          try { onCallOps.loadOnCallSchedule() } catch (e) {}
-          turn.commitText = `\u2713 ${proposal.subject.name} is on call ${proposal.dateLabel}${proposal.backup ? `, backup ${proposal.backup.name}` : ''}.`
-          askBarLog('change', { title:'On-call scheduled', detail:`${proposal.subject.name} · ${proposal.dateLabel}`, kind:'oncall', entityKeys:[`staff:${proposal.subject.id}`] })
-        } catch (err) {
-          turn.writing = false
-          const msg = (err && err.message) ? err.message : 'Could not save.'
-          turn.commitError = /already exists|duplicate/i.test(msg) ? `There's already a primary on call that day. ${msg}` : msg
+          if(traceId) GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:true,action:'schedule_oncall'})
+          const out=await groundedInvokeTool('oncall.commit_assignment',{staffId:proposal.subject.id,date:proposal.date,backupId:proposal.backup?.id||null,coverageAreaId:null},{traceId,confirmed:true})
+          turn.writing=false; turn.committed=true
+          try{await onCallOps.loadOnCallSchedule()}catch(e){}
+          turn.commitText=`✓ ${proposal.subject.name} is on call ${proposal.dateLabel}${proposal.backup?`, backup ${proposal.backup.name}`:''}.`
+          askBarLog('change',{title:'On-call scheduled',detail:`${proposal.subject.name} · ${proposal.dateLabel}`,kind:'oncall',entityKeys:[`staff:${proposal.subject.id}`],_traceId:traceId}); if(askBar.coreTraceId===traceId) askBar.coreTraceId=null
+        } catch(err) {
+          turn.writing=false
+          const msg=(err&&err.message)?err.message:'Could not save.'
+          turn.commitError=/already exists|duplicate|slot_occupied/i.test(msg)?`The duty slot changed before confirmation. ${msg}`:msg
+          if(traceId){GroundedCore?.addTraceEvent(traceId,'action_failed',{action:'schedule_oncall',error:msg}); groundedFinishExecutionTrace(traceId,{sources:['staff','on-call schedule','leave records'],confidence:'low'},'error',err,'record_oncall')}
         }
       }
-      const askBarCancelOncall = (turn) => { turn.cancelled = true }
+      const askBarCancelOncall = (turn) => {
+        turn.cancelled=true
+        const traceId=turn?.oncallProposal?.traceId||turn?.coreTraceId||null
+        if(traceId){GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:false,action:'schedule_oncall'}); GroundedCore?.finishTrace(traceId,{status:'cancelled',intent:'record_oncall',confidence:turn.confidence||'medium',sources:turn.sources||[],actionClass:'propose'}); if(askBar.coreTraceId===traceId) askBar.coreTraceId=null; groundedRefreshTraces()}
+      }
       // §8 Pick a suggested replacement → re-propose the on-call for that person.
       const askBarPickReplacement = (alt, forDate, oldTurn) => {
-        oldTurn.cancelled = true
-        const person = (medicalStaff.value || []).find(s => s.id === alt.id)
-        if (person) askBarProposeOncall({ subject: person, backup: null, start: forDate, end: forDate })
+        askBarCancelOncall(oldTurn)
+        const person = (medicalStaff.value || []).find(s => String(s.id) === String(alt.id))
+        if (person) askBarProposeOncall({ subject: person, backup: null, start: forDate, end: forDate }, `Schedule ${person.full_name} on call ${forDate}`)
       }
 
       // ══ §6 ROTA DRAFTING — first "prepare work" capability (batch on-call) ══
@@ -12976,29 +13031,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarExtractLeave = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
-        // 1. Reason (null if not stated → caller asks the clarify question)
         let reason = null, type = 'planned'
         if (/\b(sick|ill|unwell|off sick|sick leave)\b/.test(q)) { reason = 'sick_leave'; type = /today|now|called in|emergency/.test(q) ? 'unplanned' : 'planned' }
         else if (/\b(conference|congress|symposium)\b/.test(q)) reason = 'conference'
         else if (/\b(training|course|workshop|teaching)\b/.test(q)) reason = 'training'
         else if (/\b(vacation|holiday|annual leave|leave|off|away|absent)\b/.test(q)) reason = 'vacation'
-        // 2. Covering person ("X covers", "covered by X", "Y is covering")
-        let covering = null
-        const covM = q.match(/(?:cover(?:ed|ing|s)?(?:\s+by)?|backup|replace[sd]?\s+by)\s+([a-zñáéíóú]+)/i)
-        if (covM) covering = askBarResolveStaff(covM[1])
-        // 3. Subject person — strip verbs/reason/coverage words, resolve the remainder
+
+        // Covering identity is write-sensitive too. Resolve ambiguity rather than
+        // silently choosing a fuzzy match. Cover remains optional.
+        let covering = null, coveringAmbiguous = null
+        const covM = q.match(/(?:cover(?:ed|ing|s)?(?:\s+by)?|backup|replace[sd]?\s+by)\s+([a-zñáéíóú][a-zñáéíóú\s'-]{1,60}?)(?=\s+(?:from|on|next|this|until|till|to|for|today|tomorrow|mon|tue|wed|thu|fri|sat|sun)\b|$)/i)
+        if (covM) {
+          const rr = askBarResolveStaffClarified(covM[1])
+          covering = rr.person || null
+          coveringAmbiguous = rr.ambiguous || null
+        }
+
+        // Subject person — remove action/reason/date language, then use the
+        // ambiguity-aware resolver. Writes must never use first fuzzy match wins.
         let subjectQ = q
-          .replace(/\b(put|mark|record|register|set|book|schedule|add|log)\b/g, ' ')
+          .replace(/\b(put|place|mark|record|register|set|book|schedule|add|log|give)\b/g, ' ')
           .replace(/\b(on leave|off sick|off|absent|leave|vacation|holiday|sick|conference|congress|training|course|out|away)\b/g, ' ')
-          .replace(/(?:cover(?:ed|ing|s)?(?:\s+by)?|backup|replace[sd]?\s+by)\s+[a-zñáéíóú]+/gi, ' ')
+          .replace(/(?:cover(?:ed|ing|s)?(?:\s+by)?|backup|replace[sd]?\s+by)\s+[a-zñáéíóú][a-zñáéíóú\s'-]{1,60}?(?=\s+(?:from|on|next|this|until|till|to|for|today|tomorrow|mon|tue|wed|thu|fri|sat|sun)\b|$)/gi, ' ')
           .replace(/\b(from|on|next|this|until|till|to|the|and|is|going|for)\b/g, ' ')
           .replace(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/g, ' ')
           .replace(/\d{1,4}[-/]\d{1,2}([-/]\d{1,4})?/g, ' ')
           .replace(/\s+/g, ' ').trim()
-        const subject = askBarResolveStaff(subjectQ) || askBarResolveStaff(q)
-        // 4. Dates — parse a range or single day (deterministic clean-path)
+        const subjectRes = askBarResolveStaffClarified(subjectQ || q)
         const dates = askBarExtractDates(q)
-        return { subject, reason, type, covering, start: dates.start, end: dates.end, raw: qRaw }
+        return {
+          subject: subjectRes.person || null,
+          subjectAmbiguous: subjectRes.ambiguous || null,
+          reason, type, covering, coveringAmbiguous,
+          start: dates.start, end: dates.end, raw: qRaw
+        }
       }
 
       // Deterministic date parsing for the clean path: weekday names, next/this,
@@ -13038,6 +13104,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (d < today && (today - d) > 86400000*20) { yr++; d = new Date(yr, mo, 1) }
             return { start: iso(d), end: iso(d) }
           }
+        }
+        // "Tuesday this week" means the Tuesday inside the current Monday–Sunday
+        // window, not blindly the next Tuesday. This matters for action integrity.
+        const thisWeekWd=q.match(/\b(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)[a-z]*\s+(?:this\s+week|esta\s+semana)\b/i)
+        if(thisWeekWd){
+          const wd=WD[thisWeekWd[1].slice(0,3)] ?? WD[thisWeekWd[1]]
+          if(wd!==undefined){ const day=today.getDay()||7, monday=new Date(today); monday.setDate(today.getDate()+(1-day)); const target=new Date(monday); target.setDate(monday.getDate()+((wd||7)-1)); return {start:iso(target),end:iso(target)} }
         }
         // collect weekday mentions in order
         const found = []
@@ -13230,9 +13303,12 @@ document.addEventListener('DOMContentLoaded', () => {
         permissionCheck: (module, action) => !module || hasPermission(module, action)
       }) : null
 
-      const groundedInvokeTool = (name, input={}) => {
+      const groundedInvokeTool = (name, input={}, opts={}) => {
         if (!groundedToolRegistry) throw new Error('Grounded tool harness unavailable')
-        return groundedToolRegistry.invoke(name, input, { traceId: askBar.coreTraceId, confirmed:false })
+        return groundedToolRegistry.invoke(name, input, {
+          traceId: Object.prototype.hasOwnProperty.call(opts,'traceId') ? opts.traceId : (askBar.coreTraceId || null),
+          confirmed: opts.confirmed === true
+        })
       }
 
       if (groundedToolRegistry) {
@@ -13257,23 +13333,17 @@ document.addEventListener('DOMContentLoaded', () => {
           ).map(r=>({id:r.id,unitId:r.training_unit_id,start:r.start_date,end:r.end_date,status:r.rotation_status}))
         })
         groundedToolRegistry.register({
-          name:'clinical_units.attending_context', access:GroundedCore.ACCESS.READ, module:'training_units',
-          description:'Return attending physicians structurally linked to a clinical unit plus department-level resident-supervision context. This information is descriptive and does not gate resident capacity.',
+          name:'clinical_units.team_readiness', access:GroundedCore.ACCESS.READ, module:'training_units',
+          description:'Summarise recorded clinical-team membership and designated supervisor for a clinical unit.',
           inputSchema:{unitId:'uuid',date:'date?'},
           run:({unitId}) => {
             const unit=(trainingUnits.value||[]).find(u=>String(u.id)===String(unitId))
             if(!unit) throw new Error('Clinical unit not found')
-            const members=(unitStaffCache.value[unit.id]||[]).map(m=>({id:m.staff?.id,name:m.staff?.full_name,staffType:m.staff?.staff_type,role:m.role||null})).filter(m=>m.id)
-            const departmentSupervisors=getDepartmentResidentSupervisors(unit.department_id).map(s=>({id:s.id,name:s.full_name,residentManager:!!s.is_resident_manager}))
-            return { unitId:unit.id, attendingCount:members.length, attendings:members, departmentSupervisors, contextOnly:true }
+            const members=unitStaffCache.value[unit.id]||[]
+            const supervisorId=unit.supervising_attending_id||unit.supervisor_id||unit.default_supervisor_id||null
+            const supervisor=supervisorId ? (medicalStaff.value||[]).find(s=>String(s.id)===String(supervisorId)) : null
+            return { unitId:unit.id, teamCount:members.length, supervisor:supervisor?{id:supervisor.id,name:supervisor.full_name}:null, ready:members.length>0 && !!supervisor }
           }
-        })
-        // Backward-compatible alias for traces/tests from V46.8. Semantics are now descriptive.
-        groundedToolRegistry.register({
-          name:'clinical_units.team_readiness', access:GroundedCore.ACCESS.READ, module:'training_units',
-          description:'Compatibility alias for clinical_units.attending_context; no readiness gate is applied.',
-          inputSchema:{unitId:'uuid',date:'date?'},
-          run:({unitId,date}) => groundedToolRegistry.invoke('clinical_units.attending_context',{unitId,date},{traceId:askBar.coreTraceId,confirmed:false})
         })
         groundedToolRegistry.register({
           name:'clinical_units.available_units', access:GroundedCore.ACCESS.READ, module:'training_units',
@@ -13284,19 +13354,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const beenTo=residentId ? new Set((rotations.value||[]).filter(r=>String(r.resident_id)===String(residentId)).map(r=>String(r.training_unit_id))) : new Set()
             return units.map(u=>{
               const state=getUnitCapacityWindow(u.id,start,end)
-              const attendingContext=groundedToolRegistry.invoke('clinical_units.attending_context',{unitId:u.id},{traceId:askBar.coreTraceId,confirmed:false})
+              const team=groundedToolRegistry.invoke('clinical_units.team_readiness',{unitId:u.id},{traceId:askBar.coreTraceId,confirmed:false})
               let score=0
               const capacityFit=!state.overCapacity && state.minFree>0
               if(capacityFit) score+=5
+              if(team.supervisor) score+=2
+              if(team.teamCount>0) score+=2
               if(residentId && !beenTo.has(String(u.id))) score+=1
               if(state.status==='free') score+=1
-              return {unit:{id:u.id,name:u.unit_name,code:u.unit_code||null},state,attendingContext,capacityFit,isNew:residentId?!beenTo.has(String(u.id)):null,score,detail:formatCapacityWindows(state)}
+              return {unit:{id:u.id,name:u.unit_name,code:u.unit_code||null},state,team,capacityFit,isNew:residentId?!beenTo.has(String(u.id)):null,score,detail:formatCapacityWindows(state)}
             }).filter(x=>x.capacityFit).sort((a,b)=>b.score-a.score || b.state.minFree-a.state.minFree)
           }
         })
         groundedToolRegistry.register({
           name:'resident_rotations.propose_assignment', access:GroundedCore.ACCESS.PROPOSE, module:'resident_rotations',
-          description:'Build a non-destructive resident-rotation proposal after checking resident overlap and unit capacity, while carrying attending and department-supervision context.',
+          description:'Build a non-destructive resident-rotation proposal after checking overlap, unit capacity and unit readiness.',
           inputSchema:{residentId:'uuid',unitId:'uuid',start:'date',end:'date'},
           run:({residentId,unitId,start,end}) => {
             const resident=(medicalStaff.value||[]).find(s=>String(s.id)===String(residentId))
@@ -13304,11 +13376,160 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!resident||!unit) throw new Error('Resident or clinical unit not found')
             const conflicts=groundedToolRegistry.invoke('resident_rotations.conflicts',{residentId,start,end},{traceId:askBar.coreTraceId,confirmed:false})
             const capacity=groundedToolRegistry.invoke('clinical_units.capacity_window',{unitId,start,end},{traceId:askBar.coreTraceId,confirmed:false})
-            const attendingContext=groundedToolRegistry.invoke('clinical_units.attending_context',{unitId},{traceId:askBar.coreTraceId,confirmed:false})
+            const team=groundedToolRegistry.invoke('clinical_units.team_readiness',{unitId},{traceId:askBar.coreTraceId,confirmed:false})
             const blocked=[]
             if(conflicts.length) blocked.push('resident_overlap')
             if(capacity.state.overCapacity || capacity.state.minFree<1) blocked.push('unit_capacity')
-            return {kind:'rotation_proposal',resident:{id:resident.id,name:resident.full_name},unit:capacity.unit,start,end,conflicts,capacity:capacity.state,attendingContext,blocked,requiresHumanConfirmation:true}
+            return {kind:'rotation_proposal',resident:{id:resident.id,name:resident.full_name},unit:capacity.unit,start,end,conflicts,capacity:capacity.state,team,blocked,requiresHumanConfirmation:true}
+          }
+        })
+        // V46.10 · Leave is the third module migrated onto the Grounded harness.
+        // Recording leave is validated as a departmental event: identity + window +
+        // duplicate leave are hard constraints; on-call/rotation collisions remain
+        // visible warnings because legitimate leave may be the reason those duties need reassignment.
+        groundedToolRegistry.register({
+          name:'leave.person_records', access:GroundedCore.ACCESS.READ, module:'staff_absence',
+          description:'Return recorded leave periods for one staff member.',
+          inputSchema:{staffId:'uuid'},
+          run:({staffId}) => (absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId)).map(a=>({id:a.id,start:Utils.normalizeDate(a.start_date),end:Utils.normalizeDate(a.end_date),type:a.absence_type||null,reason:a.absence_reason||null,status:a.current_status||null}))
+        })
+        groundedToolRegistry.register({
+          name:'leave.check_window', access:GroundedCore.ACCESS.READ, module:'staff_absence',
+          description:'Validate a leave window and surface overlapping leave, on-call and resident-rotation responsibilities.',
+          inputSchema:{staffId:'uuid',start:'date',end:'date',coveringStaffId:'uuid?'},
+          run:({staffId,start,end,coveringStaffId=null}) => {
+            const person=(medicalStaff.value||[]).find(x=>String(x.id)===String(staffId))
+            const covering=coveringStaffId?(medicalStaff.value||[]).find(x=>String(x.id)===String(coveringStaffId)):null
+            const s=Utils.normalizeDate(start), e=Utils.normalizeDate(end)
+            const blocked=[]
+            if(!person) blocked.push('staff_not_found')
+            else if((person.employment_status||'active')!=='active') blocked.push('inactive_staff')
+            if(!s||!e||s>e) blocked.push('invalid_date_window')
+            if(coveringStaffId && String(coveringStaffId)===String(staffId)) blocked.push('covering_same_as_subject')
+            if(coveringStaffId && !covering) blocked.push('covering_staff_not_found')
+            if(covering && (covering.employment_status||'active')!=='active') blocked.push('covering_staff_inactive')
+            const overlap=(absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.normalizeDate(a.start_date)<=e && Utils.normalizeDate(a.end_date)>=s)
+            if(overlap.length) blocked.push('overlapping_leave')
+            const onCallConflicts=(onCallSchedule.value||[]).filter(o=>String(o.primary_physician_id)===String(staffId) && Utils.normalizeDate(o.duty_date)>=s && Utils.normalizeDate(o.duty_date)<=e).map(o=>({id:o.id,date:Utils.normalizeDate(o.duty_date),coverageAreaId:o.coverage_area_id||null}))
+            const rotationConflicts=(rotations.value||[]).filter(r=>['active','scheduled'].includes(r.rotation_status) && String(r.supervising_attending_id)===String(staffId) && Utils.normalizeDate(r.start_date)<=e && Utils.normalizeDate(r.end_date)>=s).map(r=>({id:r.id,residentId:r.resident_id,unitId:r.training_unit_id,start:r.start_date,end:r.end_date}))
+            const coveringConflicts=coveringStaffId ? [
+              ...(absences.value||[]).filter(a=>String(a.staff_member_id)===String(coveringStaffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.normalizeDate(a.start_date)<=e && Utils.normalizeDate(a.end_date)>=s).map(a=>({kind:'leave',id:a.id,start:a.start_date,end:a.end_date})),
+              ...(onCallSchedule.value||[]).filter(o=>String(o.primary_physician_id)===String(coveringStaffId) && Utils.normalizeDate(o.duty_date)>=s && Utils.normalizeDate(o.duty_date)<=e).map(o=>({kind:'oncall',id:o.id,date:o.duty_date}))
+            ] : []
+            const days=s&&e&&s<=e?Math.max(1,Math.round((new Date(e)-new Date(s))/86400000)+1):0
+            return {person:person?{id:person.id,name:person.full_name}:null,covering:covering?{id:covering.id,name:covering.full_name}:null,start:s,end:e,days,blocked,overlap:overlap.map(a=>({id:a.id,start:a.start_date,end:a.end_date,status:a.current_status})),onCallConflicts,rotationConflicts,coveringConflicts}
+          }
+        })
+        groundedToolRegistry.register({
+          name:'leave.propose_absence', access:GroundedCore.ACCESS.PROPOSE, module:'staff_absence',
+          description:'Build a non-destructive leave proposal after validating identity, date window, duplicate leave and operational collisions.',
+          inputSchema:{staffId:'uuid',start:'date',end:'date',reason:'string',type:'string',coveringStaffId:'uuid?'},
+          run:({staffId,start,end,reason,type,coveringStaffId=null},opts={}) => {
+            const traceId=opts.traceId||askBar.coreTraceId||null
+            const window=groundedToolRegistry.invoke('leave.check_window',{staffId,start,end,coveringStaffId},{traceId,confirmed:false})
+            return {kind:'leave_proposal',window,reason,type,blocked:window.blocked||[],onCallConflicts:window.onCallConflicts||[],rotationConflicts:window.rotationConflicts||[],coveringConflicts:window.coveringConflicts||[],days:window.days,requiresHumanConfirmation:true}
+          }
+        })
+        groundedToolRegistry.register({
+          name:'leave.commit_absence', access:GroundedCore.ACCESS.WRITE, module:'staff_absence',
+          description:'Commit human-confirmed leave after re-validating the source state immediately before write.',
+          inputSchema:{staffId:'uuid',start:'date',end:'date',reason:'string',type:'string',coveringStaffId:'uuid?'},
+          run:async({staffId,start,end,reason,type,coveringStaffId=null},opts={}) => {
+            const traceId=opts.traceId||askBar.coreTraceId||null
+            const proposal=groundedToolRegistry.invoke('leave.propose_absence',{staffId,start,end,reason,type,coveringStaffId},{traceId,confirmed:false})
+            if(proposal.blocked.length){ const er=new Error(`Leave recording blocked: ${proposal.blocked.join(', ')}`); er.code='LEAVE_RECORD_BLOCKED'; er.reasons=proposal.blocked; throw er }
+            const body={staff_member_id:staffId,absence_type:type,absence_reason:reason,start_date:start,end_date:end,coverage_arranged:!!coveringStaffId,covering_staff_id:coveringStaffId||null,coverage_notes:coveringStaffId?`Covered by ${getStaffName(coveringStaffId)}`:''}
+            const saved=await API.request('/api/absence-records',{method:'POST',body})
+            return {saved,proposal}
+          }
+        })
+        // V46.9 · On-call is the second module migrated onto the Grounded harness.
+        // These contracts centralise eligibility, slot safety, proposals and confirmed writes.
+        groundedToolRegistry.register({
+          name:'oncall.person_shifts', access:GroundedCore.ACCESS.READ, module:'oncall_schedule',
+          description:'Return recorded on-call shifts for one staff member, optionally from a date onward.',
+          inputSchema:{staffId:'uuid',from:'date?'},
+          run:({staffId,from=null}) => {
+            const min=from ? Utils.normalizeDate(from) : null
+            return (onCallSchedule.value||[]).filter(o=>
+              (String(o.primary_physician_id)===String(staffId) || String(o.backup_physician_id)===String(staffId)) &&
+              (!min || Utils.normalizeDate(o.duty_date)>=min)
+            ).map(o=>({id:o.id,date:Utils.normalizeDate(o.duty_date),role:String(o.primary_physician_id)===String(staffId)?'primary':'backup',coverageAreaId:o.coverage_area_id||null}))
+          }
+        })
+        groundedToolRegistry.register({
+          name:'oncall.check_eligibility', access:GroundedCore.ACCESS.READ, module:'oncall_schedule',
+          description:'Verify that a selected person is active and belongs to the configured on-call eligible staff population.',
+          inputSchema:{staffId:'uuid'},
+          run:({staffId}) => {
+            const person=(medicalStaff.value||[]).find(x=>String(x.id)===String(staffId))
+            if(!person) return {eligible:false,reason:'staff_not_found',person:null}
+            const active=(person.employment_status||'active')==='active'
+            const eligible=isOnCallEligible(person.staff_type)
+            return {eligible:active&&eligible,reason:!active?'inactive_staff':(!eligible?'not_oncall_eligible':null),person:{id:person.id,name:person.full_name,staffType:person.staff_type,employmentStatus:person.employment_status||'active'}}
+          }
+        })
+        groundedToolRegistry.register({
+          name:'oncall.check_slot', access:GroundedCore.ACCESS.READ, module:'oncall_schedule',
+          description:'Check leave, duplicate-person duty and same-slot occupancy for a proposed primary on-call assignment.',
+          inputSchema:{staffId:'uuid',date:'date',coverageAreaId:'uuid?'},
+          run:({staffId,date,coverageAreaId=null}) => {
+            const d=Utils.normalizeDate(date)
+            const today=Utils.normalizeDate(new Date())
+            const leave=(absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.normalizeDate(a.start_date)<=d && Utils.normalizeDate(a.end_date)>=d)
+            const samePerson=(onCallSchedule.value||[]).filter(o=>String(o.primary_physician_id)===String(staffId) && Utils.normalizeDate(o.duty_date)===d)
+            const sameSlot=(onCallSchedule.value||[]).filter(o=>{
+              if(Utils.normalizeDate(o.duty_date)!==d) return false
+              if((o.shift_type||'primary_call')!=='primary_call') return false
+              const area=o.coverage_area_id||o.coverage_area?.id||null
+              return coverageAreaId ? String(area)===String(coverageAreaId) : !area
+            })
+            return {
+              date:d, dateInPast:d<today, onLeave:leave.length>0, leave:leave.map(a=>({id:a.id,start:a.start_date,end:a.end_date,type:a.absence_reason||a.absence_type||null})),
+              duplicatePerson:samePerson.length>0, existingPersonShift:samePerson[0]?{id:samePerson[0].id,date:samePerson[0].duty_date}:null,
+              slotOccupied:sameSlot.length>0 && !sameSlot.some(o=>String(o.primary_physician_id)===String(staffId)),
+              existingSlot:sameSlot[0]?{id:sameSlot[0].id,primaryId:sameSlot[0].primary_physician_id,primaryName:getStaffName(sameSlot[0].primary_physician_id),coverageAreaId:sameSlot[0].coverage_area_id||null}:null
+            }
+          }
+        })
+        groundedToolRegistry.register({
+          name:'oncall.replacement_candidates', access:GroundedCore.ACCESS.READ, module:'oncall_schedule',
+          description:'Return eligible active staff who are not on leave and not already primary on-call for the requested date, ordered by recorded call load.',
+          inputSchema:{date:'date',excludeId:'uuid?'},
+          run:({date,excludeId=null}) => askBarWorkforceAvailable(date,{excludeId}).slice(0,8)
+        })
+        groundedToolRegistry.register({
+          name:'oncall.propose_assignment', access:GroundedCore.ACCESS.PROPOSE, module:'oncall_schedule',
+          description:'Build a non-destructive on-call proposal after validating identity eligibility, date, leave, duplicates and slot occupancy.',
+          inputSchema:{staffId:'uuid',date:'date',backupId:'uuid?',coverageAreaId:'uuid?'},
+          run:({staffId,date,backupId=null,coverageAreaId=null},opts={}) => {
+            const traceId=opts.traceId||askBar.coreTraceId||null
+            const eligibility=groundedToolRegistry.invoke('oncall.check_eligibility',{staffId},{traceId,confirmed:false})
+            const slot=groundedToolRegistry.invoke('oncall.check_slot',{staffId,date,coverageAreaId},{traceId,confirmed:false})
+            const backup=backupId ? groundedToolRegistry.invoke('oncall.check_eligibility',{staffId:backupId},{traceId,confirmed:false}) : null
+            const blocked=[]
+            if(!eligibility.eligible) blocked.push(eligibility.reason||'not_eligible')
+            if(slot.dateInPast) blocked.push('date_in_past')
+            if(slot.onLeave) blocked.push('leave_conflict')
+            if(slot.duplicatePerson) blocked.push('duplicate_person_duty')
+            if(slot.slotOccupied) blocked.push('slot_occupied')
+            if(backup && !backup.eligible) blocked.push('backup_not_eligible')
+            if(backupId && String(backupId)===String(staffId)) blocked.push('backup_same_as_primary')
+            const alternatives=blocked.length ? groundedToolRegistry.invoke('oncall.replacement_candidates',{date,excludeId:staffId},{traceId,confirmed:false}).slice(0,3) : []
+            return {kind:'oncall_proposal',eligibility,slot,backup,blocked,alternatives,requiresHumanConfirmation:true}
+          }
+        })
+        groundedToolRegistry.register({
+          name:'oncall.commit_assignment', access:GroundedCore.ACCESS.WRITE, module:'oncall_schedule',
+          description:'Commit a human-confirmed primary on-call assignment after re-validating the proposal immediately before write.',
+          inputSchema:{staffId:'uuid',date:'date',backupId:'uuid?',coverageAreaId:'uuid?'},
+          run:async({staffId,date,backupId=null,coverageAreaId=null},opts={}) => {
+            const traceId=opts.traceId||askBar.coreTraceId||null
+            const proposal=groundedToolRegistry.invoke('oncall.propose_assignment',{staffId,date,backupId,coverageAreaId},{traceId,confirmed:false})
+            if(proposal.blocked.length){ const e=new Error(`On-call assignment blocked: ${proposal.blocked.join(', ')}`); e.code='ONCALL_ASSIGNMENT_BLOCKED'; e.reasons=proposal.blocked; throw e }
+            const body={duty_date:date,primary_physician_id:staffId,shift_type:'primary_call',start_time:'08:00',end_time:'08:00',backup_physician_id:backupId||null,coverage_area_id:coverageAreaId||null,coverage_notes:backupId?`Backup: ${getStaffName(backupId)}`:''}
+            const saved=await API.request('/api/oncall',{method:'POST',body})
+            return {saved,proposal}
           }
         })
         groundedToolCatalog.value = groundedToolRegistry.list()
@@ -13378,7 +13599,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'edit_leave', priority: 123, patterns: [/(change|modify|edit|update|move|adjust|shorten|extend)\b.*(leave|absence|vacation|holiday)/, /(leave|absence)\b.*(change|modify|edit|update|move|adjust|shorten|extend)/, /(change|move) .*(dates?|start|end|reason) .*(leave|absence)/i], anti: [/who|which|list|cancel|delete|remove|record|put|place|back|return/] },
         { intent: 'record_callout', priority: 121, patterns: [/(log|record|register|report|add)\b.*(call.?out|callout|emergency call|llamada)/, /(call.?out|callout|emergency call)\b.*(log|record|register|report|add|happened|occurred)/, /there was (a |an )?(call.?out|emergency)/i], anti: [/who|which|list|how many|fairness|most|recent/] },
         { intent: 'record_leave', priority: 120, patterns: [/(put|place|mark|record|register|set|book|schedule|add|log|give)\b.*(on leave|off|absent|leave|vacation|holiday|sick|conference|congress|training|course|out)\b/, /(on leave|off sick|absent|going on leave)\b.*(from|on|next|this|until|till)\b/], anti: [/who|which|list|how many|is\b.*\bon leave|\bback\b|return|change|modify|edit|update|shorten|extend/] },
-        { intent: 'record_oncall', priority: 121, patterns: [/(put|place|assign|schedule|book|set|add|give|make|move)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|week|rota/] },
+        { intent: 'record_oncall', priority: 121, patterns: [/(put|place|assign|schedule|book|set|add|give|make|move)\b.*(on call|on-call|oncall|duty|guardia|call)\b/, /(cover|covering|takes?|do(es|ing)?)\b.*(call|duty|guardia|shift)\b/], anti: [/who|which|list|how many|is\b.*\bon call|busiest|most|compare|rank|draft|rota/] },
         { intent: 'draft_rota', priority: 123, patterns: [/(draft|prepare|generate|build|make|plan|propose)\b.*(rota|on.?call schedule|call schedule|week.*call|weekly.*call)/, /(rota|on.?call).*(for )?(next|this|the) week/], anti: [/who|which|is\b/] },
         { intent: 'return_leave', priority: 122, patterns: [/\b(is )?back\b/, /returned?\b/, /back (to|on) (duty|work)/, /no longer (on leave|absent|off)/, /end.*leave early/, /(put|mark|set)\b.*\bback\b/], require: [/back|return|no longer|end/], anti: [/who|which|list|when.*back/] },
         { intent: 'assign_rotation', priority: 122, patterns: [/(put|assign|place|move|rotate|schedule|add|set|book|enroll|send|rota|transfer|swap|switch)\b.*\b(in|into|to|on|at|through|thru)\b.*(rotation|rotat|uci|ucri|icu|ward|unit|sleep|clinic|sueño|sueno|hospitaliz|externa|torácica|toracica|trasplante|broncopleural|pfr|asma|cardiolog|interna|radiolog)/i, /(put|assign|place|move|rotate|transfer|swap)\b.*(rotation|rotat)/i, /(rotation|rotate)\b.*(under|with|supervis|from|next)/i, /rotate\s+[a-zñáéíóú]+\s+(through|thru|in|to)/i], anti: [/who|which|list|how many|rotating where|is on|profile|remove|cancel|delete|how long|when does/] },
@@ -13426,8 +13647,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'residents_board', priority: 93, patterns: [/(residents?) (board|wall|status board|dashboard|overview|map|grid|at a glance|status|visual)/i, /(show|display|give me).*(residents?).*(board|status|dashboard|visual|overview|where)/i, /resident status board/i, /where is everyone rotating/i, /rotation board/i], anti: [/put|assign|cancel|finish|ending/] },
         { intent: 'place_resident', priority: 118, patterns: [/where (should|can|could|to)\s+(i )?(place|put|assign|send)\s+[a-zñáéíóú]/i, /(best|which) unit for\s+[a-zñáéíóú]/i, /where (should|can|could)\s+[a-zñáéíóú]+\s+(go|rotate|be placed)/i, /place\s+[a-zñáéíóú]+\s+where/i], anti: [/on call|leave/] },
         { intent: 'unit_load', priority: 97, patterns: [/(which )?units? (are )?(most|least|under|over) (used|utilis|utiliz|busy|full|occupied|staffed)/i, /unit (load|utilis|utiliz|occupancy) (ranking|by|most|least)/i, /(busiest|emptiest|most used) units?/i, /units? (needing|need) (more )?(residents?|staff)/i], anti: [/put|assign|cancel/] },
-        { intent: 'unit_attending_links_gap', priority: 93, patterns: [/units? (with |without )?(no |missing )?(attending|attendings|staff|team)/i, /units? (that )?(need|lack|missing) (attending|attendings|staff|team)/i, /which units.*no (attending|staff|team)/i], anti: [/put|assign|resident/] },
-        { intent: 'unit_supervisor_gap', priority: 92, patterns: [/units? (with |without )?(no |missing )?(a )?supervisor/i, /units? (that )?(need|lack|missing) (a )?supervisor/i, /which units.*no supervisor/i, /unsupervised units?/i], anti: [/put|assign|resident/] },
+        { intent: 'unit_supervisor_gap', priority: 93, patterns: [/units? (with |without )?(no |missing )?(a )?supervisor/i, /units? (that )?(need|lack|missing) (a )?supervisor/i, /which units.*no supervisor/i, /unsupervised units?/i], anti: [/put|assign|resident/] },
         { intent: 'unit_by_specialty', priority: 92, patterns: [/units? (for|covering|in|by)\s+(the )?(asthma|copd|epoc|transplant|trasplante|sleep|sueño|critical|intensive|cardio|thoracic|toracica|bronch|respiratory|[a-zñáéíóú]+ specialty)/i, /(which|what) units? cover/i, /units? by specialty/i], anti: [/put|assign|free|full|how many/] },
         { intent: 'unit_forecast', priority: 94, patterns: [/(which )?units? (will be|are going to be|become)\s+(empty|free|available|covered|full|vacant|uncovered)/i, /units? (empty|free|available|covered|uncovered|vacant)\s+(next|this|in)\s+(month|week|\w+)/i, /(coverage|unit|rotation) (forecast|availability)/i, /(empty|free|available|uncovered|vacant) units? (next|this|in)/i, /which units.*(next month|next week|coming|which month)/i, /which (clinical )?units?.*(free|available).*(month|when|from)/i, /when (is|will) .*unit.*(free|available|open)/i, /(what|which) month.*unit.*(free|available|open)/i, /(from when|until when).*(unit|rotation).*(free|available|capacity)/i], anti: [/put|assign|cancel/] },
         { intent: 'unit_profile', priority: 95, patterns: [/(tell me about|about the|about|details? (of|for|on)|profile of|show me the?)\s+(the\s+)?(uci|ucri|asma\s?grave|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|radiolog\w*|externa)\b/i, /(tell me about|details? (of|for|on)|profile of|show me the?)\s+[a-zñáéíóú]+.*unit/i, /(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*) (unit )?(details?|profile|status|info)/i, /how (full|busy|occupied) is\s+(the\s+)?(uci|ucri|asma|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa|[a-zñáéíóú]+ unit)/i, /is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+(full|at capacity|free|empty|available)/i, /does\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)\s+have\s+(space|room|capacity|a resident)/i, /(who is|whos|who's|residents?) (in|at|assigned to|rotating in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|cardiolog\w*|tor[áa]cica|trasplante|interna|pfr|broncopleural|externa)/i, /how many residents? (in|at|are in)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /list residents? (in|at)\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i, /what (specialty|department|type|floor|building) is\s+(the\s+)?(uci|ucri|asma\s?grave|sue[ñn]o|hospitaliz\w*|[a-zñáéíóú]+ unit)/i], anti: [/put|assign|cancel|move|transfer|which units|all units|free units|trial|study|ensayo|project|proyecto/i] },
@@ -13709,7 +13929,7 @@ document.addEventListener('DOMContentLoaded', () => {
         trials_recruiting: 'clinical_trials', trials_overview: 'clinical_trials', study_governance: 'clinical_trials', trials_by_person: 'clinical_trials',
         research_lines: 'research_lines', research_line_profile: 'research_lines', trial_profile: 'clinical_trials', project_profile: 'innovation_projects', publication_profile: 'news_posts', publications: 'news_posts', research_summary: 'research_lines', research_activity: 'research_lines', innovation_projects: 'innovation_projects', innovation_attention: 'innovation_projects',
         staff_with_phd: 'medical_staff', staff_can_pi: 'medical_staff', residents_by_year: 'medical_staff',
-        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', unit_load: 'training_units', unit_supervisor_gap: 'training_units', unit_attending_links_gap: 'training_units', unit_by_specialty: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
+        certs_expiring: 'medical_staff', units_overview: 'training_units', units_at_capacity: 'training_units', unit_status: 'training_units', unit_profile: 'training_units', place_resident: 'resident_rotations', unit_forecast: 'training_units', unit_load: 'training_units', unit_supervisor_gap: 'training_units', unit_by_specialty: 'training_units', units_board: 'training_units', residents_board: 'resident_rotations',
         unsupervised_residents: 'resident_rotations', rotations_deep: 'resident_rotations', departments_overview: null,
         compare_staff: 'medical_staff', rank_staff: 'medical_staff', workload_analysis: 'medical_staff', help: 'medical_staff', today_snapshot: 'medical_staff', this_week_ahead: 'medical_staff', risk_scan: 'medical_staff', dept_health: 'medical_staff', staff_roster: 'medical_staff', staff_contact: 'medical_staff', rotations_ending: 'resident_rotations', who_supervises: 'resident_rotations', rotation_history: 'resident_rotations', rotation_gaps: 'resident_rotations', coverage_board: 'oncall_schedule', find_replacement: 'oncall_schedule',
         coverage_areas_overview: 'oncall_schedule', callouts_overview: 'oncall_schedule', callout_fairness: 'oncall_schedule', callouts_recent: 'oncall_schedule', callout_by_person: 'oncall_schedule', hospitals_overview: null, clinical_units_overview: 'training_units', draft_rota: 'oncall_schedule', return_leave: 'staff_absence', assign_rotation: 'resident_rotations',
@@ -13739,10 +13959,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // hidden reasoning or full record payloads.
         if (type === 'change' && GroundedCore) {
           try {
-            const traceId = GroundedCore.startTrace({ query:detail?.title || 'Confirmed Grounded action', intent:detail?.kind || 'write_action', view:currentView.value, context:askBarBuildContextEnvelope(), userRole:currentUser.value?.user_role || currentUser.value?.role || null })
-            GroundedCore.addTraceEvent(traceId,'human_confirmation',{confirmed:true})
+            const traceId = detail?._traceId || GroundedCore.startTrace({ query:detail?.title || 'Confirmed Grounded action', intent:detail?.kind || 'write_action', view:currentView.value, context:askBarBuildContextEnvelope(), userRole:currentUser.value?.user_role || currentUser.value?.role || null })
+            if (!detail?._traceId) GroundedCore.addTraceEvent(traceId,'human_confirmation',{confirmed:true})
             GroundedCore.addTraceEvent(traceId,'action_committed',{kind:detail?.kind || null,title:detail?.title || null,entityKeys:detail?.entityKeys || []})
-            GroundedCore.finishTrace(traceId,{status:'ok',intent:detail?.kind || 'write_action',confidence:'high',sources:[],actionClass:'write'})
+            GroundedCore.finishTrace(traceId,{status:'ok',intent:detail?.kind || 'write_action',confidence:'high',sources:['staff','on-call schedule','leave records'],actionClass:'write'})
             groundedRefreshTraces()
           } catch {}
         }
@@ -13998,7 +14218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (askBar.refreshError) { askBarPartialReply(askBar.query.trim(),null,forcedIntent); return }
         const asked0 = askBar.query.trim()
         // Multi-question: if the input holds several questions, answer each in turn.
-        if (!forcedIntent && !askBar.pendingLeave) {
+        if (!forcedIntent && !askBar.pendingLeave && !askBar.pendingOncall) {
           const parts = askBarSplitQuestions(asked0)
           if (parts.length >= 2) {
             askBar.view = 'conversation'
@@ -14225,34 +14445,41 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = 'conversation'
         // Scenario mode is explicitly non-destructive and takes priority over normal intent routing.
         if (!forcedIntent && askBarLooksScenario(asked)) { askBarStartScenario(asked); return }
-        // Multi-turn: if we're mid leave-request waiting for a detail, try to complete it.
-        // Only when the pending was set on the immediately-preceding turn (not stale state).
-        if (!forcedIntent && askBar.pendingLeave && askBar.pendingLeave.awaiting) {
-          const pend = askBar.pendingLeave
-          const q = asked.toLowerCase()
-          // if the new message is itself a clear command/question, it's a topic change
-          const changedTopic = /(who|which|list|how many|on call|oncall|rotation|trial|cancel|remove|delete|draft|show|put|mark|record|does|can|is |phd|absent|briefing)/.test(q)
-          if (!changedTopic) {
-            let filled = false
-            if (pend.awaiting === 'date') {
-              const dr = askBarExtractDates(q)
-              if (dr.start) { pend.start = dr.start; pend.end = dr.end || dr.start; filled = true }
-            } else if (pend.awaiting === 'subject') {
-              const person = askBarResolveStaff(asked)
-              if (person) { pend.subject = person; filled = true }
-            }
-            if (filled) {
-              askBar.query = ''
-              askBar.pendingLeave = null
-              // resume: if still missing something, re-run the flow; else propose
-              if (!pend.subject) { askBarStartLeaveFlow(asked); return }
-              if (!pend.start) { askBar.pendingLeave = pend; askBar.turns.push(Vue.reactive({ q: asked, text: `When is ${pend.subject.full_name} away?`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })); return }
-              if (!pend.reason) { askBar.turns.push(Vue.reactive({ q: asked, text: `What type of leave is this for ${pend.subject.full_name}?`, chips: [], actions: [], sources: [], followups: [], confidence: 'high', leaveClarify: { subject: pend.subject, covering: pend.covering, start: pend.start, end: pend.end, type: pend.type }, leaveReasons: [['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']], asOf: askBarNow(), streaming: false })); return }
-              askBarProposeLeave({ subject: pend.subject, covering: pend.covering, start: pend.start, end: pend.end, type: pend.type, reason: pend.reason }); return
+        // V46.9 · Multi-turn on-call action memory. This is task state only — not
+        // authoritative schedule data. A clearly new command abandons the pending action.
+        if (!forcedIntent && askBar.pendingOncall && askBar.pendingOncall.awaiting) {
+          const pend=askBar.pendingOncall
+          const q=asked.toLowerCase()
+          const clearlyNewCommand=/\b(put|assign|schedule|book|set|add|give|make|cancel|remove|delete|draft|show|who|which|list|rotation|leave|absence|trial|research)\b/.test(q) && !/^(today|tomorrow|next|this|mon|tue|wed|thu|fri|sat|sun|\d)/.test(q.trim())
+          if(!clearlyNewCommand){
+            if(pend.awaiting==='date'){
+              const dr=askBarExtractDates(q)
+              if(dr.start){ const ready={subject:pend.subject,backup:pend.backup||null,start:dr.start,end:dr.end||dr.start}; askBar.pendingOncall=null; askBar.query=''; askBarProposeOncall(ready,`${pend.original||'Schedule on-call'} → ${asked}`); return }
+            } else if(pend.awaiting==='subject'){
+              const rr=askBarResolveStaffClarified(asked)
+              if(rr.ambiguous){ askBarOncallAmbiguityTurn(asked,rr.ambiguous,'subject',pend); return }
+              if(rr.person){ pend.subject=rr.person; if(pend.start){askBar.pendingOncall=null; askBarProposeOncall(pend,`${pend.original||'Schedule on-call'} → ${asked}`); return} pend.awaiting='date'; askBar.turns.push(Vue.reactive({q:asked,text:`What date should I schedule ${rr.person.full_name} for on-call?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
             }
           }
-          // topic changed or couldn't fill → drop the pending, fall through to normal handling
-          askBar.pendingLeave = null
+          if(clearlyNewCommand) askBar.pendingOncall=null
+        }
+        // V46.10 · Multi-turn leave action memory. Identity continuation uses
+        // the write-safe ambiguity path; a clearly new command abandons the pending task.
+        if (!forcedIntent && askBar.pendingLeave && askBar.pendingLeave.awaiting) {
+          const pend=askBar.pendingLeave
+          const q=asked.toLowerCase()
+          const clearlyNewCommand=/\b(put|assign|schedule|book|set|add|give|make|cancel|remove|delete|draft|show|who|which|list|rotation|on.?call|trial|research)\b/.test(q) && !/^(today|tomorrow|next|this|mon|tue|wed|thu|fri|sat|sun|\d)/.test(q.trim())
+          if(!clearlyNewCommand){
+            if(pend.awaiting==='date'){
+              const dr=askBarExtractDates(q)
+              if(dr.start){pend.start=dr.start;pend.end=dr.end||dr.start;askBar.query='';askBar.pendingLeave=null;if(!pend.reason){askBar.turns.push(Vue.reactive({q:asked,text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${asked}`);return}
+            } else if(pend.awaiting==='subject' || pend.awaiting==='covering'){
+              const rr=askBarResolveStaffClarified(asked)
+              if(rr.ambiguous){askBarLeaveAmbiguityTurn(asked,rr.ambiguous,pend.awaiting,pend);return}
+              if(rr.person){if(pend.awaiting==='subject')pend.subject=rr.person;else pend.covering=rr.person;if(!pend.subject){pend.awaiting='subject';askBar.pendingLeave=pend;return}if(!pend.start){pend.awaiting='date';askBar.pendingLeave=pend;askBar.turns.push(Vue.reactive({q:asked,text:`When is ${pend.subject.full_name} away?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}askBar.pendingLeave=null;if(!pend.reason){askBar.turns.push(Vue.reactive({q:asked,text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${asked}`);return}
+            }
+          }
+          if(clearlyNewCommand) askBar.pendingLeave=null
         }
         // #2 MULTI-ACTION / MULTI-INTENT: "put X on leave AND put X on call", or
         // "is Antelo on call AND does she have a phd". Split on " and " when the two
@@ -14605,7 +14832,7 @@ document.addEventListener('DOMContentLoaded', () => {
           askBar.turns.push(Vue.reactive({ q: asked, text: `I can't delete ${who} — that's a permanent HR action. Did you mean to cancel their leave, remove them from on-call, or end a rotation?`, chips: [], actions: person ? [{ label: 'Open staff management', view: 'medical_staff', primary: true }] : [], sources: [], followups, confidence: 'high', asOf: askBarNow(), streaming: false }))
           return
         }
-        // V46.8 trace begins only after routing is stable. Write/proposal flows above
+        // V46.9 read-trace path begins only after routing is stable. Write/proposal flows above
         // retain their existing human-confirmation UI; read/decision-support runs are
         // traced through the new harness from context → tools → outcome.
         const coreTraceId = groundedStartExecutionTrace(asked, intent, { followup: followup?.kind || null })
@@ -15653,8 +15880,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const ranked = groundedInvokeTool('clinical_units.available_units',{start:range.start,end:range.end,residentId:person?.id || null})
           if (!ranked.length) return { text:`No clinical unit has resident capacity throughout ${range.label}${person?` for ${person.full_name}`:''}.`, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open rotation capacity',view:'training_units',primary:true}], sources:['units','rotations'], followups:[{label:'Show partial openings',intent:'unit_forecast',q:`which units have capacity in ${range.label}`}], confidence:'high' }
           const who=person?person.full_name:'a resident', top=ranked.slice(0,6)
-          const rows=top.map(r=>({name:r.unit.name+(r.isNew?' · new for them':''),n:r.state.peak,cap:r.state.capacity,pct:Math.min(100,Math.round(r.state.peak/Math.max(1,r.state.capacity)*100)),full:false,detail:`${r.detail}${r.attendingContext.attendingCount?` · ${r.attendingContext.attendingCount} attending${r.attendingContext.attendingCount===1?'':'s'} linked`:' · attending links not recorded'}${r.attendingContext.departmentSupervisors?.length?` · ${r.attendingContext.departmentSupervisors.length} department supervisor${r.attendingContext.departmentSupervisors.length===1?'':'s'} recorded`:''}`}))
-          return { text:`For ${range.label}, ${top.length} unit${top.length===1?'':'s'} fit the full resident-rotation window for ${who}. Best capacity fits: ${top.slice(0,3).map(r=>`${r.unit.name} (${r.state.minFree}+ guaranteed free)`).join(', ')}. Attending links and department supervision are shown as context and do not block capacity.`, visual:{type:'occupancy',rows}, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open Clinical Units',view:'training_units',primary:true}], sources:['units','rotations','staff'], followups:person&&top[0]?[{label:`Plan ${person.full_name.split(' ')[0]} in ${top[0].unit.name}`,intent:'assign_rotation',q:`put ${person.full_name} in ${top[0].unit.name} from ${range.start} to ${range.end}`}]:[], confidence:'high' }
+          const rows=top.map(r=>({name:r.unit.name+(r.isNew?' · new for them':''),n:r.state.peak,cap:r.state.capacity,pct:Math.min(100,Math.round(r.state.peak/Math.max(1,r.state.capacity)*100)),full:false,detail:`${r.detail}${r.team.supervisor?' · supervisor '+r.team.supervisor.name:' · supervisor needed'}${r.team.teamCount?` · ${r.team.teamCount} clinicians`:' · no team assigned'}`}))
+          return { text:`For ${range.label}, ${top.length} unit${top.length===1?'':'s'} fit the full resident-rotation window for ${who}. Strongest operational fits: ${top.slice(0,3).map(r=>`${r.unit.name} (${r.state.minFree}+ guaranteed free)`).join(', ')}.`, visual:{type:'occupancy',rows}, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open Clinical Units',view:'training_units',primary:true}], sources:['units','rotations','staff'], followups:person&&top[0]?[{label:`Plan ${person.full_name.split(' ')[0]} in ${top[0].unit.name}`,intent:'assign_rotation',q:`put ${person.full_name} in ${top[0].unit.name} from ${range.start} to ${range.end}${top[0].team.supervisor?` under ${top[0].team.supervisor.name}`:''}`}]:[], confidence:'high' }
         }
         if (intent === 'unit_load') {
           const q = (askBar.lastAsked || '').toLowerCase()
@@ -15671,19 +15898,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const lead = wantLeast ? `Least utilised units (most capacity free)` : `Most utilised units`
           return { text: `${lead}: ${top.slice(0,3).map(r=>`${r.name} (${r.n}/${r.cap})`).join(', ')}.`, visual: { type: 'occupancy', rows: top }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations'], followups: [{ label: 'Where to place a resident?', intent: 'place_resident', q:'where should i place a resident' }], confidence: 'high' }
         }
-        if (intent === 'unit_attending_links_gap') {
-          const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
-          const missing = units.filter(u => !(unitStaffCache.value[u.id] || []).length)
-          if (!missing.length) return { text: 'Every active clinical unit has at least one attending physician linked.', chips: [], actions: [{ label: 'Open attending physicians', view: 'training_units', filter:{lens:'weekly'} }], sources: ['units','staff'], followups: [], confidence: 'high' }
-          const items = missing.slice(0,10).map(u => ({ title: u.unit_name, badge: u.unit_code||null, tone:'project', meta: 'attending links not recorded' }))
-          return { text: `${missing.length} clinical unit${missing.length===1?' has':'s have'} no attending physicians linked yet. This is a data-completeness issue, not a resident-capacity block.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open attending physicians', view: 'training_units', primary: true }], sources: ['units','staff'], followups: [], confidence: 'high' }
-        }
         if (intent === 'unit_supervisor_gap') {
           const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
-          const deptIds=[...new Set(units.map(u=>u.department_id).filter(Boolean))]
-          const sups=deptIds.flatMap(id=>getDepartmentResidentSupervisors(id))
-          const unique=[...new Map(sups.map(x=>[String(x.id),x])).values()]
-          return { text: `Clinical Units do not require a unit-level resident supervisor. Formal resident supervision is assigned at the rotation / department level. ${unique.length ? `${unique.length} department-level resident supervisor${unique.length===1?' is':'s are'} explicitly recorded in the current staff data.` : 'No department-level resident supervisor is explicitly flagged in the current staff data.'}`, chips: [], actions: [{ label: 'Open rotations', view: 'resident_rotations', primary:true }], sources: ['units','staff','rotations'], followups: [{label:'Which units need attending links?',intent:'unit_attending_links_gap'}], confidence: 'high' }
+          const noSup = units.filter(u => !(u.default_supervisor_id || u.supervisor_id))
+          if (!noSup.length) return { text: 'Every active unit has a default supervisor assigned.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
+          const items = noSup.slice(0,10).map(u => ({ title: u.unit_name, badge: u.unit_code||null, tone:'project', meta: 'no supervisor assigned' }))
+          return { text: `${noSup.length} unit${noSup.length===1?'':'s'} without a supervisor: ${noSup.slice(0,5).map(u=>u.unit_name).join(', ')}${noSup.length>5?'…':''}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
         }
         if (intent === 'unit_by_specialty') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
@@ -15756,8 +15976,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const active = rots.filter(r => r.rotation_status === 'active' && r.training_unit_id === unit.id)
           const scheduled = rots.filter(r => r.rotation_status === 'scheduled' && r.training_unit_id === unit.id)
           const cap = unit.maximum_residents || 5
-          const attendingContext = groundedInvokeTool('clinical_units.attending_context',{unitId:unit.id})
-          const deptSupNames = (attendingContext.departmentSupervisors||[]).map(s=>s.name)
+          const sup = (medicalStaff.value||[]).find(s => s.id === (unit.default_supervisor_id||unit.supervisor_id||unit.supervising_attending_id))
           // build a profile-style card for the unit
           const profile = {
             id: unit.id, name: unit.unit_name, kind: 'unit', avatar: unit.unit_code || 'CU',
@@ -15769,24 +15988,21 @@ document.addEventListener('DOMContentLoaded', () => {
             overview: [
               { label: 'Status', value: active.length>=cap?'Full':(active.length===0?'Free':'Has space') },
               { label: 'Capacity', value: `${active.length}/${cap} residents` },
-              { label: 'Attending physicians', value: String(attendingContext.attendingCount || 0) },
-              ...(deptSupNames.length ? [{ label: 'Department supervision', value: deptSupNames.join(' · ') }] : []),
+              ...(sup ? [{ label: 'Supervisor', value: sup.full_name }] : []),
               ...(unit.specialty ? [{ label: 'Specialty', value: unit.specialty }] : []),
               ...((unit.location_building || unit.location_floor) ? [{ label: 'Location', value: [unit.location_building, unit.location_floor].filter(Boolean).join(' · ') }] : [])
             ],
             links: [], completeness: 100, missing: [],
-            unitSummary: { active: active.length, capacity: cap, scheduled: scheduled.length, attendingContext: attendingContext.attendingCount ? `${attendingContext.attendingCount} attending${attendingContext.attendingCount===1?'':'s'} linked` : null }
+            unitSummary: { active: active.length, capacity: cap, scheduled: scheduled.length, supervisor: sup ? sup.full_name : null }
           }
           const L = profile.links
-          if (attendingContext.attendingCount) L.push({ label: `${attendingContext.attendingCount} attending physician${attendingContext.attendingCount===1?'':'s'}`, detail: attendingContext.attendings.map(a=>a.name).join(', '), kind: 'people' })
-          if (deptSupNames.length) L.push({ label: 'Department resident supervision', detail: deptSupNames.join(', '), kind: 'people' })
+          if (sup) L.push({ label: 'Supervisor', detail: sup.full_name, kind: 'people' })
           if (active.length) L.push({ label: `${active.length} resident${active.length===1?'':'s'} here now`, detail: active.map(r=>getStaffName(r.resident_id)).filter(Boolean).join(', '), kind: 'people' })
           if (scheduled.length) L.push({ label: `${scheduled.length} scheduled`, detail: scheduled.slice(0,4).map(r=>`${getStaffName(r.resident_id)} (${r.start_date?Utils.formatDateShort(r.start_date):'?'})`).join(', '), kind: 'project' })
           if (unit.location_building || unit.location_floor) L.push({ label: 'Location', detail: [unit.location_building, unit.location_floor].filter(Boolean).join(' · '), kind: 'research' })
           if (!active.length && !scheduled.length) L.push({ label: 'No residents assigned', detail: 'This unit is currently free', kind: 'people' })
           let text = `${unit.unit_name}${unit.unit_code?` (${unit.unit_code})`:''} — ${active.length}/${cap} residents${active.length>=cap?', full':(active.length===0?', free':', has space')}.`
-          if (attendingContext.attendingCount) text += ` ${attendingContext.attendingCount} attending physician${attendingContext.attendingCount===1?' is':'s are'} linked to the unit.`
-          if (deptSupNames.length) text += ` Department resident supervision: ${deptSupNames.join(', ')}.`
+          if (sup) text += ` Supervisor: ${sup.full_name}.`
           return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [{ label: 'Which units are free?', intent: 'unit_status', q: 'which units are free' }, { label: 'Units board', intent: 'units_board' }], confidence: 'high' }
         }
         if (intent === 'unit_status') {
@@ -16204,7 +16420,7 @@ document.addEventListener('DOMContentLoaded', () => {
             { title: 'Coverage & schedule', badge: 'ask', tone:'active', meta: 'who is on call today · coverage this week · who is absent · draft next week rota' },
             { title: 'Staff & rotations', badge: 'ask', tone:'default', meta: 'how many staff · who is rotating where · progress of [name] · unsupervised residents' },
             { title: 'Fairness & load', badge: 'ask', tone:'research', meta: 'who does the most on call · supervisor load · who has the most leave' },
-            { title: 'Units', badge: 'ask', tone:'default', meta: 'which units are free · how full is UCI · units without attending links · where to place a resident' },
+            { title: 'Units', badge: 'ask', tone:'default', meta: 'which units are free · how full is UCI · units without a supervisor · where to place a resident' },
             { title: 'Research', badge: 'ask', tone:'research', meta: 'how is our research doing · which trials are recruiting · about line 3' },
             { title: 'Actions', badge: 'do', tone:'project', meta: 'put [name] on call [date] · put [name] on leave · put [name] in [unit] under [attending]' },
             { title: 'The big picture', badge: 'new', tone:'active', meta: "what's happening today · this week ahead · risk scan · how is the department doing" },
@@ -16458,8 +16674,27 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       // #7 A clarification chip was tapped → answer for that specific person now.
       const askBarResolveClarified = (c) => {
-        const s = (medicalStaff.value || []).find(x => x.id === c.id)
+        const s = (medicalStaff.value || []).find(x => String(x.id) === String(c.id))
         if (!s) return
+        if (c.leaveClarifyIdentity && askBar.pendingLeave) {
+          const pend=askBar.pendingLeave
+          if(c.leaveClarifyIdentity==='subject') pend.subject=s
+          else if(c.leaveClarifyIdentity==='covering') pend.covering=s
+          if(!pend.subject){pend.awaiting='subject';askBar.pendingLeave=pend;return}
+          if(!pend.start){pend.awaiting='date';askBar.pendingLeave=pend;askBar.turns.push(Vue.reactive({q:'',text:`When is ${pend.subject.full_name} away?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+          askBar.pendingLeave=null
+          if(!pend.reason){askBar.turns.push(Vue.reactive({q:'',text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}
+          askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${s.full_name}`);return
+        }
+        if (c.oncallClarify && askBar.pendingOncall) {
+          const pend = askBar.pendingOncall
+          if (c.oncallClarify === 'subject') pend.subject = s
+          else if (c.oncallClarify === 'backup') pend.backup = s
+          pend.awaiting = pend.start ? null : 'date'
+          if (pend.start) { askBar.pendingOncall = null; askBarProposeOncall({ subject:pend.subject, backup:pend.backup||null, start:pend.start, end:pend.end||pend.start }, `${pend.original||'Schedule on-call'} → ${s.full_name}`); return }
+          askBar.turns.push(Vue.reactive({ q:'', text:`What date should I schedule ${pend.subject.full_name} for on-call?`, chips:[], actions:[], sources:[], followups:[], confidence:'low', asOf:askBarNow(), streaming:false }))
+          return
+        }
         askBar.context = { type: 'staff', id: s.id, name: s.full_name }
         const fu = c.clarifyAttr ? { kind: 'staff_attr', id: s.id, name: s.full_name, attr: c.clarifyAttr } : { kind: 'staff_summary', id: s.id, name: s.full_name }
         askBar.view = 'conversation'
@@ -16684,17 +16919,17 @@ document.addEventListener('DOMContentLoaded', () => {
           deleteDepartment, confirmDeptReassignAndDeactivate, viewDepartmentStaff,
           deptPanel, openDeptPanel, closeDeptPanel,
           deptPanelAttending, deptPanelResidents, deptPanelUnits, deptPanelRotations,
-          rotDaysLeft,
+          getUnitSupervisorName, rotDaysLeft,
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
           getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
         trainingUnitView, trainingUnitHorizon, trainingUnitPlanningOffset, clinicalUnitWeekOffset, getTimelineMonths, getPlanningMonths, getUnitCapacityWindow, formatCapacityWindows, shiftPlanningWindow, resetPlanningWindow, clinicalUnitPlanningRows, clinicalUnitPlanningSummary, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
           capacityInspector, openCapacityInspector, closeCapacityInspector, getCapacityInspectorRotations, getNextFreeWindow,
           placementAdvisor, placementResidents, placementRecommendations, openPlacementRotation,
-          unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount, getStaffLinkedClinicalUnits, clinicalUnitWeeklyTeamGrid,
+          unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount, clinicalUnitWeeklyTeamGrid,
           clinicalUnitTeamSetupState, clinicalUnitTeamSetupExpanded,
           clinicalUnitTeamDayDetail, openClinicalUnitTeamDay, closeClinicalUnitTeamDay,
-          clinicalUnitHeaderContext, clinicalUnitHeroModel, clinicalUnitHeaderMetrics, clinicalUnitAttentionItems, clinicalUnitDataSetupItems,
-          unitDetailSnapshot, unitDetailCapacityMonths, getDepartmentResidentSupervisors,
+          clinicalUnitHeaderContext, clinicalUnitHeaderMetrics, clinicalUnitAttentionItems,
+          unitDetailSnapshot, unitDetailCapacityMonths,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
           editTrainingUnit, deleteTrainingUnit, saveTrainingUnit, assignAttendingToUnit,

@@ -225,15 +225,86 @@ Module
 └─ source-of-truth mapping
 ```
 
-Clinical Units is the first reference module. Rotations, Leave, On-call, Staff and Research can follow as their operational surfaces mature.
+Clinical Units is the first reference module. **On-call is the second integrated module (V46.9), and Leave is the third (V46.10).** Both write-heavy workflows now follow the same action-integrity contract. Resident Rotations is next; Staff and Research follow incrementally as their workflows mature.
 
-## V46.9 Clinical Units domain contract
 
-Clinical Units is the first adapter where the architecture explicitly distinguishes a **hard operational constraint** from **contextual clinical structure**.
+## V46.9 · On-call action integrity
 
-- Resident capacity and resident-rotation overlap can block a placement.
-- Attending physicians linked through `unit_staff` describe who normally works in the unit; they do not define resident capacity.
-- Formal resident supervision belongs to the rotation / department context and is not inferred from Clinical Unit membership.
-- Missing attending links are surfaced as data completeness, not as proof that the unit cannot accept a resident.
+V46.9 proves that the V46.8 architecture can absorb an existing write workflow without replacing Grounded. On-call now uses these semantic tools:
 
-This pattern should be preserved when future modules join Grounded: module adapters must identify which facts are constraints, which are context, and which are merely incomplete data rather than allowing the model to infer those semantics itself.
+- `oncall.person_shifts` (READ)
+- `oncall.check_eligibility` (READ)
+- `oncall.check_slot` (READ)
+- `oncall.replacement_candidates` (READ)
+- `oncall.propose_assignment` (PROPOSE)
+- `oncall.commit_assignment` (WRITE)
+
+The write trajectory is:
+
+```text
+write-safe person resolution
+→ ambiguity clarification
+→ on-call eligibility
+→ date resolution
+→ leave / duplicate / slot validation
+→ proposal
+→ human confirmation
+→ commit-time revalidation
+→ WRITE tool
+→ source refresh
+→ trace + audit
+```
+
+Short-lived `pendingOncall` task state supports natural clarification such as “Put Antelo on call” → “Tuesday”. It is session task context only; it never becomes authoritative schedule state.
+
+This release also fixes a routing defect where the `record_oncall` intent rejected action phrases containing the word **week**, allowing “Put Marina on call Tuesday this week” to fall through to the read-only schedule lookup.
+
+### Action-integrity rule for future modules
+
+A module is not considered fully migrated merely because it has a confirmation button. A write-capable workflow must:
+
+1. resolve identities safely;
+2. reject or clarify ambiguity;
+3. validate domain eligibility;
+4. prepare a non-destructive proposal;
+5. require explicit confirmation;
+6. revalidate immediately before commit;
+7. write through a permission-gated WRITE tool;
+8. refresh authoritative state;
+9. close one coherent trace/audit trajectory.
+
+**Next migration:** Resident Rotations.
+
+
+## V46.10 · Leave action integrity
+
+V46.10 migrates the leave-recording path onto the same guarded architecture used by On-call.
+
+Semantic tools:
+
+- `leave.person_records` (READ)
+- `leave.check_window` (READ)
+- `leave.propose_absence` (PROPOSE)
+- `leave.commit_absence` (WRITE)
+
+The trajectory is:
+
+```text
+write-safe subject / covering identity
+→ ambiguity clarification
+→ leave date + type resolution
+→ duplicate/overlap validation
+→ operational collision preview
+→ proposal
+→ human confirmation
+→ commit-time revalidation
+→ WRITE tool
+→ source refresh
+→ trace + audit
+```
+
+On-call and rotation collisions are warnings, not automatic blocks: leave may legitimately create a coverage problem that the department must then resolve. Duplicate/overlapping leave remains a hard block to protect record integrity.
+
+`pendingLeave` is short-lived task state only. It supports natural clarification while preserving the selected subject, dates or covering clinician without storing hospital facts in Grounded memory.
+
+**Next migration:** Resident Rotation Action Integrity.

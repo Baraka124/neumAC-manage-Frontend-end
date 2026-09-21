@@ -16,13 +16,14 @@ const arch = fs.readFileSync('GROUNDED-ARCHITECTURE.md','utf8')
 
 const tests = [
   ['V46.8 build and core load order', () => {
-    assert(html.includes('neumDesk · V46.8') || html.includes('neumDesk · V46.9'))
-    assert(html.includes('grounded-core.js?v=46.8-grounded-architecture'))
-    assert(html.includes('app.js?v=46.8-grounded-architecture') || html.includes('app.js?v=46.9-clinical-units-domain'))
-    assert(html.indexOf('grounded-core.js?v=46.8-grounded-architecture') < (html.indexOf('app.js?v=46.9-clinical-units-domain') >= 0 ? html.indexOf('app.js?v=46.9-clinical-units-domain') : html.indexOf('app.js?v=46.8-grounded-architecture')))
+    assert(/neumDesk · V46\.(8|9|10)/.test(html))
+    const coreSrc=(html.match(/grounded-core\.js\?v=([^"']+)/)||[])[0]
+    const appSrc=(html.match(/app\.js\?v=([^"']+)/)||[])[0]
+    assert(coreSrc && appSrc)
+    assert(html.indexOf(coreSrc) < html.indexOf(appSrc))
   }],
   ['core exposes architecture contracts', () => {
-    assert.strictEqual(Core.VERSION,'46.8')
+    { const [maj,min]=String(Core.VERSION).split('.').map(Number); assert(maj>46 || (maj===46 && min>=8)) }
     ;['buildContextEnvelope','createToolRegistry','runBoundedPlan','startTrace','finishTrace','evaluateTrace'].forEach(k=>assert.strictEqual(typeof Core[k],'function'))
     assert.strictEqual(Core.ACCESS.WRITE,'write')
   }],

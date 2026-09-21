@@ -17,8 +17,8 @@ const tests = [
   ['startup primary loaders use allSettled isolation', () => assert(app.includes('const primaryLoads = await Promise.allSettled(['))],
   ['startup operational loaders use allSettled isolation', () => assert(app.includes('const operationalLoads = await Promise.allSettled(['))],
   ['HTML carries a V46.3-or-later build and cache marker', () => {
-    assert(html.includes('neumDesk · V46.3') || html.includes('neumDesk · V46.4') || html.includes('neumDesk · V46.5') || html.includes('neumDesk · V46.6') || html.includes('neumDesk · V46.7') || html.includes('neumDesk · V46.8') || html.includes('neumDesk · V46.9'))
-    assert(html.includes('app.js?v=46.3-staff-loader') || html.includes('app.js?v=46.4-clinical-units') || html.includes('app.js?v=46.5-clinical-units') || html.includes('app.js?v=46.6-clinical-units-detail') || html.includes('app.js?v=46.7-clinical-units-adaptive') || html.includes('app.js?v=46.8-grounded-architecture') || html.includes('app.js?v=46.9-clinical-units-domain'))
+    assert(html.includes('neumDesk · V46.3') || html.includes('neumDesk · V46.4') || html.includes('neumDesk · V46.5') || html.includes('neumDesk · V46.6') || html.includes('neumDesk · V46.7') || html.includes('neumDesk · V46.8') || html.includes('neumDesk · V46.9') || html.includes('neumDesk · V46.10'))
+    assert(html.includes('app.js?v=46.3-staff-loader') || html.includes('app.js?v=46.4-clinical-units') || html.includes('app.js?v=46.5-clinical-units') || html.includes('app.js?v=46.6-clinical-units-detail') || html.includes('app.js?v=46.7-clinical-units-adaptive') || html.includes('app.js?v=46.8-grounded-architecture') || html.includes('app.js?v=46.9-grounded-action-integrity') || html.includes('app.js?v=46.10-leave-action-integrity'))
   }],
 ]
 

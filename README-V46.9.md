@@ -1,81 +1,103 @@
-# neumDesk V46.9 — Clinical Units · Domain Semantics + Header Alignment
+# neumDesk V46.9 — Grounded · Action Integrity
 
-V46.9 corrects the Clinical Units domain model and aligns the module header with the established Overview dashboard language. It is intentionally not a backend release and does not change the V46.8 Grounded core architecture.
+V46.9 is built directly on V46.8 Grounded Architecture Foundation. It does not redesign Grounded. It proves that the V46.8 harness can safely absorb an existing operational write flow.
 
-## Domain model
+## Why this release exists
 
-The Clinical Units UI now follows these rules:
+A real on-call example exposed four legacy weaknesses:
 
-- **Clinical Unit ↔ attending physicians** is a structural/contextual relationship. One or more attending physicians can be linked to a unit through `unit_staff` because they normally work in that clinical activity.
-- **Clinical Unit ↔ resident** is time-bounded and represented by a resident rotation with explicit start/end dates.
-- **Resident supervision** belongs to the rotation / residency programme / department level. A Clinical Unit does not need its own default resident supervisor in order to accept a resident.
-- **Resident capacity** is a configured property of the Clinical Unit and is independent of the number of attending physicians linked to it.
-- Recorded attending leave is useful context, but it is not automatically a hard resident-capacity constraint.
+1. `record_oncall` rejected phrases containing **week**, so an action such as “Put Marina on call Tuesday this week” could route to the read-only schedule lookup.
+2. On-call writes could use the ordinary fuzzy staff resolver instead of the write-safe ambiguity path.
+3. On-call had no pending task state, so “Put Baraka on call” followed by “Tuesday” did not reliably preserve the person.
+4. The proposal checked leave/duplicate state but did not make configured on-call eligibility a hard precondition.
 
-This removes the earlier semantic conflation between unit membership, staff availability and formal resident supervision.
+V46.9 treats those as architecture defects, not isolated text bugs.
 
-## Header alignment
+## On-call semantic tools
 
-Clinical Units now uses the same contextual hero grammar as Overview:
+The module is now the second Grounded tool adapter and the first legacy write-heavy workflow migrated end-to-end:
 
-- the global shell already names the module (`Clinical Units`), so the hero does not repeat the module name as a second giant heading;
-- the hero title changes with the selected lens and current planning context;
-- actions use the Overview `dbh-*` system;
-- operational attention uses the same alert rail;
-- the generic breadcrumb band is hidden for Clinical Units;
-- the hero is deliberately crisp: strong dark surfaces, no decorative haze and no translucent blur.
+- `oncall.person_shifts` — READ
+- `oncall.check_eligibility` — READ
+- `oncall.check_slot` — READ
+- `oncall.replacement_candidates` — READ
+- `oncall.propose_assignment` — PROPOSE
+- `oncall.commit_assignment` — WRITE
 
-The three lenses remain distinct:
+## Action integrity
 
-1. **Resident rotations / Rotation capacity** — month-by-month resident placement and exact date windows.
-2. **Unit staff / Attending physicians** — structural attending links, with recorded leave as secondary context.
-3. **Unit structure / Unit directory** — people, current/incoming residents, capacity and unit details.
+The scheduling path is now:
 
-## Operational attention vs data setup
+```text
+resolve exact person
+→ clarify ambiguity
+→ verify active/on-call-eligible staff
+→ resolve date
+→ check leave, duplicate duty and slot state
+→ prepare proposal
+→ human confirms
+→ revalidate immediately before write
+→ commit through WRITE tool
+→ refresh on-call data
+→ trace + audit
+```
 
-V46.9 separates issues by meaning.
+A stale proposal cannot simply write: the WRITE tool recomputes the safety proposal immediately before calling `/api/oncall`.
 
-**Operational attention** is reserved for conditions such as resident-capacity violations, recorded rotation overlaps, or an already-linked unit whose recorded attendings are all away today.
+## Multi-turn task memory
 
-**Data setup** contains incomplete structural information such as a Clinical Unit with no attending physicians linked or a failed staff-link load. Missing attending links do not make a unit unavailable for resident placement.
+`pendingOncall` is short-lived task context. It supports:
 
-## Attending links and supervision
+```text
+Put Antelo on call
+→ What date should I schedule Antelo for on-call?
+Tuesday
+→ proposal for Antelo on Tuesday
+```
 
-The attending-management modal now manages only `unit_staff` links. Saving attending links does not update any unit-level supervisor field.
+A clearly new command abandons the pending task. This state is never treated as authoritative schedule data.
 
-The Clinical Unit edit form no longer presents or saves a unit supervisor. Legacy backend fields may remain present for compatibility, but V46.9 does not treat them as the source of truth for Clinical Unit semantics.
+## Entity safety
 
-The resident-rotation form still requires a formal supervising attending because the current rotation schema requires it. The selector now prioritizes explicitly recorded **department resident supervisors** when available, followed by other eligible attendings. Selecting a Clinical Unit never auto-assigns a supervisor.
+On-call uses ambiguity-aware staff resolution. A short token that could refer to more than one person is clarified rather than silently choosing the first fuzzy match.
 
-The Department panel also now displays Clinical Unit membership from `unit_staff` rather than inferring a unit from legacy `supervisor_id` fields.
+## Observability
 
-## Unit detail
+The same execution trace can now span proposal → human confirmation → WRITE tool → commit outcome. Confirmed writes no longer need a disconnected second trace when an existing proposal trace is available.
 
-The canonical Clinical Unit record now separates:
+## DepartmentOS architecture
 
-- resident capacity today;
-- attending physicians linked to the unit;
-- current residents;
-- incoming rotations;
-- exact next resident opening;
-- department-level resident supervision context;
-- 12-month resident capacity;
-- data-setup notes.
+`DepartmentOS_Architecture.md` is now a required living release artifact. V46.9 updates it with:
 
-This supports the natural reading of a unit such as Severe Asthma: the attendings who normally work there, the residents currently rotating there, upcoming residents, and resident-programme supervision as a separate department-level concept.
+- the current implementation ledger;
+- actual READ / PROPOSE / ACT maturity;
+- Grounded harness adoption status;
+- known architectural debt;
+- the next migration sequence.
 
-## Grounded semantics
+Future complete release packages must update this file before packaging.
 
-The V46.8 Grounded architecture is unchanged. V46.9 updates only the Clinical Units adapter semantics.
+## Next
 
-- `clinical_units.attending_context` returns structural attending links plus department-level resident-supervision context.
-- attending links and department supervisors are descriptive context, not capacity gates.
-- `clinical_units.available_units` determines eligibility from resident capacity over the requested interval.
-- `resident_rotations.propose_assignment` blocks on resident overlap and unit capacity, while carrying attending/supervision context into the proposal.
-- legacy questions such as “which units have no supervisor?” are answered by explaining that Clinical Units do not require a unit-level resident supervisor.
+**Leave Action Integrity**, then **Resident Rotation Action Integrity**. Clinical Units UI and Personal Activity/Portfolio Intelligence may continue in parallel, but new write flows should not bypass the action-integrity contract.
 
-## Release boundary
+## Files changed / added
 
-No backend source file is included or modified in V46.9. `grounded-core.js` remains the V46.8 architecture foundation. V46.9 changes frontend domain semantics, presentation and the Clinical Units Grounded adapter only.
+- `grounded-core.js`
+- `app.js`
+- `index.html`
+- `style.css`
+- `GROUNDED-ARCHITECTURE.md`
+- `DepartmentOS_Architecture.md` — living architecture ledger, added to release baseline
+- `README-V46.9.md`
+- `test-v469.cjs`
+- forward-compatibility update to `test-v468.cjs`
+- regenerated `MANIFEST-SHA256.txt`
 
-Live authenticated browser testing remains required after deployment, especially for real `unit_staff` links, rotation supervisors and existing legacy unit records.
+## Backend
+
+No backend `index.js` change is required for V46.9.
+
+## Deployment
+
+The cache marker is `46.9-grounded-action-integrity`. Deploy the complete baseline and hard-refresh the browser.
