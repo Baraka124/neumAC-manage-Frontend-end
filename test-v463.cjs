@@ -17,8 +17,8 @@ const tests = [
   ['startup primary loaders use allSettled isolation', () => assert(app.includes('const primaryLoads = await Promise.allSettled(['))],
   ['startup operational loaders use allSettled isolation', () => assert(app.includes('const operationalLoads = await Promise.allSettled(['))],
   ['HTML carries a V46.3-or-later build and cache marker', () => {
-    assert(html.includes('neumDesk · V46.3') || html.includes('neumDesk · V46.4'))
-    assert(html.includes('app.js?v=46.3-staff-loader') || html.includes('app.js?v=46.4-clinical-units'))
+    assert(html.includes('neumDesk · V46.3') || html.includes('neumDesk · V46.4') || html.includes('neumDesk · V46.5'))
+    assert(html.includes('app.js?v=46.3-staff-loader') || html.includes('app.js?v=46.4-clinical-units') || html.includes('app.js?v=46.5-clinical-units'))
   }],
 ]
 

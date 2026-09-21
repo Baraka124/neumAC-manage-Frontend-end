@@ -5006,6 +5006,86 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
 
+
+      // ── V46.5 month inspector + resident-first placement advisor ───────────
+      const capacityInspector = reactive({ show:false, unit:null, month:null, state:null })
+      const openCapacityInspector = (unit, month) => {
+        if (!unit || !month) return
+        capacityInspector.unit = unit
+        capacityInspector.month = month
+        capacityInspector.state = month.state || getUnitCapacityWindow(unit.id, month.start, month.end)
+        capacityInspector.show = true
+      }
+      const closeCapacityInspector = () => { capacityInspector.show = false }
+
+      const getCapacityInspectorRotations = (state) => (state?.rotations || [])
+        .slice()
+        .sort((a,b) => String(a.start_date||'').localeCompare(String(b.start_date||'')))
+        .map(r => ({
+          ...r,
+          residentName:getResidentShortName(r.resident_id),
+          start:Utils.normalizeDate(r.start_date),
+          end:Utils.normalizeDate(r.end_date)
+        }))
+
+      // First exact free interval rather than only the first month containing space.
+      const getNextFreeWindow = (unitId, fromDate = null, months = 24) => {
+        const start = _unitDate(fromDate || Utils.normalizeDate(new Date())) || new Date()
+        for (let i=0; i<months; i++) {
+          const mStart = new Date(start.getFullYear(), start.getMonth()+i, i===0 ? start.getDate() : 1)
+          const mEnd = new Date(mStart.getFullYear(), mStart.getMonth()+1, 0)
+          const state = getUnitCapacityWindow(unitId, _unitIso(mStart), _unitIso(mEnd))
+          const seg = (state.segments || []).find(s => s.free > 0)
+          if (seg) {
+            const fmt = (iso, opts) => _unitDate(iso)?.toLocaleDateString('es-ES',opts) || iso
+            return {
+              start:seg.start, end:seg.end, freeSlots:seg.free, capacity:state.capacity,
+              label:`${fmt(seg.start,{day:'numeric',month:'short'})} – ${fmt(seg.end,{day:'numeric',month:'short',year:'numeric'})}`,
+              monthLabel:fmt(seg.start,{month:'long',year:'numeric'}),
+              state
+            }
+          }
+        }
+        return null
+      }
+
+      const _placementDefaultStart = () => {
+        const d = new Date(); return _unitIso(new Date(d.getFullYear(), d.getMonth()+1, 1))
+      }
+      const _placementDefaultEnd = () => {
+        const d = new Date(); return _unitIso(new Date(d.getFullYear(), d.getMonth()+2, 0))
+      }
+      const placementAdvisor = reactive({
+        open:false,
+        residentId:'',
+        startDate:_placementDefaultStart(),
+        endDate:_placementDefaultEnd(),
+        onlyFullFit:true
+      })
+      const placementResidents = computed(() => (medicalStaff.value || [])
+        .filter(s => isResidentType(s.staff_type) && s.employment_status !== 'inactive')
+        .slice().sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||'')))
+      const placementRecommendations = computed(() => {
+        const start = placementAdvisor.startDate, end = placementAdvisor.endDate
+        if (!start || !end || end < start) return []
+        return filteredTrainingUnits.value
+          .filter(u => u.unit_status !== 'inactive')
+          .map(unit => {
+            const state = getUnitCapacityWindow(unit.id, start, end)
+            const fullFit = !state.overCapacity && state.minFree > 0
+            const partial = !fullFit && state.hasAvailability && !state.overCapacity
+            const teamCount = (unitStaffCache.value[unit.id] || []).length
+            const supervisorId = unit.supervising_attending_id || unit.supervisor_id || unit.default_supervisor_id || null
+            const fit = fullFit ? 'fit' : partial ? 'partial' : state.overCapacity ? 'conflict' : 'full'
+            return { unit, state, fit, fullFit, partial, teamCount, supervisorReady:!!supervisorId, detail:formatCapacityWindows(state) }
+          })
+          .filter(r => !placementAdvisor.onlyFullFit || r.fullFit)
+          .sort((a,b) => {
+            const rank={fit:0,partial:1,full:2,conflict:3}
+            return (rank[a.fit]-rank[b.fit]) || (b.state.minFree-a.state.minFree) || (a.unit.unit_name||'').localeCompare(b.unit.unit_name||'')
+          })
+      })
+
       // Generate the array of month objects for the timeline header
       const getTimelineMonths = (horizonMonths) => {
         const today = new Date()
@@ -5470,6 +5550,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return { trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits, getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal, editTrainingUnit, deleteTrainingUnit, openUnitClinicians, saveUnitClinicians, assignAttendingToUnit, viewUnitResidents, saveTrainingUnit,
         trainingUnitView, trainingUnitHorizon, trainingUnitPlanningOffset, clinicalUnitWeekOffset, getTimelineMonths, getPlanningMonths, getUnitCapacityWindow, formatCapacityWindows, shiftPlanningWindow, resetPlanningWindow, clinicalUnitPlanningRows, clinicalUnitPlanningSummary, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
+        capacityInspector, openCapacityInspector, closeCapacityInspector, getCapacityInspectorRotations, getNextFreeWindow,
+        placementAdvisor, placementResidents, placementRecommendations,
         unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount, addStaffToUnit, removeStaffFromUnit,
         occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits, getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail }
     }
@@ -7398,12 +7480,24 @@ document.addEventListener('DOMContentLoaded', () => {
           trainingUnitView, trainingUnitHorizon, trainingUnitPlanningOffset, clinicalUnitWeekOffset,
           getTimelineMonths, getPlanningMonths, getUnitCapacityWindow, formatCapacityWindows, shiftPlanningWindow, resetPlanningWindow, clinicalUnitPlanningRows, clinicalUnitPlanningSummary, getUnitSlots, getDaysUntilFree,
           tlPopover, openCellPopover, closeCellPopover,
+          capacityInspector, openCapacityInspector, closeCapacityInspector, getCapacityInspectorRotations, getNextFreeWindow,
+          placementAdvisor, placementResidents, placementRecommendations,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail,
-          unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff
+          unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount
         } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, medicalStaff, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
+
+        const openPlacementRotation = (unit) => {
+          if (!unit) return
+          const resident = (medicalStaff.value || []).find(s => s.id === placementAdvisor.residentId) || null
+          rotationOps.showAddRotationModal(resident, unit)
+          if (placementAdvisor.startDate) rotationOps.rotationModal.form.start_date = placementAdvisor.startDate
+          if (placementAdvisor.endDate) rotationOps.rotationModal.form.end_date = placementAdvisor.endDate
+          placementAdvisor.open = false
+          Vue.nextTick(() => rotationOps.checkRotationAvailability?.())
+        }
 
         // Destructure getHorizonMonths so absence timeline functions can use it without qualification
         const { getHorizonMonths } = rotationOps
@@ -7491,12 +7585,88 @@ document.addEventListener('DOMContentLoaded', () => {
                 !['cancelled','returned_to_duty'].includes(ab.current_status) &&
                 Utils.normalizeDate(ab.start_date) <= day.iso && Utils.normalizeDate(ab.end_date) >= day.iso
               ))
-              const total = activeMembers.length, absent = absentMembers.length, present = Math.max(0,total-absent)
-              return { total, present, absent, noTeam:total===0, warn:total>0 && present/total < .5, critical:total>0 && present===0, absentMembers }
+              const absentIds = new Set(absentMembers.map(m => m.staff?.id).filter(Boolean))
+              const presentMembers = activeMembers.filter(m => !absentIds.has(m.staff?.id))
+              const total = activeMembers.length, absent = absentMembers.length, present = presentMembers.length
+              return { total, present, absent, noTeam:total===0, warn:total>0 && present/total < .5, critical:total>0 && present===0, activeMembers, presentMembers, absentMembers }
             })
             return { unitId:unit.id, unitName:unit.unit_name, unitCode:unit.unit_code, team, cells }
           })
           return { monday:baseMonday, days, rows }
+        })
+
+
+        // ── V46.5 Clinical Units contextual command header ───────────────────
+        const clinicalUnitTeamDayDetail = reactive({ show:false, row:null, day:null, cell:null })
+        const openClinicalUnitTeamDay = (row, day, cell) => {
+          clinicalUnitTeamDayDetail.row=row; clinicalUnitTeamDayDetail.day=day; clinicalUnitTeamDayDetail.cell=cell; clinicalUnitTeamDayDetail.show=true
+        }
+        const closeClinicalUnitTeamDay = () => { clinicalUnitTeamDayDetail.show=false }
+
+        const clinicalUnitHeaderContext = computed(() => {
+          if (trainingUnitView.value === 'weekly') {
+            const days=clinicalUnitWeeklyTeamGrid.value.days || []
+            const a=days[0]?.date, b=days[6]?.date
+            return a && b ? `${a.toLocaleDateString('es-ES',{day:'numeric',month:'short'})} – ${b.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}` : 'Clinical team readiness'
+          }
+          if (trainingUnitView.value === 'detail') return `${filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive').length} active clinical units`
+          const months=getPlanningMonths()
+          const a=months[0], b=months[months.length-1]
+          return a && b ? `${a.longLabel} – ${b.longLabel}` : 'Resident rotation planning'
+        })
+
+        const clinicalUnitHeaderMetrics = computed(() => {
+          if (trainingUnitView.value === 'weekly') {
+            const grid=clinicalUnitWeeklyTeamGrid.value
+            const todayIndex=Math.max(0,grid.days.findIndex(d=>d.isToday))
+            const todayCells=grid.rows.map(r=>r.cells[todayIndex]).filter(Boolean)
+            const assigned=new Set(grid.rows.flatMap(r=>r.team.map(m=>m.staff?.id).filter(Boolean))).size
+            return [
+              {label:'Clinical team',value:assigned,sub:'unique clinicians',tone:'teal'},
+              {label:'Available today',value:todayCells.reduce((n,c)=>n+c.present,0),sub:'recorded available',tone:'plain'},
+              {label:'Reduced cover',value:todayCells.filter(c=>c.warn||c.critical).length,sub:'units today',tone:todayCells.some(c=>c.warn||c.critical)?'amber':'plain'},
+              {label:'No team',value:todayCells.filter(c=>c.noTeam).length,sub:'units unassigned',tone:todayCells.some(c=>c.noTeam)?'red':'plain'}
+            ]
+          }
+          if (trainingUnitView.value === 'detail') {
+            const units=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive')
+            const teamAssignments=units.reduce((n,u)=>n+(unitStaffCache.value[u.id]||[]).length,0)
+            const unsupervised=units.filter(u=>!(u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id)).length
+            const activeResidents=rotations.value.filter(r=>r.rotation_status==='active').length
+            return [
+              {label:'Active units',value:units.length,sub:'in directory',tone:'teal'},
+              {label:'Team assignments',value:teamAssignments,sub:'across units',tone:'plain'},
+              {label:'Residents now',value:activeResidents,sub:'active rotations',tone:'plain'},
+              {label:'No supervisor',value:unsupervised,sub:'needs review',tone:unsupervised?'amber':'plain'}
+            ]
+          }
+          const s=clinicalUnitPlanningSummary.value
+          return [
+            {label:'Units with space',value:s.withSpace,sub:`of ${s.units} · ${s.month?.label||''}`,tone:'teal'},
+            {label:'Guaranteed slots',value:s.guaranteedSlots,sub:'throughout month',tone:'plain'},
+            {label:'Completely free',value:s.completelyFree,sub:'no resident assigned',tone:'plain'},
+            {label:'Capacity conflicts',value:s.over,sub:s.over?'requires attention':'none recorded',tone:s.over?'red':'plain'}
+          ]
+        })
+
+        const clinicalUnitAttentionItems = computed(() => {
+          const items=[]
+          const firstMonth=getPlanningMonths(1)[0]
+          if (firstMonth) {
+            clinicalUnitPlanningRows.value.forEach(row=>{
+              const st=row.months[0]?.state
+              if (st?.overCapacity) items.push({tone:'red',text:`${row.unit.unit_name} exceeds resident capacity in ${firstMonth.label}`})
+            })
+          }
+          clinicalUnitWeeklyTeamGrid.value.rows.forEach(row=>{
+            const idx=clinicalUnitWeeklyTeamGrid.value.days.findIndex(d=>d.isToday)
+            const cell=idx>=0?row.cells[idx]:null
+            if (cell?.noTeam) items.push({tone:'amber',text:`${row.unitName} has no clinical team assigned`})
+            else if (cell?.critical) items.push({tone:'red',text:`${row.unitName} has no recorded clinical cover today`})
+          })
+          filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive' && !(u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id)).slice(0,2)
+            .forEach(u=>items.push({tone:'amber',text:`${u.unit_name} has no default supervisor`}))
+          return items.slice(0,4)
         })
 
         // ── Dashboard alert: units that are understaffed today ───────────────
@@ -16214,7 +16384,11 @@ document.addEventListener('DOMContentLoaded', () => {
           trainingUnits, trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal, filteredTrainingUnits,
           getUnitActiveRotationCount, getUnitRotations, getUnitScheduledCount, getUnitOverlapWarning, getResidentShortName, loadTrainingUnits, showAddTrainingUnitModal,
         trainingUnitView, trainingUnitHorizon, trainingUnitPlanningOffset, clinicalUnitWeekOffset, getTimelineMonths, getPlanningMonths, getUnitCapacityWindow, formatCapacityWindows, shiftPlanningWindow, resetPlanningWindow, clinicalUnitPlanningRows, clinicalUnitPlanningSummary, getUnitSlots, getDaysUntilFree, tlPopover, openCellPopover, closeCellPopover,
-          unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, clinicalUnitWeeklyTeamGrid,
+          capacityInspector, openCapacityInspector, closeCapacityInspector, getCapacityInspectorRotations, getNextFreeWindow,
+          placementAdvisor, placementResidents, placementRecommendations, openPlacementRotation,
+          unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount, clinicalUnitWeeklyTeamGrid,
+          clinicalUnitTeamDayDetail, openClinicalUnitTeamDay, closeClinicalUnitTeamDay,
+          clinicalUnitHeaderContext, clinicalUnitHeaderMetrics, clinicalUnitAttentionItems,
           occupancyPanel, unitDetailDrawer, occupancyHeatmap, occupancyPanelUnits,
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail, openAssignRotationFromUnit,
           editTrainingUnit, deleteTrainingUnit, saveTrainingUnit, assignAttendingToUnit,
