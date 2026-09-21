@@ -126,10 +126,11 @@
             </div>
 
             <div class="gr431-readiness" role="status" aria-live="polite">
-                <span v-if="askBar.refreshing">Checking current records… Questions will be available when verification finishes.</span>
+                <span v-if="askBar.refreshing">Checking current records… You can type while the sources load.</span>
                 <span v-else-if="askBar.refreshError">{{ askBar.refreshError }}</span>
                 <span v-else-if="askBar.refreshedAt">Records checked at {{ askBar.refreshedAt }}. Earlier answers retain their original timestamp.</span>
                 <button v-if="askBar.refreshError && !askBar.refreshing" @click="askBarRefreshRecords()">Retry</button>
+                <details v-if="askBar.sourceHealth && askBar.sourceHealth.some(s=>!s.ready) && !askBar.refreshing"><summary>Source loading details</summary><div v-for="source in askBar.sourceHealth" :key="source.label"><strong>{{ source.label }}</strong>: {{ source.ready ? 'Retrieved' : source.error }}</div></details>
             </div>
             <div v-if="askBar.view === 'conversation' && askBarContextCard" class="gr43-contextbar">
                 <div class="gr43-contextmark" aria-hidden="true">{{ askBarContextCard.mark }}</div>
@@ -885,8 +886,8 @@
                 <div v-else-if="askBar.view === 'timeline'" class="askbar-mode-note"><span>Department memory</span><strong>Activity is local to this Grounded workspace.</strong></div>
                 <div v-else class="askbar-input" :class="{ 'askbar-input--busy': askBar.loading }">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" :disabled="askBar.loading || askBar.refreshing || !!askBar.refreshError" :placeholder="askBar.loading ? 'Grounded is checking…' : (askBar.subject && askBar.subject.name ? 'Ask about ' + askBar.subject.name + '…' : (askBar.context && askBar.context.name ? 'Ask about ' + askBar.context.name + '…' : (askBar.turns.length ? 'Continue with this context…' : 'Ask about people, coverage, rotations or research…')))" autofocus>
-                    <button class="askbar-send" @click="askBarResolve()" :disabled="askBar.loading || askBar.refreshing || !!askBar.refreshError || !askBar.query.trim()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+                    <input v-model="askBar.query" @keyup.enter="askBarResolve()" :disabled="askBar.loading" :placeholder="askBar.loading ? 'Grounded is checking…' : 'Ask about people, coverage, rotations or research…'" autofocus>
+                    <button class="askbar-send" @click="askBarResolve()" :disabled="askBar.loading || askBar.refreshing || !askBar.query.trim()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
                 </div>
             </div>
         </div>
@@ -963,7 +964,7 @@
                     </form>
                 </template>
             </div>
-            <footer class="entry44-access-foot"><span>neumDesk · V46<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
+            <footer class="entry44-access-foot"><span>neumDesk · V46.2<br>Authorised departmental access</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
         </section>
         <section class="entry46-editorial" aria-label="At neumAC — public highlights" :class="'entry46-editorial--'+entry46Story.accent">
             <img v-if="entry46Story.image && !entry46ImageErrors[entry46Story.image]" class="entry46-art" :src="entry46Story.image" :alt="entry46Story.imageAlt" @error="entry46ImageErrors[entry46Story.image]=true">
@@ -12354,7 +12355,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=45"></script>
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
-    <script src="app.js?v=46"></script>
+    <script src="app.js?v=46.2"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

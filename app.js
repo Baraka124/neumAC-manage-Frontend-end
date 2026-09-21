@@ -4599,7 +4599,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.8 useTrainingUnits ============
-    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, allStaffLookup, allDepartmentsLookup }) {
+    function useTrainingUnits({ showToast, showConfirmation, rotations, trainingUnits, medicalStaff, allStaffLookup, allDepartmentsLookup }) {
       // trainingUnits is a shared ref hoisted in main setup — do not redeclare
       const trainingUnitFilters = reactive({ search: '', department: '', status: '' })
       const debouncedTrainingSearch = ref('')
@@ -7212,7 +7212,7 @@ document.addEventListener('DOMContentLoaded', () => {
           getUnitMonthOccupancy, getNextFreeMonth, openUnitDetail,
           unitStaffCache,
           weeklyStaffingGrid
-        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
+        } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, medicalStaff, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
         const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
 
@@ -11554,11 +11554,12 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.refreshing = true
         askBar.loading = false
         askBar.refreshError = ''
+        askBar.sourceHealth = []
         askBar.refreshedAt = null
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 15000)
         // Fetch explicitly: legacy loaders may swallow errors or write derived absence state.
-        // Commit the complete snapshot only after every required source is available.
+        // Retain successful reads independently and disclose failed sources.
         const specs = [
           ['/api/medical-staff?limit=500', medicalStaff, a => a.filter(x => !x.deleted_at)],
           ['/api/oncall', onCallSchedule, a => a.map(x => ({...x, duty_date:Utils.normalizeDate(x.duty_date)}))],
@@ -11571,7 +11572,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ['/api/news?limit=100', newsPosts]
         ]
         try {
-          const results = await Promise.all(specs.map(async ([path]) => {
+          const results = await Promise.allSettled(specs.map(async ([path]) => {
             const collected = []
             for (let page = 1; page <= 100; page++) {
               const endpoint = page === 1 ? path : path + (path.includes('?') ? '&' : '?') + 'page=' + page
@@ -11586,13 +11587,25 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error('Source exceeds verification limit')
           }))
           if (generation !== askBarRefreshGeneration || currentUser.value?.id !== userId) return
-          specs.forEach(([, target, normalize], i) => { target.value = normalize ? normalize(results[i]) : results[i] })
-          askBar.refreshedAt = askBarNow()
+          const labels=['Staff directory','On-call schedule','Leave records','Rotations','Training units','Research programmes','Clinical studies','Innovation projects','Research Library']
+          let success=0
+          askBar.sourceHealth = specs.map(([path,target,normalize],i)=>{
+            const result=results[i]
+            if(result.status==='fulfilled') {
+              try { target.value=normalize?normalize(result.value):result.value; success++; return {label:labels[i],ready:true,error:''} }
+              catch(e) { return {label:labels[i],ready:false,error:'The response could not be processed.'} }
+            }
+            const e=result.reason
+            return {label:labels[i],ready:false,error:e?.name==='AbortError'?'Request timed out.':String(e?.message||'Request failed.').slice(0,180)}
+          })
+          askBar.refreshedAt = success ? askBarNow() : null
           askBar.snapshotCapturedAt = new Date().toISOString()
+          const failed=askBar.sourceHealth.filter(x=>!x.ready)
+          askBar.refreshError = failed.length ? `${success} of ${specs.length} sources retrieved. You can type; answers that need unavailable records remain paused.` : ''
         } catch (e) {
           controller.abort()
           if (generation === askBarRefreshGeneration && currentUser.value?.id === userId) {
-            askBar.refreshError = 'Current records could not be verified. Answers are paused; existing answers are historical. Check your connection or access and retry.'
+            askBar.refreshError = 'Records could not be verified. You can type and retry; current-record answers are unavailable.'
           }
         } finally {
           clearTimeout(timeout)
@@ -13267,8 +13280,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return [t]
       }
 
+      // Conservative degraded reads: known read builders only; writes stay paused.
+      const askBarPartialReply = (question,fu=null,forcedIntent=null) => {
+        if(!question) return
+        const health=askBar.sourceHealth||[]
+        const ready=label=>health.some(s=>s.label===label&&s.ready)
+        const ctx=askBar.context||askBar.subject||{}
+        let intent=forcedIntent||fu?.intent||askBarMatchIntent(question)
+        let follow=fu?.followupKind?{...fu,kind:fu.followupKind,id:fu.subjectId||fu.id||ctx.id}:null
+        if(!follow&&ctx.type==='research_record') {
+          const q=question.toLowerCase()
+          const action=/same author/.test(q)?'same_author':/same (research )?line/.test(q)?'same_line':/public|visibility/.test(q)?'visibility':/publication|details|profile|summary/.test(q)?'profile':null
+          if(action) follow={kind:'research_record_context',id:ctx.id,action}
+        }
+        const publication=follow?.kind==='research_record_context'||intent==='publication_profile'||intent==='publications'
+        const allowed=/^(staff_summary|staff_attr|staff_oncall|staff_rotation|staff_leave|oncall_week|oncall_upcoming|absent_now|rotations_active|trials_recruiting|research_lines|trial_profile|project_profile|research_line_profile|publication_profile|publications)$/.test(intent||'')||/^(research_record_context|research_subject_context)$/.test(follow?.kind||'')
+        const needs=publication?['Staff directory','Research programmes','Research Library']:['Staff directory','On-call schedule','Leave records','Rotations','Training units','Research programmes','Clinical studies','Innovation projects']
+        const module=publication?'research_lines':(askBarIntentModule[intent]||'research_lines')
+        let answer
+        askBar.lastAsked=question
+        if(allowed&&needs.every(ready)&&hasPermission(module,'read')) {
+          try { answer=follow?askBarBuildFollowup(follow):askBarBuildAnswer(intent) } catch(e) {}
+        }
+        if(!answer) answer={text:'I cannot verify the records needed for that request yet. Retry the unavailable sources below. Changes remain paused while the snapshot is incomplete.',sources:[],visual:{type:'reslist',items:health.filter(s=>!s.ready).map(s=>({title:s.label,meta:s.error,badge:'Unavailable',tone:'default'}))},actions:[],followups:[],confidence:'low'}
+        const turn=Vue.reactive({q:question,text:'',chips:answer.chips||[],actions:answer.actions||[],sources:answer.sources||[],followups:answer.followups||[],visual:answer.visual||null,evidence:answer.evidence||null,confidence:answer.confidence||'medium',asOf:askBarNow(),streaming:false})
+        askBar.view='conversation';askBar.query='';askBar.turns.push(turn);askBarStreamTurn(turn,answer.text||'')
+      }
       const askBarResolve = (forcedIntent) => {
-        if (askBar.refreshing || askBar.refreshError) return
+        if (askBar.refreshing || askBar.loading) return
+        if (askBar.refreshError) { askBarPartialReply(askBar.query.trim(),null,forcedIntent); return }
         const asked0 = askBar.query.trim()
         // Multi-question: if the input holds several questions, answer each in turn.
         if (!forcedIntent && !askBar.pendingLeave) {
@@ -15739,8 +15779,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // full metadata (attr/id/name) instead of collapsing e.g. Certificates? into another
       // generic clinician profile.
       const askBarRunFollowup = (fu) => {
-        if (askBar.refreshing || askBar.refreshError || askBar.loading) return
+        if (askBar.refreshing || askBar.loading) return
         if (!fu) return
+        if (askBar.refreshError) { askBarPartialReply(fu.q||fu.label||'',fu); return }
         askBar.view = 'conversation'
 
         // A normal intent follow-up should behave exactly like the user typed the chip.
