@@ -2,19 +2,19 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v1.3 · Implementation checkpoint: V46.11 · Supersedes Vision v0.1
+**Status:** Architecture v1.4 · Implementation checkpoint: V46.12 · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
 ---
 
-## Current implementation ledger — V46.11
+## Current implementation ledger — V46.12
 
 This is the **living checkpoint** and is authoritative over older status statements below.
 
 ### Canonical baseline
-- Baseline entering this release: **V46.10 · Leave Action Integrity**.
-- Current release: **V46.11 · Resident Rotation Action Integrity**.
+- Baseline entering this release: **V46.11 · Resident Rotation Action Integrity**.
+- Current release: **V46.12 · Clinical Units Consolidation**.
 
 ### What is real now
 | Layer | Status |
@@ -27,7 +27,7 @@ This is the **living checkpoint** and is authoritative over older status stateme
 | Tool adapters | Clinical Units + On-call + Leave + Resident Rotations |
 | READ | Mature |
 | PROPOSE | Strong |
-| ACT | Partial, real — on-call, leave creation and primary rotation assignment use guarded WRITE tools |
+| ACT | Partial, real — guarded writes exist for on-call, leave creation and primary rotation assignment |
 | Human in loop | Built pattern |
 | Observability | Built foundation |
 | Permissions | Operational |
@@ -35,31 +35,32 @@ This is the **living checkpoint** and is authoritative over older status stateme
 | Operational memory | Partial; task-only Grounded memory |
 | Multi-agent | Intentionally deferred |
 
-### V46.11 — Resident Rotation Action Integrity
-Primary rotation assignment now follows:
+### V46.12 — Clinical Units domain model
+Clinical Units now uses one explicit semantic model:
 ```text
-write-safe resident resolution
-→ deterministic unit resolution
-→ exact date window
-→ formal department/rotation supervisor
-→ resident overlap + exact unit-capacity checks
-→ leave-context warnings
-→ proposal
-→ human confirmation
-→ commit-time revalidation
-→ resident_rotations.commit_assignment WRITE tool
-→ refresh + trace + audit
+Clinical Unit ──member_of──> attending physicians (0..n)
+Resident ──rotates_in──> Clinical Unit (time-bounded)
+Resident rotation ──supervised_by──> formal department/rotation supervisor
+Clinical Unit ──resident_capacity──> configured independently
 ```
 
+Consequences:
+- unit attendings are contextual clinical relationships, not mandatory formal supervisors;
+- a missing unit-level supervisor is not an operational conflict;
+- attending absence does not directly redefine resident capacity;
+- Grounded placement logic uses exact capacity + resident overlap as hard constraints, with attending links as context;
+- the user-facing shell now follows the Overview dashboard visual grammar.
+
 ### Known debt
-1. Multi-unit rotation writes are sequential because there is no atomic backend batch transaction.
-2. Rotation edit/extend/cancel and leave return/edit/cancel are still legacy lifecycle writes.
-3. Many reads remain in the monolithic router rather than capability modules.
-4. Canonical Knowledge Layer is not yet the exclusive backend interface.
+1. Multi-unit rotation writes remain sequential because there is no atomic backend batch endpoint.
+2. Rotation edit/extend/cancel and leave return/edit/cancel remain legacy lifecycle writes.
+3. Many Grounded reads still live in the monolithic router instead of capability modules.
+4. The Canonical Knowledge Layer is not yet the exclusive operational interface.
 5. Role-first permissions remain a future onboarding improvement.
+6. Personal Activity is still document-first rather than a first-class Reporting / Portfolio Intelligence workspace.
 
 ### What comes next
-Return to **Clinical Units UI refinement** and **Personal Activity / Portfolio Intelligence**, while migrating remaining lifecycle writes when those workflows are touched.
+**V46.13 · Personal Activity / Portfolio Intelligence** — promote the existing verified personal activity brief into an interactive reporting surface with structured summary, timeline, source coverage and export as an output rather than the primary experience.
 
 ---
 

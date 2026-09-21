@@ -2897,8 +2897,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!hit) return null
         const reasonMap = { vacation: 'Vacation', sick_leave: 'Sick leave', conference: 'Conference', training: 'Training', personal: 'Personal leave', other: 'Absence' }
         const reason = reasonMap[hit.absence_reason] || 'Absence'
-        const from   = new Date(hit.start_date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-        const to     = new Date(hit.end_date   + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+        const from   = new Date(hit.start_date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        const to     = new Date(hit.end_date   + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
         return { reason, from, to, status: hit.current_status }
       })
 
@@ -2995,7 +2995,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const abs     = onAbsence[0]
             const staffName = medicalStaff.value.find(x => x.id === f0.primary_physician_id)?.full_name || 'This physician'
             const reason  = abs.absence_reason?.replace(/_/g,' ') || 'absence'
-            const fmt     = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+            const fmt     = (d) => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
             let proceed = false
             await new Promise((resolve) => {
               showConfirmation({
@@ -3121,7 +3121,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const upcomingOnCallDays = computed(() => {
         const today    = Utils.normalizeDate(new Date())
         const cutoff   = Utils.normalizeDate(new Date(Date.now() + 14 * 86400000))
-        const fmt      = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+        const fmt      = (d) => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
         const dayLabel = (d) => {
           const tomorrow = Utils.normalizeDate(new Date(Date.now() + 86400000))
           if (d === today)    return 'Today'
@@ -3633,17 +3633,11 @@ document.addEventListener('DOMContentLoaded', () => {
         checkRotationAvailability()
       })
 
-      // Auto-fill supervisor when unit is selected — reads supervisor_id from the unit
+      // Clinical Unit selection never auto-assigns formal resident supervision.
+      // Unit-linked attendings are contextual clinical relationships; the formal
+      // supervisor is selected separately at rotation / department level.
       watch(() => rotationModal.form.training_unit_id, (unitId) => {
         if (!unitId) return
-        const unit = trainingUnits.value.find(u => u.id === unitId)
-        if (unit && (unit.supervisor_id || unit.default_supervisor_id)) {
-          // Only auto-fill if supervisor is not already manually set
-          if (!rotationModal.form.supervising_attending_id) {
-            rotationModal.form.supervising_attending_id = unit.supervisor_id || unit.default_supervisor_id
-          }
-        }
-        // Trigger availability check when unit changes
         checkRotationAvailability()
       })
 
@@ -3928,7 +3922,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const prev = i > 0 ? new Date(today.getFullYear(), today.getMonth() + offset + i - 1, 1) : null
           months.push({
             key:         `${d.getFullYear()}-${d.getMonth()}`,
-            label:       d.toLocaleDateString('es-ES', { month: 'short' }),
+            label:       d.toLocaleDateString('en-GB', { month: 'short' }),
             year:        d.getFullYear(),
             month:       d.getMonth(),
             isCurrent:   d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth(),
@@ -4021,7 +4015,7 @@ document.addEventListener('DOMContentLoaded', () => {
               new Date(r.start_date) <= mEnd && new Date(r.end_date) >= mStart
             )
             if (!covered) {
-              gaps.push(mStart.toLocaleDateString('es-ES', { month: 'short' }))
+              gaps.push(mStart.toLocaleDateString('en-GB', { month: 'short' }))
             }
           }
           if (gaps.length > 0) {
@@ -4300,7 +4294,7 @@ document.addEventListener('DOMContentLoaded', () => {
               (s.primary_physician_id === f.staff_member_id || s.backup_physician_id === f.staff_member_id)
           })
           if (conflicts.length > 0) {
-            const fmt    = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+            const fmt    = (d) => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
             const lines  = conflicts.slice(0, 4).map(s => {
               const role = s.primary_physician_id === f.staff_member_id ? 'Primary' : 'Backup'
               return `${fmt(s.duty_date)} · ${role} · ${s.start_time}–${s.end_time}`
@@ -4699,7 +4693,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const res = await API.request(`/api/training-units/${unitId}/staff`)
           unitStaffCache.value = { ...unitStaffCache.value, [unitId]: Array.isArray(res?.data) ? res.data : [] }
         } catch (e) {
-          unitStaffErrors.value = { ...unitStaffErrors.value, [unitId]: e?.message || 'Could not load the clinical team' }
+          unitStaffErrors.value = { ...unitStaffErrors.value, [unitId]: e?.message || 'Could not load attending links' }
           console.error('[neumDesk] unit staff load failed', unitId, e)
         } finally {
           unitStaffLoading.value = { ...unitStaffLoading.value, [unitId]: false }
@@ -5037,7 +5031,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const state = getUnitCapacityWindow(unitId, _unitIso(mStart), _unitIso(mEnd))
           const seg = (state.segments || []).find(s => s.free > 0)
           if (seg) {
-            const fmt = (iso, opts) => _unitDate(iso)?.toLocaleDateString('es-ES',opts) || iso
+            const fmt = (iso, opts) => _unitDate(iso)?.toLocaleDateString('en-GB',opts) || iso
             return {
               start:seg.start, end:seg.end, freeSlots:seg.free, capacity:state.capacity,
               label:`${fmt(seg.start,{day:'numeric',month:'short'})} – ${fmt(seg.end,{day:'numeric',month:'short',year:'numeric'})}`,
@@ -5081,21 +5075,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const capacityFit = !state.overCapacity && state.minFree > 0
             const partial = !capacityFit && state.hasAvailability && !state.overCapacity
             const teamCount = (unitStaffCache.value[unit.id] || []).length
-            const supervisorId = unit.supervising_attending_id || unit.supervisor_id || unit.default_supervisor_id || null
-            const supervisorReady = !!supervisorId
             const residentConflict = residentConflicts.length > 0
             const fullFit = capacityFit && !residentConflict
-            const operationalReady = fullFit && supervisorReady && teamCount > 0
+            const operationalReady = fullFit
             const fit = residentConflict ? 'resident-conflict' : capacityFit ? 'fit' : partial ? 'partial' : state.overCapacity ? 'conflict' : 'full'
             const conflictText = residentConflict
               ? `Resident already assigned ${residentConflicts.map(r=>`${getResidentShortName(r.resident_id)} · ${Utils.normalizeDate(r.start_date)}–${Utils.normalizeDate(r.end_date)}`).join('; ')}`
               : null
-            return { unit, state, fit, fullFit, capacityFit, partial, operationalReady, teamCount, supervisorReady, residentConflict, residentConflicts, conflictText, detail:conflictText || formatCapacityWindows(state) }
+            return { unit, state, fit, fullFit, capacityFit, partial, operationalReady, teamCount, supervisorReady:null, residentConflict, residentConflicts, conflictText, detail:conflictText || formatCapacityWindows(state) }
           })
           .filter(r => !placementAdvisor.onlyFullFit || r.fullFit)
           .sort((a,b) => {
             const rank={fit:0,partial:1,full:2,conflict:3,'resident-conflict':4}
-            return (Number(b.operationalReady)-Number(a.operationalReady)) || (rank[a.fit]-rank[b.fit]) || (b.state.minFree-a.state.minFree) || (a.unit.unit_name||'').localeCompare(b.unit.unit_name||'')
+            return (rank[a.fit]-rank[b.fit]) || (b.state.minFree-a.state.minFree) || (a.unit.unit_name||'').localeCompare(b.unit.unit_name||'')
           })
       })
 
@@ -5107,7 +5099,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const d = new Date(today.getFullYear(), today.getMonth() + i, 1)
           months.push({
             key:       `${d.getFullYear()}-${d.getMonth()}`,
-            label:     d.toLocaleDateString('es-ES', { month: 'short', year: i === 0 || d.getMonth() === 0 ? '2-digit' : undefined }),
+            label:     d.toLocaleDateString('en-GB', { month: 'short', year: i === 0 || d.getMonth() === 0 ? '2-digit' : undefined }),
             year:      d.getFullYear(),
             month:     d.getMonth(),   // 0-based
             isCurrent: i === 0
@@ -5174,8 +5166,8 @@ document.addEventListener('DOMContentLoaded', () => {
               const fullMonth = rotStart <= mStart && rotEnd >= mEnd
               status    = fullMonth ? 'occupied' : 'partial'
               showName  = fullMonth
-              const fmtStart = rotStart.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})
-              const fmtEnd   = rotEnd.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})
+              const fmtStart = rotStart.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})
+              const fmtEnd   = rotEnd.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})
               tooltip = `${residentName} · ${fmtStart} → ${fmtEnd}`
             }
 
@@ -5239,7 +5231,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const s = new Date(rot.start_date); const e = new Date(rot.end_date)
           return s <= mEnd && e >= mStart
         })
-        const fmt = (d) => new Date(d).toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'2-digit' })
+        const fmt = (d) => new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'2-digit' })
         const entries = touching.length
           ? touching.map(rot => ({
               name: getResidentShortName(rot.resident_id),
@@ -5301,8 +5293,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (state.hasAvailability) {
             const maxFree = state.segments?.length ? Math.max(...state.segments.map(seg=>seg.free)) : state.capacity
             return {
-              label:d.toLocaleDateString('es-ES',{month:'long',year:'numeric'}),
-              shortLabel:d.toLocaleDateString('es-ES',{month:'short',year:'2-digit'}),
+              label:d.toLocaleDateString('en-GB',{month:'long',year:'numeric'}),
+              shortLabel:d.toLocaleDateString('en-GB',{month:'short',year:'2-digit'}),
               date:_unitIso(d), monthsAway:i, freeSlots:maxFree,
               guaranteedFreeSlots:state.minFree, detail:formatCapacityWindows(state), status:state.status
             }
@@ -5326,7 +5318,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return {
             key: `${d.getFullYear()}-${d.getMonth()}`,
-            label: d.toLocaleDateString('es-ES', { month: 'short' }),
+            label: d.toLocaleDateString('en-GB', { month: 'short' }),
             yearLabel: (i === 0 || d.getMonth() === 0) ? `'${d.getFullYear().toString().slice(-2)}` : '',
             isCurrent: i === 0,
             free, partial, closing, full, total: activeUnits.length
@@ -5377,7 +5369,7 @@ document.addEventListener('DOMContentLoaded', () => {
           unit_name: '', unit_code: '',
           department_id: opts.department_id || '',
           maximum_residents: 2, unit_status: 'active',
-          unit_type: 'clinical_unit', supervising_attending_id: '',
+          unit_type: 'clinical_unit',
           unit_description: '', specialty: '', location_building: '', location_floor: ''
         })
         trainingUnitModal.show = true
@@ -5424,7 +5416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Pre-populate from unitStaffCache (the new source of truth)
         const cachedStaff = unitStaffCache.value[unit.id] || []
         unitCliniciansModal.clinicians = cachedStaff.map(m => m.staff?.id).filter(Boolean)
-        unitCliniciansModal.supervisorId = unit.supervisor_id || unit.supervising_attending_id || ''
+        unitCliniciansModal.supervisorId = ''
         // Filter to same-department attendings/fellows only
         // If unit has a department_id, only show staff from that department
         const deptFilter = unit.department_id
@@ -5449,13 +5441,13 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast('No Units', 'No active units in this department', 'warning')
           return
         }
-        // If attending already supervises a unit, open that unit's clinicians modal
-        const currentUnit = deptUnits.find(u => u.supervisor_id === staff.id)
+        // Use actual unit_staff membership, not the legacy unit supervisor field.
+        const currentUnit = deptUnits.find(u => (unitStaffCache.value[u.id] || []).some(m => String(m.staff?.id) === String(staff.id)))
         const targetUnit = currentUnit || deptUnits[0]
         // Pre-select this attending
         unitCliniciansModal.unit = targetUnit
         unitCliniciansModal.clinicians = (unitStaffCache.value[targetUnit.id] || []).map(m => m.staff?.id).filter(Boolean)
-        unitCliniciansModal.supervisorId = staff.id  // pre-select this attending
+        unitCliniciansModal.supervisorId = ''
         const deptFilter = targetUnit.department_id
           ? s => s.department_id === targetUnit.department_id
           : () => true
@@ -5472,52 +5464,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const u = unitCliniciansModal.unit
         if (!u?.id) { showToast('Error', 'No unit selected', 'error'); return }
         try {
-          // 1. Update the unit's designated supervisor (backward compat field)
-          const payload = {
-            unit_name: u.unit_name, unit_code: u.unit_code, department_id: u.department_id,
-            maximum_residents: u.maximum_residents || 5, unit_status: u.unit_status || 'active',
-          }
-          if (unitCliniciansModal.supervisorId) payload.supervising_attending_id = unitCliniciansModal.supervisorId
-          if (u.specialty)         payload.specialty         = u.specialty
-          if (u.location_building) payload.location_building = u.location_building
-          if (u.location_floor)    payload.location_floor    = u.location_floor
-          await API.updateTrainingUnit(u.id, payload)
-
-          // 2. Sync clinical team to unit_staff table
           const selectedIds  = unitCliniciansModal.clinicians || []
           const currentStaff = unitStaffCache.value[u.id] || []
           const currentIds   = currentStaff.map(m => m.staff?.id).filter(Boolean)
 
-          // Add newly selected clinicians
           const toAdd = selectedIds.filter(id => !currentIds.includes(id))
-          await Promise.all(toAdd.map(staffId =>
-            API.request(`/api/training-units/${u.id}/staff`, {
-              method: 'POST',
-              body: JSON.stringify({ staff_id: staffId, role: staffId === unitCliniciansModal.supervisorId ? 'primary' : 'secondary' })
-            }).catch(() => null)  // ignore 409 duplicates
-          ))
-
-          // Remove deselected clinicians
-          const toRemove = currentIds.filter(id => !selectedIds.includes(id))
-          await Promise.all(toRemove.map(staffId =>
-            API.request(`/api/training-units/${u.id}/staff/${staffId}`, { method: 'DELETE' }).catch(() => null)
-          ))
-
-          // Refresh cache for this unit
-          await loadUnitStaff(u.id)
-
-          // Update local trainingUnits record
-          const idx = trainingUnits.value.findIndex(x => x.id === u.id)
-          if (idx !== -1) {
-            trainingUnits.value[idx] = {
-              ...trainingUnits.value[idx],
-              supervising_attending_id: unitCliniciansModal.supervisorId || null,
-              supervisor_id: unitCliniciansModal.supervisorId || null,
+          for (const staffId of toAdd) {
+            try {
+              await API.request(`/api/training-units/${u.id}/staff`, { method:'POST', body:JSON.stringify({ staff_id:staffId, role:'attending' }) })
+            } catch (e) {
+              if (!String(e?.message||'').includes('409') && !String(e?.message||'').toLowerCase().includes('already')) throw e
             }
           }
+
+          const toRemove = currentIds.filter(id => !selectedIds.includes(id))
+          for (const staffId of toRemove) await API.request(`/api/training-units/${u.id}/staff/${staffId}`, { method:'DELETE' })
+
+          await loadUnitStaff(u.id, { force:true })
           unitCliniciansModal.show = false
-          showToast('Saved', `Clinical team updated · ${selectedIds.length} clinician${selectedIds.length !== 1 ? 's' : ''}`, 'success')
-        } catch(e) { showToast('Error', e?.message || 'Failed to save unit staff', 'error') }
+          showToast('Saved', `Attending links updated · ${selectedIds.length} physician${selectedIds.length !== 1 ? 's' : ''}`, 'success')
+        } catch(e) {
+          showToast('Error', e?.message || 'Failed to save attending links', 'error')
+          try { await loadUnitStaff(u.id, { force:true }) } catch (_) {}
+        }
       }
 
       const viewUnitResidents = (unit, allRotations) => {
@@ -5549,8 +5518,6 @@ document.addEventListener('DOMContentLoaded', () => {
             specialty: f.specialty || '',
             location_building: f.location_building || '',
             location_floor: f.location_floor || '',
-            supervisor_id: f.supervising_attending_id || null,
-            supervising_attending_id: f.supervising_attending_id || null,
           }
           if (trainingUnitModal.mode === 'add') { trainingUnits.value.unshift(await API.createTrainingUnit(data)); showToast('Success', 'Training unit created', 'success') }
           else { const result = await API.updateTrainingUnit(f.id, data); const idx = trainingUnits.value.findIndex(u => u.id === result.id); if (idx !== -1) trainingUnits.value[idx] = result; showToast('Success', 'Training unit updated', 'success') }
@@ -7267,7 +7234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         if (freeSlots.length > 0) {
           const first = freeSlots[0]
-          const fmtDate = new Date(first.date + 'T00:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+          const fmtDate = new Date(first.date + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
           items.push({ icon: 'fa-calendar-plus', type: 'info', text: `Slot opens in ${first.unit} from ${fmtDate}`, action: 'training_units' })
         }
 
@@ -7304,7 +7271,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const d = new Date(todayDate.getTime() + i * 86400000)
           const ds = Utils.normalizeDate(d)
           const hasPrimary = onCallSchedule.value.some(s => Utils.normalizeDate(s.duty_date) === ds && ['primary_call','primary','weekend_coverage'].includes(s.shift_type))
-          if (!hasPrimary) ocGaps.push(d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }))
+          if (!hasPrimary) ocGaps.push(d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))
         }
         if (ocGaps.length > 0) {
           items.push({ icon: 'fa-phone-slash', type: 'danger', text: `${ocGaps.length} day${ocGaps.length>1?'s':''} without primary on-call — ${ocGaps.slice(0,2).join(', ')}${ocGaps.length>2?'…':''}`, action: 'oncall_schedule', urgent: true })
@@ -7653,22 +7620,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const todayCells=grid.rows.map(r=>r.cells[todayIndex]).filter(Boolean)
             const assigned=new Set(grid.rows.flatMap(r=>r.team.map(m=>m.staff?.id).filter(Boolean))).size
             return [
-              {label:'Clinical team',value:assigned,sub:'unique clinicians',tone:'teal'},
+              {label:'Attending physicians',value:assigned,sub:'linked across units',tone:'teal'},
               {label:'Available today',value:todayCells.reduce((n,c)=>n+c.present,0),sub:'recorded available',tone:'plain'},
               {label:'Reduced cover',value:todayCells.filter(c=>c.warn||c.critical).length,sub:'units today',tone:todayCells.some(c=>c.warn||c.critical)?'amber':'plain'},
-              {label:'Teams to configure',value:clinicalUnitTeamSetupState.value.missingCount,sub:'units unassigned',tone:clinicalUnitTeamSetupState.value.missingCount?'amber':'plain'}
+              {label:'Units without links',value:clinicalUnitTeamSetupState.value.missingCount,sub:'data setup',tone:clinicalUnitTeamSetupState.value.missingCount?'amber':'plain'}
             ]
           }
           if (trainingUnitView.value === 'detail') {
             const units=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive')
             const teamAssignments=units.reduce((n,u)=>n+(unitStaffCache.value[u.id]||[]).length,0)
-            const unsupervised=units.filter(u=>!(u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id)).length
             const activeResidents=rotations.value.filter(r=>r.rotation_status==='active').length
+            const unitsWithoutAttendings=units.filter(u=>!unitStaffErrors.value[u.id] && !(unitStaffCache.value[u.id]||[]).length).length
             return [
               {label:'Active units',value:units.length,sub:'in directory',tone:'teal'},
-              {label:'Team assignments',value:teamAssignments,sub:'across units',tone:'plain'},
+              {label:'Attending links',value:teamAssignments,sub:'across units',tone:'plain'},
               {label:'Residents now',value:activeResidents,sub:'active rotations',tone:'plain'},
-              {label:'No supervisor',value:unsupervised,sub:'needs review',tone:unsupervised?'amber':'plain'}
+              {label:'Data setup',value:unitsWithoutAttendings,sub:'units without attending links',tone:unitsWithoutAttendings?'amber':'plain'}
             ]
           }
           // Keep the command header portfolio-level. The month-specific figures are
@@ -7681,7 +7648,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return [
             {label:'Active units',value:units.length,sub:'clinical structure',tone:'teal'},
             {label:'Incoming residents',value:scheduled,sub:'scheduled rotations',tone:'plain'},
-            {label:'Teams to configure',value:noTeam,sub:'units unassigned',tone:noTeam?'amber':'plain'},
+            {label:'Attending-link setup',value:noTeam,sub:'units not yet linked',tone:noTeam?'amber':'plain'},
             {label:'Active conflicts',value:activeConflicts,sub:activeConflicts?'requires attention':'none recorded',tone:activeConflicts?'red':'plain'}
           ]
         })
@@ -7698,10 +7665,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const noTeam=todayRows.filter(x=>x.cell?.noTeam)
           const noCover=todayRows.filter(x=>x.cell?.critical && !x.cell?.noTeam)
           if (noCover.length) items.push({tone:'red',view:'weekly',text:`${noCover.length} clinical unit${noCover.length===1?' has':'s have'} no recorded clinical cover today`})
-          if (noTeam.length) items.push({tone:'amber',view:'weekly',text:`${noTeam.length} clinical unit${noTeam.length===1?' has':'s have'} no clinical team assigned`})
-
-          const noSupervisor=filteredTrainingUnits.value.filter(u=>u.unit_status!=='inactive' && !(u.supervising_attending_id||u.supervisor_id||u.default_supervisor_id))
-          if (noSupervisor.length) items.push({tone:'amber',view:'detail',text:`${noSupervisor.length} clinical unit${noSupervisor.length===1?' needs':'s need'} a default supervisor`})
+          if (noTeam.length) items.push({tone:'plain',view:'weekly',text:`Data setup · ${noTeam.length} clinical unit${noTeam.length===1?' needs':'s need'} attending links`})
           return items.slice(0,4)
         })
 
@@ -7726,20 +7690,17 @@ document.addEventListener('DOMContentLoaded', () => {
           const unitRots = getUnitRotations(unit.id)
           const active = unitRots.filter(r=>r.rotation_status==='active')
           const scheduled = unitRots.filter(r=>r.rotation_status==='scheduled')
-          const supervisorId = unit.supervising_attending_id || unit.supervisor_id || unit.default_supervisor_id || null
-          const supervisor = (medicalStaff.value || []).find(s=>String(s.id)===String(supervisorId)) || null
           const currentCapacity = getUnitCapacityWindow(unit.id, today, today)
           const nextOpening = getNextFreeWindow(unit.id, today, 24)
           const alerts=[]
           if (currentCapacity.overCapacity) alerts.push({tone:'red',title:'Resident capacity exceeded',detail:`${currentCapacity.peak}/${currentCapacity.capacity} residents recorded today`})
           const overlap = getUnitOverlapWarning(unit.id)
           if (overlap) alerts.push({tone:'red',title:'Rotation overlap',detail:`Capacity conflict around ${Utils.formatDateShort(overlap.date)}`})
-          if (!supervisorId) alerts.push({tone:'amber',title:'Supervisor not assigned',detail:'Resident placement needs a designated supervisor.'})
-          if (teamError) alerts.push({tone:'red',title:'Clinical team unavailable',detail:'The team roster could not be loaded.'})
-          else if (!team.length) alerts.push({tone:'amber',title:'No clinical team assigned',detail:'Unit membership has not been recorded.'})
-          else if (!presentMembers.length) alerts.push({tone:'red',title:'No recorded clinical cover today',detail:`${absentMembers.length} of ${team.length} assigned clinicians are absent.`})
-          else if (absentMembers.length) alerts.push({tone:'amber',title:'Reduced clinical team today',detail:`${presentMembers.length}/${team.length} assigned clinicians recorded available.`})
-          return { unit, team, teamError, absentMembers, presentMembers, active, scheduled, supervisorId, supervisor, currentCapacity, nextOpening, alerts }
+          if (teamError) alerts.push({tone:'red',title:'Attending links unavailable',detail:'Unit staff relationships could not be loaded.'})
+          else if (!team.length) alerts.push({tone:'plain',title:'Attending links not configured',detail:'This is a data-completeness item, not a resident-capacity constraint.'})
+          else if (!presentMembers.length) alerts.push({tone:'amber',title:'All linked attendings recorded away today',detail:`${absentMembers.length} of ${team.length} linked attendings have recorded leave.`})
+          else if (absentMembers.length) alerts.push({tone:'plain',title:'Recorded attending leave',detail:`${absentMembers.length} of ${team.length} linked attendings are recorded away today.`})
+          return { unit, team, teamError, absentMembers, presentMembers, active, scheduled, currentCapacity, nextOpening, alerts }
         })
 
         const unitDetailCapacityMonths = computed(() => {
@@ -7794,7 +7755,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return d >= s && d <= e &&
               (shift.primary_physician_id === pid || shift.backup_physician_id === pid)
           }).map(shift => ({
-            date: new Date(shift.duty_date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }),
+            date: new Date(shift.duty_date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }),
             role: shift.primary_physician_id === pid ? 'Primary' : 'Backup',
             area: shift.coverage_area?.name || (coverageAreas?.value || []).find(a => a.id === shift.coverage_area_id)?.name || null,
             time: `${(shift.start_time||'').slice(0,5)} → ${(shift.end_time||'').slice(0,5)}`
@@ -11542,14 +11503,14 @@ document.addEventListener('DOMContentLoaded', () => {
         context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
         pendingOncall: null, // V46.9 multi-turn on-call action state; session-only, never authoritative data
         pendingLeave: null,  // V46.10 multi-turn leave action state; session-only, never authoritative data
-        pendingRotation: null, // V46.11 multi-turn resident-rotation action state; task-only
+        pendingRotation: null, // V46.12 multi-turn resident-rotation action state; task-only
         snoozed: [],       // dismissed alert keys (#16)
         entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
-        coreTraceId: null, // V46.11 execution trace id (operational telemetry, never chain-of-thought)
+        coreTraceId: null, // V46.12 execution trace id (operational telemetry, never chain-of-thought)
         view: 'digest'     // 'digest' | 'conversation' | 'timeline' | 'trace' | 'teach'
       })
 
-      // V46.11 · Grounded architecture harness. This strengthens the existing Grounded
+      // V46.12 · Grounded architecture harness. This strengthens the existing Grounded
       // product without changing its user-facing identity. The core provides compact
       // context envelopes, permission-aware tool contracts, bounded execution, session
       // memory policy and operational traces. It never stores hidden reasoning.
@@ -13321,15 +13282,13 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         groundedToolRegistry.register({
           name:'clinical_units.team_readiness', access:GroundedCore.ACCESS.READ, module:'training_units',
-          description:'Summarise recorded clinical-team membership and designated supervisor for a clinical unit.',
+          description:'Summarise attending physicians linked to a clinical unit. Unit membership is contextual and is not a resident-supervision requirement.',
           inputSchema:{unitId:'uuid',date:'date?'},
           run:({unitId}) => {
             const unit=(trainingUnits.value||[]).find(u=>String(u.id)===String(unitId))
             if(!unit) throw new Error('Clinical unit not found')
             const members=unitStaffCache.value[unit.id]||[]
-            const supervisorId=unit.supervising_attending_id||unit.supervisor_id||unit.default_supervisor_id||null
-            const supervisor=supervisorId ? (medicalStaff.value||[]).find(s=>String(s.id)===String(supervisorId)) : null
-            return { unitId:unit.id, teamCount:members.length, supervisor:supervisor?{id:supervisor.id,name:supervisor.full_name}:null, ready:members.length>0 && !!supervisor }
+            return { unitId:unit.id, teamCount:members.length, attendingPhysicians:members.map(m=>({id:m.staff?.id,name:m.staff?.full_name||null})).filter(x=>x.id), ready:members.length>0 }
           }
         })
         groundedToolRegistry.register({
@@ -13345,8 +13304,7 @@ document.addEventListener('DOMContentLoaded', () => {
               let score=0
               const capacityFit=!state.overCapacity && state.minFree>0
               if(capacityFit) score+=5
-              if(team.supervisor) score+=2
-              if(team.teamCount>0) score+=2
+              if(team.teamCount>0) score+=1
               if(residentId && !beenTo.has(String(u.id))) score+=1
               if(state.status==='free') score+=1
               return {unit:{id:u.id,name:u.unit_name,code:u.unit_code||null},state,team,capacityFit,isNew:residentId?!beenTo.has(String(u.id)):null,score,detail:formatCapacityWindows(state)}
@@ -14451,7 +14409,7 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.view = 'conversation'
         // Scenario mode is explicitly non-destructive and takes priority over normal intent routing.
         if (!forcedIntent && askBarLooksScenario(asked)) { askBarStartScenario(asked); return }
-        // V46.11 · Multi-turn resident-rotation action memory. Resident,
+        // V46.12 · Multi-turn resident-rotation action memory. Resident,
         // unit, dates and formal supervisor can be clarified independently.
         if(!forcedIntent && askBar.pendingRotation && askBar.pendingRotation.awaiting){
           const pend=askBar.pendingRotation,q=asked.toLowerCase();const clearlyNew=/\b(cancel|remove|delete|on.?call|leave|absence|trial|research|show|who|which|list)\b/.test(q)
@@ -15900,8 +15858,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const ranked = groundedInvokeTool('clinical_units.available_units',{start:range.start,end:range.end,residentId:person?.id || null})
           if (!ranked.length) return { text:`No clinical unit has resident capacity throughout ${range.label}${person?` for ${person.full_name}`:''}.`, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open rotation capacity',view:'training_units',primary:true}], sources:['units','rotations'], followups:[{label:'Show partial openings',intent:'unit_forecast',q:`which units have capacity in ${range.label}`}], confidence:'high' }
           const who=person?person.full_name:'a resident', top=ranked.slice(0,6)
-          const rows=top.map(r=>({name:r.unit.name+(r.isNew?' · new for them':''),n:r.state.peak,cap:r.state.capacity,pct:Math.min(100,Math.round(r.state.peak/Math.max(1,r.state.capacity)*100)),full:false,detail:`${r.detail}${r.team.supervisor?' · supervisor '+r.team.supervisor.name:' · supervisor needed'}${r.team.teamCount?` · ${r.team.teamCount} clinicians`:' · no team assigned'}`}))
-          return { text:`For ${range.label}, ${top.length} unit${top.length===1?'':'s'} fit the full resident-rotation window for ${who}. Strongest operational fits: ${top.slice(0,3).map(r=>`${r.unit.name} (${r.state.minFree}+ guaranteed free)`).join(', ')}.`, visual:{type:'occupancy',rows}, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open Clinical Units',view:'training_units',primary:true}], sources:['units','rotations','staff'], followups:person&&top[0]?[{label:`Plan ${person.full_name.split(' ')[0]} in ${top[0].unit.name}`,intent:'assign_rotation',q:`put ${person.full_name} in ${top[0].unit.name} from ${range.start} to ${range.end}${top[0].team.supervisor?` under ${top[0].team.supervisor.name}`:''}`}]:[], confidence:'high' }
+          const rows=top.map(r=>({name:r.unit.name+(r.isNew?' · new for them':''),n:r.state.peak,cap:r.state.capacity,pct:Math.min(100,Math.round(r.state.peak/Math.max(1,r.state.capacity)*100)),full:false,detail:`${r.detail}${r.team.teamCount?` · ${r.team.teamCount} attending${r.team.teamCount===1?'':'s'} linked`:' · attending links not configured'}`}))
+          return { text:`For ${range.label}, ${top.length} unit${top.length===1?'':'s'} fit the full resident-rotation window for ${who}. Strongest operational fits: ${top.slice(0,3).map(r=>`${r.unit.name} (${r.state.minFree}+ guaranteed free)`).join(', ')}.`, visual:{type:'occupancy',rows}, chips:person?[{label:person.full_name,id:person.id}]:[], actions:[{label:'Open Clinical Units',view:'training_units',primary:true}], sources:['units','rotations','staff'], followups:person&&top[0]?[{label:`Plan ${person.full_name.split(' ')[0]} in ${top[0].unit.name}`,intent:'assign_rotation',q:`put ${person.full_name} in ${top[0].unit.name} from ${range.start} to ${range.end}`}]:[], confidence:'high' }
         }
         if (intent === 'unit_load') {
           const q = (askBar.lastAsked || '').toLowerCase()
@@ -15919,11 +15877,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return { text: `${lead}: ${top.slice(0,3).map(r=>`${r.name} (${r.n}/${r.cap})`).join(', ')}.`, visual: { type: 'occupancy', rows: top }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations'], followups: [{ label: 'Where to place a resident?', intent: 'place_resident', q:'where should i place a resident' }], confidence: 'high' }
         }
         if (intent === 'unit_supervisor_gap') {
-          const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
-          const noSup = units.filter(u => !(u.default_supervisor_id || u.supervisor_id))
-          if (!noSup.length) return { text: 'Every active unit has a default supervisor assigned.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
-          const items = noSup.slice(0,10).map(u => ({ title: u.unit_name, badge: u.unit_code||null, tone:'project', meta: 'no supervisor assigned' }))
-          return { text: `${noSup.length} unit${noSup.length===1?'':'s'} without a supervisor: ${noSup.slice(0,5).map(u=>u.unit_name).join(', ')}${noSup.length>5?'…':''}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+          return { text: 'Clinical Units do not require a unit-level resident supervisor. Attending physicians can be linked to a unit as structural clinical context, while the formal resident supervisor is assigned at rotation / department level.', chips: [], actions: [{ label: 'Open Clinical Units', view: 'training_units', primary:true }, { label: 'Open rotations', view:'resident_rotations' }], sources: ['units','rotations','staff'], followups: [{ label:'Which residents have no formal supervisor?', intent:'unsupervised_residents' }], confidence:'high' }
         }
         if (intent === 'unit_by_specialty') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
@@ -15996,7 +15950,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const active = rots.filter(r => r.rotation_status === 'active' && r.training_unit_id === unit.id)
           const scheduled = rots.filter(r => r.rotation_status === 'scheduled' && r.training_unit_id === unit.id)
           const cap = unit.maximum_residents || 5
-          const sup = (medicalStaff.value||[]).find(s => s.id === (unit.default_supervisor_id||unit.supervisor_id||unit.supervising_attending_id))
+          const attendingLinks = unitStaffCache.value[unit.id] || []
+          const attendingNames = attendingLinks.map(m=>m.staff?.full_name).filter(Boolean)
           // build a profile-style card for the unit
           const profile = {
             id: unit.id, name: unit.unit_name, kind: 'unit', avatar: unit.unit_code || 'CU',
@@ -16008,21 +15963,21 @@ document.addEventListener('DOMContentLoaded', () => {
             overview: [
               { label: 'Status', value: active.length>=cap?'Full':(active.length===0?'Free':'Has space') },
               { label: 'Capacity', value: `${active.length}/${cap} residents` },
-              ...(sup ? [{ label: 'Supervisor', value: sup.full_name }] : []),
+              { label: 'Attending physicians', value: attendingNames.length ? `${attendingNames.length} linked` : 'Not yet linked' },
               ...(unit.specialty ? [{ label: 'Specialty', value: unit.specialty }] : []),
               ...((unit.location_building || unit.location_floor) ? [{ label: 'Location', value: [unit.location_building, unit.location_floor].filter(Boolean).join(' · ') }] : [])
             ],
             links: [], completeness: 100, missing: [],
-            unitSummary: { active: active.length, capacity: cap, scheduled: scheduled.length, supervisor: sup ? sup.full_name : null }
+            unitSummary: { active: active.length, capacity: cap, scheduled: scheduled.length, attendingCount: attendingNames.length }
           }
           const L = profile.links
-          if (sup) L.push({ label: 'Supervisor', detail: sup.full_name, kind: 'people' })
+          if (attendingNames.length) L.push({ label: `${attendingNames.length} attending physician${attendingNames.length===1?'':'s'}`, detail: attendingNames.join(', '), kind: 'people' })
           if (active.length) L.push({ label: `${active.length} resident${active.length===1?'':'s'} here now`, detail: active.map(r=>getStaffName(r.resident_id)).filter(Boolean).join(', '), kind: 'people' })
           if (scheduled.length) L.push({ label: `${scheduled.length} scheduled`, detail: scheduled.slice(0,4).map(r=>`${getStaffName(r.resident_id)} (${r.start_date?Utils.formatDateShort(r.start_date):'?'})`).join(', '), kind: 'project' })
           if (unit.location_building || unit.location_floor) L.push({ label: 'Location', detail: [unit.location_building, unit.location_floor].filter(Boolean).join(' · '), kind: 'research' })
           if (!active.length && !scheduled.length) L.push({ label: 'No residents assigned', detail: 'This unit is currently free', kind: 'people' })
           let text = `${unit.unit_name}${unit.unit_code?` (${unit.unit_code})`:''} — ${active.length}/${cap} residents${active.length>=cap?', full':(active.length===0?', free':', has space')}.`
-          if (sup) text += ` Supervisor: ${sup.full_name}.`
+          if (attendingNames.length) text += ` Attending physicians linked: ${attendingNames.slice(0,4).join(', ')}${attendingNames.length>4?'…':''}.`
           return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units','rotations','staff'], followups: [{ label: 'Which units are free?', intent: 'unit_status', q: 'which units are free' }, { label: 'Units board', intent: 'units_board' }], confidence: 'high' }
         }
         if (intent === 'unit_status') {

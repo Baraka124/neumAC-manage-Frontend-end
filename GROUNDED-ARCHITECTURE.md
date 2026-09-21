@@ -76,12 +76,12 @@ Core fields:
 - source-health state;
 - compact module-specific context.
 
-Clinical Units establishes the first adapter:
+Clinical Units establishes the first adapter. As of V46.12 its domain semantics are explicit: unit-linked attendings are context, while formal resident supervision is attached to a rotation / department responsibility:
 
 - resident rotation month / exact date interval;
 - selected clinical unit;
 - unit capacity today;
-- recorded team count;
+- attending-physician link count;
 - next opening.
 
 Authoritative operational facts continue to live in neumDesk/Supabase, not in AI memory.
@@ -90,7 +90,7 @@ Authoritative operational facts continue to live in neumDesk/Supabase, not in AI
 
 Tools are small semantic contracts, not raw unrestricted API access.
 
-V46.8 Clinical Units tools:
+Clinical Units tools (V46.12 semantics):
 
 - `clinical_units.capacity_window`
 - `clinical_units.available_units`
@@ -106,6 +106,22 @@ Each tool declares:
 - permission module;
 - input schema;
 - deterministic implementation.
+
+
+### Clinical Units semantic contract (V46.12)
+
+Hard placement constraints:
+- active Clinical Unit;
+- exact resident-capacity window;
+- resident overlap;
+- valid formal rotation supervisor.
+
+Context, not hard placement constraints:
+- attendings linked through `unit_staff`;
+- recorded attending leave;
+- specialty / location metadata.
+
+Grounded must not infer that every Clinical Unit requires its own resident supervisor.
 
 ## 5. Memory architecture
 
