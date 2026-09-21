@@ -4,7 +4,7 @@ const html=fs.readFileSync('index.html','utf8')
 const css=fs.readFileSync('style.css','utf8')
 const readme=fs.readFileSync('README-V46.6.md','utf8')
 const tests=[
- ['V46.6 build and cache markers',()=>{assert(html.includes('neumDesk · V46.6'));assert(html.includes('app.js?v=46.6-clinical-units-detail'));assert(html.includes('style.css?v=46.6-clinical-units-detail'))}],
+ ['V46.6 build and cache markers',()=>{assert(html.includes('neumDesk · V46.6')||html.includes('neumDesk · V46.7'));assert(html.includes('app.js?v=46.6-clinical-units-detail')||html.includes('app.js?v=46.7-clinical-units-adaptive'));assert(html.includes('style.css?v=46.6-clinical-units-detail')||html.includes('style.css?v=46.7-clinical-units-adaptive'))}],
  ['application JavaScript parses',()=>{new vm.Script(app)}],
  ['canonical unit operational snapshot is exposed',()=>{assert(app.includes('const unitDetailSnapshot = computed'));assert(app.includes('unitDetailSnapshot, unitDetailCapacityMonths'));assert(html.includes('Resident capacity today'));assert(html.includes('Clinical team today'))}],
  ['unit drawer has a 12-month exact capacity strip',()=>{assert(app.includes('const unitDetailCapacityMonths = computed'));assert(html.includes('12-month resident capacity'));assert(html.includes('openCapacityInspector(unitDetailDrawer.unit,m)'))}],
