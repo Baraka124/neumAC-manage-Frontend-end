@@ -4124,7 +4124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 6.6 useAbsences ============
     function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule }) {
       const absences = ref([])
-            const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', showPast: false })
+            const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', hideReturned: true })
             const debouncedAbsenceSearch = ref('')
             watch(() => absenceFilters.search, Utils.debounce(v => { debouncedAbsenceSearch.value = v }, 250))
       const absenceModal = reactive({
@@ -4220,8 +4220,8 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return { ...a, current_status: derived, coverage_arranged: coverageOk }
         })
-        // Hide past/resolved records by default — show only when the user explicitly enables Show past.
-        if (!absenceFilters.status && !absenceFilters.showPast) {
+        // Hide past/resolved records by default — toggle via "Show Past" filter
+        if (!absenceFilters.status && absenceFilters.hideReturned) {
           f = f.filter(a => !['returned_to_duty', 'cancelled'].includes(a.current_status))
         }
         if (absenceFilters.staff) f = f.filter(a => a.staff_member_id === absenceFilters.staff)
@@ -4249,9 +4249,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const s = new Date(a.start_date)
           return s.getMonth() === now.getMonth() && s.getFullYear() === now.getFullYear()
         })
-        const currentNoCoverage = absentNow.filter(a => !a.coverage_arranged)
-        const upcomingNoCoverage = upcoming.filter(a => !a.coverage_arranged)
-        const noCoverage = [...currentNoCoverage, ...upcomingNoCoverage]
+        const noCoverage = [...absentNow, ...upcoming].filter(a => !a.coverage_arranged)
         const nextAbs    = upcoming.sort((a,b) => new Date(a.start_date)-new Date(b.start_date))[0]
         return {
           absentNow:    absentNow.length,
@@ -4270,24 +4268,7 @@ document.addEventListener('DOMContentLoaded', () => {
           thisMonth:    thisMonth.length,
           coveredCount: thisMonth.filter(a=>a.coverage_arranged).length,
           noCoverage:   noCoverage.length,
-          currentNoCoverage: currentNoCoverage.length,
-          upcomingNoCoverage: upcomingNoCoverage.length,
         }
-      })
-
-      // V46.14 · one temporal presentation model for the direct Leave workspace.
-      // Today, future planning and coverage risk are intentionally separate states.
-      const absencePageContext = computed(() => {
-        const k = absenceKPIs.value
-        let headline = 'Full recorded attendance'
-        if (k.upcomingNoCoverage > 0) headline = `${k.upcomingNoCoverage} upcoming absence${k.upcomingNoCoverage===1?'':'s'} need coverage review`
-        else if (k.currentNoCoverage > 0) headline = `${k.currentNoCoverage} current absence${k.currentNoCoverage===1?'':'s'} need coverage review`
-        else if (k.absentNow > 0) headline = `${k.absentNow} staff member${k.absentNow===1?'':'s'} absent today`
-        else if (k.upcoming > 0) headline = `${k.upcoming} planned absence${k.upcoming===1?'':'s'} ahead`
-        const today = k.absentNow > 0 ? `${k.absentNow} absent today` : 'Full recorded attendance today'
-        const upcoming = k.upcoming > 0 ? `${k.upcoming} planned${k.nextDate ? ` · next ${k.nextDate}` : ''}` : 'No planned leave recorded'
-        const coverage = k.noCoverage > 0 ? `${k.noCoverage} coverage review${k.noCoverage===1?'':'s'}` : 'No uncovered leave records'
-        return { headline, today, upcoming, coverage }
       })
 
 
@@ -4530,7 +4511,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return {
         absences, absenceFilters, absenceModal, absenceOverlapWarning,
-        filteredAbsences, filteredAbsencesAll, absenceTotalPages, absenceKPIs, absencePageContext,
+        filteredAbsences, filteredAbsencesAll, absenceTotalPages, absenceKPIs,
         loadAbsences, showAddAbsenceModal, editAbsence, saveAbsence, deleteAbsence, purgeAbsence,
         absenceResolutionModal, openResolutionModal, resolveAbsence,
         getStaffName
@@ -9563,11 +9544,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (v === 'staff_absence') {
               const kpis = absenceOps.absenceKPIs?.value
               if (!kpis) return 'Loading…'
-              if (kpis.absentNow === 0 && kpis.upcoming === 0) return 'Full recorded attendance · No planned leave'
+              if (kpis.absentNow === 0 && kpis.upcoming === 0) return 'All staff present · No planned leave'
               const parts = []
               if (kpis.absentNow > 0) parts.push(`${kpis.absentNow} absent today`)
-              else parts.push('Full recorded attendance today')
-              if (kpis.upcomingNoCoverage > 0) parts.push(`${kpis.upcomingNoCoverage} coverage review${kpis.upcomingNoCoverage===1?'':'s'}`)
+              if (kpis.noCoverage > 0) parts.push(`${kpis.noCoverage} need cover`)
               else if (kpis.upcoming > 0) parts.push(`${kpis.upcoming} planned`)
               return parts.join(' · ')
             }
@@ -13275,21 +13255,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return { person: ranked[0].s }
       }
 
-      // Operational read queries must resolve their explicitly named person BEFORE a
-      // generic/taught department-wide intent can claim the same words. The resolver
-      // deliberately strips temporal/domain language so "is Pedro Marcos on leave
-      // today?" resolves Pedro first, while "who is on leave today?" remains broad.
-      const askBarResolveNamedOperationalStaff = (qRaw) => {
-        const q = String(qRaw || '')
-        const cleaned = q
-          .replace(/\b(is|are|was|were|does|do|did|has|have|had|can|could|would|please|show|tell|me|whether|if|about|for|of|the|a|an)\b/gi,' ')
-          .replace(/\b(on[ -]?call|oncall|duty|guardia|leave|absence|absent|off|vacation|holiday|scheduled|planned|booked|future|upcoming|current|currently|today|tomorrow|tonight|next|this|week|month|status|rotation|rotating|supervision|supervising)\b/gi,' ')
-          .replace(/[?.,!;:()"']/g,' ')
-          .replace(/\s+/g,' ').trim()
-        if (!cleaned || cleaned.length < 3) return { person:null }
-        return askBarResolveStaffClarified(cleaned)
-      }
-
       const askBarResolveStaffRoleClarified = (qRaw, role) => {
         const ranked=askBarRankStaffMatches(qRaw).filter(x=>{
           const t=(x.s.staff_type||'').toLowerCase()
@@ -13886,15 +13851,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const inheritedDate = askBar.context?.date || null
           return { kind:'leave_on_date', date: parsed?.start || inheritedDate, end: parsed?.end || inheritedDate, label: parsed?.label || (inheritedDate ? Utils.formatDateShort(inheritedDate) : 'today'), broad:true }
         }
-        // #8: resolve an explicitly named person before generic collection routes.
-        // Ambiguity is preserved instead of silently choosing a similarly named colleague.
-        if ((topicLeave || topicCall || topicRot) && !hasPronoun && !broadPersonScope) {
-          const resolved = askBarResolveNamedOperationalStaff(q)
-          if (resolved?.ambiguous?.length) {
-            const mode = topicLeave ? (leaveScheduleScope ? 'leave_schedule' : (leaveRange?.start ? 'leave_on_date' : 'leave_current')) : (topicCall ? 'oncall' : 'rotation')
-            return { kind:'clarify_staff', options:resolved.ambiguous, operationalFollowup:{ mode, start:leaveRange?.start||null, end:leaveRange?.end||leaveRange?.start||null, label:leaveRange?.label||null } }
-          }
-          const person = resolved?.person || null
+        // #8: try to resolve a NAMED person first (priority over pronoun/context).
+        // Runs regardless of query length — only skipped when a pronoun is present.
+        if ((topicLeave || topicCall || topicRot) && !hasPronoun) {
+          const person = askBarResolveStaff(q)
           if (person) {
             askBar.context = { type: 'staff', id: person.id, name: person.full_name }
             if (topicLeave) {
@@ -14673,15 +14633,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (hasPronoun && askBar.context) {
             followup = askBarResolveFollowup(asked)
           }
-          // 0. Explicit entity scope outranks generic/taught vocabulary. A query such as
-          //    "is Pedro Marcos on leave today?" must remain person-specific even if
-          //    "on leave" is taught as the department-wide absent-now concept.
-          if (!followup && !intent && hasTopic && !hasBroadPersonScope && !hasPronoun && !/(put|assign|record|schedule|book|cancel|remove|delete|draft|write|compose|best|recommend|suggest)/.test(q)) {
-            const maybe = askBarResolveFollowup(asked)
-            if (maybe && /^(staff_leave|staff_leave_schedule|staff_leave_on_date|staff_oncall|staff_rotation|clarify_staff)$/.test(maybe.kind || '')) followup = maybe
-          }
-
-          // 0b. Taught vocabulary still wins for genuinely generic department language.
+          // 0. TAUGHT VOCABULARY WINS FIRST — a department-taught synonym/phrase
+          //    (bilingual/Galician) routes straight to its intent, before the name
+          //    resolver can mistake a taught word ("de garda") for a person.
           if (!followup && !intent) {
             const taughtIntent = askBarMatchTaught(asked)
             if (taughtIntent) intent = taughtIntent
@@ -14733,8 +14687,15 @@ document.addEventListener('DOMContentLoaded', () => {
               if (maybe && (maybe.kind === 'staff_attr' || maybe.kind === 'staff_summary' || maybe.kind === 'clarify_staff')) followup = maybe
             }
           }
-          // Explicit named operational questions were already resolved before taught
-          // vocabulary above. Do not re-run a second name pass here.
+          // Explicitly named leave questions resolve the person before a high-priority
+          // department-wide schedule intent can claim the query (e.g. "Marina scheduled leave").
+          if (!followup && !intent && /(leave|absent|off|vacation|holiday)/.test(q) && !/\b(anyone|anybody|everyone|everybody|who|which staff|all staff)\b/.test(q)) {
+            const namedLeavePerson = askBarResolveStaff(q)
+            if (namedLeavePerson) {
+              const maybe = askBarResolveFollowup(asked)
+              if (maybe && /^(staff_leave|staff_leave_schedule|staff_leave_on_date)$/.test(maybe.kind || '')) followup = maybe
+            }
+          }
           // Short status/schedule fragments inherit the current person reference before a generic
           // collection intent can steal them. Analytics such as "leave fairness" do not.
           if (!followup && !intent && askBar.context?.type === 'staff') {
@@ -15197,7 +15158,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const text = `There ${opts.length===2?'are two':'are several'} people that could match — which did you mean?`
           const initials = (n) => (n||'').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()
           const roleLine = (s) => { const bits = [_toTitle(s.staff_type||'staff')]; if (s.specialization) bits.push(s.specialization); else if (s.residency_year_override||s.training_year) bits.push((s.residency_year_override||s.training_year)+' resident'); return bits.join(' · ') }
-          return { text, chips: opts.slice(0,5).map(s => ({ label: s.full_name, id: s.id, clarifyAttr: fu.attr || null, operationalFollowup: fu.operationalFollowup || null, av: initials(s.full_name), meta: roleLine(s) })), actions: [], sources: ['staff'], followups: [], confidence: 'high', isClarify: true }
+          return { text, chips: opts.slice(0,5).map(s => ({ label: s.full_name, id: s.id, clarifyAttr: fu.attr || null, av: initials(s.full_name), meta: roleLine(s) })), actions: [], sources: ['staff'], followups: [], confidence: 'high', isClarify: true }
         }
         if (fu.kind === 'research_record_context') {
           const p=(newsPosts.value||[]).find(x=>String(x.id)===String(fu.id))
@@ -16922,13 +16883,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return
         }
         askBar.context = { type: 'staff', id: s.id, name: s.full_name }
-        let fu
-        if (c.operationalFollowup?.mode === 'leave_schedule') fu = { kind:'staff_leave_schedule', id:s.id, name:s.full_name, start:c.operationalFollowup.start||null, end:c.operationalFollowup.end||null, label:c.operationalFollowup.label||null }
-        else if (c.operationalFollowup?.mode === 'leave_on_date') fu = { kind:'staff_leave_on_date', id:s.id, name:s.full_name, start:c.operationalFollowup.start||null, end:c.operationalFollowup.end||c.operationalFollowup.start||null, label:c.operationalFollowup.label||null }
-        else if (c.operationalFollowup?.mode === 'leave_current') fu = { kind:'staff_leave', id:s.id, name:s.full_name }
-        else if (c.operationalFollowup?.mode === 'oncall') fu = { kind:'staff_oncall', id:s.id, name:s.full_name }
-        else if (c.operationalFollowup?.mode === 'rotation') fu = { kind:'staff_rotation', id:s.id, name:s.full_name }
-        else fu = c.clarifyAttr ? { kind: 'staff_attr', id: s.id, name: s.full_name, attr: c.clarifyAttr } : { kind: 'staff_summary', id: s.id, name: s.full_name }
+        const fu = c.clarifyAttr ? { kind: 'staff_attr', id: s.id, name: s.full_name, attr: c.clarifyAttr } : { kind: 'staff_summary', id: s.id, name: s.full_name }
         askBar.view = 'conversation'
         askBar.thinking = 'Building the clinician view…'
         askBar.loadingKind = 'profile'

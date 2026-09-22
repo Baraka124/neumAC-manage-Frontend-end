@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-leave-workspace-scope-convergence">
+    <link rel="stylesheet" href="style.css?v=46.14-interaction-focus-convergence">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -1748,7 +1748,7 @@
 
                 <!-- Breadcrumb — hidden on dashboard and fullscreen modules -->
                 <nav class="breadcrumb" aria-label="Breadcrumb"
-                     v-if="!['dashboard','resident_rotations','training_units','staff_absence','research_hub','news'].includes(currentView)">
+                     v-if="!['dashboard','resident_rotations','training_units','research_hub','news'].includes(currentView)">
                     <button @click="switchView('dashboard')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg><span>Dashboard</span></button>
                     <span class="bc-sep">/</span>
                     <span class="bc-current">{{ getCurrentViewTitle() }}</span>
@@ -3876,71 +3876,67 @@
                 </div><!-- /training_units -->
                 <!-- ============ STAFF ABSENCE VIEW ============ -->
                 <div v-if="currentView === 'staff_absence'">
-                    <!-- V46.14 · temporal operational shell: today ≠ upcoming ≠ coverage -->
-                    <section class="leave14-hero" aria-labelledby="leave14-headline">
-                        <div class="leave14-hero-copy">
-                            <div class="leave14-kicker">WORKFORCE AVAILABILITY</div>
-                            <h2 id="leave14-headline">{{ absencePageContext.headline }}</h2>
-                            <p>Current attendance, planned leave and coverage review are shown as separate operational states.</p>
-                            <div class="leave14-hero-meta" aria-label="Leave operational summary">
-                                <span><b>Today</b>{{ absencePageContext.today }}</span>
-                                <span><b>Upcoming</b>{{ absencePageContext.upcoming }}</span>
-                                <span :class="absenceKPIs.noCoverage > 0 ? 'is-attention' : 'is-clear'"><b>Coverage</b>{{ absencePageContext.coverage }}</span>
+                    <!-- KPI strip -->
+                    <div class="absence-kpi-strip">
+                        <div class="absence-kpi">
+                            <div class="absence-kpi-num" :style="absenceKPIs.absentNow > 0 ? 'color:#e24b4a' : ''">{{ absenceKPIs.absentNow }}</div>
+                            <div class="absence-kpi-label">Absent today</div>
+                            <div class="absence-kpi-sub" :class="absenceKPIs.absentNow > 0 ? 'danger' : ''">
+                                <span v-if="absenceKPIs.absentNow > 0">{{ absenceKPIs.absentName }} · day {{ absenceKPIs.absentDay }}</span>
+                                <span v-else>No current absences</span>
                             </div>
                         </div>
-                        <div class="leave14-hero-actions">
-                            <button class="leave14-primary" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10H21M8 3V7M16 3V7M12 14v5M9.5 16.5h5"/></svg>
-                                Record leave
-                            </button>
-                        </div>
-                    </section>
-
-                    <section class="leave14-state-rail" aria-label="Leave status">
-                        <div class="leave14-state">
-                            <span>Today</span>
-                            <strong>{{ absenceKPIs.absentNow }}</strong>
-                            <small>{{ absenceKPIs.absentNow ? 'recorded absent' : 'full recorded attendance' }}</small>
-                        </div>
-                        <div class="leave14-state">
-                            <span>Upcoming</span>
-                            <strong>{{ absenceKPIs.upcoming }}</strong>
-                            <small>{{ absenceKPIs.upcoming ? (absenceKPIs.nextDate ? 'next · ' + absenceKPIs.nextDate : 'planned') : 'none scheduled' }}</small>
-                        </div>
-                        <div class="leave14-state" :class="{'leave14-state--attention': absenceKPIs.noCoverage > 0}">
-                            <span>Coverage review</span>
-                            <strong>{{ absenceKPIs.noCoverage }}</strong>
-                            <small>{{ absenceKPIs.noCoverage ? 'needs review' : 'no uncovered leave' }}</small>
-                        </div>
-                        <div class="leave14-state">
-                            <span>This month</span>
-                            <strong>{{ absenceKPIs.thisMonth }}</strong>
-                            <small>{{ absenceKPIs.coveredCount }} recorded covered</small>
-                        </div>
-                    </section>
-
-                    <div class="card mb-6 leave14-workspace">
-                        <div class="leave14-toolbar">
-                            <div class="leave14-toolbar-label">
-                                <span>Working view</span>
-                                <small>{{ filteredAbsencesAll.length }} matching record{{ filteredAbsencesAll.length===1?'':'s' }}</small>
+                        <div class="absence-kpi">
+                            <div class="absence-kpi-num nd-v071" >{{ absenceKPIs.upcoming }}</div>
+                            <div class="absence-kpi-label">Upcoming planned</div>
+                            <div class="absence-kpi-sub">
+                                <span v-if="absenceKPIs.upcoming > 0">Next: {{ absenceKPIs.nextDate }}</span>
+                                <span v-else>None scheduled</span>
                             </div>
-                            <div class="view-mode-toggle" role="group" aria-label="Leave view mode">
-                                <button class="vmt-btn" :class="{ active: absenceViewMode === 'table' }" @click="absenceViewMode = 'table'" title="Table view">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9H21M3 15H21M9 3V21"/></svg>
-                                    Table
-                                </button>
-                                <button class="vmt-btn" :class="{ active: absenceViewMode === 'calendar' }" @click="absenceViewMode = 'calendar'" title="Calendar view">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2V6M8 2V6M3 10H21"/></svg>
-                                    Calendar
-                                </button>
-                                <button class="vmt-btn" :class="{ active: absenceViewMode === 'timeline' }" @click="absenceViewMode = 'timeline'" title="Timeline view">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h12"/><path d="M18 15l3 3-3 3"/></svg>
-                                    Timeline
-                                </button>
-                                <button class="vmt-btn" :class="{ active: absenceViewMode === 'coverage' }" @click="absenceViewMode = 'coverage'; loadOnCallSchedule()" title="Coverage view">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                    Coverage
+                        </div>
+                        <div class="absence-kpi">
+                            <div class="absence-kpi-num">{{ absenceKPIs.thisMonth }}</div>
+                            <div class="absence-kpi-label">This month</div>
+                            <div class="absence-kpi-sub ok">{{ absenceKPIs.coveredCount }} covered</div>
+                        </div>
+                        <div class="absence-kpi">
+                            <div class="absence-kpi-num" :style="absenceKPIs.noCoverage > 0 ? 'color:#e24b4a' : ''">{{ absenceKPIs.noCoverage }}</div>
+                            <div class="absence-kpi-label">No coverage</div>
+                            <div class="absence-kpi-sub" :class="absenceKPIs.noCoverage > 0 ? 'danger' : ''">
+                                <span v-if="absenceKPIs.noCoverage > 0">Needs attention</span>
+                                <span v-else>All covered</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mb-6">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2v-2a4 4 0 0 1 4-4h3"/><circle cx="9" cy="7" r="4"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1 1"/></svg>
+                                Leave &amp; Coverage
+                            </div>
+                            <div  class="nd-l278">
+                                <!-- Single unified view mode toggle -->
+                                <div class="view-mode-toggle">
+                                    <button class="vmt-btn" :class="{ active: absenceViewMode === 'table' }" @click="absenceViewMode = 'table'" title="Table view">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9H21M3 15H21M9 3V21"/></svg>
+                                        Table
+                                    </button>
+                                    <button class="vmt-btn" :class="{ active: absenceViewMode === 'calendar' }" @click="absenceViewMode = 'calendar'" title="Calendar view">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2V6M8 2V6M3 10H21"/></svg>
+                                        Calendar
+                                    </button>
+                                    <button class="vmt-btn" :class="{ active: absenceViewMode === 'timeline' }" @click="absenceViewMode = 'timeline'" title="Timeline view">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h12"/><path d="M18 15l3 3-3 3"/></svg>
+                                        Timeline
+                                    </button>
+                                    <button class="vmt-btn" :class="{ active: absenceViewMode === 'coverage' }" @click="absenceViewMode = 'coverage'; loadOnCallSchedule()" title="Coverage view">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        Coverage
+                                    </button>
+                                </div>
+                                <button class="btn btn-primary" @click="showAddAbsenceModal" v-if="hasPermission('staff_absence', 'create')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                    Record Leave
                                 </button>
                             </div>
                         </div>
@@ -3966,7 +3962,7 @@
                                 <option value="other">Other</option>
                             </select>
                             <label  class="nd-l277 nd-v264">
-                                <input type="checkbox" v-model="absenceFilters.showPast"  class="nd-l276 nd-v038">
+                                <input type="checkbox" v-model="absenceFilters.hideReturned"  class="nd-l276 nd-v038">
                                 Show past
                             </label>
                             <input type="date" class="form-control nd-l275" v-model="absenceFilters.startDate" >
@@ -4093,12 +4089,12 @@
                         <!-- ── COVERAGE STRIP — 30-day forward availability ── -->
                         <div  class="nd-l238 nd-v167">
                             <div  class="nd-l259">
-                                <span  class="nd-v260">30-day staff availability</span>
+                                <span  class="nd-v260">30-day coverage forecast</span>
                                 <span  class="nd-v010">
                                     <span v-if="absCoverage30.filter(d=>d.pct < 0.8).length > 0"  class="nd-v259">
                                         {{ absCoverage30.filter(d=>d.pct < 0.8).length }} days below 80%
                                     </span>
-                                    <span v-else  class="nd-v258">No days below 80%</span>
+                                    <span v-else  class="nd-v258">Full coverage</span>
                                 </span>
                             </div>
                             <div class="abs-coverage-strip">
@@ -12392,7 +12388,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-leave-workspace-scope-convergence"></script>
+    <script src="app.js?v=46.14-leave-temporal-semantics"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

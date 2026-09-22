@@ -62,7 +62,7 @@ No backend `index.js` change is included.
 
 ## Validation status
 
-- Automated historical regression: **281 checks passed across V43.1 → V46.14**.
+- Automated historical regression: **298 checks passed across V43.1 → V46.14**.
 - **62 dedicated V46.14 checks** cover A→H, semantic/reporting hardening, Grounded presentation convergence and interaction reveal/focus continuity.
 - Dedicated V46.14 suite covers the original A→H contracts plus the R1→R7 hardening invariants.
 - JavaScript syntax validation covers the main application and Personal Activity runtime files.
@@ -129,3 +129,21 @@ Authenticated-browser review showed that `on leave`, `scheduled leave`, and futu
 - `absent_now` explicitly rejects scheduled/planned/future language.
 
 This remains **V46.14** and continues the authenticated-browser release gate.
+
+
+## Leave workspace + entity-scope convergence — V46.14 refinement
+
+This refinement closes the remaining mismatch between Grounded leave scope and the direct Leave module.
+
+- Explicitly named staff in operational questions are resolved before generic/taught department intents. `Is Pedro Marcos on leave today?` is therefore person-specific, while `Who is on leave today?` remains department-wide.
+- Leave & Coverage now uses a contextual workforce-availability hero with separate Today, Upcoming and Coverage-review states.
+- The redundant primary breadcrumb / duplicate page introduction is removed for Leave.
+- Current and future uncovered leave records are tracked separately and summarized as coverage reviews.
+- `30-day coverage forecast / Full coverage` is renamed to `30-day staff availability / No days below 80%` because the strip measures staffing availability, not whether each leave record has an explicit covering clinician.
+- `Show past` now means exactly what it says.
+- The Leave table receives a first operational-table hardening pass while preserving the existing source records and lifecycle actions.
+
+Live authenticated validation remains required before this interaction model is extracted into the shared neumDesk table/icon system.
+
+
+Final convergence validation: **298 checks passed across V43.1 → V46.14**, including **79 V46.14 checks**. Live authenticated browser validation remains required.

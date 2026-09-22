@@ -22113,3 +22113,117 @@ html body #app .askbar-followups{margin-top:7px !important;}
 #app .nrd-drawer:focus:not(:focus-visible),
 #app .profile-drawer:focus:not(:focus-visible),
 #app .rot-detail-sheet:focus:not(:focus-visible){outline:none;}
+
+/* ========================================================================== 
+   V46.14 · LEAVE TEMPORAL WORKSPACE CONVERGENCE
+   The direct module mirrors Grounded's temporal model: today ≠ upcoming ≠
+   coverage review. Calm shell, contextual hero, operational table beneath.
+   ========================================================================== */
+html body #app .leave14-hero{
+  margin:0 20px 0 !important;
+  padding:26px 28px 24px !important;
+  border-radius:18px 18px 0 0 !important;
+  background:linear-gradient(110deg,#0d3555 0%,#0d4460 62%,#0c696c 100%) !important;
+  color:#fff !important;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:24px !important;
+  box-shadow:none !important;
+}
+html body #app .leave14-hero-copy{min-width:0 !important;max-width:900px !important;}
+html body #app .leave14-kicker{
+  font:700 10px/1.2 var(--font-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:.16em !important;text-transform:uppercase !important;
+  color:#68dad7 !important;margin-bottom:9px !important;
+}
+html body #app .leave14-hero h2{
+  margin:0 !important;color:#fff !important;
+  font:650 clamp(26px,3vw,38px)/1.08 var(--font-ui,"DM Sans",sans-serif) !important;
+  letter-spacing:-.035em !important;max-width:760px !important;
+}
+html body #app .leave14-hero p{
+  margin:9px 0 0 !important;max-width:760px !important;
+  color:rgba(235,247,249,.74) !important;font-size:13px !important;line-height:1.5 !important;
+}
+html body #app .leave14-hero-meta{display:flex !important;gap:8px !important;flex-wrap:wrap !important;margin-top:18px !important;}
+html body #app .leave14-hero-meta span{
+  display:flex !important;gap:7px !important;align-items:center !important;
+  padding:7px 9px !important;border-radius:8px !important;
+  border:1px solid rgba(255,255,255,.14) !important;background:rgba(255,255,255,.055) !important;
+  color:rgba(239,248,249,.76) !important;font-size:11px !important;
+}
+html body #app .leave14-hero-meta b{font-weight:700 !important;color:#fff !important;}
+html body #app .leave14-hero-meta .is-attention{border-color:rgba(250,190,76,.42) !important;background:rgba(250,190,76,.08) !important;color:#ffe1a1 !important;}
+html body #app .leave14-primary{
+  display:inline-flex !important;align-items:center !important;gap:7px !important;
+  border:1px solid rgba(255,255,255,.16) !important;border-radius:10px !important;
+  background:#13b9ba !important;color:#062d3a !important;
+  padding:10px 13px !important;font:700 12px/1 var(--font-ui,"DM Sans",sans-serif) !important;
+  cursor:pointer !important;white-space:nowrap !important;
+}
+html body #app .leave14-primary:hover{background:#35c7c6 !important;}
+
+html body #app .leave14-state-rail{
+  margin:0 20px !important;display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  background:#fff !important;border:1px solid #dfe7e7 !important;border-top:0 !important;
+  border-radius:0 0 14px 14px !important;overflow:hidden !important;
+}
+html body #app .leave14-state{padding:13px 16px 14px !important;border-right:1px solid #e8eeee !important;min-width:0 !important;}
+html body #app .leave14-state:last-child{border-right:0 !important;}
+html body #app .leave14-state span{display:block !important;color:#70838b !important;font:700 9.5px/1.2 var(--font-ui,"DM Sans",sans-serif) !important;letter-spacing:.09em !important;text-transform:uppercase !important;}
+html body #app .leave14-state strong{display:block !important;margin-top:5px !important;color:#123949 !important;font:500 25px/1 var(--font-display,"Instrument Serif",Georgia,serif) !important;}
+html body #app .leave14-state small{display:block !important;margin-top:5px !important;color:#7d8d92 !important;font-size:10.5px !important;line-height:1.3 !important;white-space:normal !important;}
+html body #app .leave14-state--attention{background:#fffaf0 !important;}
+html body #app .leave14-state--attention strong{color:#b36b00 !important;}
+
+html body #app .leave14-workspace{
+  margin:16px 20px 28px !important;border:1px solid #dfe7e7 !important;border-radius:14px !important;
+  box-shadow:none !important;background:#fff !important;overflow:hidden !important;
+}
+html body #app .leave14-toolbar{
+  display:flex !important;align-items:center !important;justify-content:space-between !important;gap:14px !important;
+  padding:10px 14px !important;background:#fbfcfb !important;border-bottom:1px solid #e7eded !important;
+}
+html body #app .leave14-toolbar-label{display:flex !important;align-items:baseline !important;gap:9px !important;min-width:0 !important;}
+html body #app .leave14-toolbar-label span{color:#274b59 !important;font:700 11px/1.2 var(--font-ui,"DM Sans",sans-serif) !important;letter-spacing:.06em !important;text-transform:uppercase !important;}
+html body #app .leave14-toolbar-label small{color:#829096 !important;font-size:10.5px !important;}
+html body #app .leave14-toolbar .view-mode-toggle{display:flex !important;gap:3px !important;padding:3px !important;border:1px solid #dbe4e4 !important;background:#f3f7f7 !important;border-radius:9px !important;}
+html body #app .leave14-toolbar .vmt-btn{
+  display:inline-flex !important;align-items:center !important;gap:5px !important;padding:6px 8px !important;border:0 !important;border-radius:7px !important;
+  background:transparent !important;color:#677b84 !important;font:700 10.5px/1 var(--font-ui,"DM Sans",sans-serif) !important;cursor:pointer !important;
+}
+html body #app .leave14-toolbar .vmt-btn.active{background:#fff !important;color:#0b7f80 !important;box-shadow:0 1px 3px rgba(17,50,63,.08) !important;}
+
+/* Leave table: lighter operational grid, less spreadsheet chrome. */
+html body #app .leave14-workspace .table-responsive{margin:0 !important;border:0 !important;}
+html body #app .leave14-workspace .table-absence{border:0 !important;border-radius:0 !important;box-shadow:none !important;}
+html body #app .leave14-workspace .table-absence thead th{
+  background:#f8faf9 !important;color:#58707a !important;font-size:10.5px !important;letter-spacing:.075em !important;
+  padding:11px 14px !important;border-right:0 !important;border-bottom:1px solid #dfe7e7 !important;
+}
+html body #app .leave14-workspace .table-absence tbody td{
+  padding:12px 14px !important;border-right:0 !important;border-bottom:1px solid #edf1f1 !important;
+  font-size:12.5px !important;color:#253e4c !important;background:#fff !important;
+}
+html body #app .leave14-workspace .table-absence tbody tr:nth-child(even){background:#fbfcfc !important;}
+html body #app .leave14-workspace .table-absence tbody tr:hover{background:#f2f9f8 !important;box-shadow:inset 3px 0 0 #19aaa9 !important;}
+html body #app .leave14-workspace .table-absence .date-cell{font-family:var(--font-ui,"DM Sans",sans-serif) !important;font-variant-numeric:tabular-nums !important;white-space:nowrap !important;}
+html body #app .leave14-workspace .table-actions{display:flex !important;align-items:center !important;gap:5px !important;justify-content:flex-end !important;}
+html body #app .leave14-workspace .tbl-btn{min-height:30px !important;padding:5px 8px !important;border-radius:8px !important;font-size:10.5px !important;box-shadow:none !important;}
+html body #app .leave14-workspace .filter-bar{background:#fff !important;border-bottom:1px solid #e7eded !important;}
+
+@media(max-width:900px){
+  html body #app .leave14-hero{margin:0 12px !important;padding:21px 18px !important;border-radius:14px 14px 0 0 !important;flex-direction:column !important;}
+  html body #app .leave14-state-rail{margin:0 12px !important;grid-template-columns:1fr 1fr !important;}
+  html body #app .leave14-state:nth-child(2){border-right:0 !important;}
+  html body #app .leave14-state:nth-child(-n+2){border-bottom:1px solid #e8eeee !important;}
+  html body #app .leave14-workspace{margin:12px 12px 22px !important;}
+}
+@media(max-width:620px){
+  html body #app .leave14-hero h2{font-size:25px !important;}
+  html body #app .leave14-hero-meta{display:grid !important;grid-template-columns:1fr !important;width:100% !important;}
+  html body #app .leave14-hero-meta span{width:100% !important;}
+  html body #app .leave14-toolbar{align-items:flex-start !important;flex-direction:column !important;}
+  html body #app .leave14-toolbar .view-mode-toggle{width:100% !important;overflow-x:auto !important;}
+}

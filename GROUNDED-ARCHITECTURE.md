@@ -25,6 +25,8 @@ The central rule is:
 14. **Reveal start, not absolute bottom.** For long profiles, boards and proposals, Grounded aligns the new question/answer start in the conversation scroller instead of jumping to the footer or composer.
 15. **Temporal state is explicit.** Leave status today, leave on a requested date/window, scheduled/upcoming leave, and leave history are separate query modes. A future leave record must never be phrased as if the person is absent today.
 16. **Current person reference can resolve short status fragments.** After opening a person, `on leave` and `scheduled leave` apply to that person unless the user explicitly widens scope (`who`, `anyone`, `everyone`). Explicitly named people always override current reference.
+17. **Explicit named operational entities outrank generic intent vocabulary.** `Is Pedro Marcos on leave today?` resolves the staff entity before a department-level `absent today` intent can claim the same words. Ambiguous names stop for clarification rather than widening scope.
+18. **Temporal language and entity scope are orthogonal.** `today`, `Friday`, `scheduled`, or `next week` determine the time window; a named person determines person scope; `who` / `anyone` / `everyone` explicitly widen person scope. One dimension must never silently erase the other.
 
 ## Architecture
 

@@ -2,7 +2,7 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v2.1 · Implementation checkpoint: V46.14 leave temporal semantics · Supersedes Vision v0.1
+**Status:** Architecture v2.2 · Implementation checkpoint: V46.14 Leave workspace + entity-scope convergence · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
@@ -14,7 +14,7 @@ This is the **living checkpoint** and is authoritative over older status stateme
 
 ### Canonical baseline
 - Baseline entering this release: **V46.13 · Personal Activity / Portfolio Intelligence**.
-- Current release: **V46.14 · Personal Activity / Portfolio Intelligence Workspace**.
+- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence**.
 
 ### Preserved implementation milestones
 - **V46.9 · Grounded Action Integrity** — On-call migrated to guarded semantic tools, pending action state, human confirmation and commit-time revalidation.
@@ -98,6 +98,15 @@ Consequences:
 - Department-wide upcoming leave honors an explicitly requested date/window (for example `next week`) instead of always substituting a generic 30-day horizon.
 - Leave answers expose answer scope such as `current leave status`, `scheduled leave`, or the resolved date/window so temporal meaning is inspectable.
 
+### V46.14 Leave workspace + entity-scope convergence — direct UI and Grounded agree on scope
+- **Explicit named entity scope outranks generic vocabulary.** A question such as `Is Pedro Marcos on leave today?` resolves Pedro first and cannot fall through to the department-wide `absent now` builder. Ambiguous names still require clarification.
+- The direct **Leave & Coverage** module now presents one temporal operational model: **Today**, **Upcoming**, **Coverage review**, and monthly context are distinct states rather than repeated page summaries.
+- Primary-module breadcrumb duplication is removed from Leave; the contextual hero follows the same neumDesk page-shell grammar already established by Overview and Clinical Units.
+- Missing explicit cover on a leave record is described as a **coverage review**, not automatically as department-wide understaffing. Current and future uncovered records are counted separately before being summarized.
+- The old 30-day `coverage forecast / Full coverage` label is replaced by **30-day staff availability**. It measures active staff availability by day and therefore cannot be confused with whether an individual leave record has a named covering clinician.
+- The `Show past` control now has positive semantics: checked means returned/cancelled historical records are shown; unchecked means the working view remains active/planned.
+- Leave receives the first targeted **operational-table hardening** pass: calmer grid lines, tabular dates, compact row actions and stronger row scanning while preserving the same source records and lifecycle actions. This is a first module implementation, not yet the universal neumDesk table system.
+
 ### Known debt
 1. Multi-unit rotation writes remain sequential because there is no atomic backend batch endpoint.
 2. Rotation edit/extend/cancel and leave return/edit/cancel remain legacy lifecycle writes.
@@ -108,7 +117,7 @@ Consequences:
 7. Personal Activity is visually full-screen but still implemented as an application overlay rather than a URL-addressable route; deep-link/browser-history integration remains product-architecture debt.
 
 ### What comes next
-**Next checkpoint:** live authenticated browser validation of V46.14 temporal leave semantics together with interaction continuity. Verify current person leave status, scheduled leave, named-person future leave, department-wide future windows, Grounded answer reveal, Research detail opening and cross-module focus. print/PDF review remains required. Do not move to operational UI consistency until the live browser confirms semantic time scope and viewport/focus continuity.
+**Next checkpoint:** deploy and live-test the combined Leave scope/workspace convergence. Verify `Is Pedro Marcos on leave today?`, current-person `on leave`, scheduled leave, broad future windows, the Today/Upcoming/Coverage-review shell, `Show past`, and 30-day staff-availability wording against real records. After that gate, extract the Leave table lessons into the shared neumDesk table / grid / icon language rather than redesigning modules independently. print/PDF review for Portfolio Intelligence remains required.
 
 ---
 
