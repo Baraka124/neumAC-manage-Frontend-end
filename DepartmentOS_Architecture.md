@@ -2,7 +2,7 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v2.2 · Implementation checkpoint: V46.14 Leave workspace + entity-scope convergence · Supersedes Vision v0.1
+**Status:** Architecture v2.3 · Implementation checkpoint: V46.14 Staff Phase 1 · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
@@ -10,11 +10,30 @@
 
 ## Current implementation ledger — V46.14
 
+### V46.14 Staff Phase 1 — preservation-first directory redesign
+The Staff redesign begins from the existing lifecycle rather than from a blank UI. `STAFF-DOMAIN-LIFECYCLE-V46.14.md` is the preservation map for resident categories, residency-year precedence, unit/rotation relationships, role flags, lifecycle transitions and guarded deactivation.
+
+Implemented in Phase 1:
+- Staff keeps the existing backend/create/edit/deactivation logic unchanged;
+- the primary-module breadcrumb is removed and the global neumDesk header remains the module title owner;
+- a contextual workforce-directory hero uses **Active staff**, not the stronger and previously misleading **Available** label;
+- Table / People / Compact controls are visible and separated from Export / Personal Activity / Add Staff actions;
+- the previously unreachable People view is repaired (it was nested inside the Compact-only branch);
+- the first operational Staff table is identity → role → current/next context → record status → actions;
+- residents render as `Resident · Internal`, `Resident · Rotating`, or `Resident · External`, with effective year and recorded origin when available;
+- the search surface now includes role, specialty, department and resident-origin text in addition to name/ID/email;
+- guarded removal/reassignment, Edit and Personal Activity remain reachable from each row.
+
+**Explicitly deferred to Staff Phase 2:** the large clickable Person profile is not functionally simplified yet. Its existing fields/tabs stay available until the profile hierarchy is redesigned against the lifecycle map.
+
+**Phase 1 validation:** 312 historical/regression checks pass across V43.1 → V46.14, including 14 Staff Phase 1 preservation and UI-contract checks. Live authenticated browser review is still required before Phase 2.
+
+
 This is the **living checkpoint** and is authoritative over older status statements below.
 
 ### Canonical baseline
 - Baseline entering this release: **V46.13 · Personal Activity / Portfolio Intelligence**.
-- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence**.
+- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence + Staff Phase 1**.
 
 ### Preserved implementation milestones
 - **V46.9 · Grounded Action Integrity** — On-call migrated to guarded semantic tools, pending action state, human confirmation and commit-time revalidation.
@@ -117,7 +136,7 @@ Consequences:
 7. Personal Activity is visually full-screen but still implemented as an application overlay rather than a URL-addressable route; deep-link/browser-history integration remains product-architecture debt.
 
 ### What comes next
-**Next checkpoint:** deploy and live-test the combined Leave scope/workspace convergence. Verify `Is Pedro Marcos on leave today?`, current-person `on leave`, scheduled leave, broad future windows, the Today/Upcoming/Coverage-review shell, `Show past`, and 30-day staff-availability wording against real records. After that gate, extract the Leave table lessons into the shared neumDesk table / grid / icon language rather than redesigning modules independently. print/PDF review for Portfolio Intelligence remains required.
+**Next checkpoint:** deploy and live-test **Staff Phase 1** as the first preservation-first workforce surface: header consolidation, Table/People/Compact switching, resident category/year/origin rendering, current/next operational context, row actions and responsive table behavior. Only after that gate move to **Staff Phase 2 — Canonical Person profile**, using `STAFF-DOMAIN-LIFECYCLE-V46.14.md` as the no-loss contract. Leave/On-call/Rotations inherit only Staff patterns that survive live use; print/PDF review for Portfolio Intelligence remains required.
 
 ---
 

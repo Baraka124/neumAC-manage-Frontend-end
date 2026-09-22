@@ -2098,7 +2098,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser, researchLines, loadResearchLines }) {
       const medicalStaff    = ref([])
       const allStaffLookup  = ref([])   // ALL staff including inactive, for name resolution
-      const staffView = ref('table') // 'table' | 'compact'
+      const staffView = ref('table') // 'table' | 'people' | 'compact'
       const hospitalsList = ref([])   // all hospitals from DB
       const clinicalUnits = ref([])   // clinical units (Pneumology + others)
       const staffFilters = reactive({ search: '', staffType: '', department: '', status: '', residentCategory: '', hospital: '', networkType: '' })
@@ -2195,7 +2195,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let f = medicalStaff.value
         if (debouncedStaffSearch.value) {
           const q = debouncedStaffSearch.value.toLowerCase()
-          f = f.filter(x => x.full_name?.toLowerCase().includes(q) || x.staff_id?.toLowerCase().includes(q) || x.professional_email?.toLowerCase().includes(q))
+          f = f.filter(x => {
+            const resident = isResidentType(x.staff_type) ? Utils.formatResidentCategoryDetailed(x) : ''
+            const role = formatStaffTypeGlobal(x.staff_type)
+            const dept = x.department?.name || x.departments?.name || x.primary_dept_name || ''
+            const haystack = [x.full_name, x.staff_id, x.professional_email, x.specialization, role, resident, dept, x.home_department, x.external_institution]
+              .filter(Boolean).join(' ').toLowerCase()
+            return haystack.includes(q)
+          })
         }
         if (staffFilters.staffType) f = f.filter(x => x.staff_type === staffFilters.staffType)
         // Department filter: match by department_id (works for both primary and affiliated staff)
@@ -11258,6 +11265,74 @@ document.addEventListener('DOMContentLoaded', () => {
         return null
       }
 
+      // V46.14 Staff Phase 1 — directory semantics. These helpers deliberately
+      // compose existing source-of-truth fields/records; they do not invent new
+      // resident lifecycle rules or bypass the registration/edit model.
+      const getStaffResidentDescriptor = (staff) => {
+        if (!staff || !isResidentType(staff.staff_type)) return null
+        const category = ({
+          department_internal: 'Internal',
+          rotating_other_dept: 'Rotating',
+          external_resident: 'External'
+        })[staff.resident_category] || 'Resident'
+        const year = Utils.effectiveResidentYear(staff)
+        let origin = ''
+        if (staff.resident_category === 'rotating_other_dept') {
+          origin = getRotationServiceName(staff.home_department_id) || staff.home_department || ''
+        } else if (staff.resident_category === 'external_resident') {
+          origin = staff.external_institution || ''
+        }
+        return { category, year, origin, label: `Resident · ${category}` }
+      }
+
+      const getStaffDirectoryContextItems = (staff) => {
+        if (!staff?.id) return []
+        const items = []
+        const today = Utils.normalizeDate(new Date())
+        const currentAbsence = absences.value.find(a => {
+          if (a.staff_member_id !== staff.id) return false
+          const start = Utils.normalizeDate(a.start_date)
+          const end = Utils.normalizeDate(a.end_date)
+          if (!start || !end || !(start <= today && today <= end)) return false
+          return !['cancelled','completed','returned_to_duty'].includes(a.current_status)
+        })
+        if (currentAbsence) {
+          items.push({
+            type: 'leave',
+            title: 'Away today',
+            meta: formatAbsenceReason(currentAbsence.absence_reason || currentAbsence.reason || 'leave')
+          })
+        }
+        if (isOnCallToday(staff.id)) {
+          items.push({ type: 'oncall', title: 'On-call today', meta: '' })
+        }
+        const rotation = getCurrentRotationForStaff(staff.id)
+        if (rotation) {
+          const unit = getTrainingUnitName(rotation.training_unit_id) || rotation.training_unit_name || rotation.unit_name || 'Clinical Unit'
+          const dates = [rotation.start_date, rotation.end_date].filter(Boolean).map(formatDateShort)
+          items.push({ type: 'rotation', title: unit, meta: dates.length === 2 ? `${dates[0]} → ${dates[1]}` : 'Active rotation' })
+        }
+        if (!items.length) {
+          const next = getStaffNextEvent(staff.id)
+          if (next) items.push({ type: next.type || 'next', title: next.label, meta: 'Next recorded event' })
+        }
+        return items.slice(0, 2)
+      }
+
+      const getStaffDirectoryRecordState = (staff) => {
+        if (!staff) return { label: 'Unknown', tone: 'neutral' }
+        if (staff.employment_status === 'inactive') return { label: 'Inactive', tone: 'inactive' }
+        const today = Utils.normalizeDate(new Date())
+        const away = absences.value.some(a => {
+          if (a.staff_member_id !== staff.id) return false
+          const start = Utils.normalizeDate(a.start_date)
+          const end = Utils.normalizeDate(a.end_date)
+          return start && end && start <= today && today <= end && !['cancelled','completed','returned_to_duty'].includes(a.current_status)
+        })
+        if (away || staff.employment_status === 'on_leave') return { label: 'Away today', tone: 'away' }
+        return { label: 'Active', tone: 'active' }
+      }
+
       const buildStaffPopoverData = (staffId) => {
         const staff = medicalStaff.value.find(s => s.id === staffId)
         if (!staff) return null
@@ -17334,6 +17409,7 @@ document.addEventListener('DOMContentLoaded', () => {
           absenceCalendarOffset, absenceCalendarCells, absenceCalendarTitle, absenceMoveMonth,
           hoverPopover, showIntelPopover, hideIntelPopover,
           getStaffPulseState, getStaffNextEvent,
+          getStaffResidentDescriptor, getStaffDirectoryContextItems, getStaffDirectoryRecordState,
           absCalendarDays, absCalendarTitle, absCalendarMonth, absCalendarYear,
           absCalPrevMonth, absCalNextMonth, absenceViewMode, absTimelineHorizon, absTimelineOffset, absTimelinePlanning, absTimelineStaff, getStaffAbsencesInHorizon, getAbsenceBarStyle, absTimelineCoverage, absTimelineTodayPct, getAbsHorizonLabel, ABS_COLOURS,
           absCoverage30, getUnit30DayTimeline, deptPulseStats, handleGlobalSearch, globalSearchResults, clearSearch, closeSearchOnBlur, isOnline,

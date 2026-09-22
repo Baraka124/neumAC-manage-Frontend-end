@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-leave-workspace-scope-convergence">
+    <link rel="stylesheet" href="style.css?v=46.14-staff-phase1-directory">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -1748,7 +1748,7 @@
 
                 <!-- Breadcrumb — hidden on dashboard and fullscreen modules -->
                 <nav class="breadcrumb" aria-label="Breadcrumb"
-                     v-if="!['dashboard','resident_rotations','training_units','staff_absence','research_hub','news'].includes(currentView)">
+                     v-if="!['dashboard','medical_staff','resident_rotations','training_units','staff_absence','research_hub','news'].includes(currentView)">
                     <button @click="switchView('dashboard')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg><span>Dashboard</span></button>
                     <span class="bc-sep">/</span>
                     <span class="bc-current">{{ getCurrentViewTitle() }}</span>
@@ -2117,401 +2117,230 @@
                 </div>
 
 
-                <!-- ============ MEDICAL STAFF VIEW ============ -->
-                <div v-if="currentView === 'medical_staff'">
-                    <!-- Breadcrumb — shows filter context if navigated from dept -->
-                    <nav class="breadcrumb" v-if="staffFilters.department || staffFilters.residentCategory">
-                        <span class="breadcrumb-link" @click="switchView('medical_staff')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="8" y="2" width="8" height="4" rx="1"/><rect x="2" y="14" width="8" height="4" rx="1"/><rect x="14" y="14" width="8" height="4" rx="1"/><path d="M12 6v4M6 14v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg> Departments
-                        </span>
-                        <span class="breadcrumb-sep">›</span>
-                        <span class="breadcrumb-item active">Medical Staff</span>
-                        <template v-if="staffFilters.residentCategory">
-                            <span class="breadcrumb-sep">›</span>
-                            <span class="breadcrumb-item active" :style="{color: staffFilters.residentCategory==='external_resident' ? 'var(--cat-external)' : staffFilters.residentCategory==='rotating_other_dept' ? 'var(--cat-rotating)' : 'var(--cat-internal)'}">
-                                {{ staffFilters.residentCategory === 'external_resident' ? 'External' : staffFilters.residentCategory === 'rotating_other_dept' ? 'Rotating' : 'Internal' }}
-                            </span>
-                        </template>
-                        <button @click="staffFilters.department = ''; staffFilters.residentCategory = ''"
-                                 class="nd-l351 nd-v328">
-                            Clear filter ×
+                <!-- ============ CLINICAL STAFF VIEW · V46.14 STAFF PHASE 1 ============ -->
+                <div v-if="currentView === 'medical_staff'" class="staff46-page">
+
+                    <!-- Context inherited from cross-module navigation stays visible but never becomes a second breadcrumb bar. -->
+                    <div v-if="staffFilters.department || staffFilters.residentCategory" class="staff46-context-strip">
+                        <span class="staff46-context-k">Filtered context</span>
+                        <button v-if="staffFilters.department" type="button" @click="staffFilters.department=''">
+                            {{ departments.find(d=>d.id===staffFilters.department)?.name || 'Department' }} ×
                         </button>
-                    </nav>
-                    <div class="card mb-6">
-                        <div class="card-header">
-                            <div class="header-actions nd-l328" >
-                                <div class="view-toggle">
-                                    <button class="btn-pill" :class="{ active: staffView === 'table' }" @click="staffView = 'table'">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01"/></svg> Table
-                                    </button>
-                                    <button class="btn-pill" :class="{ active: staffView === 'people' }" @click="staffView = 'people'">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="8" height="8" rx="2"/><rect x="14" y="3" width="8" height="8" rx="2"/><rect x="2" y="13" width="8" height="8" rx="2"/><rect x="14" y="13" width="8" height="8" rx="2"/></svg> People
-                                    </button>
-                                    <button class="btn-pill" :class="{ active: staffView === 'compact' }" @click="staffView = 'compact'">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg> Compact
-                                    </button>
-                                </div>
-                                <button class="btn btn-secondary btn-sm" @click="exportCSV('staff')" title="Export to CSV" aria-label="Export staff list to CSV">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                    CSV
-                                </button>
-                                <button class="btn btn-secondary btn-sm" @click="activity45Open()">Personal activity</button>
-                                <button class="btn btn-secondary btn-sm" @click="printView('Medical Staff')" title="Print" aria-label="Print staff list">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                                </button>
-                                <button class="btn btn-primary" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff', 'create')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Staff</button>
-                            </div>
-                        </div>
-                        <!-- ── Department Pulse Bar — live availability intelligence ── -->
-                        <div class="dept-pulse-bar nd-l156" >
-                            <div class="dpb-item" @click="switchView('medical_staff', { status: 'active' })">
-                                <div class="dpb-num dpb-num--teal">{{ deptPulseStats.active }}</div>
-                                <div class="dpb-label">Available</div>
-                                <div class="dpb-sub">active staff</div>
-                            </div>
-                            <div class="dpb-item" @click="switchView('oncall_schedule')">
-                                <div class="dpb-num dpb-num--amber">{{ deptPulseStats.onCallToday }}</div>
-                                <div class="dpb-label">On call today</div>
-                                <div class="dpb-sub">{{ deptPulseStats.onCallToday === 0 ? '⚠ no coverage' : 'physicians' }}</div>
-                            </div>
-                            <div class="dpb-item" @click="switchView('staff_absence')">
-                                <div class="dpb-num" :class="deptPulseStats.onLeave > 2 ? 'dpb-num--red' : deptPulseStats.onLeave > 0 ? 'dpb-num--amber' : ''">{{ deptPulseStats.onLeave }}</div>
-                                <div class="dpb-label">On leave</div>
-                                <div class="dpb-sub">right now</div>
-                            </div>
-                            <div class="dpb-item" @click="switchView('resident_rotations', { rotationStatus: 'active' })">
-                                <div class="dpb-num">{{ deptPulseStats.rotationCount }}</div>
-                                <div class="dpb-label">Rotations</div>
-                                <div class="dpb-sub">active</div>
-                            </div>
-                        </div>
+                        <button v-if="staffFilters.residentCategory" type="button" @click="staffFilters.residentCategory=''">
+                            {{ staffFilters.residentCategory==='department_internal' ? 'Resident · Internal' : staffFilters.residentCategory==='rotating_other_dept' ? 'Resident · Rotating' : 'Resident · External' }} ×
+                        </button>
+                        <button type="button" class="staff46-context-clear" @click="clearStaffFilters">Clear all</button>
+                    </div>
 
-                        <div class="filter-bar">
-                            <input type="text" class="form-control" v-model="staffFilters.search" placeholder="Search name…" aria-label="Search staff">
-                            <!-- Active category filter chip from dept cross-nav -->
-                            <span v-if="staffFilters.residentCategory" class="nav-context-chip"
-                                  @click="staffFilters.residentCategory = ''"
-                                  :style="{background: staffFilters.residentCategory === 'external_resident' ? 'var(--violet-lt)' : staffFilters.residentCategory === 'rotating_other_dept' ? 'var(--partial-lt)' : 'var(--ok-lt)', borderColor: 'transparent', color: staffFilters.residentCategory === 'external_resident' ? 'var(--cat-external)' : staffFilters.residentCategory === 'rotating_other_dept' ? 'var(--cat-rotating)' : 'var(--cat-internal)'}">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                                {{ staffFilters.residentCategory === 'external_resident' ? 'External Residents' : staffFilters.residentCategory === 'rotating_other_dept' ? 'Rotating Residents' : 'Internal Residents' }}
-                                &nbsp;×
-                            </span>
-                            <select class="form-select" v-model="staffFilters.staffType">
-                                <option value="">All Types</option>
-                                <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
-                            </select>
-                            <select v-if="staffFilters.staffType === 'medical_resident'" class="form-select" v-model="staffFilters.residentCategory">
-                                <option value="">All Residents</option>
-                                <option value="department_internal">Internal</option>
-                                <option value="rotating_other_dept">Rotating</option>
-                                <option value="external_resident">External</option>
-                            </select>
-                            <select class="form-select" v-model="staffFilters.department">
-                                <option value="">All Departments</option>
-                                <option v-for="dept in departments.filter(d => d.status !== 'inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
-                            </select>
-                            <select class="form-select" v-model="staffFilters.status">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="on_leave">On Leave</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                            <button v-if="hasActiveStaffFilters" class="btn-pill btn-pill--clear" @click="clearStaffFilters" title="Clear all filters">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg> Clear
+                    <!-- Contextual hero: global navbar already owns the module name. -->
+                    <section class="staff46-hero" aria-labelledby="staff46-hero-title">
+                        <div class="staff46-hero-copy">
+                            <span class="staff46-eyebrow">WORKFORCE DIRECTORY</span>
+                            <h2 id="staff46-hero-title">{{ deptPulseStats.active }} active staff</h2>
+                            <p>People, professional roles and near-term operational context.</p>
+                        </div>
+                        <div class="staff46-hero-actions">
+                            <button type="button" class="staff46-btn staff46-btn--secondary" @click="activity45Open()">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+                                Personal activity
                             </button>
-                            <span v-if="hasActiveStaffFilters" class="filter-result-count">{{ filteredMedicalStaff.length }} of {{ medicalStaff.length }}</span>
+                            <button type="button" class="staff46-btn staff46-btn--primary" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff','create')">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                Add staff
+                            </button>
                         </div>
 
-                        <!-- ══════════════════════════════════════════════
-                             COMPACT VIEW — card grid, same language as on-call/rotations
-                             ══════════════════════════════════════════════ -->
-                        <!-- COMPACT VIEW — card grid, 2 columns, space-efficient -->
-                        <div v-if="staffView === 'compact'">
-                            <!-- Skeleton loading — shimmer cards -->
-                            <div v-if="loading" class="scc-grid nd-l350" >
-                                <div v-for="i in 8" :key="i" class="nm-skel-card nm-skeleton nd-l349 nd-v263" ></div>
-                            </div>
+                        <div class="staff46-pulse" aria-label="Current department staff context">
+                            <button type="button" @click="staffFilters.status='active'">
+                                <strong>{{ deptPulseStats.active }}</strong><span>Active staff</span><small>employment records</small>
+                            </button>
+                            <button type="button" @click="switchView('oncall_schedule')">
+                                <strong>{{ deptPulseStats.onCallToday }}</strong><span>On-call today</span><small>recorded duties</small>
+                            </button>
+                            <button type="button" @click="switchView('staff_absence')" :class="{'needs-attention':deptPulseStats.onLeave>0}">
+                                <strong>{{ deptPulseStats.onLeave }}</strong><span>Away today</span><small>recorded absences</small>
+                            </button>
+                            <button type="button" @click="switchView('resident_rotations',{rotationStatus:'active'})">
+                                <strong>{{ deptPulseStats.rotationCount }}</strong><span>Resident rotations</span><small>active now</small>
+                            </button>
+                        </div>
+                    </section>
 
-                            <!-- ── People Intelligence Grid (staffView === 'people') ── -->
-                            <div v-if="staffView === 'people'">
-                                <div v-if="loading" class="pig-grid nd-l209" >
-                                    <div v-for="i in 9" :key="i" class="nm-skel-card nm-skeleton nd-l348 nd-v327" ></div>
+                    <!-- View/actions toolbar. View switches and operational actions are intentionally separated. -->
+                    <div class="staff46-toolbar">
+                        <div class="staff46-view-switch" role="group" aria-label="Staff view">
+                            <button type="button" :class="{active:staffView==='table'}" @click="staffView='table'">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                                Table
+                            </button>
+                            <button type="button" :class="{active:staffView==='people'}" @click="staffView='people'">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 20c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5M14 15c3.6 0 6 1.8 6 4.5"/></svg>
+                                People
+                            </button>
+                            <button type="button" :class="{active:staffView==='compact'}" @click="staffView='compact'">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="5" width="18" height="5" rx="1"/><rect x="3" y="14" width="18" height="5" rx="1"/></svg>
+                                Compact
+                            </button>
+                        </div>
+                        <div class="staff46-toolbar-actions">
+                            <details class="staff46-export-menu">
+                                <summary>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+                                    Export
+                                </summary>
+                                <div>
+                                    <button type="button" @click="exportCSV('staff')">CSV file</button>
+                                    <button type="button" @click="printView('Clinical Staff')">Print view</button>
                                 </div>
-                                <div v-else class="pig-grid">
-                                    <template v-for="(item, idx) in compactStaffWithDividers" :key="item.id || 'div-'+idx">
-                                        <!-- Section divider -->
-                                        <div v-if="item._divider" class="pig-divider">
-                                            <span class="pig-divider-label">{{ item._divider }}</span>
-                                            <span class="pig-divider-line"></span>
-                                        </div>
-                                        <!-- People card -->
-                                        <div v-else
-                                             class="pig-card"
-                                             :class="{
-                                                 'oncall':   isOnCallToday(item.id),
-                                                 'leave':    item.employment_status === 'on_leave',
-                                                 'inactive': item.employment_status === 'inactive'
-                                             }"
-                                             @click="viewStaffDetails(item)"
-                                             @mouseenter="showIntelPopover(item, $event)"
-                                             @mouseleave="hideIntelPopover()"
-                                             data-popover-staff>
-
-                                            <div class="pig-body">
-                                                <!-- Avatar with ring -->
-                                                <div class="pig-avatar-wrap">
-                                                    <svg class="pig-ring" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
-                                                        <circle class="pig-ring-track" cx="28" cy="28" r="24"/>
-                                                        <circle class="pig-ring-fill"
-                                                                :class="isOnCallToday(item.id) ? 'oncall' : item.employment_status === 'on_leave' ? 'leave' : item.employment_status === 'inactive' ? 'inactive' : isResidentType(item.staff_type) ? 'resident' : 'active'"
-                                                                cx="28" cy="28" r="24"
-                                                                :stroke-dasharray="(isOnCallToday(item.id) ? '151 200' : item.employment_status==='inactive' ? '0 200' : '151 200')"
-                                                                stroke-dashoffset="0"/>
-                                                    </svg>
-                                                    <div class="pig-avatar"
-                                                         :class="item.employment_status==='on_leave' ? 'leave' : item.employment_status==='inactive' ? 'inactive' : isResidentType(item.staff_type) ? 'resident' : 'attending'">
-                                                        {{ (item.full_name||'').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('') }}
-                                                    </div>
-                                                    <span class="pig-status-dot"
-                                                          :class="isOnCallToday(item.id) ? 'oncall' : item.employment_status === 'on_leave' ? 'leave' : item.employment_status === 'inactive' ? 'inactive' : 'active'"></span>
-                                                </div>
-
-                                                <!-- Info -->
-                                                <div class="pig-info">
-                                                    <div class="pig-name">{{ item.full_name }}</div>
-                                                    <div class="pig-role">{{ formatStaffType(item.staff_type) }}</div>
-                                                    <div v-if="item.specialization && !isResidentType(item.staff_type)" class="pig-spec">{{ item.specialization }}</div>
-                                                    <div class="pig-pill"
-                                                         :class="isOnCallToday(item.id) ? 'oncall' : item.employment_status==='on_leave' ? 'leave' : item.employment_status==='inactive' ? 'inactive' : 'active'">
-                                                        <span  class="nd-l100 nd-v026"></span>
-                                                        {{ isOnCallToday(item.id) ? 'On call' : item.employment_status==='on_leave' ? 'On leave' : item.employment_status==='inactive' ? 'Inactive' : 'Available' }}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Footer -->
-                                            <div class="pig-footer">
-                                                <!-- Rotation (residents) -->
-                                                <template v-if="isResidentType(item.staff_type)">
-                                                    <div class="pig-footer-item" :class="getCurrentRotationForStaff(item.id) ? 'active' : ''">
-                                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 12C4 16.4 7.6 20 12 20S20 16.4 20 12 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
-                                                        {{ getCurrentRotationForStaff(item.id) ? getTrainingUnitName(getCurrentRotationForStaff(item.id).training_unit_id) : 'No rotation' }}
-                                                    </div>
-                                                    <div v-if="getCurrentRotationForStaff(item.id)" class="pig-footer-item nd-ml-auto" :class="getRotationDaysLeft(item.id) <= 7 ? 'warn' : 'active'">
-                                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7V12L15 15"/></svg>
-                                                        {{ getRotationDaysLeft(item.id) }}d
-                                                    </div>
-                                                </template>
-                                                <!-- On-call (attendings) -->
-                                                <template v-else>
-                                                    <div class="pig-footer-item" :class="isOnCallToday(item.id) ? 'oncall-today' : ''">
-                                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3"/></svg>
-                                                        {{ isOnCallToday(item.id) ? 'On call now' : getUpcomingOnCall(item.id).length > 0 ? getUpcomingOnCall(item.id).length + ' shift' + (getUpcomingOnCall(item.id).length>1?'s':'') + ' ahead' : 'No on-call' }}
-                                                    </div>
-                                                </template>
-                                                <!-- Leave indicator -->
-                                                <div v-if="getUpcomingLeave(item.id).length" class="pig-footer-item pig-footer-dot nd-l001" ></div>
-                                                <div v-if="getUpcomingLeave(item.id).length" class="pig-footer-item warn">
-                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10H21"/></svg>
-                                                    Leave
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <div v-if="filteredMedicalStaff.length === 0" class="pig-empty">
-                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                        <div  class="nd-l066 nd-v326">No staff match this filter</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div v-else class="scc-grid">
-
-                            <template v-for="(item, idx) in compactStaffWithDividers" :key="item.id || 'div-'+idx">
-                                <div v-if="item._divider" class="scc-section-divider">{{ item._divider }}</div>
-                                <div v-else
-                                 class="scc"
-                                 :class="{
-                                     'scc--leave':    item.employment_status === 'on_leave',
-                                     'scc--inactive': item.employment_status === 'inactive'
-                                 }"
-                                 @click="viewStaffDetails(item)">
-
-                                <!-- Left: avatar — real photo if set, initials otherwise -->
-                                <div class="scc-avatar"
-                                     :class="item.employment_status === 'on_leave'    ? 'scc-avatar--leave'
-                                           : isResidentType(item.staff_type)           ? 'scc-avatar--resident'
-                                           : 'scc-avatar--attending'">
-                                    <img v-if="item.public_photo_url" :src="item.public_photo_url" :alt="item.full_name"  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" class="nd-l116 nd-v016">
-                                    <span class="scc-initials" :style="item.public_photo_url ? 'display:none' : ''">{{ (item.full_name || '').split(' ').filter(Boolean).map(w => w[0]).slice(0,2).join('') }}</span>
-                                    <span class="scc-dot" :class="'scc-dot--' + item.employment_status"
-                                          :title="formatEmploymentStatus(item.employment_status)"></span>
-                                </div>
-
-                                <!-- Right: all text info -->
-                                <div class="scc-body">
-
-                                    <!-- Row 1: full name (never truncates) + warn icon -->
-                                    <div class="scc-name-row">
-                                        <span class="scc-name">{{ item.full_name }}</span>
-                                        <span v-if="!item.professional_email"
-                                              class="scc-warn" title="Profile incomplete — missing email">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8V12M12 16H12.01"/></svg>
-                                        </span>
-                                    </div>
-                                    <div v-if="item.specialization && !isResidentType(item.staff_type)" class="scc-spec-text">{{ item.specialization }}</div>
-
-                                    <!-- Row 2: badge + int/ext pill + dept -->
-                                    <div class="scc-meta-row">
-                                        <span class="badge scc-type-badge" :class="getStaffTypeClass(item.staff_type)">{{ formatStaffTypeShortFn(item.staff_type) }}</span>
-                                        <span v-if="item.resident_category" class="scc-cat-pill"
-                                              :class="item.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'">
-                                            {{ item.resident_category === 'external_resident' ? 'Ext' : item.resident_category === 'rotating_other_dept' ? 'Rot' : 'Int' }}
-                                        </span>
-                                        <span v-if="item.external_institution" class="scc-dept-text nd-v325" >
-                                            · {{ item.external_institution }}
-                                        </span>
-                                    </div>
-
-                                    <!-- Row 3: rotation chip ONLY if active — silent otherwise -->
-                                    <div v-if="getCurrentRotationForStaff(item.id)" class="scc-rotation-row">
-                                        <div class="staff-rotation-chip">
-                                            <span class="src-dot"></span>
-                                            <span class="src-unit">{{ getTrainingUnitName(getCurrentRotationForStaff(item.id).training_unit_id) }}</span>
-                                            <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(item.id).start_date, getCurrentRotationForStaff(item.id).end_date) }}</span>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                <!-- Action buttons -->
-                                <div class="scc-actions" @click.stop="() => {}">
-                                    <button class="tbl-btn" @click.stop="viewStaffDetails(item)" title="View profile" aria-label="View staff profile">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    </button>
-                                    <button class="tbl-btn" @click.stop="editMedicalStaff(item)"
-                                            v-if="hasPermission('medical_staff','update')" title="Edit" aria-label="Edit staff member">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
-                                    </button>
-                                    <button class="tbl-btn tbl-btn--danger" @click.stop="deleteMedicalStaff(item)"
-                                            v-if="hasPermission('medical_staff','delete')" title="Deactivate" aria-label="Delete staff member">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div v-if="filteredMedicalStaff.length === 0" class="nm-empty nd-l080" >
-                                <div class="nm-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-                                <div class="nm-empty-title">No staff members found</div>
-                                <div class="nm-empty-sub">{{ hasActiveStaffFilters ? 'Try clearing your filters to see all staff' : 'Add your first staff member to get started' }}</div>
-                                <button v-if="!hasActiveStaffFilters && hasPermission('medical_staff','create')" class="btn btn-primary btn-sm nm-empty-btn" @click="showAddMedicalStaffModal">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Staff Member
-                                </button>
-                            </div>
-                            </template>
-                            </div><!-- end v-else scc-grid -->
-                        </div><!-- end compact wrapper -->
-
-                        <!-- ══════════════════════════════════════════════
-                             TABLE VIEW — cleaned up, proportional columns
-                             ══════════════════════════════════════════════ -->
-                        <div v-if="staffView === 'table'" class="table-responsive">
-                            <table class="table table-striped table-staff">
-                                <thead>
-                                    <tr>
-                                        <th @click="sortBy('medical_staff', 'full_name')"  class="nd-l161">Name</th>
-                                        <th>Type</th>
-                                        <th>Rotation</th>
-                                        <th @click="sortBy('medical_staff', 'employment_status')"  class="nd-l161">Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="staff in filteredMedicalStaff" :key="staff.id" :class="['row-' + staff.employment_status, 'staff-table-row']" @click="viewStaffDetails(staff)">
-                                        <td>
-                                            <div class="staff-name-cell"
-                                                 @mouseenter="showIntelPopover(staff.id, $event)"
-                                                 @mouseleave="hideIntelPopover()">
-                                                <div :class="nmAv(staff.full_name, staff.staff_type, 'md')"  class="nd-l347">
-                                                    {{ nmAvI(staff.full_name) }}
-                                                    <span class="nm-av-dot"
-                                                          :class="staff.employment_status === 'on_leave' ? 'nm-av-dot--absent' : getStaffPulseState(staff.id) === 'oncall' ? 'nm-av-dot--oncall' : isResidentType(staff.staff_type) ? 'nm-av-dot--resident' : 'nm-av-dot--attending'"></span>
-                                                </div>
-                                                <div  class="nd-l346">
-                                                    <div class="staff-name-primary">{{ staff.full_name }}</div>
-                                                    <!-- Next event chip -->
-                                                    <div v-if="getStaffNextEvent(staff.id)"  class="nd-l075">
-                                                        <span class="staff-next-event" :class="'staff-next-event--' + getStaffNextEvent(staff.id).type">
-                                                            {{ getStaffNextEvent(staff.id).label }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="staff-name-sub" v-if="staff.specialization || (isResidentType(staff.staff_type) && staff.resident_category) || staff.affiliation_type === 'affiliated'">
-                                                        <span v-if="staff.affiliation_type === 'affiliated'"
-                                                               class="nd-l345 nd-v324">
-                                                            Affiliated · {{ staff.primary_dept_name || 'External' }}
-                                                        </span>
-                                                        <span v-else-if="staff.specialization">{{ staff.specialization }}</span>
-                                                        <span v-else-if="isResidentType(staff.staff_type) && staff.resident_category"
-                                                              :class="staff.resident_category === 'external_resident' ? 'scc-cat--ext' : 'scc-cat--int'"
-                                                               class="nd-l199 nd-v323">
-                                                            {{ staff.resident_category === 'external_resident' ? 'External' : 'Internal' }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge" :class="getStaffTypeClass(staff.staff_type)">{{ formatStaffTypeShortFn(staff.staff_type) }}</span>
-                                        </td>
-                                        <td :title="getCurrentRotationForStaff(staff.id) ? getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) : ''">
-                                            <div v-if="getCurrentRotationForStaff(staff.id)" class="staff-rotation-chip">
-                                                <span class="src-dot"></span>
-                                                <span class="src-unit">{{ getTrainingUnitName(getCurrentRotationForStaff(staff.id).training_unit_id) }}</span>
-                                                <span class="src-dur">{{ formatClinicalDuration(getCurrentRotationForStaff(staff.id).start_date, getCurrentRotationForStaff(staff.id).end_date) }}</span>
-                                            </div>
-                                            <span v-else  class="nd-v192">—</span>
-                                        </td>
-                                        <td>
-                                            <span class="status-indicator" :class="'status-' + staff.employment_status">{{ formatEmploymentStatus(staff.employment_status) }}</span>
-                                        </td>
-                                        <td @click.stop="() => {}">
-                                            <div class="table-actions">
-                                                <button class="tbl-btn" @click.stop="viewStaffDetails(staff)" aria-label="View staff profile" title="View staff profile">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                                </button>
-                                                <button class="tbl-btn" @click.stop="editMedicalStaff(staff)" v-if="hasPermission('medical_staff','update')" aria-label="Edit staff member" title="Edit staff member">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
-                                                </button>
-                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteMedicalStaff(staff)" v-if="hasPermission('medical_staff','delete')" aria-label="Delete staff member" title="Delete staff member">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="filteredMedicalStaff.length === 0">
-                                        <td colspan="5" class="empty-state">
-                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 14v4M10 16h4"/></svg>
-                                            <div class="empty-state-title">No medical staff found</div>
-                                            <div class="empty-state-description">
-                                                <span v-if="staffFilters.search || staffFilters.staffType || staffFilters.department || staffFilters.status || staffFilters.hospital || staffFilters.networkType">No results match your filters — try clearing them</span>
-                                                <span v-else>Add your first staff member to get started</span>
-                                            </div>
-                                            <button v-if="!staffFilters.search && !staffFilters.staffType && !staffFilters.department && !staffFilters.status && !staffFilters.hospital && hasPermission('medical_staff', 'create')"
-                                                    class="btn btn-primary btn-sm" @click="showAddMedicalStaffModal">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg> Add First Staff Member
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="pagination" v-if="staffTotalPages > 1">
-                                <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page - 1)" :disabled="pagination.medical_staff.page === 1" aria-label="Previous page" title="Previous page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-                                <span class="pagination-info">Page {{ pagination.medical_staff.page }} of {{ staffTotalPages }} · {{ filteredMedicalStaffAll.length }} results</span>
-                                <button class="btn-pill" @click="goToPage('medical_staff', pagination.medical_staff.page + 1)" :disabled="pagination.medical_staff.page === staffTotalPages"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>
-                            </div>
+                            </details>
                         </div>
                     </div>
+
+                    <!-- Search/filter bar -->
+                    <div class="staff46-filters">
+                        <label class="staff46-search">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg>
+                            <input type="text" v-model="staffFilters.search" placeholder="Search staff, role, specialty, department…" aria-label="Search staff">
+                        </label>
+                        <select v-model="staffFilters.staffType" aria-label="Filter by role">
+                            <option value="">All roles</option>
+                            <option v-for="st in staffTypesList" :key="st.type_key" :value="st.type_key">{{ st.display_name }}</option>
+                        </select>
+                        <select v-if="staffFilters.staffType && isResidentType(staffFilters.staffType)" v-model="staffFilters.residentCategory" aria-label="Filter residents by category">
+                            <option value="">All resident types</option>
+                            <option value="department_internal">Resident · Internal</option>
+                            <option value="rotating_other_dept">Resident · Rotating</option>
+                            <option value="external_resident">Resident · External</option>
+                        </select>
+                        <select v-model="staffFilters.department" aria-label="Filter by department">
+                            <option value="">All departments</option>
+                            <option v-for="dept in departments.filter(d=>d.status!=='inactive')" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                        </select>
+                        <select v-model="staffFilters.status" aria-label="Filter by record status">
+                            <option value="">All record states</option>
+                            <option value="active">Active</option>
+                            <option value="on_leave">On leave</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <button v-if="hasActiveStaffFilters" type="button" class="staff46-clear" @click="clearStaffFilters">Clear</button>
+                        <span v-if="hasActiveStaffFilters" class="staff46-result-count">{{ filteredMedicalStaffAll.length }} results</span>
+                    </div>
+
+                    <!-- TABLE VIEW — first neumDesk operational-table specimen. -->
+                    <div v-if="staffView==='table'" class="staff46-table-wrap">
+                        <table class="staff46-table">
+                            <thead>
+                                <tr>
+                                    <th @click="sortBy('medical_staff','full_name')">Staff member</th>
+                                    <th>Role</th>
+                                    <th>Current / next</th>
+                                    <th @click="sortBy('medical_staff','employment_status')">Record status</th>
+                                    <th class="staff46-actions-col"><span class="sr-only">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="staff in filteredMedicalStaff" :key="staff.id" @click="viewStaffDetails(staff)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(staff)">
+                                    <td>
+                                        <div class="staff46-person">
+                                            <div :class="nmAv(staff.full_name,staff.staff_type,'md')">{{ nmAvI(staff.full_name) }}</div>
+                                            <div>
+                                                <strong>{{ staff.full_name }}</strong>
+                                                <small>{{ staff.department?.name || staff.departments?.name || staff.primary_dept_name || staff.specialization || 'Department record' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div v-if="isResidentType(staff.staff_type)" class="staff46-role-stack">
+                                            <strong>{{ getStaffResidentDescriptor(staff)?.label || 'Resident' }}</strong>
+                                            <small>
+                                                <template v-if="getStaffResidentDescriptor(staff)?.year">{{ getStaffResidentDescriptor(staff).year }}</template>
+                                                <template v-if="getStaffResidentDescriptor(staff)?.year && getStaffResidentDescriptor(staff)?.origin"> · </template>
+                                                <template v-if="getStaffResidentDescriptor(staff)?.origin">{{ getStaffResidentDescriptor(staff).origin }}</template>
+                                            </small>
+                                        </div>
+                                        <div v-else class="staff46-role-stack">
+                                            <strong>{{ formatStaffType(staff.staff_type) }}</strong>
+                                            <small v-if="staff.specialization">{{ formatSpecialization(staff.specialization) }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div v-if="getStaffDirectoryContextItems(staff).length" class="staff46-context-list">
+                                            <div v-for="(item,i) in getStaffDirectoryContextItems(staff)" :key="staff.id+'-ctx-'+i" :class="['staff46-context-item','is-'+item.type]">
+                                                <span></span><div><strong>{{ item.title }}</strong><small v-if="item.meta">{{ item.meta }}</small></div>
+                                            </div>
+                                        </div>
+                                        <span v-else class="staff46-none">No near-term recorded event</span>
+                                    </td>
+                                    <td>
+                                        <span :class="['staff46-state','is-'+getStaffDirectoryRecordState(staff).tone]">{{ getStaffDirectoryRecordState(staff).label }}</span>
+                                    </td>
+                                    <td class="staff46-actions-col" @click.stop>
+                                        <details class="staff46-row-menu">
+                                            <summary aria-label="Staff actions" title="Staff actions">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                                            </summary>
+                                            <div>
+                                                <button type="button" @click="viewStaffDetails(staff)">Open record</button>
+                                                <button type="button" @click="activity45Open(staff.id)">Personal activity</button>
+                                                <button type="button" v-if="hasPermission('medical_staff','update')" @click="editMedicalStaff(staff)">Edit profile</button>
+                                                <button type="button" class="danger" v-if="hasPermission('medical_staff','delete')" @click="deleteMedicalStaff(staff)">Remove from active staff</button>
+                                            </div>
+                                        </details>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredMedicalStaff.length===0">
+                                    <td colspan="5" class="staff46-empty">
+                                        <strong>No staff records match this view.</strong>
+                                        <span>{{ hasActiveStaffFilters ? 'Clear or adjust the filters to see more people.' : 'Add the first staff record when the department is ready.' }}</span>
+                                        <button v-if="hasActiveStaffFilters" type="button" @click="clearStaffFilters">Clear filters</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="staff46-pagination" v-if="staffTotalPages>1">
+                            <button type="button" @click="goToPage('medical_staff',pagination.medical_staff.page-1)" :disabled="pagination.medical_staff.page===1">← Previous</button>
+                            <span>Page {{ pagination.medical_staff.page }} of {{ staffTotalPages }} · {{ filteredMedicalStaffAll.length }} results</span>
+                            <button type="button" @click="goToPage('medical_staff',pagination.medical_staff.page+1)" :disabled="pagination.medical_staff.page===staffTotalPages">Next →</button>
+                        </div>
+                    </div>
+
+                    <!-- PEOPLE VIEW — browse identity/context, not an enlarged duplicate of the table. -->
+                    <div v-if="staffView==='people'" class="staff46-people">
+                        <template v-for="(item,idx) in compactStaffWithDividers" :key="item.id || 'people-divider-'+idx">
+                            <div v-if="item._divider" class="staff46-people-divider"><span>{{ item._divider }}</span></div>
+                            <article v-else class="staff46-person-card" @click="viewStaffDetails(item)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(item)">
+                                <div class="staff46-person-card-head">
+                                    <div :class="nmAv(item.full_name,item.staff_type,'lg')">{{ nmAvI(item.full_name) }}</div>
+                                    <span :class="['staff46-state','is-'+getStaffDirectoryRecordState(item).tone]">{{ getStaffDirectoryRecordState(item).label }}</span>
+                                </div>
+                                <h3>{{ item.full_name }}</h3>
+                                <p v-if="isResidentType(item.staff_type)">{{ getStaffResidentDescriptor(item)?.label }}<template v-if="getStaffResidentDescriptor(item)?.year"> · {{ getStaffResidentDescriptor(item).year }}</template></p>
+                                <p v-else>{{ formatStaffType(item.staff_type) }}<template v-if="item.specialization"> · {{ formatSpecialization(item.specialization) }}</template></p>
+                                <small v-if="getStaffResidentDescriptor(item)?.origin">From {{ getStaffResidentDescriptor(item).origin }}</small>
+                                <div class="staff46-card-context" v-if="getStaffDirectoryContextItems(item).length">
+                                    <span v-for="(ctx,i) in getStaffDirectoryContextItems(item)" :key="item.id+'-card-'+i">{{ ctx.title }}</span>
+                                </div>
+                                <footer>Open record <span>→</span></footer>
+                            </article>
+                        </template>
+                        <div v-if="filteredMedicalStaffAll.length===0" class="staff46-empty-card">No staff records match this view.</div>
+                    </div>
+
+                    <!-- COMPACT VIEW — high-density directory preserving all existing records. -->
+                    <div v-if="staffView==='compact'" class="staff46-compact">
+                        <template v-for="(item,idx) in compactStaffWithDividers" :key="item.id || 'compact-divider-'+idx">
+                            <div v-if="item._divider" class="staff46-compact-divider">{{ item._divider }}</div>
+                            <button v-else type="button" class="staff46-compact-row" @click="viewStaffDetails(item)">
+                                <span :class="nmAv(item.full_name,item.staff_type,'sm')">{{ nmAvI(item.full_name) }}</span>
+                                <span class="staff46-compact-name"><strong>{{ item.full_name }}</strong><small>{{ isResidentType(item.staff_type) ? (getStaffResidentDescriptor(item)?.label || 'Resident') : formatStaffType(item.staff_type) }}</small></span>
+                                <span class="staff46-compact-context">{{ getStaffDirectoryContextItems(item)[0]?.title || 'No near-term recorded event' }}</span>
+                                <span :class="['staff46-state','is-'+getStaffDirectoryRecordState(item).tone]">{{ getStaffDirectoryRecordState(item).label }}</span>
+                                <span aria-hidden="true">→</span>
+                            </button>
+                        </template>
+                    </div>
                 </div>
+
 
                 <!-- ============ ON-CALL SCHEDULE VIEW (ENHANCED) ============ -->
                 <div v-if="currentView === 'oncall_schedule'">
@@ -12392,7 +12221,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-leave-workspace-scope-convergence"></script>
+    <script src="app.js?v=46.14-staff-phase1-directory"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

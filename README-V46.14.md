@@ -146,4 +146,25 @@ This refinement closes the remaining mismatch between Grounded leave scope and t
 Live authenticated validation remains required before this interaction model is extracted into the shared neumDesk table/icon system.
 
 
-Final convergence validation: **298 checks passed across V43.1 → V46.14**, including **79 V46.14 checks**. Live authenticated browser validation remains required.
+Final convergence validation before Staff Phase 1: **298 checks passed across V43.1 → V46.14**, including **79 V46.14 checks**. Live authenticated browser validation remains required.
+
+
+## Staff Phase 1 — preservation-first directory convergence (same V46.14)
+
+This checkpoint starts the Staff redesign without changing backend lifecycle logic.
+
+- added `STAFF-DOMAIN-LIFECYCLE-V46.14.md` as the preservation contract;
+- removed the redundant primary Staff breadcrumb;
+- replaced the low-contrast mixed toolbar with separate view and action controls;
+- renamed the misleading directory metric from `Available` to `Active staff`;
+- repaired the People view, which was structurally unreachable inside the Compact-only branch;
+- introduced the first neumDesk operational Staff table: Staff member / Role / Current or next / Record status / actions;
+- residents now render their full category semantics and effective year/origin without rewriting legacy data;
+- expanded directory search across role, specialty, department and resident origin;
+- preserved Add/Edit, Personal Activity and the existing guarded deactivation/reassignment workflow;
+- registration/edit form and full Person profile remain functionally intact for the later Staff phases.
+
+No backend `index.js` change is included.
+
+
+**Staff Phase 1 validation:** **312 checks passed across V43.1 → V46.14**, including **14 dedicated Staff Phase 1 checks**. JavaScript syntax validation passes. Live authenticated review of the Staff directory remains the gate before redesigning the full Person profile.
