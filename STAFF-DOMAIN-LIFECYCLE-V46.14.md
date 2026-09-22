@@ -90,14 +90,17 @@ The redesigned UI may rename the user-facing action to **Remove from active staf
 - full resident category labels + effective residency year;
 - row-level action menu while preserving Edit / Personal Activity / guarded removal.
 
-### Phase 2 — Canonical Person profile
-- redesign identity rail and profile hierarchy without removing fields;
-- reduce oversized zero-state counters and photo dominance;
-- consolidate tabs around user tasks rather than database modules;
-- preserve certificates, research, units, schedule, rotations, supervision, roles and contact data.
+### Phase 2 — Canonical Person profile — IMPLEMENTED IN THIS CHECKPOINT
+- compact identity rail replaces photo-dominant / zero-metric presentation;
+- task-centred sections are `Overview`, `Work & training`, `Schedule`, `Research`, and `Profile`;
+- units, schedule, rotations, supervision, research, roles, credentials, certificates and contact remain reachable;
+- current absence/on-call/rotation and next recorded events are rendered from live operational records;
+- Clinical Unit membership is loaded with the Person profile;
+- registration/edit/deactivation/type-transition workflows are unchanged;
+- security and sync architectures are carried as deferred contracts, not partially implemented here.
 
 ### Phase 3 — Adaptive resident profile
-- Internal / Rotating / External resident variants using the same Person shell;
+- Internal / Rotating / External resident variants using the same canonical Person shell;
 - current rotation, origin, year, supervisor/manager context, host unit and history;
 - no new backend constraints unless explicitly agreed.
 

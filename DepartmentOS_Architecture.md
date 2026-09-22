@@ -2,13 +2,36 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v2.3 · Implementation checkpoint: V46.14 Staff Phase 1 · Supersedes Vision v0.1
-**First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
+**Status:** Architecture v2.4 · Implementation checkpoint: V46.14 Staff Phase 2 · Supersedes Vision v0.1
+**First domain:** Pneumology, CHUAC (live production — current Staff directory: 23 real departmental people, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
 ---
 
 ## Current implementation ledger — V46.14
+
+## V46.14 Staff Phase 2 — Canonical Person profile
+
+Staff now has a canonical **Person** renderer rather than a database-module drawer. The redesign preserves the Staff lifecycle map and existing API behavior while reorganizing the profile around identity, current operational state, clinical/training relationships, schedule, research and professional record.
+
+Implemented in Phase 2:
+- the oversized photo / zero-metric left column is replaced by a compact identity rail;
+- profile navigation is consolidated to **Overview · Work & training · Schedule · Research · Profile**;
+- empty profiles still show current attendance, on-call, unit/rotation and next-event context rather than a large blank pane;
+- Clinical Unit membership is preloaded as part of the Person record;
+- attending supervision and resident rotations remain explicit relationships rather than inferred profile fields;
+- schedule actions move into Schedule, while Personal Activity and Grounded become Person-level actions;
+- certificates, roles/capabilities, institution, credentials, contact and public/scholarly links remain represented;
+- resident-year display continues to use `override → calculated → legacy` precedence and no legacy values are rewritten in this phase.
+
+**Preservation boundary:** registration/edit, staff-type transition, deactivation/reassignment and backend lifecycle logic are unchanged. Adaptive Internal / Rotating / External resident presentation remains **Phase 3**, so this phase does not introduce new resident constraints.
+
+**Phase 2 validation:** 329 historical/regression checks pass across V43.1 → V46.14, including 17 dedicated Staff Phase 2 checks in addition to the 14 Phase 1 Staff checks.
+
+### Deferred architecture contracts now carried in the baseline
+- `PERMISSIONS_ARCHITECTURE.md` is the future authentication/authorization contract. Phase 2 does **not** retrofit role/row-level security into the Person UI yet; future auth work must keep `app_users` as login identity and `medical_staff` as professional profile, then layer role defaults + explicit overrides intentionally.
+- `SYNC_ARCHITECTURE.md` is the future Excel-sync contract. Operational Excel sources remain authoritative where specified; sync must be diffed, conflict-aware and auditable before data is accepted into neumDesk.
+- `SUPABASE_SCHEMA.sql` is retained as the current database reference for Staff/rotation/unit/identity fields used by subsequent phases.
 
 ### V46.14 Staff Phase 1 — preservation-first directory redesign
 The Staff redesign begins from the existing lifecycle rather than from a blank UI. `STAFF-DOMAIN-LIFECYCLE-V46.14.md` is the preservation map for resident categories, residency-year precedence, unit/rotation relationships, role flags, lifecycle transitions and guarded deactivation.
@@ -24,16 +47,16 @@ Implemented in Phase 1:
 - the search surface now includes role, specialty, department and resident-origin text in addition to name/ID/email;
 - guarded removal/reassignment, Edit and Personal Activity remain reachable from each row.
 
-**Explicitly deferred to Staff Phase 2:** the large clickable Person profile is not functionally simplified yet. Its existing fields/tabs stay available until the profile hierarchy is redesigned against the lifecycle map.
+**Phase 1 boundary at the time:** the large clickable Person profile was deliberately left untouched. Staff Phase 2 has now completed that canonical Person redesign against the lifecycle map.
 
-**Phase 1 validation:** 312 historical/regression checks pass across V43.1 → V46.14, including 14 Staff Phase 1 preservation and UI-contract checks. Live authenticated browser review is still required before Phase 2.
+**Phase 1 validation:** 312 historical/regression checks passed across V43.1 → V46.14, including 14 Staff Phase 1 preservation and UI-contract checks. Phase 2 is now implemented; live authenticated review remains required before Phase 3.
 
 
 This is the **living checkpoint** and is authoritative over older status statements below.
 
 ### Canonical baseline
 - Baseline entering this release: **V46.13 · Personal Activity / Portfolio Intelligence**.
-- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence + Staff Phase 1**.
+- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence + Staff Phase 2**.
 
 ### Preserved implementation milestones
 - **V46.9 · Grounded Action Integrity** — On-call migrated to guarded semantic tools, pending action state, human confirmation and commit-time revalidation.

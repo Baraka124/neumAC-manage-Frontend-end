@@ -422,3 +422,10 @@ HISTORY / AGGREGATE    → totals, fairness, monthly/history analysis
 ```
 
 Person scope and time scope are resolved separately. A current reference may resolve a short fragment such as `scheduled leave`, but broad-person language widens person scope while keeping the requested time window.
+
+
+## V46.14 Staff Phase 2 — Person context entry
+
+The canonical Staff Person profile can now open Grounded with an explicit `staff` subject/context. This is a contextual entry point only; it does not create a second Person data model. Grounded must continue to resolve live staff/operational facts from the authoritative neumDesk sources. Personal Activity remains the reporting renderer; the Person profile remains the direct operational renderer.
+
+Security note: `PERMISSIONS_ARCHITECTURE.md` is carried as the future authentication/authorization contract. Staff Phase 2 does not change Grounded permissions or widen access.

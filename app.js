@@ -9408,6 +9408,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const getDaysUntilStart = (d) => Utils.daysUntil(d)
 
         const getCurrentRotationForStaff = (id) => rotations.value.find(r => r.resident_id === id && r.rotation_status === 'active') || null
+        const getCurrentAbsenceForStaff = (staffId) => {
+          if (!staffId) return null
+          const today = Utils.normalizeDate(new Date())
+          return (absences.value || []).find(a =>
+            String(a.staff_member_id) === String(staffId) &&
+            !['cancelled','returned_to_duty'].includes(a.current_status) &&
+            Utils.normalizeDate(a.start_date) <= today &&
+            Utils.normalizeDate(a.end_date) >= today
+          ) || null
+        }
         const isOnCallToday = (staffId) => { const today = Utils.normalizeDate(new Date()); return onCallSchedule.value.some(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId) && Utils.normalizeDate(s.duty_date) === today) }
         const getUpcomingOnCall = (staffId) => { if (!staffId) return []; const today = Utils.normalizeDate(new Date()); return onCallSchedule.value.filter(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId) && Utils.normalizeDate(s.duty_date) >= today).sort((a, b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date))) }
         const getUpcomingLeave = (staffId) => {
@@ -9435,6 +9445,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const getRotationHistory = (staffId) => { if (!staffId) return []; return rotations.value.filter(r => r.resident_id === staffId && !['active', 'scheduled'].includes(r.rotation_status)).sort((a, b) => Utils.normalizeDate(b.end_date || b.rotation_end_date).localeCompare(Utils.normalizeDate(a.end_date || a.rotation_end_date))) }
         const getRotationDaysLeft = (staffId) => { const r = getCurrentRotationForStaff(staffId); return r ? getDaysRemaining(r.end_date || r.rotation_end_date) : 0 }
         const getCurrentRotationSupervisor = (staffId) => { const r = getCurrentRotationForStaff(staffId); return r?.supervising_attending_id ? getStaffName(r.supervising_attending_id) : 'Not assigned' }
+        const getPersonUpcomingEvents = (staffId) => {
+          if (!staffId) return []
+          const today = Utils.normalizeDate(new Date())
+          const out = []
+          ;(onCallSchedule.value || []).forEach(s => {
+            const d = Utils.normalizeDate(s.duty_date)
+            if ((s.primary_physician_id === staffId || s.backup_physician_id === staffId) && d >= today) {
+              out.push({ key:`oncall:${s.id}`, kind:'oncall', date:d, title:'On-call duty', detail:s.shift_type === 'primary_call' ? 'Primary duty' : s.shift_type === 'backup_call' ? 'Backup duty' : String(s.shift_type || 'Duty').replace(/_/g,' ') })
+            }
+          })
+          ;(absences.value || []).forEach(a => {
+            const d = Utils.normalizeDate(a.start_date)
+            if (String(a.staff_member_id) === String(staffId) && d >= today && !['cancelled','returned_to_duty'].includes(a.current_status)) {
+              out.push({ key:`leave:${a.id}`, kind:'leave', date:d, title:'Leave begins', detail:`${ABSENCE_REASON_LABELS[a.absence_reason] || String(a.absence_reason||'leave').replace(/_/g,' ')} · until ${Utils.formatDateShort(a.end_date)}` })
+            }
+          })
+          ;(rotations.value || []).forEach(r => {
+            const d = Utils.normalizeDate(r.start_date)
+            if (String(r.resident_id) === String(staffId) && d >= today && ['scheduled','active','extended'].includes(r.rotation_status)) {
+              out.push({ key:`rotation:${r.id}`, kind:'rotation', date:d, title:r.rotation_status === 'active' ? 'Active rotation' : 'Rotation begins', detail:`${getTrainingUnitName(r.training_unit_id)} · ${getStaffName(r.supervising_attending_id)}` })
+            }
+          })
+          return out.sort((a,b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind))
+        }
         const hasProfessionalCredentials = (staff) => !!(staff?.academic_degree || staff?.specialization || staff?.training_year || staff?.clinical_certificate || staff?.medical_license)
 
         const toggleProfileSection = (key) => {
@@ -9478,6 +9512,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const prefetchAll = [
             // Certificates — previously only loaded on tab click
             loadStaffCertificates(staff.id),
+            // Clinical Unit membership — part of the canonical Person profile
+            loadStaffUnits(staff.id),
             // Research profile
             hasPermission('analytics', 'read') ? analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id) : Promise.resolve(),
             // Leave balance
@@ -12356,6 +12392,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Best-effort and silent — loaders may run in parallel with the current view.
         askBarRefreshRecords()
         Vue.nextTick(() => { if (askBar.view === 'conversation') document.querySelector('.askbar-input input')?.focus() })
+      }
+      const openGroundedForStaff = (staff) => {
+        if (!currentUser.value || !staff?.id) return
+        const next = { type:'staff', id:staff.id, name:staff.full_name }
+        const old = askBar.subject || askBar.context
+        if (!old || String(old.id) !== String(staff.id) || old.type !== 'staff') {
+          askBar.turns = []
+          askBar.query = ''
+        }
+        askBar.subject = { ...next }
+        askBar.context = { ...next }
+        staffOps.staffProfileModal.show = false
+        askBar.open = true
+        askBar.view = 'conversation'
+        askBarRefreshRecords()
+        Vue.nextTick(() => document.querySelector('.askbar-input input')?.focus())
       }
       const closeAskBar = () => { ++askBarRefreshGeneration; askBar.open = false; askBar.query = ''; askBar.loading = false; askBar.refreshing = false }
       const askBarToggleTeach = () => {
@@ -17485,9 +17537,10 @@ document.addEventListener('DOMContentLoaded', () => {
           viewStaffDetails, toggleProfileSection, showUserProfileModal, saveUserProfile,
           getStaffName, getSupervisorName, getPhysicianName, getResidentName, getTrainingUnitName,
           calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart, getRotationProgress,
-          getCurrentRotationForStaff, isOnCallToday, getUpcomingOnCall,
+          getCurrentRotationForStaff, getCurrentAbsenceForStaff, isOnCallToday, getUpcomingOnCall,
           getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
-          getCurrentRotationSupervisor, hasProfessionalCredentials,
+          getCurrentRotationSupervisor, getPersonUpcomingEvents, hasProfessionalCredentials,
+          openGroundedForStaff,
           getRotationServiceName,
 
           // ── Inline handler methods (extracted from templates — Vue doesn't allow const/if inline) ──

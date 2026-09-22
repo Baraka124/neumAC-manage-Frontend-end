@@ -167,4 +167,26 @@ This checkpoint starts the Staff redesign without changing backend lifecycle log
 No backend `index.js` change is included.
 
 
-**Staff Phase 1 validation:** **312 checks passed across V43.1 → V46.14**, including **14 dedicated Staff Phase 1 checks**. JavaScript syntax validation passes. Live authenticated review of the Staff directory remains the gate before redesigning the full Person profile.
+**Staff Phase 1 validation:** **312 checks passed across V43.1 → V46.14**, including **14 dedicated Staff Phase 1 checks**. Phase 2 now supersedes the old profile while preserving the lifecycle contract.
+
+
+## Staff Phase 2 — Canonical Person Profile (same V46.14)
+
+This checkpoint redesigns the clickable clinician/person profile against the Staff preservation map rather than simplifying the lifecycle.
+
+- compact identity rail replaces the oversized photo / zero-metric column;
+- Person navigation is consolidated to **Overview · Work & training · Schedule · Research · Profile**;
+- Overview always explains current attendance, on-call, work/training and next recorded events instead of showing a giant blank state;
+- attending Clinical Unit membership is loaded with the Person profile;
+- resident rotations and attending supervision remain explicit relationships;
+- Schedule owns on-call/leave actions and calendar export;
+- Profile owns institution, credentials, roles/capabilities, contact, certificates and public/scholarly links;
+- Personal Activity and Grounded are Person-level actions;
+- resident year remains `override → calculated → legacy`; no legacy database values are silently rewritten;
+- Add/Edit, type transition, guarded deactivation and reassignment are intentionally unchanged;
+- `PERMISSIONS_ARCHITECTURE.md`, `SYNC_ARCHITECTURE.md`, and `SUPABASE_SCHEMA.sql` are now carried as deferred architecture/reference inputs for later phases.
+
+Phase 3 remains the adaptive Internal / Rotating / External resident experience. No new resident constraints are introduced in Phase 2.
+
+
+**Staff Phase 2 validation:** **329 historical/regression checks passed across V43.1 → V46.14**, including **17 dedicated Staff Phase 2 checks** plus the preserved Phase 1 suite. JavaScript syntax and HTML parse validation pass. Live authenticated review remains required before Phase 3 adaptive resident rendering.
