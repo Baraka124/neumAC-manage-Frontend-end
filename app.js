@@ -13496,6 +13496,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return {saved,proposal}
           }
         })
+        groundedToolRegistry.register({
+          name:'reporting.personal_activity_snapshot', access:GroundedCore.ACCESS.READ, module:'medical_staff',
+          description:'Build the same permission-scoped deterministic Personal Activity / Portfolio Intelligence snapshot used by the workspace and formal document.',
+          inputSchema:{personId:'uuid',start:'date',end:'date',selected:'object?'},
+          run:async({personId,start,end,selected=null}) => {
+            const scope=selected&&typeof selected==='object'?selected:{oncall:true,rotations:true,studies:true,projects:true,lines:true}
+            return Activity45.snapshot((path,options)=>API.request(path,options),hasPermission,personId,start,end,scope,null)
+          }
+        })
         groundedToolCatalog.value = groundedToolRegistry.list()
       }
 
@@ -16791,42 +16800,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 0)
       }
 
-      // V46.14 Personal Activity / Portfolio Intelligence uses its own permission-scoped deterministic snapshot.
-      // No mutation, account inference, or dependency on Grounded's all-source gate.
-      const activity45 = reactive({open:false,busy:false,error:'',personId:'',start:'',end:'',periodPreset:'month',people:[],sources:{},model:null,summary:null,view:'overview',html:'',filename:'',selected:{oncall:true,rotations:true,studies:true,projects:true,lines:true}})
+      // V46.14 Personal Activity / Portfolio Intelligence uses the shared deterministic
+      // reporting.personal_activity_snapshot capability. Controls can change without
+      // destroying the last completed snapshot; the workspace marks it as stale until refreshed.
+      const activity45 = reactive({open:false,busy:false,error:'',dirty:false,personId:'',personFilter:'',start:'',end:'',periodPreset:'month',people:[],sources:{},model:null,summary:null,view:'overview',html:'',filename:'',selected:{oncall:true,rotations:true,studies:true,projects:true,lines:true}})
       let activity45Generation=0, activity45Controller=null, activity45ReturnFocus=null
-      const activity45Invalidate = () => { activity45.model=null; activity45.summary=null; activity45.html=''; activity45.error=''; activity45.view='overview' }
+      const activity45MarkDirty = () => { activity45.dirty=!!activity45.model; activity45.error='' }
+      const activity45Invalidate = activity45MarkDirty
       const activity45PeriodPresets = [
         {id:'month',label:'This month'}, {id:'previous_month',label:'Previous month'}, {id:'last3',label:'Last 3 months'}, {id:'ytd',label:'Year to date'}, {id:'custom',label:'Custom'}
       ]
       const activity45IsoDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
       const activity45ApplyPreset = preset => {
         activity45.periodPreset=preset
-        if(preset==='custom') return
+        if(preset==='custom') { activity45MarkDirty(); return }
         const now=new Date(), y=now.getFullYear(), m=now.getMonth(); let start,end
         if(preset==='previous_month'){start=new Date(y,m-1,1);end=new Date(y,m,0)}
         else if(preset==='last3'){start=new Date(y,m-2,1);end=new Date(y,m+1,0)}
         else if(preset==='ytd'){start=new Date(y,0,1);end=now}
         else {start=new Date(y,m,1);end=new Date(y,m+1,0)}
-        activity45.start=activity45IsoDate(start); activity45.end=activity45IsoDate(end); activity45Invalidate()
+        activity45.start=activity45IsoDate(start); activity45.end=activity45IsoDate(end); activity45MarkDirty()
       }
       const activity45ToggleSection = key => {
         if(!Object.prototype.hasOwnProperty.call(activity45.selected,key)) return
         const enabled=Object.values(activity45.selected).filter(Boolean).length
         if(activity45.selected[key] && enabled===1) { activity45.error='Keep at least one activity area included.'; return }
-        activity45.selected[key]=!activity45.selected[key]; activity45Invalidate()
+        activity45.selected[key]=!activity45.selected[key]; activity45MarkDirty()
       }
       const activity45SelectedCount = () => Object.values(activity45.selected||{}).filter(Boolean).length
+      const activity45FilteredPeople = () => {
+        const q=String(activity45.personFilter||'').trim().toLowerCase()
+        const rows=(activity45.people||[]).filter(p=>!q||`${p.full_name||''} ${p.staff_type||''}`.toLowerCase().includes(q))
+        const selected=(activity45.people||[]).find(p=>Activity45.same(p.id,activity45.personId))
+        if(selected && !rows.some(p=>Activity45.same(p.id,selected.id))) rows.unshift(selected)
+        return rows
+      }
       const activity45TimelineGroups = () => Activity45.timelineGroups(activity45.model||{events:[]})
+      const activity45Metric = key => activity45.summary?.metrics?.[key] || {state:'unknown',value:null}
+      const activity45MetricValue = key => { const m=activity45Metric(key); return m.state==='known'?m.value:m.state==='partial'?`${m.value??0}+?`:'—' }
+      const activity45SourceState = key => activity45.model?.sources?.find(s=>s.key===key)?.state || 'not included'
+      const activity45SourceKnown = key => activity45SourceState(key)==='ready'
+      const activity45EmptyText = (key,zeroText) => activity45SourceKnown(key) ? zeroText : `${activity45.model?.sources?.find(s=>s.key===key)?.label||key} is ${activity45SourceState(key)}; neumDesk cannot establish whether matching records exist.`
       const activity45Close = () => {
         ++activity45Generation; activity45Controller?.abort(); activity45Controller=null
-        activity45.open=false; activity45.busy=false; activity45.model=null; activity45.summary=null; activity45.view='overview'; activity45.html=''; activity45.sources={}; activity45.people=[]
+        activity45.open=false; activity45.busy=false; activity45.dirty=false; activity45.model=null; activity45.summary=null; activity45.view='overview'; activity45.html=''; activity45.sources={}; activity45.people=[]; activity45.personFilter=''
         Vue.nextTick(()=>activity45ReturnFocus?.isConnected && activity45ReturnFocus.focus())
       }
       const activity45Read = async (scope={}) => {
         const generation=++activity45Generation, userId=currentUser.value?.id
         activity45Controller?.abort(); const controller=new AbortController(); activity45Controller=controller
-        activity45.busy=true; activity45.error=''; activity45.model=null; activity45.summary=null; activity45.html=''
+        activity45.busy=true; activity45.error=''
         const timeout=setTimeout(()=>controller.abort(),15000)
         try {
           const sources=await Activity45.load((path,options)=>API.request(path,options),hasPermission,controller.signal,scope)
@@ -16841,7 +16864,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const activity45Open = async (personId='') => {
         if(!hasPermission('medical_staff','read')) return
         activity45ReturnFocus=document.activeElement
-        activity45.personId=personId||''; activity45.periodPreset='month'
+        activity45.personId=personId||''; activity45.personFilter=''; activity45.periodPreset='month'; activity45.dirty=false
         const now=new Date(), y=now.getFullYear(), m=now.getMonth()
         activity45.start=`${y}-${String(m+1).padStart(2,'0')}-01`
         activity45.end=`${y}-${String(m+1).padStart(2,'0')}-${String(new Date(y,m+1,0).getDate()).padStart(2,'0')}`
@@ -16852,22 +16875,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const activity45Generate = async () => {
         if(activity45.busy) return
-        activity45.model=null; activity45.summary=null; activity45.html=''; activity45.error=''
         const selectedId=activity45.personId
         if(!selectedId) { activity45.error='Select a staff member.'; return }
+        const generation=++activity45Generation, userId=currentUser.value?.id
+        activity45.busy=true; activity45.error=''
         try {
           Activity45.build({id:selectedId},activity45.start,activity45.end,{},activity45.selected)
           if(!Object.values(activity45.selected).some(Boolean)) throw Error('Include at least one activity section.')
-          if(!await activity45Read({personId:selectedId,start:activity45.start,end:activity45.end,selected:{...activity45.selected}})) return
-          const person=activity45.people.find(p=>Activity45.same(p.id,selectedId))
-          if(!person) throw Error('This person is no longer in the accessible staff directory. Select a current record.')
-          const model=Activity45.build(person,activity45.start,activity45.end,activity45.sources,activity45.selected)
+          const model=await groundedInvokeTool('reporting.personal_activity_snapshot',{personId:selectedId,start:activity45.start,end:activity45.end,selected:{...activity45.selected}},{traceId:null})
+          if(generation!==activity45Generation||currentUser.value?.id!==userId||!activity45.open) return
           activity45.model=model
           activity45.summary=model.summary||Activity45.summarize(model)
+          activity45.dirty=false
           activity45.view='overview'
           activity45.html=Activity45.render(model)
-          activity45.filename='neumDesk-activity-'+String(person.full_name||'staff').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').slice(0,70)+'-'+activity45.start+'.html'
-        } catch(e) { activity45.error=e.message||'Unable to create the document.' }
+          activity45.filename='neumDesk-activity-'+String(model.person.name||'staff').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').slice(0,70)+'-'+activity45.start+'.html'
+        } catch(e) { if(generation===activity45Generation) activity45.error=e.message||'Unable to create the activity snapshot.' }
+        finally { if(generation===activity45Generation) activity45.busy=false }
       }
       const activity45PrettyDate = value => {
         if(!value) return '—'
@@ -16886,20 +16910,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const target=map[source.key]; if(!target) return
         activity45Close(); switchView(target)
       }
+      const activity45OpenRecord = (sourceKey, ref, item=null) => {
+        if(!sourceKey||!ref) return
+        const id=String(ref); activity45Close()
+        if(sourceKey==='studies') { currentView.value='research_hub'; const x=(researchOps.clinicalTrials.value||[]).find(v=>String(v.id)===id); if(x) Vue.nextTick(()=>researchOps.openStudy(x,'allstudies')); else switchView('research_hub'); return }
+        if(sourceKey==='projects') { currentView.value='research_hub'; const x=(researchOps.innovationProjects.value||[]).find(v=>String(v.id)===id); if(x) Vue.nextTick(()=>researchOps.openProject(x,'allprojects')); else switchView('research_hub'); return }
+        if(sourceKey==='lines') { currentView.value='research_hub'; const x=(researchOps.researchLines.value||[]).find(v=>String(v.id)===id); if(x) Vue.nextTick(()=>researchOps.openLine(x)); else switchView('research_hub'); return }
+        if(sourceKey==='rotations') { switchView('resident_rotations'); const x=(rotations.value||[]).find(v=>String(v.id)===id); if(x) Vue.nextTick(()=>rotationOps.viewRotationDetails(x)); return }
+        if(sourceKey==='oncall') { onCallOps.onCallFilters.date=item?.start||''; onCallOps.onCallFilters.physician=activity45.personId||''; switchView('oncall_schedule'); return }
+        activity45OpenSource({key:sourceKey})
+      }
       const activity45AskGrounded = () => {
         const model=activity45.model, summary=activity45.summary
         if(!model||!summary) return
-        const ctx={type:'staff',id:model.person.id||activity45.personId,name:model.person.name,activityStart:model.start,activityEnd:model.end,activitySnapshot:{summary:{...summary},events:model.events.slice(0,80),studies:model.studies.slice(0,40),projects:model.projects.slice(0,40),lines:model.lines.slice(0,40),supervision:(model.supervision||[]).slice(0,40),sources:model.sources.map(x=>({key:x.key,label:x.label,state:x.state,matchCount:x.matchCount}))}}
+        const pack=(rows,limit)=>({items:(rows||[]).slice(0,limit),total:(rows||[]).length,included:Math.min((rows||[]).length,limit),truncated:(rows||[]).length>limit})
+        const ctx={type:'staff',id:model.person.id||activity45.personId,name:model.person.name,activityStart:model.start,activityEnd:model.end,activityCapability:'reporting.personal_activity_snapshot',activitySnapshot:{generatedAt:model.generatedAt,selected:{...model.selected},summary:{...summary},events:pack(model.events,80),residentAssignments:pack(model.residentAssignments||[],40),studies:pack(model.studies,40),projects:pack(model.projects,40),lines:pack(model.lines,40),supervision:pack(model.supervision||[],40),issues:[...(model.issues||[])],sources:model.sources.map(x=>({key:x.key,label:x.label,state:x.state,matchCount:x.matchCount,checkedAt:x.checkedAt,notes:x.notes||[]}))}}
         const text=`Portfolio Intelligence context loaded for ${model.person.name}, ${activity45PrettyDate(model.start)} — ${activity45PrettyDate(model.end)}. ${summary.narrative||''}`
+        const period=`between ${ctx.activityStart} and ${ctx.activityEnd}`
         activity45Close()
         askBar.subject=ctx; askBar.context=ctx; askBar.open=true; askBar.view='conversation'; askBar.query=''
-        askBar.turns.push(Vue.reactive({q:'',text,chips:[{label:ctx.name,id:ctx.id}],actions:[],sources:ctx.activitySnapshot.sources.filter(x=>x.state==='ready').map(x=>x.key),followups:[{label:'On-call in this period',q:`${ctx.name} on call between ${ctx.activityStart} and ${ctx.activityEnd}`},{label:'Rotations in this period',q:`${ctx.name} rotations between ${ctx.activityStart} and ${ctx.activityEnd}`},{label:'Research involvement',q:`${ctx.name} research activity`}],confidence:summary.status==='verified'?'high':'medium',asOf:askBarNow(),streaming:false}))
+        askBar.turns.push(Vue.reactive({q:'',text,chips:[{label:ctx.name,id:ctx.id}],actions:[],sources:ctx.activitySnapshot.sources.filter(x=>x.state==='ready').map(x=>x.key),followups:[{label:'On-call in this period',q:`${ctx.name} on call ${period}`},{label:'Rotations in this period',q:`${ctx.name} rotations ${period}`},{label:'Research involvement in this period',q:`${ctx.name} research involvement ${period}`}],confidence:summary.status==='complete'?'high':'medium',asOf:askBarNow(),streaming:false}))
         askBarRefreshRecords(); Vue.nextTick(()=>document.querySelector('.askbar-input input')?.focus())
       }
       const activity45SetView = view => {
         if(!['overview','timeline','portfolio','sources','document'].includes(view)) return
         activity45.view=view
-        Vue.nextTick(()=>document.querySelector(`.activity45-tab[data-view=\"${view}\"]`)?.focus())
+        Vue.nextTick(()=>{ document.querySelector('.activity45-workspace')?.scrollTo({top:0,behavior:'auto'}); document.querySelector(`.activity45-tab[data-view=\"${view}\"]`)?.focus() })
       }
       const activity45Download = () => {
         if(!activity45.html||!currentUser.value) return
@@ -16915,6 +16951,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const activity45Key = ev => {
         if(ev.key==='Escape') { ev.preventDefault(); activity45Close(); return }
+        if((ev.key==='ArrowLeft'||ev.key==='ArrowRight') && document.activeElement?.classList?.contains('activity45-tab')) {
+          ev.preventDefault(); const order=['overview','timeline','portfolio','sources','document']; const i=order.indexOf(activity45.view); const next=order[(i+(ev.key==='ArrowRight'?1:-1)+order.length)%order.length]; activity45SetView(next); return
+        }
         if(ev.key!=='Tab') return
         const controls=[...ev.currentTarget.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled)')].filter(x=>x.getClientRects().length && x.tabIndex>=0)
         const first=controls[0],last=controls[controls.length-1]
@@ -16924,7 +16963,7 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(()=>currentUser.value?.id,(id,old)=>{ if(id!==old && activity45.open) activity45Close() })
 
         return {
-          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45PeriodPresets, activity45ApplyPreset, activity45ToggleSection, activity45SelectedCount, activity45TimelineGroups, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45OpenSource, activity45AskGrounded, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn,
+          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45MarkDirty, activity45PeriodPresets, activity45ApplyPreset, activity45ToggleSection, activity45SelectedCount, activity45FilteredPeople, activity45TimelineGroups, activity45Metric, activity45MetricValue, activity45SourceState, activity45SourceKnown, activity45EmptyText, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45OpenSource, activity45OpenRecord, activity45AskGrounded, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn,
           // Existing returns
           entry, entryBusy, backToSignIn, validateEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,

@@ -12219,16 +12219,16 @@ Use Section heading to structure longer clinical or research articles."></textar
 
     <teleport to="body">
         <div v-if="activity45.open && currentUser" class="activity45-backdrop">
-            <section class="activity45-dialog activity45-workspace-shell" role="dialog" aria-modal="true" aria-labelledby="activity45-title" @keydown="activity45Key">
+            <section class="activity45-dialog activity45-workspace-shell" role="region" aria-labelledby="activity45-title" @keydown="activity45Key">
                 <header class="activity45-header">
                     <div class="activity45-heading">
                         <span class="activity45-eyebrow">neumDesk · Personal Activity</span>
                         <h2 id="activity45-title">{{ activity45.model?.person?.name || 'Portfolio Intelligence' }}</h2>
-                        <p>{{ activity45.model ? 'Recorded activity, responsibilities and portfolio — with evidence.' : 'Build a verified, permission-scoped view of one person’s recorded work and professional relationships.' }}</p>
+                        <p>{{ activity45.model ? 'Recorded departmental activity, responsibilities and portfolio — with retrieval evidence.' : 'Build a permission-scoped view of one person’s recorded departmental activity and professional relationships.' }}</p>
                         <div v-if="activity45.model" class="activity45-context-row">
                             <span>{{ activity45.model.person.role }}</span>
                             <span>{{ activity45PrettyDate(activity45.model.start) }} — {{ activity45PrettyDate(activity45.model.end) }}</span>
-                            <span :class="['coverage',activity45.summary?.status]">{{ activity45.summary?.sourceCoverage || 0 }}% source coverage</span>
+                            <span :class="['coverage',activity45.summary?.status]">{{ activity45.summary?.sourceReady || 0 }}/{{ activity45.summary?.sourceTotal || 0 }} included sources retrieved</span>
                         </div>
                     </div>
                     <div class="activity45-head-actions">
@@ -12242,10 +12242,11 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <fieldset :disabled="activity45.busy">
                             <div class="activity45-scope-heading"><span>Activity scope</span><small>{{ activity45SelectedCount() }} areas included</small></div>
 
-                            <label for="activity45-person">Person</label>
-                            <select id="activity45-person" v-model="activity45.personId" @change="activity45Invalidate">
+                            <label for="activity45-person-filter">Person</label>
+                            <input id="activity45-person-filter" class="activity45-person-search" type="search" v-model="activity45.personFilter" placeholder="Search name or role" autocomplete="off">
+                            <select id="activity45-person" v-model="activity45.personId" @change="activity45MarkDirty" aria-label="Select staff member">
                                 <option value="">Select a staff member</option>
-                                <option v-for="p in activity45.people" :key="p.id" :value="p.id">{{ p.full_name }}</option>
+                                <option v-for="p in activity45FilteredPeople()" :key="p.id" :value="p.id">{{ p.full_name }} · {{ String(p.staff_type || '').replaceAll('_',' ') }}</option>
                             </select>
 
                             <label>Period</label>
@@ -12253,8 +12254,8 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <button v-for="preset in activity45PeriodPresets" :key="preset.id" type="button" :class="{active:activity45.periodPreset===preset.id}" :aria-pressed="activity45.periodPreset===preset.id" @click="activity45ApplyPreset(preset.id)">{{ preset.label }}</button>
                             </div>
                             <div v-if="activity45.periodPreset==='custom'" class="activity45-date-grid">
-                                <div><label for="activity45-start">From</label><input id="activity45-start" type="date" v-model="activity45.start" required @change="activity45Invalidate"></div>
-                                <div><label for="activity45-end">Through</label><input id="activity45-end" type="date" v-model="activity45.end" :min="activity45.start" required @change="activity45Invalidate"></div>
+                                <div><label for="activity45-start">From</label><input id="activity45-start" type="date" v-model="activity45.start" required @change="activity45MarkDirty"></div>
+                                <div><label for="activity45-end">Through</label><input id="activity45-end" type="date" v-model="activity45.end" :min="activity45.start" required @change="activity45MarkDirty"></div>
                             </div>
                             <div v-else class="activity45-period-summary"><strong>{{ activity45PrettyDate(activity45.start) }}</strong><span>to</span><strong>{{ activity45PrettyDate(activity45.end) }}</strong></div>
                             <p class="activity45-hint">Dated records are filtered by this period. Persistent portfolio relationships remain explicitly labelled as relationships.</p>
@@ -12269,13 +12270,13 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                         </fieldset>
 
-                        <button class="activity45-primary" type="submit" :disabled="activity45.busy || !activity45.personId">{{ activity45.busy ? 'Retrieving verified records…' : activity45.model ? 'Refresh activity view' : 'Build activity view' }}</button>
-                        <p v-if="activity45.busy" role="status" class="activity45-hint">Checking only sources available to your account.</p>
+                        <button class="activity45-primary" type="submit" :disabled="activity45.busy || !activity45.personId">{{ activity45.busy ? 'Retrieving included sources…' : activity45.model ? (activity45.dirty ? 'Apply changes' : 'Refresh activity view') : 'Build activity view' }}</button>
+                        <p v-if="activity45.busy" role="status" class="activity45-hint activity45-loading-note">Retrieving only sources available to your account. The last completed snapshot remains visible until refresh succeeds.</p><p v-if="activity45.dirty && activity45.model && !activity45.busy" class="activity45-stale-note"><strong>Scope changed.</strong> The workspace still shows the previous completed snapshot. Select <em>Apply changes</em> to refresh it.</p>
                         <p v-if="activity45.error" role="alert" class="activity45-error">{{ activity45.error }}</p>
 
                         <div v-if="activity45.model" class="activity45-coverage-mini">
-                            <div class="activity45-coverage-top"><span>Evidence coverage</span><strong>{{ activity45.summary?.sourceReady || 0 }}/{{ activity45.summary?.sourceTotal || 0 }}</strong></div>
-                            <div class="activity45-coverage-bar"><i :style="{width:(activity45.summary?.sourceCoverage || 0)+'%'}"></i></div>
+                            <div class="activity45-coverage-top"><span>Retrieval evidence</span><strong>{{ activity45.summary?.sourceReady || 0 }}/{{ activity45.summary?.sourceTotal || 0 }}</strong></div>
+                            <div class="activity45-coverage-bar"><i :style="{width:(activity45.summary?.retrievalCoverage || 0)+'%'}"></i></div>
                             <small>{{ activity45.summary?.degradedSources ? activity45.summary.degradedSources + ' included source(s) need review' : 'All included sources retrieved' }}</small>
                         </div>
                         <p class="activity45-hint activity45-privacy">Private notes, contact details and leave reasons are excluded. Missing or failed sources are never interpreted as zero activity.</p>
@@ -12283,27 +12284,27 @@ Use Section heading to structure longer clinical or research articles."></textar
 
                     <main class="activity45-workspace">
                         <template v-if="activity45.model">
-                            <nav class="activity45-tabs" aria-label="Portfolio Intelligence views">
-                                <button v-for="tab in [{id:'overview',label:'Overview'},{id:'timeline',label:'Timeline'},{id:'portfolio',label:'Portfolio'},{id:'sources',label:'Evidence'},{id:'document',label:'Document'}]" :key="tab.id" type="button" class="activity45-tab" :class="{active:activity45.view===tab.id}" :data-view="tab.id" @click="activity45SetView(tab.id)">{{ tab.label }}</button>
+                            <nav class="activity45-tabs" role="tablist" aria-label="Portfolio Intelligence views">
+                                <button v-for="tab in [{id:'overview',label:'Overview'},{id:'timeline',label:'Timeline'},{id:'portfolio',label:'Portfolio'},{id:'sources',label:'Evidence'},{id:'document',label:'Document'}]" :key="tab.id" type="button" role="tab" class="activity45-tab" :class="{active:activity45.view===tab.id}" :id="'activity45-tab-'+tab.id" :aria-selected="activity45.view===tab.id" :aria-controls="'activity45-panel-'+tab.id" :tabindex="activity45.view===tab.id ? 0 : -1" :data-view="tab.id" @click="activity45SetView(tab.id)">{{ tab.label }}</button>
                             </nav>
 
-                            <section v-if="activity45.view==='overview'" class="activity45-panel activity45-overview">
+                            <section v-if="activity45.view==='overview'" id="activity45-panel-overview" role="tabpanel" aria-labelledby="activity45-tab-overview" class="activity45-panel activity45-overview">
                                 <div class="activity45-intro-row">
-                                    <div><span class="activity45-kicker">At a glance</span><h3>A verified view of recorded work.</h3><p class="activity45-narrative">{{ activity45.summary?.narrative }}</p></div>
-                                    <div class="activity45-status" :class="activity45.summary?.status"><span>{{ activity45.summary?.status==='verified' ? 'Verified snapshot' : 'Partial snapshot' }}</span><strong>{{ activity45.summary?.sourceCoverage || 0 }}%</strong><small>source coverage</small></div>
+                                    <div><span class="activity45-kicker">At a glance</span><h3>Recorded departmental activity & portfolio.</h3><p class="activity45-narrative">{{ activity45.summary?.narrative }}</p></div>
+                                    <div class="activity45-status" :class="activity45.summary?.status"><span>{{ activity45.summary?.status==='complete' ? 'Included sources retrieved' : 'Partial retrieval' }}</span><strong>{{ activity45.summary?.sourceReady || 0 }}/{{ activity45.summary?.sourceTotal || 0 }}</strong><small>included sources retrieved</small></div>
                                 </div>
 
                                 <div class="activity45-intelligence-band">
                                     <section><div class="activity45-band-title"><span>Recorded in this period</span><small>Dated activity only</small></div><div class="activity45-metrics compact">
-                                        <article><span>On-call</span><strong>{{ activity45.summary?.oncall || 0 }}</strong><small>duties</small></article>
-                                        <article><span>Resident</span><strong>{{ activity45.summary?.residentRotations || 0 }}</strong><small>rotation assignments</small></article>
-                                        <article><span>Supervision</span><strong>{{ activity45.summary?.supervisedRotations || 0 }}</strong><small>formal rotations</small></article>
-                                        <article><span>Milestones</span><strong>{{ activity45.summary?.milestones || 0 }}</strong><small>shared dated records</small></article>
+                                        <article><span>On-call</span><strong>{{ activity45MetricValue('oncall') }}</strong><small>duties</small></article>
+                                        <article><span>Resident</span><strong>{{ activity45MetricValue('residentActivity') }}</strong><small>rotation assignments</small></article>
+                                        <article><span>Supervision</span><strong>{{ activity45MetricValue('supervisionActivity') }}</strong><small>formal rotations</small></article>
+                                        <article><span>Milestones</span><strong>{{ activity45MetricValue('milestones') }}</strong><small>shared dated records</small></article>
                                     </div></section>
                                     <section><div class="activity45-band-title"><span>Professional portfolio</span><small>Explicit relationships</small></div><div class="activity45-metrics compact portfolio">
-                                        <article><span>Research</span><strong>{{ activity45.summary?.studies || 0 }}</strong><small>linked studies</small></article>
-                                        <article><span>Innovation</span><strong>{{ activity45.summary?.projects || 0 }}</strong><small>linked projects</small></article>
-                                        <article><span>Programmes</span><strong>{{ activity45.summary?.programmes || 0 }}</strong><small>coordinator roles</small></article>
+                                        <article><span>Research</span><strong>{{ activity45MetricValue('studies') }}</strong><small>linked studies</small></article>
+                                        <article><span>Innovation</span><strong>{{ activity45MetricValue('projects') }}</strong><small>linked projects</small></article>
+                                        <article><span>Programmes</span><strong>{{ activity45MetricValue('programmes') }}</strong><small>coordinator roles</small></article>
                                         <article><span>Evidence</span><strong>{{ activity45.summary?.sourceReady || 0 }}/{{ activity45.summary?.sourceTotal || 0 }}</strong><small>sources retrieved</small></article>
                                     </div></section>
                                 </div>
@@ -12312,45 +12313,45 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <section>
                                         <div class="activity45-section-head"><div><span>Chronology</span><h4>Latest dated records</h4></div><button type="button" @click="activity45SetView('timeline')">Full timeline →</button></div>
                                         <div v-if="activity45.model.events.length" class="activity45-mini-events"><article v-for="event in activity45.model.events.slice(0,6)" :key="event.kind+'-'+event.ref+'-'+event.start"><span :class="['activity45-kind',event.kind]">{{ event.kind }}</span><div><strong>{{ event.title }}</strong><p>{{ activity45DateRange(event) }} · {{ event.role }}</p></div></article></div>
-                                        <p v-else class="activity45-empty">No dated activity is visible in successfully retrieved sources for this period. This does not establish availability.</p>
+                                        <p v-else class="activity45-empty">No dated activity is visible in the successfully retrieved sources for this period. Unavailable or restricted sources remain unknown; this does not establish availability.</p>
                                     </section>
                                     <section>
                                         <div class="activity45-section-head"><div><span>Trust layer</span><h4>Evidence & interpretation</h4></div><button type="button" @click="activity45SetView('sources')">Review evidence →</button></div>
-                                        <div class="activity45-evidence-summary"><p><strong>{{ activity45.summary?.sourceReady || 0 }}</strong><span>sources retrieved</span></p><p><strong>{{ activity45.summary?.issues || 0 }}</strong><span>information caveats</span></p><p><strong>{{ activity45.summary?.portfolioRelationships || 0 }}</strong><span>portfolio relationships</span></p></div>
+                                        <div class="activity45-evidence-summary"><p><strong>{{ activity45.summary?.sourceReady || 0 }}</strong><span>sources retrieved</span></p><p><strong>{{ activity45.summary?.issues || 0 }}</strong><span>information caveats</span></p><p><strong>{{ activity45MetricValue('portfolioRelationships') }}</strong><span>portfolio relationships</span></p></div>
                                         <div v-if="activity45.model.issues.length" class="activity45-review-note"><strong>{{ activity45.model.issues.length }} item{{ activity45.model.issues.length===1?'':'s' }} need careful interpretation</strong><p>Incomplete dates and source conditions remain visible instead of being converted into assumptions.</p></div>
                                         <div v-else class="activity45-clean-note">No information caveats were generated from the included records.</div>
                                     </section>
                                 </div>
                             </section>
 
-                            <section v-else-if="activity45.view==='timeline'" class="activity45-panel">
+                            <section v-else-if="activity45.view==='timeline'" id="activity45-panel-timeline" role="tabpanel" aria-labelledby="activity45-tab-timeline" class="activity45-panel">
                                 <div class="activity45-panel-title"><span class="activity45-kicker">Timeline</span><h3>What is dated in the record?</h3><p>On-call duties and rotation spans are person-specific records. Study and innovation milestones are shown as shared milestones unless personal ownership is explicitly established.</p></div>
                                 <div v-if="activity45.model.events.length" class="activity45-timeline-groups">
-                                    <section v-for="group in activity45TimelineGroups()" :key="group.key" class="activity45-timeline-group"><h4>{{ group.label }}</h4><div class="activity45-timeline"><article v-for="event in group.events" :key="event.kind+'-'+event.ref+'-'+event.start"><time>{{ activity45DateRange(event) }}</time><i :class="event.kind"></i><div><span :class="['activity45-kind',event.kind]">{{ event.source }}</span><h5>{{ event.title }}</h5><p>{{ event.role }}<template v-if="event.detail"> · {{ event.detail }}</template></p><small>Record {{ event.ref }}</small></div></article></div></section>
+                                    <section v-for="group in activity45TimelineGroups()" :key="group.key" class="activity45-timeline-group"><h4>{{ group.label }}</h4><div class="activity45-timeline"><article v-for="event in group.events" :key="event.kind+'-'+event.ref+'-'+event.start"><time>{{ activity45DateRange(event) }}</time><i :class="event.kind"></i><div><span :class="['activity45-kind',event.kind]">{{ event.evidenceKind==='shared' ? 'Shared record · ' : 'Person record · ' }}{{ event.source }}</span><h5>{{ event.title }}</h5><p>{{ event.role }}<template v-if="event.detail"> · {{ event.detail }}</template></p><div class="activity45-record-ref"><small>Record {{ event.ref }}</small><button type="button" @click="activity45OpenRecord(event.sourceKey,event.ref,event)">Open record ↗</button></div></div></article></div></section>
                                 </div>
                                 <p v-else class="activity45-empty">No dated activity is visible in the included, successfully retrieved sources.</p>
                             </section>
 
-                            <section v-else-if="activity45.view==='portfolio'" class="activity45-panel">
+                            <section v-else-if="activity45.view==='portfolio'" id="activity45-panel-portfolio" role="tabpanel" aria-labelledby="activity45-tab-portfolio" class="activity45-panel">
                                 <div class="activity45-panel-title"><span class="activity45-kicker">Portfolio</span><h3>Responsibilities are not the same as dated activity.</h3><p>These sections show explicit professional relationships. Where dates cannot establish period relevance, the relationship stays visible and is labelled accordingly.</p></div>
                                 <div class="activity45-portfolio-board">
-                                    <section><div class="activity45-section-head"><div><span>Training</span><h4>Resident assignments</h4></div><b>{{ activity45.model.residentAssignments.length }}</b></div><article v-for="item in activity45.model.residentAssignments" :key="'resident-'+item.ref" class="activity45-portfolio-card"><span>{{ item.status }}</span><h4>{{ item.title }}</h4><p>Resident assignment · Supervisor: {{ item.supervisor }}</p><small>{{ activity45DateRange(item) }} · Record {{ item.ref }}</small></article><p v-if="!activity45.model.residentAssignments.length" class="activity45-empty compact">No resident rotation assignment overlaps this period.</p></section>
-                                    <section><div class="activity45-section-head"><div><span>Supervision</span><h4>Residents supervised</h4></div><b>{{ activity45.model.supervision.length }}</b></div><article v-for="item in activity45.model.supervision" :key="'supervision-'+item.ref" class="activity45-portfolio-card"><span>{{ item.status }}</span><h4>{{ item.resident }}</h4><p>{{ item.title }} · {{ item.role }}</p><small>{{ activity45DateRange(item) }} · Record {{ item.ref }}</small></article><p v-if="!activity45.model.supervision.length" class="activity45-empty compact">No formal resident-supervision rotation overlaps this period.</p></section>
-                                    <section><div class="activity45-section-head"><div><span>Research</span><h4>Studies</h4></div><b>{{ activity45.model.studies.length }}</b></div><article v-for="item in activity45.model.studies" :key="'study-'+item.ref" class="activity45-portfolio-card"><span>{{ item.status }}</span><h4>{{ item.title }}</h4><p>{{ item.role }}<template v-if="item.line"> · {{ item.line }}</template></p><small>{{ item.timing }} · Record {{ item.ref }}</small></article><p v-if="!activity45.model.studies.length" class="activity45-empty compact">No linked studies are established by the included records.</p></section>
-                                    <section><div class="activity45-section-head"><div><span>Innovation</span><h4>Projects</h4></div><b>{{ activity45.model.projects.length }}</b></div><article v-for="item in activity45.model.projects" :key="'project-'+item.ref" class="activity45-portfolio-card"><span>{{ item.status }}</span><h4>{{ item.title }}</h4><p>{{ item.role }}<template v-if="item.line"> · {{ item.line }}</template></p><small>{{ item.timing }} · Record {{ item.ref }}</small></article><p v-if="!activity45.model.projects.length" class="activity45-empty compact">No linked innovation projects are established by the included records.</p></section>
-                                    <section class="wide"><div class="activity45-section-head"><div><span>Programme responsibility</span><h4>Coordination</h4></div><b>{{ activity45.model.lines.length }}</b></div><article v-for="item in activity45.model.lines" :key="'line-'+item.ref" class="activity45-portfolio-card horizontal"><div><span>{{ item.status }}</span><h4>{{ item.title }}</h4><p>{{ item.role }}</p></div><small>{{ item.timing }} · Record {{ item.ref }}</small></article><p v-if="!activity45.model.lines.length" class="activity45-empty compact">No programme coordination role is established by the included records.</p></section>
+                                    <section><div class="activity45-section-head"><div><span>Training</span><h4>Resident assignments</h4></div><b>{{ activity45MetricValue('residentAssignments') }}</b></div><article v-for="item in activity45.model.residentAssignments" :key="'resident-'+item.ref" class="activity45-portfolio-card"><span>{{ item.status }}</span><h4>{{ item.title }}</h4><p>Resident assignment · Supervisor: {{ item.supervisor }}</p><small>{{ item.timing || activity45DateRange(item) }}</small><div class="activity45-record-ref"><small>Rotations · Record {{ item.ref }}</small><button type="button" @click="activity45OpenRecord('rotations',item.ref,item)">Open record ↗</button></div></article><p v-if="!activity45.model.residentAssignments.length" class="activity45-empty compact">{{ activity45EmptyText('rotations','No resident rotation assignment overlaps this period.') }}</p></section>
+                                    <section><div class="activity45-section-head"><div><span>Supervision</span><h4>Residents supervised</h4></div><b>{{ activity45MetricValue('supervision') }}</b></div><article v-for="item in activity45.model.supervision" :key="'supervision-'+item.ref" class="activity45-portfolio-card"><span>{{ item.status }}</span><h4>{{ item.resident }}</h4><p>{{ item.title }} · {{ item.role }}</p><small>{{ item.timing || activity45DateRange(item) }}</small><div class="activity45-record-ref"><small>Rotations · Record {{ item.ref }}</small><button type="button" @click="activity45OpenRecord('rotations',item.ref,item)">Open record ↗</button></div></article><p v-if="!activity45.model.supervision.length" class="activity45-empty compact">{{ activity45EmptyText('rotations','No formal resident-supervision rotation overlaps this period.') }}</p></section>
+                                    <section><div class="activity45-section-head"><div><span>Research</span><h4>Studies</h4></div><b>{{ activity45MetricValue('studies') }}</b></div><article v-for="item in activity45.model.studies" :key="'study-'+item.ref" class="activity45-portfolio-card"><span>{{ item.status }}</span><h4>{{ item.title }}</h4><p>{{ item.role }}<template v-if="item.line"> · {{ item.line }}</template></p><small>{{ item.timing }}</small><div class="activity45-record-ref"><small>Research studies · Record {{ item.ref }}</small><button type="button" @click="activity45OpenRecord('studies',item.ref,item)">Open record ↗</button></div></article><p v-if="!activity45.model.studies.length" class="activity45-empty compact">{{ activity45EmptyText('studies','No linked studies are established by the retrieved records.') }}</p></section>
+                                    <section><div class="activity45-section-head"><div><span>Innovation</span><h4>Projects</h4></div><b>{{ activity45MetricValue('projects') }}</b></div><article v-for="item in activity45.model.projects" :key="'project-'+item.ref" class="activity45-portfolio-card"><span>{{ item.status }}</span><h4>{{ item.title }}</h4><p>{{ item.role }}<template v-if="item.line"> · {{ item.line }}</template></p><small>{{ item.timing }}</small><div class="activity45-record-ref"><small>Innovation projects · Record {{ item.ref }}</small><button type="button" @click="activity45OpenRecord('projects',item.ref,item)">Open record ↗</button></div></article><p v-if="!activity45.model.projects.length" class="activity45-empty compact">{{ activity45EmptyText('projects','No linked innovation projects are established by the retrieved records.') }}</p></section>
+                                    <section class="wide"><div class="activity45-section-head"><div><span>Programme responsibility</span><h4>Coordination</h4></div><b>{{ activity45MetricValue('programmes') }}</b></div><article v-for="item in activity45.model.lines" :key="'line-'+item.ref" class="activity45-portfolio-card horizontal"><div><span>{{ item.status }}</span><h4>{{ item.title }}</h4><p>{{ item.role }}</p></div><div class="activity45-record-ref"><small>{{ item.timing }} · Record {{ item.ref }}</small><button type="button" @click="activity45OpenRecord('lines',item.ref,item)">Open record ↗</button></div></article><p v-if="!activity45.model.lines.length" class="activity45-empty compact">{{ activity45EmptyText('lines','No programme coordination role is established by the retrieved records.') }}</p></section>
                                 </div>
                             </section>
 
-                            <section v-else-if="activity45.view==='sources'" class="activity45-panel">
-                                <div class="activity45-panel-title"><span class="activity45-kicker">Evidence & provenance</span><h3>What could this snapshot actually verify?</h3><p>Source health is part of the result. A restricted or unavailable source means neumDesk cannot establish whether activity exists there.</p></div>
-                                <div class="activity45-source-list"><article v-for="source in activity45.model.sources" :key="source.key"><i :class="activity45SourceTone(source.state)"></i><div><strong>{{ source.label }}</strong><p>{{ source.state==='ready' ? (source.matchCount + ' relevant record' + (source.matchCount===1?'':'s') + ' represented in this view') : source.state }}</p></div><time>{{ source.checkedAt ? source.checkedAt.replace('T',' ').slice(0,16)+' UTC' : 'Not checked' }}</time><button v-if="source.state==='ready'" type="button" @click="activity45OpenSource(source)">Open source ↗</button></article></div>
+                            <section v-else-if="activity45.view==='sources'" id="activity45-panel-sources" role="tabpanel" aria-labelledby="activity45-tab-sources" class="activity45-panel">
+                                <div class="activity45-panel-title"><span class="activity45-kicker">Evidence & provenance</span><h3>What could this snapshot retrieve and establish?</h3><p>Source health is part of the result. A restricted or unavailable source means neumDesk cannot establish whether activity exists there.</p></div>
+                                <div class="activity45-source-list"><article v-for="source in activity45.model.sources" :key="source.key"><i :class="activity45SourceTone(source.state)"></i><div><strong>{{ source.label }}</strong><p>{{ source.state==='ready' ? (source.matchCount + ' relevant record' + (source.matchCount===1?'':'s') + ' represented in this view') : (source.state + ' — matching activity remains unknown') }}</p><small v-if="source.notes?.length">{{ source.notes.join(' · ') }}</small></div><time>{{ source.checkedAt ? source.checkedAt.replace('T',' ').slice(0,16)+' UTC' : 'Not checked' }}</time><button v-if="source.state==='ready'" type="button" @click="activity45OpenSource(source)">Open source ↗</button></article></div>
                                 <div v-if="activity45.model.issues.length" class="activity45-issues"><span class="activity45-kicker">Information to review</span><ul><li v-for="issue in activity45.model.issues" :key="issue">{{ issue }}</li></ul></div>
                                 <div class="activity45-scope-note"><strong>Interpretation boundary</strong><p>This is a record snapshot, not a workload score, performance rating or confirmation of availability. Research and innovation entries represent explicit relationships unless a dated milestone is separately present. Private notes, contact details and leave reasons are excluded.</p></div>
                             </section>
 
-                            <section v-else class="activity45-document-panel">
-                                <div class="activity45-document-toolbar"><div><span class="activity45-kicker">Formal output</span><strong>Personal Activity brief</strong><small>Generated from exactly the same verified snapshot as Overview, Timeline, Portfolio and Evidence.</small></div><div><button type="button" @click="activity45Download">Download HTML</button><button type="button" class="primary" @click="activity45Print">Print / Save as PDF</button></div></div>
+                            <section v-else id="activity45-panel-document" role="tabpanel" aria-labelledby="activity45-tab-document" class="activity45-document-panel">
+                                <div class="activity45-document-toolbar"><div><span class="activity45-kicker">Formal output</span><strong>Personal Activity brief</strong><small>Generated from the same permission-scoped snapshot as Overview, Timeline, Portfolio and Evidence.</small></div><div><button type="button" @click="activity45Download">Download HTML</button><button type="button" class="primary" @click="activity45Print">Print / Save as PDF</button></div></div>
                                 <div class="activity45-preview-area"><iframe id="activity45-preview" title="Personal activity document preview" tabindex="-1" :srcdoc="activity45.html" sandbox="allow-same-origin allow-modals"></iframe></div>
                             </section>
                         </template>
@@ -12362,8 +12363,8 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <div class="activity45-placeholder-grid">
                                 <article><b>01</b><strong>Understand the period</strong><small>On-call, rotations and shared dated milestones arranged chronologically.</small></article>
                                 <article><b>02</b><strong>See the portfolio</strong><small>Research, innovation, programme and supervision relationships kept semantically distinct.</small></article>
-                                <article><b>03</b><strong>Inspect the evidence</strong><small>Source coverage, unavailable data and incomplete dates stay visible.</small></article>
-                                <article><b>04</b><strong>Produce the brief</strong><small>Interactive intelligence and the printable document come from one verified snapshot.</small></article>
+                                <article><b>03</b><strong>Inspect the evidence</strong><small>Retrieval evidence, unavailable data and incomplete dates stay visible.</small></article>
+                                <article><b>04</b><strong>Produce the brief</strong><small>Interactive intelligence and the printable document come from one permission-scoped snapshot.</small></article>
                             </div>
                             <div class="activity45-placeholder-flow"><span>Select person</span><i>→</i><span>Review activity</span><i>→</i><span>Inspect evidence</span><i>→</i><span>Generate document</span></div>
                         </div>

@@ -360,6 +360,16 @@ Personal Activity is deliberately **not converted into an autonomous Grounded ag
 
 Grounded may later consume this reporting capability as a READ tool (for example, “summarize Marina’s recorded activity this month”), but it must receive the same source-health/provenance contract and must not reinterpret unavailable sources as no activity. The canonical Personal Activity model therefore becomes a candidate reusable structured output, not a parallel truth store.
 
+## V46.14 hardening — Reporting READ capability
+
+Portfolio Intelligence now exposes `reporting.personal_activity_snapshot` as a real READ tool in the shared Grounded tool registry. The workspace and Grounded tool call the same deterministic `Activity45.snapshot(...)` capability, so there is one reporting truth path rather than a UI-only builder plus a separate chat interpretation.
+
+The tool remains permission-scoped per underlying source. Its result carries source states and never converts restricted/unavailable sources to numeric zero. Grounded handoff includes resident assignments, formal supervision, issues, source checked times and explicit `{total, included, truncated}` metadata for bounded arrays.
+
+This still does **not** mean every free-form Personal Activity question is automatically routed through this tool. Universal intent routing remains staged and eval-guarded.
+
+---
+
 ## V46.14 — Portfolio Intelligence contextual integration
 Personal Activity remains a deterministic reporting capability, not an autonomous agent. V46.14 adds a structured context handoff from the Portfolio Intelligence workspace into Grounded.
 
@@ -374,7 +384,7 @@ The handoff contains:
 
 Grounded may use this context to continue a conversation, but the snapshot remains authoritative for the reporting period. Missing sources remain missing; Grounded must not reinterpret them as zero activity. The handoff is session context only and is discarded with the conversation context.
 
-V46.14 deliberately stops short of claiming a universal free-form Personal Activity READ adapter. Period-aware questions should migrate incrementally behind a semantic reporting tool with equivalence evals against the deterministic snapshot.
+V46.14 deliberately now has a deterministic Personal Activity READ capability but stops short of claiming universal free-form routing to it. Period-aware questions should migrate incrementally behind a semantic reporting tool with equivalence evals against the deterministic snapshot.
 
 **Product integration rule:** Personal Activity can be entered from Staff, Grounded or direct workspace actions, but every path must converge on the same snapshot builder and evidence contract.
 

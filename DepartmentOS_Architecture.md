@@ -2,7 +2,7 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v1.7 · Implementation checkpoint: V46.14 · Supersedes Vision v0.1
+**Status:** Architecture v1.8 · Implementation checkpoint: V46.14 hardening · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
@@ -38,7 +38,7 @@ This is the **living checkpoint** and is authoritative over older status stateme
 | Human in loop | Built pattern |
 | Observability | Built foundation |
 | Permissions | Operational |
-| Structured outputs | Mature Personal Activity client proven across interactive + formal renderers; broader universal adoption pending |
+| Structured outputs | Mature Personal Activity client with unknown-vs-zero state, record provenance, interactive/formal parity and shared reporting capability; broader universal adoption pending |
 | Operational memory | Partial; task-only Grounded memory |
 | Multi-agent | Intentionally deferred |
 
@@ -64,28 +64,37 @@ Consequences:
 3. Many Grounded reads still live in the monolithic router instead of capability modules.
 4. The Canonical Knowledge Layer is not yet the exclusive operational interface.
 5. Role-first permissions remain a future onboarding improvement.
-6. Personal Activity now has a full Portfolio Intelligence workspace and structured context handoff into Grounded; a universal free-form, period-aware Grounded READ adapter over this snapshot remains future integration work.
+6. Personal Activity now exposes `reporting.personal_activity_snapshot` as a deterministic semantic READ capability shared by the workspace and Grounded. Free-form routing to that capability remains staged rather than universal.
+7. Personal Activity is visually full-screen but still implemented as an application overlay rather than a URL-addressable route; deep-link/browser-history integration remains product-architecture debt.
 
 ### What comes next
-**Next checkpoint:** live browser validation of V46.14 Portfolio Intelligence, then return to operational UI consistency (On-call → Leave → Resident Rotations → Staff) while continuing staged Grounded READ migration behind the deterministic source of truth.
+**Next checkpoint:** live authenticated browser and print validation of the hardened V46.14 Portfolio Intelligence workspace. Do not move to operational UI consistency until the live browser confirms layout, print, responsive and source-state behaviour.
 
 ---
 
 
 ## Implementation checkpoint — V46.14 (2026-09-21)
 
-### Personal Activity becomes a complete Portfolio Intelligence workspace
-V46.14 completes the product architecture around the deterministic Personal Activity snapshot. The feature is now a full-screen departmental workspace rather than a document-preparation modal.
+### Personal Activity becomes a hardened Portfolio Intelligence workspace
+V46.14 implements the full A→H product programme around the deterministic Personal Activity snapshot and then hardens it after code audit. It is presented as a full-screen departmental workspace, while the underlying container remains a transitional application overlay rather than a URL-addressable route.
 
-**A → H completed in this checkpoint**
-1. **Product architecture** — full-screen workspace; person, period and included activity are first-class context.
-2. **Overview intelligence** — deterministic narrative, dated-activity metrics, portfolio-relationship metrics and source-quality status.
-3. **Timeline** — month-grouped chronology for on-call, rotations and shared milestones.
+**A → H implemented and hardened in this checkpoint**
+1. **Product architecture** — full-screen workspace; person, period and included activity are first-class context. The current overlay container is explicitly transitional; deep-link/browser-history routing is not claimed complete.
+2. **Overview intelligence** — deterministic narrative, dated-activity metrics, portfolio-relationship metrics and source-quality status. Metrics now carry known / unknown / partial state so failed retrieval can never render as numeric zero.
+3. **Timeline** — month-grouped chronology for on-call, rotations and shared milestones, with person-specific records visibly separated from shared study/project events and direct record navigation where supported.
 4. **Portfolio** — resident assignments, formal supervision, research, innovation and programme coordination remain semantically distinct.
-5. **Evidence** — source health, match counts, provenance and information caveats are first-class UI.
-6. **Document** — offline HTML / Print-to-PDF remains a renderer of the same verified model; it is no longer the primary experience.
-7. **Contextual integration** — Staff and Grounded can open the same workspace; the workspace can hand person + period + structured snapshot context back to Grounded.
-8. **Visual hardening** — crisp full-screen shell, compact scope controls, responsive states, no haze/backdrop blur, truthful empty/loading/error treatment.
+5. **Evidence** — retrieval state, relevant-record counts, checked time, provenance and information caveats are first-class UI. “Source coverage” has been replaced by retrieval evidence; successful retrieval is never presented as institutional completeness.
+6. **Document** — offline HTML / Print-to-PDF remains a renderer of the same permission-scoped model; resident assignments, formal supervision and source evidence are represented explicitly rather than collapsed into a generic rotation section.
+7. **Contextual integration** — Staff and Grounded can open the same workspace. The deterministic snapshot is now also exposed as the semantic READ capability `reporting.personal_activity_snapshot`; handoff includes resident assignments, caveats, source timestamps and explicit truncation metadata.
+8. **Visual hardening** — crisp full-screen shell, searchable staff filtering, retained last-good snapshot during refresh, stale-scope state, semantic tabs, mobile Grounded access, larger minimum typography, no haze/backdrop blur and truthful empty/loading/error treatment.
+
+**Hardening corrections after implementation audit**
+- unknown source state is distinct from a known zero; UI and document use an em dash / explicit unknown copy rather than `0`;
+- rotations retrieval deliberately includes `terminated_early` records, but a planned span is never presented as completed activity without an explicit actual termination date;
+- research/project dates describe the study/project record, not the person’s participation interval unless a personal interval is explicitly stored;
+- successful endpoint retrieval is described as retrieval evidence, never “100% complete work”;
+- exact record references are preserved and can navigate to underlying records/modules where the current application exposes a read surface;
+- the last completed snapshot stays visible while a changed scope is refreshed; failed refresh does not erase prior evidence.
 
 **Semantic invariants**
 - dated activity is not conflated with persistent professional relationships;
@@ -95,7 +104,7 @@ V46.14 completes the product architecture around the deterministic Personal Acti
 - Grounded receives this model as context but does not become a second truth store.
 
 **Still next**
-- live authenticated browser validation and print review;
+- live authenticated browser validation and print review of the hardened state model;
 - operational UI consistency across On-call, Leave, Rotations and Staff;
 - staged Knowledge Layer / Grounded READ adoption with output-equivalence evals.
 
@@ -116,7 +125,7 @@ The existing permission-scoped personal-activity snapshot is now a first-class *
 - truthfulness invariant: unavailable/restricted source != zero activity.
 
 **Architectural significance**
-This is a concrete implementation of §9 Structured Outputs: UI and document are two renderers over the same verified record model. It also establishes the Reporting capability without requiring a separate agent or LLM.
+This is a concrete implementation of §9 Structured Outputs: UI and document are two renderers over the same permission-scoped record model. It also establishes the Reporting capability without requiring a separate agent or LLM.
 
 **Still next**
 1. Continue migrating legacy Grounded read builders behind semantic capabilities / Knowledge Objects.
