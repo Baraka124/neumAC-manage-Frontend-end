@@ -2,7 +2,7 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v1.9 · Implementation checkpoint: V46.14 presentation convergence · Supersedes Vision v0.1
+**Status:** Architecture v2.1 · Implementation checkpoint: V46.14 leave temporal semantics · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
@@ -79,6 +79,25 @@ Consequences:
 - Evidence remains visible without forcing the user to open audit depth; retrieval method / deep detail stays secondary.
 - Browser cache keys for `app.js` and `style.css` are advanced inside the same V46.14 release so live deployments actually receive the convergence CSS/runtime.
 
+### V46.14 interaction continuity — Interaction reveal & focus contract
+- A click or command that reveals a new surface must move the relevant scroll container to that surface after layout settles; users must not hunt below an old scroll position.
+- Grounded follows the loading state and then the start of the newly completed answer turn. It does not blindly jump to the absolute bottom of a long response.
+- Research detail navigation resets the Research-owned scroller and moves focus to the newly opened study/project/programme surface.
+- Research Library readers reset their own reading scroller and receive focus when opened, including records launched from Research programme outputs.
+- Cross-module navigation resets stale module scroll position at the destination boundary.
+- Explicit drawers/sheets such as Staff profile and Rotation detail receive focus when opened.
+- Return-position behavior is preserved only where it is intentional (for example closing a Research Library reader back to the previous Library position).
+
+
+### V46.14 leave temporal semantics — current state vs future schedule
+- Grounded models leave questions with explicit temporal scope: **current/today**, **specific date or window**, **scheduled/upcoming**, and **history/aggregate** are not interchangeable.
+- A short leave query after opening a person (for example `on leave` or `scheduled leave`) resolves against that current person reference unless the user explicitly widens scope with `who`, `anyone`, `everyone`, or equivalent language.
+- `on leave` answers current status first. If the person is not absent today but has future leave, Grounded says so explicitly and surfaces the next scheduled period rather than claiming the person is currently absent.
+- `scheduled leave` / `planned leave` is a future-schedule query and never falls through to the `absent now` builder.
+- Named-person future questions (for example `Marina scheduled leave`) resolve the person before department-wide schedule routing.
+- Department-wide upcoming leave honors an explicitly requested date/window (for example `next week`) instead of always substituting a generic 30-day horizon.
+- Leave answers expose answer scope such as `current leave status`, `scheduled leave`, or the resolved date/window so temporal meaning is inspectable.
+
 ### Known debt
 1. Multi-unit rotation writes remain sequential because there is no atomic backend batch endpoint.
 2. Rotation edit/extend/cancel and leave return/edit/cancel remain legacy lifecycle writes.
@@ -89,7 +108,7 @@ Consequences:
 7. Personal Activity is visually full-screen but still implemented as an application overlay rather than a URL-addressable route; deep-link/browser-history integration remains product-architecture debt.
 
 ### What comes next
-**Next checkpoint:** live authenticated browser validation of the V46.14 presentation-converged Grounded + Portfolio Intelligence surfaces, followed by print/PDF review. Do not move to operational UI consistency until the live browser confirms response wrapping, answer scope, context transitions, responsive layout, print and source-state behaviour.
+**Next checkpoint:** live authenticated browser validation of V46.14 temporal leave semantics together with interaction continuity. Verify current person leave status, scheduled leave, named-person future leave, department-wide future windows, Grounded answer reveal, Research detail opening and cross-module focus. print/PDF review remains required. Do not move to operational UI consistency until the live browser confirms semantic time scope and viewport/focus continuity.
 
 ---
 

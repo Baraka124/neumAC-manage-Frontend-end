@@ -22098,3 +22098,18 @@ html body #app .askbar-followups{margin-top:7px !important;}
   html body #app .askbar-context-event{grid-template-columns:1fr !important;grid-template-areas:'eyebrow' 'title' 'meta' !important;row-gap:4px !important;}
   html body #app .askbar-context-event>span{justify-self:start !important;}
 }
+
+/* ========================================================================== 
+   V46.14 · INTERACTION REVEAL / FOCUS CONTINUITY
+   New content must appear where the user's interaction leads. These margins
+   keep programmatic reveal targets clear of sticky bars without adding motion
+   or visual noise to the calm neumDesk interface.
+   ========================================================================== */
+#app .askbar-q-bub[data-grounded-question],
+#app .askbar-a-bub[data-grounded-turn]{scroll-margin-top:14px;}
+#app .research-hub .rv31-page,
+#app .research-hub .rv32-page,
+#app .research-hub .rv33-intelligence{scroll-margin-top:56px;}
+#app .nrd-drawer:focus:not(:focus-visible),
+#app .profile-drawer:focus:not(:focus-visible),
+#app .rot-detail-sheet:focus:not(:focus-visible){outline:none;}

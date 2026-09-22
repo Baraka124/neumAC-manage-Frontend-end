@@ -86,6 +86,64 @@ document.addEventListener('DOMContentLoaded', () => {
       return 'unknown'
     }
 
+
+    // ============ V46.14 · INTERACTION REVEAL / FOCUS CONTRACT ============
+    // When a click or command reveals a new surface, the viewport must follow it.
+    // We deliberately wait for two paint frames: Vue may have committed the state
+    // while layout is still settling (sticky headers, drawers, async result cards).
+    const uiAfterPaint = (fn) => {
+      Vue.nextTick(() => {
+        const run = () => { try { fn() } catch (e) { console.warn('[neumDesk] reveal/focus failed:', e) } }
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(run))
+        else setTimeout(run, 0)
+      })
+    }
+    const uiFocusWithoutScroll = (el) => {
+      if (!el || typeof el.focus !== 'function') return
+      const hadTabIndex = el.hasAttribute?.('tabindex')
+      if (!hadTabIndex) el.setAttribute?.('tabindex', '-1')
+      try { el.focus({ preventScroll: true }) } catch (_) { try { el.focus() } catch (_) {} }
+      if (!hadTabIndex) setTimeout(() => { try { el.removeAttribute('tabindex') } catch (_) {} }, 0)
+    }
+    const uiRevealElement = (target, opts = {}) => {
+      uiAfterPaint(() => {
+        const el = typeof target === 'string' ? document.querySelector(target) : target
+        if (!el) return
+        const container = typeof opts.container === 'string' ? document.querySelector(opts.container) : opts.container
+        const behavior = opts.behavior || 'auto'
+        const offset = Number.isFinite(opts.offset) ? opts.offset : 12
+        if (container && container !== el && container.scrollHeight > container.clientHeight) {
+          const cr = container.getBoundingClientRect(), er = el.getBoundingClientRect()
+          const top = Math.max(0, container.scrollTop + (er.top - cr.top) - offset)
+          try { container.scrollTo({ top, left: 0, behavior }) } catch (_) { container.scrollTop = top }
+        } else {
+          try { el.scrollIntoView({ block: opts.block || 'start', inline: 'nearest', behavior }) } catch (_) { try { el.scrollIntoView() } catch (_) {} }
+        }
+        if (opts.focus) uiFocusWithoutScroll(opts.focusTarget || el)
+      })
+    }
+    const uiResetScroller = (scroller, opts = {}) => {
+      uiAfterPaint(() => {
+        const el = typeof scroller === 'string' ? document.querySelector(scroller) : scroller
+        if (!el) return
+        try { el.scrollTo({ top: 0, left: 0, behavior: opts.behavior || 'auto' }) } catch (_) { el.scrollTop = 0 }
+        const focusTarget = opts.focusTarget ? (typeof opts.focusTarget === 'string' ? el.querySelector(opts.focusTarget) || document.querySelector(opts.focusTarget) : opts.focusTarget) : null
+        if (focusTarget) uiFocusWithoutScroll(focusTarget)
+      })
+    }
+    const uiRevealModuleTop = (view, behavior = 'auto') => {
+      uiAfterPaint(() => {
+        const content = document.querySelector('.content-area')
+        let scroller = content
+        let root = content
+        if (view === 'research_hub') { root = document.querySelector('.research-hub'); scroller = root }
+        else if (view === 'news') { root = document.querySelector('.news-view'); scroller = root }
+        if (scroller) { try { scroller.scrollTo({ top: 0, left: 0, behavior }) } catch (_) { scroller.scrollTop = 0 } }
+        const focusTarget = root?.querySelector?.('h1, h2, [role="heading"]') || root
+        if (focusTarget) uiFocusWithoutScroll(focusTarget)
+      })
+    }
+
     const ROLES = {
       ADMIN: 'system_admin',
       HEAD: 'department_head',
@@ -3907,6 +3965,7 @@ document.addEventListener('DOMContentLoaded', () => {
           clinicalDuration: Utils.formatClinicalDuration(rotation.start_date, rotation.end_date)
         }
         rotationViewModal.show = true
+        uiRevealElement('.rot-detail-sheet', { focus: true, behavior: 'auto', block: 'start' })
       }
 
 
@@ -5899,11 +5958,17 @@ document.addEventListener('DOMContentLoaded', () => {
       // Reset position after page changes; otherwise a detail view can inherit a
       // deep scroll offset from the previous collection and appear "stuck".
       const resetResearchScroll = (behavior = 'auto') => {
-        Vue.nextTick(() => {
+        uiAfterPaint(() => {
           const scroller = document.querySelector('.content-area--fullheight > .research-hub') || document.querySelector('.research-hub')
           if (!scroller) return
           try { scroller.scrollTo({ top: 0, left: 0, behavior }) }
           catch (_) { scroller.scrollTop = 0 }
+          // The newly selected research page is rendered inside the same scroller.
+          // Focus it after layout settles so keyboard/screen-reader position follows
+          // the record the user just opened instead of remaining on the old row.
+          const page = scroller.querySelector('.rv32-study-detail, .rv32-project-detail, .rv31-line-page, .rv32-collection, .rv33-intelligence, .rv31-overview')
+          const target = page?.querySelector('h1, h2, .rv32-context-bar, .rv31-line-context') || page
+          if (target) uiFocusWithoutScroll(target)
         })
       }
       const openResearchPage = (page = 'overview') => {
@@ -8838,9 +8903,16 @@ document.addEventListener('DOMContentLoaded', () => {
           newsReadingProgress.value = 0
           newsReaderCompact.value = false
           newsDrawer.show = true
-          Vue.nextTick(() => {
+          uiAfterPaint(() => {
+            const drawer = document.querySelector('.nrd-drawer')
             const scroller = document.querySelector('.nrd-v27-scroll')
-            if (scroller) scroller.scrollTop = 0
+            if (scroller) {
+              try { scroller.scrollTo({ top: 0, left: 0, behavior: 'auto' }) }
+              catch (_) { scroller.scrollTop = 0 }
+            }
+            // Reader content may be teleported/fixed over a deeply scrolled Library.
+            // Move focus into the reader so the interaction follows the record opened.
+            if (drawer) uiFocusWithoutScroll(drawer)
           })
         }
         const closeNewsDrawer = () => {
@@ -9140,12 +9212,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!lineId) return
           currentView.value = 'news'
           if (!newsOps.newsLoaded.value && !newsOps.newsLoading.value) newsOps.loadNews()
+          uiRevealModuleTop('news')
           Vue.nextTick(() => exploreNewsLine(lineId))
         }
         const openResearchLibraryRecord = (post) => {
           if (!post) return
           currentView.value = 'news'
           if (!newsOps.newsLoaded.value && !newsOps.newsLoading.value) newsOps.loadNews()
+          uiRevealModuleTop('news')
           Vue.nextTick(() => openNewsDrawer(post, null))
         }
 
@@ -9370,6 +9444,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const viewStaffDetails = async (staff) => {
           if (!staff || !staff.id) { console.warn('viewStaffDetails: staff object is undefined or missing id'); return; }
           staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'overview'; staffOps.staffProfileModal.show = true
+          uiRevealElement('.profile-drawer', { focus: true, behavior: 'auto', block: 'start' })
           // Instant local profile from refs — shown immediately with no loading state
           const quickProfile = researchOps.getStaffResearchQuick(staff.id)
           if (quickProfile) staffOps.staffProfileModal.researchProfile = quickProfile
@@ -9659,6 +9734,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // filters example: { department: deptId, category: 'external_resident' }
         const switchView = async (view, filters = {}) => {
           currentView.value = view; ui.mobileMenuOpen.value = false
+          // Cross-module navigation should land on the surface that was requested,
+          // not preserve an unrelated deep scroll position from the previous module.
+          uiRevealModuleTop(view)
           // Apply pre-filters if provided (cross-view navigation)
           if (filters.department) {
             if (staffFilters && staffFilters.department !== undefined) staffFilters.department = filters.department
@@ -13664,6 +13742,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'issues', priority: 40, patterns: [/conflict/, /problem/, /\bissue/, /wrong/, /double.book/, /clash/, /overlap/, /concern/], anti: [/scan|risk report|this week|today/] },
         { intent: 'briefing', priority: 38, patterns: [/\bbrief/, /resumen/, /\bsummary\b/, /standup/, /stand-up/] },
         { intent: 'coverage_gaps', priority: 55, patterns: [/\bgap/, /understaff/, /uncovered/, /\bshort\b/, /sin cobertura/, /hueco/, /coverage gap/] },
+        { intent: 'absence_scheduled', priority: 104, patterns: [/\b(scheduled|planned|booked|future)\s+(leave|absences?|holidays?|vacation)\b/i, /\b(leave|absences?|holidays?|vacation)\s+(schedule|scheduled|planned|booked|ahead)\b/i, /\bwho\s+(has|have).*\b(leave|absence|holiday|vacation)\b.*\b(scheduled|planned|booked)\b/i], anti: [/put|assign|record|cancel|right now|currently|today/] },
         { intent: 'absence_upcoming', priority: 100, patterns: [/who.?s? (out|away|off|on leave) (next|in|coming|soon|this)/i, /upcoming (leave|absences?|holidays?)/i, /(leave|absences?) (next|coming|ahead|upcoming)/i, /who (is|will be) (out|away|off) (next|soon)/i], anti: [/put|assign|record|right now|today/] },
         { intent: 'absence_by_person', priority: 100, patterns: [/how (much|many) (leave|days|absence|holiday|vacation) (has|did)\s+[a-zñáéíóú]/i, /[a-zñáéíóú]{3,}.?s?\s+(leave|absence|holiday|vacation) (record|history|days|total)/i, /(leave|absence) (for|of)\s+[a-zñáéíóú]{3,}/i], anti: [/put|assign|record|who|most|by type|by category|by reason/] },
         { intent: 'absence_fairness', priority: 100, patterns: [/who (has|took|takes) (the )?most (leave|days|holiday|vacation|absence)/i, /(leave|absence|holiday) (fairness|balance|distribution)/i, /(most|least) (leave|days off|holiday)/i], anti: [/put|assign|record/] },
@@ -13672,7 +13751,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { intent: 'absence_this_month', priority: 99, patterns: [/(leave|absences?|holidays?) this month/i, /this month.?s? (leave|absences?)/i, /(leave|absence) (calendar|count) (for )?(this )?month/i], anti: [/put|assign/] },
         { intent: 'absence_returning', priority: 100, patterns: [/who (is |'s )?(coming back|returning|back) (soon|this week|next week|from leave)/i, /returning (to duty|soon|this week)/i, /back (from leave|to work) (soon|this week)/i], anti: [/put|assign/] },
         { intent: 'absence_overlap', priority: 100, patterns: [/(when|which days?).*(many|multiple|several).*(out|away|on leave|absent)/i, /(thin|low) (cover|coverage|staffing) days?/i, /days? (when|where) (most|many) (are )?(out|away|absent)/i, /(overlap|clash).*(leave|absence)/i], anti: [/put|assign/] },
-        { intent: 'absent_now', priority: 34, patterns: [/absent/, /\bleave\b/, /\boff\b/, /vacation/, /baja/, /ausen/], anti: [/put|assign|record|upcoming|next|coming|most|by type|returning|coverage risk|this month/] },
+        { intent: 'absent_now', priority: 34, patterns: [/absent/, /\bleave\b/, /\boff\b/, /vacation/, /baja/, /ausen/], anti: [/put|assign|record|scheduled|planned|booked|future|upcoming|next|coming|most|by type|returning|coverage risk|this month/] },
         { intent: 'research_summary', priority: 90, patterns: [/(how|what).*(research|studies|trials).*(doing|going|status|overview|portfolio|summary)/i, /research (overview|summary|portfolio|snapshot|dashboard|health)/i, /(state|status) of (our )?research/i, /how.?s (our )?research/i], anti: [/put|assign|which line|line \d/] },
         { intent: 'research_activity', priority: 105, patterns: [/research active/i, /most.*(active|productive).*(research|academ)/i, /(who|which).*(research|academically).*(active|productive)/i, /most (published|active).*(researcher|investigator|staff|person)/i, /who (publishes|researches).*(most)/i, /research (leaders|productivity)/i], anti: [/put|assign/] },
         { intent: 'trials_recruiting', priority: 32, patterns: [/recruit/, /reclut/, /\btrial\b/, /\bstudy\b/, /studies/, /estudio/, /ensayo/], anti: [/research active|most active|productive|publishes most|research (leaders|productivity)/] },
@@ -13759,10 +13838,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarResolveFollowup = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
         const topicLeave = /(leave|absent|off|vacation|baja|ausen)/.test(q)
-        const topicCall = /(on-call|on call|oncall|guardia|schedule|rota)/.test(q)
+        const topicCall = /(on-call|on call|oncall|guardia|\bcall schedule\b|\bon-call schedule\b|\brota\b)/.test(q)
         const topicRot = /(rotation|supervis|rotación)/.test(q)
         const hasPronoun = /\b(she|he|her|him|they|them|same person|that person)\b|\b(también|tambien)\b/.test(q)
         const broadPersonScope = /\b(anyone|anybody|everyone|everybody|who|which staff|which people|all staff|alguien|todos|quien|quién)\b/.test(q)
+        const leaveScheduleScope = topicLeave && /\b(scheduled|planned|booked|future|upcoming|coming|next)\b/.test(q)
+        const leaveRange = topicLeave ? askBarParseRange(q) : null
         // Broad words explicitly widen person scope. Inherit the relevant date/window,
         // never the previous person's identity (e.g. "Anyone on leave that day?").
         if (topicLeave && broadPersonScope) {
@@ -13776,7 +13857,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const person = askBarResolveStaff(q)
           if (person) {
             askBar.context = { type: 'staff', id: person.id, name: person.full_name }
-            if (topicLeave) return { kind: 'staff_leave', id: person.id, name: person.full_name }
+            if (topicLeave) {
+              if (leaveScheduleScope) return { kind:'staff_leave_schedule', id:person.id, name:person.full_name, start:leaveRange?.start||null, end:leaveRange?.end||leaveRange?.start||null, label:leaveRange?.label||null }
+              if (leaveRange?.start) return { kind:'staff_leave_on_date', id:person.id, name:person.full_name, start:leaveRange.start, end:leaveRange.end||leaveRange.start, label:leaveRange.label||null }
+              return { kind: 'staff_leave', id: person.id, name: person.full_name }
+            }
             if (topicCall)  return { kind: 'staff_oncall', id: person.id, name: person.full_name }
             if (topicRot)   return { kind: 'staff_rotation', id: person.id, name: person.full_name }
           }
@@ -13806,12 +13891,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return { kind: 'staff_attr', id: askBar.context.id, name: askBar.context.name, attr }
           }
         }
-        // pronoun / short reference → use remembered context
+        // Pronouns and short domain fragments can use the current person reference.
+        // Explicit broad scope (who / anyone / everyone) never inherits a person.
         if (!askBar.context) return null
         const ctx = askBar.context
-        const refersToCtx = hasPronoun  // only true pronoun refs use remembered context
+        const shortTopicRef = !broadPersonScope && q.trim().split(/\s+/).length <= 5 && (topicLeave || topicCall || topicRot)
+        const refersToCtx = hasPronoun || shortTopicRef
         if (!refersToCtx || ctx.type !== 'staff') return null
-        if (topicLeave) return { kind: 'staff_leave', id: ctx.id, name: ctx.name }
+        if (topicLeave) {
+          if (leaveScheduleScope) return { kind:'staff_leave_schedule', id:ctx.id, name:ctx.name, start:leaveRange?.start||null, end:leaveRange?.end||leaveRange?.start||null, label:leaveRange?.label||null }
+          if (leaveRange?.start) return { kind:'staff_leave_on_date', id:ctx.id, name:ctx.name, start:leaveRange.start, end:leaveRange.end||leaveRange.start, label:leaveRange.label||null }
+          return { kind: 'staff_leave', id: ctx.id, name: ctx.name }
+        }
         if (topicCall)  return { kind: 'staff_oncall', id: ctx.id, name: ctx.name }
         if (topicRot)   return { kind: 'staff_rotation', id: ctx.id, name: ctx.name }
         return null
@@ -13831,6 +13922,7 @@ document.addEventListener('DOMContentLoaded', () => {
           coverage_gaps: 'Checking unit coverage…',
           absent_now: 'Checking current leave records…',
           absence_upcoming: 'Reviewing upcoming leave…',
+          absence_scheduled: 'Reviewing scheduled leave…',
           trials_recruiting: 'Reviewing recruiting trials…',
           trials_overview: 'Reading the clinical-trial portfolio…',
           research_lines: 'Reading the research portfolio…',
@@ -13853,7 +13945,9 @@ document.addEventListener('DOMContentLoaded', () => {
           staff_summary: 'Building the clinician view…',
           staff_attr: 'Checking the clinician record…',
           staff_roster: 'Reading the staff directory…',
-          staff_leave: 'Cross-checking the clinician with leave records…',
+          staff_leave: 'Checking current leave status…',
+          staff_leave_schedule: 'Reviewing this person’s scheduled leave…',
+          staff_leave_on_date: 'Checking this person’s leave for that date…',
           leave_on_date: 'Checking who has recorded leave on that date…',
           staff_oncall: 'Cross-checking the clinician with on-call…',
           staff_rotation: 'Cross-checking the clinician with rotations…',
@@ -13866,7 +13960,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarLoadingKindFor = (intent) => {
         if (/^(staff_summary|staff_attr|research_line_profile|trial_profile|project_profile|publication_profile|unit_profile|research_subject_context|research_record_context)$/.test(intent || '')) return 'profile'
-        if (/^(oncall_week|oncall_upcoming|absent_now|absence_upcoming|trials_recruiting|trials_overview|study_governance|innovation_attention|research_lines|publications|staff_roster|residents_board|units_board|rotations_active|rotations_upcoming)$/.test(intent || '')) return 'collection'
+        if (/^(oncall_week|oncall_upcoming|absent_now|absence_upcoming|absence_scheduled|trials_recruiting|trials_overview|study_governance|innovation_attention|research_lines|publications|staff_roster|residents_board|units_board|rotations_active|rotations_upcoming)$/.test(intent || '')) return 'collection'
         if (/^(issues|risk_scan|today_snapshot|this_week_ahead|dept_health|briefing|coverage_gaps|research_summary|workload_analysis|oncall_fairness|oncall_no_backup)$/.test(intent || '')) return 'insight'
         if (/^(record_leave|record_oncall|assign_rotation|draft_rota|return_leave|cancel_leave|remove_oncall|cancel_rotation|edit_rotation|edit_oncall|edit_leave|extend_rotation)$/.test(intent || '')) return 'proposal'
         return 'fact'
@@ -13917,7 +14011,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Which module each intent reads from — used to gate answers by access.
       const askBarIntentModule = {
         oncall_upcoming: 'oncall_schedule', rank_oncall: 'oncall_schedule', pis_oncall: 'oncall_schedule',
-        absent_now: 'staff_absence', absence_upcoming: 'staff_absence', absence_by_person: 'staff_absence', absence_fairness: 'staff_absence', absence_by_type: 'staff_absence', absence_coverage_risk: 'staff_absence', absence_this_month: 'staff_absence', absence_returning: 'staff_absence', absence_overlap: 'staff_absence', staff_leave: 'staff_absence', leave_on_date: 'staff_absence',
+        absent_now: 'staff_absence', absence_upcoming: 'staff_absence', absence_scheduled: 'staff_absence', absence_by_person: 'staff_absence', absence_fairness: 'staff_absence', absence_by_type: 'staff_absence', absence_coverage_risk: 'staff_absence', absence_this_month: 'staff_absence', absence_returning: 'staff_absence', absence_overlap: 'staff_absence', staff_leave: 'staff_absence', staff_leave_schedule:'staff_absence', staff_leave_on_date:'staff_absence', leave_on_date: 'staff_absence',
         staff_oncall: 'oncall_schedule', staff_rotation: 'resident_rotations',
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
         count_rotations_ending: 'resident_rotations', rotations_upcoming: 'resident_rotations', rotation_overdue: 'resident_rotations', supervisor_load: 'resident_rotations', resident_progress: 'resident_rotations', residents_free: 'resident_rotations', oncall_by_person: 'oncall_schedule', oncall_fairness: 'oncall_schedule', oncall_no_backup: 'oncall_schedule', oncall_week: 'oncall_schedule', oncall_swap: 'oncall_schedule',
@@ -13982,6 +14076,7 @@ document.addEventListener('DOMContentLoaded', () => {
           issues:          [['Reading the on-call schedule','on-call'], ['Cross-referencing leave records','leave'], ['Checking rotations & coverage','rotations'], ['Looking for conflicts','synthesis']],
           oncall_upcoming: [['Reading the on-call schedule','on-call'], ['Resolving physician names','staff']],
           absent_now:      [['Scanning leave records','leave'], ['Filtering to today','leave']],
+          absence_scheduled:[['Scanning leave records','leave'], ['Filtering to future scheduled periods','leave']],
           trials_recruiting:[['Reviewing trials','research'], ['Computing enrollment health','research']],
           publications:   [['Reading scholarly records','publications'], ['Applying publication filters','publications']],
           publication_profile:[['Resolving the publication','publications'], ['Connecting scholarly metadata','publications'], ['Checking related output','research']],
@@ -14197,7 +14292,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if(action) follow={kind:'research_record_context',id:ctx.id,action}
         }
         const publication=follow?.kind==='research_record_context'||intent==='publication_profile'||intent==='publications'
-        const allowed=/^(staff_summary|staff_attr|staff_oncall|staff_rotation|staff_leave|oncall_week|oncall_upcoming|absent_now|rotations_active|trials_recruiting|research_lines|trial_profile|project_profile|research_line_profile|publication_profile|publications)$/.test(intent||'')||/^(research_record_context|research_subject_context)$/.test(follow?.kind||'')
+        const allowed=/^(staff_summary|staff_attr|staff_oncall|staff_rotation|staff_leave|staff_leave_schedule|staff_leave_on_date|oncall_week|oncall_upcoming|absent_now|absence_scheduled|rotations_active|trials_recruiting|research_lines|trial_profile|project_profile|research_line_profile|publication_profile|publications)$/.test(intent||'')||/^(research_record_context|research_subject_context)$/.test(follow?.kind||'')
         const needs=publication?['Staff directory','Research programmes','Research Library']:['Staff directory','On-call schedule','Leave records','Rotations','Training units','Research programmes','Clinical studies','Innovation projects']
         const module=publication?'research_lines':(askBarIntentModule[intent]||'research_lines')
         let answer
@@ -14592,6 +14687,27 @@ document.addEventListener('DOMContentLoaded', () => {
               if (maybe && (maybe.kind === 'staff_attr' || maybe.kind === 'staff_summary' || maybe.kind === 'clarify_staff')) followup = maybe
             }
           }
+          // Explicitly named leave questions resolve the person before a high-priority
+          // department-wide schedule intent can claim the query (e.g. "Marina scheduled leave").
+          if (!followup && !intent && /(leave|absent|off|vacation|holiday)/.test(q) && !/\b(anyone|anybody|everyone|everybody|who|which staff|all staff)\b/.test(q)) {
+            const namedLeavePerson = askBarResolveStaff(q)
+            if (namedLeavePerson) {
+              const maybe = askBarResolveFollowup(asked)
+              if (maybe && /^(staff_leave|staff_leave_schedule|staff_leave_on_date)$/.test(maybe.kind || '')) followup = maybe
+            }
+          }
+          // Short status/schedule fragments inherit the current person reference before a generic
+          // collection intent can steal them. Analytics such as "leave fairness" do not.
+          if (!followup && !intent && askBar.context?.type === 'staff') {
+            const qq = q.trim().replace(/[?.!]+$/,'')
+            const broad = /\b(anyone|anybody|everyone|everybody|who|which staff|which people|all staff|alguien|todos|quien|quién)\b/.test(qq)
+            const shortDomain = /^(on leave|leave status|scheduled leave|planned leave|upcoming leave|future leave|absent|off today|on call|on-call|next on call|rotation status|current rotation|supervision status)$/.test(qq)
+            if (!broad && shortDomain) {
+              const maybe = askBarResolveFollowup(asked)
+              if (maybe && /^(staff_leave|staff_leave_schedule|staff_leave_on_date|staff_oncall|staff_rotation)$/.test(maybe.kind || '')) followup = maybe
+            }
+          }
+
           // 2. STRONG scored intent wins next — analytical intents (rank, compare,
           //    unsupervised, rotations_deep, etc.) must not be pre-empted by a
           //    greedy name grab. Only high-confidence routes qualify here.
@@ -15219,20 +15335,53 @@ document.addEventListener('DOMContentLoaded', () => {
           const evidence=out.slice(0,12).map(a=>({label:`${getStaffName(a.staff_member_id)} — ${_reasonLbl[a.absence_reason]||a.absence_reason||'leave'}`,detail:`${Utils.normalizeDate(a.start_date)} → ${Utils.normalizeDate(a.end_date)}`,source:'staff_absence_records'}))
           return { text:`${out.length} staff member${out.length===1?'':'s'} ${out.length===1?'has':'have'} recorded leave overlapping ${label}: ${out.slice(0,4).map(a=>getStaffName(a.staff_member_id)).join(', ')}${out.length>4?'…':''}.`, visual:{type:'absence',rows}, evidence, chips:[], actions:[{label:'Open leave view',view:'staff_absence',primary:true}], sources:['leave records'], followups:[], confidence:'high', reviewScope:`All staff · ${label}` }
         }
-        if (fu.kind === 'staff_leave') {
-          const leave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
-          // Check conflict with remembered date
-          const ctxDate = askBar.context?.date
-          if (leave) {
-            const range = `${Utils.formatDateShort(leave.start_date)}–${Utils.formatDateShort(leave.end_date)}`
-            let text = `Yes — ${fu.name} is on leave ${range}.`
-            if (ctxDate) {
-              const d = Utils.normalizeDate(ctxDate), s = Utils.normalizeDate(leave.start_date), e = Utils.normalizeDate(leave.end_date)
-              if (d >= s && d <= e) text += ` That overlaps the ${Utils.formatDateShort(ctxDate)} duty — a conflict you'll want to resolve.`
-            }
-            return { text, chips: [{ label: fu.name, id: fu.id }], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['leave records', 'on-call schedule'], followups: [{ label: 'Who could cover instead?', intent: 'oncall_upcoming' }] }
+        if (fu.kind === 'staff_leave' || fu.kind === 'staff_leave_schedule' || fu.kind === 'staff_leave_on_date') {
+          const todayIso = Utils.normalizeDate(new Date())
+          const allLeave = (absences.value || []).filter(a => String(a.staff_member_id) === String(fu.id) && !['returned_to_duty','cancelled'].includes(a.current_status) && a.start_date && a.end_date)
+            .sort((a,b)=>Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
+          const overlaps = (a,start,end=start) => Utils.normalizeDate(a.start_date) <= end && Utils.normalizeDate(a.end_date) >= start
+          const current = allLeave.filter(a => overlaps(a,todayIso,todayIso))
+          const upcoming = allLeave.filter(a => Utils.normalizeDate(a.start_date) > todayIso)
+          const fmtRange = a => `${Utils.formatDateShort(a.start_date)}–${Utils.formatDateShort(a.end_date)}`
+          const leaveLabel = a => String(a.absence_reason || a.absence_type || 'leave').replace(/_/g,' ')
+
+          if (fu.kind === 'staff_leave_on_date') {
+            const start = Utils.normalizeDate(fu.start), end = Utils.normalizeDate(fu.end || fu.start)
+            const hits = allLeave.filter(a => overlaps(a,start,end))
+            const label = fu.label || (start===end ? Utils.formatDateShort(start) : `${Utils.formatDateShort(start)}–${Utils.formatDateShort(end)}`)
+            if (!hits.length) return { text:`No — ${fu.name} has no recorded leave overlapping ${label}.`, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open leave',view:'staff_absence'}], sources:['leave records'], followups:[], reviewScope:`${fu.name} · ${label}` }
+            const items = hits.map(a=>({title:fmtRange(a),badge:leaveLabel(a),tone:'default',meta:a.current_status||''}))
+            return { text:`Yes — ${fu.name} has ${hits.length===1?'recorded leave':'leave records'} overlapping ${label}.`, visual:{type:'reslist',items}, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open leave',view:'staff_absence',primary:true}], sources:['leave records'], followups:[], reviewScope:`${fu.name} · ${label}` }
           }
-          return { text: `No — ${fu.name} has no active or upcoming leave on record.`, chips: [], actions: [], sources: ['leave records'], followups: [] }
+
+          if (fu.kind === 'staff_leave_schedule') {
+            const requestedStart = fu.start ? Utils.normalizeDate(fu.start) : null
+            const requestedEnd = fu.end ? Utils.normalizeDate(fu.end) : requestedStart
+            const horizonEnd = Utils.normalizeDate(new Date(Date.now()+90*864e5))
+            const scheduled = requestedStart
+              ? upcoming.filter(a => overlaps(a, requestedStart, requestedEnd || requestedStart))
+              : upcoming.filter(a => Utils.normalizeDate(a.start_date) <= horizonEnd)
+            const label = fu.label || (requestedStart ? (requestedStart===requestedEnd ? Utils.formatDateShort(requestedStart) : `${Utils.formatDateShort(requestedStart)}–${Utils.formatDateShort(requestedEnd)}`) : 'the next 90 days')
+            if (!scheduled.length) return { text:`${fu.name} has no scheduled leave ${requestedStart?'overlapping '+label:'in the next 90 days'}.`, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open leave',view:'staff_absence'}], sources:['leave records'], followups:[], reviewScope:`${fu.name} · scheduled leave` }
+            const items=scheduled.map(a=>({title:fmtRange(a),badge:leaveLabel(a),tone:'default',meta:a.current_status||'scheduled'}))
+            return { text:`${fu.name} has ${scheduled.length} scheduled leave period${scheduled.length===1?'':'s'} ${requestedStart?'overlapping '+label:'in the next 90 days'}.`, visual:{type:'reslist',items}, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open leave',view:'staff_absence',primary:true}], sources:['leave records'], followups:[], reviewScope:`${fu.name} · scheduled leave` }
+          }
+
+          if (current.length) {
+            const leave=current[0]
+            let text=`Yes — ${fu.name} is on leave today (${fmtRange(leave)}).`
+            const ctxDate = askBar.context?.date
+            if (ctxDate) {
+              const d=Utils.normalizeDate(ctxDate)
+              if (overlaps(leave,d,d) && d!==todayIso) text += ` It also overlaps ${Utils.formatDateShort(ctxDate)}.`
+            }
+            return { text, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open leave',view:'staff_absence',primary:true}], sources:['leave records'], followups: upcoming.length?[{label:'Scheduled leave',q:'scheduled leave'}]:[], reviewScope:`${fu.name} · current leave status` }
+          }
+          if (upcoming.length) {
+            const next=upcoming[0]
+            return { text:`No — ${fu.name} is not on leave today. Next scheduled leave: ${fmtRange(next)} (${leaveLabel(next)}).`, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open leave',view:'staff_absence',primary:true}], sources:['leave records'], followups:[{label:'Show scheduled leave',q:'scheduled leave'}], reviewScope:`${fu.name} · current leave status` }
+          }
+          return { text:`No — ${fu.name} is not on leave today and has no upcoming leave on record.`, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open leave',view:'staff_absence'}], sources:['leave records'], followups:[], reviewScope:`${fu.name} · current leave status` }
         }
         if (fu.kind === 'staff_oncall') {
           const shifts = (onCallSchedule.value || []).filter(s => (s.primary_physician_id === fu.id || s.backup_physician_id === fu.id) && Utils.normalizeDate(s.duty_date) >= today)
@@ -15266,15 +15415,23 @@ document.addEventListener('DOMContentLoaded', () => {
           const text = `${gaps.length} coverage gap${gaps.length===1?'':'s'} flagged: ` + gaps.slice(0,4).map(g => g.unitName).join(', ') + '. You may want to assign cover.'
           return { text, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }] }
         }
-        if (intent === 'absence_upcoming') {
+        if (intent === 'absence_upcoming' || intent === 'absence_scheduled') {
           const today = Utils.normalizeDate(new Date())
-          const end = Utils.normalizeDate(new Date(Date.now()+30*864e5))
-          const up = (absences.value||[]).filter(a => !['cancelled'].includes(a.current_status) && a.start_date && Utils.normalizeDate(a.start_date)>today && Utils.normalizeDate(a.start_date)<=end)
+          const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
+          const parsed = askBarParseRange(q)
+          const defaultEnd = Utils.normalizeDate(new Date(Date.now()+30*864e5))
+          const windowStart = parsed?.start || today
+          const windowEnd = parsed?.end || parsed?.start || defaultEnd
+          const overlapsWindow = a => { const s=Utils.normalizeDate(a.start_date), e=Utils.normalizeDate(a.end_date); return s<=windowEnd && e>=windowStart }
+          const up = (absences.value||[]).filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && a.start_date && a.end_date && Utils.normalizeDate(a.end_date)>=today && overlapsWindow(a))
+            .filter(a => intent !== 'absence_scheduled' || Utils.normalizeDate(a.start_date) > today)
             .sort((a,b)=>Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
-          if (!up.length) return { text: 'No planned leave in the next 30 days.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
+          const rangeLabel = parsed?.label || 'the next 30 days'
+          if (!up.length) return { text: intent==='absence_scheduled' ? `No scheduled leave is recorded for ${rangeLabel}.` : `No upcoming leave is recorded for ${rangeLabel}.`, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high', reviewScope:`Department leave · ${rangeLabel}` }
           const fmt=(d)=>Utils.formatDateShort(d)
-          const items = up.slice(0,10).map(a => ({ title: getStaffName(a.staff_member_id), badge: a.absence_reason||null, tone:'default', meta: `${fmt(a.start_date)}–${fmt(a.end_date)}` }))
-          return { text: `${up.length} upcoming leave period${up.length===1?'':'s'} (next 30 days):`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open leave', view: 'staff_absence', primary: true }], sources: ['leave records','staff'], followups: [], confidence: 'high' }
+          const items = up.slice(0,10).map(a => ({ title: getStaffName(a.staff_member_id), badge:a.absence_reason||null, tone:'default', meta:`${fmt(a.start_date)}–${fmt(a.end_date)}` }))
+          const noun = intent==='absence_scheduled' ? 'scheduled leave period' : 'upcoming leave period'
+          return { text: `${up.length} ${noun}${up.length===1?'':'s'} ${parsed?'overlap '+rangeLabel:'are recorded in '+rangeLabel}.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open leave',view:'staff_absence',primary:true}], sources:['leave records','staff'], followups:[], confidence:'high', reviewScope:`Department leave · ${rangeLabel}` }
         }
         if (intent === 'absence_by_person') {
           const person = askBarResolveStaff(askBar.lastAsked||askBar.query)
@@ -16746,20 +16903,34 @@ document.addEventListener('DOMContentLoaded', () => {
       // bottom-scrolling can land on the footer/follow-ups and make the new answer look
       // as though it never rendered behind the composer.
       const askBarRevealLatestTurn = (smooth = true) => {
-        Vue.nextTick(() => {
+        uiAfterPaint(() => {
           const c = document.querySelector('.askbar-conv')
           if (!c) return
-          const qs = c.querySelectorAll('.askbar-q-bub')
-          const q = qs.length ? qs[qs.length - 1] : null
-          if (!q) { askBarScrollToBottom(smooth); return }
-          const reveal = () => {
-            const top = Math.max(0, q.offsetTop - 10)
-            try { c.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' }) }
-            catch (e) { c.scrollTop = top }
-          }
-          reveal(); askBar.showLatest=false
+          const turns = c.querySelectorAll('[data-grounded-turn]')
+          const answer = turns.length ? turns[turns.length - 1] : null
+          if (!answer) { askBarScrollToBottom(smooth); return }
+          const turnId = answer.getAttribute('data-grounded-turn')
+          const question = turnId !== null ? c.querySelector(`[data-grounded-question="${turnId}"]`) : null
+          const target = question || answer
+          const cr = c.getBoundingClientRect(), tr = target.getBoundingClientRect()
+          const top = Math.max(0, c.scrollTop + (tr.top - cr.top) - 12)
+          try { c.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' }) }
+          catch (_) { c.scrollTop = top }
+          askBar.showLatest = false
         })
       }
+
+      // New Grounded work should become visible without forcing the user to hunt
+      // below their previous reading position. Loading follows the command first;
+      // when the answer arrives, the start of that exact turn replaces it in view.
+      watch(() => askBar.loading, (loading, wasLoading) => {
+        if (loading && !wasLoading && askBar.open && askBar.view === 'conversation') {
+          uiRevealElement('.askbar-working', { container: '.askbar-conv', behavior: 'smooth', offset: 14 })
+        }
+      })
+      watch(() => askBar.turns.length, (count, previous) => {
+        if (count > previous && askBar.open && askBar.view === 'conversation') askBarRevealLatestTurn(true)
+      })
 
       // Run a guided follow-up.
       // IMPORTANT: intent-based chips go back through the full resolver so action flows,

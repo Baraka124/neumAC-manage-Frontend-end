@@ -62,7 +62,8 @@ No backend `index.js` change is included.
 
 ## Validation status
 
-- Automated historical regression: **274 checks passed across V43.1 → V46.14**.
+- Automated historical regression: **281 checks passed across V43.1 → V46.14**.
+- **62 dedicated V46.14 checks** cover A→H, semantic/reporting hardening, Grounded presentation convergence and interaction reveal/focus continuity.
 - Dedicated V46.14 suite covers the original A→H contracts plus the R1→R7 hardening invariants.
 - JavaScript syntax validation covers the main application and Personal Activity runtime files.
 - **Still required before leaving V46.14:** deploy/authenticated browser review with real data, responsive interaction review, and print/PDF review. Findings from that validation remain V46.14 refinements.
@@ -99,3 +100,32 @@ Implemented in this same V46.14 release:
 
 This remains **V46.14**. Live authenticated-browser validation continues to be the release gate before moving to another module/version.
 
+
+## Interaction reveal & focus convergence (same V46.14)
+
+Authenticated use showed a cross-UI interaction defect: content could load correctly while the viewport remained at the previous scroll position. This pass adds one explicit interaction contract without redesigning the calm neumDesk visual system.
+
+- Grounded reveals the loading state, then aligns the **start of the newly completed turn** in the conversation scroller.
+- Grounded does not blindly scroll to the absolute bottom of a long answer.
+- Research programme/study/project navigation resets the Research-owned scroller and focuses the newly opened surface.
+- Research Library readers reset to the top and receive focus when opened, including publications/articles launched from Research.
+- Cross-module navigation clears stale destination scroll positions.
+- Staff profile and Rotation detail surfaces receive focus when explicitly opened.
+- Intentional return-position behavior remains intact when closing a reader back to the Library.
+
+This is still **V46.14**. The live-browser gate now includes viewport/focus continuity in addition to semantic correctness, response wrapping, responsive behavior and print/PDF review.
+
+
+## Leave temporal semantics convergence (same V46.14)
+
+Authenticated-browser review showed that `on leave`, `scheduled leave`, and future-date leave were collapsing into the same `absent now` answer. This refinement adds explicit temporal leave semantics without changing the calm Grounded presentation model.
+
+- `on leave` = current/today status; future leave is mentioned as future, never as current absence.
+- `scheduled leave` / `planned leave` = future scheduled periods.
+- named-person scheduled leave resolves the named person before department-wide routing.
+- short leave fragments use the current person reference when appropriate.
+- `who` / `anyone` / `everyone` explicitly widen person scope.
+- requested future ranges such as `next week` are honored exactly rather than replaced by a generic next-30-days query.
+- `absent_now` explicitly rejects scheduled/planned/future language.
+
+This remains **V46.14** and continues the authenticated-browser release gate.

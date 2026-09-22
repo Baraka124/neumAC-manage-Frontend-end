@@ -21,6 +21,10 @@ The central rule is:
 10. **Evidence is visible; audit depth is optional.** The source/evidence strip remains readable without forcing “Show details”; deeper method/provenance expansion stays secondary.
 11. **Resolved values, never user-text placeholders.** Date-dependent follow-ups render the resolved date/window, never the original question as a pseudo-date label.
 12. **Navigation never obscures content.** “Latest answer” is compact, conditional and anchored away from the answer body.
+13. **Viewport / focus continuity.** A user command that creates a new Grounded turn reveals the loading state and then the start of that exact answer. Rich answers are never appended off-screen while the reader remains stranded on an older turn.
+14. **Reveal start, not absolute bottom.** For long profiles, boards and proposals, Grounded aligns the new question/answer start in the conversation scroller instead of jumping to the footer or composer.
+15. **Temporal state is explicit.** Leave status today, leave on a requested date/window, scheduled/upcoming leave, and leave history are separate query modes. A future leave record must never be phrased as if the person is absent today.
+16. **Current person reference can resolve short status fragments.** After opening a person, `on leave` and `scheduled leave` apply to that person unless the user explicitly widens scope (`who`, `anyone`, `everyone`). Explicitly named people always override current reference.
 
 ## Architecture
 
@@ -402,3 +406,17 @@ V46.14 deliberately now has a deterministic Personal Activity READ capability bu
 
 **Product integration rule:** Personal Activity can be entered from Staff, Grounded or direct workspace actions, but every path must converge on the same snapshot builder and evidence contract.
 
+
+
+## V46.14 temporal leave semantics
+
+The authenticated-browser sequence exposed a semantic collapse between present absence and future scheduled leave. Grounded now treats leave time as a typed scope:
+
+```text
+CURRENT / TODAY        → is this person absent now? / who is absent today?
+SPECIFIC DATE/WINDOW   → leave overlapping Friday / next week
+SCHEDULED / UPCOMING   → future leave periods, not current absence
+HISTORY / AGGREGATE    → totals, fairness, monthly/history analysis
+```
+
+Person scope and time scope are resolved separately. A current reference may resolve a short fragment such as `scheduled leave`, but broad-person language widens person scope while keeping the requested time window.

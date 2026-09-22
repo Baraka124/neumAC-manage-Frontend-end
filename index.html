@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-grounded-presentation-convergence">
+    <link rel="stylesheet" href="style.css?v=46.14-interaction-focus-convergence">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -346,8 +346,8 @@
                     </div>
                 </div>
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
-                    <div v-if="turn.q" class="askbar-q-bub" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
-                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual, 'askbar-turn--context-event': !!turn.contextEvent }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','research_brief'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
+                    <div v-if="turn.q" class="askbar-q-bub" :data-grounded-question="ti" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
+                    <div class="askbar-a-bub" :data-grounded-turn="ti" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual, 'askbar-turn--context-event': !!turn.contextEvent }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','research_brief'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
                         <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
                             <div v-if="turn.contextEvent" class="askbar-context-event">
                                 <span>{{ (turn.contextMeta && turn.contextMeta.eyebrow) || 'Context loaded' }}</span>
@@ -12388,7 +12388,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-grounded-presentation-convergence"></script>
+    <script src="app.js?v=46.14-leave-temporal-semantics"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
