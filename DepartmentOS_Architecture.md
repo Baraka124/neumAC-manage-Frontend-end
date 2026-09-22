@@ -2,13 +2,29 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v2.6 · Implementation checkpoint: V46.14 Staff Phase 3.1 Profile Integrity · Supersedes Vision v0.1
+**Status:** Architecture v2.7 · Implementation checkpoint: V46.14 Staff Phase 3.1 DOM Template Safety · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — current Staff directory: 23 real departmental people, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
 ---
 
 ## Current implementation ledger — V46.14
+
+## V46.14 Staff Phase 3.1 — Browser DOM template safety hotfix
+
+Authenticated deployment still failed with Vue production compiler error `compiler-30` after the earlier local template fix. A full browser-DOM audit found the root cause was broader than Staff: neumDesk mounts an **in-DOM Vue template**, so the browser parses `index.html` before Vue compiles it. Literal `<` comparison operators inside Vue directive attributes or interpolation expressions can therefore corrupt the DOM tree before Vue sees it.
+
+Release-wide correction:
+- escaped every literal `<` operator inside Vue-bound HTML attribute values as `&lt;`; the browser decodes it back to `<` for Vue while preserving HTML structure;
+- escaped every literal `<` inside `{{ ... }}` expressions for the same reason;
+- removed an accidental duplicate pair of external-contact email/phone rows in the Phase 3.1 Person profile;
+- added `test-v4614-template-dom.cjs` so raw `<` comparison operators cannot silently re-enter in-DOM template attributes/interpolations;
+- validated the parsed application template with Chromium: **191 `v-else` / `v-else-if` branches, 0 broken adjacencies** after browser parsing;
+- full historical regression remains green.
+
+**Root-cause invariant:** source-level HTML validity is not enough for an in-DOM Vue application. Release validation must protect the **browser-parsed template** that Vue actually receives.
+
+**Validation:** 369 checks pass across V43.1 → V46.14, including the new DOM-template safety suite. No backend, resident lifecycle, permission or sync behavior changed.
 
 
 ## V46.14 Staff Phase 3.1 — Profile integrity

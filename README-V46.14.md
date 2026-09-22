@@ -227,5 +227,7 @@ A direct inspection of the corrected Phase 3 package found integrity gaps that r
 
 No backend `index.js`, schema, resident lifecycle, permissions architecture or sync architecture is changed. Phase 4 remains blocked on live validation of the four representative Person profiles.
 
-**Staff Phase 3.1 validation:** **362 historical/regression checks passed across V43.1 → V46.14**, including 14 dedicated integrity checks. JavaScript syntax, HTML parse, local dependency audit, manifest verification and ZIP integrity are part of the freeze. Authenticated browser validation remains required.
+**Staff Phase 3.1 validation:** **369 checks passed across V43.1 → V46.14**, including 14 dedicated integrity checks and 7 DOM-template safety checks. JavaScript syntax, HTML parse, browser-DOM adjacency validation, local dependency audit, manifest verification and ZIP integrity are part of the freeze.
+
+**Phase 3.1 browser-DOM hotfix:** a second authenticated deployment still exposed Vue `compiler-30`. The root cause was release-wide: because neumDesk uses an in-DOM Vue template, literal `<` comparisons inside directive attributes or `{{ ... }}` expressions can be interpreted by the browser as markup before Vue compiles the template. All such comparisons are now HTML-safe (`&lt;` in source, decoded back to `<` in the DOM). Chromium validation confirms 191 conditional else branches and 0 broken adjacencies. `test-v4614-template-dom.cjs` prevents this class from returning.
 

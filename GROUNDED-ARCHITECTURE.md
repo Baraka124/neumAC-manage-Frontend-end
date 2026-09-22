@@ -444,3 +444,7 @@ Security note: `PERMISSIONS_ARCHITECTURE.md` is carried as the future authentica
 ## V46.14 Staff Phase 3 — resident-year consistency
 
 Grounded resident-year answers must use the same effective-year resolver as the Staff Person profile. Manual override remains first priority; system-calculated/start-date context follows; legacy calendar start years are normalised for display without mutating source records. Resident category/origin and rotation-supervisor relationships remain source-derived and are not inferred into new constraints.
+## V46.14 Staff Phase 3.1 DOM-template safety note
+
+The browser-DOM hotfix changes template source encoding only. Grounded intent, context, tools, permissions, traces and write/action semantics are unchanged. The release-wide validation rule now includes browser-safe in-DOM Vue expressions so UI template corruption cannot prevent Grounded from mounting.
+

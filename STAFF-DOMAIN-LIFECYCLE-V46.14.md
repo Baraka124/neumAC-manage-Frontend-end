@@ -155,5 +155,16 @@ Phase 3.1 preserves the Phase 3 resident taxonomy and fixes integrity gaps found
 - **Accessibility baseline.** The canonical Person surface is a dialog with labelled tabs, focus containment and Escape close behavior.
 
 No Phase 3.1 rule writes or normalises stored resident fields. The year precedence and display-only legacy normalization remain unchanged.
+## 11. Phase 3.1 browser-DOM template safety
 
+The second live Phase 3.1 deployment exposed a release-wide Vue compiler failure (`compiler-30`) even though JavaScript syntax and source-level conditional checks passed. The root cause was browser parsing of the in-DOM Vue template: literal `<` comparisons inside HTML attributes and interpolation expressions can alter the DOM before Vue receives it.
+
+Corrections:
+- all literal `<` comparisons in Vue-bound attributes are represented as `&lt;` in `index.html`;
+- all literal `<` comparisons inside interpolation expressions are represented as `&lt;`;
+- this is source encoding only: the browser decodes the operator back to `<` before Vue evaluates the expression;
+- Chromium parsing verifies 191 `v-else` / `v-else-if` branches with zero broken adjacency relationships;
+- a permanent DOM-template safety regression test now blocks raw `<` operators from these template contexts.
+
+No Staff domain, resident lifecycle, backend or stored-data semantics changed.
 

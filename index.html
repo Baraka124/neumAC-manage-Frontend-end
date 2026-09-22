@@ -853,7 +853,7 @@
                                     <div class="askbar-trust-main">
                                         <span class="askbar-trust-state">{{ turn.sources && turn.sources.length ? 'Source scope' : 'Source scope not established' }}</span>
                                         <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src">
-                                            <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ src }}<span v-if="si < turn.sources.length-1" class="askbar-source-sep"> · </span></span>
+                                            <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ src }}<span v-if="si &lt; turn.sources.length-1" class="askbar-source-sep"> · </span></span>
                                         </span>
                                     </div>
                                     <div class="askbar-trust-meta">
@@ -1056,10 +1056,10 @@
                 <div  class="nd-l311">
                     <div  class="nd-l310">
                         <div v-for="(s, i) in ONBOARDING_STEPS" :key="i"
-                             :style="'width:' + (i === onboarding.step ? '20' : '6') + 'px;height:6px;border-radius:100px;transition:all .2s;background:' + (i <= onboarding.step ? 'var(--nm-teal,#007A7A)' : 'var(--nm-border)')"></div>
+                             :style="'width:' + (i === onboarding.step ? '20' : '6') + 'px;height:6px;border-radius:100px;transition:all .2s;background:' + (i &lt;= onboarding.step ? 'var(--nm-teal,#007A7A)' : 'var(--nm-border)')"></div>
                     </div>
                     <button @click="nextOnboardingStep" class="btn btn-primary btn-sm nd-l003" >
-                        {{ onboarding.step < ONBOARDING_STEPS.length - 1 ? 'Next' : 'Done' }}
+                        {{ onboarding.step &lt; ONBOARDING_STEPS.length - 1 ? 'Next' : 'Done' }}
                     </button>
                 </div>
             </div>
@@ -2003,8 +2003,8 @@
                                         <button class="db-panel-link" @click="switchView('resident_rotations')">All rotations <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
                                     </div>
                                 </div>
-                                <template v-if="rotations.filter(r => (r.rotation_status==='active'||r.rotation_status==='scheduled') && getDaysRemaining(r.end_date||r.start_date) >= 0 && getDaysRemaining(r.end_date||r.start_date) <= 7).length > 0">
-                                    <div v-for="rot in rotations.filter(r => r.rotation_status==='active' && getDaysRemaining(r.end_date) >= 0 && getDaysRemaining(r.end_date) <= 7).slice(0,2)" :key="'end-'+rot.id" class="db-rot-row">
+                                <template v-if="rotations.filter(r => (r.rotation_status==='active'||r.rotation_status==='scheduled') && getDaysRemaining(r.end_date||r.start_date) >= 0 && getDaysRemaining(r.end_date||r.start_date) &lt;= 7).length > 0">
+                                    <div v-for="rot in rotations.filter(r => r.rotation_status==='active' && getDaysRemaining(r.end_date) >= 0 && getDaysRemaining(r.end_date) &lt;= 7).slice(0,2)" :key="'end-'+rot.id" class="db-rot-row">
                                         <div class="db-rot-av db-rot-av--end">{{ (getResidentName(rot.resident_id)||'?').replace(/^(Dr\.?|Dra\.?)\s*/i,'').trim()[0]?.toUpperCase() || '?' }}</div>
                                         <div class="db-rot-info">
                                             <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
@@ -2012,7 +2012,7 @@
                                         </div>
                                         <span class="db-rot-chip db-rot-chip--ending">ends {{ formatDateShort(rot.end_date) }}</span>
                                     </div>
-                                    <div v-for="rot in rotations.filter(r => r.rotation_status==='scheduled' && getDaysUntilStart(r.start_date) >= 0 && getDaysUntilStart(r.start_date) <= 7).slice(0,2)" :key="'start-'+rot.id" class="db-rot-row">
+                                    <div v-for="rot in rotations.filter(r => r.rotation_status==='scheduled' && getDaysUntilStart(r.start_date) >= 0 && getDaysUntilStart(r.start_date) &lt;= 7).slice(0,2)" :key="'start-'+rot.id" class="db-rot-row">
                                         <div class="db-rot-av db-rot-av--start">{{ (getResidentName(rot.resident_id)||'?').replace(/^(Dr\.?|Dra\.?)\s*/i,'').trim()[0]?.toUpperCase() || '?' }}</div>
                                         <div class="db-rot-info">
                                             <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
@@ -2559,7 +2559,7 @@
                                                 <div class="oncall-shift-date-row">
                                                     {{ formatDate(schedule.duty_date) }}
                                                     <span v-if="isToday(schedule.duty_date)" class="oc-today-tag">TODAY</span>
-                                                    <span v-if="schedule.end_time < schedule.start_time" class="oncall-shift-overnight">+1d</span>
+                                                    <span v-if="schedule.end_time &lt; schedule.start_time" class="oncall-shift-overnight">+1d</span>
                                                 </div>
                                                 <div class="oncall-shift-time-row">
                                                     <span class="oncall-shift-time">{{ (schedule.start_time||'').slice(0,5) }}</span>
@@ -2721,7 +2721,7 @@
                                     <div class="co-dist-num nd-l334 nd-v208" >{{ p.night }}N · {{ p.weekend }}W</div>
                                 </div>
                                 <span v-if="p.deviation >= 50" class="co-dist-badge co-dist-badge--high">+{{ p.deviation }}%</span>
-                                <span v-else-if="p.deviation <= -30" class="co-dist-badge co-dist-badge--low">{{ p.deviation }}%</span>
+                                <span v-else-if="p.deviation &lt;= -30" class="co-dist-badge co-dist-badge--low">{{ p.deviation }}%</span>
                             </div>
                         </div>
 
@@ -2851,7 +2851,7 @@
                                     </thead>
                                     <tbody>
                                         <tr v-for="row in calloutDistribution.slice(0,12)" :key="row.id" class="staff-table-row"
-                                                :class="{ 'oc-summary-row--high': row.deviation > 40, 'oc-summary-row--low': row.deviation < -30 && row.total > 0 }">
+                                                :class="{ 'oc-summary-row--high': row.deviation > 40, 'oc-summary-row--low': row.deviation &lt; -30 && row.total > 0 }">
                                             <td :title="row.name || ''">
                                                 <div class="staff-name-cell">
                                                     <div class="staff-table-av staff-table-av--attending">
@@ -3924,8 +3924,8 @@
                             <div  class="nd-l259">
                                 <span  class="nd-v260">30-day staff availability</span>
                                 <span  class="nd-v010">
-                                    <span v-if="absCoverage30.filter(d=>d.pct < 0.8).length > 0"  class="nd-v259">
-                                        {{ absCoverage30.filter(d=>d.pct < 0.8).length }} days below 80%
+                                    <span v-if="absCoverage30.filter(d=>d.pct &lt; 0.8).length > 0"  class="nd-v259">
+                                        {{ absCoverage30.filter(d=>d.pct &lt; 0.8).length }} days below 80%
                                     </span>
                                     <span v-else  class="nd-v258">No days below 80%</span>
                                 </span>
@@ -4276,7 +4276,7 @@
 
                             <!-- Absences for this day -->
                             <div class="cov-absence-col">
-                                <template v-for="abs in absences.filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && day.date >= a.start_date && day.date <= (a.end_date || a.start_date))" :key="abs.id">
+                                <template v-for="abs in absences.filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && day.date >= a.start_date && day.date &lt;= (a.end_date || a.start_date))" :key="abs.id">
                                     <div class="cov-abs-chip" :class="abs.coverage_arranged ? 'cov-abs-chip--covered' : 'cov-abs-chip--uncovered'">
                                         <span class="cov-abs-name">{{ formatDrName(allStaffLookup.find(s=>s.id===abs.staff_member_id)?.full_name || '—') }}</span>
                                         <span class="cov-abs-reason">{{ (abs.absence_reason||'').replace(/_/g,' ') }}</span>
@@ -4285,7 +4285,7 @@
                                         </span>
                                     </div>
                                 </template>
-                                <div v-if="!absences.filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && day.date >= a.start_date && day.date <= (a.end_date || a.start_date)).length"  class="nd-v010">—</div>
+                                <div v-if="!absences.filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && day.date >= a.start_date && day.date &lt;= (a.end_date || a.start_date)).length"  class="nd-v010">—</div>
                             </div>
 
                         </div>
@@ -5830,7 +5830,7 @@
                         <header><div><span>Review queue</span><strong>Publication readiness</strong></div><small>Record completeness and publishing readiness are shown here. Formal reviewer approval is shown only when supported by backend data.</small></header>
                         <div class="news-v29-review-path" aria-label="Publication lifecycle"><span>Draft</span><i></i><span>Ready for review</span><i></i><span>Publication check</span><i></i><span>Published</span></div>
                         <article v-for="post in newsReviewQueue" :key="post.id" @click="openNewsDrawer(post,null)">
-                            <div><span>{{ post.post_type }}</span><h3>{{ post.title || 'Untitled record' }}</h3><small v-if="newsReviewReadiness(post).missing.length">Missing: {{ newsReviewReadiness(post).missing.join(', ') }}</small><small v-else>Core record fields complete · ready for publication check</small><div class="news-v29-record-stage"><b>{{ newsReviewStage(post).label }}</b><span v-for="n in 4" :key="n" :class="{'is-done':n<=newsReviewStage(post).step}"></span></div></div>
+                            <div><span>{{ post.post_type }}</span><h3>{{ post.title || 'Untitled record' }}</h3><small v-if="newsReviewReadiness(post).missing.length">Missing: {{ newsReviewReadiness(post).missing.join(', ') }}</small><small v-else>Core record fields complete · ready for publication check</small><div class="news-v29-record-stage"><b>{{ newsReviewStage(post).label }}</b><span v-for="n in 4" :key="n" :class="{'is-done':n&lt;=newsReviewStage(post).step}"></span></div></div>
                             <div class="news-v28-readiness"><b>{{ newsReviewReadiness(post).score }}%</b><span><i :style="{width:newsReviewReadiness(post).score+'%'}"></i></span><em>{{ newsReviewReadiness(post).score===100 ? 'Open publication check →' : 'Complete record →' }}</em></div>
                         </article>
                         <div v-if="!newsReviewQueue.length" class="news-v28-review-empty">No draft records are waiting in the queue.</div>
@@ -5964,7 +5964,7 @@
                                         <span v-if="post.research_line_id">{{ newsLineName(post.research_line_id) }}</span>
                                         <span v-if="post.post_type !== 'update'">{{ formatNewsDate(post.published_at || post.created_at) }}</span>
                                         <span v-if="post.word_count && post.post_type==='article'">{{ Math.max(1, Math.ceil(post.word_count / 220)) }} min read</span>
-                                        <span v-if="post.expires_at && post.post_type !== 'publication'" class="knowledge-expiry" :class="{'is-soon': new Date(post.expires_at) < new Date(Date.now() + 14*86400000)}">Expires {{ formatDate(post.expires_at) }}</span>
+                                        <span v-if="post.expires_at && post.post_type !== 'publication'" class="knowledge-expiry" :class="{'is-soon': new Date(post.expires_at) &lt; new Date(Date.now() + 14*86400000)}">Expires {{ formatDate(post.expires_at) }}</span>
                                     </div>
                                     <div class="knowledge-v23-actions" @click.stop>
                                         <button class="knowledge-v23-icon-action news-v38-peek-action" @click="openNewsPeek(post,$event)" title="Quick preview" aria-label="Quick preview"><i class="fas fa-eye"></i></button>
@@ -6096,7 +6096,7 @@
                                             <header><div><span>Index terms</span><small>Up to 10 short keywords for finding, grouping and connecting this article.</small></div><b>{{ (newsModal.form.keywords || []).length }}/10</b></header>
                                             <div class="news-v42-keyword-row">
                                                 <button v-for="kw in (newsModal.form.keywords || [])" :key="kw" @click.prevent="removeNewsKeyword(kw)" :title="'Remove ' + kw"><span>{{ kw }}</span><i>×</i></button>
-                                                <label v-if="(newsModal.form.keywords || []).length < 10"><span>#</span><input v-model="newsModal.form._keywordInput" maxlength="28" placeholder="Add keyword" @keydown="newsKeywordKeydown" @blur="addNewsKeyword()"></label>
+                                                <label v-if="(newsModal.form.keywords || []).length &lt; 10"><span>#</span><input v-model="newsModal.form._keywordInput" maxlength="28" placeholder="Add keyword" @keydown="newsKeywordKeydown" @blur="addNewsKeyword()"></label>
                                             </div>
                                             <div v-if="newsKeywordSuggestions.length" class="news-v42-keyword-suggestions"><span>Suggested from the draft</span><button v-for="kw in newsKeywordSuggestions" :key="kw" @click.prevent="addNewsKeyword(kw)">+ {{ kw }}</button></div>
                                         </div>
@@ -6500,10 +6500,10 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
                     </header>
 
-                    <div v-if="(staffProfileModal.certificates||[]).some(c => c.expiry_date && (new Date(c.expiry_date) - new Date()) < 60*86400000)"
+                    <div v-if="(staffProfileModal.certificates||[]).some(c => c.expiry_date && (new Date(c.expiry_date) - new Date()) &lt; 60*86400000)"
                          class="pp2-alert" @click="staffProfileModal.activeTab = 'profile'">
                         <strong>Credential review</strong>
-                        <span>{{ (staffProfileModal.certificates||[]).filter(c => c.expiry_date && new Date(c.expiry_date) < new Date()).length ? 'Expired certificate on record.' : 'Certificate expiry approaching.' }}</span>
+                        <span>{{ (staffProfileModal.certificates||[]).filter(c => c.expiry_date && new Date(c.expiry_date) &lt; new Date()).length ? 'Expired certificate on record.' : 'Certificate expiry approaching.' }}</span>
                     </div>
 
                     <nav class="pp2-tabs" aria-label="Person profile sections" role="tablist">
@@ -6765,8 +6765,6 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <div v-if="staffProfileModal.staff.external_contact_name"><span>External contact</span><strong>{{ staffProfileModal.staff.external_contact_name }}</strong></div>
                                     <div v-if="staffProfileModal.staff.external_contact_email"><span>External contact email</span><strong>{{ staffProfileModal.staff.external_contact_email }}</strong></div>
                                     <div v-if="staffProfileModal.staff.external_contact_phone"><span>External contact phone</span><strong>{{ formatPhone(staffProfileModal.staff.external_contact_phone) }}</strong></div>
-                                    <div v-if="staffProfileModal.staff.external_contact_email"><span>External contact email</span><strong>{{ staffProfileModal.staff.external_contact_email }}</strong></div>
-                                    <div v-if="staffProfileModal.staff.external_contact_phone"><span>External contact phone</span><strong>{{ formatPhone(staffProfileModal.staff.external_contact_phone) }}</strong></div>
                                 </div>
                             </section>
                             <section class="pp2-section">
@@ -6800,8 +6798,8 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div v-if="staffProfileModal.loadingCerts" class="pp2-empty">Loading certificates…</div>
                                 <div v-else-if="(staffProfileModal.certificates||[]).length" class="pp2-list">
                                     <article v-for="cert in staffProfileModal.certificates" :key="cert.id" class="pp2-list-row">
-                                        <div><strong>{{ cert.certificate_name }}</strong><small><span v-if="cert.issued_date">Issued {{ formatDate(cert.issued_date) }}</span><span v-if="cert.expiry_date"> · {{ new Date(cert.expiry_date) < new Date() ? 'Expired' : 'Expires' }} {{ formatDate(cert.expiry_date) }}</span></small></div>
-                                        <div class="pp2-row-meta"><em :class="cert.expiry_date && new Date(cert.expiry_date)<new Date() ? 'is-expired' : ''">{{ cert.expiry_date && new Date(cert.expiry_date)<new Date() ? 'Expired' : 'Recorded' }}</em></div>
+                                        <div><strong>{{ cert.certificate_name }}</strong><small><span v-if="cert.issued_date">Issued {{ formatDate(cert.issued_date) }}</span><span v-if="cert.expiry_date"> · {{ new Date(cert.expiry_date) &lt; new Date() ? 'Expired' : 'Expires' }} {{ formatDate(cert.expiry_date) }}</span></small></div>
+                                        <div class="pp2-row-meta"><em :class="cert.expiry_date && new Date(cert.expiry_date)&lt;new Date() ? 'is-expired' : ''">{{ cert.expiry_date && new Date(cert.expiry_date)&lt;new Date() ? 'Expired' : 'Recorded' }}</em></div>
                                     </article>
                                 </div>
                                 <div v-else class="pp2-empty">No certificates on record.</div>
@@ -7523,7 +7521,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div class="cert-list-inline">
                                     <template v-if="medicalStaffModal._certs && medicalStaffModal._certs.length > 0">
                                         <div v-for="cert in medicalStaffModal._certs" :key="cert.id" class="cert-row-inline">
-                                            <span class="cert-row-dot" :class="cert.expiry_date && new Date(cert.expiry_date) < new Date() ? 'cert-dot--expired' : 'cert-dot--ok'"></span>
+                                            <span class="cert-row-dot" :class="cert.expiry_date && new Date(cert.expiry_date) &lt; new Date() ? 'cert-dot--expired' : 'cert-dot--ok'"></span>
                                             <span class="cert-row-name">{{ cert.certificate_name }}</span>
                                             <span class="cert-row-dates" v-if="cert.expiry_date">exp. {{ new Date(cert.expiry_date).toLocaleDateString('es-ES',{month:'short',year:'numeric'}) }}</span>
                                             <button type="button" class="cert-row-del" @click="deleteCertificate(cert)" aria-label="Remove certificate" title="Remove certificate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
@@ -7899,7 +7897,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     class="nd-l105 nd-v001">
                                 Add coverage areas in Settings → Coverage Areas
                             </small>
-                            <small v-else-if="filteredCoverageAreas.length < coverageAreas.filter(a=>a.is_active!==false).length"
+                            <small v-else-if="filteredCoverageAreas.length &lt; coverageAreas.filter(a=>a.is_active!==false).length"
                                     class="nd-l105 nd-v001">
                                 ℹ Some areas hidden — not active on weekends
                             </small>
@@ -8197,7 +8195,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                             </div>
                                         </div>
                                         <div class="uap-meta">
-                                            <span v-if="getUnitActiveRotationCount(u.id) < u.maximum_residents"  class="nd-v106">
+                                            <span v-if="getUnitActiveRotationCount(u.id) &lt; u.maximum_residents"  class="nd-v106">
                                                 {{ u.maximum_residents - getUnitActiveRotationCount(u.id) }} slot{{ u.maximum_residents - getUnitActiveRotationCount(u.id) !== 1 ? 's' : '' }} free
                                             </span>
                                             <span v-else  class="nd-v105">Full</span>
@@ -8243,7 +8241,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <strong>{{ rotationModal.availability.unit_name }} is at capacity</strong>
                                     — {{ rotationModal.availability.occupied }}/{{ rotationModal.availability.capacity }} slots filled during this period
                                     <div v-if="rotationModal.availability.overlapping?.length"  class="nd-l098 nd-v086">
-                                        <span v-for="(r,i) in rotationModal.availability.overlapping.slice(0,3)" :key="r.id">{{ r.resident_name }}{{ i < Math.min(rotationModal.availability.overlapping.length,3)-1 ? ', ' : '' }}</span>
+                                        <span v-for="(r,i) in rotationModal.availability.overlapping.slice(0,3)" :key="r.id">{{ r.resident_name }}{{ i &lt; Math.min(rotationModal.availability.overlapping.length,3)-1 ? ', ' : '' }}</span>
                                         <span v-if="rotationModal.availability.overlapping.length > 3"> +{{ rotationModal.availability.overlapping.length - 3 }} more</span>
                                     </div>
                                 </div>
@@ -8853,10 +8851,10 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                             <div v-for="u in getAbsenceUnitImpact(absenceModal.form.staff_member_id, absenceModal.form.start_date, absenceModal.form.end_date)" :key="u.unitId"
                                  class="abs-unit-impact-row"
-                                 :class="u.remaining <= 0 ? 'abs-unit-impact-row--critical' : u.remaining <= 1 ? 'abs-unit-impact-row--warn' : ''">
+                                 :class="u.remaining &lt;= 0 ? 'abs-unit-impact-row--critical' : u.remaining &lt;= 1 ? 'abs-unit-impact-row--warn' : ''">
                                 <span class="abs-unit-impact-name">{{ u.unitName }}</span>
                                 <span class="abs-unit-impact-badge">
-                                    {{ u.remaining <= 0 ? '⚠ No attending left' : u.remaining + ' of ' + u.total + ' attending' + (u.total !== 1 ? 's' : '') + ' present' }}
+                                    {{ u.remaining &lt;= 0 ? '⚠ No attending left' : u.remaining + ' of ' + u.total + ' attending' + (u.total !== 1 ? 's' : '') + ' present' }}
                                 </span>
                             </div>
                         </div>
@@ -9339,7 +9337,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
                                     {{ new Date(rotation.start_date + 'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}
                                     → {{ new Date(rotation.end_date + 'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) }}
-                                    <span v-if="getDaysUntilFree(rotation.end_date) <= 30 && getDaysUntilFree(rotation.end_date) > 0"
+                                    <span v-if="getDaysUntilFree(rotation.end_date) &lt;= 30 && getDaysUntilFree(rotation.end_date) > 0"
                                            class="nd-v074">&nbsp;· Free in {{ getDaysUntilFree(rotation.end_date) }}d</span>
                                 </div>
                                 <div class="urm-sub">
@@ -9360,7 +9358,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 </div>
                             </div>
                             <div class="urm-days" v-if="rotation.rotation_status === 'active'">
-                                <span class="urm-days-num" :class="{ 'urm-days-urgent': getDaysRemaining(rotation.end_date) <= 7 }">
+                                <span class="urm-days-num" :class="{ 'urm-days-urgent': getDaysRemaining(rotation.end_date) &lt;= 7 }">
                                     {{ getDaysRemaining(rotation.end_date) }}
                                 </span>
                                 <span class="urm-days-lbl">days left</span>
@@ -9749,7 +9747,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         <input type="checkbox" :value="l.id" v-model="clinicalTrialModal.form.additional_line_ids">
                                         <b>L{{ l.line_number }}</b><span>{{ l.research_line_name || l.name }}</span>
                                     </label>
-                                    <small v-if="researchLines.length <= 1">No other lines to choose from.</small>
+                                    <small v-if="researchLines.length &lt;= 1">No other lines to choose from.</small>
                                 </div>
                             </div>
                         </section>
@@ -9988,7 +9986,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <span  class="nd-l003 nd-v044">L{{ line.line_number }}</span>
                                     <span>{{ line.research_line_name || line.name }}</span>
                                 </label>
-                                <p v-if="researchLines.length <= 1"  class="nd-l043 nd-v043">No other lines to choose from.</p>
+                                <p v-if="researchLines.length &lt;= 1"  class="nd-l043 nd-v043">No other lines to choose from.</p>
                             </div>
                         </div>
                         <div class="form-group">
@@ -10804,7 +10802,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                              :style="{width: Math.min(100, (getUnitActiveRotationCount(unit.id)/unit.maximum_residents)*100) + '%'}"
                                              :class="{
                                                'dp-occ-fill--full':    getUnitActiveRotationCount(unit.id) >= unit.maximum_residents,
-                                               'dp-occ-fill--partial': getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) < unit.maximum_residents,
+                                               'dp-occ-fill--partial': getUnitActiveRotationCount(unit.id) > 0 && getUnitActiveRotationCount(unit.id) &lt; unit.maximum_residents,
                                                'dp-occ-fill--free':    getUnitActiveRotationCount(unit.id) === 0
                                              }">
                                         </div>
@@ -10840,7 +10838,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 </div>
                                 <div class="dp-rot-dates">
                                     <div class="dp-rot-period">{{ r.start_date }} → {{ r.end_date }}</div>
-                                    <div class="dp-rot-remaining" :class="rotDaysLeft(r) < 14 ? 'dp-rot-remaining--urgent' : ''">
+                                    <div class="dp-rot-remaining" :class="rotDaysLeft(r) &lt; 14 ? 'dp-rot-remaining--urgent' : ''">
                                         {{ rotDaysLeft(r) }}d left
                                     </div>
                                 </div>
@@ -11362,9 +11360,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                       </button>
                   </div>
                   <div class="db-drawer-body">
-                      <div v-if="rotations.filter(r=>r.rotation_status==='active'&&getDaysRemaining(r.end_date)>=0&&getDaysRemaining(r.end_date)<=7).length">
+                      <div v-if="rotations.filter(r=>r.rotation_status==='active'&&getDaysRemaining(r.end_date)>=0&&getDaysRemaining(r.end_date)&lt;=7).length">
                           <div class="db-drawer-section nd-v013" >Ending this week</div>
-                          <div v-for="rot in rotations.filter(r=>r.rotation_status==='active'&&getDaysRemaining(r.end_date)>=0&&getDaysRemaining(r.end_date)<=7)" :key="'de-'+rot.id" class="db-rot-row">
+                          <div v-for="rot in rotations.filter(r=>r.rotation_status==='active'&&getDaysRemaining(r.end_date)>=0&&getDaysRemaining(r.end_date)&lt;=7)" :key="'de-'+rot.id" class="db-rot-row">
                               <div :class="nmAv(getResidentName(rot.resident_id), 'medical_resident', 'sm')"  class="nd-l008">{{ nmAvI(getResidentName(rot.resident_id)) }}<span class="nm-av-dot nm-av-dot--resident"></span></div>
                               <div class="db-rot-info">
                                   <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
@@ -11373,9 +11371,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                               <span class="db-rot-chip db-rot-chip--ending">ends {{ formatDateShort(rot.end_date) }}</span>
                           </div>
                       </div>
-                      <div v-if="rotations.filter(r=>r.rotation_status==='scheduled'&&getDaysUntilStart(r.start_date)>=0&&getDaysUntilStart(r.start_date)<=7).length">
+                      <div v-if="rotations.filter(r=>r.rotation_status==='scheduled'&&getDaysUntilStart(r.start_date)>=0&&getDaysUntilStart(r.start_date)&lt;=7).length">
                           <div class="db-drawer-section nd-v012" >Starting this week</div>
-                          <div v-for="rot in rotations.filter(r=>r.rotation_status==='scheduled'&&getDaysUntilStart(r.start_date)>=0&&getDaysUntilStart(r.start_date)<=7)" :key="'ds-'+rot.id" class="db-rot-row">
+                          <div v-for="rot in rotations.filter(r=>r.rotation_status==='scheduled'&&getDaysUntilStart(r.start_date)>=0&&getDaysUntilStart(r.start_date)&lt;=7)" :key="'ds-'+rot.id" class="db-rot-row">
                               <div :class="nmAv(getResidentName(rot.resident_id), 'medical_resident', 'sm')"  class="nd-l008">{{ nmAvI(getResidentName(rot.resident_id)) }}<span class="nm-av-dot nm-av-dot--attending"></span></div>
                               <div class="db-rot-info">
                                   <span class="db-rot-name">{{ formatDrName(getResidentName(rot.resident_id)) }}</span>
@@ -11573,7 +11571,7 @@ Use Section heading to structure longer clinical or research articles."></textar
               <div class="boc-cal-nav">
                 <button class="boc-cal-btn" @click="bulkOncall.calMonth > 0 ? bulkOncall.calMonth-- : (bulkOncall.calYear--, bulkOncall.calMonth=11)">‹</button>
                 <span class="boc-cal-label">{{ new Date(bulkOncall.calYear, bulkOncall.calMonth, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) }}</span>
-                <button class="boc-cal-btn" @click="bulkOncall.calMonth < 11 ? bulkOncall.calMonth++ : (bulkOncall.calYear++, bulkOncall.calMonth=0)">›</button>
+                <button class="boc-cal-btn" @click="bulkOncall.calMonth &lt; 11 ? bulkOncall.calMonth++ : (bulkOncall.calYear++, bulkOncall.calMonth=0)">›</button>
               </div>
 
               <!-- Day-of-week headers -->
