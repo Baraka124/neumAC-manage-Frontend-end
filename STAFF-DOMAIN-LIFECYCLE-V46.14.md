@@ -112,6 +112,9 @@ The redesigned UI may rename the user-facing action to **Remove from active staf
 
 ## 9. Phase 3 implementation — adaptive resident profile
 
+> **Vue template hotfix:** live browser validation found a Phase 3 `compiler-30` template adjacency error. Two new fallback branches were rewritten from `v-else` to explicit inverse `v-if` conditions. No lifecycle or resident-domain semantics changed.
+
+
 **Implemented in this checkpoint.** The canonical Person shell now adapts its resident presentation without creating a parallel resident data model.
 
 ### Internal resident
@@ -138,3 +141,19 @@ A legacy bare calendar year such as `2024` is interpreted for **display** as the
 
 ### Preservation rule
 Phase 3 is a rendering/adaptation layer. It does not add a new backend supervision constraint, does not create a second resident record, and does not change the registration/edit/deactivation lifecycle.
+## 10. Phase 3.1 implementation — profile integrity
+
+Phase 3.1 preserves the Phase 3 resident taxonomy and fixes integrity gaps found during direct package inspection.
+
+- **Unknown category remains unknown.** Missing `resident_category` displays `Resident · Category not recorded`; it is never treated as `department_internal`.
+- **Current ≠ next rotation.** The selected current (`active`/`extended`) or next (`scheduled`) rotation is labelled explicitly in host-unit, window and supervisor presentation.
+- **Host attending team is context.** Existing `unit_staff` links are displayed for the selected host unit but do not replace the recorded `resident_rotations.supervising_attending_id` or resident-management roles.
+- **Leave is de-duplicated temporally.** A leave starting today is current leave and is excluded from the upcoming list.
+- **External contact is complete.** Name, email and phone remain available when stored.
+- **Person-load isolation.** Profile-local async state is reset and guarded so one clinician's delayed response cannot leak into another clinician's profile.
+- **Research permission mapping.** Person-profile research reads depend on the actual research modules, not an `analytics` permission that is not part of the current backend permission list.
+- **Accessibility baseline.** The canonical Person surface is a dialog with labelled tabs, focus containment and Escape close behavior.
+
+No Phase 3.1 rule writes or normalises stored resident fields. The year precedence and display-only legacy normalization remain unchanged.
+
+

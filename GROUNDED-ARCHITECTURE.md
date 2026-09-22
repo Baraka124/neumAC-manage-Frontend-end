@@ -8,6 +8,16 @@ The central rule is:
 
 > Grounded is an intelligence layer over trustworthy operational modules. It must not compensate for broken or ambiguous modules.
 
+## V46.14 Staff Phase 3.1 Person-context integrity
+
+Staff Phase 3.1 does not add a new Grounded agent or write path. It tightens the Person object Grounded can inherit from Staff:
+
+- missing resident category remains unknown rather than being inferred as Internal;
+- current and next rotation contexts are separate temporal states;
+- host-unit attending links are contextual and do not replace the rotation's recorded formal supervisor;
+- Staff and Grounded continue to share the same effective resident-year resolver;
+- research context is exposed only when the user can read an actual research module.
+
 ## V46.14 convergence + presentation rules
 1. **Scope words override entity memory.** `Anyone`, `who`, `everyone` and equivalents widen the person scope. The relevant date/window may be inherited; the previous person may not.
 2. **Pinned context is not answer scope.** A pinned person only resolves ambiguous references; explicit names and broad-scope questions override it.

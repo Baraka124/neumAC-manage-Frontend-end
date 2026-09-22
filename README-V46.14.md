@@ -206,4 +206,26 @@ The Phase 2 canonical Person shell now adapts to the existing resident lifecycle
 
 Live authenticated validation should compare at least one Attending, Internal Resident, Rotating Resident and External Resident before Phase 4.
 
-**Staff Phase 3 validation:** **346 historical/regression checks passed across V43.1 → V46.14**, including 17 dedicated Phase 3 checks plus the preserved Staff Phase 1/2 suites. JavaScript syntax and HTML parse validation pass.
+**Staff Phase 3 validation:** **348 historical/regression checks passed across V43.1 → V46.14**, including 19 dedicated Phase 3 checks plus the preserved Staff Phase 1/2 suites. JavaScript syntax and HTML parse validation pass.
+
+**Phase 3 template hotfix:** authenticated browser validation exposed Vue production compiler error `compiler-30` in two newly introduced resident-profile fallback branches. The fallbacks now use explicit inverse `v-if` conditions rather than relying on `v-else` adjacency. No domain logic, resident lifecycle, backend API or stored data changed.
+
+## Staff Phase 3.1 — Profile Integrity (same V46.14)
+
+A direct inspection of the corrected Phase 3 package found integrity gaps that regression/string checks did not cover. Phase 3.1 fixes those gaps without starting Phase 4.
+
+- restored the known-good Vue 3.4.21 CDN runtime reference;
+- reset and token-guard all Person-profile async state to prevent cross-person stale data;
+- preserve unknown resident category as unknown;
+- distinguish current vs next rotation throughout the adaptive resident profile;
+- de-duplicate current vs upcoming leave;
+- preserve external-contact phone;
+- load host attending-team context from existing unit membership;
+- add future resident-supervision events to attending timelines;
+- map Staff Research to actual research permissions;
+- add dialog/tab/focus accessibility baseline.
+
+No backend `index.js`, schema, resident lifecycle, permissions architecture or sync architecture is changed. Phase 4 remains blocked on live validation of the four representative Person profiles.
+
+**Staff Phase 3.1 validation:** **362 historical/regression checks passed across V43.1 → V46.14**, including 14 dedicated integrity checks. JavaScript syntax, HTML parse, local dependency audit, manifest verification and ZIP integrity are part of the freeze. Authenticated browser validation remains required.
+

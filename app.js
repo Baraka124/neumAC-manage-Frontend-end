@@ -2188,7 +2188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         full_name: 'basic', staff_type: 'basic', professional_email: 'basic',
         department_id: 'basic', employment_status: 'basic',
         resident_category: 'basic', home_department_id: 'basic',
-        external_institution: 'basic', external_contact_name: 'basic', external_contact_email: 'basic',
+        external_institution: 'basic', external_contact_name: 'basic', external_contact_email: 'basic', external_contact_phone: 'basic',
         specialization: 'professional', training_year: 'professional',
         medical_license: 'professional', mobile_phone: 'professional',
         can_supervise_residents: 'roles', can_be_pi: 'roles', can_be_coi: 'roles',
@@ -9469,10 +9469,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!staffId) return []
           const today = Utils.normalizeDate(new Date())
           return absences.value
-            .filter(a => a.staff_member_id === staffId
-              && Utils.normalizeDate(a.start_date) >= today
-              && a.current_status !== 'cancelled'
-              && a.current_status !== 'completed')
+            .filter(a => String(a.staff_member_id) === String(staffId)
+              && Utils.normalizeDate(a.start_date) > today
+              && !['cancelled','returned_to_duty'].includes(a.current_status))
             .sort((a, b) => Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
         }
         // Returns active + scheduled rotations for a resident (used in profile Rotations tab)
@@ -9509,7 +9508,7 @@ document.addEventListener('DOMContentLoaded', () => {
             department_internal: 'internal',
             rotating_other_dept: 'rotating',
             external_resident: 'external'
-          })[staff.resident_category] || 'resident'
+          })[staff.resident_category] || 'unknown'
         }
 
         const getResidentTrainingContext = (staff) => {
@@ -9518,9 +9517,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const current = getCurrentRotationForStaff(staff.id)
           const next = !current ? getUpcomingRotations(staff.id)[0] || null : null
           const rotation = current || next
-          const hostUnit = rotation ? getTrainingUnitName(rotation.training_unit_id) : 'No active rotation'
+          const hostUnit = rotation ? getTrainingUnitName(rotation.training_unit_id) : 'No active or scheduled rotation'
           const supervisor = rotation?.supervising_attending_id ? getStaffName(rotation.supervising_attending_id) : 'Not assigned'
-          const window = rotation ? `${Utils.formatDateShort(rotation.start_date)} → ${Utils.formatDateShort(rotation.end_date)}` : 'No current rotation window'
+          const window = rotation ? `${Utils.formatDateShort(rotation.start_date)} → ${Utils.formatDateShort(rotation.end_date)}` : 'No active or scheduled rotation window'
           const homeDepartment = getDepartmentName(staff.home_department_id) || getRotationServiceName(staff.home_department_id) || staff.home_department || ''
           const ownDepartment = getDepartmentName(staff.department_id) || staff.primary_dept_name || 'Pneumology'
           const year = Utils.effectiveResidentYear(staff)
@@ -9528,7 +9527,12 @@ document.addEventListener('DOMContentLoaded', () => {
           let origin = ownDepartment
           let heading = 'Department residency programme'
           let summary = 'Longitudinal resident in the Pneumology training programme.'
-          if (variant === 'rotating') {
+          if (variant === 'unknown') {
+            originLabel = 'Department'
+            origin = ownDepartment
+            heading = 'Resident category not recorded'
+            summary = 'A resident record exists, but the resident category has not been recorded. neumDesk will not infer Internal, Rotating or External.'
+          } else if (variant === 'rotating') {
             originLabel = 'Home department'
             origin = homeDepartment || 'Not recorded'
             heading = 'Internal institutional rotation'
@@ -9539,9 +9543,14 @@ document.addEventListener('DOMContentLoaded', () => {
             heading = 'External visiting rotation'
             summary = 'Resident hosted temporarily in Pneumology from another institution.'
           }
+          const rotationState = current ? 'current' : (rotation ? 'next' : 'none')
+          const hostLabel = current ? 'Current host unit' : (rotation ? 'Next host unit' : 'Host unit')
+          const windowLabel = current ? 'Current rotation window' : (rotation ? 'Next rotation window' : 'Rotation window')
+          const supervisorLabel = current ? 'Recorded rotation supervisor' : (rotation ? 'Recorded next-rotation supervisor' : 'Recorded rotation supervisor')
+          const rotationRecordNote = current ? 'From the current rotation record' : (rotation ? 'From the next scheduled rotation record' : 'No active or scheduled rotation record')
           return {
             variant,
-            categoryLabel: `Resident · ${Utils.formatResidentCategorySimple(staff.resident_category)}`,
+            categoryLabel: variant === 'unknown' ? 'Resident · Category not recorded' : `Resident · ${Utils.formatResidentCategorySimple(staff.resident_category)}`,
             heading,
             summary,
             year,
@@ -9554,11 +9563,19 @@ document.addEventListener('DOMContentLoaded', () => {
             rotation,
             rotationStatus: rotation?.rotation_status || null,
             rotationWindow: window,
+            rotationState, hostLabel, windowLabel, supervisorLabel, rotationRecordNote,
             supervisor,
             managerNames: getResidentManagerNames(),
             isCurrent: !!current
           }
         }
+        const getResidentHostTeam = (staff) => {
+          const ctx = getResidentTrainingContext(staff)
+          const unitId = ctx?.rotation?.training_unit_id
+          if (!unitId) return []
+          return Array.isArray(unitStaffCache.value?.[unitId]) ? unitStaffCache.value[unitId] : []
+        }
+
         const getPersonUpcomingEvents = (staffId) => {
           if (!staffId) return []
           const today = Utils.normalizeDate(new Date())
@@ -9580,6 +9597,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (String(r.resident_id) === String(staffId) && d >= today && ['scheduled','active','extended'].includes(r.rotation_status)) {
               out.push({ key:`rotation:${r.id}`, kind:'rotation', date:d, title:r.rotation_status === 'active' ? 'Active rotation' : 'Rotation begins', detail:`${getTrainingUnitName(r.training_unit_id)} · ${getStaffName(r.supervising_attending_id)}` })
             }
+            if (String(r.supervising_attending_id) === String(staffId) && d >= today && ['scheduled','active','extended'].includes(r.rotation_status)) {
+              out.push({ key:`supervision:${r.id}`, kind:'supervision', date:d, title:r.rotation_status === 'active' ? 'Resident supervision active' : 'Resident supervision begins', detail:`${getStaffName(r.resident_id)} · ${getTrainingUnitName(r.training_unit_id)}` })
+            }
           })
           return out.sort((a,b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind))
         }
@@ -9591,56 +9611,95 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Load certificates into profile modal on demand
-        const loadStaffCertificates = async (staffId) => {
+        const loadStaffCertificates = async (staffId, loadToken = staffProfileLoadSeq) => {
           if (!staffId) return
-          staffOps.staffProfileModal.loadingCerts = true
-          staffOps.staffProfileModal.certificates = []
+          if (isActiveStaffProfileLoad(loadToken, staffId)) { staffOps.staffProfileModal.loadingCerts = true; staffOps.staffProfileModal.certificates = [] }
           try {
             const data = await API.request(`/api/medical-staff/${staffId}/certificates`)
-            staffOps.staffProfileModal.certificates = Array.isArray(data) ? data : []
-          } catch { staffOps.staffProfileModal.certificates = [] }
-          finally { staffOps.staffProfileModal.loadingCerts = false }
+            if (isActiveStaffProfileLoad(loadToken, staffId)) staffOps.staffProfileModal.certificates = Array.isArray(data) ? data : []
+          } catch { if (isActiveStaffProfileLoad(loadToken, staffId)) staffOps.staffProfileModal.certificates = [] }
+          finally { if (isActiveStaffProfileLoad(loadToken, staffId)) staffOps.staffProfileModal.loadingCerts = false }
         }
 
-        const loadStaffUnits = async (staffId) => {
+        const loadStaffUnits = async (staffId, loadToken = staffProfileLoadSeq) => {
           if (!staffId) return
-          staffOps.staffProfileModal.unitsLoading = true
-          staffOps.staffProfileModal.units = []
+          if (isActiveStaffProfileLoad(loadToken, staffId)) { staffOps.staffProfileModal.unitsLoading = true; staffOps.staffProfileModal.units = [] }
           try {
             const res = await API.request(`/api/staff/${staffId}/units`)
-            staffOps.staffProfileModal.units = Array.isArray(res?.data) ? res.data : []
+            if (isActiveStaffProfileLoad(loadToken, staffId)) staffOps.staffProfileModal.units = Array.isArray(res?.data) ? res.data : []
           } catch (e) {
-            staffOps.staffProfileModal.units = []
+            if (isActiveStaffProfileLoad(loadToken, staffId)) staffOps.staffProfileModal.units = []
             console.error('[neumDesk] loadStaffUnits failed:', e)
-          } finally { staffOps.staffProfileModal.unitsLoading = false }
+          } finally { if (isActiveStaffProfileLoad(loadToken, staffId)) staffOps.staffProfileModal.unitsLoading = false }
+        }
+
+        const canReadStaffResearch = () => ['clinical_trials','research_lines','innovation_projects'].some(m => hasPermission(m, 'read'))
+        let staffProfileLoadSeq = 0
+        const isActiveStaffProfileLoad = (token, staffId) => token === staffProfileLoadSeq && String(staffOps.staffProfileModal.staff?.id || '') === String(staffId || '')
+
+        const resetStaffProfileTransientState = () => {
+          const p = staffOps.staffProfileModal
+          p.researchProfile = null
+          p.supervisionData = null
+          p.leaveBalance = null
+          p.certificates = []
+          p.loadingResearch = false
+          p.loadingSupervision = false
+          p.loadingLeave = false
+          p.loadingCerts = false
+          p.units = []
+          p.unitsLoading = false
+          p.collapsed = {}
+        }
+
+        const trapStaffProfileFocus = (event) => {
+          if (event.key !== 'Tab') return
+          const root = event.currentTarget
+          if (!root) return
+          const items = [...root.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')].filter(el => el.offsetParent !== null)
+          if (!items.length) return
+          const first = items[0], last = items[items.length - 1]
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
         }
 
         const viewStaffDetails = async (staff) => {
           if (!staff || !staff.id) { console.warn('viewStaffDetails: staff object is undefined or missing id'); return; }
+          const profileLoadToken = ++staffProfileLoadSeq
+          resetStaffProfileTransientState()
           staffOps.staffProfileModal.staff = staff; staffOps.staffProfileModal.activeTab = 'overview'; staffOps.staffProfileModal.show = true
           uiRevealElement('.profile-drawer', { focus: true, behavior: 'auto', block: 'start' })
-          // Instant local profile from refs — shown immediately with no loading state
-          const quickProfile = researchOps.getStaffResearchQuick(staff.id)
+          // Instant local profile from refs — shown immediately with no loading state.
+          // Only surface research data when the user can read a real research module.
+          const quickProfile = canReadStaffResearch() ? researchOps.getStaffResearchQuick(staff.id) : null
           if (quickProfile) staffOps.staffProfileModal.researchProfile = quickProfile
           // Prefetch ALL tab data in parallel — no waiting for tab clicks
+          if (canReadStaffResearch()) staffOps.staffProfileModal.loadingResearch = true
           const prefetchAll = [
             // Certificates — previously only loaded on tab click
-            loadStaffCertificates(staff.id),
+            loadStaffCertificates(staff.id, profileLoadToken),
             // Clinical Unit membership — part of the canonical Person profile
-            loadStaffUnits(staff.id),
+            loadStaffUnits(staff.id, profileLoadToken),
             // Research profile
-            hasPermission('analytics', 'read') ? analyticsOps.loadStaffResearchProfile(staffOps.staffProfileModal, staff.id) : Promise.resolve(),
+            canReadStaffResearch() ? API.getStaffResearchProfile(staff.id)
+              .then(data => { if (isActiveStaffProfileLoad(profileLoadToken, staff.id)) staffOps.staffProfileModal.researchProfile = data })
+              .catch(() => { if (isActiveStaffProfileLoad(profileLoadToken, staff.id) && !quickProfile) staffOps.staffProfileModal.researchProfile = null })
+              .finally(() => { if (isActiveStaffProfileLoad(profileLoadToken, staff.id)) staffOps.staffProfileModal.loadingResearch = false }) : Promise.resolve(),
             // Leave balance
-            API.getLeaveBalance(staff.id).then(b => { staffOps.staffProfileModal.leaveBalance = b }).catch(() => { staffOps.staffProfileModal.leaveBalance = null }),
+            API.getLeaveBalance(staff.id)
+              .then(b => { if (isActiveStaffProfileLoad(profileLoadToken, staff.id)) staffOps.staffProfileModal.leaveBalance = b })
+              .catch(() => { if (isActiveStaffProfileLoad(profileLoadToken, staff.id)) staffOps.staffProfileModal.leaveBalance = null }),
           ]
+          const residentCtx = getResidentTrainingContext(staff)
+          if (residentCtx?.rotation?.training_unit_id) prefetchAll.push(loadUnitStaff(residentCtx.rotation.training_unit_id))
           // Supervision (attending/supervisors only)
           if (staff.staff_type === 'attending_physician' || staffTypeMap.value[staff.staff_type]?.can_supervise) {
             staffOps.staffProfileModal.loadingSupervision = true
             prefetchAll.push(
               API.getSupervisedResidents(staff.id)
-                .then(d => { staffOps.staffProfileModal.supervisionData = d })
-                .catch(() => { staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, totalDaysSupervised: 0 } })
-                .finally(() => { staffOps.staffProfileModal.loadingSupervision = false })
+                .then(d => { if (isActiveStaffProfileLoad(profileLoadToken, staff.id)) staffOps.staffProfileModal.supervisionData = d })
+                .catch(() => { if (isActiveStaffProfileLoad(profileLoadToken, staff.id)) staffOps.staffProfileModal.supervisionData = { current: [], currentCount: 0, pastCount: 0, totalDaysSupervised: 0 } })
+                .finally(() => { if (isActiveStaffProfileLoad(profileLoadToken, staff.id)) staffOps.staffProfileModal.loadingSupervision = false })
             )
           }
           // Fire all in parallel — no sequential waiting
@@ -17647,7 +17706,7 @@ document.addEventListener('DOMContentLoaded', () => {
           calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart, getRotationProgress,
           getCurrentRotationForStaff, getCurrentAbsenceForStaff, isOnCallToday, getUpcomingOnCall,
           getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
-          getCurrentRotationSupervisor, getResidentManagers, getResidentManagerNames, getResidentProfileVariant, getResidentTrainingContext, getPersonUpcomingEvents, hasProfessionalCredentials,
+          getCurrentRotationSupervisor, getResidentManagers, getResidentManagerNames, getResidentProfileVariant, getResidentTrainingContext, getResidentHostTeam, getPersonUpcomingEvents, hasProfessionalCredentials, canReadStaffResearch, trapStaffProfileFocus,
           openGroundedForStaff,
           getRotationServiceName,
 

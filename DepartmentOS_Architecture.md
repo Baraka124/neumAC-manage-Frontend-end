@@ -2,7 +2,7 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v2.5 · Implementation checkpoint: V46.14 Staff Phase 3 · Supersedes Vision v0.1
+**Status:** Architecture v2.6 · Implementation checkpoint: V46.14 Staff Phase 3.1 Profile Integrity · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — current Staff directory: 23 real departmental people, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
@@ -10,6 +10,28 @@
 
 ## Current implementation ledger — V46.14
 
+
+## V46.14 Staff Phase 3.1 — Profile integrity
+
+Phase 3.1 is a correctness/stability pass over the adaptive Person profile. It does **not** introduce a new resident model or Phase 4 visual system.
+
+Implemented integrity corrections:
+- the Staff profile returns to the known-good Vue 3.4.21 production CDN runtime instead of referencing a missing local `vue.global.js`;
+- profile transient state is cleared before a different Person opens, and asynchronous profile loads are token-guarded so late results from Person A cannot populate Person B;
+- a resident without `resident_category` is rendered as **Resident · Category not recorded** and is never inferred to be an Internal Resident;
+- current and next rotations use distinct labels for host unit, date window and recorded supervisor;
+- leave beginning today is current leave only, not duplicated in the future-leave list;
+- external resident contact phone is preserved alongside name/email;
+- host attending-team context is loaded from existing `unit_staff` links and is explicitly contextual, not a formal supervision constraint;
+- attending future timelines include scheduled resident-supervision starts;
+- Staff Research visibility/loading uses actual research-module read permissions (`clinical_trials`, `research_lines`, `innovation_projects`) rather than the unrelated `analytics` pseudo-module;
+- the Person drawer now has dialog semantics, semantic tabs, focus trapping and the existing Escape-close lifecycle.
+
+**Preservation boundary:** no backend schema, resident registration, rotation write, deactivation, permission architecture or sync architecture is changed in Phase 3.1.
+
+**Phase 3.1 validation:** 362 historical/regression checks pass across V43.1 → V46.14, including 14 dedicated Phase 3.1 integrity checks plus preserved Staff Phase 1/2/3 suites.
+
+**Next Staff checkpoint:** live authenticated validation of one Attending, one Internal Resident, one Rotating Resident and one External Resident on this integrity baseline. Only after that should Phase 4 extract reusable icon/status/table/Person UI rules.
 
 ## V46.14 Staff Phase 3 — Adaptive resident profile
 
@@ -26,9 +48,11 @@ Implemented in Phase 3:
 
 **Preservation boundary:** Phase 3 changes presentation and derived display semantics only. Registration/edit, resident category validation, rotation writes, supervisor requirements, deactivation and type-transition behavior remain unchanged.
 
-**Phase 3 validation:** 346 historical/regression checks pass across V43.1 → V46.14, including 17 dedicated adaptive-resident checks plus preserved Phase 1/2 Staff suites.
+**Phase 3 validation:** 348 historical/regression checks pass across V43.1 → V46.14, including 19 dedicated adaptive-resident/template-safety checks plus preserved Phase 1/2 Staff suites.
 
-**Next Staff checkpoint:** Phase 4 — lifecycle/action review + visual/accessibility hardening, after live comparison of an attending, Internal resident, Rotating resident and External resident.
+**Authenticated-browser hotfix:** the first Phase 3 deployment exposed Vue compiler error `compiler-30` from fragile `v-else` adjacency in two new Person-profile fallback branches. Those branches now use explicit inverse `v-if` predicates. This is a presentation-template correction only; the Person model, adaptive resident semantics, lifecycle and backend remain unchanged.
+
+**Next Staff checkpoint:** Staff Phase 3.1 live validation first; Phase 4 begins only after the four-profile comparison is clean.
 
 ## V46.14 Staff Phase 2 — Canonical Person profile
 
@@ -76,7 +100,7 @@ This is the **living checkpoint** and is authoritative over older status stateme
 
 ### Canonical baseline
 - Baseline entering this release: **V46.13 · Personal Activity / Portfolio Intelligence**.
-- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence + Staff Phase 3**.
+- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence + Staff Phase 3.1 Profile Integrity**.
 
 ### Preserved implementation milestones
 - **V46.9 · Grounded Action Integrity** — On-call migrated to guarded semantic tools, pending action state, human confirmation and commit-time revalidation.

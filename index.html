@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-staff-phase3-adaptive-residents">
+    <link rel="stylesheet" href="style.css?v=46.14-staff-phase31-profile-integrity">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -6430,7 +6430,9 @@ Use Section heading to structure longer clinical or research articles."></textar
         <transition name="drawer-slide">
             <div v-if="staffProfileModal.show && staffProfileModal.staff"
                  class="profile-drawer person-profile-v2"
-                 :class="'status-accent--' + (staffProfileModal.staff?.employment_status || 'active')">
+                 :class="'status-accent--' + (staffProfileModal.staff?.employment_status || 'active')"
+                 role="dialog" aria-modal="true" aria-labelledby="pp2-profile-title" tabindex="-1"
+                 @keydown="trapStaffProfileFocus">
 
                 <!-- Canonical Person identity rail -->
                 <aside class="pp2-rail">
@@ -6465,9 +6467,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <div><small>Resident type</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).categoryLabel }}</strong></div>
                         <div><small>Training year</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).year || 'Not recorded' }}</strong></div>
                         <div v-if="getResidentProfileVariant(staffProfileModal.staff)!=='internal'"><small>{{ getResidentTrainingContext(staffProfileModal.staff).originLabel }}</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).origin }}</strong></div>
-                        <div><small>Host unit</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).hostUnit }}</strong></div>
+                        <div><small>{{ getResidentTrainingContext(staffProfileModal.staff).hostLabel }}</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).hostUnit }}</strong></div>
                     </div>
-                    <div class="pp2-context" v-else>
+                    <div class="pp2-context" v-if="!isResidentType(staffProfileModal.staff.staff_type) || !getResidentTrainingContext(staffProfileModal.staff)">
                         <div v-if="staffProfileModal.staff.specialization"><small>Specialty</small><strong>{{ formatSpecialization(staffProfileModal.staff.specialization) }}</strong></div>
                         <div v-if="(staffProfileModal.units || []).length"><small>Clinical units</small><strong>{{ staffProfileModal.units.length }} linked</strong></div>
                     </div>
@@ -6489,9 +6491,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                     <header class="pp2-head">
                         <div>
                             <span class="pp2-kicker">{{ isResidentType(staffProfileModal.staff.staff_type) ? 'Resident record' : 'Department person' }}</span>
-                            <h2>{{ staffProfileModal.staff.full_name }}</h2>
+                            <h2 id="pp2-profile-title">{{ staffProfileModal.staff.full_name }}</h2>
                             <p v-if="isResidentType(staffProfileModal.staff.staff_type) && getResidentTrainingContext(staffProfileModal.staff)">{{ getResidentTrainingContext(staffProfileModal.staff).summary }}</p>
-                            <p v-else>Current operational context, clinical relationships and professional record.</p>
+                            <p v-if="!isResidentType(staffProfileModal.staff.staff_type) || !getResidentTrainingContext(staffProfileModal.staff)">Current operational context, clinical relationships and professional record.</p>
                         </div>
                         <div class="pp2-head-actions">
                             <button v-if="hasPermission('medical_staff','update')" @click="editMedicalStaff(staffProfileModal.staff)" class="pp2-btn pp2-btn--quiet">Edit profile</button>
@@ -6504,17 +6506,17 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <span>{{ (staffProfileModal.certificates||[]).filter(c => c.expiry_date && new Date(c.expiry_date) < new Date()).length ? 'Expired certificate on record.' : 'Certificate expiry approaching.' }}</span>
                     </div>
 
-                    <nav class="pp2-tabs" aria-label="Person profile sections">
-                        <button :class="{active:staffProfileModal.activeTab==='overview'}" @click="staffProfileModal.activeTab='overview'">Overview</button>
-                        <button :class="{active:staffProfileModal.activeTab==='work'}" @click="staffProfileModal.activeTab='work'">Work &amp; training</button>
-                        <button :class="{active:staffProfileModal.activeTab==='schedule'}" @click="staffProfileModal.activeTab='schedule'">Schedule</button>
-                        <button v-if="hasPermission('analytics','read')" :class="{active:staffProfileModal.activeTab==='research'}" @click="staffProfileModal.activeTab='research'">Research</button>
-                        <button :class="{active:staffProfileModal.activeTab==='profile'}" @click="staffProfileModal.activeTab='profile'">Profile</button>
+                    <nav class="pp2-tabs" aria-label="Person profile sections" role="tablist">
+                        <button role="tab" :aria-selected="staffProfileModal.activeTab==='overview'" aria-controls="pp2-panel-overview" :class="{active:staffProfileModal.activeTab==='overview'}" @click="staffProfileModal.activeTab='overview'">Overview</button>
+                        <button role="tab" :aria-selected="staffProfileModal.activeTab==='work'" aria-controls="pp2-panel-work" :class="{active:staffProfileModal.activeTab==='work'}" @click="staffProfileModal.activeTab='work'">Work &amp; training</button>
+                        <button role="tab" :aria-selected="staffProfileModal.activeTab==='schedule'" aria-controls="pp2-panel-schedule" :class="{active:staffProfileModal.activeTab==='schedule'}" @click="staffProfileModal.activeTab='schedule'">Schedule</button>
+                        <button v-if="canReadStaffResearch()" role="tab" :aria-selected="staffProfileModal.activeTab==='research'" aria-controls="pp2-panel-research" :class="{active:staffProfileModal.activeTab==='research'}" @click="staffProfileModal.activeTab='research'">Research</button>
+                        <button role="tab" :aria-selected="staffProfileModal.activeTab==='profile'" aria-controls="pp2-panel-profile" :class="{active:staffProfileModal.activeTab==='profile'}" @click="staffProfileModal.activeTab='profile'">Profile</button>
                     </nav>
 
                     <div class="pp2-body">
                         <!-- OVERVIEW -->
-                        <div v-if="staffProfileModal.activeTab==='overview'" class="pp2-view">
+                        <div v-if="staffProfileModal.activeTab==='overview'" class="pp2-view" id="pp2-panel-overview" role="tabpanel">
                             <section v-if="isResidentType(staffProfileModal.staff.staff_type) && getResidentTrainingContext(staffProfileModal.staff)"
                                      class="pp2-section pp3-resident-overview"
                                      :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
@@ -6534,15 +6536,22 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     </div>
                                     <div class="pp3-route-arrow" aria-hidden="true">→</div>
                                     <div class="pp3-route-node is-host">
-                                        <span>Host / current rotation</span>
+                                        <span>{{ getResidentTrainingContext(staffProfileModal.staff).hostLabel }}</span>
                                         <strong>{{ getResidentTrainingContext(staffProfileModal.staff).hostUnit }}</strong>
                                         <small>{{ getResidentTrainingContext(staffProfileModal.staff).rotation ? getResidentTrainingContext(staffProfileModal.staff).rotationWindow : 'No active or scheduled host rotation' }}</small>
                                     </div>
                                 </div>
                                 <div class="pp3-fact-grid">
                                     <div><span>Training year</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff).year || 'Not recorded' }}</strong><small>{{ getResidentTrainingContext(staffProfileModal.staff).yearSource }}</small></div>
-                                    <div><span>Recorded rotation supervisor</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff).supervisor }}</strong><small>From the active / next rotation record</small></div>
+                                    <div><span>{{ getResidentTrainingContext(staffProfileModal.staff).supervisorLabel }}</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff).supervisor }}</strong><small>{{ getResidentTrainingContext(staffProfileModal.staff).rotationRecordNote }}</small></div>
                                     <div><span>Resident management</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff).managerNames }}</strong><small>Department role context</small></div>
+                                    <div v-if="getResidentTrainingContext(staffProfileModal.staff).rotation"><span>Host attending team</span>
+                                        <strong v-if="unitStaffLoading[getResidentTrainingContext(staffProfileModal.staff).rotation.training_unit_id]">Loading…</strong>
+                                        <strong v-else-if="unitStaffErrors[getResidentTrainingContext(staffProfileModal.staff).rotation.training_unit_id]">Unavailable</strong>
+                                        <strong v-else-if="getResidentHostTeam(staffProfileModal.staff).length">{{ getResidentHostTeam(staffProfileModal.staff).map(x=>x.staff?.full_name || x.full_name).filter(Boolean).join(' · ') }}</strong>
+                                        <strong v-else>No attending physicians linked</strong>
+                                        <small>Clinical Unit context · not a formal supervision rule</small>
+                                    </div>
                                 </div>
                             </section>
                             <section class="pp2-section">
@@ -6579,7 +6588,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         <strong>{{ staffProfileModal.supervisionData?.currentCount || 0 }} active</strong>
                                         <small>{{ staffProfileModal.supervisionData?.pastCount || 0 }} completed rotation{{ (staffProfileModal.supervisionData?.pastCount||0)===1?'':'s' }}</small>
                                     </article>
-                                    <article class="pp2-state" v-if="hasPermission('analytics','read')">
+                                    <article class="pp2-state" v-if="canReadStaffResearch()">
                                         <span>Research</span>
                                         <strong>{{ (staffProfileModal.researchProfile?.trials?.list || []).length + (staffProfileModal.researchProfile?.projects?.list || []).length }} connected</strong>
                                         <small v-if="staffProfileModal.researchProfile?.isCoordinator">Research coordinator</small>
@@ -6597,12 +6606,12 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         <div><strong>{{ event.title }}</strong><small>{{ event.detail }}</small></div>
                                     </div>
                                 </div>
-                                <div v-else class="pp2-empty">No future on-call, leave or resident rotation is recorded.</div>
+                                <div v-else class="pp2-empty">No future on-call, leave, rotation or supervision event is recorded.</div>
                             </section>
                         </div>
 
                         <!-- WORK & TRAINING -->
-                        <div v-if="staffProfileModal.activeTab==='work'" class="pp2-view">
+                        <div v-if="staffProfileModal.activeTab==='work'" class="pp2-view" id="pp2-panel-work" role="tabpanel">
                             <template v-if="isResidentType(staffProfileModal.staff.staff_type)">
                                 <section class="pp2-section pp3-training-context" :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
                                     <div class="pp2-section-head">
@@ -6617,10 +6626,16 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         <div v-if="staffProfileModal.staff.resident_category==='rotating_other_dept'"><span>Home department</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.homeDepartment || 'Not recorded' }}</strong></div>
                                         <div v-if="staffProfileModal.staff.resident_category==='external_resident'"><span>Home institution</span><strong>{{ staffProfileModal.staff.external_institution || 'Not recorded' }}</strong></div>
                                         <div v-if="staffProfileModal.staff.resident_category==='external_resident'"><span>Home department</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.homeDepartment || 'Not recorded' }}</strong></div>
-                                        <div><span>Host unit</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.hostUnit || 'No active rotation' }}</strong></div>
-                                        <div><span>Rotation window</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.rotationWindow || 'Not recorded' }}</strong></div>
-                                        <div><span>Recorded rotation supervisor</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.supervisor || 'Not assigned' }}</strong></div>
+                                        <div><span>{{ getResidentTrainingContext(staffProfileModal.staff)?.hostLabel || 'Host unit' }}</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.hostUnit || 'No active or scheduled rotation' }}</strong></div>
+                                        <div><span>{{ getResidentTrainingContext(staffProfileModal.staff)?.windowLabel || 'Rotation window' }}</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.rotationWindow || 'Not recorded' }}</strong></div>
+                                        <div><span>{{ getResidentTrainingContext(staffProfileModal.staff)?.supervisorLabel || 'Recorded rotation supervisor' }}</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.supervisor || 'Not assigned' }}</strong></div>
                                         <div><span>Resident management</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.managerNames || 'Not recorded' }}</strong></div>
+                                        <div v-if="getResidentTrainingContext(staffProfileModal.staff)?.rotation"><span>Host attending team</span>
+                                            <strong v-if="unitStaffLoading[getResidentTrainingContext(staffProfileModal.staff).rotation.training_unit_id]">Loading…</strong>
+                                            <strong v-else-if="unitStaffErrors[getResidentTrainingContext(staffProfileModal.staff).rotation.training_unit_id]">Unavailable</strong>
+                                            <strong v-else-if="getResidentHostTeam(staffProfileModal.staff).length">{{ getResidentHostTeam(staffProfileModal.staff).map(x=>x.staff?.full_name || x.full_name).filter(Boolean).join(' · ') }}</strong>
+                                            <strong v-else>No attending physicians linked</strong><small>Practical host-unit context</small>
+                                        </div>
                                         <div v-if="staffProfileModal.staff.resident_category==='external_resident' && staffProfileModal.staff.external_contact_name"><span>External contact</span><strong>{{ staffProfileModal.staff.external_contact_name }}</strong></div>
                                     </div>
                                     <p class="pp3-context-note">Host-unit context, resident-management roles and the recorded rotation supervisor are shown as separate relationships. neumDesk does not infer a stricter supervision rule than the records provide.</p>
@@ -6672,7 +6687,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                         <!-- SCHEDULE -->
-                        <div v-if="staffProfileModal.activeTab==='schedule'" class="pp2-view">
+                        <div v-if="staffProfileModal.activeTab==='schedule'" class="pp2-view" id="pp2-panel-schedule" role="tabpanel">
                             <section class="pp2-section">
                                 <div class="pp2-section-head"><div><small>ON-CALL</small><h3>Duty schedule</h3></div><div class="pp2-section-actions"><button class="pp2-text-btn" @click="downloadStaffSchedule && downloadStaffSchedule(staffProfileModal.staff)">Download .ics</button><button v-if="hasPermission('oncall_schedule','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddOnCallModal(staffProfileModal.staff)">Schedule duty</button></div></div>
                                 <div v-if="getUpcomingOnCall(staffProfileModal.staff.id).length" class="pp2-list">
@@ -6700,7 +6715,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                         <!-- RESEARCH -->
-                        <div v-if="staffProfileModal.activeTab==='research'" class="pp2-view">
+                        <div v-if="staffProfileModal.activeTab==='research'" class="pp2-view" id="pp2-panel-research" role="tabpanel">
                             <div v-if="staffProfileModal.loadingResearch" class="pp2-empty">Loading research relationships…</div>
                             <template v-else-if="staffProfileModal.researchProfile">
                                 <section class="pp2-section" v-if="staffProfileModal.researchProfile.isCoordinator || (staffProfileModal.researchProfile.allResearchLines||[]).length">
@@ -6737,7 +6752,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                         <!-- PROFILE -->
-                        <div v-if="staffProfileModal.activeTab==='profile'" class="pp2-view">
+                        <div v-if="staffProfileModal.activeTab==='profile'" class="pp2-view" id="pp2-panel-profile" role="tabpanel">
                             <section v-if="isResidentType(staffProfileModal.staff.staff_type)" class="pp2-section pp3-resident-record">
                                 <div class="pp2-section-head"><div><small>RESIDENT RECORD</small><h3>Programme &amp; origin data</h3></div></div>
                                 <div class="pp2-kv-grid">
@@ -6749,6 +6764,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <div v-if="staffProfileModal.staff.resident_category==='external_resident'"><span>Home institution</span><strong>{{ staffProfileModal.staff.external_institution || 'Not recorded' }}</strong></div>
                                     <div v-if="staffProfileModal.staff.external_contact_name"><span>External contact</span><strong>{{ staffProfileModal.staff.external_contact_name }}</strong></div>
                                     <div v-if="staffProfileModal.staff.external_contact_email"><span>External contact email</span><strong>{{ staffProfileModal.staff.external_contact_email }}</strong></div>
+                                    <div v-if="staffProfileModal.staff.external_contact_phone"><span>External contact phone</span><strong>{{ formatPhone(staffProfileModal.staff.external_contact_phone) }}</strong></div>
+                                    <div v-if="staffProfileModal.staff.external_contact_email"><span>External contact email</span><strong>{{ staffProfileModal.staff.external_contact_email }}</strong></div>
+                                    <div v-if="staffProfileModal.staff.external_contact_phone"><span>External contact phone</span><strong>{{ formatPhone(staffProfileModal.staff.external_contact_phone) }}</strong></div>
                                 </div>
                             </section>
                             <section class="pp2-section">
@@ -11812,7 +11830,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-staff-phase3-adaptive-residents"></script>
+    <script src="app.js?v=46.14-staff-phase31-profile-integrity"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */
