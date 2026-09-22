@@ -8,6 +8,13 @@ The central rule is:
 
 > Grounded is an intelligence layer over trustworthy operational modules. It must not compensate for broken or ambiguous modules.
 
+## V46.14 convergence rules
+1. **Scope words override entity memory.** `Anyone`, `who`, `everyone` and equivalents widen the person scope. The relevant date/window may be inherited; the previous person may not.
+2. **Pinned context is not answer scope.** A pinned person only resolves ambiguous references; explicit names and broad-scope questions override it.
+3. **Structured visuals needed to understand an answer are visible by default.** Deep audit/method details remain optional.
+4. **No unresolved interpolation.** Missing semantic slots must produce grouped/general results or clarification, never strings containing `undefined`.
+5. **Portfolio Intelligence is one structured truth.** Grounded consumes the same selected-period snapshot used by Overview, Timeline, Portfolio and Document.
+
 ## Architecture
 
 ```text

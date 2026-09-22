@@ -104,12 +104,12 @@
                     </span>
                     <div class="grounded-head-copy">
                         <div class="askbar-head-t">Grounded</div>
-                        <div class="askbar-head-s"><span class="askbar-head-dot"></span><span>{{ askBarContextCard ? askBarContextCard.label + ' in context' : (askBar.view === 'conversation' && askBar.turns.length ? 'Context retained' : 'Department context') }}</span><span class="askbar-head-sep">·</span><span>{{ askBar.refreshing ? "checking" : (askBar.refreshError ? "unverified" : "snapshot") }}</span></div>
+                        <div class="askbar-head-s"><span class="askbar-head-dot"></span><span>{{ askBarContextCard ? (askBarContextCard.pinned ? 'Pinned person' : askBarContextCard.label + ' in context') : (askBar.view === 'conversation' && askBar.turns.length ? 'Context retained' : 'Department context') }}</span><span class="askbar-head-sep">·</span><span>{{ askBar.refreshing ? "checking" : (askBar.refreshError ? "unverified" : "snapshot") }}</span></div>
                     </div>
                 </div>
                 <div class="grounded-head-tools">
                     <button class="askbar-newchat" @click="askBar.reviewWide = !askBar.reviewWide" :aria-pressed="!!askBar.reviewWide" title="Toggle expanded review"><span>{{ askBar.reviewWide ? 'Compact' : 'Expand' }}</span></button>
-                    <button v-if="hasPermission('medical_staff','read')" class="askbar-newchat" @click="activity45Open(askBar.context?.type === 'staff' ? askBar.context.id : '')" title="Open Personal Activity / Portfolio Intelligence"><span>Personal activity</span></button>
+                    <button v-if="hasPermission('medical_staff','read')" class="askbar-newchat" @click="activity45Open(askBar.subject?.type === 'staff' ? askBar.subject.id : (askBar.context?.type === 'staff' ? askBar.context.id : ''))" title="Open Personal Activity / Portfolio Intelligence"><span>Personal activity</span></button>
                     <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()" title="Start a new Grounded conversation">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>New</span>
                     </button>
@@ -142,7 +142,7 @@
                     <strong>{{ askBarContextCard.title }}</strong>
                     <small v-if="askBarContextCard.meta">{{ askBarContextCard.meta }}</small>
                 </div>
-                <button class="gr43-contextopen" @click="askBarOpenContext()">View record <span>→</span></button>
+                <div class="gr43-context-actions"><button class="gr43-contextopen" @click="askBarOpenContext()">View record <span>→</span></button><button v-if="askBarContextCard.pinned" class="gr43-contextclear" @click="askBarClearPinnedContext()" title="Unpin this person" aria-label="Unpin current person">×</button></div>
             </div>
 
             <!-- PROACTIVE DIGEST (scan) -->
@@ -325,8 +325,8 @@
             </div>
 
             <!-- CONVERSATION -->
-            <div v-if="askBar.view === 'conversation'" class="askbar-conv">
-                <button v-if="askBar.turns.length" class="gr45-latest" @click="askBarRevealLatestTurn(false)">Go to latest answer ↓</button>
+            <div v-if="askBar.view === 'conversation'" class="askbar-conv" @scroll.passive="askBarOnConversationScroll">
+                <button v-if="askBar.showLatest && askBar.turns.length" class="gr45-latest" @click="askBarRevealLatestTurn(false)">Go to latest answer ↓</button>
                 <div v-if="!askBar.turns.length" class="askbar-greeting">
                     <div class="askbar-greeting-t">{{ askBarContextCard ? 'What do you need from this ' + askBarContextCard.noun + '?' : 'What would you like to know?' }}</div>
                     <div class="askbar-greeting-s">{{ askBarContextCard ? 'Grounded is using this record plus the connected department records it can verify.' : 'Ask across live operations, people, rotations and research — Grounded connects the records for you.' }}</div>
@@ -355,7 +355,7 @@
                             </div>
                             <div v-else class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
                             <div v-if="turn.visual && !turn.isClarify" class="gr45-review-control">
-                                <div><span>Review scope</span><strong>{{ turn.reviewScope || 'Department records' }}</strong><small>{{ turn.snapshotAt ? 'Snapshot retrieved ' + turn.snapshotAt : 'Source refresh time not recorded for this answer' }}</small></div>
+                                <div><span>Review scope</span><strong>{{ turn.reviewScope || 'Department records' }}</strong><small>{{ turn.snapshotAt ? 'Retrieved ' + askBarFormatSnapshotTime(turn.snapshotAt) : 'Source refresh time not recorded for this answer' }}</small></div>
                                 <button @click="turn.reviewOpen = !turn.reviewOpen" :aria-expanded="!!turn.reviewOpen">{{ turn.reviewOpen ? 'Hide detail' : 'Review detail' }}</button>
                             </div>
 
@@ -647,9 +647,8 @@
                                         <div class="askbar-profile-role">{{ turn.visual.profile.static.role }}<span v-if="turn.visual.profile.static.specialty"> · {{ turn.visual.profile.static.specialty }}</span><span v-if="turn.visual.profile.static.residency"> · {{ turn.visual.profile.static.residency }}</span></div>
                                     </div>
                                     <div class="askbar-profile-top-actions">
-                                        <button class="askbar-watch-btn" :class="{ 'askbar-watch-btn--on': askBarIsWatched(turn.visual.profile.kind||'staff', turn.visual.profile.id) }" @click="askBarToggleWatch(turn.visual.profile)" :title="askBarIsWatched(turn.visual.profile.kind||'staff', turn.visual.profile.id) ? 'Stop following' : 'Keep in my view'">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" :fill="askBarIsWatched(turn.visual.profile.kind||'staff', turn.visual.profile.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.7"><path d="M12 2l3.1 6.3 6.9 1-5 4.8 1.2 6.9L12 17.8 5.8 21 7 14.1 2 9.3l6.9-1L12 2z"/></svg><span>{{ askBarIsWatched(turn.visual.profile.kind||'staff', turn.visual.profile.id) ? 'Following' : 'Follow' }}</span>
-                                        </button>
+                                        <button v-if="(turn.visual.profile.kind||'staff')==='staff'" class="askbar-profile-record-btn" @click="askBarOpenStaff(turn.visual.profile.id)">Open record</button>
+                                        <button v-if="(turn.visual.profile.kind||'staff')==='staff'" class="askbar-profile-record-btn" @click="turn.profileDeep=!turn.profileDeep">{{ turn.profileDeep ? 'Less detail' : 'Details' }}</button>
                                         <span class="askbar-profile-status" :class="'askbar-profile-status--'+turn.visual.profile.active.statusKind">{{ turn.visual.profile.active.status }}</span>
                                     </div>
                                 </div>
@@ -681,7 +680,7 @@
                                 </div>
 
                                 <!-- Staff-specific identity -->
-                                <div v-if="!(turn.visual.profile.overview && turn.visual.profile.overview.length)" class="askbar-profile-sec">
+                                <div v-if="!(turn.visual.profile.overview && turn.visual.profile.overview.length) && ((turn.visual.profile.kind||'staff')!=='staff' || turn.profileDeep)" class="askbar-profile-sec">
                                     <div class="askbar-profile-sechead">Contact & credentials</div>
                                     <div class="askbar-profile-grid">
                                         <div v-if="turn.visual.profile.static.email" class="askbar-profile-row"><span class="askbar-profile-k">Email</span><span>{{ turn.visual.profile.static.email }}</span></div>
@@ -12274,7 +12273,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <p v-if="activity45.busy" role="status" class="activity45-hint activity45-loading-note">Retrieving only sources available to your account. The last completed snapshot remains visible until refresh succeeds.</p><p v-if="activity45.dirty && activity45.model && !activity45.busy" class="activity45-stale-note"><strong>Scope changed.</strong> The workspace still shows the previous completed snapshot. Select <em>Apply changes</em> to refresh it.</p>
                         <p v-if="activity45.error" role="alert" class="activity45-error">{{ activity45.error }}</p>
 
-                        <div v-if="activity45.model" class="activity45-coverage-mini">
+                        <div v-if="activity45.model && activity45.summary?.degradedSources" class="activity45-coverage-mini">
                             <div class="activity45-coverage-top"><span>Retrieval evidence</span><strong>{{ activity45.summary?.sourceReady || 0 }}/{{ activity45.summary?.sourceTotal || 0 }}</strong></div>
                             <div class="activity45-coverage-bar"><i :style="{width:(activity45.summary?.retrievalCoverage || 0)+'%'}"></i></div>
                             <small>{{ activity45.summary?.degradedSources ? activity45.summary.degradedSources + ' included source(s) need review' : 'All included sources retrieved' }}</small>
@@ -12291,7 +12290,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <section v-if="activity45.view==='overview'" id="activity45-panel-overview" role="tabpanel" aria-labelledby="activity45-tab-overview" class="activity45-panel activity45-overview">
                                 <div class="activity45-intro-row">
                                     <div><span class="activity45-kicker">At a glance</span><h3>Recorded departmental activity & portfolio.</h3><p class="activity45-narrative">{{ activity45.summary?.narrative }}</p></div>
-                                    <div class="activity45-status" :class="activity45.summary?.status"><span>{{ activity45.summary?.status==='complete' ? 'Included sources retrieved' : 'Partial retrieval' }}</span><strong>{{ activity45.summary?.sourceReady || 0 }}/{{ activity45.summary?.sourceTotal || 0 }}</strong><small>included sources retrieved</small></div>
+
                                 </div>
 
                                 <div class="activity45-intelligence-band">
@@ -12305,7 +12304,6 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         <article><span>Research</span><strong>{{ activity45MetricValue('studies') }}</strong><small>linked studies</small></article>
                                         <article><span>Innovation</span><strong>{{ activity45MetricValue('projects') }}</strong><small>linked projects</small></article>
                                         <article><span>Programmes</span><strong>{{ activity45MetricValue('programmes') }}</strong><small>coordinator roles</small></article>
-                                        <article><span>Evidence</span><strong>{{ activity45.summary?.sourceReady || 0 }}/{{ activity45.summary?.sourceTotal || 0 }}</strong><small>sources retrieved</small></article>
                                     </div></section>
                                 </div>
 
@@ -12317,7 +12315,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     </section>
                                     <section>
                                         <div class="activity45-section-head"><div><span>Trust layer</span><h4>Evidence & interpretation</h4></div><button type="button" @click="activity45SetView('sources')">Review evidence →</button></div>
-                                        <div class="activity45-evidence-summary"><p><strong>{{ activity45.summary?.sourceReady || 0 }}</strong><span>sources retrieved</span></p><p><strong>{{ activity45.summary?.issues || 0 }}</strong><span>information caveats</span></p><p><strong>{{ activity45MetricValue('portfolioRelationships') }}</strong><span>portfolio relationships</span></p></div>
+                                        <div class="activity45-evidence-summary"><p><strong>{{ activity45.summary?.sourceReady || 0 }}</strong><span>sources retrieved</span></p><p><strong>{{ activity45.summary?.issues || 0 }}</strong><span>information caveats</span></p><p><strong>{{ activity45MetricValue('portfolioRelationships') }}</strong><span>professional portfolio relationships</span></p></div>
                                         <div v-if="activity45.model.issues.length" class="activity45-review-note"><strong>{{ activity45.model.issues.length }} item{{ activity45.model.issues.length===1?'':'s' }} need careful interpretation</strong><p>Incomplete dates and source conditions remain visible instead of being converted into assumptions.</p></div>
                                         <div v-else class="activity45-clean-note">No information caveats were generated from the included records.</div>
                                     </section>

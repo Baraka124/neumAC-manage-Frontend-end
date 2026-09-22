@@ -21,6 +21,7 @@
     return Number.isFinite(+d) && d.toISOString().slice(0,10)===s ? s : '';
   };
   const addDay = (s,n=1) => { const d=new Date(s+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+  const overlaps = (a,b,start,end) => !!(a&&b&&start&&end&&a<=end&&b>=start);
   const pretty = s => date(s) ? new Date(date(s)+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) : 'Not recorded';
   const nice = s => String(s || 'Not recorded').replace(/_/g,' ');
   const specs = [
@@ -122,16 +123,19 @@
           ? `Terminated early on ${pretty(explicitTermination)}; planned end ${pretty(plannedEnd)}`
           : `Marked terminated early${changed?` in the system on ${pretty(changed)}`:''}; an explicit actual termination date is not stored`;
         model.issues.push(`${unit}: ${timing}. The planned rotation span is not shown as completed activity.`);
-        if(same(r.resident_id,person.id)) model.residentAssignments.push({title:unit,role:'Resident',supervisor:staffName(r.supervising_attending_id),start:s,end:explicitTermination||plannedEnd,status,ref:String(r.id),timing,terminatedEarly:true,evidenceKind:'person'});
-        if(same(r.supervising_attending_id,person.id)) model.supervision.push({title:unit,role:'Formal resident supervisor',resident:staffName(r.resident_id),start:s,end:explicitTermination||plannedEnd,status,ref:String(r.id),timing,terminatedEarly:true,evidenceKind:'person'});
-        if(s&&explicitTermination) event(r,'rotation',unit,roles.join(' · '),s,explicitTermination,`${status} · explicit actual end recorded`);
+        const actualSpanKnown=!!(s&&explicitTermination);
+        const inSelectedPeriod=actualSpanKnown&&overlaps(s,explicitTermination,start,end);
+        if(inSelectedPeriod&&same(r.resident_id,person.id)) model.residentAssignments.push({title:unit,role:'Resident',supervisor:staffName(r.supervising_attending_id),start:s,end:explicitTermination,status,ref:String(r.id),timing,terminatedEarly:true,evidenceKind:'person'});
+        if(inSelectedPeriod&&same(r.supervising_attending_id,person.id)) model.supervision.push({title:unit,role:'Formal resident supervisor',resident:staffName(r.resident_id),start:s,end:explicitTermination,status,ref:String(r.id),timing,terminatedEarly:true,evidenceKind:'person'});
+        if(actualSpanKnown) event(r,'rotation',unit,roles.join(' · '),s,explicitTermination,`${status} · explicit actual end recorded`);
         return;
       }
       if(!plannedEnd) { model.issues.push(`${unit}: rotation end date missing; not placed on the calendar.`); return; }
       event(r,'rotation',unit,roles.join(' · '),s,plannedEnd,status);
       const timing=s&&plannedEnd?`${pretty(s)} — ${pretty(plannedEnd)}`:'Dates not established';
-      if(same(r.resident_id,person.id)) model.residentAssignments.push({title:unit,role:'Resident',supervisor:staffName(r.supervising_attending_id),start:s,end:plannedEnd,status,ref:String(r.id),timing,evidenceKind:'person'});
-      if(same(r.supervising_attending_id,person.id)) model.supervision.push({title:unit,role:'Formal resident supervisor',resident:staffName(r.resident_id),start:s,end:plannedEnd,status,ref:String(r.id),timing,evidenceKind:'person'});
+      const inSelectedPeriod=overlaps(s,plannedEnd,start,end);
+      if(inSelectedPeriod&&same(r.resident_id,person.id)) model.residentAssignments.push({title:unit,role:'Resident',supervisor:staffName(r.supervising_attending_id),start:s,end:plannedEnd,status,ref:String(r.id),timing,evidenceKind:'person'});
+      if(inSelectedPeriod&&same(r.supervising_attending_id,person.id)) model.supervision.push({title:unit,role:'Formal resident supervisor',resident:staffName(r.resident_id),start:s,end:plannedEnd,status,ref:String(r.id),timing,evidenceKind:'person'});
     });
     function portfolio(key,leadField,leadRole) {
       if(!selected[key]) return;
@@ -174,20 +178,25 @@
     const parts=[];
     const oncall=events.filter(x=>x.kind==='oncall').length;
     const rotations=events.filter(x=>x.kind==='rotation');
-    const resident=rotations.filter(x=>String(x.role||'').includes('Resident')).length;
-    const supervised=rotations.filter(x=>String(x.role||'').includes('Supervisor')).length;
+    // Use the same selected-period relationship collections that power the metrics,
+    // Portfolio and formal document. Narrative must never independently recount rotations.
+    const resident=(m?.residentAssignments||[]).length;
+    const supervised=(m?.supervision||[]).length;
     if(selected.oncall && sources.oncall?.state==='ready') parts.push(oncall?`${oncall} on-call dut${oncall===1?'y was':'ies were'} recorded in the selected period.`:'No on-call duty is recorded in the successfully retrieved schedule for the selected period.');
     if(selected.rotations && sources.rotations?.state==='ready') {
       if(rotations.length) {
         const bits=[]; if(resident) bits.push(`${resident} resident assignment${resident===1?'':'s'}`); if(supervised) bits.push(`${supervised} supervised rotation${supervised===1?'':'s'}`);
-        parts.push(`${bits.join(' and ')} overlap the selected period.`);
+        const subject=bits.join(' and '); parts.push(`${subject} ${resident+supervised===1?'overlaps':'overlap'} the selected period.`);
       } else parts.push('No resident or supervision rotation overlaps the selected period in the retrieved rotation records.');
     }
     const rel=[];
     if(selected.studies && sources.studies?.state==='ready') rel.push(`${m.studies.length} linked stud${m.studies.length===1?'y':'ies'}`);
     if(selected.projects && sources.projects?.state==='ready') rel.push(`${m.projects.length} innovation project${m.projects.length===1?'':'s'}`);
     if(selected.lines && sources.lines?.state==='ready') rel.push(`${m.lines.length} programme coordination role${m.lines.length===1?'':'s'}`);
-    if(rel.length) parts.push(`The portfolio view establishes ${rel.join(', ')} from explicit recorded relationships.`);
+    if(rel.length) {
+      const allZero=(m?.studies?.length||0)+(m?.projects?.length||0)+(m?.lines?.length||0)===0;
+      parts.push(allZero ? 'No research, innovation or programme coordination relationship is established by the successfully retrieved records.' : `The portfolio view establishes ${rel.join(', ')} from explicit recorded relationships.`);
+    }
     const degraded=(m?.sources||[]).filter(x=>x.state!=='ready');
     if(degraded.length) parts.push(`${degraded.length} included source${degraded.length===1?' was':'s were'} not fully available, so this snapshot must be read as partial.`);
     return parts.join(' ');
@@ -215,7 +224,7 @@
     const milestoneStates=[m?.selected?.studies?sourceBy.studies?.state:null,m?.selected?.projects?sourceBy.projects?.state:null].filter(Boolean);
     const milestoneKnown=milestoneStates.length&&milestoneStates.every(x=>x==='ready');
     const milestonePartial=milestoneStates.some(x=>x==='ready')&&milestoneStates.some(x=>x!=='ready');
-    const portfolioMetricSources=[['studies',m?.selected?.studies],['projects',m?.selected?.projects],['lines',m?.selected?.lines],['rotations',m?.selected?.rotations]].filter(([,sel])=>sel);
+    const portfolioMetricSources=[['studies',m?.selected?.studies],['projects',m?.selected?.projects],['lines',m?.selected?.lines]].filter(([,sel])=>sel);
     const portfolioStates=portfolioMetricSources.map(([k])=>sourceBy[k]?.state);
     const portfolioKnown=portfolioStates.length&&portfolioStates.every(x=>x==='ready');
     const portfolioPartial=portfolioStates.some(x=>x==='ready')&&portfolioStates.some(x=>x!=='ready');
@@ -231,7 +240,8 @@
       programmes:Array.isArray(m?.lines)?m.lines.length:0,
       milestones:events.filter(x=>x.kind==='study'||x.kind==='project').length,
       datedActivity:events.filter(x=>x.kind==='oncall'||x.kind==='rotation'||x.kind==='study'||x.kind==='project').length,
-      portfolioRelationships:(m?.studies?.length||0)+(m?.projects?.length||0)+(m?.lines?.length||0)+(m?.supervision?.length||0)+(m?.residentAssignments?.length||0),
+      professionalPortfolioRelationships:(m?.studies?.length||0)+(m?.projects?.length||0)+(m?.lines?.length||0),
+      trainingRelationships:(m?.supervision?.length||0)+(m?.residentAssignments?.length||0),
       sourceReady:ready,sourceTotal:sources.length,retrievalCoverage:sources.length?Math.round((ready/sources.length)*100):0,
       sourceCoverage:sources.length?Math.round((ready/sources.length)*100):0,
       degradedSources:degraded.length,issues:Array.isArray(m?.issues)?m.issues.length:0,status:degraded.length?'partial':'complete'
@@ -246,7 +256,8 @@
       projects:metric('projects',summary.projects,m?.selected?.projects),
       programmes:metric('lines',summary.programmes,m?.selected?.lines),
       milestones:{state:!milestoneSelected?'not_included':milestoneKnown?'known':milestonePartial?'partial':'unknown',value:milestoneKnown||milestonePartial?summary.milestones:null,sources:milestoneStates},
-      portfolioRelationships:{state:portfolioKnown?'known':portfolioPartial?'partial':portfolioStates.length?'unknown':'not_included',value:portfolioKnown||portfolioPartial?summary.portfolioRelationships:null}
+      portfolioRelationships:{state:portfolioKnown?'known':portfolioPartial?'partial':portfolioStates.length?'unknown':'not_included',value:portfolioKnown||portfolioPartial?summary.professionalPortfolioRelationships:null},
+      trainingRelationships:metric('rotations',summary.trainingRelationships,m?.selected?.rotations)
     };
     summary.narrative=narrative(m);
     return summary;

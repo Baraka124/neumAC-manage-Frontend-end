@@ -58,6 +58,16 @@ Consequences:
 - Grounded placement logic uses exact capacity + resident overlap as hard constraints, with attending links as context;
 - the user-facing shell now follows the Overview dashboard visual grammar.
 
+
+### V46.14 convergence hardening — Grounded × Portfolio Intelligence
+- Grounded broad-person language (anyone / who / everyone) widens person scope while retaining the relevant date instead of inheriting the previous person.
+- Pinned context and current answer scope are distinct concepts; pinned staff context is explicitly labelled and can be cleared.
+- Portfolio narrative, metrics, Timeline, Portfolio, Document and Grounded now derive rotation counts from the same selected-period relationship collections.
+- Professional portfolio relationship counts mean research + innovation + programme relationships only; time-bounded training/supervision relationships are reported separately.
+- Grounded collection/profile visuals open by default when they are necessary to understand the answer; audit details remain optional.
+- Generic unit-specialty questions never interpolate missing values such as `undefined`; unfiltered requests return grouped specialty results.
+- Staff profile cards use evidence-specific operational status (for example `No recorded absence today`) rather than the ambiguous label `Available`.
+
 ### Known debt
 1. Multi-unit rotation writes remain sequential because there is no atomic backend batch endpoint.
 2. Rotation edit/extend/cancel and leave return/edit/cancel remain legacy lifecycle writes.

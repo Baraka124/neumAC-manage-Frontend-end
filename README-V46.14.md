@@ -61,7 +61,11 @@ No backend `index.js` change is included.
 
 ## Validation status
 
-- Automated historical regression: **256 checks passed across V43.1 → V46.14**.
+- Automated historical regression: **267 checks passed across V43.1 → V46.14**.
 - Dedicated V46.14 suite covers the original A→H contracts plus the R1→R7 hardening invariants.
 - JavaScript syntax validation covers the main application and Personal Activity runtime files.
 - **Still required before leaving V46.14:** deploy/authenticated browser review with real data, responsive interaction review, and print/PDF review. Findings from that validation remain V46.14 refinements.
+
+
+## Joint convergence hardening (same V46.14)
+This refinement was driven by authenticated browser review of Grounded and Personal Activity together. It fixes broad-scope follow-ups, pinned-context semantics, specialty null handling, selected-period rotation consistency, professional relationship counting, profile status wording, visual-answer visibility, local retrieval timestamps and latest-answer behavior. The dedicated V46.14 suite now covers these convergence scenarios explicitly.

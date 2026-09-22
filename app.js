@@ -11500,7 +11500,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingStartedAt: 0,
         trace: [],         // checks used to explain the answer after it settles
         turns: [],         // conversation history: [{ q, text, chips, actions, sources, followups, confidence, asOf, streaming }]
-        context: null,     // remembered entity for follow-ups: { type:'staff', id, name, date }
+        context: null,     // remembered answer reference for pronouns/date follow-ups
+        showLatest: false,  // only shown when the reader has scrolled away from the newest answer
         pendingOncall: null, // V46.9 multi-turn on-call action state; session-only, never authoritative data
         pendingLeave: null,  // V46.10 multi-turn leave action state; session-only, never authoritative data
         pendingRotation: null, // V46.12 multi-turn resident-rotation action state; task-only
@@ -11869,13 +11870,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return null
       }
       const askBarContextCard = Vue.computed(() => {
-        const s = askBar.subject || askBar.context
+        const pinned = !!(askBar.subject && askBar.subject.id)
+        const s = pinned ? askBar.subject : askBar.context
         if (!s || !s.id) return null
         try {
           if (s.type === 'staff') {
             const x = (medicalStaff.value || []).find(v => String(v.id) === String(s.id))
             const bits = [x?.staff_type ? _toTitle(x.staff_type) : 'Staff', x?.specialization || x?.specialty].filter(Boolean)
-            return { type:'staff', noun:'person', label:'Department person', title:x?.full_name || s.name || 'Staff record', meta:bits.join(' · '), mark:(x?.full_name || s.name || 'S').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() }
+            return { type:'staff', noun:'person', label:pinned?'Pinned person':'Current reference', pinned, title:x?.full_name || s.name || 'Staff record', meta:bits.join(' · '), mark:(x?.full_name || s.name || 'S').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() }
           }
           if (s.type === 'research_record') {
             const x = (newsPosts.value || []).find(v => String(v.id) === String(s.id))
@@ -13760,6 +13762,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const topicCall = /(on-call|on call|oncall|guardia|schedule|rota)/.test(q)
         const topicRot = /(rotation|supervis|rotación)/.test(q)
         const hasPronoun = /\b(she|he|her|him|they|them|same person|that person)\b|\b(también|tambien)\b/.test(q)
+        const broadPersonScope = /\b(anyone|anybody|everyone|everybody|who|which staff|which people|all staff|alguien|todos|quien|quién)\b/.test(q)
+        // Broad words explicitly widen person scope. Inherit the relevant date/window,
+        // never the previous person's identity (e.g. "Anyone on leave that day?").
+        if (topicLeave && broadPersonScope) {
+          const parsed = askBarParseRange(q)
+          const inheritedDate = askBar.context?.date || null
+          return { kind:'leave_on_date', date: parsed?.start || inheritedDate, end: parsed?.end || inheritedDate, label: parsed?.label || (inheritedDate ? Utils.formatDateShort(inheritedDate) : 'today'), broad:true }
+        }
         // #8: try to resolve a NAMED person first (priority over pronoun/context).
         // Runs regardless of query length — only skipped when a pronoun is present.
         if ((topicLeave || topicCall || topicRot) && !hasPronoun) {
@@ -13844,6 +13854,7 @@ document.addEventListener('DOMContentLoaded', () => {
           staff_attr: 'Checking the clinician record…',
           staff_roster: 'Reading the staff directory…',
           staff_leave: 'Cross-checking the clinician with leave records…',
+          leave_on_date: 'Checking who has recorded leave on that date…',
           staff_oncall: 'Cross-checking the clinician with on-call…',
           staff_rotation: 'Cross-checking the clinician with rotations…',
           workload_analysis: 'Comparing department workload…',
@@ -13878,15 +13889,26 @@ document.addEventListener('DOMContentLoaded', () => {
           const c = document.querySelector('.askbar-conv')
           if (!c) return
           try { c.scrollTo({ top: c.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }) } catch (e) { c.scrollTop = c.scrollHeight }
+          askBar.showLatest = false
         })
       }
+      const askBarOnConversationScroll = (ev) => {
+        const c=ev?.currentTarget; if(!c) return
+        askBar.showLatest = (c.scrollHeight - c.scrollTop - c.clientHeight) > 180
+      }
+      const askBarFormatSnapshotTime = (value) => {
+        if(!value) return ''
+        const d=new Date(value); if(Number.isNaN(+d)) return String(value)
+        return d.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+      }
+      const askBarClearPinnedContext = () => { askBar.subject=null; if(askBar.context?.pinned) askBar.context=null }
       const askBarStreamTurn = (turn, fullText, done) => {
         turn.text = fullText || ''
         turn.streaming = false
         turn.revealing = false
-        turn.reviewOpen = false
+        turn.reviewOpen = !!(turn.visual && ['roster','profile','reslist','absence','board','research_brief'].includes(turn.visual.type))
         turn.snapshotAt = askBar.refreshedAt ? (askBar.snapshotCapturedAt || askBar.refreshedAt) : null
-        turn.reviewScope = (askBar.context || askBar.subject)?.name || 'Department records'
+        turn.reviewScope = turn.reviewScope || (askBar.context || askBar.subject)?.name || 'Department records'
         // Completion is immediate. Reading and expanding evidence remain user controlled.
         if (done) done()
       }
@@ -13895,7 +13917,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Which module each intent reads from — used to gate answers by access.
       const askBarIntentModule = {
         oncall_upcoming: 'oncall_schedule', rank_oncall: 'oncall_schedule', pis_oncall: 'oncall_schedule',
-        absent_now: 'staff_absence', absence_upcoming: 'staff_absence', absence_by_person: 'staff_absence', absence_fairness: 'staff_absence', absence_by_type: 'staff_absence', absence_coverage_risk: 'staff_absence', absence_this_month: 'staff_absence', absence_returning: 'staff_absence', absence_overlap: 'staff_absence', staff_leave: 'staff_absence',
+        absent_now: 'staff_absence', absence_upcoming: 'staff_absence', absence_by_person: 'staff_absence', absence_fairness: 'staff_absence', absence_by_type: 'staff_absence', absence_coverage_risk: 'staff_absence', absence_this_month: 'staff_absence', absence_returning: 'staff_absence', absence_overlap: 'staff_absence', staff_leave: 'staff_absence', leave_on_date: 'staff_absence',
         staff_oncall: 'oncall_schedule', staff_rotation: 'resident_rotations',
         coverage_gaps: 'oncall_schedule', rotations_active: 'resident_rotations',
         count_rotations_ending: 'resident_rotations', rotations_upcoming: 'resident_rotations', rotation_overdue: 'resident_rotations', supervisor_load: 'resident_rotations', resident_progress: 'resident_rotations', residents_free: 'resident_rotations', oncall_by_person: 'oncall_schedule', oncall_fairness: 'oncall_schedule', oncall_no_backup: 'oncall_schedule', oncall_week: 'oncall_schedule', oncall_swap: 'oncall_schedule',
@@ -13972,6 +13994,7 @@ document.addEventListener('DOMContentLoaded', () => {
           recommend_backup:[['Identifying who is out','on-call'], ['Finding eligible physicians','staff'], ['Removing anyone on leave','leave'], ['Ranking by call load','synthesis']],
           briefing:        [['Reading today’s duty','on-call'], ['Checking leave & coverage','leave'], ['Composing the briefing','synthesis']],
           staff_leave:     [['Looking up the person','staff'], ['Checking their leave','leave']],
+          leave_on_date:  [['Keeping the requested date','data'], ['Checking all leave records for that date','leave']],
           staff_oncall:    [['Looking up the person','staff'], ['Reading their shifts','on-call']],
           staff_rotation:  [['Looking up the person','staff'], ['Checking their rotation','rotations']]
         }
@@ -14508,6 +14531,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const q = asked.toLowerCase()
           const hasPronoun = /\b(she|he|her|him|they|them|same person|that person)\b|\b(también|tambien)\b/.test(q)
           const hasTopic = /(leave|absent|off|vacation|baja|ausen|on-call|on call|oncall|guardia|rotation|supervis)/.test(q)
+          const hasBroadPersonScope = /\b(anyone|anybody|everyone|everybody|who|which staff|which people|all staff|alguien|todos|quien|quién)\b/.test(q)
+          // Broad person scope is a semantic override: keep the date/window, drop the person.
+          if (hasBroadPersonScope && /(leave|absent|off|vacation|baja|ausen)/.test(q)) followup = askBarResolveFollowup(asked)
           // 1. Pronoun reference with remembered context → context follow-up
           if (hasPronoun && askBar.context) {
             followup = askBarResolveFollowup(asked)
@@ -14863,7 +14889,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           const completedTrace = askBar.trace.map(step => ({ ...step, done: true }))
           const full = ans.text || ''
-          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, coreTraceId, asOf: askBarNow(), streaming: true, revealing: false })
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, coreTraceId, asOf: askBarNow(), streaming: true, revealing: false, reviewScope: ans.reviewScope || null })
           groundedFinishExecutionTrace(coreTraceId, ans, answerError ? 'error' : 'ok', answerError, intent)
 
           // Keep the working surface visible for one calm beat, then replace it in place.
@@ -15130,7 +15156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // ACTIVE state (what's happening now/soon)
             active: {
               status: onLeave ? ('On leave until ' + Utils.formatDateShort(onLeave.end_date))
-                      : (rot ? 'On active rotation' : 'Available'),
+                      : (rot ? 'On active rotation' : 'No recorded absence today'),
               statusKind: onLeave ? 'leave' : (rot ? 'rotation' : 'ok'),
               onLeave: onLeave ? `${Utils.formatDateShort(onLeave.start_date)}–${Utils.formatDateShort(onLeave.end_date)}` : null,
               nextOnCall: nextShift ? Utils.formatDateShort(nextShift.duty_date) : null,
@@ -15177,6 +15203,21 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           profile.links = links
           return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open full profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations', 'research'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high' }
+        }
+        if (fu.kind === 'leave_on_date') {
+          const dateIso = Utils.normalizeDate(fu.date || new Date())
+          const endIso = Utils.normalizeDate(fu.end || dateIso)
+          const active = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
+          const out = active.filter(a => {
+            const s=Utils.normalizeDate(a.start_date), e=Utils.normalizeDate(a.end_date)
+            return s<=endIso && e>=dateIso
+          })
+          const label = fu.label || (dateIso===endIso ? Utils.formatDateShort(dateIso) : `${Utils.formatDateShort(dateIso)}–${Utils.formatDateShort(endIso)}`)
+          if (!out.length) return { text:`No recorded leave overlaps ${label}.`, visual:null, chips:[], actions:[{label:'Open leave view',view:'staff_absence',primary:true}], sources:['leave records'], followups:[], confidence:'high', reviewScope:`All staff · ${label}` }
+          const _reasonLbl={vacation:'vacation',sick_leave:'sick',conference:'conference',training:'training',personal:'personal',other:'leave'}
+          const rows=out.slice(0,8).map(a=>({id:a.staff_member_id,name:getStaffName(a.staff_member_id),reason:_reasonLbl[a.absence_reason]||String(a.absence_reason||'leave').replace(/_/g,' '),until:a.end_date?Utils.formatDateShort(a.end_date):null,covered:!!a.covering_staff_id,cover:a.covering_staff_id?getStaffName(a.covering_staff_id):null}))
+          const evidence=out.slice(0,12).map(a=>({label:`${getStaffName(a.staff_member_id)} — ${_reasonLbl[a.absence_reason]||a.absence_reason||'leave'}`,detail:`${Utils.normalizeDate(a.start_date)} → ${Utils.normalizeDate(a.end_date)}`,source:'staff_absence_records'}))
+          return { text:`${out.length} staff member${out.length===1?'':'s'} ${out.length===1?'has':'have'} recorded leave overlapping ${label}: ${out.slice(0,4).map(a=>getStaffName(a.staff_member_id)).join(', ')}${out.length>4?'…':''}.`, visual:{type:'absence',rows}, evidence, chips:[], actions:[{label:'Open leave view',view:'staff_absence',primary:true}], sources:['leave records'], followups:[], confidence:'high', reviewScope:`All staff · ${label}` }
         }
         if (fu.kind === 'staff_leave') {
           const leave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
@@ -15894,8 +15935,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const units = (trainingUnits.value || []).filter(u => (u.unit_status||'active')!=='inactive')
           // extract a specialty keyword from the query
           const kw = (q.match(/\b(asthma|asma|copd|epoc|transplant|trasplante|sleep|sue[ñn]o|critical|intensive|cardio\w*|thoracic|tor[áa]cica|bronch\w*|respiratory|interna|internal)\b/)||[])[0]
-          let matched = units
-          if (kw) matched = units.filter(u => _nu((u.specialty||'')+' '+(u.unit_name||'')).includes(_nu(kw)))
+          if (!kw) {
+            const byspec={}; units.forEach(u=>{ const spec=String(u.specialty||'Unspecified specialty').trim()||'Unspecified specialty'; (byspec[spec]=byspec[spec]||[]).push(u.unit_name) })
+            const items=Object.entries(byspec).sort((a,b)=>a[0].localeCompare(b[0])).slice(0,12).map(([spec,names])=>({title:spec,badge:String(names.length),tone:'research',meta:names.slice(0,4).join(', ')}))
+            return { text:`${units.length} active clinical unit${units.length===1?' is':'s are'} recorded across ${Object.keys(byspec).length} specialty group${Object.keys(byspec).length===1?'':'s'}.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open units',view:'training_units',primary:true}], sources:['units'], followups:[], confidence:'high' }
+          }
+          let matched = units.filter(u => _nu((u.specialty||'')+' '+(u.unit_name||'')).includes(_nu(kw)))
           if (!matched.length) {
             // group all by specialty instead
             const byspec = {}; units.forEach(u => { const s=u.specialty||'General'; (byspec[s]=byspec[s]||[]).push(u.unit_name) })
@@ -16343,7 +16388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             detail: `duty_date ${Utils.normalizeDate(s.duty_date)}${s.backup_physician_id ? ' · backup ' + staffName(s.backup_physician_id) : ''}`,
             source: 'oncall_schedule'
           }))
-          return { text, visual: { type: 'roster', rows: roster }, evidence, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'staff_leave' }] }
+          return { text, visual: { type: 'roster', rows: roster }, evidence, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'leave_on_date', date: up[0]?.duty_date || null }] }
         }
         if (intent === 'rotations_active') {
           const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
@@ -16712,7 +16757,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try { c.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' }) }
             catch (e) { c.scrollTop = top }
           }
-          reveal()
+          reveal(); askBar.showLatest=false
         })
       }
 
@@ -16739,8 +16784,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const intent = fu.followupKind
         const ctx = askBar.context || {}
-        const targetId = fu.subjectId || fu.id || ctx.id
-        const targetName = fu.name || ctx.name
+        const isBroadFollowup = intent === 'leave_on_date'
+        const targetId = isBroadFollowup ? null : (fu.subjectId || fu.id || ctx.id)
+        const targetName = isBroadFollowup ? null : (fu.name || ctx.name)
         const asked = (fu.q || fu.label || '').trim()
         askBar.lastAsked = asked
         askBar.query = ''
@@ -16761,7 +16807,9 @@ document.addEventListener('DOMContentLoaded', () => {
               id: targetId,
               name: targetName,
               // preserve specific staff attribute metadata such as certs / pi / phd
-              attr: fu.attr || fu.clarifyAttr || null
+              attr: fu.attr || fu.clarifyAttr || null,
+              date: fu.date || ctx.date || null,
+              end: fu.end || fu.date || ctx.date || null
             }
             if (followGeneration !== askBarRefreshGeneration) return
             ans = askBarBuildFollowup(payload)
@@ -16792,7 +16840,8 @@ document.addEventListener('DOMContentLoaded', () => {
             coreTraceId: followCoreTraceId,
             asOf: askBarNow(),
             streaming: true,
-            revealing: false
+            revealing: false,
+            reviewScope: ans.reviewScope || null
           })
           groundedFinishExecutionTrace(followCoreTraceId, ans, ans?.confidence === 'low' ? 'partial' : 'ok', null, intent)
           askBar.turns.push(turn)
@@ -16963,7 +17012,7 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(()=>currentUser.value?.id,(id,old)=>{ if(id!==old && activity45.open) activity45Close() })
 
         return {
-          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45MarkDirty, activity45PeriodPresets, activity45ApplyPreset, activity45ToggleSection, activity45SelectedCount, activity45FilteredPeople, activity45TimelineGroups, activity45Metric, activity45MetricValue, activity45SourceState, activity45SourceKnown, activity45EmptyText, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45OpenSource, activity45OpenRecord, activity45AskGrounded, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn,
+          activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45MarkDirty, activity45PeriodPresets, activity45ApplyPreset, activity45ToggleSection, activity45SelectedCount, activity45FilteredPeople, activity45TimelineGroups, activity45Metric, activity45MetricValue, activity45SourceState, activity45SourceKnown, activity45EmptyText, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45OpenSource, activity45OpenRecord, activity45AskGrounded, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn, askBarOnConversationScroll, askBarFormatSnapshotTime, askBarClearPinnedContext,
           // Existing returns
           entry, entryBusy, backToSignIn, validateEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,
