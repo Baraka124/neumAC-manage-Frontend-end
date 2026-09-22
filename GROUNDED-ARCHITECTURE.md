@@ -429,3 +429,8 @@ Person scope and time scope are resolved separately. A current reference may res
 The canonical Staff Person profile can now open Grounded with an explicit `staff` subject/context. This is a contextual entry point only; it does not create a second Person data model. Grounded must continue to resolve live staff/operational facts from the authoritative neumDesk sources. Personal Activity remains the reporting renderer; the Person profile remains the direct operational renderer.
 
 Security note: `PERMISSIONS_ARCHITECTURE.md` is carried as the future authentication/authorization contract. Staff Phase 2 does not change Grounded permissions or widen access.
+
+
+## V46.14 Staff Phase 3 — resident-year consistency
+
+Grounded resident-year answers must use the same effective-year resolver as the Staff Person profile. Manual override remains first priority; system-calculated/start-date context follows; legacy calendar start years are normalised for display without mutating source records. Resident category/origin and rotation-supervisor relationships remain source-derived and are not inferred into new constraints.

@@ -2,13 +2,33 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v2.4 · Implementation checkpoint: V46.14 Staff Phase 2 · Supersedes Vision v0.1
+**Status:** Architecture v2.5 · Implementation checkpoint: V46.14 Staff Phase 3 · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — current Staff directory: 23 real departmental people, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
 ---
 
 ## Current implementation ledger — V46.14
+
+
+## V46.14 Staff Phase 3 — Adaptive resident profile
+
+The canonical Person shell now adapts to the resident relationship actually recorded in `medical_staff.resident_category` while preserving one Person model. Internal, rotating and external residents no longer share a generic resident information hierarchy.
+
+Implemented in Phase 3:
+- **Resident · Internal** surfaces programme progression, effective R-year, current/next host rotation, exact window and recorded rotation supervisor;
+- **Resident · Rotating** makes the home-department → Pneumology host relationship explicit;
+- **Resident · External** makes home institution/home department → Pneumology host context explicit and retains external-contact information;
+- department resident-management roles (`is_resident_manager`) are shown separately from the supervising attending recorded on an individual rotation;
+- active and `extended` rotations are treated as current operational rotations;
+- bare legacy calendar years such as `2024` are normalised to an effective R-year for display, without rewriting the stored value;
+- Grounded resident-year grouping uses the same effective-year resolver as Staff, preventing UI/chat disagreement.
+
+**Preservation boundary:** Phase 3 changes presentation and derived display semantics only. Registration/edit, resident category validation, rotation writes, supervisor requirements, deactivation and type-transition behavior remain unchanged.
+
+**Phase 3 validation:** 346 historical/regression checks pass across V43.1 → V46.14, including 17 dedicated adaptive-resident checks plus preserved Phase 1/2 Staff suites.
+
+**Next Staff checkpoint:** Phase 4 — lifecycle/action review + visual/accessibility hardening, after live comparison of an attending, Internal resident, Rotating resident and External resident.
 
 ## V46.14 Staff Phase 2 — Canonical Person profile
 
@@ -24,7 +44,7 @@ Implemented in Phase 2:
 - certificates, roles/capabilities, institution, credentials, contact and public/scholarly links remain represented;
 - resident-year display continues to use `override → calculated → legacy` precedence and no legacy values are rewritten in this phase.
 
-**Preservation boundary:** registration/edit, staff-type transition, deactivation/reassignment and backend lifecycle logic are unchanged. Adaptive Internal / Rotating / External resident presentation remains **Phase 3**, so this phase does not introduce new resident constraints.
+**Preservation boundary:** registration/edit, staff-type transition, deactivation/reassignment and backend lifecycle logic are unchanged. At the Phase 2 checkpoint, adaptive Internal / Rotating / External presentation remained pending; Phase 3 now implements it without introducing new resident constraints.
 
 **Phase 2 validation:** 329 historical/regression checks pass across V43.1 → V46.14, including 17 dedicated Staff Phase 2 checks in addition to the 14 Phase 1 Staff checks.
 
@@ -49,14 +69,14 @@ Implemented in Phase 1:
 
 **Phase 1 boundary at the time:** the large clickable Person profile was deliberately left untouched. Staff Phase 2 has now completed that canonical Person redesign against the lifecycle map.
 
-**Phase 1 validation:** 312 historical/regression checks passed across V43.1 → V46.14, including 14 Staff Phase 1 preservation and UI-contract checks. Phase 2 is now implemented; live authenticated review remains required before Phase 3.
+**Phase 1 validation:** 312 historical/regression checks passed across V43.1 → V46.14, including 14 Staff Phase 1 preservation and UI-contract checks. Phase 2 is preserved as the common Person-shell milestone; Phase 3 is now implemented on top of it.
 
 
 This is the **living checkpoint** and is authoritative over older status statements below.
 
 ### Canonical baseline
 - Baseline entering this release: **V46.13 · Personal Activity / Portfolio Intelligence**.
-- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence + Staff Phase 2**.
+- Current release: **V46.14 · Portfolio Intelligence + Grounded/Leave convergence + Staff Phase 3**.
 
 ### Preserved implementation milestones
 - **V46.9 · Grounded Action Integrity** — On-call migrated to guarded semantic tools, pending action state, human confirmation and commit-time revalidation.

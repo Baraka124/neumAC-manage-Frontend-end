@@ -186,7 +186,24 @@ This checkpoint redesigns the clickable clinician/person profile against the Sta
 - Add/Edit, type transition, guarded deactivation and reassignment are intentionally unchanged;
 - `PERMISSIONS_ARCHITECTURE.md`, `SYNC_ARCHITECTURE.md`, and `SUPABASE_SCHEMA.sql` are now carried as deferred architecture/reference inputs for later phases.
 
-Phase 3 remains the adaptive Internal / Rotating / External resident experience. No new resident constraints are introduced in Phase 2.
+At the Phase 2 checkpoint, adaptive Internal / Rotating / External rendering remained pending. Phase 3 now implements that adaptation without adding new resident constraints.
 
 
-**Staff Phase 2 validation:** **329 historical/regression checks passed across V43.1 → V46.14**, including **17 dedicated Staff Phase 2 checks** plus the preserved Phase 1 suite. JavaScript syntax and HTML parse validation pass. Live authenticated review remains required before Phase 3 adaptive resident rendering.
+**Staff Phase 2 validation:** **329 historical/regression checks passed across V43.1 → V46.14**, including **17 dedicated Staff Phase 2 checks** plus the preserved Phase 1 suite. JavaScript syntax and HTML parse validation pass. This was the Phase 2 validation gate; Phase 3 is now implemented and requires live authenticated comparison across resident categories before Phase 4.
+
+
+## Staff Phase 3 — Adaptive Resident Profile (same V46.14)
+
+The Phase 2 canonical Person shell now adapts to the existing resident lifecycle rather than rendering every resident generically.
+
+- Internal / Rotating / External residents keep one Person shell but receive category-specific training/origin/host information hierarchy.
+- Rotation supervisor, resident-management role and host-unit context remain separate relationships.
+- Current rotation recognition includes `active` and `extended`; scheduled rotations remain upcoming.
+- Legacy calendar training years (for example `2024`) are converted to an effective R-year for display only; database values are not silently migrated.
+- Grounded uses the same effective resident-year resolver.
+- Registration/edit/deactivation/type-transition workflows are intentionally unchanged.
+- `PERMISSIONS_ARCHITECTURE.md`, `SYNC_ARCHITECTURE.md` and `SUPABASE_SCHEMA.sql` remain future/reference contracts, not partially implemented features.
+
+Live authenticated validation should compare at least one Attending, Internal Resident, Rotating Resident and External Resident before Phase 4.
+
+**Staff Phase 3 validation:** **346 historical/regression checks passed across V43.1 → V46.14**, including 17 dedicated Phase 3 checks plus the preserved Staff Phase 1/2 suites. JavaScript syntax and HTML parse validation pass.

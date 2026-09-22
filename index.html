@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-staff-phase2-person-profile">
+    <link rel="stylesheet" href="style.css?v=46.14-staff-phase3-adaptive-residents">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -6423,7 +6423,7 @@ Use Section heading to structure longer clinical or research articles."></textar
             </div>
         </div>
 
-        <!-- ============ STAFF PROFILE DRAWER · V46.14 PHASE 2 ============ -->
+        <!-- ============ STAFF PROFILE DRAWER · V46.14 PHASE 3 ============ -->
         <transition name="drawer-backdrop">
             <div v-if="staffProfileModal.show" class="profile-drawer-backdrop" @click="staffProfileModal.show = false"></div>
         </transition>
@@ -6461,10 +6461,11 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <template v-else>No recorded absence today</template>
                     </div>
 
-                    <div class="pp2-context" v-if="isResidentType(staffProfileModal.staff.staff_type)">
-                        <div><small>Residency</small><strong>{{ effectiveResidentYear(staffProfileModal.staff) || 'Year not recorded' }}</strong></div>
-                        <div v-if="staffProfileModal.staff.resident_category==='rotating_other_dept'"><small>Home department</small><strong>{{ getDepartmentName(staffProfileModal.staff.home_department_id) || staffProfileModal.staff.home_department || 'Not recorded' }}</strong></div>
-                        <div v-if="staffProfileModal.staff.resident_category==='external_resident'"><small>Home institution</small><strong>{{ staffProfileModal.staff.external_institution || 'Not recorded' }}</strong></div>
+                    <div class="pp2-context pp3-resident-rail" v-if="isResidentType(staffProfileModal.staff.staff_type) && getResidentTrainingContext(staffProfileModal.staff)">
+                        <div><small>Resident type</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).categoryLabel }}</strong></div>
+                        <div><small>Training year</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).year || 'Not recorded' }}</strong></div>
+                        <div v-if="getResidentProfileVariant(staffProfileModal.staff)!=='internal'"><small>{{ getResidentTrainingContext(staffProfileModal.staff).originLabel }}</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).origin }}</strong></div>
+                        <div><small>Host unit</small><strong>{{ getResidentTrainingContext(staffProfileModal.staff).hostUnit }}</strong></div>
                     </div>
                     <div class="pp2-context" v-else>
                         <div v-if="staffProfileModal.staff.specialization"><small>Specialty</small><strong>{{ formatSpecialization(staffProfileModal.staff.specialization) }}</strong></div>
@@ -6487,9 +6488,10 @@ Use Section heading to structure longer clinical or research articles."></textar
                 <section class="pp2-main">
                     <header class="pp2-head">
                         <div>
-                            <span class="pp2-kicker">Department person</span>
+                            <span class="pp2-kicker">{{ isResidentType(staffProfileModal.staff.staff_type) ? 'Resident record' : 'Department person' }}</span>
                             <h2>{{ staffProfileModal.staff.full_name }}</h2>
-                            <p>Current operational context, clinical relationships and professional record.</p>
+                            <p v-if="isResidentType(staffProfileModal.staff.staff_type) && getResidentTrainingContext(staffProfileModal.staff)">{{ getResidentTrainingContext(staffProfileModal.staff).summary }}</p>
+                            <p v-else>Current operational context, clinical relationships and professional record.</p>
                         </div>
                         <div class="pp2-head-actions">
                             <button v-if="hasPermission('medical_staff','update')" @click="editMedicalStaff(staffProfileModal.staff)" class="pp2-btn pp2-btn--quiet">Edit profile</button>
@@ -6513,6 +6515,36 @@ Use Section heading to structure longer clinical or research articles."></textar
                     <div class="pp2-body">
                         <!-- OVERVIEW -->
                         <div v-if="staffProfileModal.activeTab==='overview'" class="pp2-view">
+                            <section v-if="isResidentType(staffProfileModal.staff.staff_type) && getResidentTrainingContext(staffProfileModal.staff)"
+                                     class="pp2-section pp3-resident-overview"
+                                     :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
+                                <div class="pp3-resident-title">
+                                    <div>
+                                        <small>TRAINING RELATIONSHIP</small>
+                                        <h3>{{ getResidentTrainingContext(staffProfileModal.staff).heading }}</h3>
+                                        <p>{{ getResidentTrainingContext(staffProfileModal.staff).summary }}</p>
+                                    </div>
+                                    <span class="pp3-category-chip">{{ getResidentTrainingContext(staffProfileModal.staff).categoryLabel }}</span>
+                                </div>
+                                <div class="pp3-route">
+                                    <div class="pp3-route-node">
+                                        <span>{{ getResidentTrainingContext(staffProfileModal.staff).originLabel }}</span>
+                                        <strong>{{ getResidentTrainingContext(staffProfileModal.staff).origin }}</strong>
+                                        <small v-if="getResidentProfileVariant(staffProfileModal.staff)==='external' && getResidentTrainingContext(staffProfileModal.staff).homeDepartment!=='Not recorded'">{{ getResidentTrainingContext(staffProfileModal.staff).homeDepartment }}</small>
+                                    </div>
+                                    <div class="pp3-route-arrow" aria-hidden="true">→</div>
+                                    <div class="pp3-route-node is-host">
+                                        <span>Host / current rotation</span>
+                                        <strong>{{ getResidentTrainingContext(staffProfileModal.staff).hostUnit }}</strong>
+                                        <small>{{ getResidentTrainingContext(staffProfileModal.staff).rotation ? getResidentTrainingContext(staffProfileModal.staff).rotationWindow : 'No active or scheduled host rotation' }}</small>
+                                    </div>
+                                </div>
+                                <div class="pp3-fact-grid">
+                                    <div><span>Training year</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff).year || 'Not recorded' }}</strong><small>{{ getResidentTrainingContext(staffProfileModal.staff).yearSource }}</small></div>
+                                    <div><span>Recorded rotation supervisor</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff).supervisor }}</strong><small>From the active / next rotation record</small></div>
+                                    <div><span>Resident management</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff).managerNames }}</strong><small>Department role context</small></div>
+                                </div>
+                            </section>
                             <section class="pp2-section">
                                 <div class="pp2-section-head"><div><small>RIGHT NOW</small><h3>Current context</h3></div></div>
                                 <div class="pp2-state-grid">
@@ -6572,14 +6604,26 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <!-- WORK & TRAINING -->
                         <div v-if="staffProfileModal.activeTab==='work'" class="pp2-view">
                             <template v-if="isResidentType(staffProfileModal.staff.staff_type)">
-                                <section class="pp2-section">
-                                    <div class="pp2-section-head"><div><small>TRAINING CONTEXT</small><h3>{{ formatResidentCategoryDetailed(staffProfileModal.staff) || 'Resident' }}</h3></div><button v-if="hasPermission('resident_rotations','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddRotationModal(staffProfileModal.staff)">Plan rotation</button></div>
-                                    <div class="pp2-kv-grid">
-                                        <div><span>Effective year</span><strong>{{ effectiveResidentYear(staffProfileModal.staff) || 'Not recorded' }}</strong></div>
-                                        <div><span>Programme start</span><strong>{{ staffProfileModal.staff.residency_start_date ? formatDate(staffProfileModal.staff.residency_start_date) : 'Not recorded' }}</strong></div>
-                                        <div v-if="staffProfileModal.staff.resident_category==='rotating_other_dept'"><span>Home department</span><strong>{{ getDepartmentName(staffProfileModal.staff.home_department_id) || staffProfileModal.staff.home_department || 'Not recorded' }}</strong></div>
-                                        <div v-if="staffProfileModal.staff.resident_category==='external_resident'"><span>Home institution</span><strong>{{ staffProfileModal.staff.external_institution || 'Not recorded' }}</strong></div>
+                                <section class="pp2-section pp3-training-context" :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
+                                    <div class="pp2-section-head">
+                                        <div><small>TRAINING CONTEXT</small><h3>{{ getResidentTrainingContext(staffProfileModal.staff)?.heading || 'Resident' }}</h3></div>
+                                        <button v-if="hasPermission('resident_rotations','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddRotationModal(staffProfileModal.staff)">Plan rotation</button>
                                     </div>
+                                    <div class="pp2-kv-grid pp3-resident-kv">
+                                        <div><span>Resident type</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.categoryLabel || 'Resident' }}</strong></div>
+                                        <div><span>Effective year</span><strong>{{ effectiveResidentYear(staffProfileModal.staff) || 'Not recorded' }}</strong><small>{{ residentYearSource(staffProfileModal.staff) }}</small></div>
+                                        <div v-if="staffProfileModal.staff.resident_category==='department_internal'"><span>Programme start</span><strong>{{ staffProfileModal.staff.residency_start_date ? formatDate(staffProfileModal.staff.residency_start_date) : 'Not recorded' }}</strong></div>
+                                        <div v-if="staffProfileModal.staff.resident_category==='department_internal' && staffProfileModal.staff.residency_end_date_calc"><span>Calculated programme end</span><strong>{{ formatDate(staffProfileModal.staff.residency_end_date_calc) }}</strong></div>
+                                        <div v-if="staffProfileModal.staff.resident_category==='rotating_other_dept'"><span>Home department</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.homeDepartment || 'Not recorded' }}</strong></div>
+                                        <div v-if="staffProfileModal.staff.resident_category==='external_resident'"><span>Home institution</span><strong>{{ staffProfileModal.staff.external_institution || 'Not recorded' }}</strong></div>
+                                        <div v-if="staffProfileModal.staff.resident_category==='external_resident'"><span>Home department</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.homeDepartment || 'Not recorded' }}</strong></div>
+                                        <div><span>Host unit</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.hostUnit || 'No active rotation' }}</strong></div>
+                                        <div><span>Rotation window</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.rotationWindow || 'Not recorded' }}</strong></div>
+                                        <div><span>Recorded rotation supervisor</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.supervisor || 'Not assigned' }}</strong></div>
+                                        <div><span>Resident management</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.managerNames || 'Not recorded' }}</strong></div>
+                                        <div v-if="staffProfileModal.staff.resident_category==='external_resident' && staffProfileModal.staff.external_contact_name"><span>External contact</span><strong>{{ staffProfileModal.staff.external_contact_name }}</strong></div>
+                                    </div>
+                                    <p class="pp3-context-note">Host-unit context, resident-management roles and the recorded rotation supervisor are shown as separate relationships. neumDesk does not infer a stricter supervision rule than the records provide.</p>
                                 </section>
                                 <section class="pp2-section">
                                     <div class="pp2-section-head"><div><small>CURRENT &amp; SCHEDULED</small><h3>Resident rotations</h3></div></div>
@@ -6694,6 +6738,19 @@ Use Section heading to structure longer clinical or research articles."></textar
 
                         <!-- PROFILE -->
                         <div v-if="staffProfileModal.activeTab==='profile'" class="pp2-view">
+                            <section v-if="isResidentType(staffProfileModal.staff.staff_type)" class="pp2-section pp3-resident-record">
+                                <div class="pp2-section-head"><div><small>RESIDENT RECORD</small><h3>Programme &amp; origin data</h3></div></div>
+                                <div class="pp2-kv-grid">
+                                    <div><span>Resident type</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.categoryLabel || 'Resident' }}</strong></div>
+                                    <div><span>Effective year</span><strong>{{ effectiveResidentYear(staffProfileModal.staff) || 'Not recorded' }}</strong><small>{{ residentYearSource(staffProfileModal.staff) }}</small></div>
+                                    <div><span>Residency start</span><strong>{{ staffProfileModal.staff.residency_start_date ? formatDate(staffProfileModal.staff.residency_start_date) : 'Not recorded' }}</strong></div>
+                                    <div v-if="staffProfileModal.staff.residency_end_date_calc"><span>Calculated end</span><strong>{{ formatDate(staffProfileModal.staff.residency_end_date_calc) }}</strong></div>
+                                    <div v-if="staffProfileModal.staff.resident_category!=='department_internal'"><span>Home department</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.homeDepartment || 'Not recorded' }}</strong></div>
+                                    <div v-if="staffProfileModal.staff.resident_category==='external_resident'"><span>Home institution</span><strong>{{ staffProfileModal.staff.external_institution || 'Not recorded' }}</strong></div>
+                                    <div v-if="staffProfileModal.staff.external_contact_name"><span>External contact</span><strong>{{ staffProfileModal.staff.external_contact_name }}</strong></div>
+                                    <div v-if="staffProfileModal.staff.external_contact_email"><span>External contact email</span><strong>{{ staffProfileModal.staff.external_contact_email }}</strong></div>
+                                </div>
+                            </section>
                             <section class="pp2-section">
                                 <div class="pp2-section-head"><div><small>INSTITUTIONAL RECORD</small><h3>Affiliation &amp; professional identity</h3></div></div>
                                 <div class="pp2-kv-grid">
@@ -11755,7 +11812,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-staff-phase2-person-profile"></script>
+    <script src="app.js?v=46.14-staff-phase3-adaptive-residents"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

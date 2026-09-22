@@ -905,15 +905,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ============ 3.1 RESIDENT FORMATTING ============
       
-      // Compute effective R-year: override wins over system-calc, system-calc over legacy training_year
+      // Compute the effective resident year without mutating legacy data.
+      // Precedence remains: explicit override → system-calculated value →
+      // residency start date → legacy training_year. Bare calendar years
+      // (e.g. 2024) are interpreted as programme start years for display.
+      static _normalizeResidentYearValue(value, referenceDate = new Date()) {
+        if (value === null || value === undefined || value === '') return null
+        const raw = String(value).trim()
+        if (!raw) return null
+        const upper = raw.toUpperCase()
+        let m = upper.match(/^R\s*([1-4])(\+)?$/)
+        if (m) return m[2] ? `R${m[1]}+` : `R${m[1]}`
+        m = upper.match(/^PGY[-\s]?([1-9])$/)
+        if (m) {
+          const n = Number(m[1])
+          return n <= 4 ? `R${n}` : 'R4+'
+        }
+        if (/^[1-4]$/.test(upper)) return `R${upper}`
+        if (/^(19|20)\d{2}$/.test(upper)) {
+          const startYear = Number(upper)
+          const currentYear = referenceDate.getFullYear()
+          const level = Math.max(1, currentYear - startYear + 1)
+          return level <= 4 ? `R${level}` : 'R4+'
+        }
+        return raw
+      }
+
+      static _residentYearFromStartDate(startDate, referenceDate = new Date()) {
+        if (!startDate) return null
+        const d = new Date(String(startDate).slice(0,10) + 'T00:00:00')
+        if (Number.isNaN(d.getTime())) return null
+        let months = (referenceDate.getFullYear() - d.getFullYear()) * 12 + (referenceDate.getMonth() - d.getMonth())
+        if (referenceDate.getDate() < d.getDate()) months -= 1
+        const level = Math.max(1, Math.floor(months / 12) + 1)
+        return level <= 4 ? `R${level}` : 'R4+'
+      }
+
       static effectiveResidentYear(staff) {
-        if (staff.residency_year_override) return staff.residency_year_override
-        if (staff.residency_year_calc) return staff.residency_year_calc
-        // fallback: map legacy PGY- values
-        const t = staff.training_year
-        if (!t) return null
-        const map = { 'PGY-1':'R1','PGY-2':'R2','PGY-3':'R3','PGY-4':'R4','PGY-5':'R4+' }
-        return map[t] || t
+        if (!staff) return null
+        if (staff.residency_year_override) return Utils._normalizeResidentYearValue(staff.residency_year_override)
+        if (staff.residency_year_calc) return Utils._normalizeResidentYearValue(staff.residency_year_calc)
+        const fromStart = Utils._residentYearFromStartDate(staff.residency_start_date)
+        if (fromStart) return fromStart
+        return Utils._normalizeResidentYearValue(staff.training_year)
+      }
+
+      static residentYearSource(staff) {
+        if (!staff) return 'Not recorded'
+        if (staff.residency_year_override) return 'Manual override'
+        if (staff.residency_year_calc) return 'System calculated'
+        if (staff.residency_start_date) return 'Calculated from programme start'
+        const raw = String(staff.training_year || '').trim()
+        if (/^(19|20)\d{2}$/.test(raw)) return `Calculated from legacy start year ${raw}`
+        if (raw) return 'Legacy training-year record'
+        return 'Not recorded'
       }
 
       static formatTrainingYear(year) {
@@ -9407,7 +9452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const getDaysUntilStart = (d) => Utils.daysUntil(d)
 
-        const getCurrentRotationForStaff = (id) => rotations.value.find(r => r.resident_id === id && r.rotation_status === 'active') || null
+        const getCurrentRotationForStaff = (id) => rotations.value.find(r => r.resident_id === id && ['active','extended'].includes(r.rotation_status)) || null
         const getCurrentAbsenceForStaff = (staffId) => {
           if (!staffId) return null
           const today = Utils.normalizeDate(new Date())
@@ -9434,7 +9479,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const getUpcomingRotations = (staffId) => {
           if (!staffId) return []
           return rotations.value.filter(r =>
-            r.resident_id === staffId && ['active', 'scheduled'].includes(r.rotation_status)
+            r.resident_id === staffId && ['active', 'scheduled', 'extended'].includes(r.rotation_status)
           ).sort((a, b) => {
             // active first, then by start date
             if (a.rotation_status === 'active' && b.rotation_status !== 'active') return -1
@@ -9442,9 +9487,78 @@ document.addEventListener('DOMContentLoaded', () => {
             return (a.start_date || '').localeCompare(b.start_date || '')
           })
         }
-                const getRotationHistory = (staffId) => { if (!staffId) return []; return rotations.value.filter(r => r.resident_id === staffId && !['active', 'scheduled'].includes(r.rotation_status)).sort((a, b) => Utils.normalizeDate(b.end_date || b.rotation_end_date).localeCompare(Utils.normalizeDate(a.end_date || a.rotation_end_date))) }
+                const getRotationHistory = (staffId) => { if (!staffId) return []; return rotations.value.filter(r => r.resident_id === staffId && !['active', 'scheduled', 'extended'].includes(r.rotation_status)).sort((a, b) => Utils.normalizeDate(b.end_date || b.rotation_end_date).localeCompare(Utils.normalizeDate(a.end_date || a.rotation_end_date))) }
         const getRotationDaysLeft = (staffId) => { const r = getCurrentRotationForStaff(staffId); return r ? getDaysRemaining(r.end_date || r.rotation_end_date) : 0 }
         const getCurrentRotationSupervisor = (staffId) => { const r = getCurrentRotationForStaff(staffId); return r?.supervising_attending_id ? getStaffName(r.supervising_attending_id) : 'Not assigned' }
+
+        // V46.14 Staff Phase 3 — adaptive resident profile. These helpers
+        // compose existing resident, rotation, department and role records;
+        // they do not introduce a new supervision rule or mutate legacy data.
+        const getResidentManagers = () => (medicalStaff.value || [])
+          .filter(s => s.employment_status === 'active' && s.is_resident_manager)
+          .sort((a,b) => String(a.full_name||'').localeCompare(String(b.full_name||'')))
+
+        const getResidentManagerNames = () => {
+          const rows = getResidentManagers()
+          return rows.length ? rows.map(s => s.full_name).join(' · ') : 'Not recorded'
+        }
+
+        const getResidentProfileVariant = (staff) => {
+          if (!staff || !isResidentType(staff.staff_type)) return 'person'
+          return ({
+            department_internal: 'internal',
+            rotating_other_dept: 'rotating',
+            external_resident: 'external'
+          })[staff.resident_category] || 'resident'
+        }
+
+        const getResidentTrainingContext = (staff) => {
+          if (!staff || !isResidentType(staff.staff_type)) return null
+          const variant = getResidentProfileVariant(staff)
+          const current = getCurrentRotationForStaff(staff.id)
+          const next = !current ? getUpcomingRotations(staff.id)[0] || null : null
+          const rotation = current || next
+          const hostUnit = rotation ? getTrainingUnitName(rotation.training_unit_id) : 'No active rotation'
+          const supervisor = rotation?.supervising_attending_id ? getStaffName(rotation.supervising_attending_id) : 'Not assigned'
+          const window = rotation ? `${Utils.formatDateShort(rotation.start_date)} → ${Utils.formatDateShort(rotation.end_date)}` : 'No current rotation window'
+          const homeDepartment = getDepartmentName(staff.home_department_id) || getRotationServiceName(staff.home_department_id) || staff.home_department || ''
+          const ownDepartment = getDepartmentName(staff.department_id) || staff.primary_dept_name || 'Pneumology'
+          const year = Utils.effectiveResidentYear(staff)
+          let originLabel = 'Programme'
+          let origin = ownDepartment
+          let heading = 'Department residency programme'
+          let summary = 'Longitudinal resident in the Pneumology training programme.'
+          if (variant === 'rotating') {
+            originLabel = 'Home department'
+            origin = homeDepartment || 'Not recorded'
+            heading = 'Internal institutional rotation'
+            summary = 'Resident hosted temporarily in Pneumology from another department in the same institutional environment.'
+          } else if (variant === 'external') {
+            originLabel = 'Home institution'
+            origin = staff.external_institution || 'Not recorded'
+            heading = 'External visiting rotation'
+            summary = 'Resident hosted temporarily in Pneumology from another institution.'
+          }
+          return {
+            variant,
+            categoryLabel: `Resident · ${Utils.formatResidentCategorySimple(staff.resident_category)}`,
+            heading,
+            summary,
+            year,
+            yearSource: Utils.residentYearSource(staff),
+            originLabel,
+            origin,
+            homeDepartment: homeDepartment || 'Not recorded',
+            ownDepartment,
+            hostUnit,
+            rotation,
+            rotationStatus: rotation?.rotation_status || null,
+            rotationWindow: window,
+            supervisor,
+            managerNames: getResidentManagerNames(),
+            isCurrent: !!current
+          }
+        }
         const getPersonUpcomingEvents = (staffId) => {
           if (!staffId) return []
           const today = Utils.normalizeDate(new Date())
@@ -16032,16 +16146,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ? knowledge.person.list({ role: 'medical_resident' }).map(o => o._raw).concat((medicalStaff.value||[]).filter(s => askBarIsResident(s) && s.staff_type !== 'medical_resident'))
             : (medicalStaff.value || []).filter(s => askBarIsResident(s))
           if (!residents.length) return { text: 'No residents are on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
-          // Normalise the year: prefer a real R-year (R1..R5); ignore bare calendar years
-          // (e.g. "2005") which are start-years, not training levels.
-          const rYear = (s) => {
-            let y = s.residency_year_override || s.residency_year_calc || s.training_year || ''
-            y = String(y).trim()
-            const m = y.match(/r\s?([1-5])/i)
-            if (m) return 'R' + m[1]
-            if (/^[1-5]$/.test(y)) return 'R' + y
-            return null   // unknown / bare-year → don't bucket as a category
-          }
+          // Use the same resident-year resolver as the Staff UI so a legacy
+          // calendar start-year (e.g. 2024) and an explicit R-year cannot
+          // produce contradictory answers across neumDesk surfaces.
+          const rYear = (s) => Utils.effectiveResidentYear(s)
           const byYear = {}
           let known = 0
           residents.forEach(s => { const y = rYear(s); if (y) { byYear[y] = (byYear[y]||0)+1; known++ } })
@@ -17373,7 +17481,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ...rotationOps,
           ...absenceOps,
           absenceOnCallConflict,  // root-level: cross-composable computed
-          formatTrainingYear: Utils.formatTrainingYear, formatStudyStatus, formatSpecialization: Utils.formatSpecialization, effectiveResidentYear: Utils.effectiveResidentYear,
+          formatTrainingYear: Utils.formatTrainingYear, formatStudyStatus, formatSpecialization: Utils.formatSpecialization, effectiveResidentYear: Utils.effectiveResidentYear, residentYearSource: Utils.residentYearSource,
           formatPhone: Utils.formatPhone, formatLicense: Utils.formatLicense,
           getResidentCategoryInfo: Utils.getResidentCategoryInfo, formatResidentCategorySimple: Utils.formatResidentCategorySimple,
           formatResidentCategoryDetailed: Utils.formatResidentCategoryDetailed, getResidentCategoryIcon: Utils.getResidentCategoryIcon,
@@ -17539,7 +17647,7 @@ document.addEventListener('DOMContentLoaded', () => {
           calculateAbsenceDuration, getDaysRemaining, getDaysUntilStart, getRotationProgress,
           getCurrentRotationForStaff, getCurrentAbsenceForStaff, isOnCallToday, getUpcomingOnCall,
           getUpcomingRotations, getUpcomingLeave, getRotationHistory, getRotationDaysLeft,
-          getCurrentRotationSupervisor, getPersonUpcomingEvents, hasProfessionalCredentials,
+          getCurrentRotationSupervisor, getResidentManagers, getResidentManagerNames, getResidentProfileVariant, getResidentTrainingContext, getPersonUpcomingEvents, hasProfessionalCredentials,
           openGroundedForStaff,
           getRotationServiceName,
 

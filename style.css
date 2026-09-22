@@ -22445,3 +22445,56 @@ html body #app .leave14-workspace .filter-bar{background:#fff !important;border-
   .person-profile-v2 .pp2-name{font-size:21px;}.person-profile-v2 .pp2-context,.person-profile-v2 .pp2-rail-foot{display:none;}.person-profile-v2 .pp2-primary-actions{max-width:360px;margin-top:14px;}
   .person-profile-v2 .pp2-main{overflow:visible;}.person-profile-v2 .pp2-head{padding:20px 18px 16px;}.person-profile-v2 .pp2-head h2{display:none;}.person-profile-v2 .pp2-head p{font-size:12px;}.person-profile-v2 .pp2-tabs{padding:0 8px;}.person-profile-v2 .pp2-body{overflow:visible;padding:18px 14px 30px;}.person-profile-v2 .pp2-state-grid,.person-profile-v2 .pp2-kv-grid,.person-profile-v2 .pp2-contact-grid{grid-template-columns:1fr;}.person-profile-v2 .pp2-section{padding:16px 14px;}.person-profile-v2 .pp2-list-row{align-items:flex-start;}.person-profile-v2 .pp2-row-meta{max-width:42%;}
 }
+
+/* ============================================================
+   V46.14 · STAFF PHASE 3 — ADAPTIVE RESIDENT PROFILE
+   Same canonical Person shell; resident semantics adapt by
+   department_internal / rotating_other_dept / external_resident.
+   ============================================================ */
+.person-profile-v2 .pp3-resident-overview{
+  position:relative; overflow:hidden; border-color:#d9e7e8;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfefe 100%);
+}
+.person-profile-v2 .pp3-resident-overview::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#0aa7a8;
+}
+.person-profile-v2 .pp3-resident-overview.is-rotating::before{background:#3d78b9;}
+.person-profile-v2 .pp3-resident-overview.is-external::before{background:#765bb2;}
+.person-profile-v2 .pp3-resident-title{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px;}
+.person-profile-v2 .pp3-resident-title small{font-family:"DM Mono",monospace;font-size:9.5px;letter-spacing:.11em;font-weight:700;color:#8294a1;}
+.person-profile-v2 .pp3-resident-title h3{margin:5px 0 6px;font-size:18px;color:#173348;letter-spacing:-.015em;}
+.person-profile-v2 .pp3-resident-title p{margin:0;max-width:700px;font-size:12px;line-height:1.55;color:#657986;}
+.person-profile-v2 .pp3-category-chip{display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:999px;border:1px solid #b9e1e1;background:#effafa;color:#067e81;font-size:10.5px;font-weight:750;white-space:nowrap;}
+.person-profile-v2 .pp3-resident-overview.is-rotating .pp3-category-chip{border-color:#c9d9ed;background:#f2f6fb;color:#365f94;}
+.person-profile-v2 .pp3-resident-overview.is-external .pp3-category-chip{border-color:#ddd3ef;background:#f8f5fc;color:#66508f;}
+.person-profile-v2 .pp3-route{display:grid;grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr);align-items:stretch;border:1px solid #dfe7ea;border-radius:11px;background:#fff;overflow:hidden;}
+.person-profile-v2 .pp3-route-node{padding:14px 16px;display:flex;flex-direction:column;gap:5px;min-width:0;}
+.person-profile-v2 .pp3-route-node span,.person-profile-v2 .pp3-fact-grid span{font-family:"DM Mono",monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#82939e;}
+.person-profile-v2 .pp3-route-node strong{font-size:13.5px;color:#173348;line-height:1.35;overflow-wrap:anywhere;}
+.person-profile-v2 .pp3-route-node small{font-size:11px;color:#788892;line-height:1.35;}
+.person-profile-v2 .pp3-route-node.is-host{background:#fbfdfd;}
+.person-profile-v2 .pp3-route-arrow{display:grid;place-items:center;color:#66aeb0;border-left:1px solid #e4eaec;border-right:1px solid #e4eaec;font-size:18px;background:#f8fbfb;}
+.person-profile-v2 .pp3-fact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin-top:12px;border:1px solid #e1e8ea;background:#e1e8ea;border-radius:10px;overflow:hidden;}
+.person-profile-v2 .pp3-fact-grid>div{background:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:5px;min-width:0;}
+.person-profile-v2 .pp3-fact-grid strong{font-size:12.5px;color:#173348;line-height:1.35;overflow-wrap:anywhere;}
+.person-profile-v2 .pp3-fact-grid small{font-size:10.5px;color:#7b8b95;line-height:1.35;}
+.person-profile-v2 .pp3-training-context{border-top:3px solid #0aa7a8;}
+.person-profile-v2 .pp3-training-context.is-rotating{border-top-color:#3d78b9;}
+.person-profile-v2 .pp3-training-context.is-external{border-top-color:#765bb2;}
+.person-profile-v2 .pp3-resident-kv>div{min-height:78px;}
+.person-profile-v2 .pp3-resident-kv small,.person-profile-v2 .pp3-resident-record .pp2-kv-grid small{font-size:10.5px;color:#7b8b95;line-height:1.35;}
+.person-profile-v2 .pp3-context-note{margin:13px 0 0;padding:10px 12px;border-left:2px solid #b8d7d8;background:#f8fbfb;color:#687c87;font-size:11px;line-height:1.5;}
+.person-profile-v2 .pp3-resident-record{border-top:3px solid #8acaca;}
+.person-profile-v2 .pp3-resident-rail strong{max-width:58%;}
+
+@media (max-width: 1050px){
+  .person-profile-v2 .pp3-fact-grid{grid-template-columns:1fr;}
+}
+@media (max-width: 760px){
+  .person-profile-v2 .pp3-resident-title{display:grid;gap:10px;}
+  .person-profile-v2 .pp3-category-chip{justify-self:start;}
+  .person-profile-v2 .pp3-route{grid-template-columns:1fr;}
+  .person-profile-v2 .pp3-route-arrow{height:34px;border:0;border-top:1px solid #e4eaec;border-bottom:1px solid #e4eaec;transform:none;}
+  .person-profile-v2 .pp3-route-arrow{font-size:0;}
+  .person-profile-v2 .pp3-route-arrow::after{content:"↓";font-size:16px;}
+}

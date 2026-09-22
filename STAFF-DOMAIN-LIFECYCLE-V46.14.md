@@ -99,7 +99,7 @@ The redesigned UI may rename the user-facing action to **Remove from active staf
 - registration/edit/deactivation/type-transition workflows are unchanged;
 - security and sync architectures are carried as deferred contracts, not partially implemented here.
 
-### Phase 3 — Adaptive resident profile
+### Phase 3 — Adaptive resident profile — IMPLEMENTED IN THIS CHECKPOINT
 - Internal / Rotating / External resident variants using the same canonical Person shell;
 - current rotation, origin, year, supervisor/manager context, host unit and history;
 - no new backend constraints unless explicitly agreed.
@@ -109,3 +109,32 @@ The redesigned UI may rename the user-facing action to **Remove from active staf
 - icon/status grammar extraction from the surviving Staff patterns;
 - responsive and accessibility review;
 - live-browser validation before propagating the table/person patterns to other modules.
+
+## 9. Phase 3 implementation — adaptive resident profile
+
+**Implemented in this checkpoint.** The canonical Person shell now adapts its resident presentation without creating a parallel resident data model.
+
+### Internal resident
+- rendered as `Resident · Internal`;
+- effective R-year is shown using the preserved precedence `override → system calc → residency start → legacy value`;
+- programme start / calculated end remain visible when recorded;
+- current/next host rotation, exact rotation window and recorded rotation supervisor are shown from `resident_rotations`;
+- department `is_resident_manager` roles are shown separately as resident-management context.
+
+### Rotating resident
+- rendered as `Resident · Rotating`;
+- home department is shown as the origin relationship;
+- current/next Pneumology host unit and exact rotation window are shown separately;
+- rotation supervisor and resident-management roles remain distinct recorded relationships.
+
+### External resident
+- rendered as `Resident · External`;
+- home institution and, where recorded, home department are shown as origin context;
+- external contact information remains available;
+- host unit, window and recorded supervisor come from the rotation record.
+
+### Legacy year normalisation
+A legacy bare calendar year such as `2024` is interpreted for **display** as the programme start year and converted to the effective R-year for the current date. The stored legacy value is not overwritten. The manual `residency_year_override` remains authoritative and editable.
+
+### Preservation rule
+Phase 3 is a rendering/adaptation layer. It does not add a new backend supervision constraint, does not create a second resident record, and does not change the registration/edit/deactivation lifecycle.
