@@ -1,4 +1,4 @@
-# neumDesk V46.14 — Personal Activity / Portfolio Intelligence Workspace (Hardened)
+# neumDesk V46.14 — Grounded × Portfolio Intelligence (Hardened + Presentation Converged)
 
 V46.14 remains the active version. This revision completes the A→H Personal Activity programme **and** the subsequent implementation audit/hardening pass. The release stays on V46.14 deliberately: the feature is not promoted to another version until live authenticated browser and print validation confirms the workspace behaves as designed.
 
@@ -51,6 +51,7 @@ The first A→H pass was re-audited against the actual implementation rather tha
 - `app.js`
 - `activity45.js`
 - `activity45-ui.css`
+- `style.css`
 - `DepartmentOS_Architecture.md`
 - `GROUNDED-ARCHITECTURE.md`
 - `README-V46.14.md`
@@ -61,7 +62,7 @@ No backend `index.js` change is included.
 
 ## Validation status
 
-- Automated historical regression: **267 checks passed across V43.1 → V46.14**.
+- Automated historical regression: **274 checks passed across V43.1 → V46.14**.
 - Dedicated V46.14 suite covers the original A→H contracts plus the R1→R7 hardening invariants.
 - JavaScript syntax validation covers the main application and Personal Activity runtime files.
 - **Still required before leaving V46.14:** deploy/authenticated browser review with real data, responsive interaction review, and print/PDF review. Findings from that validation remain V46.14 refinements.
@@ -69,3 +70,32 @@ No backend `index.js` change is included.
 
 ## Joint convergence hardening (same V46.14)
 This refinement was driven by authenticated browser review of Grounded and Personal Activity together. It fixes broad-scope follow-ups, pinned-context semantics, specialty null handling, selected-period rotation consistency, professional relationship counting, profile status wording, visual-answer visibility, local retrieval timestamps and latest-answer behavior. The dedicated V46.14 suite now covers these convergence scenarios explicitly.
+
+## Grounded presentation convergence (same V46.14)
+
+Authenticated-browser review showed that semantic correctness alone was not enough: several answers were still visually over-wrapped, context labels were crowding the header, and broad answer scope could appear to inherit a previous person. This pass keeps the calm neumDesk visual language while tightening the response grammar.
+
+Implemented in this same V46.14 release:
+
+- compact Grounded header with product navigation separated from pinned/current context;
+- simple factual answers render as prose rather than large answer cards;
+- structured surfaces are reserved for records, rosters, proposals, timelines and other content that benefits from inspection;
+- `Review scope` is renamed **Answer scope** and broad builders explicitly provide department/date scope;
+- broad leave follow-ups render the resolved date rather than interpolating the user’s question text;
+- Portfolio → Grounded handoff becomes a compact context-transition event;
+- person profiles default to a compact glance with deeper details on demand;
+- `↓ Latest` replaces the intrusive large latest-answer button and appears only when needed;
+- source/evidence remains visible without requiring audit detail to be opened;
+- `app.js` and `style.css` cache keys are advanced to `46.14-grounded-presentation-convergence` so the deployed browser receives the refined runtime and CSS.
+
+### Presentation invariants
+
+- Pinned person, conversational reference and answer scope are separate concepts.
+- Broad questions never inherit a previous person simply because that person remains pinned/in context.
+- A raw user phrase is never displayed as a resolved date/window.
+- Simple answers remain visually simple.
+- Evidence is always available; audit depth is optional.
+- Context-transition events are not masqueraded as ordinary assistant answers.
+
+This remains **V46.14**. Live authenticated-browser validation continues to be the release gate before moving to another module/version.
+

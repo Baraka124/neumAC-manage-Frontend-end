@@ -8,12 +8,19 @@ The central rule is:
 
 > Grounded is an intelligence layer over trustworthy operational modules. It must not compensate for broken or ambiguous modules.
 
-## V46.14 convergence rules
+## V46.14 convergence + presentation rules
 1. **Scope words override entity memory.** `Anyone`, `who`, `everyone` and equivalents widen the person scope. The relevant date/window may be inherited; the previous person may not.
 2. **Pinned context is not answer scope.** A pinned person only resolves ambiguous references; explicit names and broad-scope questions override it.
 3. **Structured visuals needed to understand an answer are visible by default.** Deep audit/method details remain optional.
 4. **No unresolved interpolation.** Missing semantic slots must produce grouped/general results or clarification, never strings containing `undefined`.
 5. **Portfolio Intelligence is one structured truth.** Grounded consumes the same selected-period snapshot used by Overview, Timeline, Portfolio and Document.
+6. **Answer first.** Simple factual answers render as prose; they are not wrapped in large decorative cards.
+7. **Cards are for structure.** Rosters, people, proposals, comparisons, timelines and other inspectable objects may use structured surfaces; plain facts should not.
+8. **Answer scope is immutable per answer.** Pinned/current conversational memory can help resolve ambiguity, but broad or explicit queries set their own scope and cannot silently inherit a previous person.
+9. **Context transitions are explicit events.** Loading Portfolio Intelligence into Grounded is shown as a compact context event, not presented as a normal assistant answer.
+10. **Evidence is visible; audit depth is optional.** The source/evidence strip remains readable without forcing “Show details”; deeper method/provenance expansion stays secondary.
+11. **Resolved values, never user-text placeholders.** Date-dependent follow-ups render the resolved date/window, never the original question as a pseudo-date label.
+12. **Navigation never obscures content.** “Latest answer” is compact, conditional and anchored away from the answer body.
 
 ## Architecture
 

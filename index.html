@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.12-clinical-units">
+    <link rel="stylesheet" href="style.css?v=46.14-grounded-presentation-convergence">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -104,7 +104,7 @@
                     </span>
                     <div class="grounded-head-copy">
                         <div class="askbar-head-t">Grounded</div>
-                        <div class="askbar-head-s"><span class="askbar-head-dot"></span><span>{{ askBarContextCard ? (askBarContextCard.pinned ? 'Pinned person' : askBarContextCard.label + ' in context') : (askBar.view === 'conversation' && askBar.turns.length ? 'Context retained' : 'Department context') }}</span><span class="askbar-head-sep">·</span><span>{{ askBar.refreshing ? "checking" : (askBar.refreshError ? "unverified" : "snapshot") }}</span></div>
+                        <div class="askbar-head-s"><span class="askbar-head-dot"></span><span>Department intelligence</span></div>
                     </div>
                 </div>
                 <div class="grounded-head-tools">
@@ -326,7 +326,7 @@
 
             <!-- CONVERSATION -->
             <div v-if="askBar.view === 'conversation'" class="askbar-conv" @scroll.passive="askBarOnConversationScroll">
-                <button v-if="askBar.showLatest && askBar.turns.length" class="gr45-latest" @click="askBarRevealLatestTurn(false)">Go to latest answer ↓</button>
+                <button v-if="askBar.showLatest && askBar.turns.length" class="gr45-latest" @click="askBarRevealLatestTurn(false)" aria-label="Go to latest answer">↓ Latest</button>
                 <div v-if="!askBar.turns.length" class="askbar-greeting">
                     <div class="askbar-greeting-t">{{ askBarContextCard ? 'What do you need from this ' + askBarContextCard.noun + '?' : 'What would you like to know?' }}</div>
                     <div class="askbar-greeting-s">{{ askBarContextCard ? 'Grounded is using this record plus the connected department records it can verify.' : 'Ask across live operations, people, rotations and research — Grounded connects the records for you.' }}</div>
@@ -347,16 +347,21 @@
                 </div>
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
                     <div v-if="turn.q" class="askbar-q-bub" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
-                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','research_brief'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
+                    <div class="askbar-a-bub" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual, 'askbar-turn--context-event': !!turn.contextEvent }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','research_brief'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
                         <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
-                            <div v-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state">
+                            <div v-if="turn.contextEvent" class="askbar-context-event">
+                                <span>{{ (turn.contextMeta && turn.contextMeta.eyebrow) || 'Context loaded' }}</span>
+                                <strong>{{ (turn.contextMeta && turn.contextMeta.title) || turn.text }}</strong>
+                                <small v-if="turn.contextMeta && turn.contextMeta.meta">{{ turn.contextMeta.meta }}</small>
+                            </div>
+                            <div v-else-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state">
                                 <span class="askbar-empty-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg></span>
                                 <div><div class="askbar-empty-title">{{ turn.text }}</div><div class="askbar-empty-sub">No matching current record was found in the sources Grounded checked.</div></div>
                             </div>
                             <div v-else class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
-                            <div v-if="turn.visual && !turn.isClarify" class="gr45-review-control">
-                                <div><span>Review scope</span><strong>{{ turn.reviewScope || 'Department records' }}</strong><small>{{ turn.snapshotAt ? 'Retrieved ' + askBarFormatSnapshotTime(turn.snapshotAt) : 'Source refresh time not recorded for this answer' }}</small></div>
-                                <button @click="turn.reviewOpen = !turn.reviewOpen" :aria-expanded="!!turn.reviewOpen">{{ turn.reviewOpen ? 'Hide detail' : 'Review detail' }}</button>
+                            <div v-if="turn.visual && !turn.isClarify && turn.visual.type !== 'profile'" class="gr45-review-control">
+                                <div><span>Answer scope</span><strong>{{ turn.reviewScope || 'Department records' }}</strong><small>{{ turn.snapshotAt ? 'Retrieved ' + askBarFormatSnapshotTime(turn.snapshotAt) : 'Source refresh time not recorded for this answer' }}</small></div>
+                                <button @click="turn.reviewOpen = !turn.reviewOpen" :aria-expanded="!!turn.reviewOpen">{{ turn.reviewOpen ? 'Hide detail' : 'Show details' }}</button>
                             </div>
 
                             <!-- §3 clarify: pick leave reason -->
@@ -652,6 +657,14 @@
                                         <span class="askbar-profile-status" :class="'askbar-profile-status--'+turn.visual.profile.active.statusKind">{{ turn.visual.profile.active.status }}</span>
                                     </div>
                                 </div>
+                                <div v-if="(turn.visual.profile.kind||'staff')==='staff' && !turn.profileDeep" class="askbar-profile-glance">
+                                    <span v-if="turn.visual.profile.active.onLeave">On leave · {{ turn.visual.profile.active.onLeave }}</span>
+                                    <span v-else-if="turn.visual.profile.active.rotation">Rotation · {{ turn.visual.profile.active.rotation }}</span>
+                                    <span v-else>No recorded absence today</span>
+                                    <span v-if="turn.visual.profile.active.nextOnCall">Next on-call · {{ turn.visual.profile.active.nextOnCall }}</span>
+                                    <span v-if="turn.visual.profile.active.supervises">Supervising · {{ turn.visual.profile.active.supervises }}</span>
+                                    <span v-if="turn.visual.profile.links && turn.visual.profile.links.length">{{ turn.visual.profile.links.length }} connected record{{ turn.visual.profile.links.length===1?'':'s' }}</span>
+                                </div>
                                 <div v-if="(turn.visual.profile.kind||'staff')==='staff' && turn.visual.profile.static.roleFlags.length" class="askbar-profile-flags">
                                     <span v-for="f in turn.visual.profile.static.roleFlags" :key="f" class="askbar-profile-flag">{{ f }}</span>
                                 </div>
@@ -692,7 +705,7 @@
                                 </div>
 
                                 <!-- Staff live state -->
-                                <div v-if="(turn.visual.profile.kind||'staff')==='staff'" class="askbar-profile-sec">
+                                <div v-if="(turn.visual.profile.kind||'staff')==='staff' && turn.profileDeep" class="askbar-profile-sec">
                                     <div class="askbar-profile-sechead">Current activity</div>
                                     <div class="askbar-profile-grid">
                                         <div v-if="turn.visual.profile.active.onLeave" class="askbar-profile-row"><span class="askbar-profile-k">Leave</span><span>{{ turn.visual.profile.active.onLeave }}</span></div>
@@ -707,18 +720,16 @@
                                 <div v-if="turn.visual.profile.links && turn.visual.profile.links.length" class="askbar-profile-sec">
                                     <div class="askbar-profile-sechead">{{ (turn.visual.profile.kind||'staff')==='staff' ? 'Connected work' : ((turn.visual.profile.kind||'')==='research_line' ? 'Portfolio' : 'Related records') }}</div>
                                     <div class="askbar-profile-links">
-                                        <div v-for="(lk,li) in (turn.profileExpanded ? turn.visual.profile.links : turn.visual.profile.links.slice(0,2))" :key="li" class="askbar-profile-link" :class="'askbar-profile-link--'+lk.kind">
+                                        <div v-for="(lk,li) in (turn.profileDeep ? turn.visual.profile.links : turn.visual.profile.links.slice(0,1))" :key="li" class="askbar-profile-link" :class="'askbar-profile-link--'+lk.kind">
                                             <div class="askbar-profile-link-l">{{ lk.label }}</div>
-                                            <div v-if="lk.detail" class="askbar-profile-link-d">{{ lk.detail }}</div>
+                                            <div v-if="lk.detail && turn.profileDeep" class="askbar-profile-link-d">{{ lk.detail }}</div>
                                         </div>
                                     </div>
-                                    <button v-if="turn.visual.profile.links.length > 2" class="askbar-inline-more" @click="turn.profileExpanded = !turn.profileExpanded">
-                                        {{ turn.profileExpanded ? 'Show less' : 'Show ' + (turn.visual.profile.links.length - 2) + ' more' }}
-                                    </button>
+                                    <button v-if="!turn.profileDeep && turn.visual.profile.links.length > 1" class="askbar-inline-more" @click="turn.profileDeep = true">View connected work</button>
                                 </div>
 
                                 <!-- Staff record completeness is useful, but should stay peripheral. -->
-                                <div v-if="(turn.visual.profile.kind||'staff')==='staff' && turn.visual.profile.missing.length" class="askbar-profile-complete askbar-profile-complete--compact">
+                                <div v-if="(turn.visual.profile.kind||'staff')==='staff' && turn.profileDeep && turn.visual.profile.missing.length" class="askbar-profile-complete askbar-profile-complete--compact">
                                     <div class="askbar-profile-cmiss"><strong>Record {{ turn.visual.profile.completeness }}% complete</strong><span> · missing {{ turn.visual.profile.missing.join(', ') }}</span></div>
                                     <button class="askbar-profile-cbtn" @click="askBarCompleteProfile(turn.visual.profile.id)">Complete record</button>
                                 </div>
@@ -12377,7 +12388,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-personal-activity-workspace"></script>
+    <script src="app.js?v=46.14-grounded-presentation-convergence"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

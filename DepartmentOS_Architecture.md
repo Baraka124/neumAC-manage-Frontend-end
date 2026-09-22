@@ -2,7 +2,7 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v1.8 · Implementation checkpoint: V46.14 hardening · Supersedes Vision v0.1
+**Status:** Architecture v1.9 · Implementation checkpoint: V46.14 presentation convergence · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — 65 staff, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
@@ -68,6 +68,17 @@ Consequences:
 - Generic unit-specialty questions never interpolate missing values such as `undefined`; unfiltered requests return grouped specialty results.
 - Staff profile cards use evidence-specific operational status (for example `No recorded absence today`) rather than the ambiguous label `Available`.
 
+### V46.14 presentation convergence — Grounded calm response grammar
+- Grounded keeps product identity and current/pinned context separate: the top navigation no longer tries to render a long context sentence inside the header.
+- Simple factual answers render as calm prose with a compact evidence strip; cards are reserved for structure such as rosters, profiles, proposals and timelines.
+- Every answer has its own explicit **Answer scope**. Broad department questions set department-wide scope rather than inheriting a pinned/current person.
+- Broad leave follow-ups resolve the inherited date first and render that resolved date; the raw question text can never become a date label.
+- Portfolio Intelligence handoff is a compact context-transition event, not a large explanatory answer card.
+- Person records default to a compact glance and expose deeper staff details only on demand.
+- “Latest answer” navigation is a small conditional control and must not cover the reading plane.
+- Evidence remains visible without forcing the user to open audit depth; retrieval method / deep detail stays secondary.
+- Browser cache keys for `app.js` and `style.css` are advanced inside the same V46.14 release so live deployments actually receive the convergence CSS/runtime.
+
 ### Known debt
 1. Multi-unit rotation writes remain sequential because there is no atomic backend batch endpoint.
 2. Rotation edit/extend/cancel and leave return/edit/cancel remain legacy lifecycle writes.
@@ -78,7 +89,7 @@ Consequences:
 7. Personal Activity is visually full-screen but still implemented as an application overlay rather than a URL-addressable route; deep-link/browser-history integration remains product-architecture debt.
 
 ### What comes next
-**Next checkpoint:** live authenticated browser and print validation of the hardened V46.14 Portfolio Intelligence workspace. Do not move to operational UI consistency until the live browser confirms layout, print, responsive and source-state behaviour.
+**Next checkpoint:** live authenticated browser validation of the V46.14 presentation-converged Grounded + Portfolio Intelligence surfaces, followed by print/PDF review. Do not move to operational UI consistency until the live browser confirms response wrapping, answer scope, context transitions, responsive layout, print and source-state behaviour.
 
 ---
 

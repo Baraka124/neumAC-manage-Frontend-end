@@ -15202,7 +15202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (supervisees.length) links.push({ label: `Supervising ${supervisees.length} resident${supervisees.length===1?'':'s'}`, detail: supervisees.slice(0,4).join(', '), kind: 'people' })
           }
           profile.links = links
-          return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open full profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations', 'research'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high' }
+          return { text, visual: { type: 'profile', profile }, chips: [], actions: [{ label: 'Open full profile', view: 'medical_staff', primary: true }], sources: ['staff', 'on-call schedule', 'leave records', 'rotations', 'research'], followups: [{ label: 'Certificates?', followupKind: 'staff_attr', attr: 'certs' }, { label: 'Can be PI?', followupKind: 'staff_attr', attr: 'pi' }], confidence: 'high', reviewScope:name }
         }
         if (fu.kind === 'leave_on_date') {
           const dateIso = Utils.normalizeDate(fu.date || new Date())
@@ -15212,7 +15212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const s=Utils.normalizeDate(a.start_date), e=Utils.normalizeDate(a.end_date)
             return s<=endIso && e>=dateIso
           })
-          const label = fu.label || (dateIso===endIso ? Utils.formatDateShort(dateIso) : `${Utils.formatDateShort(dateIso)}–${Utils.formatDateShort(endIso)}`)
+          const label = dateIso===endIso ? Utils.formatDateShort(dateIso) : `${Utils.formatDateShort(dateIso)}–${Utils.formatDateShort(endIso)}`
           if (!out.length) return { text:`No recorded leave overlaps ${label}.`, visual:null, chips:[], actions:[{label:'Open leave view',view:'staff_absence',primary:true}], sources:['leave records'], followups:[], confidence:'high', reviewScope:`All staff · ${label}` }
           const _reasonLbl={vacation:'vacation',sick_leave:'sick',conference:'conference',training:'training',personal:'personal',other:'leave'}
           const rows=out.slice(0,8).map(a=>({id:a.staff_member_id,name:getStaffName(a.staff_member_id),reason:_reasonLbl[a.absence_reason]||String(a.absence_reason||'leave').replace(/_/g,' '),until:a.end_date?Utils.formatDateShort(a.end_date):null,covered:!!a.covering_staff_id,cover:a.covering_staff_id?getStaffName(a.covering_staff_id):null}))
@@ -15938,17 +15938,17 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!kw) {
             const byspec={}; units.forEach(u=>{ const spec=String(u.specialty||'Unspecified specialty').trim()||'Unspecified specialty'; (byspec[spec]=byspec[spec]||[]).push(u.unit_name) })
             const items=Object.entries(byspec).sort((a,b)=>a[0].localeCompare(b[0])).slice(0,12).map(([spec,names])=>({title:spec,badge:String(names.length),tone:'research',meta:names.slice(0,4).join(', ')}))
-            return { text:`${units.length} active clinical unit${units.length===1?' is':'s are'} recorded across ${Object.keys(byspec).length} specialty group${Object.keys(byspec).length===1?'':'s'}.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open units',view:'training_units',primary:true}], sources:['units'], followups:[], confidence:'high' }
+            return { text:`${units.length} active clinical unit${units.length===1?' is':'s are'} recorded across ${Object.keys(byspec).length} specialty group${Object.keys(byspec).length===1?'':'s'}.`, visual:{type:'reslist',items}, chips:[], actions:[{label:'Open units',view:'training_units',primary:true}], sources:['units'], followups:[], confidence:'high', reviewScope:'Department-wide · Clinical Units' }
           }
           let matched = units.filter(u => _nu((u.specialty||'')+' '+(u.unit_name||'')).includes(_nu(kw)))
           if (!matched.length) {
             // group all by specialty instead
             const byspec = {}; units.forEach(u => { const s=u.specialty||'General'; (byspec[s]=byspec[s]||[]).push(u.unit_name) })
             const items = Object.entries(byspec).slice(0,10).map(([s,us])=>({ title: s, badge: us.length+'', tone:'research', meta: us.slice(0,3).join(', ') }))
-            return { text: `Units grouped by specialty:`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+            return { text: `Units grouped by specialty:`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high', reviewScope:'Department-wide · Clinical Units' }
           }
           const items = matched.slice(0,10).map(u => ({ title: u.unit_name, badge: u.specialty||null, tone:'research', meta: u.maximum_residents?`cap ${u.maximum_residents}`:'' }))
-          return { text: `${matched.length} unit${matched.length===1?'':'s'} for ${kw}: ${matched.slice(0,4).map(u=>u.unit_name).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+          return { text: `${matched.length} unit${matched.length===1?'':'s'} for ${kw}: ${matched.slice(0,4).map(u=>u.unit_name).join(', ')}.`, visual: { type: 'reslist', items }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high', reviewScope:'Department-wide · Clinical Units' }
         }
         if (intent === 'unit_forecast') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
@@ -16388,7 +16388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             detail: `duty_date ${Utils.normalizeDate(s.duty_date)}${s.backup_physician_id ? ' · backup ' + staffName(s.backup_physician_id) : ''}`,
             source: 'oncall_schedule'
           }))
-          return { text, visual: { type: 'roster', rows: roster }, evidence, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'leave_on_date', date: up[0]?.duty_date || null }] }
+          return { text, visual: { type: 'roster', rows: roster }, evidence, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'leave_on_date', date: up[0]?.duty_date || null }], reviewScope: dayLabel ? `On-call schedule · ${dayLabel}` : 'Upcoming on-call schedule' }
         }
         if (intent === 'rotations_active') {
           const active = (rotations.value || []).filter(r => r.rotation_status === 'active')
@@ -16974,11 +16974,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!model||!summary) return
         const pack=(rows,limit)=>({items:(rows||[]).slice(0,limit),total:(rows||[]).length,included:Math.min((rows||[]).length,limit),truncated:(rows||[]).length>limit})
         const ctx={type:'staff',id:model.person.id||activity45.personId,name:model.person.name,activityStart:model.start,activityEnd:model.end,activityCapability:'reporting.personal_activity_snapshot',activitySnapshot:{generatedAt:model.generatedAt,selected:{...model.selected},summary:{...summary},events:pack(model.events,80),residentAssignments:pack(model.residentAssignments||[],40),studies:pack(model.studies,40),projects:pack(model.projects,40),lines:pack(model.lines,40),supervision:pack(model.supervision||[],40),issues:[...(model.issues||[])],sources:model.sources.map(x=>({key:x.key,label:x.label,state:x.state,matchCount:x.matchCount,checkedAt:x.checkedAt,notes:x.notes||[]}))}}
-        const text=`Portfolio Intelligence context loaded for ${model.person.name}, ${activity45PrettyDate(model.start)} — ${activity45PrettyDate(model.end)}. ${summary.narrative||''}`
+        const retrieved=ctx.activitySnapshot.sources.filter(x=>x.state==='ready').length
+        const totalSources=ctx.activitySnapshot.sources.filter(x=>x.state!=='not included').length
+        const text=`Portfolio context loaded for ${model.person.name}.`
         const period=`between ${ctx.activityStart} and ${ctx.activityEnd}`
         activity45Close()
         askBar.subject=ctx; askBar.context=ctx; askBar.open=true; askBar.view='conversation'; askBar.query=''
-        askBar.turns.push(Vue.reactive({q:'',text,chips:[{label:ctx.name,id:ctx.id}],actions:[],sources:ctx.activitySnapshot.sources.filter(x=>x.state==='ready').map(x=>x.key),followups:[{label:'On-call in this period',q:`${ctx.name} on call ${period}`},{label:'Rotations in this period',q:`${ctx.name} rotations ${period}`},{label:'Research involvement in this period',q:`${ctx.name} research involvement ${period}`}],confidence:summary.status==='complete'?'high':'medium',asOf:askBarNow(),streaming:false}))
+        askBar.turns.push(Vue.reactive({q:'',text,contextEvent:true,contextMeta:{eyebrow:'Portfolio context loaded',title:model.person.name,meta:`${activity45PrettyDate(model.start)} — ${activity45PrettyDate(model.end)} · ${retrieved}/${totalSources} sources retrieved`},chips:[],actions:[],sources:ctx.activitySnapshot.sources.filter(x=>x.state==='ready').map(x=>x.key),followups:[{label:'On-call in this period',q:`${ctx.name} on call ${period}`},{label:'Rotations in this period',q:`${ctx.name} rotations ${period}`},{label:'Research involvement in this period',q:`${ctx.name} research involvement ${period}`}],confidence:summary.status==='complete'?'high':'medium',asOf:askBarNow(),streaming:false,reviewScope:`${ctx.name} · ${activity45PrettyDate(model.start)} — ${activity45PrettyDate(model.end)}`}))
         askBarRefreshRecords(); Vue.nextTick(()=>document.querySelector('.askbar-input input')?.focus())
       }
       const activity45SetView = view => {
