@@ -626,3 +626,15 @@ Authenticated-browser review identified that the login gate validated the backen
 ### V46.14 Access Gate 4.4 — Identity and login polish
 
 The public/editorial access surface uses the supplied neumact identity while neumDesk remains the authenticated departmental workspace. Access Gate 4.4 adds no permission or data-model behavior. It refines the sign-in hierarchy, separates low-risk email memory from explicit trusted-browser security, presents typed authentication failures, hardens field-level interaction details and adds a reduced-motion-aware final workspace handoff.
+
+---
+
+## Implementation checkpoint — V46.14 Phase 5.0 Temporal Integrity Foundation
+
+Operational time is now a first-class knowledge contract. Grounded uses the shared deterministic `temporal50.js` interpreter rather than an early-return date parser. Leave, rotations and on-call apply different domain policies instead of sharing the same implicit `end || start` behavior.
+
+The persistence model now separates planned time from actual/effective time for resident rotations and staff absences. Early rotation termination stores an explicit actual end; early return from leave preserves the planned end and stores actual return separately. Legacy records are never backfilled from `updated_at`/`last_updated` because system-write time is not proof of real-world effective time.
+
+Portfolio Intelligence consumes explicit actual dates where available and continues to expose unresolved historical gaps instead of inventing completed activity. The Rotations UI now provides a reconciliation path for terminated-early records with unknown actual end dates.
+
+This temporal foundation precedes Phase 5 Operational Decision Intelligence: constraints, warnings, override policy and recommendations must reason over temporally correct records.

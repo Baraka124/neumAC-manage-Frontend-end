@@ -3046,6 +3046,31 @@
                         <span class="breadcrumb-item active">Resident Rotations</span>
                     </nav>
 
+                    <!-- ── Phase 5.0 · temporal reconciliation strip ── -->
+                    <div v-if="rotationTemporalReviews && rotationTemporalReviews.length > 0" class="rgw-strip">
+                        <div class="rgw-header">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg>
+                            <span class="rgw-title">{{ rotationTemporalReviews.length }} historical rotation{{ rotationTemporalReviews.length !== 1 ? 's' : '' }} need an actual end date</span>
+                            <span class="rgw-sub">Planned dates are preserved · review only what is known</span>
+                        </div>
+                        <div class="rgw-list">
+                            <div v-for="r in rotationTemporalReviews" :key="'temporal-'+r.id" class="rgw-item"
+                                 @click="editRotation(r)"
+                                 :title="'Review actual end date for ' + getResidentName(r.resident_id)">
+                                <div class="rgw-avatar">{{ (getResidentName(r.resident_id)||'??').split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase() }}</div>
+                                <div class="rgw-info">
+                                    <span class="rgw-name">{{ getResidentName(r.resident_id) }}</span>
+                                    <span class="rgw-year">{{ getTrainingUnitName(r.training_unit_id) }}</span>
+                                </div>
+                                <div class="rgw-gaps">
+                                    <span class="rgw-gap-pill">planned {{ formatDate(r.start_date) }} – {{ formatDate(r.end_date) }}</span>
+                                    <span class="rgw-gap-pill">actual end unknown</span>
+                                </div>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L8 18l-4 1 1-4z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- ── Resident gap warning strip ── -->
                     <div v-if="residentGapWarnings.length > 0" class="rgw-strip">
                         <div class="rgw-header nd-l161" @click="rgwCollapsed = !rgwCollapsed" >
@@ -3912,9 +3937,15 @@
                                         </td>
                                         <td><span class="badge" :class="{'badge-primary': absence.absence_reason==='vacation','badge-green': absence.absence_reason==='conference','badge-red': absence.absence_reason==='sick_leave','badge-purple': absence.absence_reason==='training','badge-secondary': !['vacation','conference','sick_leave','training'].includes(absence.absence_reason)}">{{ absence.absence_reason ? absence.absence_reason.replace('_',' ') : '—' }}</span></td>
                                         <td><span class="status-indicator" :class="{'status-active': absence.current_status==='currently_absent','status-scheduled': absence.current_status==='planned_leave','status-completed': absence.current_status==='returned_to_duty','status-inactive': absence.current_status==='cancelled'}"><span v-if="absence.current_status==='currently_absent'">Absent now</span><span v-else-if="absence.current_status==='planned_leave'">Planned</span><span v-else-if="absence.current_status==='returned_to_duty'">Returned</span><span v-else-if="absence.current_status==='cancelled'">Cancelled</span><span v-else>{{ absence.current_status }}</span></span></td>
-                                        <td class="date-cell">{{ formatDate(absence.start_date) }}</td>
-                                        <td class="date-cell">{{ formatDate(absence.end_date) }}</td>
-                                        <td><span class="absence-duration">{{ calculateAbsenceDuration(absence.start_date, absence.end_date) }}</span><span class="absence-duration-label"> days</span></td>
+                                        <td class="date-cell" :title="absence.actual_start_date ? 'Actual/effective start recorded' : 'Planned start'">{{ formatDate(absence.actual_start_date || absence.start_date) }}</td>
+                                        <td class="date-cell">
+                                            <div>{{ formatDate(absence.actual_return_date || absence.end_date) }}</div>
+                                            <small v-if="absence.actual_return_date && absence.end_date && absence.actual_return_date !== absence.end_date" class="form-hint">planned {{ formatDate(absence.end_date) }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="absence-duration">{{ absence.actual_days || calculateAbsenceDuration(absence.actual_start_date || absence.start_date, absence.actual_return_date || absence.end_date) }}</span>
+                                            <span class="absence-duration-label"> {{ absence.actual_return_date ? 'actual days' : 'planned days' }}</span>
+                                        </td>
                                         <td :title="absence.coverage_arranged && absence.covering_staff_id ? getStaffName(absence.covering_staff_id) : ''">
                                             <span v-if="absence.coverage_arranged && absence.covering_staff_id" class="coverage-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg> {{ getStaffName(absence.covering_staff_id) }}</span>
                                             <span v-else-if="absence.coverage_arranged" class="coverage-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> Covered</span>
@@ -3929,7 +3960,7 @@
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                                     Edit
                                                 </button>
-                                                <button class="tbl-btn tbl-btn--teal" @click.stop="returnToDuty(absence)"
+                                                <button class="tbl-btn tbl-btn--teal" @click.stop="openResolutionModal(absence)"
                                                         v-if="hasPermission('staff_absence','update') && absence.current_status === 'currently_absent'"
                                                         title="Mark returned to duty">
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
@@ -8259,9 +8290,28 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <small v-if="fieldErrors.rotation?.start_date" class="error-text">{{ fieldErrors.rotation.start_date }}</small>
                             </div>
                             <div class="sm-field">
-                                <div class="sm-label">End Date <span class="req">·</span></div>
+                                <div class="sm-label">Planned End Date <span class="req">·</span></div>
                                 <input type="date" class="sm-input" v-model="rotationModal.form.end_date" :class="{'is-invalid': fieldErrors.rotation?.end_date}" @change="clearFieldError('rotation','end_date')">
                                 <small v-if="fieldErrors.rotation?.end_date" class="error-text">{{ fieldErrors.rotation.end_date }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Phase 5.0 · legacy/effective-date reconciliation. Planned dates are never overwritten. -->
+                        <div v-if="rotationModal.mode === 'edit' && rotationModal.form.rotation_status === 'terminated_early'" class="sm-row">
+                            <div class="sm-field">
+                                <div class="sm-label">Actual End Date <span v-if="!rotationModal.form.actual_end_date" class="req">· review needed</span></div>
+                                <input type="date" class="sm-input" v-model="rotationModal.form.actual_end_date"
+                                       :min="rotationModal.form.actual_start_date || rotationModal.form.start_date"
+                                       :max="rotationModal.form.end_date"
+                                       :class="{'is-invalid': fieldErrors.rotation?.actual_end_date}"
+                                       @change="clearFieldError('rotation','actual_end_date')">
+                                <small v-if="fieldErrors.rotation?.actual_end_date" class="error-text">{{ fieldErrors.rotation.actual_end_date }}</small>
+                                <small v-else class="form-hint">The original planned end stays unchanged. Add the date the rotation actually ended to resolve historical uncertainty.</small>
+                            </div>
+                            <div class="sm-field">
+                                <div class="sm-label">Termination context</div>
+                                <input type="text" class="sm-input" v-model="rotationModal.form.termination_reason" placeholder="Optional reason or note">
+                                <small class="form-hint">Recorded separately from the planned rotation window.</small>
                             </div>
                         </div>
 
@@ -8548,9 +8598,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                     <div>
                         <h3 class="modal-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12l2 2 4-4"/></svg> Resolve Absence</h3>
                         <div class="modal-subtitle nd-l075 nd-v095" >
-                            {{ getStaffName(absenceResolutionModal.absence.staff_member_id) }} ·
-                            {{ formatDate(absenceResolutionModal.absence.start_date) }} →
-                            {{ formatDate(absenceResolutionModal.absence.end_date) }}
+                            {{ getStaffName(absenceResolutionModal.absence.staff_member_id) }} · Planned {{ formatDate(absenceResolutionModal.absence.start_date) }} → {{ formatDate(absenceResolutionModal.absence.end_date) }}
                         </div>
                     </div>
                     <button class="modal-close" @click="absenceResolutionModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
@@ -8590,7 +8638,8 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Actual Return Date</label>
-                                <input type="date" class="form-control" v-model="absenceResolutionModal.returnDate">
+                                <input type="date" class="form-control" v-model="absenceResolutionModal.returnDate" :min="absenceResolutionModal.absence.actual_start_date || absenceResolutionModal.absence.start_date">
+                                <small class="form-hint">The planned end date stays {{ formatDate(absenceResolutionModal.absence.end_date) }} for audit and schedule history.</small>
                             </div>
                         </div>
                         <div class="form-group">
@@ -11871,10 +11920,13 @@ Use Section heading to structure longer clinical or research articles."></textar
     </div><!-- end app-layout -->
 </div><!-- end #app -->
     <script src="activity45.js?v=46.14"></script>
+    <script src="activity50.js?v=46.14-phase50-temporal-integrity"></script>
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-access44-login-polish"></script>
+    <script src="temporal50.js?v=46.14-phase50-temporal-integrity"></script>
+    <script src="app.js?v=46.14-phase50-temporal-integrity"></script>
+    <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
     <!-- Preserved Access Gate app cache checkpoint for regression history: app.js?v=46.14-access42-session-integrity -->
     <!-- Preserved delivery checkpoints for historical regression contracts: app.js?v=46.14-grounded-phase41e-oncall-precision · style.css?v=46.14-grounded-phase41e-oncall-precision -->
     <!-- Previous Grounded UI cache checkpoint retained for regression history: app.js?v=46.14-grounded-phase41b-ui-convergence · style.css?v=46.14-grounded-phase41b-ui-convergence -->

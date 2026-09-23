@@ -921,6 +921,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return s
       }
 
+      // Phase 5.0 Temporal Integrity — leave records carry a planned window
+      // (start_date/end_date) and may also carry an observed/effective window.
+      // Operational checks must use the effective dates when they are known,
+      // while presentation may still show the planned dates separately.
+      static absenceEffectiveStart(absence) {
+        if (!absence) return ''
+        return Utils.normalizeDate(absence.actual_start_date || absence.start_date)
+      }
+      static absenceEffectiveEnd(absence) {
+        if (!absence) return ''
+        return Utils.normalizeDate(absence.actual_return_date || absence.end_date || absence.start_date)
+      }
+      static absenceOverlaps(absence, start, end = start) {
+        const s = Utils.absenceEffectiveStart(absence)
+        const e = Utils.absenceEffectiveEnd(absence)
+        const ws = Utils.normalizeDate(start)
+        const we = Utils.normalizeDate(end || start)
+        return !!(s && e && ws && we && s <= we && e >= ws)
+      }
+
       // ============ 3.1 RESIDENT FORMATTING ============
       
       // Compute the effective resident year without mutating legacy data.
@@ -1764,6 +1784,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       async getRotations() {
         try { const r = await this.request('/api/rotations?limit=500'); return Utils.ensureArray(r?.data ?? r) } catch { return [] }
+      }
+      async getTerminatedRotations() {
+        try { const r = await this.request('/api/rotations?limit=500&rotation_status=terminated_early'); return Utils.ensureArray(r?.data ?? r) } catch { return [] }
       }
       async createRotation(d) { this.invalidate('/api/rotations'); return this.request('/api/rotations', { method: 'POST', body: d }) }
       async updateRotation(id, d) { this.invalidate('/api/rotations'); return this.request(`/api/rotations/${id}`, { method: 'PUT', body: d }) }
@@ -2836,8 +2859,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // Check absence conflict
           const hasAbs = physId ? (absences?.value || []).some(a => {
             if (a.staff_member_id !== physId) return false
-            const s = Utils.normalizeDate(a.start_date)
-            const e = Utils.normalizeDate(a.end_date)
+            const s = Utils.absenceEffectiveStart(a)
+            const e = Utils.absenceEffectiveEnd(a)
             return dateStr >= s && dateStr <= e && !['cancelled','returned_to_duty'].includes(a.current_status)
           }) : false
           // Is this date already selected in current block?
@@ -2871,8 +2894,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dates = [...(cur._dates || [])].sort()
         const conflicts = dates.filter(dateStr => absList.some(a => {
           if (a.staff_member_id !== physId) return false
-          const s = Utils.normalizeDate(a.start_date)
-          const e = Utils.normalizeDate(a.end_date)
+          const s = Utils.absenceEffectiveStart(a)
+          const e = Utils.absenceEffectiveEnd(a)
           return dateStr >= s && dateStr <= e && !['cancelled','returned_to_duty'].includes(a.current_status)
         }))
         bulkOncall.queue.push({
@@ -3183,8 +3206,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const absList   = absences?.value || []
           const onAbsence = absList.filter(a => {
             if (a.staff_member_id !== f0.primary_physician_id) return false
-            const s = Utils.normalizeDate(a.start_date)
-            const e = Utils.normalizeDate(a.end_date)
+            const s = Utils.absenceEffectiveStart(a)
+            const e = Utils.absenceEffectiveEnd(a)
             return dutyDate >= s && dutyDate <= e && !['cancelled','returned_to_duty'].includes(a.current_status)
           })
           if (onAbsence.length > 0) {
@@ -3581,6 +3604,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const pendingActivations = ref([])
+      const rotationTemporalReviews = ref([])
       const activationModal = reactive({ show: false, rotations: [], selectedRotation: null, notes: '', action: 'activate' })
 
       const getResidentName = (id) => {
@@ -3839,11 +3863,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const loadRotations = async () => {
         try {
-          const raw = await API.getRotations()
-          rotations.value = raw.map(r => ({
-            ...r, start_date: Utils.normalizeDate(r.start_date || r.rotation_start_date),
-            end_date: Utils.normalizeDate(r.end_date || r.rotation_end_date)
-          }))
+          const [raw, terminated] = await Promise.all([API.getRotations(), API.getTerminatedRotations()])
+          const normalizeRotation = r => ({
+            ...r,
+            start_date: Utils.normalizeDate(r.start_date || r.rotation_start_date),
+            end_date: Utils.normalizeDate(r.end_date || r.rotation_end_date),
+            actual_start_date: Utils.normalizeDate(r.actual_start_date) || null,
+            actual_end_date: Utils.normalizeDate(r.actual_end_date) || null
+          })
+          rotations.value = raw.map(normalizeRotation)
+          rotationTemporalReviews.value = terminated.map(normalizeRotation).filter(r => !r.actual_end_date)
         } catch { showToast('Error', 'Failed to load rotations', 'error') }
       }
 
@@ -3861,7 +3890,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const editRotation = (rotation) => {
         clearAll('rotation'); rotationModal.mode = 'edit'
-        rotationModal.form = { ...rotation, start_date: Utils.normalizeDate(rotation.start_date || rotation.rotation_start_date), end_date: Utils.normalizeDate(rotation.end_date || rotation.rotation_end_date) }
+        rotationModal.form = {
+          ...rotation,
+          start_date: Utils.normalizeDate(rotation.start_date || rotation.rotation_start_date),
+          end_date: Utils.normalizeDate(rotation.end_date || rotation.rotation_end_date),
+          actual_start_date: Utils.normalizeDate(rotation.actual_start_date) || '',
+          actual_end_date: Utils.normalizeDate(rotation.actual_end_date) || '',
+          termination_reason: rotation.termination_reason || ''
+        }
         rotationModal.show = true
       }
 
@@ -3942,6 +3978,22 @@ document.addEventListener('DOMContentLoaded', () => {
             rotation_category: f.rotation_category || 'clinical_rotation',
             rotation_status: derivedStatus
           }
+          if (rotationModal.mode === 'edit' && f.rotation_status === 'terminated_early') {
+            const actualEnd = Utils.normalizeDate(f.actual_end_date)
+            if (actualEnd && actualEnd < startISO) {
+              setErr('rotation','actual_end_date','Actual end cannot be before the planned start')
+              showToast('Temporal review', 'Actual end date cannot be before the rotation started.', 'error')
+              saving.value = false; return
+            }
+            if (actualEnd && actualEnd > endISO) {
+              setErr('rotation','actual_end_date','Early termination cannot be after the planned end')
+              showToast('Temporal review', 'An early-termination date cannot be later than the planned end date.', 'error')
+              saving.value = false; return
+            }
+            data.actual_start_date = Utils.normalizeDate(f.actual_start_date) || null
+            data.actual_end_date = actualEnd || null
+            data.termination_reason = f.termination_reason || null
+          }
           const normalize = r => ({ ...r, start_date: Utils.normalizeDate(r.start_date), end_date: Utils.normalizeDate(r.end_date) })
           if (rotationModal.mode === 'add') {
             const rName = (medicalStaff.value || []).find(s => s.id === data.resident_id)?.full_name || 'Resident'
@@ -3964,7 +4016,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (prev && prev.supervising_attending_id !== data.supervising_attending_id) changes.push('Supervisor changed')
             showToast('Rotation updated', changes.length ? changes.join(' · ') : 'No changes detected', 'success')
           }
-          rotationModal.show = false; clearAll('rotation')
+          rotationModal.show = false; clearAll('rotation'); await loadRotations()
         } catch (e) {
           let msg = e.message || 'Failed to save rotation'
           if (msg.includes('overlapping')) msg = 'Dates conflict with an existing rotation.'
@@ -3974,27 +4026,37 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const deleteRotation = (rotation) => {
-        const isActive = ['active', 'scheduled'].includes(rotation.rotation_status)
+        const status = String(rotation.rotation_status || '').toLowerCase()
+        const isScheduled = status === 'scheduled'
+        const isActive = ['active','extended'].includes(status)
         const resident = Utils.formatDrName(getResidentName(rotation.resident_id))
         const unit     = getTrainingUnitName(rotation.training_unit_id)
+        const todayLabel = Utils.formatDateShort(Utils.normalizeDate(new Date()))
+        const title = isScheduled ? 'Cancel scheduled rotation' : isActive ? 'End rotation early' : 'Remove rotation record'
+        const message = isScheduled
+          ? 'This rotation has not started. It will be cancelled without creating an actual completion date.'
+          : isActive
+            ? `This records the rotation as ending early, effective ${todayLabel}. The original planned end date is preserved for training history.`
+            : 'This is already a historical rotation. Removing it from operational lists will not rewrite its recorded dates or status.'
+        const confirmButtonText = isScheduled ? 'Cancel rotation' : isActive ? 'End rotation today' : 'Remove from list'
 
         showConfirmation({
-          title:   isActive ? 'Cancel Rotation' : 'Remove Rotation Record',
-          message: isActive
-            ? 'This will cancel the rotation and mark it as ended early. The record is preserved for audit and training history purposes.'
-            : 'This rotation is already completed or cancelled. Remove it from the visible list?',
-          confirmButtonText:  isActive ? 'Cancel rotation' : 'Remove record',
+          title, message,
+          confirmButtonText,
           confirmButtonClass: 'btn-danger',
-          details: `${resident} · ${unit}`,
+          details: `${resident} · ${unit} · planned ${Utils.formatDateShort(rotation.start_date)} – ${Utils.formatDateShort(rotation.end_date)}`,
           onConfirm: async () => {
             try {
-              await API.deleteRotation(rotation.id)
+              const result = await API.deleteRotation(rotation.id)
               const idx = rotations.value.findIndex(r => r.id === rotation.id)
-              if (idx !== -1) rotations.value[idx] = { ...rotations.value[idx], rotation_status: 'terminated_early' }
-              showToast('Success', isActive ? 'Rotation cancelled' : 'Record removed', 'success')
+              if (idx !== -1) {
+                const nextStatus = result?.rotation_status || (isScheduled ? 'cancelled' : isActive ? 'terminated_early' : rotations.value[idx].rotation_status)
+                rotations.value[idx] = { ...rotations.value[idx], rotation_status: nextStatus, actual_end_date: result?.actual_end_date ?? rotations.value[idx].actual_end_date, deleted_at: result?.deleted_at ?? rotations.value[idx].deleted_at }
+              }
+              showToast('Rotation updated', isScheduled ? 'Scheduled rotation cancelled; no actual end date was created.' : isActive ? `Rotation ended early effective ${result?.actual_end_date ? Utils.formatDateShort(result.actual_end_date) : todayLabel}.` : 'Historical record removed from operational lists; history preserved.', 'success')
               await loadRotations()
             } catch (e) {
-              showToast('Error', e?.message || 'Failed to cancel rotation', 'error')
+              showToast('Error', e?.message || 'Failed to update rotation lifecycle', 'error')
               await loadRotations()
             }
           }
@@ -4231,7 +4293,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         rotations, rotationFilters, rotationModal,
         filteredRotations, filteredRotationsAll, rotationTotalPages,
-        loadRotations, rotationConflicts, showAddRotationModal, editRotation, saveRotation, deleteRotation, selectedUnitCapacity,
+        loadRotations, rotationConflicts, showAddRotationModal, editRotation, saveRotation, deleteRotation, selectedUnitCapacity, rotationTemporalReviews,
         checkRotationAvailability,
         pendingActivations, activationModal, checkAndUpdateRotations, updateRotationStatus,
         confirmPendingActivation, skipPendingActivation, postponeAllActivations, initAutoCheck,
@@ -4635,7 +4697,10 @@ document.addEventListener('DOMContentLoaded', () => {
         m.saving = true
         try {
           if (m.action === 'confirm_return') {
-            // Call dedicated /return endpoint — updates end_date, sets returned_to_duty, writes audit
+            if (!m.returnDate) { showToast('Actual return date required', 'Record the date the staff member actually returned to duty.', 'error'); m.saving = false; return }
+            const effectiveStart = Utils.normalizeDate(m.absence.actual_start_date || m.absence.start_date)
+            if (effectiveStart && m.returnDate < effectiveStart) { showToast('Invalid return date', 'Actual return cannot be before the absence started.', 'error'); m.saving = false; return }
+            // Call dedicated /return endpoint — preserves planned end_date, records actual_return_date, sets returned_to_duty, writes audit
             await API.returnToDuty(m.absence.id, {
               return_date: m.returnDate,
               notes: m.returnNotes || 'Staff confirmed returned to duty'
@@ -5847,8 +5912,8 @@ document.addEventListener('DOMContentLoaded', () => {
           return d === todayStr
         }).length
         const absent = (absences?.value || []).filter(a => {
-          const s = Utils.normalizeDate(a.start_date)
-          const e = Utils.normalizeDate(a.end_date)
+          const s = Utils.absenceEffectiveStart(a)
+          const e = Utils.absenceEffectiveEnd(a)
           return todayStr >= s && todayStr <= e && a.current_status === 'currently_absent'
         }).length
         const activeBroadcasts = livebroadcasts.value.length
@@ -7389,7 +7454,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const today = Utils.normalizeDate(new Date())
         systemStats.value.onLeaveStaff = absences.value.filter(a => {
-          const s = Utils.normalizeDate(a.start_date), e = Utils.normalizeDate(a.end_date)
+          const s = Utils.absenceEffectiveStart(a), e = Utils.absenceEffectiveEnd(a)
           if (!s || !e || !(s <= today && today <= e)) return false
           if (a.current_status) return a.current_status === 'currently_absent'
           return true
@@ -11774,8 +11839,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const date = new Date(year, month, d)
           const dateStr = Utils.normalizeDate(date)
           const dayAbsences = absences.value.filter(a => {
-            const s = Utils.normalizeDate(a.start_date)
-            const e = Utils.normalizeDate(a.end_date)
+            const s = Utils.absenceEffectiveStart(a)
+            const e = Utils.absenceEffectiveEnd(a)
             return s <= dateStr && e >= dateStr &&
               a.current_status !== 'returned_to_duty' && a.current_status !== 'cancelled'
           })
@@ -11954,8 +12019,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const d = new Date(); d.setDate(d.getDate() + i); d.setHours(0,0,0,0)
           const dateStr = Utils.normalizeDate(d)
           const absent = absences.value.filter(a => {
-            const s = Utils.normalizeDate(a.start_date)
-            const e = Utils.normalizeDate(a.end_date)
+            const s = Utils.absenceEffectiveStart(a)
+            const e = Utils.absenceEffectiveEnd(a)
             return s <= dateStr && e >= dateStr &&
               a.current_status !== 'returned_to_duty' && a.current_status !== 'cancelled'
           }).length
@@ -11993,8 +12058,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const today = Utils.normalizeDate(new Date())
         const active = medicalStaff.value.filter(s => s.employment_status === 'active').length
         const onLeave = absences.value.filter(a => {
-          const s = Utils.normalizeDate(a.start_date)
-          const e = Utils.normalizeDate(a.end_date)
+          const s = Utils.absenceEffectiveStart(a)
+          const e = Utils.absenceEffectiveEnd(a)
           return s <= today && e >= today && a.current_status !== 'returned_to_duty'
         }).length
         const onCallToday = [...new Set(
@@ -12082,7 +12147,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .map(s => s.id))
         const isActiveStaff = (id) => _activeIds.has(id)
         const within = (date, a) => {
-          const d = Utils.normalizeDate(date), s = Utils.normalizeDate(a.start_date), e = Utils.normalizeDate(a.end_date)
+          const d = Utils.normalizeDate(date), s = Utils.absenceEffectiveStart(a), e = Utils.absenceEffectiveEnd(a)
           return d >= s && d <= e
         }
         try {
@@ -12872,7 +12937,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarStartLeaveFlow = (asked) => {
         const ex = askBarExtractLeave(asked)
         askBar.view = 'conversation'
-        const basePending = { subject:ex.subject||null, reason:ex.reason, covering:ex.covering||null, start:ex.start, end:ex.end, type:ex.type, original:asked }
+        const basePending = { subject:ex.subject||null, reason:ex.reason, covering:ex.covering||null, start:ex.start, end:ex.end, temporal:ex.temporal||null, type:ex.type, original:asked }
         if (ex.subjectAmbiguous?.length) { askBarLeaveAmbiguityTurn(asked, ex.subjectAmbiguous, 'subject', basePending); return }
         if (ex.coveringAmbiguous?.length) { askBarLeaveAmbiguityTurn(asked, ex.coveringAmbiguous, 'covering', basePending); return }
         if (!ex.subject) {
@@ -12880,9 +12945,29 @@ document.addEventListener('DOMContentLoaded', () => {
           askBar.turns.push(Vue.reactive({ q: asked, text: "I couldn't tell who this is for. Try naming the person, e.g. “put Marcos on leave next Thursday.”", chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
           return
         }
+        if (!ex.start && ex.end) {
+          askBar.pendingLeave = { ...basePending, awaiting: 'date_start' }
+          askBar.turns.push(Vue.reactive({ q: asked, text: `I have ${ex.subject.full_name}'s leave ending ${Utils.formatDateShort(ex.end)}. When does it start?`, chips: [], actions: [], sources: [], followups: [], confidence: 'medium', isClarify:true, asOf: askBarNow(), streaming: false }))
+          return
+        }
+        if (ex.start && !ex.end) {
+          askBar.pendingLeave = { ...basePending, awaiting: 'date_end' }
+          askBar.turns.push(Vue.reactive({ q: asked, text: `I have ${ex.subject.full_name}'s leave starting ${Utils.formatDateShort(ex.start)}. When does it end? If it is one day, say “same day”.`, chips: [], actions: [], sources: [], followups: [], confidence: 'medium', isClarify:true, asOf: askBarNow(), streaming: false }))
+          return
+        }
         if (!ex.start) {
           askBar.pendingLeave = { ...basePending, awaiting: 'date' }
-          askBar.turns.push(Vue.reactive({ q: asked, text: `When is ${ex.subject.full_name} away? Give a day or range, e.g. “next Thursday and Friday.”`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+          askBar.turns.push(Vue.reactive({ q: asked, text: `When is ${ex.subject.full_name} away? Give a day or range, e.g. “next Thursday until Friday.”`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false }))
+          return
+        }
+        if (ex.temporal?.needsClarification) {
+          askBar.pendingLeave = { ...basePending, start:null, end:null, awaiting:'date' }
+          const why = ex.temporal.clarificationReason === 'leave_month_requires_confirmation'
+            ? `I read “${ex.temporal.interpretation}” as the whole month, which is too broad to record without confirmation.`
+            : ex.temporal.clarificationReason === 'end_before_start'
+              ? `The end of that leave would be before its start.`
+              : `I couldn't establish the leave window safely.`
+          askBar.turns.push(Vue.reactive({q:asked,text:`${why} Give the exact day or start and end dates.`,chips:[],actions:[],sources:[],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}))
           return
         }
         if (!ex.reason) {
@@ -12990,8 +13075,8 @@ document.addEventListener('DOMContentLoaded', () => {
           .replace(/\s+/g,' ').trim()
         let sr=resolveWriteCandidate(subjectQ)
         if(!sr.person && !sr.ambiguous) sr=resolveWriteCandidate(q)
-        const dates=askBarExtractDates(q)
-        return {subject:sr.person,subjectAmbiguous:sr.ambiguous,backup,backupAmbiguous,start:dates.start,end:dates.end,raw:qRaw}
+        const dates=askBarExtractDates(q,{domain:'oncall'})
+        return {subject:sr.person,subjectAmbiguous:sr.ambiguous,backup,backupAmbiguous,start:dates.start,end:dates.end,temporal:dates,raw:qRaw}
       }
 
       const askBarOncallAmbiguityTurn = (asked, options, role, partial) => {
@@ -13020,7 +13105,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return
           }
         } catch(e) {}
-        if(ex.backupAmbiguous){ askBarOncallAmbiguityTurn(asked,ex.backupAmbiguous,'backup',{subject:ex.subject,start:ex.start,end:ex.end,original:asked}); return }
+        if(ex.backupAmbiguous){ askBarOncallAmbiguityTurn(asked,ex.backupAmbiguous,'backup',{subject:ex.subject,start:ex.start,end:ex.end,temporal:ex.temporal,original:asked}); return }
+        if(ex.temporal?.needsClarification){
+          askBar.pendingOncall={subject:ex.subject,backup:ex.backup,start:null,end:null,awaiting:'date',original:asked}
+          askBar.turns.push(Vue.reactive({q:asked,text:`On-call is recorded as an individual duty date. I interpreted ${ex.temporal.interpretation}; give the single duty date you want to schedule.`,chips:[],actions:[],sources:[],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}))
+          return
+        }
         if(!ex.start){
           askBar.pendingOncall={subject:ex.subject,backup:ex.backup,start:null,end:null,awaiting:'date',original:asked}
           askBar.turns.push(Vue.reactive({q:asked,text:`What date should I schedule ${ex.subject.full_name} for on-call? For example, “next Friday.”`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}))
@@ -13231,7 +13321,11 @@ document.addEventListener('DOMContentLoaded', () => {
           return
         }
         const person = resolved.person || askBarResolveStaff(asked)
-        const dr = askBarExtractDates(q)
+        const dr = askBarExtractDates(q,{domain:'oncall'})
+        if(dr.needsClarification){
+          askBar.turns.push(Vue.reactive({q:asked,text:`On-call cancellation needs one duty date. I interpreted ${dr.interpretation}; tell me the specific shift to cancel.`,chips:[],actions:[{label:'Open on-call',view:'oncall_schedule'}],sources:['on-call schedule'],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}))
+          return
+        }
         let shifts = (onCallSchedule.value || [])
         if (person) shifts = shifts.filter(s => s.primary_physician_id === person.id)
         if (dr.start) shifts = shifts.filter(s => { const d=Utils.normalizeDate(s.duty_date); return d>=dr.start && d<=(dr.end||dr.start) })
@@ -13335,7 +13429,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const sM = part.match(/(?:under|supervised by|with)\s+([a-zñáéíóú]+)/i)
           const supervisor = sM ? (askBarResolveStaffRole(sM[1],'supervisor') || askBarResolveStaff(sM[1])) : null
           // per-clause dates → sequential rotations (each unit its own window)
-          const segDates = askBarExtractDates(part)
+          const segDates = askBarExtractDates(part,{domain:'rotation'})
           if (!segments.some(s => s.unit.id === unit.id)) segments.push({ unit, supervisor, dates: segDates })
         }
         // resident: strip all unit/supervisor/filler
@@ -13348,7 +13442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const supIds = new Set(segments.map(s => s.supervisor && s.supervisor.id).filter(Boolean))
         let resident = askBarResolveStaffRole(rq,'resident') || askBarResolveStaff(rq)
         if (!resident) { const r = askBarResolveStaffRole(q,'resident') || askBarResolveStaff(q); if (r && !supIds.has(r.id)) resident = r }
-        return { resident, dates: askBarExtractDates(q), segments }
+        return { resident, dates: askBarExtractDates(q,{domain:'rotation'}), segments }
       }
 
       const askBarResolveRotationUnit = (qRaw) => {
@@ -13445,13 +13539,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if(unit) rq=rq.replace(new RegExp((unit.unit_name||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'ig'),' ').trim()
         const rr=askBarResolveStaffRoleClarified(rq||q,'resident')
         const resident=rr.person||null, residentAmbiguous=rr.ambiguous||null
-        const dates=askBarExtractDates(q)
-        const pending={resident,unit,supervisor,start:dates.start,end:dates.end||dates.start,original:asked}
+        const dates=askBarExtractDates(q,{domain:'rotation'})
+        const pending={resident,unit,supervisor,start:dates.start,end:dates.end,temporal:dates,original:asked}
         if(residentAmbiguous?.length){askBarRotationIdentityTurn(asked,residentAmbiguous,'resident',pending);return}
         if(!resident){askBar.pendingRotation={...pending,awaiting:'resident'};askBar.turns.push(Vue.reactive({q:asked,text:'Which resident is this for?',chips:[],actions:[],sources:['staff'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
         if(ur.ambiguous?.length){askBar.pendingRotation={...pending,awaiting:'unit',unitOptions:ur.ambiguous.map(u=>({id:u.id,name:u.unit_name}))};askBar.turns.push(Vue.reactive({q:asked,text:`Which clinical unit should ${resident.full_name} rotate into? I found: ${ur.ambiguous.map(u=>u.unit_name).join(', ')}.`,chips:[],actions:[{label:'Open units',view:'training_units'}],sources:['units'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
         if(!unit){askBar.pendingRotation={...pending,awaiting:'unit'};askBar.turns.push(Vue.reactive({q:asked,text:`Which clinical unit should ${resident.full_name} rotate into?`,chips:[],actions:[{label:'Open units',view:'training_units'}],sources:['units'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
         if(!dates.start){askBar.pendingRotation={...pending,awaiting:'date'};askBar.turns.push(Vue.reactive({q:asked,text:`When does ${resident.full_name}'s rotation in ${unit.unit_name} start and end?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+        if(!dates.end || dates.needsClarification){askBar.pendingRotation={...pending,awaiting:'date_end'};askBar.turns.push(Vue.reactive({q:asked,text:`I have the rotation starting ${dates.start ? Utils.formatDateShort(dates.start) : 'on that date'}, but a rotation needs an explicit end date. When should it end?`,chips:[],actions:[],sources:[],followups:[],confidence:'medium',isClarify:true,asOf:askBarNow(),streaming:false}));return}
         if(supervisorAmbiguous?.length){askBarRotationIdentityTurn(asked,supervisorAmbiguous,'supervisor',pending);return}
         if(!supervisor){askBar.pendingRotation={...pending,awaiting:'supervisor'};askBar.turns.push(Vue.reactive({q:asked,text:`Who is the formal resident supervisor for this rotation? This can be a department-level supervising attending; they do not have to be linked to ${unit.unit_name}.`,chips:[],actions:[],sources:['staff'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
         askBarProposeRotation(pending,asked)
@@ -13461,14 +13556,14 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.pendingRotation=null
         const traceId=groundedStartExecutionTrace(asked,'assign_rotation')
         let checked
-        try{checked=groundedInvokeTool('resident_rotations.propose_assignment',{residentId:ex.resident.id,unitId:ex.unit.id,supervisorId:ex.supervisor.id,start:ex.start,end:ex.end||ex.start},{traceId})}
+        try{checked=groundedInvokeTool('resident_rotations.propose_assignment',{residentId:ex.resident.id,unitId:ex.unit.id,supervisorId:ex.supervisor.id,start:ex.start,end:ex.end},{traceId})}
         catch(err){groundedFinishExecutionTrace(traceId,{sources:['staff','units','rotations','leave records'],confidence:'low'},'error',err,'assign_rotation');askBar.turns.push(Vue.reactive({q:asked,text:`I couldn't prepare that rotation: ${err?.message||'validation failed'}.`,chips:[],actions:[],sources:['staff','units','rotations'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
         const fmt=d=>{try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}catch(e){return d}}
         const labels={resident_not_found:'Resident record not found',resident_inactive:'Resident is inactive',resident_not_eligible:'Selected person is not a resident/fellow',unit_not_found:'Clinical unit not found',unit_inactive:'Clinical unit is inactive',supervisor_not_found:'Supervisor record not found',supervisor_inactive:'Supervisor is inactive',supervisor_not_eligible:'Selected supervisor is not eligible to supervise residents',invalid_date_window:'Invalid rotation date range',resident_overlap:'Resident already has a rotation in this period',unit_capacity:'Clinical unit has no resident capacity for the full period'}
         const warnings=[]
         if(checked.leaveConflicts?.length) warnings.push(`${checked.leaveConflicts.length} recorded leave period${checked.leaveConflicts.length===1?'':'s'} overlaps this rotation`)
         if(checked.supervisorLeave?.length) warnings.push(`Supervisor has ${checked.supervisorLeave.length} recorded leave period${checked.supervisorLeave.length===1?'':'s'} during the rotation`)
-        const proposal={kind:'rotation',traceId,resident:{id:ex.resident.id,name:ex.resident.full_name},unit:{id:ex.unit.id,name:ex.unit.unit_name},supervisor:{id:ex.supervisor.id,name:ex.supervisor.full_name},start:ex.start,end:ex.end||ex.start,startLabel:fmt(ex.start),endLabel:fmt(ex.end||ex.start),blocked:(checked.blocked||[]).length>0,blockReasons:checked.blocked||[],blockReason:(checked.blocked||[]).map(x=>labels[x]||x).join(' · '),warnings,occ:`${checked.capacity?.state?.peak??0}/${checked.capacity?.state?.capacity??ex.unit.maximum_residents??'—'}`,atCapacity:(checked.blocked||[]).includes('unit_capacity'),rotationOverlap:(checked.blocked||[]).includes('resident_overlap')?'existing rotation':null,leaveOverlap:checked.leaveConflicts?.length?checked.leaveConflicts.map(x=>`${fmt(x.start)}–${fmt(x.end)}`).join(', '):null}
+        const proposal={kind:'rotation',traceId,resident:{id:ex.resident.id,name:ex.resident.full_name},unit:{id:ex.unit.id,name:ex.unit.unit_name},supervisor:{id:ex.supervisor.id,name:ex.supervisor.full_name},start:ex.start,end:ex.end,startLabel:fmt(ex.start),endLabel:fmt(ex.end),blocked:(checked.blocked||[]).length>0,blockReasons:checked.blocked||[],blockReason:(checked.blocked||[]).map(x=>labels[x]||x).join(' · '),warnings,occ:`${checked.capacity?.state?.peak??0}/${checked.capacity?.state?.capacity??ex.unit.maximum_residents??'—'}`,atCapacity:(checked.blocked||[]).includes('unit_capacity'),rotationOverlap:(checked.blocked||[]).includes('resident_overlap')?'existing rotation':null,leaveOverlap:checked.leaveConflicts?.length?checked.leaveConflicts.map(x=>`${fmt(x.start)}–${fmt(x.end)}`).join(', '):null}
         askBar.turns.push(Vue.reactive({q:'',text:'',rotationProposal:proposal,chips:[],actions:[],sources:['staff','units','rotations','leave records'],followups:[],confidence:proposal.blocked?'low':(warnings.length?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
       }
       const askBarConfirmRotationEdit = async (p, turn) => {
@@ -13531,11 +13626,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const traceId=p.traceId||turn.coreTraceId||null
         try{
           if(traceId)GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:true,action:'assign_rotation'})
-          await groundedInvokeTool('resident_rotations.commit_assignment',{residentId:p.resident.id,unitId:p.unit.id,supervisorId:p.supervisor.id,start:p.start,end:p.end||p.start},{traceId,confirmed:true})
+          await groundedInvokeTool('resident_rotations.commit_assignment',{residentId:p.resident.id,unitId:p.unit.id,supervisorId:p.supervisor.id,start:p.start,end:p.end},{traceId,confirmed:true})
           turn.writing=false;turn.committed=true
           try{await rotationOps.loadRotations()}catch(e){}
           turn.commitText=`✓ ${p.resident.name} scheduled in ${p.unit.name} under ${p.supervisor.name}.`
-          askBarLog('change',{title:'Resident rotation scheduled',detail:`${p.resident.name} · ${p.unit.name} · ${p.start} → ${p.end||p.start}`,kind:'rotation',entityKeys:[`staff:${p.resident.id}`,`unit:${p.unit.id}`],_traceId:traceId})
+          askBarLog('change',{title:'Resident rotation scheduled',detail:`${p.resident.name} · ${p.unit.name} · ${p.start} → ${p.end}`,kind:'rotation',entityKeys:[`staff:${p.resident.id}`,`unit:${p.unit.id}`],_traceId:traceId})
           if(askBar.coreTraceId===traceId)askBar.coreTraceId=null
         }catch(err){turn.writing=false;const msg=err?.message||'Could not save.';turn.commitError=/blocked|overlap|capacity|changed/i.test(msg)?`The rotation state changed before confirmation. ${msg}`:msg;if(traceId){GroundedCore?.addTraceEvent(traceId,'action_failed',{action:'assign_rotation',error:msg});groundedFinishExecutionTrace(traceId,{sources:['staff','units','rotations','leave records'],confidence:'low'},'error',err,'assign_rotation')}}
       }
@@ -13570,79 +13665,28 @@ document.addEventListener('DOMContentLoaded', () => {
           .replace(/\d{1,4}[-/]\d{1,2}([-/]\d{1,4})?/g, ' ')
           .replace(/\s+/g, ' ').trim()
         const subjectRes = askBarResolveStaffClarified(subjectQ || q)
-        const dates = askBarExtractDates(q)
+        const dates = askBarExtractDates(q,{domain:'leave'})
         return {
           subject: subjectRes.person || null,
           subjectAmbiguous: subjectRes.ambiguous || null,
           reason, type, covering, coveringAmbiguous,
-          start: dates.start, end: dates.end, raw: qRaw
+          start: dates.start, end: dates.end, temporal: dates, raw: qRaw
         }
       }
 
-      // Deterministic date parsing for the clean path: weekday names, next/this,
-      // "X to Y", explicit ISO dates. Returns {start,end} ISO or nulls.
-      const askBarExtractDates = (q) => {
-        const today = new Date()
-        const iso = (d) => Utils.normalizeDate(d)
-        const WD = { sun:0, sunday:0, mon:1, monday:1, tue:2, tuesday:2, wed:3, wednesday:3, thu:4, thursday:4, thur:4, fri:5, friday:5, sat:6, saturday:6 }
-        // explicit ISO dates first
-        const isos = (q.match(/\d{4}-\d{2}-\d{2}/g) || [])
-        if (isos.length) return { start: isos[0], end: isos[isos.length - 1] }
-        // explicit day-month: "20 sept", "sept 20", "20 de septiembre", "20 september"
-        const MO = { jan:0,ene:0,feb:1,mar:2,apr:3,abr:3,may:4,jun:5,jul:6,aug:7,ago:7,sep:8,sept:8,oct:9,nov:10,dec:11,dic:11 }
-        const dm = q.match(/\b(\d{1,2})\s*(?:de\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|ene|abr|ago|dic)[a-z]*\b/) ||
-                   q.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|ene|abr|ago|dic)[a-z]*\s+(\d{1,2})\b/)
-        if (dm) {
-          let day, moKey
-          if (/^\d/.test(dm[1])) { day = parseInt(dm[1],10); moKey = dm[2] } else { moKey = dm[1]; day = parseInt(dm[2],10) }
-          const mo = MO[moKey.slice(0,4)] ?? MO[moKey.slice(0,3)]
-          if (mo !== undefined && day >= 1 && day <= 31) {
-            let yr = today.getFullYear()
-            const cand = new Date(yr, mo, day)
-            if (cand < today && (today - cand) > 86400000*180) yr++   // if well past, assume next year
-            const d = new Date(yr, mo, day)
-            return { start: iso(d), end: iso(d) }
-          }
-        }
-        // bare month name, no day ("in december", "next october") → 1st of that month
-        const bm = q.match(/\b(?:in|from|during|next)?\s*(january|february|march|april|may|june|july|august|september|october|november|december|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/)
-        if (bm) {
-          const MOFULL = { january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11,
-                           enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11 }
-          const mo = MOFULL[bm[1]]
-          if (mo !== undefined) {
-            let yr = today.getFullYear()
-            let d = new Date(yr, mo, 1)
-            if (d < today && (today - d) > 86400000*20) { yr++; d = new Date(yr, mo, 1) }
-            return { start: iso(d), end: iso(d) }
-          }
-        }
-        // "Tuesday this week" means the Tuesday inside the current Monday–Sunday
-        // window, not blindly the next Tuesday. This matters for action integrity.
-        const thisWeekWd=q.match(/\b(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)[a-z]*\s+(?:this\s+week|esta\s+semana)\b/i)
-        if(thisWeekWd){
-          const wd=WD[thisWeekWd[1].slice(0,3)] ?? WD[thisWeekWd[1]]
-          if(wd!==undefined){ const day=today.getDay()||7, monday=new Date(today); monday.setDate(today.getDate()+(1-day)); const target=new Date(monday); target.setDate(monday.getDate()+((wd||7)-1)); return {start:iso(target),end:iso(target)} }
-        }
-        // collect weekday mentions in order
-        const found = []
-        const re = /\b(next|this)?\s*(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)[a-z]*\b/g
-        let m
-        while ((m = re.exec(q)) !== null) {
-          const wd = WD[m[2].slice(0,3)] ?? WD[m[2]]
-          if (wd === undefined) continue
-          const base = new Date(today)
-          let delta = (wd - base.getDay() + 7) % 7
-          if (delta === 0) delta = 7            // "thursday" = the coming thursday
-          if (/next/.test(m[1] || '')) { if (delta <= 7) delta += 0 } // "next thu" ~ coming thu (kept simple)
-          const d = new Date(base); d.setDate(base.getDate() + delta)
-          found.push(iso(d))
-        }
-        if (found.length) return { start: found[0], end: found[found.length - 1] }
-        // "tomorrow" / "today"
-        if (/\btomorrow\b/.test(q)) { const d = new Date(today); d.setDate(today.getDate()+1); return { start: iso(d), end: iso(d) } }
-        if (/\btoday\b/.test(q)) return { start: iso(today), end: iso(today) }
-        return { start: null, end: null }
+      // Phase 5.0 · Temporal Integrity
+      // One deterministic interpreter is shared across Grounded reads/writes. Domain
+      // Regression semantics remain explicit for phrases such as "Tuesday this week",
+      // Historical V46.9 marker: thisWeekWd=q.match (logic now lives in temporal50.js).
+      // "tomorrow until 30 Sept" and "from 1 Oct to 31 Oct".
+      // policy (leave / rotation / on-call) decides whether a point, range or month
+      // is actionable; the parser never silently collapses a partially understood
+      // interval into a one-day record.
+      const askBarExtractDates = (q, options = {}) => {
+        const temporal = globalThis.NeumTemporal?.interpret
+          ? globalThis.NeumTemporal.interpret(q, options)
+          : { start:null, end:null, target:'range', granularity:'day', explicitRange:false, source:'unavailable', confidence:'low', needsClarification:true, clarificationReason:'temporal_interpreter_unavailable', interpretation:'date not established', raw:String(q||'') }
+        return temporal
       }
 
       const askBarExtractTwoNames = (qRaw) => {
@@ -13927,8 +13971,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const supervisor=groundedToolRegistry.invoke('resident_rotations.check_supervisor',{supervisorId},{traceId,confirmed:false});if(!supervisor.eligible)blocked.push(supervisor.reason||'supervisor_not_eligible')
             const conflicts=resident&&ss&&ee?groundedToolRegistry.invoke('resident_rotations.conflicts',{residentId,start:ss,end:ee},{traceId,confirmed:false}):[];if(conflicts.length)blocked.push('resident_overlap')
             const capacity=unit&&ss&&ee?groundedToolRegistry.invoke('clinical_units.capacity_window',{unitId,start:ss,end:ee},{traceId,confirmed:false}):null;if(capacity&&(capacity.state.overCapacity||capacity.state.minFree<1))blocked.push('unit_capacity')
-            const leaveConflicts=resident&&ss&&ee?(absences.value||[]).filter(a=>String(a.staff_member_id)===String(residentId)&&!['returned_to_duty','cancelled'].includes(a.current_status)&&Utils.normalizeDate(a.start_date)<=ee&&Utils.normalizeDate(a.end_date)>=ss).map(a=>({id:a.id,start:a.start_date,end:a.end_date,type:a.absence_reason||a.absence_type||null})):[]
-            const supervisorLeave=supervisor?.person&&ss&&ee?(absences.value||[]).filter(a=>String(a.staff_member_id)===String(supervisorId)&&!['returned_to_duty','cancelled'].includes(a.current_status)&&Utils.normalizeDate(a.start_date)<=ee&&Utils.normalizeDate(a.end_date)>=ss).map(a=>({id:a.id,start:a.start_date,end:a.end_date,type:a.absence_reason||a.absence_type||null})):[]
+            const leaveConflicts=resident&&ss&&ee?(absences.value||[]).filter(a=>String(a.staff_member_id)===String(residentId)&&!['returned_to_duty','cancelled'].includes(a.current_status)&&Utils.absenceEffectiveStart(a)<=ee&&Utils.absenceEffectiveEnd(a)>=ss).map(a=>({id:a.id,start:Utils.absenceEffectiveStart(a),end:Utils.absenceEffectiveEnd(a),plannedStart:a.start_date,plannedEnd:a.end_date,type:a.absence_reason||a.absence_type||null})):[]
+            const supervisorLeave=supervisor?.person&&ss&&ee?(absences.value||[]).filter(a=>String(a.staff_member_id)===String(supervisorId)&&!['returned_to_duty','cancelled'].includes(a.current_status)&&Utils.absenceEffectiveStart(a)<=ee&&Utils.absenceEffectiveEnd(a)>=ss).map(a=>({id:a.id,start:Utils.absenceEffectiveStart(a),end:Utils.absenceEffectiveEnd(a),plannedStart:a.start_date,plannedEnd:a.end_date,type:a.absence_reason||a.absence_type||null})):[]
             return{resident:resident?{id:resident.id,name:resident.full_name}:null,unit:unit?{id:unit.id,name:unit.unit_name}:null,supervisor,capacity,conflicts,leaveConflicts,supervisorLeave,blocked:[...new Set(blocked)],start:ss,end:ee}
           }
         })
@@ -13942,7 +13986,16 @@ document.addEventListener('DOMContentLoaded', () => {
           name:'resident_rotations.commit_assignment', access:GroundedCore.ACCESS.WRITE, module:'resident_rotations',
           description:'Commit a human-confirmed resident rotation after re-validating resident overlap, unit capacity and formal supervisor immediately before write.',
           inputSchema:{residentId:'uuid',unitId:'uuid',supervisorId:'uuid',start:'date',end:'date'},
-          run:async({residentId,unitId,supervisorId,start,end},opts={})=>{const traceId=opts.traceId||askBar.coreTraceId||null;const proposal=groundedToolRegistry.invoke('resident_rotations.propose_assignment',{residentId,unitId,supervisorId,start,end},{traceId,confirmed:false});if(proposal.blocked.length){const er=new Error(`Rotation assignment blocked: ${proposal.blocked.join(', ')}`);er.code='ROTATION_ASSIGNMENT_BLOCKED';er.reasons=proposal.blocked;throw er}const body={resident_id:residentId,training_unit_id:unitId,supervising_attending_id:supervisorId,start_date:start,end_date:end,rotation_status:'scheduled',rotation_category:'clinical_rotation'};const saved=await API.request('/api/rotations',{method:'POST',body});return{saved,proposal}}
+          run:async({residentId,unitId,supervisorId,start,end},opts={})=>{
+            const traceId=opts.traceId||askBar.coreTraceId||null
+            const proposal=groundedToolRegistry.invoke('resident_rotations.propose_assignment',{residentId,unitId,supervisorId,start,end},{traceId,confirmed:false})
+            if(proposal.blocked.length){const er=new Error(`Rotation assignment blocked: ${proposal.blocked.join(', ')}`);er.code='ROTATION_ASSIGNMENT_BLOCKED';er.reasons=proposal.blocked;throw er}
+            const ss=Utils.normalizeDate(start),ee=Utils.normalizeDate(end),today=Utils.normalizeDate(new Date())
+            const status=ss>today?'scheduled':(ee<today?'completed':'active')
+            const body={resident_id:residentId,training_unit_id:unitId,supervising_attending_id:supervisorId,start_date:ss,end_date:ee,rotation_status:status,rotation_category:'clinical_rotation'}
+            const saved=await API.request('/api/rotations',{method:'POST',body})
+            return{saved,proposal,status}
+          }
         })
         // V46.10 · Leave is the third module migrated onto the Grounded harness.
         // Recording leave is validated as a departmental event: identity + window +
@@ -13952,7 +14005,7 @@ document.addEventListener('DOMContentLoaded', () => {
           name:'leave.person_records', access:GroundedCore.ACCESS.READ, module:'staff_absence',
           description:'Return recorded leave periods for one staff member.',
           inputSchema:{staffId:'uuid'},
-          run:({staffId}) => (absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId)).map(a=>({id:a.id,start:Utils.normalizeDate(a.start_date),end:Utils.normalizeDate(a.end_date),type:a.absence_type||null,reason:a.absence_reason||null,status:a.current_status||null}))
+          run:({staffId}) => (absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId)).map(a=>({id:a.id,start:Utils.absenceEffectiveStart(a),end:Utils.absenceEffectiveEnd(a),plannedStart:Utils.normalizeDate(a.start_date),plannedEnd:Utils.normalizeDate(a.end_date),actualStart:Utils.normalizeDate(a.actual_start_date),actualReturn:Utils.normalizeDate(a.actual_return_date),type:a.absence_type||null,reason:a.absence_reason||null,status:a.current_status||null}))
         })
         groundedToolRegistry.register({
           name:'leave.check_window', access:GroundedCore.ACCESS.READ, module:'staff_absence',
@@ -13969,16 +14022,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if(coveringStaffId && String(coveringStaffId)===String(staffId)) blocked.push('covering_same_as_subject')
             if(coveringStaffId && !covering) blocked.push('covering_staff_not_found')
             if(covering && (covering.employment_status||'active')!=='active') blocked.push('covering_staff_inactive')
-            const overlap=(absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.normalizeDate(a.start_date)<=e && Utils.normalizeDate(a.end_date)>=s)
+            const overlap=(absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.absenceEffectiveStart(a)<=e && Utils.absenceEffectiveEnd(a)>=s)
             if(overlap.length) blocked.push('overlapping_leave')
             const onCallConflicts=(onCallSchedule.value||[]).filter(o=>String(o.primary_physician_id)===String(staffId) && Utils.normalizeDate(o.duty_date)>=s && Utils.normalizeDate(o.duty_date)<=e).map(o=>({id:o.id,date:Utils.normalizeDate(o.duty_date),coverageAreaId:o.coverage_area_id||null}))
             const rotationConflicts=(rotations.value||[]).filter(r=>['active','scheduled'].includes(r.rotation_status) && String(r.supervising_attending_id)===String(staffId) && Utils.normalizeDate(r.start_date)<=e && Utils.normalizeDate(r.end_date)>=s).map(r=>({id:r.id,residentId:r.resident_id,unitId:r.training_unit_id,start:r.start_date,end:r.end_date}))
             const coveringConflicts=coveringStaffId ? [
-              ...(absences.value||[]).filter(a=>String(a.staff_member_id)===String(coveringStaffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.normalizeDate(a.start_date)<=e && Utils.normalizeDate(a.end_date)>=s).map(a=>({kind:'leave',id:a.id,start:a.start_date,end:a.end_date})),
+              ...(absences.value||[]).filter(a=>String(a.staff_member_id)===String(coveringStaffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.absenceEffectiveStart(a)<=e && Utils.absenceEffectiveEnd(a)>=s).map(a=>({kind:'leave',id:a.id,start:Utils.absenceEffectiveStart(a),end:Utils.absenceEffectiveEnd(a),plannedStart:a.start_date,plannedEnd:a.end_date})),
               ...(onCallSchedule.value||[]).filter(o=>String(o.primary_physician_id)===String(coveringStaffId) && Utils.normalizeDate(o.duty_date)>=s && Utils.normalizeDate(o.duty_date)<=e).map(o=>({kind:'oncall',id:o.id,date:o.duty_date}))
             ] : []
             const days=s&&e&&s<=e?Math.max(1,Math.round((new Date(e)-new Date(s))/86400000)+1):0
-            return {person:person?{id:person.id,name:person.full_name}:null,covering:covering?{id:covering.id,name:covering.full_name}:null,start:s,end:e,days,blocked,overlap:overlap.map(a=>({id:a.id,start:a.start_date,end:a.end_date,status:a.current_status})),onCallConflicts,rotationConflicts,coveringConflicts}
+            return {person:person?{id:person.id,name:person.full_name}:null,covering:covering?{id:covering.id,name:covering.full_name}:null,start:s,end:e,days,blocked,overlap:overlap.map(a=>({id:a.id,start:Utils.absenceEffectiveStart(a),end:Utils.absenceEffectiveEnd(a),plannedStart:a.start_date,plannedEnd:a.end_date,status:a.current_status})),onCallConflicts,rotationConflicts,coveringConflicts}
           }
         })
         groundedToolRegistry.register({
@@ -14037,7 +14090,7 @@ document.addEventListener('DOMContentLoaded', () => {
           run:({staffId,date,coverageAreaId=null}) => {
             const d=Utils.normalizeDate(date)
             const today=Utils.normalizeDate(new Date())
-            const leave=(absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.normalizeDate(a.start_date)<=d && Utils.normalizeDate(a.end_date)>=d)
+            const leave=(absences.value||[]).filter(a=>String(a.staff_member_id)===String(staffId) && !['returned_to_duty','cancelled'].includes(a.current_status) && Utils.absenceEffectiveStart(a)<=d && Utils.absenceEffectiveEnd(a)>=d)
             const samePerson=(onCallSchedule.value||[]).filter(o=>String(o.primary_physician_id)===String(staffId) && Utils.normalizeDate(o.duty_date)===d)
             const sameSlot=(onCallSchedule.value||[]).filter(o=>{
               if(Utils.normalizeDate(o.duty_date)!==d) return false
@@ -14046,7 +14099,7 @@ document.addEventListener('DOMContentLoaded', () => {
               return coverageAreaId ? String(area)===String(coverageAreaId) : !area
             })
             return {
-              date:d, dateInPast:d<today, onLeave:leave.length>0, leave:leave.map(a=>({id:a.id,start:a.start_date,end:a.end_date,type:a.absence_reason||a.absence_type||null})),
+              date:d, dateInPast:d<today, onLeave:leave.length>0, leave:leave.map(a=>({id:a.id,start:Utils.absenceEffectiveStart(a),end:Utils.absenceEffectiveEnd(a),plannedStart:a.start_date,plannedEnd:a.end_date,type:a.absence_reason||a.absence_type||null})),
               duplicatePerson:samePerson.length>0, existingPersonShift:samePerson[0]?{id:samePerson[0].id,date:samePerson[0].duty_date}:null,
               slotOccupied:sameSlot.length>0 && !sameSlot.some(o=>String(o.primary_physician_id)===String(staffId)),
               existingSlot:sameSlot[0]?{id:sameSlot[0].id,primaryId:sameSlot[0].primary_physician_id,primaryName:getStaffName(sameSlot[0].primary_physician_id),coverageAreaId:sameSlot[0].coverage_area_id||null}:null
@@ -14791,7 +14844,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rots = rotations.value || []
         const trials = (researchOps.clinicalTrials.value) || []
         const absList = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
-        const onLeaveNow = (id) => absList.some(a => a.staff_member_id === id && Utils.normalizeDate(a.start_date) <= today && Utils.normalizeDate(a.end_date) >= today)
+        const onLeaveNow = (id) => absList.some(a => a.staff_member_id === id && Utils.absenceEffectiveStart(a) <= today && Utils.absenceEffectiveEnd(a) >= today)
         const rows = staff.map(s => {
           const callCount = shifts.filter(x => x.primary_physician_id === s.id || x.backup_physician_id === s.id).length
           const supervising = rots.filter(r => r.rotation_status === 'active' && r.supervising_attending_id === s.id).length
@@ -14830,7 +14883,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const onLeaveThatDay = (id) => (absences.value || []).some(a =>
           a.staff_member_id === id &&
           !['returned_to_duty', 'cancelled'].includes(a.current_status) &&
-          (!dd || (norm(a.start_date) <= dd && norm(a.end_date) >= dd)))
+          (!dd || (Utils.absenceEffectiveStart(a) <= dd && Utils.absenceEffectiveEnd(a) >= dd)))
         const alreadyOnCall = (id) => dd && (onCallSchedule.value || []).some(o =>
           o.primary_physician_id === id && norm(o.duty_date) === dd)
         const load = {}
@@ -15226,12 +15279,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!forcedIntent && askBar.pendingRotation && askBar.pendingRotation.awaiting){
           const pend=askBar.pendingRotation,q=asked.toLowerCase();const clearlyNew=/\b(cancel|remove|delete|on.?call|leave|absence|trial|research|show|who|which|list)\b/.test(q)
           if(!clearlyNew){
-            if(pend.awaiting==='date'){const dr=askBarExtractDates(q);if(dr.start){pend.start=dr.start;pend.end=dr.end||dr.start;pend.awaiting=pend.supervisor?'ready':'supervisor'}}
-            else if(pend.awaiting==='unit'){const ur=askBarResolveRotationUnit(q);if(ur.ambiguous?.length){askBar.turns.push(Vue.reactive({q:asked,text:`Which unit did you mean: ${ur.ambiguous.map(u=>u.unit_name).join(', ')}?`,chips:[],actions:[{label:'Open units',view:'training_units'}],sources:['units'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}if(ur.unit){pend.unit=ur.unit;pend.awaiting=pend.start?(pend.supervisor?'ready':'supervisor'):'date'}}
-            else if(pend.awaiting==='resident'||pend.awaiting==='supervisor'){const role=pend.awaiting;const rr=askBarResolveStaffRoleClarified(asked,role);if(rr.ambiguous){askBarRotationIdentityTurn(asked,rr.ambiguous,role,pend);return}if(rr.person){pend[role]=rr.person;pend.awaiting=!pend.resident?'resident':(!pend.unit?'unit':(!pend.start?'date':(!pend.supervisor?'supervisor':'ready')))}}
+            if(pend.awaiting==='date'){
+              const dr=askBarExtractDates(q,{domain:'rotation'})
+              if(dr.start){ pend.start=dr.start; pend.end=dr.end||null; pend.temporal=dr; pend.awaiting=dr.end&&!dr.needsClarification?(pend.supervisor?'ready':'supervisor'):'date_end' }
+            }
+            else if(pend.awaiting==='date_end'){
+              const dr=askBarExtractDates(q,{domain:'rotation',target:'end'})
+              if(dr.end){ pend.end=dr.end; pend.temporal=dr; pend.awaiting=pend.supervisor?'ready':'supervisor' }
+            }
+            else if(pend.awaiting==='unit'){const ur=askBarResolveRotationUnit(q);if(ur.ambiguous?.length){askBar.turns.push(Vue.reactive({q:asked,text:`Which unit did you mean: ${ur.ambiguous.map(u=>u.unit_name).join(', ')}?`,chips:[],actions:[{label:'Open units',view:'training_units'}],sources:['units'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}if(ur.unit){pend.unit=ur.unit;pend.awaiting=pend.start?(pend.end?(pend.supervisor?'ready':'supervisor'):'date_end'):'date'}}
+            else if(pend.awaiting==='resident'||pend.awaiting==='supervisor'){const role=pend.awaiting;const rr=askBarResolveStaffRoleClarified(asked,role);if(rr.ambiguous){askBarRotationIdentityTurn(asked,rr.ambiguous,role,pend);return}if(rr.person){pend[role]=rr.person;pend.awaiting=!pend.resident?'resident':(!pend.unit?'unit':(!pend.start?'date':(!pend.end?'date_end':(!pend.supervisor?'supervisor':'ready'))))}}
             if(pend.awaiting==='ready'){askBar.pendingRotation=null;askBarProposeRotation(pend,`${pend.original||'Assign rotation'} → ${asked}`);return}
             if(pend.awaiting==='supervisor'&&pend.resident&&pend.unit&&pend.start&&!pend.supervisor){askBar.pendingRotation=pend;askBar.turns.push(Vue.reactive({q:asked,text:`Who is the formal resident supervisor for ${pend.resident.full_name}'s rotation?`,chips:[],actions:[],sources:['staff'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
             if(pend.awaiting==='date'&&pend.resident&&pend.unit&&!pend.start){askBar.pendingRotation=pend;askBar.turns.push(Vue.reactive({q:asked,text:`When does ${pend.resident.full_name}'s rotation in ${pend.unit.unit_name} start and end?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
+            if(pend.awaiting==='date_end'&&pend.resident&&pend.unit&&pend.start&&!pend.end){askBar.pendingRotation=pend;askBar.turns.push(Vue.reactive({q:asked,text:`The rotation starts ${Utils.formatDateShort(pend.start)}. What is the end date?`,chips:[],actions:[],sources:[],followups:[],confidence:'medium',isClarify:true,asOf:askBarNow(),streaming:false}));return}
           }
           if(clearlyNew)askBar.pendingRotation=null
         }
@@ -15243,8 +15304,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const clearlyNewCommand=/\b(put|assign|schedule|book|set|add|give|make|cancel|remove|delete|draft|show|who|which|list|rotation|leave|absence|trial|research)\b/.test(q) && !/^(today|tomorrow|next|this|mon|tue|wed|thu|fri|sat|sun|\d)/.test(q.trim())
           if(!clearlyNewCommand){
             if(pend.awaiting==='date'){
-              const dr=askBarExtractDates(q)
-              if(dr.start){ const ready={subject:pend.subject,backup:pend.backup||null,start:dr.start,end:dr.end||dr.start}; askBar.pendingOncall=null; askBar.query=''; askBarProposeOncall(ready,`${pend.original||'Schedule on-call'} → ${asked}`); return }
+              const dr=askBarExtractDates(q,{domain:'oncall'})
+              if(dr.needsClarification){askBar.turns.push(Vue.reactive({q:asked,text:'Give one duty date for this on-call assignment.',chips:[],actions:[],sources:[],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}));return}
+              if(dr.start){ const ready={subject:pend.subject,backup:pend.backup||null,start:dr.start,end:dr.end,temporal:dr}; askBar.pendingOncall=null; askBar.query=''; askBarProposeOncall(ready,`${pend.original||'Schedule on-call'} → ${asked}`); return }
             } else if(pend.awaiting==='subject'){
               const rr=askBarResolveStaffClarified(asked)
               if(rr.ambiguous){ askBarOncallAmbiguityTurn(asked,rr.ambiguous,'subject',pend); return }
@@ -15261,12 +15323,23 @@ document.addEventListener('DOMContentLoaded', () => {
           const clearlyNewCommand=/\b(put|assign|schedule|book|set|add|give|make|cancel|remove|delete|draft|show|who|which|list|rotation|on.?call|trial|research)\b/.test(q) && !/^(today|tomorrow|next|this|mon|tue|wed|thu|fri|sat|sun|\d)/.test(q.trim())
           if(!clearlyNewCommand){
             if(pend.awaiting==='date'){
-              const dr=askBarExtractDates(q)
-              if(dr.start){pend.start=dr.start;pend.end=dr.end||dr.start;askBar.query='';askBar.pendingLeave=null;if(!pend.reason){askBar.turns.push(Vue.reactive({q:asked,text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${asked}`);return}
+              const dr=askBarExtractDates(q,{domain:'leave'})
+              if(dr.needsClarification){askBar.turns.push(Vue.reactive({q:asked,text:'Give the exact leave day or start and end dates.',chips:[],actions:[],sources:[],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}));return}
+              if(dr.start&&dr.end){pend.start=dr.start;pend.end=dr.end;pend.temporal=dr;askBar.query='';askBar.pendingLeave=null;if(!pend.reason){askBar.turns.push(Vue.reactive({q:asked,text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${asked}`);return}
+              if(dr.start&&!dr.end){pend.start=dr.start;pend.awaiting='date_end';askBar.pendingLeave=pend;askBar.turns.push(Vue.reactive({q:asked,text:`When does ${pend.subject.full_name}'s leave end?`,chips:[],actions:[],sources:[],followups:[],confidence:'medium',isClarify:true,asOf:askBarNow(),streaming:false}));return}
+              if(!dr.start&&dr.end){pend.end=dr.end;pend.awaiting='date_start';askBar.pendingLeave=pend;askBar.turns.push(Vue.reactive({q:asked,text:`When does ${pend.subject.full_name}'s leave start?`,chips:[],actions:[],sources:[],followups:[],confidence:'medium',isClarify:true,asOf:askBarNow(),streaming:false}));return}
+            } else if(pend.awaiting==='date_start'){
+              if(/^(same day|same date|that day)$/i.test(q.trim())){pend.start=pend.end}
+              else {const dr=askBarExtractDates(q,{domain:'leave',target:'start',allowPartial:true}); if(dr.start) pend.start=dr.start}
+              if(pend.start&&pend.end){if(pend.end<pend.start){askBar.turns.push(Vue.reactive({q:asked,text:'That start would be after the recorded end. Give an earlier start date.',chips:[],actions:[],sources:[],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}));return}askBar.pendingLeave=null;if(!pend.reason){askBar.turns.push(Vue.reactive({q:asked,text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${asked}`);return}
+            } else if(pend.awaiting==='date_end'){
+              if(/^(same day|same date|that day)$/i.test(q.trim())){pend.end=pend.start}
+              else {const dr=askBarExtractDates(q,{domain:'leave',target:'end',allowPartial:true}); if(dr.end) pend.end=dr.end}
+              if(pend.start&&pend.end){if(pend.end<pend.start){askBar.turns.push(Vue.reactive({q:asked,text:'That end would be before the leave starts. Give a later end date.',chips:[],actions:[],sources:[],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}));return}askBar.pendingLeave=null;if(!pend.reason){askBar.turns.push(Vue.reactive({q:asked,text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${asked}`);return}
             } else if(pend.awaiting==='subject' || pend.awaiting==='covering'){
               const rr=askBarResolveStaffClarified(asked)
               if(rr.ambiguous){askBarLeaveAmbiguityTurn(asked,rr.ambiguous,pend.awaiting,pend);return}
-              if(rr.person){if(pend.awaiting==='subject')pend.subject=rr.person;else pend.covering=rr.person;if(!pend.subject){pend.awaiting='subject';askBar.pendingLeave=pend;return}if(!pend.start){pend.awaiting='date';askBar.pendingLeave=pend;askBar.turns.push(Vue.reactive({q:asked,text:`When is ${pend.subject.full_name} away?`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}askBar.pendingLeave=null;if(!pend.reason){askBar.turns.push(Vue.reactive({q:asked,text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${asked}`);return}
+              if(rr.person){if(pend.awaiting==='subject')pend.subject=rr.person;else pend.covering=rr.person;if(!pend.subject){pend.awaiting='subject';askBar.pendingLeave=pend;return}if(!pend.start||!pend.end){pend.awaiting=!pend.start&&pend.end?'date_start':(pend.start&&!pend.end?'date_end':'date');askBar.pendingLeave=pend;askBar.turns.push(Vue.reactive({q:asked,text:!pend.start&&pend.end?`When does ${pend.subject.full_name}'s leave start?`:(pend.start&&!pend.end?`When does ${pend.subject.full_name}'s leave end?`:`When is ${pend.subject.full_name} away?`),chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}askBar.pendingLeave=null;if(!pend.reason){askBar.turns.push(Vue.reactive({q:asked,text:`What type of leave is this for ${pend.subject.full_name}?`,chips:[],actions:[],sources:[],followups:[],confidence:'high',leaveClarify:{subject:pend.subject,covering:pend.covering,start:pend.start,end:pend.end,type:pend.type},leaveReasons:[['vacation','Vacation'],['sick_leave','Sick'],['conference','Conference'],['training','Training'],['personal','Personal']],asOf:askBarNow(),streaming:false}));return}askBarProposeLeave(pend,`${pend.original||'Record leave'} → ${asked}`);return}
             }
           }
           if(clearlyNewCommand) askBar.pendingLeave=null
@@ -15486,7 +15559,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const open = (absences.value||[]).filter(a => a.staff_member_id===person.id && !['returned_to_duty','cancelled'].includes(a.current_status))
           if (!open.length) { askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} has no open leave to edit.`,chips:[],actions:[{label:'Open leave',view:'staff_absence'}],sources:['leave records'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false})); return }
           const a = open[0]; const fmt=(d)=>Utils.formatDateShort(d)
-          const dr = askBarExtractDates(q)
+          const dr = askBarExtractDates(q,{domain:'leave',allowPartial:true})
+          if(dr.needsClarification){askBar.turns.push(Vue.reactive({q:asked,text:'I could not establish the revised leave dates safely. Give the exact start or end date you want to change.',chips:[{label:person.full_name,id:person.id}],actions:[],sources:['leave records'],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}));return}
           const changes = {}; const rows = []
           rows.push({ k:'Who', v: person.full_name })
           rows.push({ k:'Type', v: a.absence_reason||'—' })
@@ -15544,7 +15618,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // detect WHAT to change: supervisor, unit, or dates
           const supMatch = q.match(/(?:to|under|with|supervisor)\s+([a-zñáéíóú]+)/i)
           const newSup = supMatch ? (askBarResolveStaffRole(supMatch[1],'supervisor') || askBarResolveStaff(supMatch[1])) : null
-          const dr = askBarExtractDates(q)
+          const dr = askBarExtractDates(q,{domain:'rotation',allowPartial:true})
+          if(dr.needsClarification){askBar.turns.push(Vue.reactive({q:asked,text:'I could not establish the revised rotation date safely. Say which boundary to change, e.g. “move end date to 31 Oct”.',chips:[{label:person.full_name,id:person.id}],actions:[],sources:['rotations'],followups:[],confidence:'low',isClarify:true,asOf:askBarNow(),streaming:false}));return}
           const changes = {}; const rows = []
           rows.push({ k:'Who', v: person.full_name })
           rows.push({ k:'Unit', v: un(r.training_unit_id) })
@@ -15576,9 +15651,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const active = (rotations.value||[]).filter(r => r.resident_id===person.id && r.rotation_status==='active')
           if (!active.length) { askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} has no active rotation to extend.`,chips:[],actions:[{label:'Open rotations',view:'resident_rotations'}],sources:['rotations'],followups:[],confidence:'high',asOf:askBarNow(),streaming:false})); return }
           const r = active[0]; const units=trainingUnits.value||[]; const un=(id)=>(units.find(u=>u.id===id)||{}).unit_name||'a unit'
-          const dr = askBarExtractDates(asked.toLowerCase())
+          const dr = askBarExtractDates(asked.toLowerCase(),{domain:'rotation',target:'end',allowPartial:true})
           if (!dr.end && !dr.start) { askBar.turns.push(Vue.reactive({q:asked,text:`${person.full_name} is in ${un(r.training_unit_id)} until ${r.end_date?Utils.formatDateShort(r.end_date):'no end date set'}. Extend until when? (e.g. "until 31 October")`,chips:[],actions:[],sources:[],followups:[],confidence:'low',asOf:askBarNow(),streaming:false})); return }
-          const newEnd = dr.end || dr.start
+          const newEnd = dr.end
           const fmt=(d)=>{try{return new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}catch(e){return d}}
           askBar.turns.push(Vue.reactive({q:'',text:'',rotationExtendProposal:{
             id:r.id, name:person.full_name, unit:un(r.training_unit_id),
@@ -16012,21 +16087,21 @@ document.addEventListener('DOMContentLoaded', () => {
           const endIso = Utils.normalizeDate(fu.end || dateIso)
           const active = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
           const out = active.filter(a => {
-            const s=Utils.normalizeDate(a.start_date), e=Utils.normalizeDate(a.end_date)
+            const s=Utils.absenceEffectiveStart(a), e=Utils.absenceEffectiveEnd(a)
             return s<=endIso && e>=dateIso
           })
           const label = dateIso===endIso ? Utils.formatDateShort(dateIso) : `${Utils.formatDateShort(dateIso)}–${Utils.formatDateShort(endIso)}`
           if (!out.length) return { text:`No recorded leave overlaps ${label}.`, visual:null, chips:[], actions:[{label:'Open leave view',view:'staff_absence',primary:true}], sources:['leave records'], followups:[], confidence:'high', reviewScope:`All staff · ${label}` }
           const _reasonLbl={vacation:'vacation',sick_leave:'sick',conference:'conference',training:'training',personal:'personal',other:'leave'}
           const rows=out.slice(0,8).map(a=>({id:a.staff_member_id,name:getStaffName(a.staff_member_id),reason:_reasonLbl[a.absence_reason]||String(a.absence_reason||'leave').replace(/_/g,' '),until:a.end_date?Utils.formatDateShort(a.end_date):null,covered:!!a.covering_staff_id,cover:a.covering_staff_id?getStaffName(a.covering_staff_id):null}))
-          const evidence=out.slice(0,12).map(a=>({label:`${getStaffName(a.staff_member_id)} — ${_reasonLbl[a.absence_reason]||a.absence_reason||'leave'}`,detail:`${Utils.normalizeDate(a.start_date)} → ${Utils.normalizeDate(a.end_date)}`,source:'staff_absence_records'}))
+          const evidence=out.slice(0,12).map(a=>({label:`${getStaffName(a.staff_member_id)} — ${_reasonLbl[a.absence_reason]||a.absence_reason||'leave'}`,detail:`${Utils.absenceEffectiveStart(a)} → ${Utils.absenceEffectiveEnd(a)}`,source:'staff_absence_records'}))
           return { text:`${out.length} staff member${out.length===1?'':'s'} ${out.length===1?'has':'have'} recorded leave overlapping ${label}: ${out.slice(0,4).map(a=>getStaffName(a.staff_member_id)).join(', ')}${out.length>4?'…':''}.`, visual:{type:'absence',rows}, evidence, chips:[], actions:[{label:'Open leave view',view:'staff_absence',primary:true}], sources:['leave records'], followups:[], confidence:'high', reviewScope:`All staff · ${label}` }
         }
         if (fu.kind === 'staff_leave' || fu.kind === 'staff_leave_schedule' || fu.kind === 'staff_leave_on_date') {
           const todayIso = Utils.normalizeDate(new Date())
           const allLeave = (absences.value || []).filter(a => String(a.staff_member_id) === String(fu.id) && !['returned_to_duty','cancelled'].includes(a.current_status) && a.start_date && a.end_date)
             .sort((a,b)=>Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
-          const overlaps = (a,start,end=start) => Utils.normalizeDate(a.start_date) <= end && Utils.normalizeDate(a.end_date) >= start
+          const overlaps = (a,start,end=start) => Utils.absenceEffectiveStart(a) <= end && Utils.absenceEffectiveEnd(a) >= start
           const current = allLeave.filter(a => overlaps(a,todayIso,todayIso))
           const upcoming = allLeave.filter(a => Utils.normalizeDate(a.start_date) > todayIso)
           const fmtRange = a => `${Utils.formatDateShort(a.start_date)}–${Utils.formatDateShort(a.end_date)}`
@@ -16139,7 +16214,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const defaultEnd = Utils.normalizeDate(new Date(Date.now()+30*864e5))
           const windowStart = parsed?.start || today
           const windowEnd = parsed?.end || parsed?.start || defaultEnd
-          const overlapsWindow = a => { const s=Utils.normalizeDate(a.start_date), e=Utils.normalizeDate(a.end_date); return s<=windowEnd && e>=windowStart }
+          const overlapsWindow = a => { const s=Utils.absenceEffectiveStart(a), e=Utils.absenceEffectiveEnd(a); return s<=windowEnd && e>=windowStart }
           const up = (absences.value||[]).filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && a.start_date && a.end_date && Utils.normalizeDate(a.end_date)>=today && overlapsWindow(a))
             .filter(a => intent !== 'absence_scheduled' || Utils.normalizeDate(a.start_date) > today)
             .sort((a,b)=>Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
@@ -16182,7 +16257,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const oncall=onCallSchedule.value||[]; const rots=rotations.value||[]
           const risks=[]
           abs.forEach(a=>{
-            const s=Utils.normalizeDate(a.start_date), e=Utils.normalizeDate(a.end_date)
+            const s=Utils.absenceEffectiveStart(a), e=Utils.absenceEffectiveEnd(a)
             const oc=oncall.find(o=>o.primary_physician_id===a.staff_member_id && Utils.normalizeDate(o.duty_date)>=s && Utils.normalizeDate(o.duty_date)<=e)
             const rt=rots.find(r=>r.supervising_attending_id===a.staff_member_id && r.rotation_status==='active' && r.start_date && Utils.normalizeDate(r.start_date)<=e && (!r.end_date||Utils.normalizeDate(r.end_date)>=s))
             if (oc) risks.push({name:getStaffName(a.staff_member_id),issue:`on call ${Utils.formatDateShort(oc.duty_date)} during leave`})
@@ -16194,7 +16269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'absence_this_month') {
           const now=new Date(); const ms=Utils.normalizeDate(new Date(now.getFullYear(),now.getMonth(),1)), me=Utils.normalizeDate(new Date(now.getFullYear(),now.getMonth()+1,0))
-          const mon=(absences.value||[]).filter(a=>a.current_status!=='cancelled' && a.start_date && Utils.normalizeDate(a.start_date)<=me && a.end_date && Utils.normalizeDate(a.end_date)>=ms)
+          const mon=(absences.value||[]).filter(a=>a.current_status!=='cancelled' && a.start_date && Utils.absenceEffectiveStart(a)<=me && Utils.absenceEffectiveEnd(a)>=ms)
             .sort((a,b)=>Utils.normalizeDate(a.start_date).localeCompare(Utils.normalizeDate(b.start_date)))
           if (!mon.length) return { text: 'No leave recorded for this month.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
           const fmt=(d)=>Utils.formatDateShort(d)
@@ -16213,7 +16288,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const abs=(absences.value||[]).filter(a=>!['cancelled'].includes(a.current_status) && a.start_date && a.end_date)
           // count concurrent absences per day over next 60 days
           const today=new Date(); const dayCount={}
-          for (let i=0;i<60;i++){ const d=Utils.normalizeDate(new Date(today.getTime()+i*864e5)); const n=abs.filter(a=>Utils.normalizeDate(a.start_date)<=d && Utils.normalizeDate(a.end_date)>=d); if(n.length>=2) dayCount[d]=n.map(a=>getStaffName(a.staff_member_id)) }
+          for (let i=0;i<60;i++){ const d=Utils.normalizeDate(new Date(today.getTime()+i*864e5)); const n=abs.filter(a=>Utils.absenceEffectiveStart(a)<=d && Utils.absenceEffectiveEnd(a)>=d); if(n.length>=2) dayCount[d]=n.map(a=>getStaffName(a.staff_member_id)) }
           const days=Object.entries(dayCount).sort((a,b)=>b[1].length-a[1].length)
           if (!days.length) return { text: 'No days in the next 60 with 2+ staff out at once — coverage looks safe.', chips: [], actions: [{ label: 'Open leave', view: 'staff_absence' }], sources: ['leave records'], followups: [], confidence: 'high' }
           const items=days.slice(0,8).map(([d,names])=>({title:Utils.formatDateShort(d),badge:names.length+' out',tone:names.length>=3?'project':'default',meta:names.slice(0,3).join(', ')}))
@@ -16226,7 +16301,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const range = askBarParseRange(q)
           const rangeLabel = range ? range.label : 'today'
           const overlaps = (a) => {
-            const s = Utils.normalizeDate(a.start_date), e = Utils.normalizeDate(a.end_date)
+            const s = Utils.absenceEffectiveStart(a), e = Utils.absenceEffectiveEnd(a)
             if (range) return s <= range.end && e >= range.start   // any overlap with the window
             return today >= s && today <= e && a.current_status === 'currently_absent'
           }
@@ -16239,7 +16314,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const rows = out.slice(0,6).map(a => ({
             id: a.staff_member_id, name: staffName(a.staff_member_id),
             reason: _reasonLbl[a.absence_reason] || (a.absence_reason || 'leave').replace(/_/g,' '),
-            until: a.end_date ? fmt(a.end_date) : null,
+            until: Utils.absenceEffectiveEnd(a) ? fmt(Utils.absenceEffectiveEnd(a)) : null,
             covered: !!a.covering_staff_id, cover: a.covering_staff_id ? staffName(a.covering_staff_id) : null
           }))
           const uncovered = rows.filter(r => !r.covered).length
@@ -16247,7 +16322,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const text = `${out.length} absent ${rangeLabel}${uncovered ? ` — ${uncovered} without cover` : ''}: ${_names}${out.length>3?'…':''}.`
           const evidence = out.slice(0,8).map(a => ({
             label: `${staffName(a.staff_member_id)} — ${_reasonLbl[a.absence_reason] || a.absence_reason}`,
-            detail: `${Utils.normalizeDate(a.start_date)} → ${Utils.normalizeDate(a.end_date)}${a.covering_staff_id ? ' · covered by ' + staffName(a.covering_staff_id) : ' · no cover'}`,
+            detail: `${Utils.absenceEffectiveStart(a)} → ${Utils.absenceEffectiveEnd(a)}${a.covering_staff_id ? ' · covered by ' + staffName(a.covering_staff_id) : ' · no cover'}`,
             source: 'staff_absence_records'
           }))
           return { text, visual: { type: 'absence', rows }, evidence, chips: [], actions: [{ label: 'Open leave view', view: 'staff_absence', primary: true }], sources: ['leave records'], followups: [{ label: 'Any coverage gaps?', intent: 'coverage_gaps' }, { label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
@@ -16786,7 +16861,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const uname = (id) => units.find(u => u.id === id)?.unit_name || null
           const tiles = residents.map(r => {
             const rot = rots.find(x => x.resident_id === r.id && x.rotation_status === 'active')
-            const onLeave = absList.find(a => a.staff_member_id === r.id && Utils.normalizeDate(a.start_date) <= today && Utils.normalizeDate(a.end_date) >= today)
+            const onLeave = absList.find(a => a.staff_member_id === r.id && Utils.absenceEffectiveStart(a) <= today && Utils.absenceEffectiveEnd(a) >= today)
             const state = onLeave ? 'leave' : (rot ? 'rotating' : 'free')
             return { title: r.full_name, code: r.residency_year_override || r.training_year || null,
                      state, sub: onLeave ? 'on leave' : (rot ? (uname(rot.training_unit_id) || 'a unit') : 'unassigned'),
@@ -17370,7 +17445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'today_snapshot') {
           const today = Utils.normalizeDate(new Date())
           const oc = (onCallSchedule.value||[]).filter(o => Utils.normalizeDate(o.duty_date)===today)
-          const absent = (absences.value||[]).filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && a.start_date && Utils.normalizeDate(a.start_date)<=today && a.end_date && Utils.normalizeDate(a.end_date)>=today)
+          const absent = (absences.value||[]).filter(a => !['cancelled','returned_to_duty'].includes(a.current_status) && Utils.absenceEffectiveStart(a) && Utils.absenceEffectiveStart(a)<=today && Utils.absenceEffectiveEnd(a) && Utils.absenceEffectiveEnd(a)>=today)
           const startingToday = (rotations.value||[]).filter(r => r.start_date && Utils.normalizeDate(r.start_date)===today)
           const items = []
           items.push({ title: 'On call today', badge: oc.length?null:'⚠ none', tone: oc.length?'active':'project', meta: oc.length ? oc.map(o=>getStaffName(o.primary_physician_id)).join(', ') : 'no coverage today' })
@@ -17387,7 +17462,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const oc=(onCallSchedule.value||[]).filter(o=>inWk(o.duty_date))
           const starting=(rotations.value||[]).filter(r=>r.start_date&&inWk(r.start_date))
           const ending=(rotations.value||[]).filter(r=>r.end_date&&inWk(r.end_date)&&r.rotation_status==='active')
-          const leave=(absences.value||[]).filter(a=>a.current_status!=='cancelled'&&a.start_date&&Utils.normalizeDate(a.start_date)<=e&&a.end_date&&Utils.normalizeDate(a.end_date)>=s)
+          const leave=(absences.value||[]).filter(a=>a.current_status!=='cancelled'&&Utils.absenceEffectiveStart(a)&&Utils.absenceEffectiveStart(a)<=e&&Utils.absenceEffectiveEnd(a)&&Utils.absenceEffectiveEnd(a)>=s)
           const items=[
             { title:'On-call shifts', badge:oc.length+'', tone:oc.length?'active':'project', meta: oc.length?`${oc.filter(o=>o.primary_physician_id).length} filled`:'none scheduled' },
             { title:'Rotations starting', badge:starting.length+'', tone:'active', meta: starting.slice(0,3).map(r=>getStaffName(r.resident_id)).join(', ')||'none' },
@@ -17413,7 +17488,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // leave colliding with duty
           const abs=(absences.value||[]).filter(a=>!['cancelled','returned_to_duty'].includes(a.current_status))
           let collisions=0
-          abs.forEach(a=>{const as=Utils.normalizeDate(a.start_date),ae=Utils.normalizeDate(a.end_date); if(futureOc.some(o=>o.primary_physician_id===a.staff_member_id&&Utils.normalizeDate(o.duty_date)>=as&&Utils.normalizeDate(o.duty_date)<=ae)) collisions++})
+          abs.forEach(a=>{const as=Utils.absenceEffectiveStart(a),ae=Utils.absenceEffectiveEnd(a); if(futureOc.some(o=>o.primary_physician_id===a.staff_member_id&&Utils.normalizeDate(o.duty_date)>=as&&Utils.normalizeDate(o.duty_date)<=ae)) collisions++})
           if (collisions) risks.push({ title:`${collisions} leave/duty collision${collisions===1?'':'s'}`, tone:'project', meta: 'someone on call during their leave' })
           // units at/over capacity
           const units=trainingUnits.value||[]; const overcap=units.filter(u=>{const n=(rotations.value||[]).filter(r=>r.rotation_status==='active'&&r.training_unit_id===u.id).length; return n>(u.maximum_residents||5)})
@@ -17441,7 +17516,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // 1. On-call ↔ absence conflicts (someone scheduled on-call while on leave)
           const absList = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
           const within = (date, a) => {
-            const d = Utils.normalizeDate(date), s = Utils.normalizeDate(a.start_date), e = Utils.normalizeDate(a.end_date)
+            const d = Utils.normalizeDate(date), s = Utils.absenceEffectiveStart(a), e = Utils.absenceEffectiveEnd(a)
             return d >= s && d <= e
           }
           ;(onCallSchedule.value || []).forEach(shift => {
