@@ -195,3 +195,17 @@ When you're ready for Tier 2:
 | Leave approval flow? | Direct record vs. request → approve | Direct for now (Tier 1), request flow in Tier 2 |
 | How many people log in? | 2-3 now | Start with 2-3, expand when ready |
 | Grounded (chat) available to? | Everyone vs. coordinators | Coordinators only for now (it changes data) |
+
+
+## V46.14 Access Gate 4.2 — Frontend session policy
+
+The authentication endpoint and backend JWT verification remain unchanged. The frontend persistence contract is now explicit:
+
+- normal JWTs are stored in tab-scoped `sessionStorage`;
+- `Remember my email` stores only the email preference;
+- trusted-browser persistence is a separate opt-in, bounded to 12 hours client-side;
+- a trusted token recovered in a new browser session is validated with `/api/auth/me` but requires an explicit Continue action before protected records render;
+- legacy localStorage JWTs without bounded trust metadata are cleared;
+- logout/401 clear all session/trust storage.
+
+This is defence-in-depth at the client layer. Server-side JWT expiry, revocation and signing remain backend responsibilities and require independent verification.

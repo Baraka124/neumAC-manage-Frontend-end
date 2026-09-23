@@ -1,0 +1,50 @@
+{
+  "release": "V46.14 Access Gate 4.2",
+  "checkpoint": "session-integrity",
+  "files": {
+    "app.js": {
+      "sha256": "19f7eb03d2d7f15d796c1acd6fb39fae9fa00bfd92ffa1c59f436fe7d8cb295a",
+      "bytes": 1256035
+    },
+    "index.html": {
+      "sha256": "c47e42532f04fb90387b2a140fa57f37381bf6cba1602107d04b97b1dda9c040",
+      "bytes": 1153395
+    },
+    "entry46.css": {
+      "sha256": "0d614978fef15ae532969ffe42e3d0cd783fd4a2baad8d118c20697cbb01344b",
+      "bytes": 10689
+    },
+    "style.css": {
+      "sha256": "1f32b6405c1a45d916f74c64ff2798386070f2b34a592f65134ae9502e67202c",
+      "bytes": 2333325
+    },
+    "grounded-core.js": {
+      "sha256": "738ed64d64f02358079b94635591b63bf3f5a227301c5e46f473acc98697220b",
+      "bytes": 9724
+    },
+    "activity45.js": {
+      "sha256": "c943857ad57655cfea16a505957587eb5cd00ec119c3696d98961ce2c80aaedb",
+      "bytes": 34520
+    },
+    "SUPABASE_SCHEMA.sql": {
+      "sha256": "66541c3c9017c7d6480831999ca33325e0953bdeccc193d4873a8e8a7a195768",
+      "bytes": 36071
+    },
+    "ACCESS-GATE-V46.14.md": {
+      "sha256": "ca5e41cdf9b650660a2adbb423ff87ef631676aa22903fe89c26f37923a0ef78",
+      "bytes": 2874
+    },
+    "ACCESS-GATE42-CHANGES.md": {
+      "sha256": "d8823447472fa3ef722d393196d10cc39a60d641bc997477d38014e650c5337e",
+      "bytes": 2498
+    },
+    "VALIDATION-V46.14-ACCESS-GATE42.md": {
+      "sha256": "4cf30484d2ee98f24cd34dd2755f049cbb643a4115375ffa5f1a5c23bf5f13d7",
+      "bytes": 2419
+    },
+    "test-v4614-access42.cjs": {
+      "sha256": "0fe1fadcb81ce2a6eec95eef86bcbc1483fd1fe46869d8e36022ce09a9e8ef2d",
+      "bytes": 4595
+    }
+  }
+}

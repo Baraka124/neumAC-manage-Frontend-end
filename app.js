@@ -44,8 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
       API_BASE_URL: window.location.hostname.includes('localhost')
         ? 'http://localhost:3000' 
         : 'https://neumac-manage-back-end-production.up.railway.app',      
+      // V46.14 Access Gate 4.2: active sessions are tab-scoped by default.
+      // The legacy localStorage keys are retained only for migration/explicit trusted-browser persistence.
       TOKEN_KEY: 'neumocare_token',
       USER_KEY: 'neumocare_user',
+      SESSION_TOKEN_KEY: 'neumocare_session_token',
+      SESSION_USER_KEY: 'neumocare_session_user',
+      TRUST_META_KEY: 'neumocare_trust_meta',
+      TRUST_MAX_AGE_MS: 12 * 60 * 60 * 1000,
       CACHE_TTL: 300000
     }
 
@@ -1340,7 +1346,78 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       get isOnline() { return this._isOnline }
 
-      get token() { return localStorage.getItem(CONFIG.TOKEN_KEY) }
+      get sessionToken() {
+        try { return sessionStorage.getItem(CONFIG.SESSION_TOKEN_KEY) } catch (_) { return null }
+      }
+
+      get persistentToken() {
+        try { return localStorage.getItem(CONFIG.TOKEN_KEY) } catch (_) { return null }
+      }
+
+      get token() { return this.sessionToken || this.persistentToken }
+      get tokenSource() { return this.sessionToken ? 'session' : (this.persistentToken ? 'persistent' : null) }
+
+      get trustMeta() {
+        try {
+          const raw = localStorage.getItem(CONFIG.TRUST_META_KEY)
+          if (!raw) return null
+          const meta = JSON.parse(raw)
+          if (!meta || !Number.isFinite(Number(meta.expiresAt))) return null
+          return meta
+        } catch (_) { return null }
+      }
+
+      persistentSessionIsUsable() {
+        if (!this.persistentToken) return false
+        const meta = this.trustMeta
+        if (!meta) return false
+        const now = Date.now()
+        const expiresAt = Number(meta.expiresAt || 0)
+        const issuedAt = Number(meta.issuedAt || 0)
+        return issuedAt > 0 && expiresAt > now && (expiresAt - issuedAt) <= CONFIG.TRUST_MAX_AGE_MS + 5000
+      }
+
+      clearAuthStorage() {
+        try { sessionStorage.removeItem(CONFIG.SESSION_TOKEN_KEY) } catch (_) {}
+        try { sessionStorage.removeItem(CONFIG.SESSION_USER_KEY) } catch (_) {}
+        try { localStorage.removeItem(CONFIG.TOKEN_KEY) } catch (_) {}
+        try { localStorage.removeItem(CONFIG.USER_KEY) } catch (_) {}
+        try { localStorage.removeItem(CONFIG.TRUST_META_KEY) } catch (_) {}
+      }
+
+      storeSessionUser(user) {
+        try {
+          if (user) sessionStorage.setItem(CONFIG.SESSION_USER_KEY, JSON.stringify(user))
+          else sessionStorage.removeItem(CONFIG.SESSION_USER_KEY)
+        } catch (_) {}
+      }
+
+      storeAuthenticatedSession(data, { persist = false } = {}) {
+        if (!data?.token || !data?.user?.id) return
+        const now = Date.now()
+        try {
+          sessionStorage.setItem(CONFIG.SESSION_TOKEN_KEY, data.token)
+          sessionStorage.setItem(CONFIG.SESSION_USER_KEY, JSON.stringify(data.user))
+        } catch (_) {}
+        if (persist) {
+          try {
+            localStorage.setItem(CONFIG.TOKEN_KEY, data.token)
+            localStorage.setItem(CONFIG.TRUST_META_KEY, JSON.stringify({ issuedAt: now, expiresAt: now + CONFIG.TRUST_MAX_AGE_MS }))
+          } catch (_) {}
+        } else {
+          try { localStorage.removeItem(CONFIG.TOKEN_KEY) } catch (_) {}
+          try { localStorage.removeItem(CONFIG.TRUST_META_KEY) } catch (_) {}
+        }
+        // Cached identity never grants access and no longer needs to persist across browser sessions.
+        try { localStorage.removeItem(CONFIG.USER_KEY) } catch (_) {}
+      }
+
+      promotePersistentToSession() {
+        if (!this.persistentSessionIsUsable()) return false
+        const token = this.persistentToken
+        try { sessionStorage.setItem(CONFIG.SESSION_TOKEN_KEY, token) } catch (_) { return false }
+        return true
+      }
 
       headers() {
         const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' }
@@ -1390,8 +1467,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if (endpoint === '/api/auth/login') throw new Error('Email or password not recognised. Please try again.')
               if (!this._sessionExpired) {
                 this._sessionExpired = true
-                localStorage.removeItem(CONFIG.TOKEN_KEY)
-                localStorage.removeItem(CONFIG.USER_KEY)
+                this.clearAuthStorage()
                 window.dispatchEvent(new CustomEvent('neumax:session-expired'))
               }
               throw new Error('Session expired. Please log in again.')
@@ -1466,11 +1542,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return Utils.ensureArray(payload)
       }
 
-      async login(email, password) {
+      async login(email, password, options = {}) {
         const data = await this.request('/api/auth/login', { method: 'POST', body: { email, password }, timeoutMs:15000 })
         if (data?.token && data?.user?.id) {
-          localStorage.setItem(CONFIG.TOKEN_KEY, data.token)
-          localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(data.user))
+          this.storeAuthenticatedSession(data, { persist: options.persist === true })
           this.clearCache()
           this._sessionExpired = false
         }
@@ -1479,8 +1554,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       async logout() {
         try { await this.request('/api/auth/logout', { method: 'POST' }) } finally {
-          localStorage.removeItem(CONFIG.TOKEN_KEY)
-          localStorage.removeItem(CONFIG.USER_KEY)
+          this.clearAuthStorage()
           this.clearCache()
         }
       }
@@ -1962,7 +2036,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 6.1 useAuth ============
     function useAuth() {
       const currentUser = ref(null)
-      const loginForm = reactive({ email: '', password: '', remember_me: false })
+      const loginForm = reactive({ email: '', password: '', remember_me: false, keep_signed_in: false })
       const loginLoading = ref(false)
 
       // hasPermission reads from the explicit permissions array returned by the backend
@@ -7533,7 +7607,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const loginError = ref('')
         const loginFieldErrors = reactive({ email: '', password: '' })
         const clearLoginError = (field) => { if (field === 'email') loginFieldErrors.email = ''; if (field === 'password') loginFieldErrors.password = ''; loginError.value = '' }
-        const entry = reactive({ state:'checking', mode:'signin', message:'', capsLock:false })
+        const entry = reactive({ state:'checking', mode:'signin', message:'', notice:'', capsLock:false, pendingUser:null, trustUntil:null })
         const handleForgotPassword = () => { entry.mode = 'help'; loginError.value = '' }
         const backToSignIn = () => { entry.mode = 'signin'; loginError.value = ''; Vue.nextTick(() => document.getElementById('entry-email')?.focus()) }
         const entryBusy = computed(() => loginLoading.value || entry.state === 'checking' || entry.state === 'opening')
@@ -9895,7 +9969,8 @@ document.addEventListener('DOMContentLoaded', () => {
               currentUser.value.full_name = userProfileModal.form.full_name
               currentUser.value.department_id = userProfileModal.form.department_id
             }
-            localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value))
+            if (typeof API.storeSessionUser === 'function') API.storeSessionUser(currentUser.value)
+            else try { localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(currentUser.value)) } catch (_) {}
             // If this user has a linked staff record, open it for full profile editing
             if (userProfileModal.form.linked_staff_id) {
               const staffRecord = medicalStaff.value.find(s => s.id === userProfileModal.form.linked_staff_id)
@@ -9919,43 +9994,64 @@ document.addEventListener('DOMContentLoaded', () => {
           if (loginForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginForm.email)) loginFieldErrors.email = 'Enter a valid email address'
           loginFieldErrors.password = !loginForm.password ? 'Password required' : ''
           if (loginFieldErrors.email || loginFieldErrors.password) { loginError.value = 'Please fill all required fields'; return }
-          loginLoading.value = true; loginError.value = ''; entry.state = 'signin'
+          loginLoading.value = true; loginError.value = ''; entry.notice = ''; entry.state = 'signin'
           try {
-            const response = await API.login(loginForm.email, loginForm.password)
+            const response = await API.login(loginForm.email, loginForm.password, { persist: loginForm.keep_signed_in === true })
             if (!response?.token || !response?.user?.id) throw new Error('The server returned an incomplete sign-in response. Please try again.')
             try { if (loginForm.remember_me) localStorage.setItem('neumdesk_entry_email',loginForm.email); else localStorage.removeItem('neumdesk_entry_email') } catch (_) {}
             loginForm.password = ''; showPassword.value = false; entry.capsLock = false
-            entry.state = 'opening'
-            currentUser.value = response.user; localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(response.user))
-            maybeShowPreviewIntro(response.user)
             showToast('Success', `Welcome, ${response.user.full_name}!`, 'success')
-            // FIX: set currentView BEFORE loadAllData — currentUser already triggers the
-            // app-layout (v-else on !currentUser), so leaving currentView at 'login' here
-            // meant the dashboard had no matching v-if branch and rendered blank with the
-            // breadcrumb falling back to 'neumDesk' until loadAllData fully resolved.
-            currentView.value = 'dashboard'
-            await loadAllData()
-            if (currentUser.value) { entry.state = 'ready'; loadBrain() }
+            await openEntryWorkspace(response.user)
           } catch (e) { entry.state = 'signin'; loginError.value = e.message || 'Sign-in could not be completed. Please try again.' }
           finally { loginLoading.value = false }
         }
 
-        // Cached identity is never used to grant or render workspace access.
+        const openEntryWorkspace = async (user, { attempt = null } = {}) => {
+          entry.state = 'opening'; entry.pendingUser = null; entry.message = ''; entry.notice = ''
+          currentUser.value = user; currentView.value = 'dashboard'
+          if (typeof API.storeSessionUser === 'function') API.storeSessionUser(user)
+          else try { localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user)) } catch (_) {}
+          maybeShowPreviewIntro(user)
+          await loadAllData()
+          if (attempt !== null && attempt !== entryAttempt) return
+          if (currentUser.value) { entry.state = 'ready'; loadBrain() }
+        }
+
+        // V46.14 Access Gate 4.2
+        // - Same-tab sessionStorage sessions may resume automatically after /auth/me verification.
+        // - Explicit trusted-browser sessions are bounded and require a deliberate Continue action on a new browser session.
+        // - Legacy unbounded localStorage tokens are never silently promoted.
         let entryAttempt = 0
         const validateEntrySession = async () => {
           const attempt = ++entryAttempt
-          entry.state = 'checking'; entry.message = ''; loginError.value = ''
-          if (!API.token) { entry.state = 'signin'; currentView.value = 'login'; return }
+          entry.state = 'checking'; entry.message = ''; entry.notice = ''; loginError.value = ''; entry.pendingUser = null; entry.trustUntil = null
+
+          const source = API.tokenSource || (API.token ? 'session' : null)
+          if (!source) { entry.state = 'signin'; currentView.value = 'login'; return }
+
+          if (source === 'persistent' && !API.persistentSessionIsUsable()) {
+            if (typeof API.clearAuthStorage === 'function') API.clearAuthStorage()
+            else { try { localStorage.removeItem(CONFIG.TOKEN_KEY); localStorage.removeItem(CONFIG.USER_KEY) } catch (_) {} }
+            currentUser.value = null; currentView.value = 'login'; entry.state = 'signin'
+            entry.notice = 'For security, please sign in again. neumDesk no longer resumes legacy unbounded browser sessions.'
+            return
+          }
+
           try {
             const data = await API.request('/api/auth/me', {skipCache:true, timeoutMs:15000})
             if (attempt !== entryAttempt) return
             if (!data?.id || data.account_status !== 'active') throw new Error('Your session could not be validated. Please sign in again.')
-            entry.state = 'opening'; currentUser.value = data; currentView.value = 'dashboard'
-            localStorage.setItem(CONFIG.USER_KEY,JSON.stringify(data))
-            maybeShowPreviewIntro(data)
-            await loadAllData()
-            if (attempt !== entryAttempt) return
-            if (currentUser.value) { entry.state = 'ready'; loadBrain() }
+
+            // A trusted-browser token found after a new browser session is validated,
+            // but does not automatically reveal departmental records.
+            if (source === 'persistent' && !API.sessionToken) {
+              entry.pendingUser = data
+              entry.trustUntil = API.trustMeta?.expiresAt || null
+              entry.state = 'resume'; currentUser.value = null; currentView.value = 'login'
+              return
+            }
+
+            await openEntryWorkspace(data, { attempt })
           } catch (e) {
             if (attempt !== entryAttempt) return
             currentUser.value = null; currentView.value = 'login'
@@ -9963,11 +10059,29 @@ document.addEventListener('DOMContentLoaded', () => {
             else { entry.state = 'unavailable'; entry.message = e.message || 'We could not verify your session. Please retry.' }
           }
         }
+
+        const resumeEntrySession = async () => {
+          if (entry.state !== 'resume' || !entry.pendingUser) return
+          if (!API.promotePersistentToSession()) {
+            if (typeof API.clearAuthStorage === 'function') API.clearAuthStorage()
+            entry.pendingUser = null; entry.trustUntil = null; entry.state = 'signin'
+            entry.notice = 'That trusted-browser session is no longer available. Please sign in again.'
+            return
+          }
+          const user = entry.pendingUser
+          try { await openEntryWorkspace(user) }
+          catch (e) {
+            currentUser.value = null; currentView.value = 'login'; entry.state = 'unavailable'; entry.message = e.message || 'We could not open your workspace. Please retry.'
+          }
+        }
+
         const useAnotherEntryAccount = () => {
           ++entryAttempt
-          localStorage.removeItem(CONFIG.TOKEN_KEY); localStorage.removeItem(CONFIG.USER_KEY)
+          if (typeof API.clearAuthStorage === 'function') API.clearAuthStorage()
+          else { try { localStorage.removeItem(CONFIG.TOKEN_KEY); localStorage.removeItem(CONFIG.USER_KEY) } catch (_) {} }
           API.clearCache(); currentUser.value = null; currentView.value = 'login'
-          entry.state = 'signin'; entry.message = ''; entry.mode = 'signin'; loginForm.password = ''
+          entry.state = 'signin'; entry.message = ''; entry.notice = ''; entry.mode = 'signin'; entry.pendingUser = null; entry.trustUntil = null
+          loginForm.password = ''; loginForm.keep_signed_in = false
         }
 
         const handleLogout = () => showConfirmation({
@@ -11159,7 +11273,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }, 300000)
 
           window.addEventListener('neumax:session-expired', () => {
-            entry.state = 'signin'; entry.mode = 'signin'; loginForm.password = ''; showPassword.value = false
+            entry.state = 'signin'; entry.mode = 'signin'; entry.pendingUser = null; entry.trustUntil = null; loginForm.password = ''; showPassword.value = false
             closeAskBar(); askBar.turns = []; askBar.context = null; askBar.subject = null
             currentUser.value = null
             currentView.value = 'login'
@@ -17818,7 +17932,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
           activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45MarkDirty, activity45PeriodPresets, activity45ApplyPreset, activity45ToggleSection, activity45SelectedCount, activity45FilteredPeople, activity45TimelineGroups, activity45Metric, activity45MetricValue, activity45SourceState, activity45SourceKnown, activity45EmptyText, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45OpenSource, activity45OpenRecord, activity45AskGrounded, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn, askBarOnConversationScroll, askBarFormatSnapshotTime, askBarClearPinnedContext,
           // Existing returns
-          entry, entryBusy, backToSignIn, validateEntrySession, useAnotherEntryAccount,
+          entry, entryBusy, backToSignIn, validateEntrySession, resumeEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,
           askBarRefreshRecords,
           loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, isAdmin,

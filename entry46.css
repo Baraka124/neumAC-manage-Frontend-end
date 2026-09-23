@@ -38,3 +38,31 @@ html body #app .entry46-editorial :focus-visible{outline:2px solid #e0dcb2;outli
 @media(max-width:820px){html body #app .entry44.entry46{display:flex;flex-direction:column}html body #app .entry46 .entry44-access{position:relative;top:auto;min-height:auto;width:100%;border-left:0;padding:24px 28px 20px}html body #app .entry46 .entry44-access-top{max-width:440px;width:100%;margin:auto}html body #app .entry46 .entry44-form-area{max-width:440px;padding:46px 0 30px}html body #app .entry46 .entry44-access-foot{max-width:440px;width:100%;margin:auto}html body #app .entry46-editorial{width:100%;min-height:auto;padding:30px 28px 24px}html body #app .entry46-story{padding:52px 0 45px;max-width:600px}html body #app .entry46 .entry46-story h1{font-size:52px;max-width:550px}html body #app .entry46-selector{gap:15px}}
 @media(max-width:420px){html body #app .entry46 .entry44-access,html body #app .entry46-editorial{padding-inline:22px}html body #app .entry46-location{font-size:9px;padding-left:16px}html body #app .entry46-mast{gap:16px}html body #app .entry46 .entry46-story h1{font-size:44px}html body #app .entry46-selector{grid-template-columns:1fr;gap:0}html body #app .entry46-selector button{min-height:52px;padding-block:12px}html body #app .entry46-selector button[aria-pressed=true]{padding-top:11px}html body #app .entry46 .entry44-access h2{font-size:38px}}
 @media(prefers-reduced-motion:reduce){html body #app .entry46 *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* V46.14 · Access Gate 4.2 — session integrity + deliberate resume */
+html body #app .entry46 .entry46-notice{margin:0 0 20px;padding:12px 14px;border:1px solid #d7dfd6;border-left:2px solid #648575;background:#f2f5f0;color:#405f55;font-size:11px;line-height:1.6;border-radius:4px;}
+html body #app .entry46 .entry46-access-chain{display:grid;gap:0;margin-top:30px;border-top:1px solid #dce3da;}
+html body #app .entry46 .entry46-access-chain>div{display:grid;grid-template-columns:20px 1fr;gap:11px;align-items:center;padding:13px 0;border-bottom:1px solid #e2e7df;color:#6a7e77;}
+html body #app .entry46 .entry46-access-chain>div>span{width:10px;height:10px;border:1.5px solid #a9b9b0;border-radius:50%;position:relative;margin-left:2px;background:#fafaf7;}
+html body #app .entry46 .entry46-access-chain>div.is-active>span{border-color:#3e7465;box-shadow:0 0 0 4px #dfe9e3;}
+html body #app .entry46 .entry46-access-chain>div.is-active>span::after{content:'';position:absolute;inset:2px;border-radius:50%;background:#3e7465;}
+html body #app .entry46 .entry46-access-chain>div.is-done>span{border-color:#517968;background:#517968;}
+html body #app .entry46 .entry46-access-chain>div.is-done>span::after{content:'✓';position:absolute;inset:-4px 0 0 1px;color:#fff;font-size:8px;line-height:16px;text-align:center;}
+html body #app .entry46 .entry46-access-chain strong{display:block;font-size:11px;font-weight:650;color:#294c43;line-height:1.35;}
+html body #app .entry46 .entry46-access-chain small{display:block;margin-top:2px;font-size:11px;line-height:1.45;color:#73857f;}
+html body #app .entry46 .entry46-resume-card{display:flex;align-items:center;gap:13px;margin:0 0 18px;padding:14px 0;border-top:1px solid #dce3da;border-bottom:1px solid #dce3da;}
+html body #app .entry46 .entry46-resume-avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:0 0 42px;background:#e5ece7;border:1px solid #cdd9d1;color:#31594d;font-size:12px;font-weight:700;letter-spacing:.04em;}
+html body #app .entry46 .entry46-resume-card strong{display:block;font-size:13px;font-weight:650;color:#24483f;line-height:1.4;}
+html body #app .entry46 .entry46-resume-card span{display:block;margin-top:3px;font-size:11px;color:#71827c;overflow-wrap:anywhere;}
+html body #app .entry46 .entry46-session-fact{margin:0 0 24px;padding:11px 12px;background:#f3f5f1;border-left:2px solid #90aa9b;display:grid;gap:4px;}
+html body #app .entry46 .entry46-session-fact span{font:500 9px/1.4 'DM Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:#657d74;}
+html body #app .entry46 .entry46-session-fact strong{font-size:11px;line-height:1.5;font-weight:600;color:#3d5d53;}
+html body #app .entry46 .entry46-trust-option{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:flex-start;margin:-4px 0 22px;padding:13px 14px;border:1px solid #d7dfd6;background:#f7f8f4;border-radius:5px;cursor:pointer;}
+html body #app .entry46 .entry46-trust-option input{width:15px;height:15px;margin:2px 0 0;accent-color:#315f52;}
+html body #app .entry46 .entry46-trust-option strong{display:block;font-size:11px;line-height:1.45;color:#2f5148;font-weight:650;}
+html body #app .entry46 .entry46-trust-option small{display:block;margin-top:4px;font-size:11px;line-height:1.5;color:#6d8179;}
+html body #app .entry46 .entry46-session-policy{display:flex;align-items:flex-start;gap:10px;margin:16px 0 0;color:#677b74;}
+html body #app .entry46 .entry46-policy-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid #6d8d7e;margin-top:5px;flex:0 0 8px;box-shadow:inset 0 0 0 2px #fafaf7;}
+html body #app .entry46 .entry46-session-policy p{margin:0;font-size:11px;line-height:1.55;}
+html body #app .entry46 .entry46-session-policy strong{color:#36584e;font-weight:650;}
+@media(max-width:420px){html body #app .entry46 .entry46-trust-option{padding:12px}html body #app .entry46 .entry46-access-chain>div{padding:11px 0}}

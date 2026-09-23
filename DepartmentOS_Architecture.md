@@ -611,3 +611,8 @@ The lasting contribution isn't the AI. It's the knowledge architecture that make
 
 ### V46.14 Grounded Phase 4.1E — On-call temporal precision
 Grounded now separates named current-state on-call questions, named schedule questions, next-duty questions and department-wide roster requests. Broad roster queries no longer inherit Person context; roster presentation converges on the Phase 4 compact collection scope without changing the surrounding neumDesk UI.
+
+
+## V46.14 Access Gate 4.2 — Session integrity
+
+Authenticated-browser review identified that the login gate validated the backend correctly but persisted every JWT in `localStorage`, independent of the “Remember my email” choice. Access Gate 4.2 makes normal sessions tab-scoped, introduces explicit bounded trusted-browser persistence, and requires deliberate resume before a trusted session from a new browser session reveals departmental records. Legacy unbounded localStorage sessions are invalidated once after deployment. The backend `/api/auth/me` remains authoritative. This checkpoint does not alter permissions, domain logic, Grounded, Staff or the schema.

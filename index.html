@@ -13,7 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="style.css?v=46.14-grounded-phase41e-oncall-precision">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
-    <link rel="stylesheet" href="entry46.css?v=46">
+    <link rel="stylesheet" href="entry46.css?v=46.14-access42">
 
     
 </head>
@@ -975,10 +975,26 @@
             <div class="entry44-access-top"><span class="entry46-wordmark">neum<span>Desk</span><i>.</i></span><span class="entry44-access-label">Department access</span></div>
             <div class="entry44-form-area">
                 <template v-if="entry.state === 'checking' || entry.state === 'opening'">
-                    <span class="entry44-kicker">Welcome to neumDesk</span>
-                    <h2 id="entry-title">{{ entry.state === 'checking' ? 'Checking your session.' : 'Preparing your workspace.' }}</h2>
-                    <p class="entry44-subtitle">{{ entry.state === 'checking' ? 'Verifying your account before opening departmental records.' : 'Connecting your departmental records and permissions.' }}</p>
-                    <div class="entry44-progress" role="status" aria-live="polite"><span></span>{{ entry.state === 'checking' ? 'Validating access…' : 'Opening neumDesk…' }}</div>
+                    <span class="entry44-kicker">Secure department access</span>
+                    <h2 id="entry-title">{{ entry.state === 'checking' ? 'Verifying your session.' : 'Preparing your workspace.' }}</h2>
+                    <p class="entry44-subtitle">{{ entry.state === 'checking' ? 'Confirming your account before any departmental records are shown.' : 'Your account is verified. Loading the records and permissions available to you.' }}</p>
+                    <div class="entry46-access-chain" role="status" aria-live="polite">
+                        <div :class="{ 'is-done': entry.state === 'opening', 'is-active': entry.state === 'checking' }"><span></span><div><strong>Account</strong><small>{{ entry.state === 'checking' ? 'Verifying identity' : 'Verified' }}</small></div></div>
+                        <div :class="{ 'is-done': entry.state === 'opening' }"><span></span><div><strong>Permissions</strong><small>{{ entry.state === 'checking' ? 'Waiting for account verification' : 'Permission scope received' }}</small></div></div>
+                        <div :class="{ 'is-active': entry.state === 'opening' }"><span></span><div><strong>Workspace</strong><small>{{ entry.state === 'checking' ? 'Locked' : 'Opening authorised records' }}</small></div></div>
+                    </div>
+                </template>
+                <template v-else-if="entry.state === 'resume'">
+                    <span class="entry44-kicker">Session verified</span>
+                    <h2 id="entry-title">Continue to neumDesk.</h2>
+                    <p class="entry44-subtitle">This browser has a previously trusted session. Your account has been re-verified, but departmental records remain locked until you continue.</p>
+                    <div class="entry46-resume-card">
+                        <div class="entry46-resume-avatar">{{ entry.pendingUser?.full_name ? entry.pendingUser.full_name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() : '?' }}</div>
+                        <div><strong>{{ entry.pendingUser?.full_name || 'Verified account' }}</strong><span>{{ entry.pendingUser?.email || '' }}</span></div>
+                    </div>
+                    <div class="entry46-session-fact"><span>Trusted-browser session</span><strong>Requires confirmation on a new browser session</strong></div>
+                    <button type="button" class="entry44-submit" @click="resumeEntrySession()">Continue to neumDesk <span aria-hidden="true">→</span></button>
+                    <button type="button" class="entry44-text-button" @click="useAnotherEntryAccount()">Use another account</button>
                 </template>
                 <template v-else-if="entry.state === 'unavailable'">
                     <span class="entry44-kicker">Connection interrupted</span>
@@ -998,6 +1014,7 @@
                     <span class="entry44-kicker">Your working environment</span>
                     <h2 id="entry-title">Welcome back.</h2>
                     <p class="entry44-subtitle">Sign in with your authorised departmental account.</p>
+                    <div v-if="entry.notice" class="entry46-notice" role="status">{{ entry.notice }}</div>
                     <div v-if="loginError" class="entry44-error" role="alert">{{ loginError }}</div>
                     <form class="entry44-form" @submit.prevent="handleLogin" novalidate :aria-busy="loginLoading">
                         <div class="entry44-field">
@@ -1018,8 +1035,12 @@
                             <label><input type="checkbox" v-model="loginForm.remember_me"> Remember my email</label>
                             <button type="button" @click="handleForgotPassword()">Need help?</button>
                         </div>
+                        <label class="entry46-trust-option">
+                            <input type="checkbox" v-model="loginForm.keep_signed_in">
+                            <span><strong>Trust this browser for up to 12 hours</strong><small>Optional. On a new browser session, neumDesk will still verify your account and ask you to continue before records are shown.</small></span>
+                        </label>
                         <button type="submit" class="entry44-submit" :disabled="entryBusy">{{ loginLoading ? 'Signing in…' : 'Enter workspace' }}<span v-if="!loginLoading" aria-hidden="true">→</span></button>
-                        <p class="entry44-session-note">Using a shared computer? Sign out when you finish.</p>
+                        <div class="entry46-session-policy"><span class="entry46-policy-dot"></span><p><strong>Session protected</strong><br>Without browser trust, your sign-in stays in this browser tab and is not retained after the session closes.</p></div>
                     </form>
                 </template>
             </div>
@@ -11835,7 +11856,8 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-grounded-phase41e-oncall-precision"></script>
+    <script src="app.js?v=46.14-access42-session-integrity"></script>
+    <!-- Preserved delivery checkpoints for historical regression contracts: app.js?v=46.14-grounded-phase41e-oncall-precision · style.css?v=46.14-grounded-phase41e-oncall-precision -->
     <!-- Previous Grounded UI cache checkpoint retained for regression history: app.js?v=46.14-grounded-phase41b-ui-convergence · style.css?v=46.14-grounded-phase41b-ui-convergence -->
 
     <script>

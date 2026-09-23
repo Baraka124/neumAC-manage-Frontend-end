@@ -272,3 +272,8 @@ Implemented knowledge-integrity changes:
 
 ## Grounded Phase 4.1E — On-call temporal precision
 Authenticated testing exposed a temporal/scope edge case in named on-call questions. Phase 4.1E preserves explicit person/date scope, prevents broad roster requests from inheriting stale Person context, honours explicit list-all schedule requests, and applies the compact collection-scope treatment to roster answers. No write contract or non-Grounded module UI is changed.
+
+
+### Access Gate 4.2 — session integrity
+
+Live browser review showed that valid locally persisted JWTs could make return visits appear to bypass login. Normal sessions are now tab-scoped; browser persistence is explicit and bounded; persisted sessions stop at a verified resume gate before records render; and legacy unbounded browser tokens require one-time reauthentication. The release remains V46.14 and no Grounded, Staff, permission or schema semantics changed.
