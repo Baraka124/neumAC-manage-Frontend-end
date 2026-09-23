@@ -608,3 +608,6 @@ The lasting contribution isn't the AI. It's the knowledge architecture that make
 - Established this file as a required artifact in every future complete release package.
 **Phase 4 automated validation:** the complete historical suite remains green and the Phase 4 contract now includes accessibility/promotion hardening. Production acceptance is still gated by the four-profile authenticated comparison.
 
+
+### V46.14 Grounded Phase 4.1E — On-call temporal precision
+Grounded now separates named current-state on-call questions, named schedule questions, next-duty questions and department-wide roster requests. Broad roster queries no longer inherit Person context; roster presentation converges on the Phase 4 compact collection scope without changing the surrounding neumDesk UI.

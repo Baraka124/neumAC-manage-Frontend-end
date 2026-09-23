@@ -23351,3 +23351,82 @@ html body #app .gr45-latest{font-size:11px !important;}
   html body #app .grounded-orb-wrap *{animation:none !important;transition:none !important;}
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   GROUNDED PHASE 4.1D · COLLECTION DENSITY
+   Scoped only to structured collection answers inside Grounded.
+   No Staff / module / global neumDesk selectors are changed here.
+   ══════════════════════════════════════════════════════════════ */
+html body #app .nd-intelligence-shell .askbar-turn--collection .nd-collection-scope{
+  display:flex !important;align-items:baseline !important;gap:6px !important;flex-wrap:wrap !important;
+  margin:5px 2px 8px !important;padding:0 !important;border:0 !important;background:transparent !important;
+  color:#73858f !important;font-size:11px !important;line-height:1.4 !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .nd-collection-scope strong{
+  color:#4d6875 !important;font-size:11.5px !important;font-weight:700 !important;line-height:1.4 !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .nd-collection-scope small{
+  color:#87969e !important;font-size:11px !important;line-height:1.4 !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist{
+  margin:6px 0 8px !important;border-radius:10px !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist-row{
+  padding:8px 12px !important;gap:3px !important;min-height:0 !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist-main{
+  display:grid !important;grid-template-columns:minmax(0,1fr) auto !important;align-items:center !important;gap:8px !important;min-width:0 !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist-title{
+  min-width:0 !important;font-size:12px !important;line-height:1.35 !important;overflow-wrap:anywhere !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist-badge{
+  justify-self:end !important;align-self:center !important;white-space:nowrap !important;max-width:150px !important;overflow:hidden !important;text-overflow:ellipsis !important;
+  padding:3px 6px !important;border-radius:6px !important;font-family:'DM Mono',monospace !important;font-size:11px !important;line-height:1.1 !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist-meta{
+  margin-top:1px !important;font-size:11px !important;line-height:1.35 !important;color:#738592 !important;overflow-wrap:anywhere !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-inline-more--list{
+  min-height:40px !important;padding:8px 12px !important;font-size:11px !important;font-weight:700 !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .nd-evidence-strip{
+  margin-top:7px !important;padding-top:7px !important;gap:5px 10px !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .nd-evidence-strip .askbar-trust-main{
+  gap:4px 7px !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .nd-evidence-strip .askbar-trust-state,
+html body #app .nd-intelligence-shell .askbar-turn--collection .nd-evidence-strip .askbar-trust-src,
+html body #app .nd-intelligence-shell .askbar-turn--collection .nd-evidence-strip .askbar-trust-time{
+  font-size:11px !important;line-height:1.35 !important;
+}
+@media (max-width:560px){
+  html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist-row{padding:8px 10px !important;}
+  html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist-main{grid-template-columns:minmax(0,1fr) auto !important;gap:6px !important;}
+  html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-reslist-badge{max-width:112px !important;}
+}
+\n\n/* ══════════════════════════════════════════════════════════════
+   GROUNDED PHASE 4.1E · ON-CALL PRECISION + ROSTER DENSITY
+   Scoped only to structured roster answers inside Grounded.
+   ══════════════════════════════════════════════════════════════ */
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster{
+  margin:6px 0 8px !important;border-radius:10px !important;overflow:hidden !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-row{
+  min-height:0 !important;padding:8px 12px !important;column-gap:9px !important;row-gap:3px !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-date,
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-name,
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-backup,
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-pill{
+  line-height:1.35 !important;
+}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-date{font-size:11px !important;}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-name{font-size:12px !important;min-width:0 !important;overflow-wrap:anywhere !important;}
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-backup,
+html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-pill{font-size:11px !important;}
+@media(max-width:560px){
+  html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-row{padding:8px 10px !important;}
+}

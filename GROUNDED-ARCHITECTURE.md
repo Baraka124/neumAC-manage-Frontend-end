@@ -480,3 +480,6 @@ Grounded resident-year answers must use the same effective-year resolver as the 
 
 The browser-DOM hotfix changes template source encoding only. Grounded intent, context, tools, permissions, traces and write/action semantics are unchanged. The release-wide validation rule now includes browser-safe in-DOM Vue expressions so UI template corruption cannot prevent Grounded from mounting.
 
+
+## V46.14 Grounded Phase 4.1E — On-call temporal/scope invariant
+A named operational on-call query must preserve its explicit temporal scope. `is X on call today?` is a current-state question, not a request for X's next duty. Broad collection language (`all`, `list all`, schedule/roster collection requests) must widen scope and must not inherit a pinned Person from the previous turn. Explicit list-all requests are allowed to return the complete upcoming roster.

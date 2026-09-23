@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-grounded-phase41c-collection-rendering">
+    <link rel="stylesheet" href="style.css?v=46.14-grounded-phase41e-oncall-precision">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -356,7 +356,12 @@
                                 <div><div class="askbar-empty-title">{{ turn.text }}</div><div class="askbar-empty-sub">No matching current record was found in the sources Grounded checked.</div></div>
                             </div>
                             <div v-else class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
-                            <div v-if="turn.visual && !turn.isClarify && turn.visual.type !== 'profile'" class="gr45-review-control nd-answer-scope">
+                            <div v-if="turn.visual && !turn.isClarify && ['reslist','roster'].includes(turn.visual.type)" class="nd-collection-scope" aria-label="Answer scope and retrieval time">
+                                <strong>{{ turn.reviewScope || turn.timeScope || 'Department records' }}</strong>
+                                <span aria-hidden="true">·</span>
+                                <small>{{ turn.snapshotAt ? 'Retrieved ' + askBarFormatSnapshotTime(turn.snapshotAt) : 'Source refresh time not recorded' }}</small>
+                            </div>
+                            <div v-else-if="turn.visual && !turn.isClarify && turn.visual.type !== 'profile'" class="gr45-review-control nd-answer-scope">
                                 <div><span>Answer scope</span><strong>{{ turn.reviewScope || turn.timeScope || 'Department records' }}</strong><small>{{ turn.snapshotAt ? 'Retrieved ' + askBarFormatSnapshotTime(turn.snapshotAt) : 'Source refresh time not recorded for this answer' }}</small></div>
                                 <button @click="turn.reviewOpen = !turn.reviewOpen" :aria-expanded="!!turn.reviewOpen">{{ turn.reviewOpen ? 'Hide detail' : 'Show details' }}</button>
                             </div>
@@ -798,8 +803,8 @@
                                     </div>
                                     <div v-if="it.meta" class="askbar-reslist-meta">{{ it.meta }}</div>
                                 </div>
-                                <button v-if="turn.visual.items.length > 5" class="askbar-inline-more askbar-inline-more--list" @click="turn.listExpanded = !turn.listExpanded">
-                                    {{ turn.listExpanded ? 'Show fewer' : 'Show ' + (turn.visual.items.length - 5) + ' more' }}
+                                <button v-if="turn.visual.items.length > 5 && !turn.visual.initialExpanded && !turn.visual.lockExpanded" class="askbar-inline-more askbar-inline-more--list" @click="turn.listExpanded = !turn.listExpanded">
+                                    {{ turn.listExpanded ? 'Collapse list' : 'Show ' + (turn.visual.items.length - 5) + ' more' }}
                                 </button>
                             </div>
 
@@ -848,14 +853,14 @@
                                 </div>
                                 <div v-if="turn.confidence!=='low' || (turn.sources && turn.sources.length) || (turn.evidence && turn.evidence.length)" class="askbar-trust nd-evidence-strip" :class="'askbar-trust--' + turn.confidence">
                                     <div class="askbar-trust-main">
-                                        <span class="askbar-trust-state">{{ turn.knowledge ? (turn.knowledge.complete ? 'Verified source scope' : 'Partial source scope') : (turn.sources && turn.sources.length ? 'Source scope' : 'Source scope not established') }}</span>
+                                        <span class="askbar-trust-state">{{ turn.visual && ['reslist','roster'].includes(turn.visual.type) && turn.knowledge && turn.knowledge.complete ? 'Sources verified' : (turn.knowledge ? (turn.knowledge.complete ? 'Verified source scope' : 'Partial source scope') : (turn.sources && turn.sources.length ? 'Source scope' : 'Source scope not established')) }}</span>
                                         <span v-if="turn.knowledge && turn.knowledge.checkedSources && turn.knowledge.checkedSources.length" class="askbar-trust-src">
                                             <span v-for="(src,si) in turn.knowledge.checkedSources" :key="src.key">{{ src.label }}<span v-if="si &lt; turn.knowledge.checkedSources.length-1" class="askbar-source-sep"> · </span></span>
                                         </span>
                                         <span v-else-if="turn.sources && turn.sources.length" class="askbar-trust-src">
                                             <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ src }}<span v-if="si &lt; turn.sources.length-1" class="askbar-source-sep"> · </span></span>
                                         </span>
-                                        <small v-if="turn.confidenceReason" class="nd-evidence-reason">{{ turn.confidenceReason }}</small>
+                                        <small v-if="turn.confidenceReason && !(turn.visual && ['reslist','roster'].includes(turn.visual.type) && turn.knowledge && turn.knowledge.complete)" class="nd-evidence-reason">{{ turn.confidenceReason }}</small>
                                         <small v-if="turn.knowledge && turn.knowledge.unavailableSources && turn.knowledge.unavailableSources.length" class="nd-evidence-warning">Unavailable: {{ turn.knowledge.unavailableSources.map(s => s.label).join(', ') }}</small>
                                     </div>
                                     <div class="askbar-trust-meta">
@@ -11830,7 +11835,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-grounded-phase41c-collection-rendering"></script>
+    <script src="app.js?v=46.14-grounded-phase41e-oncall-precision"></script>
     <!-- Previous Grounded UI cache checkpoint retained for regression history: app.js?v=46.14-grounded-phase41b-ui-convergence · style.css?v=46.14-grounded-phase41b-ui-convergence -->
 
     <script>

@@ -14223,16 +14223,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const broadPersonScope = /\b(anyone|anybody|everyone|everybody|who|which staff|which people|all staff|alguien|todos|quien|quién)\b/.test(q)
         const leaveScheduleScope = topicLeave && /\b(scheduled|planned|booked|future|upcoming|coming|next)\b/.test(q)
         const leaveRange = topicLeave ? askBarParseRange(q) : null
+        // Grounded 4.1E — on-call temporal/scope precision. A broad collection
+        // request must never inherit a previously pinned person, while a named or
+        // pronoun query keeps its explicit date/window (today, tomorrow, Friday…).
+        const callRange = topicCall ? askBarParseRange(q) : null
+        const callListScope = topicCall && /\b(schedule|shifts?|days?|list|all|upcoming|scheduled)\b/.test(q)
+        const broadCallScope = topicCall && (broadPersonScope || /^\s*(all|list all|show all)\b/.test(q) || /\b(all|every)\s+(next|scheduled|upcoming|shift|shifts|on.?call)\b/.test(q))
+        const broadOperationalScope = broadPersonScope || broadCallScope
         // Broad words explicitly widen person scope. Inherit the relevant date/window,
         // never the previous person's identity (e.g. "Anyone on leave that day?").
-        if (topicLeave && broadPersonScope) {
+        if (topicLeave && broadOperationalScope) {
           const parsed = askBarParseRange(q)
           const inheritedDate = askBar.context?.date || null
           return { kind:'leave_on_date', date: parsed?.start || inheritedDate, end: parsed?.end || inheritedDate, label: parsed?.label || (inheritedDate ? Utils.formatDateShort(inheritedDate) : 'today'), broad:true }
         }
         // #8: resolve an explicitly named person before generic collection routes.
         // Ambiguity is preserved instead of silently choosing a similarly named colleague.
-        if ((topicLeave || topicCall || topicRot) && !hasPronoun && !broadPersonScope) {
+        if ((topicLeave || topicCall || topicRot) && !hasPronoun && !broadOperationalScope) {
           const resolved = askBarResolveNamedOperationalStaff(q)
           if (resolved?.ambiguous?.length) {
             const mode = topicLeave ? (leaveScheduleScope ? 'leave_schedule' : (leaveRange?.start ? 'leave_on_date' : 'leave_current')) : (topicCall ? 'oncall' : 'rotation')
@@ -14246,7 +14253,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if (leaveRange?.start) return { kind:'staff_leave_on_date', id:person.id, name:person.full_name, start:leaveRange.start, end:leaveRange.end||leaveRange.start, label:leaveRange.label||null }
               return { kind: 'staff_leave', id: person.id, name: person.full_name }
             }
-            if (topicCall)  return { kind: 'staff_oncall', id: person.id, name: person.full_name }
+            if (topicCall)  return { kind: 'staff_oncall', id: person.id, name: person.full_name, start:callRange?.start||null, end:callRange?.end||callRange?.start||null, label:callRange?.label||null, mode:callListScope?'schedule':'next' }
             if (topicRot)   return { kind: 'staff_rotation', id: person.id, name: person.full_name }
           }
         }
@@ -14279,7 +14286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Explicit broad scope (who / anyone / everyone) never inherits a person.
         if (!askBar.context) return null
         const ctx = askBar.context
-        const shortTopicRef = !broadPersonScope && q.trim().split(/\s+/).length <= 5 && (topicLeave || topicCall || topicRot)
+        const shortTopicRef = !broadOperationalScope && q.trim().split(/\s+/).length <= 5 && (topicLeave || topicCall || topicRot)
         const refersToCtx = hasPronoun || shortTopicRef
         if (!refersToCtx || ctx.type !== 'staff') return null
         if (topicLeave) {
@@ -14287,7 +14294,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (leaveRange?.start) return { kind:'staff_leave_on_date', id:ctx.id, name:ctx.name, start:leaveRange.start, end:leaveRange.end||leaveRange.start, label:leaveRange.label||null }
           return { kind: 'staff_leave', id: ctx.id, name: ctx.name }
         }
-        if (topicCall)  return { kind: 'staff_oncall', id: ctx.id, name: ctx.name }
+        if (topicCall)  return { kind: 'staff_oncall', id: ctx.id, name: ctx.name, start:callRange?.start||null, end:callRange?.end||callRange?.start||null, label:callRange?.label||null, mode:callListScope?'schedule':'next' }
         if (topicRot)   return { kind: 'staff_rotation', id: ctx.id, name: ctx.name }
         return null
       }
@@ -15922,9 +15929,39 @@ document.addEventListener('DOMContentLoaded', () => {
           return { text:`No — ${fu.name} is not on leave today and has no upcoming leave on record.`, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open leave',view:'staff_absence'}], sources:['leave records'], followups:[], reviewScope:`${fu.name} · current leave status` }
         }
         if (fu.kind === 'staff_oncall') {
-          const shifts = (onCallSchedule.value || []).filter(s => (s.primary_physician_id === fu.id || s.backup_physician_id === fu.id) && Utils.normalizeDate(s.duty_date) >= today)
-          if (!shifts.length) return { text: `${fu.name} has no upcoming on-call shifts.`, chips: [], actions: [], sources: ['on-call schedule'], followups: [] }
-          return { text: `${fu.name} is next on-call ${Utils.formatDateShort(shifts[0].duty_date)}.`, chips: [{ label: fu.name, id: fu.id }], actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [] }
+          const allShifts = (onCallSchedule.value || [])
+            .filter(s => s.primary_physician_id === fu.id || s.backup_physician_id === fu.id)
+            .slice().sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
+          const roleLabel = s => s.primary_physician_id === fu.id ? 'primary' : 'backup'
+          const upcoming = allShifts.filter(s => Utils.normalizeDate(s.duty_date) >= today)
+
+          // Explicit date/window means answer that question first. Do not substitute
+          // the person's next shift for a yes/no question about today.
+          if (fu.start) {
+            const start=Utils.normalizeDate(fu.start), end=Utils.normalizeDate(fu.end||fu.start)
+            const hits=allShifts.filter(s=>{const d=Utils.normalizeDate(s.duty_date);return d>=start&&d<=end})
+            const isToday=start===today&&end===today
+            const label=fu.label || (isToday?'today':(start===end?Utils.formatDateShort(start):`${Utils.formatDateShort(start)}–${Utils.formatDateShort(end)}`))
+            if (!hits.length) {
+              const next=upcoming.find(s=>Utils.normalizeDate(s.duty_date)>end) || upcoming[0] || null
+              const suffix=next ? ` Next scheduled on-call: ${Utils.formatDateShort(next.duty_date)} (${roleLabel(next)}).` : ' No upcoming on-call shift is recorded.'
+              return { text:`No — ${fu.name} is not on call ${isToday?'today':('during '+label)}.${suffix}`, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open schedule',view:'oncall_schedule',primary:true}], sources:['on-call schedule'], followups:[], reviewScope:`${fu.name} · ${label}` }
+            }
+            const items=hits.map(s=>({title:Utils.formatDateShort(s.duty_date),badge:roleLabel(s),tone:roleLabel(s)==='primary'?'active':'default',meta:''}))
+            const text=hits.length===1
+              ? `Yes — ${fu.name} is on call ${isToday?'today':('on '+Utils.formatDateShort(hits[0].duty_date))}${roleLabel(hits[0])==='backup'?' as backup':''}.`
+              : `Yes — ${fu.name} has ${hits.length} on-call shifts during ${label}.`
+            return { text, visual:hits.length>1?{type:'reslist',items}:null, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open schedule',view:'oncall_schedule',primary:true}], sources:['on-call schedule'], followups:[], reviewScope:`${fu.name} · ${label}` }
+          }
+
+          if (fu.mode === 'schedule') {
+            if (!upcoming.length) return { text:`${fu.name} has no upcoming on-call shifts.`, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open schedule',view:'oncall_schedule'}], sources:['on-call schedule'], followups:[], reviewScope:`${fu.name} · upcoming on-call` }
+            const items=upcoming.map(s=>({title:Utils.formatDateShort(s.duty_date),badge:roleLabel(s),tone:roleLabel(s)==='primary'?'active':'default',meta:''}))
+            return { text:`${fu.name} has ${upcoming.length} upcoming on-call shift${upcoming.length===1?'':'s'}.`, visual:{type:'reslist',items,initialExpanded:true,lockExpanded:true}, chips:[{label:fu.name,id:fu.id}], actions:[{label:'Open schedule',view:'oncall_schedule',primary:true}], sources:['on-call schedule'], followups:[], reviewScope:`${fu.name} · upcoming on-call` }
+          }
+
+          if (!upcoming.length) return { text: `${fu.name} has no upcoming on-call shifts.`, chips: [{label:fu.name,id:fu.id}], actions: [{label:'Open schedule',view:'oncall_schedule'}], sources: ['on-call schedule'], followups: [] }
+          return { text: `${fu.name} is next on-call ${Utils.formatDateShort(upcoming[0].duty_date)}${roleLabel(upcoming[0])==='backup'?' as backup':''}.`, chips: [{ label: fu.name, id: fu.id }], actions: [{ label: 'Open schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [], reviewScope:`${fu.name} · next on-call` }
         }
         if (fu.kind === 'staff_rotation') {
           const rot = (rotations.value || []).find(r => r.resident_id === fu.id && r.rotation_status === 'active')
@@ -16458,7 +16495,7 @@ document.addEventListener('DOMContentLoaded', () => {
               return { title:u.unit_name || 'Unnamed unit', badge:u.unit_code || null, tone:status==='active'?'active':'default', meta }
             })
           const text = `${units.length} clinical unit${units.length===1?'':'s'} on record. ${active} active${inactive?` · ${inactive} inactive`:''}.`
-          return { text, visual: { type: 'reslist', items, initialExpanded: full }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [{ label: 'Units board', intent: 'units_board' }, { label: 'Which are free?', intent: 'unit_status', q: 'which units are free' }], confidence: 'high' }
+          return { text, visual: { type: 'reslist', items, initialExpanded: full, lockExpanded: full }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [{ label: 'Units board', intent: 'units_board' }, { label: 'Which are free?', intent: 'unit_status', q: 'which units are free' }], confidence: 'high' }
         }
         if (intent === 'rotations_deep') {
           // Who's rotating where, under whom
@@ -17083,7 +17120,8 @@ document.addEventListener('DOMContentLoaded', () => {
             up = all.filter(s => { const d = Utils.normalizeDate(s.duty_date); return d >= dr.start && d <= (dr.end || dr.start) })
             dayLabel = (dr.start === dr.end || !dr.end) ? fmt(dr.start) : `${fmt(dr.start)}–${fmt(dr.end)}`
           } else {
-            up = all.filter(s => Utils.normalizeDate(s.duty_date) >= today).slice(0, 4)
+            const upcoming = all.filter(s => Utils.normalizeDate(s.duty_date) >= today)
+            up = askBarWantsFull(q) ? upcoming : upcoming.slice(0, 4)
           }
           if (!up.length) {
             const none = dayLabel ? `No one is scheduled on call for ${dayLabel}.` : "No upcoming on-call shifts are scheduled. You may want to set the rota."
@@ -17095,16 +17133,24 @@ document.addEventListener('DOMContentLoaded', () => {
               ? `${staffName(up[0].primary_physician_id)} is on call ${dayLabel === 'today' ? 'today' : ('on ' + dayLabel)}.`
               : `On call ${dayLabel}: ${up.map(s => staffName(s.primary_physician_id)).join(', ')}.`
           } else {
-            text = up[0] && Utils.normalizeDate(up[0].duty_date) === today
-              ? `${staffName(up[0].primary_physician_id)} is on call today.`
-              : `Next on call: ${staffName(up[0].primary_physician_id)} on ${fmt(up[0].duty_date)}.`
+            const full = askBarWantsFull(q)
+            text = full
+              ? `${up.length} scheduled on-call shift${up.length===1?'':'s'} from today onward.`
+              : (up[0] && Utils.normalizeDate(up[0].duty_date) === today
+                  ? `${staffName(up[0].primary_physician_id)} is on call today.`
+                  : `Next on call: ${staffName(up[0].primary_physician_id)} on ${fmt(up[0].duty_date)}.`)
           }
-          const roster = up.slice(0,7).map(s => ({
+          const fullRoster = !dayLabel && askBarWantsFull(q)
+          const roster = (fullRoster ? up : up.slice(0,7)).map(s => ({
             id: s.primary_physician_id, name: staffName(s.primary_physician_id),
             date: fmt(s.duty_date), today: Utils.normalizeDate(s.duty_date) === today,
             backup: s.backup_physician_id ? staffName(s.backup_physician_id) : null
           }))
-          if (up[0]?.primary_physician_id) askBar.context = { type: 'staff', id: up[0].primary_physician_id, name: staffName(up[0].primary_physician_id), date: up[0].duty_date }
+          if (up.length===1 && up[0]?.primary_physician_id) {
+            askBar.context = { type:'staff', id:up[0].primary_physician_id, name:staffName(up[0].primary_physician_id), date:up[0].duty_date }
+          } else {
+            askBar.context = { type:'oncall', id:null, name:dayLabel ? `On-call ${dayLabel}` : 'Upcoming on-call schedule', date:up[0]?.duty_date||null }
+          }
           // #provenance: the exact records backing this answer
           const evidence = up.slice(0,8).map(s => ({
             label: `${staffName(s.primary_physician_id)} — on-call ${fmt(s.duty_date)}`,

@@ -269,3 +269,6 @@ Implemented knowledge-integrity changes:
 - ranking/comparison answers now expose their current temporal meaning as **All recorded records** rather than leaving the reporting period implicit.
 
 **Preservation boundary:** no Supabase schema, Staff lifecycle, Leave/On-call/Rotation write semantics, permission model, sync architecture or Staff Phase 4 presentation contract changes in 4.1A. Grounded UI convergence is the next checkpoint (4.1B).
+
+## Grounded Phase 4.1E — On-call temporal precision
+Authenticated testing exposed a temporal/scope edge case in named on-call questions. Phase 4.1E preserves explicit person/date scope, prevents broad roster requests from inheriting stale Person context, honours explicit list-all schedule requests, and applies the compact collection-scope treatment to roster answers. No write contract or non-Grounded module UI is changed.

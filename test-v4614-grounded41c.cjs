@@ -7,14 +7,15 @@ const sha=s=>crypto.createHash('sha256').update(s).digest('hex')
 
 test('G41C-01 application JavaScript parses',()=>new vm.Script(app))
 test('G41C-02 cache marker advances without presentation markup rewrite',()=>{
-  assert(html.includes('app.js?v=46.14-grounded-phase41c-collection-rendering'))
-  assert(html.includes('style.css?v=46.14-grounded-phase41c-collection-rendering'))
+  assert(/app\.js\?v=46\.14-grounded-phase41[c-e]-/.test(html))
+  assert(/style\.css\?v=46\.14-grounded-phase41[c-e]-/.test(html))
 })
 test('G41C-03 clinical unit overview uses existing structured collection renderer',()=>{
   const a=app.indexOf("if (intent === 'units_overview')")
   const b=app.indexOf("if (intent === 'rotations_deep')",a)
   const block=app.slice(a,b)
-  assert(block.includes("visual: { type: 'reslist', items, initialExpanded: full }"))
+  assert(block.includes("type: 'reslist'"))
+  assert(block.includes('initialExpanded: full'))
   assert(block.includes('clinical unit'))
   assert(!block.includes("names.join(', ')"))
   assert(!block.includes('ask "list all units"'))

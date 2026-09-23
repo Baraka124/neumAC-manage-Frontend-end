@@ -1,0 +1,26 @@
+{
+  "release": "V46.14 Grounded Phase 4.1D",
+  "checkpoint": "collection-density-live-feedback",
+  "files": {
+    "app.js": "ca8a8f79727d6c0535518b87e8ea6ce4e58ca3251e0b358ce451818777a36eb2",
+    "index.html": "aec5e472fe8301b98843af9620ee8491a00cf4b984d052729d13caec2aa2caca",
+    "style.css": "39762b3118cae916f1871cf654f93bbc40f9ec83fab2f3d27c96cb218c78bb54",
+    "grounded-core.js": "738ed64d64f02358079b94635591b63bf3f5a227301c5e46f473acc98697220b",
+    "activity45.js": "c943857ad57655cfea16a505957587eb5cd00ec119c3696d98961ce2c80aaedb",
+    "SUPABASE_SCHEMA.sql": "66541c3c9017c7d6480831999ca33325e0953bdeccc193d4873a8e8a7a195768"
+  },
+  "preservation": {
+    "style_41c_is_exact_prefix": true,
+    "grounded_core_unchanged_from_41c": true,
+    "activity45_unchanged_from_41c": true,
+    "schema_unchanged_from_41c": true
+  },
+  "validation": {
+    "suites": 28,
+    "checks": 442,
+    "phase41d_checks": 12,
+    "dom_template_checks": 7,
+    "staff_phase4_checks": 24
+  },
+  "live_acceptance_required": true
+}
