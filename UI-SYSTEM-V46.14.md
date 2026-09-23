@@ -1,4 +1,4 @@
-# neumDesk V46.14 — Staff Phase 4 UI Foundation
+# neumDesk V46.14 — Phase 4 UI Foundation
 
 ## Purpose
 
@@ -82,4 +82,29 @@ Only after those checks should the same component vocabulary be migrated into Le
 ## Automated checkpoint
 
 The complete historical suite has been rerun after promotion hardening, including browser-DOM template safety and the expanded Phase 4 contract. The final pass also fixes the malformed Phase 4 CSS comment boundary found in the candidate, adds keyboard/ARIA hardening for directory views and Person tabs, and keeps all runtime files byte-for-byte unchanged. Live authenticated four-profile comparison remains the production acceptance gate.
+## Grounded intelligence extension — Phase 4.1B
+
+Grounded is the first non-Staff surface to adopt the Phase 4 primitives while adding intelligence-specific patterns. The goal is not to force chat/analytics into Person components; it is to share control, focus, typography, context and evidence grammar.
+
+### Reused primitives
+- `nd-toolbar`, `nd-btn` — header/action rhythm.
+- `nd-context-strip` — active/pinned object context.
+- `nd-empty-state` — truthful no-result and unavailable-result states.
+- shared 40px control baseline, focus ring and 11px meaningful metadata floor.
+
+### Intelligence-specific contracts
+- `nd-intelligence-overlay`, `nd-intelligence-shell`, `nd-intelligence-head`, `nd-intelligence-composer`.
+- `nd-source-health` — retrieval/source readiness.
+- `nd-answer`, `nd-answer-card`, `nd-answer-question`, `nd-answer-scope`.
+- `nd-evidence-strip`, `nd-evidence-records`, `nd-evidence-reason`, `nd-evidence-warning`.
+- `nd-proposal` — consequential action proposal/check/confirmation presentation.
+
+### Grounded UI invariants
+1. The answer is primary; evidence is visible but visually subordinate.
+2. Unknown/partial source state cannot be styled as a verified result.
+3. Source scope is rendered from the typed knowledge envelope when available.
+4. Trace/Teach are secondary utilities, not primary conversation chrome.
+5. No visible cloud/mist/glass metaphor or backdrop blur is used in the converged workspace.
+6. Modal behavior includes labelled dialog semantics, focus containment, Escape close and focus return.
+7. Legacy Grounded classes remain temporary compatibility hooks until later extraction removes them safely.
 

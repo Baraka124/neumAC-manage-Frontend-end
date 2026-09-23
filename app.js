@@ -15540,7 +15540,10 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           const completedTrace = askBar.trace.map(step => ({ ...step, done: true }))
           const full = ans.text || ''
-          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', confidenceReason: ans.confidenceReason || '', knowledge: ans.knowledge || null, timeScope: ans.timeScope || null, visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, coreTraceId, asOf: askBarNow(), streaming: true, revealing: false, reviewScope: ans.reviewScope || null })
+          // Grounded 4.1C: collection answers may opt into an initially-expanded
+          // list (for explicit "list all" requests) without changing the shared
+          // collection renderer or any global UI/CSS behavior.
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', confidenceReason: ans.confidenceReason || '', knowledge: ans.knowledge || null, timeScope: ans.timeScope || null, visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, coreTraceId, asOf: askBarNow(), streaming: true, revealing: false, reviewScope: ans.reviewScope || null, listExpanded: !!(ans.visual && ans.visual.initialExpanded) })
           groundedFinishExecutionTrace(coreTraceId, ans, answerError ? 'error' : 'ok', answerError, intent)
 
           // Keep the working surface visible for one calm beat, then replace it in place.
@@ -16341,7 +16344,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'staff_can_pi') {
           const pis = (medicalStaff.value || []).filter(s => s.can_be_pi && s.employment_status === 'active')
           if (!pis.length) return { text: 'No staff are currently flagged as PI-eligible.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
-          const _f=askBarWantsFull(askBar.lastAsked||askBar.query); const _pn=(_f?pis:pis.slice(0,6)).map(s=>s.full_name); return { text: `${pis.length} staff can serve as PI: ${_f&&_pn.length>6?'\n• '+_pn.join('\n• '):_pn.join(', ')}${!_f&&pis.length>6?` …and ${pis.length-6} more (ask "list all").`:'.'}`, chips: pis.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+          const full=askBarWantsFull(askBar.lastAsked||askBar.query)
+          const items=pis.map(s=>({
+            title:s.full_name,
+            badge:'PI',
+            tone:'active',
+            meta:[s.specialization||null,_toTitle(String(s.staff_type||'staff').replace(/_/g,' '))].filter(Boolean).join(' · ')
+          }))
+          return { text: `${pis.length} staff member${pis.length===1?' is':'s are'} recorded as PI-eligible.`, visual:{type:'reslist',items,initialExpanded:full}, chips: pis.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'staff_roster') {
           const q = (askBar.lastAsked || askBar.query || '').toLowerCase()
@@ -16371,9 +16381,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return { text: `${filtered.length} ${roleLabel}${filtered.length===1?'':'s'}.`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [{ label: `List the ${roleLabel}s`, intent: 'staff_roster', q: 'list '+roleLabel+'s' }], confidence: 'high' }
           }
-          const body = full && names.length > 6 ? '\n• ' + names.join('\n• ') : names.join(', ')
-          const tail = (!full && filtered.length > 10) ? ` …and ${filtered.length-10} more (ask "list all").` : '.'
-          return { text: `${filtered.length} ${roleLabel}${filtered.length===1?'':'s'}: ${body}${tail}`, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+          const items = filtered.map(s => {
+            const typeLabel=_toTitle(String(s.staff_type||'staff').replace(/_/g,' '))
+            const year=askBarIsResident(s) ? Utils.effectiveResidentYear(s) : null
+            const meta=[s.specialization||null, year||null].filter(Boolean).join(' · ')
+            return { title:s.full_name, badge:roleLabel==='staff'?typeLabel:null, tone:'default', meta }
+          })
+          return { text: `${filtered.length} active ${roleLabel}${filtered.length===1?'':'s'} on record.`, visual:{type:'reslist',items,initialExpanded:full}, chips: [], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'staff_contact') {
           const person = askBarResolveStaff(askBar.lastAsked || askBar.query)
@@ -16394,7 +16408,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ? knowledge.person.list({ activeOnly: false }).filter(o => o.attributes.has_phd).map(o => o._raw)
             : (medicalStaff.value || []).filter(s => s.has_phd)
           if (!phds.length) return { text: 'No staff have a PhD on record.', chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }
-          const _f2=askBarWantsFull(askBar.lastAsked||askBar.query); const _pd=(_f2?phds:phds.slice(0,6)).map(s=>s.full_name+(s.phd_field?' ('+s.phd_field+')':'')); return { text: `${phds.length} staff hold a PhD: ${_f2&&_pd.length>6?'\n• '+_pd.join('\n• '):_pd.join(', ')}${!_f2&&phds.length>6?` …and ${phds.length-6} more (ask "list all").`:'.'}`, chips: phds.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
+          const full=askBarWantsFull(askBar.lastAsked||askBar.query)
+          const items=phds.map(s=>({title:s.full_name,badge:'PhD',tone:'research',meta:s.phd_field||s.specialization||''}))
+          return { text: `${phds.length} staff member${phds.length===1?' holds':'s hold'} a PhD on record.`, visual:{type:'reslist',items,initialExpanded:full}, chips: phds.slice(0,5).map(s=>({label:s.full_name,id:s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: ['staff'], followups: [], confidence: 'high' }
         }
         if (intent === 'residents_by_year') {
           const residents = USE_KNOWLEDGE_LAYER
@@ -16419,14 +16435,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (intent === 'units_overview') {
           const units = (trainingUnits.value) || []
-          if (!units.length) return { text: 'No training units are defined.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
+          if (!units.length) return { text: 'No clinical units are defined.', chips: [], actions: [{ label: 'Open units', view: 'training_units' }], sources: ['units'], followups: [], confidence: 'high' }
           const active = units.filter(u => (u.unit_status||'active')==='active').length
+          const inactive = Math.max(0, units.length - active)
           const full = askBarWantsFull(askBar.lastAsked || askBar.query)
-          const names = (full ? units : units.slice(0,5)).map(u => u.unit_name)
-          // When showing the full list, render one-per-line for readability.
-          const body = full && names.length > 6 ? '\n• ' + names.join('\n• ') : names.join(', ')
-          const tail = (!full && units.length > 5) ? ` …and ${units.length-5} more (ask "list all units").` : '.'
-          return { text: `${units.length} unit${units.length===1?'':'s'} (${active} active): ${body}${tail}`, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [], confidence: 'high' }
+          // Grounded 4.1C — collection answers belong in the existing structured
+          // collection renderer, not in a long comma-separated prose sentence.
+          // This intentionally changes response data only: index.html/style.css and
+          // the Phase 4 Staff UI are untouched.
+          const items = units
+            .slice()
+            .sort((a,b) => {
+              const aa=(a.unit_status||'active')==='active' ? 0 : 1
+              const bb=(b.unit_status||'active')==='active' ? 0 : 1
+              return aa-bb || String(a.unit_name||'').localeCompare(String(b.unit_name||''), undefined, { sensitivity:'base' })
+            })
+            .map(u => {
+              const status=(u.unit_status||'active').toLowerCase()
+              const statusLabel=status==='active' ? 'Active' : _toTitle(status.replace(/_/g,' '))
+              const cap=Number(u.maximum_residents||0)
+              const meta=[statusLabel, u.specialty||null, cap>0 ? `Capacity ${cap} resident${cap===1?'':'s'}` : null].filter(Boolean).join(' · ')
+              return { title:u.unit_name || 'Unnamed unit', badge:u.unit_code || null, tone:status==='active'?'active':'default', meta }
+            })
+          const text = `${units.length} clinical unit${units.length===1?'':'s'} on record. ${active} active${inactive?` · ${inactive} inactive`:''}.`
+          return { text, visual: { type: 'reslist', items, initialExpanded: full }, chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [{ label: 'Units board', intent: 'units_board' }, { label: 'Which are free?', intent: 'unit_status', q: 'which units are free' }], confidence: 'high' }
         }
         if (intent === 'rotations_deep') {
           // Who's rotating where, under whom
@@ -16445,7 +16477,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (intent === 'departments_overview') {
           const depts = departments.value || []
           if (!depts.length) return { text: 'No departments are on record.', chips: [], actions: [], sources: ['departments'], followups: [], confidence: 'high' }
-          const _f3=askBarWantsFull(askBar.lastAsked||askBar.query); const _dn=(_f3?depts:depts.slice(0,6)).map(d=>d.name+(d.head_of_department_id?' (head: '+getStaffName(d.head_of_department_id)+')':'')); return { text: `${depts.length} department${depts.length===1?'':'s'}: ${_f3&&_dn.length>6?'\n• '+_dn.join('\n• '):_dn.join(', ')}${!_f3&&depts.length>6?` …and ${depts.length-6} more.`:'.'}`, chips: [], actions: [], sources: ['departments'], followups: [], confidence: 'high' }
+          const full=askBarWantsFull(askBar.lastAsked||askBar.query)
+          const items=depts.map(d=>({title:d.name||'Unnamed department',badge:d.code||null,tone:'default',meta:d.head_of_department_id?`Head: ${getStaffName(d.head_of_department_id)}`:''}))
+          return { text: `${depts.length} department${depts.length===1?'':'s'} on record.`, visual:{type:'reslist',items,initialExpanded:full}, chips: [], actions: [], sources: ['departments'], followups: [], confidence: 'high' }
         }
         if (intent === 'hospitals_overview') {
           const hs = (hospitalsList.value || []).filter(h => h.is_active !== false)
@@ -16453,21 +16487,24 @@ document.addEventListener('DOMContentLoaded', () => {
           const byComplex = {}
           hs.forEach(h => { const c = h.parent_complex || h.region || 'other'; byComplex[c] = (byComplex[c] || 0) + 1 })
           const grouped = Object.keys(byComplex).length > 1
-          let text = `${hs.length} hospital${hs.length===1?'':'s'}: ${hs.slice(0,8).map(h => h.name + (h.city ? ` (${h.city})` : '')).join(', ')}.`
-          if (grouped) text += ` Across ${Object.keys(byComplex).length} complexes/regions.`
-          return { text, chips: [], actions: [], sources: ['hospitals'], followups: [], confidence: 'high' }
+          const full=askBarWantsFull(askBar.lastAsked||askBar.query)
+          const items=hs.map(h=>({title:h.name||'Unnamed hospital',badge:h.city||null,tone:'default',meta:h.parent_complex||h.region||''}))
+          const text = `${hs.length} active hospital${hs.length===1?'':'s'} on record${grouped?` across ${Object.keys(byComplex).length} complexes/regions`:''}.`
+          return { text, visual:{type:'reslist',items,initialExpanded:full}, chips: [], actions: [], sources: ['hospitals'], followups: [], confidence: 'high' }
         }
         if (intent === 'clinical_units_overview') {
-          // Clinical units are covered by the training-units view; redirect there.
-          return { text: 'Clinical/training units are listed under Units.', chips: [], actions: [{ label: 'Open units', view: 'training_units', primary: true }], sources: ['units'], followups: [{ label: 'Which units are at capacity?', intent: 'units_at_capacity' }], confidence: 'high' }
+          // Keep alternate clinical-unit phrasing on the same structured collection
+          // answer so the presentation does not depend on which synonym routed here.
+          return _askBarBuildAnswerRaw('units_overview')
         }
         if (intent === 'coverage_areas_overview') {
           const areas = (coverageAreas.value || []).filter(a => a.is_active !== false)
           if (!areas.length) return { text: 'No coverage areas are defined.', chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['coverage areas'], followups: [], confidence: 'high' }
           const req = areas.filter(a => a.requires_coverage)
-          let text = `${areas.length} coverage area${areas.length===1?'':'s'}: ${areas.slice(0,8).map(a=>a.name).join(', ')}.`
-          if (req.length) text += ` ${req.length} require${req.length===1?'s':''} coverage${req.some(a=>a.applies_weekends)?' (some include weekends)':''}.`
-          return { text, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['coverage areas'], followups: [{ label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
+          const full=askBarWantsFull(askBar.lastAsked||askBar.query)
+          const items=areas.map(a=>({title:a.name||'Unnamed coverage area',badge:a.requires_coverage?'Coverage required':'Optional',tone:a.requires_coverage?'active':'default',meta:a.applies_weekends?'Includes weekends':''}))
+          const text = `${areas.length} coverage area${areas.length===1?'':'s'} on record. ${req.length} require${req.length===1?'s':''} coverage${req.some(a=>a.applies_weekends)?', including weekend coverage in some areas':''}.`
+          return { text, visual:{type:'reslist',items,initialExpanded:full}, chips: [], actions: [{ label: 'Open on-call', view: 'oncall_schedule', primary: true }], sources: ['coverage areas'], followups: [{ label: "Who's on call today?", intent: 'oncall_upcoming' }], confidence: 'high' }
         }
         if (intent === 'callout_fairness') {
           const cos = callouts.value || []

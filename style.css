@@ -23005,3 +23005,349 @@ html body #app .leave14-workspace .filter-bar{background:#fff !important;border-
   .nd-person-body{padding-inline:10px !important;}
   .nd-section{border-radius:10px;}
 }
+
+
+/* ======================================================================
+   V46.14 · GROUNDED PHASE 4.1B — INTELLIGENCE UI CONVERGENCE
+   Grounded adopts the reusable neumDesk Phase 4 language while preserving
+   its answer-first, evidence-aware interaction model. Presentation and
+   accessibility only: no operational write semantics are introduced here.
+   ====================================================================== */
+html body #app .nd-intelligence-overlay{
+  z-index:30000 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  padding:18px !important;
+  background:rgba(13,29,42,.32) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+html body #app .nd-intelligence-shell{
+  width:min(760px,calc(100vw - 36px)) !important;
+  max-width:760px !important;
+  height:min(920px,calc(100vh - 36px)) !important;
+  max-height:calc(100vh - 36px) !important;
+  border:1px solid var(--nd-component-line,#e3e7e8) !important;
+  border-radius:var(--nd-component-r-lg,16px) !important;
+  background:var(--nd-component-bg,#fff) !important;
+  box-shadow:0 24px 70px rgba(7,25,39,.20),0 6px 20px rgba(7,25,39,.08) !important;
+  overflow:hidden !important;
+  isolation:isolate !important;
+  font-family:var(--font-ui,'DM Sans',system-ui,sans-serif) !important;
+  color:var(--text-1,#173348) !important;
+}
+html body #app .grounded-mist{display:none !important;}
+html body #app .nd-intelligence-head{
+  position:relative !important;
+  z-index:12 !important;
+  min-height:70px !important;
+  padding:12px 14px 12px 16px !important;
+  background:#102f46 !important;
+  border-bottom:1px solid rgba(255,255,255,.08) !important;
+  box-shadow:none !important;
+}
+html body #app .nd-intelligence-head .grounded-head-orb{
+  width:38px !important;height:38px !important;flex:0 0 38px !important;
+  border:1px solid rgba(191,229,229,.30) !important;
+  background:rgba(255,255,255,.055) !important;
+  box-shadow:none !important;
+}
+html body #app .nd-intelligence-head .askbar-head-t{
+  font-size:16px !important;line-height:1.2 !important;font-weight:720 !important;letter-spacing:-.01em !important;
+}
+html body #app .nd-intelligence-head .askbar-head-s{
+  margin-top:3px !important;font-size:11.5px !important;line-height:1.25 !important;color:#bfd0d8 !important;
+}
+html body #app .nd-intelligence-actions{display:flex !important;align-items:center !important;gap:7px !important;min-width:0 !important;}
+html body #app .nd-intelligence-actions .nd-btn,
+html body #app .nd-intelligence-actions .grounded-tools-menu>summary{
+  min-height:var(--nd-control-h,40px) !important;height:var(--nd-control-h,40px) !important;
+  border-radius:var(--nd-control-r,9px) !important;
+  border:1px solid rgba(213,231,233,.23) !important;
+  background:rgba(255,255,255,.07) !important;
+  color:#f5fbfc !important;-webkit-text-fill-color:#f5fbfc !important;
+  padding:0 12px !important;font-size:11.5px !important;font-weight:680 !important;
+  display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:7px !important;
+  box-shadow:none !important;cursor:pointer !important;
+}
+html body #app .nd-intelligence-actions .nd-btn:hover,
+html body #app .nd-intelligence-actions .grounded-tools-menu>summary:hover{
+  background:rgba(255,255,255,.13) !important;border-color:rgba(213,231,233,.36) !important;
+}
+html body #app .nd-intelligence-actions .nd-btn:focus-visible,
+html body #app .nd-intelligence-actions .grounded-tools-menu>summary:focus-visible{
+  outline:none !important;box-shadow:0 0 0 3px rgba(115,217,220,.24) !important;
+}
+html body #app .nd-intelligence-actions .nd-btn--icon{
+  width:var(--nd-control-h,40px) !important;min-width:var(--nd-control-h,40px) !important;padding:0 !important;
+}
+html body #app .grounded-tools-menu{position:relative !important;display:block !important;}
+html body #app .grounded-tools-menu>summary{list-style:none !important;user-select:none !important;}
+html body #app .grounded-tools-menu>summary::-webkit-details-marker{display:none !important;}
+html body #app .grounded-tools-popover{
+  position:absolute !important;right:0 !important;top:calc(100% + 8px) !important;z-index:50 !important;
+  width:238px !important;padding:6px !important;border:1px solid var(--nd-component-line,#e3e7e8) !important;
+  border-radius:12px !important;background:#fff !important;box-shadow:0 16px 42px rgba(8,28,42,.18) !important;
+}
+html body #app .grounded-tools-item{
+  width:100% !important;min-height:48px !important;padding:8px 10px !important;border:0 !important;border-radius:8px !important;
+  display:flex !important;flex-direction:column !important;align-items:flex-start !important;justify-content:center !important;gap:2px !important;
+  background:transparent !important;color:#23485b !important;text-align:left !important;cursor:pointer !important;
+}
+html body #app .grounded-tools-item:hover{background:#f3f8f8 !important;}
+html body #app .grounded-tools-item:focus-visible{outline:none !important;box-shadow:var(--nd-focus-ring) !important;}
+html body #app .grounded-tools-item>span{font-size:12px !important;font-weight:700 !important;line-height:1.3 !important;}
+html body #app .grounded-tools-item>small{font-size:11px !important;color:#768993 !important;line-height:1.3 !important;}
+
+/* Source state and active context are first-class, calm system surfaces. */
+html body #app .nd-source-health{
+  min-height:36px !important;padding:8px 16px !important;border-bottom:1px solid #e4eaec !important;
+  background:#f7faf9 !important;color:#536e79 !important;font-size:11.5px !important;line-height:1.45 !important;
+}
+html body #app .nd-source-health button{min-height:32px !important;font-size:11px !important;}
+html body #app .nd-source-health summary{cursor:pointer !important;font-size:11px !important;font-weight:650 !important;}
+html body #app .nd-source-health details>div{font-size:11px !important;line-height:1.45 !important;}
+html body #app .nd-context-strip{
+  min-height:64px !important;padding:10px 16px !important;background:#f7faf9 !important;border-bottom:1px solid #e2e9ea !important;box-shadow:none !important;
+}
+html body #app .nd-context-strip .gr43-contextmark{font-size:11px !important;}
+html body #app .nd-context-strip .gr43-contextcopy>span,
+html body #app .nd-context-strip .gr43-contextcopy>small,
+html body #app .nd-context-strip .gr43-contextopen{font-size:11px !important;}
+html body #app .nd-context-strip .gr43-contextopen{min-height:36px !important;padding-inline:8px !important;border-radius:8px !important;}
+html body #app .nd-context-strip .gr43-contextclear{min-width:36px !important;min-height:36px !important;}
+
+/* Reading plane: answer first, structure only when it helps. */
+html body #app .nd-intelligence-shell .askbar-conv{
+  background:#fbfcfc !important;padding:18px 18px 16px !important;scrollbar-gutter:stable !important;
+}
+html body #app .nd-intelligence-empty{max-width:650px !important;padding:10px 4px 4px !important;}
+html body #app .nd-intelligence-empty .askbar-greeting-t{font-size:30px !important;line-height:1.08 !important;}
+html body #app .nd-intelligence-empty .askbar-greeting-s{font-size:13px !important;line-height:1.55 !important;}
+html body #app .nd-answer-question{
+  max-width:min(88%,620px) !important;border-radius:12px 12px 4px 12px !important;
+  background:#eaf4f3 !important;color:#173f4b !important;font-size:12.5px !important;line-height:1.5 !important;
+}
+html body #app .nd-answer{max-width:100% !important;min-width:0 !important;}
+html body #app .nd-answer-card{
+  max-width:100% !important;border:0 !important;border-radius:0 !important;background:transparent !important;box-shadow:none !important;
+}
+html body #app .nd-answer .askbar-a-txt{font-size:13px !important;line-height:1.65 !important;color:#263f4e !important;}
+html body #app .nd-answer-scope{
+  margin-top:10px !important;padding:8px 10px !important;border:1px solid #e1e8ea !important;border-radius:9px !important;
+  background:#f7f9f9 !important;color:#647985 !important;font-size:11px !important;line-height:1.4 !important;
+}
+html body #app .nd-proposal{
+  border:1px solid #e0e7e8 !important;border-left:3px solid #c28a31 !important;border-radius:12px !important;
+  background:#fffdfa !important;box-shadow:0 1px 2px rgba(12,33,50,.025) !important;
+}
+html body #app .nd-proposal.askbar-proposal--done{border-left-color:#2b9d79 !important;background:#fbfefd !important;}
+html body #app .nd-proposal.askbar-proposal--blocked{border-left-color:#b75a54 !important;background:#fffafa !important;}
+html body #app .nd-proposal button{min-height:40px !important;border-radius:9px !important;font-size:11.5px !important;}
+
+/* Evidence is visible but subordinate to the answer. */
+html body #app .nd-evidence-strip{
+  display:flex !important;align-items:flex-start !important;justify-content:space-between !important;gap:10px 16px !important;
+  margin:12px 0 0 !important;padding:10px 0 0 !important;border-top:1px solid #e4eaec !important;background:transparent !important;
+}
+html body #app .nd-evidence-strip .askbar-trust-main{gap:5px 8px !important;}
+html body #app .nd-evidence-strip .askbar-trust-state{
+  font-size:11px !important;line-height:1.35 !important;font-weight:720 !important;color:#486975 !important;-webkit-text-fill-color:#486975 !important;
+}
+html body #app .nd-evidence-strip .askbar-trust-src,
+html body #app .nd-evidence-reason,
+html body #app .nd-evidence-warning,
+html body #app .nd-evidence-strip .askbar-trust-time{
+  font-size:11px !important;line-height:1.4 !important;
+}
+html body #app .nd-evidence-reason{display:block !important;flex-basis:100% !important;color:#71838d !important;}
+html body #app .nd-evidence-warning{display:block !important;flex-basis:100% !important;color:#9c6218 !important;font-weight:650 !important;}
+html body #app .nd-evidence-strip .askbar-trust-checks,
+html body #app .nd-evidence-strip .askbar-trust-copy{
+  min-height:32px !important;border-radius:8px !important;font-size:11px !important;
+}
+html body #app .nd-evidence-strip .askbar-trust-checks{padding:0 8px !important;}
+html body #app .nd-evidence-strip .askbar-trust-copy{width:32px !important;height:32px !important;}
+html body #app .nd-evidence-records{
+  margin-top:8px !important;border:1px solid #e5eaec !important;border-radius:10px !important;background:#fff !important;padding:10px 12px !important;
+}
+html body #app .nd-evidence-records .askbar-evidence-h,
+html body #app .nd-evidence-records .askbar-evidence-label,
+html body #app .nd-evidence-records .askbar-evidence-detail,
+html body #app .nd-evidence-records .askbar-evidence-src{font-size:11px !important;line-height:1.45 !important;}
+
+/* Composer follows the 40px Phase 4 interaction rhythm. */
+html body #app .nd-intelligence-composer{
+  min-height:72px !important;padding:10px 12px !important;border-top:1px solid #dfe6e8 !important;background:#fff !important;
+}
+html body #app .nd-intelligence-composer input{
+  min-height:48px !important;border:1px solid #d8e1e3 !important;border-radius:11px !important;background:#fbfcfc !important;
+  font-size:13px !important;line-height:1.4 !important;padding-inline:14px !important;
+}
+html body #app .nd-intelligence-composer input:focus,
+html body #app .nd-intelligence-composer input:focus-visible{
+  outline:none !important;border-color:#7abbbc !important;box-shadow:var(--nd-focus-ring) !important;background:#fff !important;
+}
+html body #app .nd-intelligence-composer button{min-width:40px !important;min-height:40px !important;border-radius:9px !important;}
+
+/* Keyboard language shared with the canonical Person surface. */
+html body #app .nd-intelligence-shell button:focus-visible,
+html body #app .nd-intelligence-shell a:focus-visible,
+html body #app .nd-intelligence-shell summary:focus-visible,
+html body #app .nd-intelligence-shell input:focus-visible,
+html body #app .nd-intelligence-shell [tabindex]:focus-visible{
+  outline:none !important;box-shadow:var(--nd-focus-ring) !important;
+}
+
+/* Meaningful support text never falls below the Phase 4 11px floor. */
+html body #app .grounded-orb-badge{font-size:11px !important;}
+html body #app .askbar-head-s{font-size:11px !important;}
+html body #app .askbar-head-live{font-size:11px !important;}
+html body #app .askbar-sug-label{font-size:11px !important;}
+html body #app .askbar-trace-mini-t{font-size:11px !important;}
+html body #app .askbar-trace-mini-x{font-size:11px !important;}
+html body #app .askbar-trace-src{font-size:11px !important;}
+/* trust / provenance */
+html body #app .askbar-trust{font-size:11px !important;}
+html body #app .askbar-proposal-label{font-size:11px !important;}
+html body #app .askbar-proposal-tag{font-size:11px !important;}
+html body #app .askbar-proposal-k{font-size:11px !important;}
+html body #app .askbar-roster-pill,html body #app .askbar-reslist-badge,html body #app .askbar-risk-tag{font-size:11px !important;}
+html body #app .askbar-profile-status{font-size:11px !important;}
+html body #app .askbar-profile-flag{font-size:11px !important;}
+html body #app .askbar-profile-sechead{font-size:11px !important;}
+html body #app .askbar-profile-k{font-size:11px !important;}
+html body #app .askbar-profile-link-d{font-size:11px !important;}
+html body #app .askbar-profile-cmiss{font-size:11px !important;}
+html body #app .askbar-profile-cbtn{font-size:11px !important;}
+html body #app .askbar-digest-h-ct{font-size:11px !important;}
+html body #app .askbar-teach-langlbl{font-size:11px !important;}
+html body #app .askbar-teach-langmini{font-size:11px !important;}
+html body #app .askbar-clarify-meta,html body #app .askbar-alt-load{font-size:11px !important;}
+#app .askbar-working-source{font-size:11px !important;}
+html body #app .askbar-newchat,html body #app .askbar-teach-btn{font-size:11px !important;}
+html body #app .askbar-empty-sub{font-size:11px !important;}
+html body #app .askbar-trust-state{font-size:11px !important;}
+html body #app .askbar-trust-src{font-size:11px !important;}
+html body #app .askbar-trust-time{font-size:11px !important;}
+html body #app .askbar-trust-checks{font-size:11px !important;}
+html body #app .askbar-trace--footnote .askbar-evidence-h,html body #app .askbar-evidence-h{font-size:11px !important;}
+html body #app .askbar-followup-label{font-size:11px !important;}
+html body #app .askbar-fu{font-size:11px !important;}
+html body #app .askbar-tile-code{font-size:11px !important;}
+html body #app .askbar-tile-cap{font-size:11px !important;}
+html body #app .askbar-tile-sub{font-size:11px !important;}
+html body #app .askbar-tile-sup,
+html body #app .askbar-tile-sched{font-size:11px !important;}
+html body #app .askbar-profile-more{font-size:11px !important;}
+html body #app .askbar-tool-count{font-size:11px !important;}
+html body #app .askbar-continuity-kicker{font-size:11px !important;}
+html body #app .askbar-continuity-item span:not(.askbar-continuity-dot){font-size:11px !important;}
+html body #app .askbar-continuity-foot{font-size:11px !important;}
+html body #app .askbar-timeline-kicker{font-size:11px !important;}
+html body #app .askbar-timeline-back{font-size:11px !important;}
+html body #app .askbar-watch-strip-label{font-size:11px !important;}
+html body #app .askbar-watch-chip{font-size:11px !important;}
+html body #app .askbar-watch-more{font-size:11px !important;}
+html body #app .askbar-timeline-row span{font-size:11px !important;}
+html body #app .askbar-watch-btn{font-size:11px !important;}
+html body #app .askbar-inline-more{font-size:11px !important;}
+html body #app .askbar-researchline-coordinator span{font-size:11px !important;}
+html body #app .askbar-entity-metric span{font-size:11px !important;}
+html body #app .askbar-unit-facts{font-size:11px !important;}
+html body #app .askbar-scenario-eyebrow{font-size:11px !important;}
+html body #app .askbar-scenario-head>div>span:last-child{font-size:11px !important;}
+html body #app .askbar-scenario-badge{font-size:11px !important;}
+html body #app .askbar-impact-row>div>span{font-size:11px !important;}
+html body #app .askbar-impact-row small{font-size:11px !important;}
+html body #app .askbar-scenario-options>span{font-size:11px !important;}
+html body #app .askbar-scenario-options button{font-size:11px !important;}
+html body #app .askbar-scenario-options small{font-size:11px !important;}
+html body #app .askbar-impact-preview-head span{font-size:11px !important;}
+html body #app .askbar-impact-preview-head small{font-size:11px !important;}
+html body #app .askbar-impact-mini span{font-size:11px !important;}
+html body #app .askbar-impact-mini strong{font-size:11px !important;}
+html body #app .askbar-teach-eyebrow{font-size:11px !important;}
+html body #app .askbar-teach-stats span{font-size:11px !important;}
+html body #app .askbar-teach-panel-head>span{font-size:11px !important;}
+html body #app .askbar-teach-step{font-size:11px !important;}
+html body #app .askbar-teach-fields label>span{font-size:11px !important;}
+html body #app .askbar-teach-submit{font-size:11px !important;}
+html body #app .askbar-learning-actions button{font-size:11px !important;}
+html body #app .askbar-learning-clear small{font-size:11px !important;}
+html body #app .askbar-vocab-word strong{font-size:11px !important;}
+html body #app .askbar-vocab-word span{font-size:11px !important;}
+html body #app .askbar-vocab-map{font-size:11px !important;}
+html body #app .askbar-mode-note span{font-size:11px !important;}
+html body #app .askbar-mode-note strong{font-size:11px !important;}
+html body #app .askbar-publist-head span{font-size:11px !important;}
+html body #app .askbar-publist-head small{font-size:11px !important;}
+html body #app .askbar-pubrow-index{font-size:11px !important;}
+html body #app .askbar-pubrow-authors{font-size:11px !important;}
+html body #app .askbar-pubrow-meta{font-size:11px !important;}
+html body #app .entry44-grounded p>span{font-size:11px !important;}
+html body #app .gr43-contextmark{font-size:11px !important;}
+html body #app .gr43-contextcopy>span{font-size:11px !important;}
+html body #app .gr43-contextcopy>small{font-size:11px !important;}
+html body #app .gr43-contextopen{font-size:11px !important;}
+html body #app .askbar-sug-d{font-size:11px !important;}
+html body #app .gr43-research-brief-head span{font-size:11px !important;}
+html body #app .gr43-research-brief-head em{font-size:11px !important;}
+html body #app .gr43-research-brief-row>span{font-size:11px !important;}
+html body #app .gr43-research-brief-row>small{font-size:11px !important;}
+html body #app .gr43-research-note{font-size:11px !important;}
+html body #app .gr43-research-tags span{font-size:11px !important;}
+#app .udd-grounded-btn{font-size:11px !important;}
+.udd-grounded-btn{font-size:11px !important;}
+#app .grounded-trace-kicker{font-size:11px !important;}
+#app .grounded-trace-actions>span{font-size:11px !important;}
+#app .grounded-arch-strip strong{font-size:11px !important;}
+#app .grounded-trace-main small{font-size:11px !important;}
+#app .grounded-trace-duration{font-size:11px !important;}
+#app .grounded-trace-detail span{font-size:11px !important;}
+#app .grounded-trace-detail strong{font-size:11px !important;}
+#app .grounded-trace-events>div{font-size:11px !important;}
+#app .grounded-trace-events code{font-size:11px !important;}
+html body #app .askbar-context-event>span{font-size:11px !important;}
+html body #app .askbar-context-event>small{font-size:11px !important;}
+html body #app .gr45-review-control>div>span{font-size:11px !important;}
+html body #app .gr45-review-control>div>small{font-size:11px !important;}
+html body #app .gr45-review-control>button{font-size:11px !important;}
+html body #app .askbar-profile-glance span{font-size:11px !important;}
+html body #app .askbar-profile-link-l{font-size:11px !important;}
+/* The latest-answer affordance is an unobtrusive navigation cue. */
+html body #app .gr45-latest{font-size:11px !important;}
+
+@media(max-width:900px){
+  html body #app .nd-intelligence-shell{width:min(700px,calc(100vw - 24px)) !important;height:calc(100vh - 24px) !important;max-height:calc(100vh - 24px) !important;}
+  html body #app .nd-intelligence-overlay{padding:12px !important;}
+}
+@media(max-width:760px){
+  html body #app .nd-intelligence-overlay{align-items:flex-end !important;padding:0 !important;background:rgba(13,29,42,.30) !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}
+  html body #app .nd-intelligence-shell{width:100vw !important;max-width:none !important;height:min(94vh,940px) !important;max-height:94vh !important;border-radius:14px 14px 0 0 !important;border-bottom:0 !important;}
+  html body #app .nd-intelligence-head{min-height:64px !important;padding:10px 10px 10px 12px !important;}
+  html body #app .nd-intelligence-head .grounded-head-orb{width:36px !important;height:36px !important;flex-basis:36px !important;}
+  html body #app .nd-intelligence-actions{gap:5px !important;}
+  html body #app .nd-intelligence-actions .nd-btn{padding-inline:9px !important;}
+  html body #app .nd-intelligence-actions .askbar-newchat:first-child span{display:none !important;}
+  html body #app .grounded-tools-popover{right:-42px !important;width:min(250px,calc(100vw - 24px)) !important;}
+  html body #app .nd-context-strip{padding-inline:12px !important;}
+  html body #app .nd-intelligence-shell .askbar-conv{padding:14px 12px 12px !important;}
+  html body #app .nd-answer-question{max-width:94% !important;}
+  html body #app .nd-evidence-strip{flex-direction:column !important;gap:7px !important;}
+  html body #app .nd-evidence-strip .askbar-trust-meta{margin-left:0 !important;}
+  html body #app .nd-intelligence-composer{padding:9px 10px !important;}
+}
+@media(max-width:440px){
+  html body #app .nd-intelligence-head .askbar-head-s{display:none !important;}
+  html body #app .nd-intelligence-actions .nd-btn:not(.nd-btn--icon){min-width:40px !important;}
+  html body #app .nd-intelligence-actions .askbar-newchat:nth-of-type(2) span{display:none !important;}
+  html body #app .nd-source-health{padding-inline:12px !important;}
+  html body #app .nd-context-strip{grid-template-columns:30px minmax(0,1fr) auto !important;}
+}
+@media(prefers-reduced-motion:reduce){
+  html body #app .nd-intelligence-shell *,
+  html body #app .grounded-orb-wrap *{animation:none !important;transition:none !important;}
+}
+

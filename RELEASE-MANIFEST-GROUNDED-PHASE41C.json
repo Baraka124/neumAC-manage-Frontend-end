@@ -1,0 +1,38 @@
+{
+  "release": "V46.14 Grounded Phase 4.1C",
+  "created_at": "2026-09-23",
+  "files": {
+    "index.html": {
+      "sha256": "602f9d7388a8c8e26c69d839277f97c8a0b234fbae183a62feecd8bda4afbe9d",
+      "bytes": 1149611
+    },
+    "app.js": {
+      "sha256": "531842177cc449fa0d50753df1cc0e5e82d9b4f6cfe879537895d815bd17eb33",
+      "bytes": 1245647
+    },
+    "style.css": {
+      "sha256": "6737cee3be2d7d41427b071ba363f9d477d8ca3119ff2a1454dc07c14b7dc942",
+      "bytes": 2327476
+    },
+    "grounded-core.js": {
+      "sha256": "738ed64d64f02358079b94635591b63bf3f5a227301c5e46f473acc98697220b",
+      "bytes": 9724
+    },
+    "activity45.js": {
+      "sha256": "c943857ad57655cfea16a505957587eb5cd00ec119c3696d98961ce2c80aaedb",
+      "bytes": 34520
+    },
+    "test-v4614-grounded41c.cjs": {
+      "sha256": "2d5a0e65a5ab275bfee34f507c61d764ccf3422d2a2768266e4520f76d47576d",
+      "bytes": 3488
+    },
+    "GROUNDED-PHASE41C-CHANGES.md": {
+      "sha256": "8cec8293b1edc9f60fce2fc2980f174b63e9f408ded52a7b7bd6a5207b59df1b",
+      "bytes": 1557
+    },
+    "VALIDATION-V46.14-GROUNDED-PHASE41C.md": {
+      "sha256": "f15cee2ea9aa26b8c1c7a7724d84b9dcd6d72d0b9c56ca312b31a695c0b4ed4c",
+      "bytes": 1493
+    }
+  }
+}

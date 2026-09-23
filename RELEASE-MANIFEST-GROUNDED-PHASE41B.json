@@ -1,0 +1,64 @@
+{
+  "release": "V46.14 Grounded Phase 4.1A + 4.1B",
+  "checkpoint": "grounded-phase41b-ui-convergence",
+  "automated_validation": {
+    "suites": 26,
+    "checks": 420,
+    "dom_template_checks": 7,
+    "css_parse_errors": 0
+  },
+  "files": {
+    "app.js": {
+      "sha256": "8b0d1ffd235f235b193a1efd11f6da446b884e5a261a97d211bdb4b1d7e8126c",
+      "bytes": 1243458
+    },
+    "index.html": {
+      "sha256": "cf274270d03d6543300d1806b03afc5dd06540d6663d8be2310d30ed2ab61c98",
+      "bytes": 1149413
+    },
+    "style.css": {
+      "sha256": "6737cee3be2d7d41427b071ba363f9d477d8ca3119ff2a1454dc07c14b7dc942",
+      "bytes": 2327476
+    },
+    "grounded-core.js": {
+      "sha256": "738ed64d64f02358079b94635591b63bf3f5a227301c5e46f473acc98697220b",
+      "bytes": 9724
+    },
+    "activity45.js": {
+      "sha256": "c943857ad57655cfea16a505957587eb5cd00ec119c3696d98961ce2c80aaedb",
+      "bytes": 34520
+    },
+    "SUPABASE_SCHEMA.sql": {
+      "sha256": "66541c3c9017c7d6480831999ca33325e0953bdeccc193d4873a8e8a7a195768",
+      "bytes": 36071
+    },
+    "DepartmentOS_Architecture.md": {
+      "sha256": "0c4143140385c63705769c1ecf5a629b20923308db5aa7d7db5e90c02e68fc45",
+      "bytes": 52935
+    },
+    "GROUNDED-ARCHITECTURE.md": {
+      "sha256": "e46d64b0776ef0fa532b4fd53b49de415a8baa32fed7754b5186c0c6b0225f60",
+      "bytes": 23798
+    },
+    "UI-SYSTEM-V46.14.md": {
+      "sha256": "b7bfb868b9e4d629dcff64377b46beb6892befa623d52de51482ed6a5af84b45",
+      "bytes": 6968
+    },
+    "VALIDATION-V46.14-GROUNDED-PHASE41A.md": {
+      "sha256": "471fc0d6997e60d6f7861500def8c7dfe0ccb80ff147a0d4c6ee29d386912ef7",
+      "bytes": 982
+    },
+    "VALIDATION-V46.14-GROUNDED-PHASE41B.md": {
+      "sha256": "ff6229cc07637e6c435ef5019f1aab88c69b14d39824fdaa21bcb038bcd49503",
+      "bytes": 1839
+    },
+    "test-v4614-grounded41a.cjs": {
+      "sha256": "89f2b1cf3ddccd8a3f96f6b9775b0181d6dc78ff745c58751888e2ccc136c15d",
+      "bytes": 6824
+    },
+    "test-v4614-grounded41b.cjs": {
+      "sha256": "42947858d0a18f8773a7767ce85050d590f590801eb1aec51e98db90c9afa5e7",
+      "bytes": 5814
+    }
+  }
+}

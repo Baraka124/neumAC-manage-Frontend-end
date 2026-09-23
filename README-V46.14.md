@@ -2,6 +2,12 @@
 
 V46.14 remains the active version. This revision completes the A→H Personal Activity programme **and** the subsequent implementation audit/hardening pass. The release stays on V46.14 deliberately: the feature is not promoted to another version until live authenticated browser and print validation confirms the workspace behaves as designed.
 
+## Grounded Phase 4.1B — intelligence UI convergence
+
+The current V46.14 artifact now includes Grounded Phase 4.1A/4.1B. Phase 4.1A tightens source dependencies, provenance/confidence and routing precision; Phase 4.1B makes those semantics visible through the shared Phase 4 UI system. Grounded is presented as a crisp department-intelligence workspace with structured source scope, evidence, proposal and context patterns rather than a separate cloud/glass interface. Dialog focus containment/return, a simplified primary header, 40px interaction rhythm and an 11px meaningful support-text floor are included.
+
+The operational contract is unchanged: consequential writes still require explicit human confirmation and commit-time revalidation. Authenticated browser acceptance and deployed partial-source failure simulation remain required before production promotion.
+
 ## A → H implementation
 
 A. **Product architecture** — Personal Activity is presented as a full-screen Portfolio Intelligence workspace rather than an export-first dialog. Person, period and included activity are first-class context. The current container is still a full-viewport overlay inside the single-page app; URL-addressable routing/history is recorded architectural debt rather than falsely claimed complete.
@@ -247,3 +253,19 @@ The Staff directory and canonical Person profile now expose a reusable `nd-*` pr
 Promotion hardening in this package fixes the malformed CSS comment boundary discovered in the candidate, adds ARIA state to the Table / People / Compact selector, adds Space-key activation to interactive directory records, uses roving focus and labelled panels in the Person tabs, and hardens overflow/mobile density. `app.js`, `grounded-core.js` and `activity45.js` remain byte-for-byte unchanged from the validated template-safe baseline.
 
 Automated validation now passes **24 suites / 393 checks** including the DOM-template guard and **24 dedicated Staff Phase 4 checks**. Production acceptance still requires authenticated review of one Attending, one Internal Resident, one Rotating Resident and one External Resident, plus Table / People / Compact at desktop, tablet and mobile widths.
+
+
+## V46.14 Grounded Phase 4.1A — Knowledge contract precision
+
+Grounded now treats source availability as an **intent-level dependency**, not a release-wide all-or-nothing condition. A failed Innovation Projects request no longer blocks a verified Leave or On-call answer when the resolved intent does not depend on Innovation. Consequential writes remain on their existing guarded confirmation and commit-time revalidation paths.
+
+Implemented knowledge-integrity changes:
+- exact source keys map the nine refreshed record families to each Grounded intent/follow-up;
+- degraded reads execute only when the sources required for that answer are verified;
+- every finalized factual answer carries a `grounded.answer.v1` knowledge envelope with required/checked/unavailable sources, evidence count, temporal scope and retrieval timestamp;
+- confidence now carries an explicit structured reason and source completeness can lower confidence independently of answer prose;
+- near-tie staff identity matches (within one fuzzy-token scoring step) trigger clarification rather than silently selecting the first person;
+- Teach vocabulary cannot override a conflicting strong built-in route, and the Teach UI blocks obvious strong-route collisions before persistence;
+- ranking/comparison answers now expose their current temporal meaning as **All recorded records** rather than leaving the reporting period implicit.
+
+**Preservation boundary:** no Supabase schema, Staff lifecycle, Leave/On-call/Rotation write semantics, permission model, sync architecture or Staff Phase 4 presentation contract changes in 4.1A. Grounded UI convergence is the next checkpoint (4.1B).

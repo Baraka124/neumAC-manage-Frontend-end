@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"></head><body>
+<div id="probe" class="nd-workspace"><button id="btn" class="nd-btn">Probe</button><div id="section" class="nd-section">Section</div></div>
+<script>
+requestAnimationFrame(()=>{
+ const root=getComputedStyle(document.documentElement);
+ const btn=getComputedStyle(document.getElementById('btn'));
+ const section=getComputedStyle(document.getElementById('section'));
+ document.body.dataset.controlH=root.getPropertyValue('--nd-control-h').trim();
+ document.body.dataset.btnMinHeight=btn.minHeight;
+ document.body.dataset.sectionRadius=section.borderRadius;
+ document.body.dataset.phase4Loaded=(root.getPropertyValue('--nd-type-label').trim()==='11px' && btn.minHeight==='40px')?'yes':'no';
+});
+</script></body></html>

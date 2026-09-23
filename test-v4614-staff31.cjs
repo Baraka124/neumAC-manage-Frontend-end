@@ -6,8 +6,8 @@ const life=fs.readFileSync('STAFF-DOMAIN-LIFECYCLE-V46.14.md','utf8');
 const tests=[]; const test=(n,f)=>tests.push([n,f]);
 
 test('P31-01 phase 3.1 cache markers and CDN runtime',()=>{
-  assert(html.includes('app.js?v=46.14-staff-phase31-profile-integrity'));
-  assert((html.includes('style.css?v=46.14-staff-phase31-profile-integrity') || html.includes('style.css?v=46.14-staff-phase4-ui-foundation')));
+  assert((html.includes('app.js?v=46.14-staff-phase31-profile-integrity') || (html.includes('app.js?v=46.14-grounded-phase41a-knowledge-contract') || html.includes('app.js?v=46.14-grounded-phase41b-ui-convergence'))));
+  assert((html.includes('style.css?v=46.14-staff-phase31-profile-integrity') || (html.includes('style.css?v=46.14-staff-phase4-ui-foundation') || html.includes('style.css?v=46.14-grounded-phase41b-ui-convergence'))));
   assert(html.includes('https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js'));
   assert(!html.includes('<script src="vue.global.js"></script>'));
 });
