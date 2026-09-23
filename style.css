@@ -22498,3 +22498,327 @@ html body #app .leave14-workspace .filter-bar{background:#fff !important;border-
   .person-profile-v2 .pp3-route-arrow{font-size:0;}
   .person-profile-v2 .pp3-route-arrow::after{content:"↓";font-size:16px;}
 }
+   V46.14 · STAFF PHASE 4 CANDIDATE — REUSABLE UI FOUNDATION
+   Presentation-only extraction from the validated Staff directory + Person
+   surfaces. Legacy staff46-/pp2-/pp3- selectors remain as compatibility
+   hooks; nd-* classes are the reusable neumDesk component contract.
+   ====================================================================== */
+:root{
+  --nd-control-h:40px;
+  --nd-control-r:9px;
+  --nd-component-r:12px;
+  --nd-component-r-lg:16px;
+  --nd-component-line:var(--border,#e3dfd6);
+  --nd-component-bg:var(--surface,#fff);
+  --nd-component-soft:var(--surface-2,#f5f4f0);
+  --nd-component-hover:#f7fbfb;
+  --nd-focus-ring:0 0 0 3px rgba(8,145,178,.14);
+  --nd-type-meta:11px;
+  --nd-type-label:11px;
+  --nd-type-body:13px;
+  --nd-type-title:16px;
+  --nd-status-active-bg:#edf9f4;
+  --nd-status-active-bd:#bee8d3;
+  --nd-status-active-fg:#167a56;
+  --nd-status-away-bg:#fff7e8;
+  --nd-status-away-bd:#eed6a5;
+  --nd-status-away-fg:#9b6815;
+  --nd-status-neutral-bg:#f4f6f7;
+  --nd-status-neutral-bd:#dfe4e6;
+  --nd-status-neutral-fg:#6f7c84;
+}
+
+/* Foundation shell ----------------------------------------------------- */
+.nd-workspace{
+  min-width:0;
+  color:var(--text-1);
+  font-family:var(--font-ui);
+}
+.nd-context-strip{
+  box-shadow:var(--shadow-xs);
+}
+.nd-eyebrow{
+  font-family:var(--font-data);
+  font-size:var(--nd-type-label);
+  line-height:1.25;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  font-weight:700;
+}
+.nd-eyebrow--compact{letter-spacing:.085em;}
+.nd-hero{
+  isolation:isolate;
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset;
+}
+.nd-hero__copy{min-width:0;}
+.nd-hero__actions{align-self:start;}
+.nd-btn{
+  min-height:var(--nd-control-h);
+  border-radius:var(--nd-control-r);
+  font-family:var(--font-ui);
+  transition:background var(--t),border-color var(--t),color var(--t),transform var(--t),box-shadow var(--t);
+}
+.nd-btn:focus-visible,
+.nd-segmented button:focus-visible,
+.nd-menu summary:focus-visible,
+.nd-menu button:focus-visible,
+.nd-filterbar select:focus-visible,
+.nd-filterbar__clear:focus-visible,
+.nd-search:focus-within,
+.nd-table tbody tr:focus-visible,
+.nd-person-card:focus-visible,
+.nd-compact-row:focus-visible,
+.nd-tabs button:focus-visible,
+.nd-person-drawer button:focus-visible,
+.nd-person-drawer a:focus-visible{
+  outline:none;
+  box-shadow:var(--nd-focus-ring);
+}
+.nd-btn--accent{font-weight:700;}
+.nd-btn--inverse{font-weight:650;}
+
+/* Metric strip --------------------------------------------------------- */
+.nd-metric-strip button{
+  min-height:64px;
+  transition:background var(--t),box-shadow var(--t);
+}
+.nd-metric-strip button:focus-visible{
+  outline:none;
+  box-shadow:inset 0 0 0 2px rgba(115,217,220,.72);
+}
+.nd-metric-strip small{
+  font-size:var(--nd-type-meta) !important;
+  line-height:1.25;
+}
+
+/* Toolbar / filter / controls ----------------------------------------- */
+.nd-toolbar{
+  min-height:54px;
+  box-shadow:0 1px 0 rgba(7,17,31,.02);
+}
+.nd-toolbar__actions{margin-left:auto;}
+.nd-segmented{
+  border-radius:10px;
+}
+.nd-segmented button{
+  min-height:34px;
+  font-size:12.5px;
+}
+.nd-filterbar{
+  box-shadow:var(--shadow-xs);
+}
+.nd-filterbar select,
+.nd-search{
+  min-height:var(--nd-control-h);
+  border-radius:var(--nd-control-r);
+}
+.nd-filterbar select:focus-visible{
+  border-color:var(--teal);
+}
+.nd-filterbar__count,
+.nd-filterbar__clear{
+  font-size:11.5px;
+}
+
+/* Canonical operational table ----------------------------------------- */
+.nd-table-shell{
+  border-radius:var(--nd-component-r);
+  box-shadow:var(--shadow-xs);
+}
+.nd-table thead th{
+  font-size:var(--nd-type-label) !important;
+  line-height:1.2;
+  letter-spacing:.065em;
+}
+.nd-table tbody tr{
+  transition:background var(--t),box-shadow var(--t);
+}
+.nd-table tbody tr:focus-visible{
+  position:relative;
+  z-index:1;
+  background:var(--nd-component-hover);
+}
+.nd-identity strong{line-height:1.25;}
+.nd-identity small,
+.nd-context-item small{
+  font-size:var(--nd-type-meta) !important;
+  line-height:1.35;
+}
+.nd-context-item strong{line-height:1.3;}
+.nd-muted{font-size:11.5px;}
+.nd-status{
+  min-height:27px;
+  font-size:11.5px !important;
+  letter-spacing:.005em;
+}
+.nd-status.is-active{
+  background:var(--nd-status-active-bg);
+  border-color:var(--nd-status-active-bd);
+  color:var(--nd-status-active-fg);
+}
+.nd-status.is-away{
+  background:var(--nd-status-away-bg);
+  border-color:var(--nd-status-away-bd);
+  color:var(--nd-status-away-fg);
+}
+.nd-status.is-inactive,
+.nd-status.is-neutral{
+  background:var(--nd-status-neutral-bg);
+  border-color:var(--nd-status-neutral-bd);
+  color:var(--nd-status-neutral-fg);
+}
+.nd-menu>div{
+  border-radius:10px;
+  box-shadow:var(--shadow-md);
+}
+
+/* Identity browse cards / compact rows -------------------------------- */
+.nd-card-grid{align-items:stretch;}
+.nd-person-card{
+  border-radius:var(--nd-component-r);
+  box-shadow:0 1px 2px rgba(8,24,40,.025);
+}
+.nd-person-card:hover,
+.nd-person-card:focus-visible{
+  box-shadow:0 8px 22px rgba(24,75,77,.08);
+}
+.nd-person-card>small,
+.nd-chip-row span,
+.nd-chip-row a,
+.staff46-people-divider,
+.staff46-compact-divider{
+  font-size:var(--nd-type-meta) !important;
+}
+.nd-compact-list{
+  border-radius:var(--nd-component-r);
+  box-shadow:var(--shadow-xs);
+}
+.nd-compact-row{
+  min-height:54px;
+  transition:background var(--t),box-shadow var(--t);
+}
+.nd-compact-row:focus-visible{background:var(--nd-component-hover);}
+
+/* Canonical Person surface -------------------------------------------- */
+.nd-person-drawer{
+  --nd-person-line:#e2e8eb;
+  --nd-person-soft:#fbfcfc;
+  --nd-person-ink:#173348;
+  --nd-person-muted:#75848e;
+}
+.nd-person-rail{
+  border-right:1px solid rgba(255,255,255,.06);
+}
+.nd-person-main{min-width:0;}
+.nd-person-head{
+  min-height:94px;
+}
+.nd-tabs button{
+  min-height:48px;
+  font-size:12.5px;
+  transition:color var(--t),border-color var(--t),background var(--t);
+}
+.nd-tabs button:focus-visible{
+  box-shadow:inset 0 -2px 0 var(--teal),var(--nd-focus-ring);
+}
+.nd-person-body{scrollbar-gutter:stable;}
+.nd-view{gap:18px;}
+.nd-section{
+  border-radius:var(--nd-component-r);
+  border-color:var(--nd-person-line);
+  box-shadow:0 1px 2px rgba(12,33,50,.025);
+}
+.nd-section-head small,
+.nd-state-card>span,
+.nd-kv-grid span,
+.nd-contact-grid span,
+.nd-person-drawer .pp2-kicker,
+.nd-person-drawer .pp2-context small,
+.nd-person-drawer .pp3-resident-title small,
+.nd-person-drawer .pp3-route-node span,
+.nd-person-drawer .pp3-fact-grid span{
+  font-size:var(--nd-type-label) !important;
+  line-height:1.25;
+  letter-spacing:.08em;
+}
+.nd-section-head h3{
+  font-size:var(--nd-type-title);
+  line-height:1.25;
+}
+.nd-state-grid{gap:10px;}
+.nd-state-card{
+  border-radius:10px;
+  background:var(--nd-person-soft);
+}
+.nd-state-card strong{line-height:1.35;}
+.nd-state-card small,
+.nd-timeline-item time,
+.nd-timeline-item small,
+.nd-record-row small,
+.nd-person-drawer .pp3-fact-grid small,
+.nd-person-drawer .pp3-resident-kv small,
+.nd-person-drawer .pp3-resident-record .nd-kv-grid small{
+  font-size:11.5px !important;
+  line-height:1.4;
+}
+.nd-kv-grid{
+  border-radius:10px;
+}
+.nd-kv-grid>div{
+  min-height:72px;
+}
+.nd-record-list{
+  border-radius:10px;
+}
+.nd-record-row{
+  min-height:52px;
+  transition:background var(--t);
+}
+.nd-record-meta{
+  font-size:11.5px !important;
+}
+.nd-record-meta em{
+  font-size:11px !important;
+}
+.nd-contact-grid>*{
+  border-radius:10px;
+}
+.nd-empty-state{
+  min-height:54px;
+  display:flex;
+  align-items:center;
+  font-size:12px;
+  line-height:1.45;
+}
+.nd-tag{
+  font-size:11px !important;
+  letter-spacing:.01em;
+}
+.nd-person-drawer .pp2-mini-metrics span{
+  font-size:11px !important;
+}
+.nd-person-drawer .pp3-context-note{
+  font-size:11.5px;
+}
+
+/* The foundation keeps interactive language calm and consistent. */
+.nd-workspace button,
+.nd-person-drawer button,
+.nd-workspace input,
+.nd-workspace select{
+  font-family:var(--font-ui);
+}
+
+@media (max-width:980px){
+  .nd-filterbar{grid-template-columns:1fr 1fr 1fr;}
+  .nd-search{grid-column:1/-1;}
+}
+@media (max-width:720px){
+  .nd-workspace{padding-left:10px;padding-right:10px;}
+  .nd-filterbar{grid-template-columns:1fr;}
+  .nd-search{grid-column:auto;}
+  .nd-tabs{scroll-snap-type:x proximity;}
+  .nd-tabs button{scroll-snap-align:start;}
+  .nd-person-head{min-height:auto;}
+  .nd-record-row{gap:14px;}
+}

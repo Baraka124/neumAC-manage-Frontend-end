@@ -10,6 +10,13 @@
 
 ## Current implementation ledger — V46.14
 
+## Staff Phase 4 candidate — reusable UI foundation
+
+The Staff directory and canonical Person profile now carry a parallel reusable `nd-*` component vocabulary while preserving every existing `staff46-*`, `pp2-*` and `pp3-*` compatibility hook. The extraction standardizes controls, focus treatment, operational table/status grammar, Person sections, record lists and support-text typography without changing lifecycle or runtime data behavior. `app.js`, Grounded and Personal Activity runtime files remain unchanged. See `UI-SYSTEM-V46.14.md`.
+
+This is still a **candidate** inside V46.14. Promotion depends on authenticated validation of Attending + Internal/Rotating/External Resident profiles and Table/People/Compact views.
+
+
 ## V46.14 Staff Phase 3.1 — Browser DOM template safety hotfix
 
 Authenticated deployment still failed with Vue production compiler error `compiler-30` after the earlier local template fix. A full browser-DOM audit found the root cause was broader than Staff: neumDesk mounts an **in-DOM Vue template**, so the browser parses `index.html` before Vue compiles it. Literal `<` comparison operators inside Vue directive attributes or interpolation expressions can therefore corrupt the DOM tree before Vue sees it.
@@ -567,3 +574,5 @@ The lasting contribution isn't the AI. It's the knowledge architecture that make
 - Corrected the architecture maturity ladder: ACT is partial/real, not “not started.”
 - Set **Leave Action Integrity** as the next migration, followed by Resident Rotations.
 - Established this file as a required artifact in every future complete release package.
+**Phase 4 candidate automated validation:** 24 suites / 387 checks pass; production promotion is still gated by the four-profile authenticated comparison.
+

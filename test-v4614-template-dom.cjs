@@ -28,7 +28,7 @@ eq((html.match(/External contact email<\/span>/g) || []).length, 1,
 eq((html.match(/External contact phone<\/span>/g) || []).length, 1,
   'External contact phone row is not duplicated');
 
-ok(html.includes('v-else class="pp2-empty">No certificates on record.</div>'),
+ok(/v-else class="[^"]*\bpp2-empty\b[^"]*">No certificates on record\.<\/div>/.test(html),
   'Certificate empty-state branch remains present');
 
 console.log(`V46.14 DOM-template safety: ${checks} checks passed`);

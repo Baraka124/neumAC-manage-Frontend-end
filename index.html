@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-staff-phase31-profile-integrity">
+    <link rel="stylesheet" href="style.css?v=46.14-staff-phase4-ui-foundation">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -2117,12 +2117,12 @@
                 </div>
 
 
-                <!-- ============ CLINICAL STAFF VIEW · V46.14 STAFF PHASE 1 ============ -->
-                <div v-if="currentView === 'medical_staff'" class="staff46-page">
+                <!-- ============ CLINICAL STAFF VIEW · V46.14 STAFF PHASE 1 / PHASE 4 UI FOUNDATION ============ -->
+                <div v-if="currentView === 'medical_staff'" class="staff46-page nd-workspace" data-ui-foundation="staff-phase4">
 
                     <!-- Context inherited from cross-module navigation stays visible but never becomes a second breadcrumb bar. -->
-                    <div v-if="staffFilters.department || staffFilters.residentCategory" class="staff46-context-strip">
-                        <span class="staff46-context-k">Filtered context</span>
+                    <div v-if="staffFilters.department || staffFilters.residentCategory" class="staff46-context-strip nd-context-strip">
+                        <span class="staff46-context-k nd-eyebrow nd-eyebrow--compact">Filtered context</span>
                         <button v-if="staffFilters.department" type="button" @click="staffFilters.department=''">
                             {{ departments.find(d=>d.id===staffFilters.department)?.name || 'Department' }} ×
                         </button>
@@ -2133,24 +2133,24 @@
                     </div>
 
                     <!-- Contextual hero: global navbar already owns the module name. -->
-                    <section class="staff46-hero" aria-labelledby="staff46-hero-title">
-                        <div class="staff46-hero-copy">
-                            <span class="staff46-eyebrow">WORKFORCE DIRECTORY</span>
+                    <section class="staff46-hero nd-hero" aria-labelledby="staff46-hero-title">
+                        <div class="staff46-hero-copy nd-hero__copy">
+                            <span class="staff46-eyebrow nd-eyebrow">WORKFORCE DIRECTORY</span>
                             <h2 id="staff46-hero-title">{{ deptPulseStats.active }} active staff</h2>
                             <p>People, professional roles and near-term operational context.</p>
                         </div>
-                        <div class="staff46-hero-actions">
-                            <button type="button" class="staff46-btn staff46-btn--secondary" @click="activity45Open()">
+                        <div class="staff46-hero-actions nd-hero__actions">
+                            <button type="button" class="staff46-btn staff46-btn--secondary nd-btn nd-btn--inverse" @click="activity45Open()">
                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
                                 Personal activity
                             </button>
-                            <button type="button" class="staff46-btn staff46-btn--primary" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff','create')">
+                            <button type="button" class="staff46-btn staff46-btn--primary nd-btn nd-btn--accent" @click="showAddMedicalStaffModal" v-if="hasPermission('medical_staff','create')">
                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                                 Add staff
                             </button>
                         </div>
 
-                        <div class="staff46-pulse" aria-label="Current department staff context">
+                        <div class="staff46-pulse nd-metric-strip" aria-label="Current department staff context">
                             <button type="button" @click="staffFilters.status='active'">
                                 <strong>{{ deptPulseStats.active }}</strong><span>Active staff</span><small>employment records</small>
                             </button>
@@ -2167,8 +2167,8 @@
                     </section>
 
                     <!-- View/actions toolbar. View switches and operational actions are intentionally separated. -->
-                    <div class="staff46-toolbar">
-                        <div class="staff46-view-switch" role="group" aria-label="Staff view">
+                    <div class="staff46-toolbar nd-toolbar">
+                        <div class="staff46-view-switch nd-segmented" role="group" aria-label="Staff view">
                             <button type="button" :class="{active:staffView==='table'}" @click="staffView='table'">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
                                 Table
@@ -2182,8 +2182,8 @@
                                 Compact
                             </button>
                         </div>
-                        <div class="staff46-toolbar-actions">
-                            <details class="staff46-export-menu">
+                        <div class="staff46-toolbar-actions nd-toolbar__actions">
+                            <details class="staff46-export-menu nd-menu">
                                 <summary>
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
                                     Export
@@ -2197,8 +2197,8 @@
                     </div>
 
                     <!-- Search/filter bar -->
-                    <div class="staff46-filters">
-                        <label class="staff46-search">
+                    <div class="staff46-filters nd-filterbar">
+                        <label class="staff46-search nd-search">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg>
                             <input type="text" v-model="staffFilters.search" placeholder="Search staff, role, specialty, department…" aria-label="Search staff">
                         </label>
@@ -2222,13 +2222,13 @@
                             <option value="on_leave">On leave</option>
                             <option value="inactive">Inactive</option>
                         </select>
-                        <button v-if="hasActiveStaffFilters" type="button" class="staff46-clear" @click="clearStaffFilters">Clear</button>
-                        <span v-if="hasActiveStaffFilters" class="staff46-result-count">{{ filteredMedicalStaffAll.length }} results</span>
+                        <button v-if="hasActiveStaffFilters" type="button" class="staff46-clear nd-filterbar__clear" @click="clearStaffFilters">Clear</button>
+                        <span v-if="hasActiveStaffFilters" class="staff46-result-count nd-filterbar__count">{{ filteredMedicalStaffAll.length }} results</span>
                     </div>
 
                     <!-- TABLE VIEW — first neumDesk operational-table specimen. -->
-                    <div v-if="staffView==='table'" class="staff46-table-wrap">
-                        <table class="staff46-table">
+                    <div v-if="staffView==='table'" class="staff46-table-wrap nd-table-shell">
+                        <table class="staff46-table nd-table">
                             <thead>
                                 <tr>
                                     <th @click="sortBy('medical_staff','full_name')">Staff member</th>
@@ -2241,7 +2241,7 @@
                             <tbody>
                                 <tr v-for="staff in filteredMedicalStaff" :key="staff.id" @click="viewStaffDetails(staff)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(staff)">
                                     <td>
-                                        <div class="staff46-person">
+                                        <div class="staff46-person nd-identity">
                                             <div :class="nmAv(staff.full_name,staff.staff_type,'md')">{{ nmAvI(staff.full_name) }}</div>
                                             <div>
                                                 <strong>{{ staff.full_name }}</strong>
@@ -2264,18 +2264,18 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div v-if="getStaffDirectoryContextItems(staff).length" class="staff46-context-list">
-                                            <div v-for="(item,i) in getStaffDirectoryContextItems(staff)" :key="staff.id+'-ctx-'+i" :class="['staff46-context-item','is-'+item.type]">
+                                        <div v-if="getStaffDirectoryContextItems(staff).length" class="staff46-context-list nd-context-list">
+                                            <div v-for="(item,i) in getStaffDirectoryContextItems(staff)" :key="staff.id+'-ctx-'+i" :class="['staff46-context-item','nd-context-item','is-'+item.type]">
                                                 <span></span><div><strong>{{ item.title }}</strong><small v-if="item.meta">{{ item.meta }}</small></div>
                                             </div>
                                         </div>
-                                        <span v-else class="staff46-none">No near-term recorded event</span>
+                                        <span v-else class="staff46-none nd-muted">No near-term recorded event</span>
                                     </td>
                                     <td>
-                                        <span :class="['staff46-state','is-'+getStaffDirectoryRecordState(staff).tone]">{{ getStaffDirectoryRecordState(staff).label }}</span>
+                                        <span :class="['staff46-state','nd-status','is-'+getStaffDirectoryRecordState(staff).tone]">{{ getStaffDirectoryRecordState(staff).label }}</span>
                                     </td>
                                     <td class="staff46-actions-col" @click.stop>
-                                        <details class="staff46-row-menu">
+                                        <details class="staff46-row-menu nd-menu nd-menu--row">
                                             <summary aria-label="Staff actions" title="Staff actions">
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
                                             </summary>
@@ -2305,19 +2305,19 @@
                     </div>
 
                     <!-- PEOPLE VIEW — browse identity/context, not an enlarged duplicate of the table. -->
-                    <div v-if="staffView==='people'" class="staff46-people">
+                    <div v-if="staffView==='people'" class="staff46-people nd-card-grid">
                         <template v-for="(item,idx) in compactStaffWithDividers" :key="item.id || 'people-divider-'+idx">
                             <div v-if="item._divider" class="staff46-people-divider"><span>{{ item._divider }}</span></div>
-                            <article v-else class="staff46-person-card" @click="viewStaffDetails(item)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(item)">
+                            <article v-else class="staff46-person-card nd-person-card" @click="viewStaffDetails(item)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(item)">
                                 <div class="staff46-person-card-head">
                                     <div :class="nmAv(item.full_name,item.staff_type,'lg')">{{ nmAvI(item.full_name) }}</div>
-                                    <span :class="['staff46-state','is-'+getStaffDirectoryRecordState(item).tone]">{{ getStaffDirectoryRecordState(item).label }}</span>
+                                    <span :class="['staff46-state','nd-status','is-'+getStaffDirectoryRecordState(item).tone]">{{ getStaffDirectoryRecordState(item).label }}</span>
                                 </div>
                                 <h3>{{ item.full_name }}</h3>
                                 <p v-if="isResidentType(item.staff_type)">{{ getStaffResidentDescriptor(item)?.label }}<template v-if="getStaffResidentDescriptor(item)?.year"> · {{ getStaffResidentDescriptor(item).year }}</template></p>
                                 <p v-else>{{ formatStaffType(item.staff_type) }}<template v-if="item.specialization"> · {{ formatSpecialization(item.specialization) }}</template></p>
                                 <small v-if="getStaffResidentDescriptor(item)?.origin">From {{ getStaffResidentDescriptor(item).origin }}</small>
-                                <div class="staff46-card-context" v-if="getStaffDirectoryContextItems(item).length">
+                                <div class="staff46-card-context nd-chip-row" v-if="getStaffDirectoryContextItems(item).length">
                                     <span v-for="(ctx,i) in getStaffDirectoryContextItems(item)" :key="item.id+'-card-'+i">{{ ctx.title }}</span>
                                 </div>
                                 <footer>Open record <span>→</span></footer>
@@ -2327,14 +2327,14 @@
                     </div>
 
                     <!-- COMPACT VIEW — high-density directory preserving all existing records. -->
-                    <div v-if="staffView==='compact'" class="staff46-compact">
+                    <div v-if="staffView==='compact'" class="staff46-compact nd-compact-list">
                         <template v-for="(item,idx) in compactStaffWithDividers" :key="item.id || 'compact-divider-'+idx">
                             <div v-if="item._divider" class="staff46-compact-divider">{{ item._divider }}</div>
-                            <button v-else type="button" class="staff46-compact-row" @click="viewStaffDetails(item)">
+                            <button v-else type="button" class="staff46-compact-row nd-compact-row" @click="viewStaffDetails(item)">
                                 <span :class="nmAv(item.full_name,item.staff_type,'sm')">{{ nmAvI(item.full_name) }}</span>
                                 <span class="staff46-compact-name"><strong>{{ item.full_name }}</strong><small>{{ isResidentType(item.staff_type) ? (getStaffResidentDescriptor(item)?.label || 'Resident') : formatStaffType(item.staff_type) }}</small></span>
                                 <span class="staff46-compact-context">{{ getStaffDirectoryContextItems(item)[0]?.title || 'No near-term recorded event' }}</span>
-                                <span :class="['staff46-state','is-'+getStaffDirectoryRecordState(item).tone]">{{ getStaffDirectoryRecordState(item).label }}</span>
+                                <span :class="['staff46-state','nd-status','is-'+getStaffDirectoryRecordState(item).tone]">{{ getStaffDirectoryRecordState(item).label }}</span>
                                 <span aria-hidden="true">→</span>
                             </button>
                         </template>
@@ -6429,13 +6429,13 @@ Use Section heading to structure longer clinical or research articles."></textar
         </transition>
         <transition name="drawer-slide">
             <div v-if="staffProfileModal.show && staffProfileModal.staff"
-                 class="profile-drawer person-profile-v2"
+                 class="profile-drawer person-profile-v2 nd-person-drawer" data-ui-foundation="staff-phase4"
                  :class="'status-accent--' + (staffProfileModal.staff?.employment_status || 'active')"
                  role="dialog" aria-modal="true" aria-labelledby="pp2-profile-title" tabindex="-1"
                  @keydown="trapStaffProfileFocus">
 
                 <!-- Canonical Person identity rail -->
-                <aside class="pp2-rail">
+                <aside class="pp2-rail nd-person-rail">
                     <button class="pp2-close" @click="staffProfileModal.show = false" title="Close profile" aria-label="Close profile">×</button>
 
                     <div class="pp2-avatar" :class="{'is-resident': isResidentType(staffProfileModal.staff.staff_type)}">
@@ -6487,8 +6487,8 @@ Use Section heading to structure longer clinical or research articles."></textar
                 </aside>
 
                 <!-- Person record workspace -->
-                <section class="pp2-main">
-                    <header class="pp2-head">
+                <section class="pp2-main nd-person-main">
+                    <header class="pp2-head nd-person-head">
                         <div>
                             <span class="pp2-kicker">{{ isResidentType(staffProfileModal.staff.staff_type) ? 'Resident record' : 'Department person' }}</span>
                             <h2 id="pp2-profile-title">{{ staffProfileModal.staff.full_name }}</h2>
@@ -6506,7 +6506,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <span>{{ (staffProfileModal.certificates||[]).filter(c => c.expiry_date && new Date(c.expiry_date) &lt; new Date()).length ? 'Expired certificate on record.' : 'Certificate expiry approaching.' }}</span>
                     </div>
 
-                    <nav class="pp2-tabs" aria-label="Person profile sections" role="tablist">
+                    <nav class="pp2-tabs nd-tabs" aria-label="Person profile sections" role="tablist">
                         <button role="tab" :aria-selected="staffProfileModal.activeTab==='overview'" aria-controls="pp2-panel-overview" :class="{active:staffProfileModal.activeTab==='overview'}" @click="staffProfileModal.activeTab='overview'">Overview</button>
                         <button role="tab" :aria-selected="staffProfileModal.activeTab==='work'" aria-controls="pp2-panel-work" :class="{active:staffProfileModal.activeTab==='work'}" @click="staffProfileModal.activeTab='work'">Work &amp; training</button>
                         <button role="tab" :aria-selected="staffProfileModal.activeTab==='schedule'" aria-controls="pp2-panel-schedule" :class="{active:staffProfileModal.activeTab==='schedule'}" @click="staffProfileModal.activeTab='schedule'">Schedule</button>
@@ -6514,11 +6514,11 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <button role="tab" :aria-selected="staffProfileModal.activeTab==='profile'" aria-controls="pp2-panel-profile" :class="{active:staffProfileModal.activeTab==='profile'}" @click="staffProfileModal.activeTab='profile'">Profile</button>
                     </nav>
 
-                    <div class="pp2-body">
+                    <div class="pp2-body nd-person-body">
                         <!-- OVERVIEW -->
-                        <div v-if="staffProfileModal.activeTab==='overview'" class="pp2-view" id="pp2-panel-overview" role="tabpanel">
+                        <div v-if="staffProfileModal.activeTab==='overview'" class="pp2-view nd-view" id="pp2-panel-overview" role="tabpanel">
                             <section v-if="isResidentType(staffProfileModal.staff.staff_type) && getResidentTrainingContext(staffProfileModal.staff)"
-                                     class="pp2-section pp3-resident-overview"
+                                     class="pp2-section pp3-resident-overview nd-section"
                                      :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
                                 <div class="pp3-resident-title">
                                     <div>
@@ -6526,7 +6526,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         <h3>{{ getResidentTrainingContext(staffProfileModal.staff).heading }}</h3>
                                         <p>{{ getResidentTrainingContext(staffProfileModal.staff).summary }}</p>
                                     </div>
-                                    <span class="pp3-category-chip">{{ getResidentTrainingContext(staffProfileModal.staff).categoryLabel }}</span>
+                                    <span class="pp3-category-chip nd-tag">{{ getResidentTrainingContext(staffProfileModal.staff).categoryLabel }}</span>
                                 </div>
                                 <div class="pp3-route">
                                     <div class="pp3-route-node">
@@ -6554,41 +6554,41 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     </div>
                                 </div>
                             </section>
-                            <section class="pp2-section">
-                                <div class="pp2-section-head"><div><small>RIGHT NOW</small><h3>Current context</h3></div></div>
-                                <div class="pp2-state-grid">
-                                    <article class="pp2-state">
+                            <section class="pp2-section nd-section">
+                                <div class="pp2-section-head nd-section-head"><div><small>RIGHT NOW</small><h3>Current context</h3></div></div>
+                                <div class="pp2-state-grid nd-state-grid">
+                                    <article class="pp2-state nd-state-card">
                                         <span>Attendance</span>
                                         <strong v-if="getCurrentAbsenceForStaff(staffProfileModal.staff.id)">Away today</strong>
                                         <strong v-else>No recorded absence</strong>
                                         <small v-if="getCurrentAbsenceForStaff(staffProfileModal.staff.id)">{{ formatAbsenceReason(getCurrentAbsenceForStaff(staffProfileModal.staff.id).absence_reason) }} · until {{ formatDateShort(getCurrentAbsenceForStaff(staffProfileModal.staff.id).end_date) }}</small>
                                         <small v-else>Current date</small>
                                     </article>
-                                    <article class="pp2-state">
+                                    <article class="pp2-state nd-state-card">
                                         <span>On-call</span>
                                         <strong>{{ isOnCallToday(staffProfileModal.staff.id) ? 'On duty today' : 'Not on duty today' }}</strong>
                                         <small v-if="getUpcomingOnCall(staffProfileModal.staff.id).length">Next {{ formatDateShort(getUpcomingOnCall(staffProfileModal.staff.id)[0].duty_date) }}</small>
                                         <small v-else>No upcoming duty recorded</small>
                                     </article>
-                                    <article class="pp2-state" v-if="isResidentType(staffProfileModal.staff.staff_type)">
+                                    <article class="pp2-state nd-state-card" v-if="isResidentType(staffProfileModal.staff.staff_type)">
                                         <span>Current rotation</span>
                                         <strong v-if="getCurrentRotationForStaff(staffProfileModal.staff.id)">{{ getTrainingUnitName(getCurrentRotationForStaff(staffProfileModal.staff.id).training_unit_id) }}</strong>
                                         <strong v-else>No active rotation</strong>
                                         <small v-if="getCurrentRotationForStaff(staffProfileModal.staff.id)">Supervisor · {{ getCurrentRotationSupervisor(staffProfileModal.staff.id) }}</small>
                                         <small v-else>{{ formatResidentCategoryDetailed(staffProfileModal.staff) || 'Resident record' }}</small>
                                     </article>
-                                    <article class="pp2-state" v-else>
+                                    <article class="pp2-state nd-state-card" v-else>
                                         <span>Clinical units</span>
                                         <strong>{{ (staffProfileModal.units || []).length ? (staffProfileModal.units.length + ' linked') : 'No linked unit recorded' }}</strong>
                                         <small v-if="(staffProfileModal.units||[]).length">{{ (staffProfileModal.units||[]).slice(0,2).map(x=>x.unit?.unit_name).filter(Boolean).join(' · ') }}</small>
                                         <small v-else>Unit membership is managed in Clinical Units</small>
                                     </article>
-                                    <article class="pp2-state" v-if="!isResidentType(staffProfileModal.staff.staff_type) && (staffProfileModal.staff.can_supervise_residents || staffTypeMap[staffProfileModal.staff.staff_type]?.can_supervise)">
+                                    <article class="pp2-state nd-state-card" v-if="!isResidentType(staffProfileModal.staff.staff_type) && (staffProfileModal.staff.can_supervise_residents || staffTypeMap[staffProfileModal.staff.staff_type]?.can_supervise)">
                                         <span>Supervision</span>
                                         <strong>{{ staffProfileModal.supervisionData?.currentCount || 0 }} active</strong>
                                         <small>{{ staffProfileModal.supervisionData?.pastCount || 0 }} completed rotation{{ (staffProfileModal.supervisionData?.pastCount||0)===1?'':'s' }}</small>
                                     </article>
-                                    <article class="pp2-state" v-if="canReadStaffResearch()">
+                                    <article class="pp2-state nd-state-card" v-if="canReadStaffResearch()">
                                         <span>Research</span>
                                         <strong>{{ (staffProfileModal.researchProfile?.trials?.list || []).length + (staffProfileModal.researchProfile?.projects?.list || []).length }} connected</strong>
                                         <small v-if="staffProfileModal.researchProfile?.isCoordinator">Research coordinator</small>
@@ -6597,28 +6597,28 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 </div>
                             </section>
 
-                            <section class="pp2-section">
-                                <div class="pp2-section-head"><div><small>COMING UP</small><h3>Next recorded events</h3></div></div>
-                                <div v-if="getPersonUpcomingEvents(staffProfileModal.staff.id).length" class="pp2-timeline">
-                                    <div v-for="event in getPersonUpcomingEvents(staffProfileModal.staff.id).slice(0,6)" :key="event.key" class="pp2-event">
+                            <section class="pp2-section nd-section">
+                                <div class="pp2-section-head nd-section-head"><div><small>COMING UP</small><h3>Next recorded events</h3></div></div>
+                                <div v-if="getPersonUpcomingEvents(staffProfileModal.staff.id).length" class="pp2-timeline nd-timeline">
+                                    <div v-for="event in getPersonUpcomingEvents(staffProfileModal.staff.id).slice(0,6)" :key="event.key" class="pp2-event nd-timeline-item">
                                         <time>{{ formatDateShort(event.date) }}</time>
                                         <i :class="'is-'+event.kind"></i>
                                         <div><strong>{{ event.title }}</strong><small>{{ event.detail }}</small></div>
                                     </div>
                                 </div>
-                                <div v-else class="pp2-empty">No future on-call, leave, rotation or supervision event is recorded.</div>
+                                <div v-else class="pp2-empty nd-empty-state">No future on-call, leave, rotation or supervision event is recorded.</div>
                             </section>
                         </div>
 
                         <!-- WORK & TRAINING -->
-                        <div v-if="staffProfileModal.activeTab==='work'" class="pp2-view" id="pp2-panel-work" role="tabpanel">
+                        <div v-if="staffProfileModal.activeTab==='work'" class="pp2-view nd-view" id="pp2-panel-work" role="tabpanel">
                             <template v-if="isResidentType(staffProfileModal.staff.staff_type)">
-                                <section class="pp2-section pp3-training-context" :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
-                                    <div class="pp2-section-head">
+                                <section class="pp2-section pp3-training-context nd-section" :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
+                                    <div class="pp2-section-head nd-section-head">
                                         <div><small>TRAINING CONTEXT</small><h3>{{ getResidentTrainingContext(staffProfileModal.staff)?.heading || 'Resident' }}</h3></div>
                                         <button v-if="hasPermission('resident_rotations','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddRotationModal(staffProfileModal.staff)">Plan rotation</button>
                                     </div>
-                                    <div class="pp2-kv-grid pp3-resident-kv">
+                                    <div class="pp2-kv-grid pp3-resident-kv nd-kv-grid">
                                         <div><span>Resident type</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.categoryLabel || 'Resident' }}</strong></div>
                                         <div><span>Effective year</span><strong>{{ effectiveResidentYear(staffProfileModal.staff) || 'Not recorded' }}</strong><small>{{ residentYearSource(staffProfileModal.staff) }}</small></div>
                                         <div v-if="staffProfileModal.staff.resident_category==='department_internal'"><span>Programme start</span><strong>{{ staffProfileModal.staff.residency_start_date ? formatDate(staffProfileModal.staff.residency_start_date) : 'Not recorded' }}</strong></div>
@@ -6640,122 +6640,122 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     </div>
                                     <p class="pp3-context-note">Host-unit context, resident-management roles and the recorded rotation supervisor are shown as separate relationships. neumDesk does not infer a stricter supervision rule than the records provide.</p>
                                 </section>
-                                <section class="pp2-section">
-                                    <div class="pp2-section-head"><div><small>CURRENT &amp; SCHEDULED</small><h3>Resident rotations</h3></div></div>
-                                    <div v-if="getUpcomingRotations(staffProfileModal.staff.id).length" class="pp2-list">
-                                        <article v-for="rot in getUpcomingRotations(staffProfileModal.staff.id)" :key="rot.id" class="pp2-list-row">
+                                <section class="pp2-section nd-section">
+                                    <div class="pp2-section-head nd-section-head"><div><small>CURRENT &amp; SCHEDULED</small><h3>Resident rotations</h3></div></div>
+                                    <div v-if="getUpcomingRotations(staffProfileModal.staff.id).length" class="pp2-list nd-record-list">
+                                        <article v-for="rot in getUpcomingRotations(staffProfileModal.staff.id)" :key="rot.id" class="pp2-list-row nd-record-row">
                                             <div><strong>{{ getTrainingUnitName(rot.training_unit_id) }}</strong><small>{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</small></div>
-                                            <div class="pp2-row-meta"><span>{{ getStaffName(rot.supervising_attending_id) }}</span><em :class="'is-'+rot.rotation_status">{{ formatRotationStatus(rot.rotation_status) }}</em></div>
+                                            <div class="pp2-row-meta nd-record-meta"><span>{{ getStaffName(rot.supervising_attending_id) }}</span><em :class="'is-'+rot.rotation_status">{{ formatRotationStatus(rot.rotation_status) }}</em></div>
                                         </article>
                                     </div>
-                                    <div v-else class="pp2-empty">No active or scheduled rotation.</div>
+                                    <div v-else class="pp2-empty nd-empty-state">No active or scheduled rotation.</div>
                                 </section>
-                                <section class="pp2-section" v-if="getRotationHistory(staffProfileModal.staff.id).length">
-                                    <div class="pp2-section-head"><div><small>HISTORY</small><h3>Completed / previous rotations</h3></div></div>
-                                    <div class="pp2-list pp2-list--compact">
-                                        <article v-for="rot in getRotationHistory(staffProfileModal.staff.id).slice(0,8)" :key="rot.id" class="pp2-list-row">
+                                <section class="pp2-section nd-section" v-if="getRotationHistory(staffProfileModal.staff.id).length">
+                                    <div class="pp2-section-head nd-section-head"><div><small>HISTORY</small><h3>Completed / previous rotations</h3></div></div>
+                                    <div class="pp2-list pp2-list--compact nd-record-list">
+                                        <article v-for="rot in getRotationHistory(staffProfileModal.staff.id).slice(0,8)" :key="rot.id" class="pp2-list-row nd-record-row">
                                             <div><strong>{{ getTrainingUnitName(rot.training_unit_id) }}</strong><small>{{ formatDate(rot.start_date) }} → {{ formatDate(rot.end_date) }}</small></div>
-                                            <div class="pp2-row-meta"><span>{{ getStaffName(rot.supervising_attending_id) }}</span><em>{{ formatRotationStatus(rot.rotation_status) }}</em></div>
+                                            <div class="pp2-row-meta nd-record-meta"><span>{{ getStaffName(rot.supervising_attending_id) }}</span><em>{{ formatRotationStatus(rot.rotation_status) }}</em></div>
                                         </article>
                                     </div>
                                 </section>
                             </template>
                             <template v-else>
-                                <section class="pp2-section">
-                                    <div class="pp2-section-head"><div><small>CLINICAL RELATIONSHIPS</small><h3>Clinical Units</h3></div></div>
-                                    <div v-if="staffProfileModal.unitsLoading" class="pp2-empty">Loading unit memberships…</div>
-                                    <div v-else-if="(staffProfileModal.units||[]).length" class="pp2-list">
-                                        <article v-for="u in staffProfileModal.units" :key="u.id" class="pp2-list-row">
+                                <section class="pp2-section nd-section">
+                                    <div class="pp2-section-head nd-section-head"><div><small>CLINICAL RELATIONSHIPS</small><h3>Clinical Units</h3></div></div>
+                                    <div v-if="staffProfileModal.unitsLoading" class="pp2-empty nd-empty-state">Loading unit memberships…</div>
+                                    <div v-else-if="(staffProfileModal.units||[]).length" class="pp2-list nd-record-list">
+                                        <article v-for="u in staffProfileModal.units" :key="u.id" class="pp2-list-row nd-record-row">
                                             <div><strong>{{ u.unit?.unit_name || 'Clinical Unit' }}</strong><small>{{ u.unit?.specialty || u.unit?.department_name || 'Pneumology' }}</small></div>
-                                            <div class="pp2-row-meta"><em>{{ u.role === 'primary' ? 'Primary attending' : 'Secondary attending' }}</em></div>
+                                            <div class="pp2-row-meta nd-record-meta"><em>{{ u.role === 'primary' ? 'Primary attending' : 'Secondary attending' }}</em></div>
                                         </article>
                                     </div>
-                                    <div v-else class="pp2-empty">No Clinical Unit membership is recorded.</div>
+                                    <div v-else class="pp2-empty nd-empty-state">No Clinical Unit membership is recorded.</div>
                                 </section>
-                                <section class="pp2-section" v-if="staffProfileModal.staff.can_supervise_residents || staffTypeMap[staffProfileModal.staff.staff_type]?.can_supervise">
-                                    <div class="pp2-section-head"><div><small>RESIDENT SUPERVISION</small><h3>Recorded supervision</h3></div></div>
+                                <section class="pp2-section nd-section" v-if="staffProfileModal.staff.can_supervise_residents || staffTypeMap[staffProfileModal.staff.staff_type]?.can_supervise">
+                                    <div class="pp2-section-head nd-section-head"><div><small>RESIDENT SUPERVISION</small><h3>Recorded supervision</h3></div></div>
                                     <div class="pp2-mini-metrics"><div><strong>{{ staffProfileModal.supervisionData?.currentCount || 0 }}</strong><span>current</span></div><div><strong>{{ staffProfileModal.supervisionData?.pastCount || 0 }}</strong><span>completed</span></div></div>
-                                    <div v-if="staffProfileModal.supervisionData?.current?.length" class="pp2-list">
-                                        <article v-for="resident in staffProfileModal.supervisionData.current" :key="resident.id" class="pp2-list-row">
+                                    <div v-if="staffProfileModal.supervisionData?.current?.length" class="pp2-list nd-record-list">
+                                        <article v-for="resident in staffProfileModal.supervisionData.current" :key="resident.id" class="pp2-list-row nd-record-row">
                                             <div><strong>{{ resident.residentName }}</strong><small>{{ resident.unitName }} · {{ resident.residentYear ? formatTrainingYear(resident.residentYear) : 'year not recorded' }}</small></div>
-                                            <div class="pp2-row-meta"><span>{{ formatDateShort(resident.endDate) }}</span><em>{{ resident.daysLeft }}d left</em></div>
+                                            <div class="pp2-row-meta nd-record-meta"><span>{{ formatDateShort(resident.endDate) }}</span><em>{{ resident.daysLeft }}d left</em></div>
                                         </article>
                                     </div>
-                                    <div v-else class="pp2-empty">No active resident supervision assignment.</div>
+                                    <div v-else class="pp2-empty nd-empty-state">No active resident supervision assignment.</div>
                                 </section>
                             </template>
                         </div>
 
                         <!-- SCHEDULE -->
-                        <div v-if="staffProfileModal.activeTab==='schedule'" class="pp2-view" id="pp2-panel-schedule" role="tabpanel">
-                            <section class="pp2-section">
-                                <div class="pp2-section-head"><div><small>ON-CALL</small><h3>Duty schedule</h3></div><div class="pp2-section-actions"><button class="pp2-text-btn" @click="downloadStaffSchedule && downloadStaffSchedule(staffProfileModal.staff)">Download .ics</button><button v-if="hasPermission('oncall_schedule','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddOnCallModal(staffProfileModal.staff)">Schedule duty</button></div></div>
-                                <div v-if="getUpcomingOnCall(staffProfileModal.staff.id).length" class="pp2-list">
-                                    <article v-for="shift in getUpcomingOnCall(staffProfileModal.staff.id).slice(0,10)" :key="shift.id" class="pp2-list-row">
+                        <div v-if="staffProfileModal.activeTab==='schedule'" class="pp2-view nd-view" id="pp2-panel-schedule" role="tabpanel">
+                            <section class="pp2-section nd-section">
+                                <div class="pp2-section-head nd-section-head"><div><small>ON-CALL</small><h3>Duty schedule</h3></div><div class="pp2-section-actions"><button class="pp2-text-btn" @click="downloadStaffSchedule && downloadStaffSchedule(staffProfileModal.staff)">Download .ics</button><button v-if="hasPermission('oncall_schedule','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddOnCallModal(staffProfileModal.staff)">Schedule duty</button></div></div>
+                                <div v-if="getUpcomingOnCall(staffProfileModal.staff.id).length" class="pp2-list nd-record-list">
+                                    <article v-for="shift in getUpcomingOnCall(staffProfileModal.staff.id).slice(0,10)" :key="shift.id" class="pp2-list-row nd-record-row">
                                         <div><strong>{{ formatDate(shift.duty_date) }}</strong><small>{{ shift.start_time }}–{{ shift.end_time }}</small></div>
-                                        <div class="pp2-row-meta"><em>{{ shift.shift_type === 'primary_call' ? 'Primary' : shift.shift_type === 'backup_call' ? 'Backup' : String(shift.shift_type||'Duty').replace(/_/g,' ') }}</em></div>
+                                        <div class="pp2-row-meta nd-record-meta"><em>{{ shift.shift_type === 'primary_call' ? 'Primary' : shift.shift_type === 'backup_call' ? 'Backup' : String(shift.shift_type||'Duty').replace(/_/g,' ') }}</em></div>
                                     </article>
                                 </div>
-                                <div v-else class="pp2-empty">No upcoming on-call duty is recorded.</div>
+                                <div v-else class="pp2-empty nd-empty-state">No upcoming on-call duty is recorded.</div>
                             </section>
-                            <section class="pp2-section">
-                                <div class="pp2-section-head"><div><small>LEAVE</small><h3>Current &amp; upcoming leave</h3></div><button v-if="hasPermission('staff_absence','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddAbsenceModal(staffProfileModal.staff)">Record leave</button></div>
-                                <div v-if="getCurrentAbsenceForStaff(staffProfileModal.staff.id) || getUpcomingLeave(staffProfileModal.staff.id).length" class="pp2-list">
-                                    <article v-if="getCurrentAbsenceForStaff(staffProfileModal.staff.id)" class="pp2-list-row is-current">
+                            <section class="pp2-section nd-section">
+                                <div class="pp2-section-head nd-section-head"><div><small>LEAVE</small><h3>Current &amp; upcoming leave</h3></div><button v-if="hasPermission('staff_absence','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddAbsenceModal(staffProfileModal.staff)">Record leave</button></div>
+                                <div v-if="getCurrentAbsenceForStaff(staffProfileModal.staff.id) || getUpcomingLeave(staffProfileModal.staff.id).length" class="pp2-list nd-record-list">
+                                    <article v-if="getCurrentAbsenceForStaff(staffProfileModal.staff.id)" class="pp2-list-row is-current nd-record-row">
                                         <div><strong>{{ formatAbsenceReason(getCurrentAbsenceForStaff(staffProfileModal.staff.id).absence_reason) }}</strong><small>{{ formatDate(getCurrentAbsenceForStaff(staffProfileModal.staff.id).start_date) }} → {{ formatDate(getCurrentAbsenceForStaff(staffProfileModal.staff.id).end_date) }}</small></div>
-                                        <div class="pp2-row-meta"><em>Current</em></div>
+                                        <div class="pp2-row-meta nd-record-meta"><em>Current</em></div>
                                     </article>
-                                    <article v-for="leave in getUpcomingLeave(staffProfileModal.staff.id).slice(0,8)" :key="leave.id" class="pp2-list-row">
+                                    <article v-for="leave in getUpcomingLeave(staffProfileModal.staff.id).slice(0,8)" :key="leave.id" class="pp2-list-row nd-record-row">
                                         <div><strong>{{ formatAbsenceReason(leave.absence_reason) }}</strong><small>{{ formatDate(leave.start_date) }} → {{ formatDate(leave.end_date) }}</small></div>
-                                        <div class="pp2-row-meta"><em>Planned</em></div>
+                                        <div class="pp2-row-meta nd-record-meta"><em>Planned</em></div>
                                     </article>
                                 </div>
-                                <div v-else class="pp2-empty">No current or upcoming leave is recorded.</div>
+                                <div v-else class="pp2-empty nd-empty-state">No current or upcoming leave is recorded.</div>
                             </section>
                         </div>
 
                         <!-- RESEARCH -->
-                        <div v-if="staffProfileModal.activeTab==='research'" class="pp2-view" id="pp2-panel-research" role="tabpanel">
-                            <div v-if="staffProfileModal.loadingResearch" class="pp2-empty">Loading research relationships…</div>
+                        <div v-if="staffProfileModal.activeTab==='research'" class="pp2-view nd-view" id="pp2-panel-research" role="tabpanel">
+                            <div v-if="staffProfileModal.loadingResearch" class="pp2-empty nd-empty-state">Loading research relationships…</div>
                             <template v-else-if="staffProfileModal.researchProfile">
-                                <section class="pp2-section" v-if="staffProfileModal.researchProfile.isCoordinator || (staffProfileModal.researchProfile.allResearchLines||[]).length">
-                                    <div class="pp2-section-head"><div><small>RESEARCH LINES</small><h3>Programme relationships</h3></div></div>
-                                    <div class="pp2-list" v-if="(staffProfileModal.researchProfile.allResearchLines||[]).length">
-                                        <article v-for="line in staffProfileModal.researchProfile.allResearchLines" :key="line.id" class="pp2-list-row">
+                                <section class="pp2-section nd-section" v-if="staffProfileModal.researchProfile.isCoordinator || (staffProfileModal.researchProfile.allResearchLines||[]).length">
+                                    <div class="pp2-section-head nd-section-head"><div><small>RESEARCH LINES</small><h3>Programme relationships</h3></div></div>
+                                    <div class="pp2-list nd-record-list" v-if="(staffProfileModal.researchProfile.allResearchLines||[]).length">
+                                        <article v-for="line in staffProfileModal.researchProfile.allResearchLines" :key="line.id" class="pp2-list-row nd-record-row">
                                             <div><strong>L{{ line.line_number }} · {{ line.name }}</strong><small>{{ line.trialsCount }} studies · {{ line.projectsCount }} projects</small></div>
-                                            <div class="pp2-row-meta"><em>{{ (line.roles||[]).join(' · ') || 'Member' }}</em></div>
+                                            <div class="pp2-row-meta nd-record-meta"><em>{{ (line.roles||[]).join(' · ') || 'Member' }}</em></div>
                                         </article>
                                     </div>
                                 </section>
-                                <section class="pp2-section">
-                                    <div class="pp2-section-head"><div><small>CLINICAL STUDIES</small><h3>Study involvement</h3></div></div>
-                                    <div v-if="(staffProfileModal.researchProfile.trials?.list||[]).length" class="pp2-list">
-                                        <article v-for="trial in staffProfileModal.researchProfile.trials.list" :key="trial.id" class="pp2-list-row">
+                                <section class="pp2-section nd-section">
+                                    <div class="pp2-section-head nd-section-head"><div><small>CLINICAL STUDIES</small><h3>Study involvement</h3></div></div>
+                                    <div v-if="(staffProfileModal.researchProfile.trials?.list||[]).length" class="pp2-list nd-record-list">
+                                        <article v-for="trial in staffProfileModal.researchProfile.trials.list" :key="trial.id" class="pp2-list-row nd-record-row">
                                             <div><strong>{{ trial.title }}</strong><small>{{ trial.phase || 'Phase not recorded' }} · {{ trial.role }}</small></div>
-                                            <div class="pp2-row-meta"><em>{{ formatStudyStatus(trial.status) }}</em></div>
+                                            <div class="pp2-row-meta nd-record-meta"><em>{{ formatStudyStatus(trial.status) }}</em></div>
                                         </article>
                                     </div>
-                                    <div v-else class="pp2-empty">No clinical study relationship is recorded.</div>
+                                    <div v-else class="pp2-empty nd-empty-state">No clinical study relationship is recorded.</div>
                                 </section>
-                                <section class="pp2-section">
-                                    <div class="pp2-section-head"><div><small>INNOVATION</small><h3>Innovation projects</h3></div></div>
-                                    <div v-if="(staffProfileModal.researchProfile.projects?.list||[]).length" class="pp2-list">
-                                        <article v-for="project in staffProfileModal.researchProfile.projects.list" :key="project.id" class="pp2-list-row">
+                                <section class="pp2-section nd-section">
+                                    <div class="pp2-section-head nd-section-head"><div><small>INNOVATION</small><h3>Innovation projects</h3></div></div>
+                                    <div v-if="(staffProfileModal.researchProfile.projects?.list||[]).length" class="pp2-list nd-record-list">
+                                        <article v-for="project in staffProfileModal.researchProfile.projects.list" :key="project.id" class="pp2-list-row nd-record-row">
                                             <div><strong>{{ project.title }}</strong><small>{{ project.category || 'Innovation project' }}</small></div>
-                                            <div class="pp2-row-meta"><em>{{ project.current_stage || project.development_stage || 'Active' }}</em></div>
+                                            <div class="pp2-row-meta nd-record-meta"><em>{{ project.current_stage || project.development_stage || 'Active' }}</em></div>
                                         </article>
                                     </div>
-                                    <div v-else class="pp2-empty">No innovation project relationship is recorded.</div>
+                                    <div v-else class="pp2-empty nd-empty-state">No innovation project relationship is recorded.</div>
                                 </section>
                             </template>
-                            <div v-else class="pp2-empty">No research profile could be loaded.</div>
+                            <div v-else class="pp2-empty nd-empty-state">No research profile could be loaded.</div>
                         </div>
 
                         <!-- PROFILE -->
-                        <div v-if="staffProfileModal.activeTab==='profile'" class="pp2-view" id="pp2-panel-profile" role="tabpanel">
-                            <section v-if="isResidentType(staffProfileModal.staff.staff_type)" class="pp2-section pp3-resident-record">
-                                <div class="pp2-section-head"><div><small>RESIDENT RECORD</small><h3>Programme &amp; origin data</h3></div></div>
-                                <div class="pp2-kv-grid">
+                        <div v-if="staffProfileModal.activeTab==='profile'" class="pp2-view nd-view" id="pp2-panel-profile" role="tabpanel">
+                            <section v-if="isResidentType(staffProfileModal.staff.staff_type)" class="pp2-section pp3-resident-record nd-section">
+                                <div class="pp2-section-head nd-section-head"><div><small>RESIDENT RECORD</small><h3>Programme &amp; origin data</h3></div></div>
+                                <div class="pp2-kv-grid nd-kv-grid">
                                     <div><span>Resident type</span><strong>{{ getResidentTrainingContext(staffProfileModal.staff)?.categoryLabel || 'Resident' }}</strong></div>
                                     <div><span>Effective year</span><strong>{{ effectiveResidentYear(staffProfileModal.staff) || 'Not recorded' }}</strong><small>{{ residentYearSource(staffProfileModal.staff) }}</small></div>
                                     <div><span>Residency start</span><strong>{{ staffProfileModal.staff.residency_start_date ? formatDate(staffProfileModal.staff.residency_start_date) : 'Not recorded' }}</strong></div>
@@ -6767,9 +6767,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <div v-if="staffProfileModal.staff.external_contact_phone"><span>External contact phone</span><strong>{{ formatPhone(staffProfileModal.staff.external_contact_phone) }}</strong></div>
                                 </div>
                             </section>
-                            <section class="pp2-section">
-                                <div class="pp2-section-head"><div><small>INSTITUTIONAL RECORD</small><h3>Affiliation &amp; professional identity</h3></div></div>
-                                <div class="pp2-kv-grid">
+                            <section class="pp2-section nd-section">
+                                <div class="pp2-section-head nd-section-head"><div><small>INSTITUTIONAL RECORD</small><h3>Affiliation &amp; professional identity</h3></div></div>
+                                <div class="pp2-kv-grid nd-kv-grid">
                                     <div><span>Department</span><strong>{{ getDepartmentName(staffProfileModal.staff.department_id) || staffProfileModal.staff.primary_dept_name || 'Not recorded' }}</strong></div>
                                     <div><span>Hospital</span><strong>{{ staffProfileModal.staff.hospitals?.name || hospitalsList.find(h=>h.id===staffProfileModal.staff.hospital_id)?.name || 'Not recorded' }}</strong></div>
                                     <div><span>Affiliation</span><strong>{{ staffProfileModal.staff.affiliation_type || 'primary' }}</strong></div>
@@ -6780,33 +6780,33 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <div v-if="staffProfileModal.staff.years_experience"><span>Experience</span><strong>{{ staffProfileModal.staff.years_experience }} years</strong></div>
                                 </div>
                             </section>
-                            <section class="pp2-section" v-if="getStaffRoles(staffProfileModal.staff).length">
-                                <div class="pp2-section-head"><div><small>DEPARTMENT ROLES</small><h3>Capabilities &amp; responsibilities</h3></div></div>
-                                <div class="pp2-chip-row"><span v-for="role in getStaffRoles(staffProfileModal.staff)" :key="role.key">{{ role.label }}</span></div>
+                            <section class="pp2-section nd-section" v-if="getStaffRoles(staffProfileModal.staff).length">
+                                <div class="pp2-section-head nd-section-head"><div><small>DEPARTMENT ROLES</small><h3>Capabilities &amp; responsibilities</h3></div></div>
+                                <div class="pp2-chip-row nd-chip-row"><span v-for="role in getStaffRoles(staffProfileModal.staff)" :key="role.key">{{ role.label }}</span></div>
                             </section>
-                            <section class="pp2-section">
-                                <div class="pp2-section-head"><div><small>CONTACT</small><h3>Professional contact</h3></div></div>
-                                <div class="pp2-contact-grid">
+                            <section class="pp2-section nd-section">
+                                <div class="pp2-section-head nd-section-head"><div><small>CONTACT</small><h3>Professional contact</h3></div></div>
+                                <div class="pp2-contact-grid nd-contact-grid">
                                     <a v-if="staffProfileModal.staff.professional_email" :href="'mailto:'+staffProfileModal.staff.professional_email"><span>Email</span><strong>{{ staffProfileModal.staff.professional_email }}</strong></a>
                                     <div v-if="staffProfileModal.staff.mobile_phone"><span>Mobile</span><strong>{{ formatPhone(staffProfileModal.staff.mobile_phone) }}</strong></div>
                                     <div v-if="staffProfileModal.staff.office_phone"><span>Office</span><strong>{{ staffProfileModal.staff.office_phone }}</strong></div>
                                     <div v-if="staffProfileModal.staff.external_contact_name"><span>External contact</span><strong>{{ staffProfileModal.staff.external_contact_name }}</strong></div>
                                 </div>
                             </section>
-                            <section class="pp2-section">
-                                <div class="pp2-section-head"><div><small>CREDENTIALS</small><h3>Certificates</h3></div></div>
-                                <div v-if="staffProfileModal.loadingCerts" class="pp2-empty">Loading certificates…</div>
-                                <div v-else-if="(staffProfileModal.certificates||[]).length" class="pp2-list">
-                                    <article v-for="cert in staffProfileModal.certificates" :key="cert.id" class="pp2-list-row">
+                            <section class="pp2-section nd-section">
+                                <div class="pp2-section-head nd-section-head"><div><small>CREDENTIALS</small><h3>Certificates</h3></div></div>
+                                <div v-if="staffProfileModal.loadingCerts" class="pp2-empty nd-empty-state">Loading certificates…</div>
+                                <div v-else-if="(staffProfileModal.certificates||[]).length" class="pp2-list nd-record-list">
+                                    <article v-for="cert in staffProfileModal.certificates" :key="cert.id" class="pp2-list-row nd-record-row">
                                         <div><strong>{{ cert.certificate_name }}</strong><small><span v-if="cert.issued_date">Issued {{ formatDate(cert.issued_date) }}</span><span v-if="cert.expiry_date"> · {{ new Date(cert.expiry_date) &lt; new Date() ? 'Expired' : 'Expires' }} {{ formatDate(cert.expiry_date) }}</span></small></div>
-                                        <div class="pp2-row-meta"><em :class="cert.expiry_date && new Date(cert.expiry_date)&lt;new Date() ? 'is-expired' : ''">{{ cert.expiry_date && new Date(cert.expiry_date)&lt;new Date() ? 'Expired' : 'Recorded' }}</em></div>
+                                        <div class="pp2-row-meta nd-record-meta"><em :class="cert.expiry_date && new Date(cert.expiry_date)&lt;new Date() ? 'is-expired' : ''">{{ cert.expiry_date && new Date(cert.expiry_date)&lt;new Date() ? 'Expired' : 'Recorded' }}</em></div>
                                     </article>
                                 </div>
-                                <div v-else class="pp2-empty">No certificates on record.</div>
+                                <div v-else class="pp2-empty nd-empty-state">No certificates on record.</div>
                             </section>
-                            <section class="pp2-section" v-if="staffProfileModal.staff.is_public || staffProfileModal.staff.orcid_id || staffProfileModal.staff.scholar_url || staffProfileModal.staff.researchgate_url">
-                                <div class="pp2-section-head"><div><small>PUBLIC / SCHOLARLY</small><h3>External profile links</h3></div></div>
-                                <div class="pp2-chip-row">
+                            <section class="pp2-section nd-section" v-if="staffProfileModal.staff.is_public || staffProfileModal.staff.orcid_id || staffProfileModal.staff.scholar_url || staffProfileModal.staff.researchgate_url">
+                                <div class="pp2-section-head nd-section-head"><div><small>PUBLIC / SCHOLARLY</small><h3>External profile links</h3></div></div>
+                                <div class="pp2-chip-row nd-chip-row">
                                     <span v-if="staffProfileModal.staff.is_public">Public staff profile enabled</span>
                                     <a v-if="staffProfileModal.staff.orcid_id" :href="'https://orcid.org/'+staffProfileModal.staff.orcid_id" target="_blank" rel="noopener">ORCID ↗</a>
                                     <a v-if="staffProfileModal.staff.scholar_url" :href="staffProfileModal.staff.scholar_url" target="_blank" rel="noopener">Scholar ↗</a>

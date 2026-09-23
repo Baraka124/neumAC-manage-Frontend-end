@@ -231,3 +231,10 @@ No backend `index.js`, schema, resident lifecycle, permissions architecture or s
 
 **Phase 3.1 browser-DOM hotfix:** a second authenticated deployment still exposed Vue `compiler-30`. The root cause was release-wide: because neumDesk uses an in-DOM Vue template, literal `<` comparisons inside directive attributes or `{{ ... }}` expressions can be interpreted by the browser as markup before Vue compiles the template. All such comparisons are now HTML-safe (`&lt;` in source, decoded back to `<` in the DOM). Chromium validation confirms 191 conditional else branches and 0 broken adjacencies. `test-v4614-template-dom.cjs` prevents this class from returning.
 
+## Staff Phase 4 candidate — reusable UI foundation
+
+The Staff directory and canonical Person profile now carry a parallel reusable `nd-*` component vocabulary while preserving every existing `staff46-*`, `pp2-*` and `pp3-*` compatibility hook. The extraction standardizes controls, focus treatment, operational table/status grammar, Person sections, record lists and support-text typography without changing lifecycle or runtime data behavior. `app.js`, Grounded and Personal Activity runtime files remain unchanged. See `UI-SYSTEM-V46.14.md`.
+
+This is still a **candidate** inside V46.14. Promotion depends on authenticated validation of Attending + Internal/Rotating/External Resident profiles and Table/People/Compact views.
+**Phase 4 automated validation:** 24 suites / 387 checks pass on the candidate, including DOM-template safety. Live authenticated four-profile and responsive comparison remains pending.
+

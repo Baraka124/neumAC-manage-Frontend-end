@@ -5,7 +5,7 @@ const css=fs.readFileSync('style.css','utf8');
 const life=fs.readFileSync('STAFF-DOMAIN-LIFECYCLE-V46.14.md','utf8');
 const arch=fs.readFileSync('DepartmentOS_Architecture.md','utf8');
 const tests=[]; const test=(n,f)=>tests.push([n,f]);
-test('P3-01 phase marker and cache keys advance',()=>{assert(html.includes('STAFF PROFILE DRAWER · V46.14 PHASE 3'));assert(html.includes('app.js?v=46.14-staff-phase31-profile-integrity'));assert(html.includes('style.css?v=46.14-staff-phase31-profile-integrity'))});
+test('P3-01 phase marker and cache keys advance',()=>{assert(html.includes('STAFF PROFILE DRAWER · V46.14 PHASE 3'));assert(html.includes('app.js?v=46.14-staff-phase31-profile-integrity'));assert((html.includes('style.css?v=46.14-staff-phase31-profile-integrity') || html.includes('style.css?v=46.14-staff-phase4-ui-foundation')))});
 test('P3-02 canonical Person shell is preserved',()=>{['Overview','Work &amp; training','Schedule','Research','Profile'].forEach(x=>assert(html.includes(x)));assert(html.includes('Canonical Person identity rail'))});
 test('P3-03 all three resident variants are explicit',()=>{['department_internal','rotating_other_dept','external_resident'].forEach(x=>assert(html.includes(x)));['internal','rotating','external'].forEach(x=>assert(app.includes(x)))});
 test('P3-04 resident adaptive training relationship surface exists',()=>{assert(html.includes('TRAINING RELATIONSHIP'));assert(html.includes('pp3-resident-overview'));assert(css.includes('STAFF PHASE 3 — ADAPTIVE RESIDENT PROFILE'))});
