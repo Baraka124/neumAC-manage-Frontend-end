@@ -622,3 +622,7 @@ Grounded now separates named current-state on-call questions, named schedule que
 ## V46.14 Access Gate 4.2 — Session integrity
 
 Authenticated-browser review identified that the login gate validated the backend correctly but persisted every JWT in `localStorage`, independent of the “Remember my email” choice. Access Gate 4.2 makes normal sessions tab-scoped, introduces explicit bounded trusted-browser persistence, and requires deliberate resume before a trusted session from a new browser session reveals departmental records. Legacy unbounded localStorage sessions are invalidated once after deployment. The backend `/api/auth/me` remains authoritative. This checkpoint does not alter permissions, domain logic, Grounded, Staff or the schema.
+
+### V46.14 Access Gate 4.4 — Identity and login polish
+
+The public/editorial access surface uses the supplied neumact identity while neumDesk remains the authenticated departmental workspace. Access Gate 4.4 adds no permission or data-model behavior. It refines the sign-in hierarchy, separates low-risk email memory from explicit trusted-browser security, presents typed authentication failures, hardens field-level interaction details and adds a reduced-motion-aware final workspace handoff.

@@ -1,0 +1,38 @@
+{
+  "release": "V46.14 Access Gate 4.4",
+  "created_at": "2026-09-23",
+  "files": {
+    "index.html": {
+      "sha256": "4ab709f5db93ee8593d89a356b62dff1326dd957ac4b12a1049a746af2a32640",
+      "size": 1156454
+    },
+    "app.js": {
+      "sha256": "9dc0cad0047a6281cfade1a5d60ee93be0024d4beb0f661f8160ce0a19b7fb26",
+      "size": 1258187
+    },
+    "entry46.css": {
+      "sha256": "6fa749ee1348a6ed37244b0ff2bc618b3f89362d3225f7081dbbd71638a339fc",
+      "size": 23636
+    },
+    "style.css": {
+      "sha256": "1f32b6405c1a45d916f74c64ff2798386070f2b34a592f65134ae9502e67202c",
+      "size": 2333325
+    },
+    "grounded-core.js": {
+      "sha256": "738ed64d64f02358079b94635591b63bf3f5a227301c5e46f473acc98697220b",
+      "size": 9724
+    },
+    "activity45.js": {
+      "sha256": "c943857ad57655cfea16a505957587eb5cd00ec119c3696d98961ce2c80aaedb",
+      "size": 34520
+    },
+    "SUPABASE_SCHEMA.sql": {
+      "sha256": "66541c3c9017c7d6480831999ca33325e0953bdeccc193d4873a8e8a7a195768",
+      "size": 36071
+    },
+    "neumact-logo.png": {
+      "sha256": "1e7d00ff175810a11460abd4b514089011c7c6bdc96dae9ab41a895bec01dafa",
+      "size": 35951
+    }
+  }
+}

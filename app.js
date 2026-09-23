@@ -7608,9 +7608,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const loginFieldErrors = reactive({ email: '', password: '' })
         const clearLoginError = (field) => { if (field === 'email') loginFieldErrors.email = ''; if (field === 'password') loginFieldErrors.password = ''; loginError.value = '' }
         const entry = reactive({ state:'checking', mode:'signin', message:'', notice:'', capsLock:false, pendingUser:null, trustUntil:null })
+        const entryLoginIssue = computed(() => {
+          const message = String(loginError.value || '').trim()
+          if (!message) return null
+          const lower = message.toLowerCase()
+          if (/email or password|not recognised|not recognized|invalid credential/.test(lower)) return { kind:'credentials', title:'Check your email and password', message }
+          if (/cannot sign in|permission|authori[sz]ed|disabled account|not active/.test(lower)) return { kind:'access', title:'Department access is not available', message }
+          if (/too many attempts|wait a few minutes/.test(lower)) return { kind:'rate', title:'Too many sign-in attempts', message }
+          if (/maintenance/.test(lower)) return { kind:'maintenance', title:'neumDesk is temporarily unavailable', message }
+          if (/network|cannot connect|connection took too long|server error|could not verify|could not open/.test(lower)) return { kind:'connection', title:'We could not verify access', message }
+          if (/session.*expired|sign in again/.test(lower)) return { kind:'session', title:'Your session has ended', message }
+          return { kind:'generic', title:'Sign-in could not be completed', message }
+        })
         const handleForgotPassword = () => { entry.mode = 'help'; loginError.value = '' }
         const backToSignIn = () => { entry.mode = 'signin'; loginError.value = ''; Vue.nextTick(() => document.getElementById('entry-email')?.focus()) }
-        const entryBusy = computed(() => loginLoading.value || entry.state === 'checking' || entry.state === 'opening')
+        const entryBusy = computed(() => loginLoading.value || entry.state === 'checking' || entry.state === 'opening' || entry.state === 'entering')
         // V46 editorial state is independent of authentication and private records.
         const entry46Clock = ref(Date.now())
         const entry46Selection = ref('')
@@ -9993,7 +10005,15 @@ document.addEventListener('DOMContentLoaded', () => {
           loginFieldErrors.email = !loginForm.email ? 'Email required' : ''
           if (loginForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginForm.email)) loginFieldErrors.email = 'Enter a valid email address'
           loginFieldErrors.password = !loginForm.password ? 'Password required' : ''
-          if (loginFieldErrors.email || loginFieldErrors.password) { loginError.value = 'Please fill all required fields'; return }
+          if (loginFieldErrors.email || loginFieldErrors.password) {
+            loginError.value = ''
+            try {
+              const focusInvalidEntryField = () => document.getElementById(loginFieldErrors.email ? 'entry-email' : 'entry-password')?.focus()
+              if (typeof Vue !== 'undefined' && typeof Vue.nextTick === 'function') Vue.nextTick(focusInvalidEntryField)
+              else if (typeof document !== 'undefined') focusInvalidEntryField()
+            } catch (_) {}
+            return
+          }
           loginLoading.value = true; loginError.value = ''; entry.notice = ''; entry.state = 'signin'
           try {
             const response = await API.login(loginForm.email, loginForm.password, { persist: loginForm.keep_signed_in === true })
@@ -10014,7 +10034,15 @@ document.addEventListener('DOMContentLoaded', () => {
           maybeShowPreviewIntro(user)
           await loadAllData()
           if (attempt !== null && attempt !== entryAttempt) return
-          if (currentUser.value) { entry.state = 'ready'; loadBrain() }
+          if (currentUser.value) {
+            entry.state = 'entering'
+            const reduceMotion = (() => { try { return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true } catch (_) { return false } })()
+            const scheduleExit = typeof setTimeout === 'function' ? setTimeout : null
+            if (!reduceMotion && scheduleExit) await new Promise(resolve => scheduleExit(resolve, 180))
+            if (attempt !== null && attempt !== entryAttempt) return
+            entry.state = 'ready'
+            loadBrain()
+          }
         }
 
         // V46.14 Access Gate 4.2
@@ -17932,7 +17960,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
           activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45MarkDirty, activity45PeriodPresets, activity45ApplyPreset, activity45ToggleSection, activity45SelectedCount, activity45FilteredPeople, activity45TimelineGroups, activity45Metric, activity45MetricValue, activity45SourceState, activity45SourceKnown, activity45EmptyText, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45OpenSource, activity45OpenRecord, activity45AskGrounded, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn, askBarOnConversationScroll, askBarFormatSnapshotTime, askBarClearPinnedContext,
           // Existing returns
-          entry, entryBusy, backToSignIn, validateEntrySession, resumeEntrySession, useAnotherEntryAccount,
+          entry, entryBusy, entryLoginIssue, backToSignIn, validateEntrySession, resumeEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,
           askBarRefreshRecords,
           loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, isAdmin,

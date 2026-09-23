@@ -90,3 +90,13 @@ The current project artifact documents JWT middleware and `/api/auth/me`, but th
 - rate-limit implementation.
 
 Those remain backend-security validation items.
+
+---
+
+## Access Gate 4.4 — Login experience + neumact identity
+
+The Access Gate now uses the supplied `neumact` logo and lowercase neumact naming on the public/editorial half of the gate. Representative brand tokens used by the access UI are `#3A61B2`, `#2F80B7`, `#2DA5A6`, and `#2DA28B`.
+
+Access 4.4 preserves the Access 4.2 session contract. Its scope is presentation and interaction quality: authentication hierarchy, trusted-browser explanation, typed error states, input details, and a short reduced-motion-aware handoff into neumDesk.
+
+A successful login still requires server authentication and the normal workspace load. The transition does not grant access or alter permission semantics; it only changes the final visual handoff.

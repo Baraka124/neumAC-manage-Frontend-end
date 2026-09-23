@@ -281,3 +281,7 @@ Authenticated testing exposed a temporal/scope edge case in named on-call questi
 ### Access Gate 4.2 — session integrity
 
 Live browser review showed that valid locally persisted JWTs could make return visits appear to bypass login. Normal sessions are now tab-scoped; browser persistence is explicit and bounded; persisted sessions stop at a verified resume gate before records render; and legacy unbounded browser tokens require one-time reauthentication. The release remains V46.14 and no Grounded, Staff, permission or schema semantics changed.
+
+## Access Gate 4.4
+
+The V46.14 access gate now carries the neumact editorial identity and final login UX polish while preserving Access 4.2 session integrity. See `ACCESS-GATE44-CHANGES.md` and `VALIDATION-V46.14-ACCESS-GATE44.md`.
