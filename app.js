@@ -728,8 +728,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const teachMsg = Vue.ref('')
     const teachSubmit = async () => {
       if (!teachForm.intent || !teachForm.content.trim()) return
+      const _clean = teachForm.content.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g,'').trim()
+      // V46.14 Grounded 4.1A — Teach enriches vocabulary; it must not silently
+      // steal an already-specific route from a different operational intent.
+      // `askBarMatchTableOnly` is declared later in setup but is available by the
+      // time a user can submit this form.
+      try {
+        const collision = typeof askBarMatchTableOnly === 'function' ? askBarMatchTableOnly(_clean) : null
+        if (collision && collision.priority >= 50 && collision.intent !== teachForm.intent) {
+          teachMsg.value = `Not saved — that phrase already maps strongly to ${collision.intent.replace(/_/g,' ')}. Use a more specific local phrase.`
+          return
+        }
+      } catch (_) {}
       teachMsg.value = 'Teaching…'
-      const _clean = teachForm.content.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g,'').trim(); const ok = await brainAdd('synonym', teachForm.intent, _clean, { lang: teachForm.lang || 'Spanish', taught_via: 'ui' })
+      const ok = await brainAdd('synonym', teachForm.intent, _clean, { lang: teachForm.lang || 'Spanish', taught_via: 'ui', routing_scope: 'v4614-safe' })
       if (ok) { teachMsg.value = `✓ Grounded now understands "${teachForm.content.trim()}"`; teachForm.content = ''; setTimeout(() => teachMsg.value = '', 2600) }
       else { teachMsg.value = 'Could not save — the /api/brain route may not be deployed yet.' }
     }
@@ -12528,7 +12540,7 @@ document.addEventListener('DOMContentLoaded', () => {
           askBar.refreshedAt = success ? askBarNow() : null
           askBar.snapshotCapturedAt = new Date().toISOString()
           const failed=askBar.sourceHealth.filter(x=>!x.ready)
-          askBar.refreshError = failed.length ? `${success} of ${specs.length} sources retrieved. You can type; answers that need unavailable records remain paused.` : ''
+          askBar.refreshError = failed.length ? `${success} of ${specs.length} sources retrieved. Grounded will answer from verified sources when the resolved request does not depend on the unavailable records.` : ''
         } catch (e) {
           controller.abort()
           if (generation === askBarRefreshGeneration && currentUser.value?.id === userId) {
@@ -12539,8 +12551,25 @@ document.addEventListener('DOMContentLoaded', () => {
           if (generation === askBarRefreshGeneration) askBar.refreshing = false
         }
       }
+      let askBarReturnFocus = null
+      const askBarCaptureReturnFocus = () => {
+        try { if (!askBar.open && document.activeElement instanceof HTMLElement) askBarReturnFocus = document.activeElement } catch (_) {}
+      }
+      const askBarOnKeydown = (ev) => {
+        if (!askBar.open || !ev) return
+        if (ev.key === 'Escape') { ev.preventDefault(); closeAskBar(); return }
+        if (ev.key !== 'Tab') return
+        const panel=document.querySelector('.askbar-panel.grounded-cloud')
+        if (!panel) return
+        const nodes=[...panel.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(el=>!el.disabled && el.offsetParent!==null)
+        if (!nodes.length) return
+        const first=nodes[0], last=nodes[nodes.length-1], active=document.activeElement
+        if (ev.shiftKey && (active===first || !panel.contains(active))) { ev.preventDefault(); last.focus() }
+        else if (!ev.shiftKey && active===last) { ev.preventDefault(); first.focus() }
+      }
       const openAskBar  = () => {
         if (!currentUser.value) return
+        askBarCaptureReturnFocus()
         const visibleSubject = askBarInferVisibleSubject()
         const oldCtx = askBar.subject || askBar.context
         const oldKey = oldCtx?.id ? `${oldCtx.type}:${oldCtx.id}` : ''
@@ -12564,10 +12593,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Pull fresh data so the agent never answers from a stale local snapshot.
         // Best-effort and silent — loaders may run in parallel with the current view.
         askBarRefreshRecords()
-        Vue.nextTick(() => { if (askBar.view === 'conversation') document.querySelector('.askbar-input input')?.focus() })
+        Vue.nextTick(() => {
+          if (askBar.view === 'conversation') document.querySelector('.askbar-input input')?.focus()
+          else document.querySelector('.nd-intelligence-overlay')?.focus()
+        })
       }
       const openGroundedForStaff = (staff) => {
         if (!currentUser.value || !staff?.id) return
+        askBarCaptureReturnFocus()
         const next = { type:'staff', id:staff.id, name:staff.full_name }
         const old = askBar.subject || askBar.context
         if (!old || String(old.id) !== String(staff.id) || old.type !== 'staff') {
@@ -12582,7 +12615,11 @@ document.addEventListener('DOMContentLoaded', () => {
         askBarRefreshRecords()
         Vue.nextTick(() => document.querySelector('.askbar-input input')?.focus())
       }
-      const closeAskBar = () => { ++askBarRefreshGeneration; askBar.open = false; askBar.query = ''; askBar.loading = false; askBar.refreshing = false }
+      const closeAskBar = () => {
+        ++askBarRefreshGeneration; askBar.open = false; askBar.query = ''; askBar.loading = false; askBar.refreshing = false
+        const target=askBarReturnFocus; askBarReturnFocus=null
+        Vue.nextTick(()=>{ try { if (target && document.contains(target) && typeof target.focus==='function') target.focus() } catch (_) {} })
+      }
       const askBarToggleTeach = () => {
         askBar.view = askBar.view === 'teach' ? 'conversation' : 'teach'
         if (askBar.view === 'teach') loadBrain()
@@ -13563,14 +13600,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return filt.length ? filt[0].s : null
       }
 
-      // #7 Ambiguity: returns {person} if clear, or {ambiguous:[...]} if a tie.
+      // #7 Ambiguity: returns {person} if clear, or {ambiguous:[...]} when the
+      // leading identity candidates are too close to distinguish safely. Exact ties
+      // are not the only ambiguous case: one fuzzy-token step is worth 0.7 vs 1.0
+      // for an exact token, so a <=0.31 margin is intentionally clarification-safe.
       const askBarResolveStaffClarified = (qRaw) => {
         const ranked = askBarRankStaffMatches(qRaw)
         if (!ranked.length) return { person: null }
-        // A tie = top two share the same score AND it's a meaningful match
-        if (ranked.length >= 2 && ranked[0].score === ranked[1].score) {
-          const tied = ranked.filter(r => r.score === ranked[0].score)
-          if (tied.length >= 2) return { ambiguous: tied.map(r => r.s) }
+        if (ranked.length >= 2 && (ranked[0].score - ranked[1].score) <= 0.31) {
+          const floor = ranked[0].score - 0.31
+          const close = ranked.filter(r => r.score >= floor).slice(0,4)
+          if (close.length >= 2) return { ambiguous: close.map(r => r.s), margin: ranked[0].score - ranked[1].score }
         }
         return { person: ranked[0].s }
       }
@@ -14116,12 +14156,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return null
       }
 
-      const askBarMatchScored = (qRaw) => {
+      const askBarMatchTableOnly = (qRaw) => {
         const q = (qRaw || '').toLowerCase()
-        // 0. Taught vocabulary wins first (department-curated, bilingual).
-        const taught = askBarMatchTaught(qRaw)
-        if (taught) return { intent: taught, priority: 999, viaTaught: true }
-        // 1. Score the routing table (authoritative — specific, ordered, editable).
         let best = null
         for (const r of ASKBAR_ROUTES) {
           if (r.anti && r.anti.some(rx => rx.test(q))) continue
@@ -14129,17 +14165,25 @@ document.addEventListener('DOMContentLoaded', () => {
           const hits = r.patterns.filter(rx => rx.test(q)).length
           if (!hits) continue
           const score = r.priority + (hits - 1) * 2
-          if (!best || score > best.priority) best = { intent: r.intent, priority: score }
+          if (!best || score > best.priority) best = { intent:r.intent, priority:score }
         }
-        // 2. If a strong route matched (priority >= 50), it wins outright.
-        if (best && best.priority >= 50) return { intent: best.intent, confidence: 'high' }
-        // 3. Otherwise let the brain (editable concepts) try — good for phrasings
-        //    the routing table doesn't cover, incl. bilingual vocabulary.
+        return best
+      }
+
+      const askBarMatchScored = (qRaw) => {
+        // V46.14 Grounded 4.1A: authoritative specific routes beat conflicting
+        // taught vocabulary. Teach remains powerful when it fills a genuine language
+        // gap, or reinforces the same intent, but can no longer become priority 999.
+        const best = askBarMatchTableOnly(qRaw)
+        const taught = askBarMatchTaught(qRaw)
+        if (best && best.priority >= 50) {
+          return { intent:best.intent, confidence:'high', priority:best.priority, viaTaught:taught===best.intent, taughtCollision:!!(taught&&taught!==best.intent) }
+        }
+        if (taught) return { intent:taught, confidence:'high', priority:Math.max(49,best?.priority||0), viaTaught:true }
+        // Editable concepts handle phrasings not covered strongly by the routing table.
         const fromBrain = askBarMatchFromBrain(qRaw)
         if (fromBrain) return { intent: fromBrain, confidence: 'high' }
-        // 4. Fall back to the best weak route, if any.
-        if (best) return { intent: best.intent, confidence: 'medium' }
-        // 5. Nothing matched → unknown (triggers precise "I don't know").
+        if (best) return { intent: best.intent, confidence: 'medium', priority:best.priority }
         return { intent: 'unknown', confidence: 'low' }
       }
 
@@ -14365,6 +14409,131 @@ document.addEventListener('DOMContentLoaded', () => {
         announcements_overview: 'communications', ops_metrics_overview: 'communications',
         briefing: null, issues: null, unknown: null,  // synthesis/briefing span modules — allowed
         recommend_backup: null, draft_email: null  // agent synthesis — allowed (read multiple)
+      }
+
+      // V46.14 Grounded Phase 4.1A — per-intent knowledge/source contract.
+      // Source refresh is independent; an unrelated failed source must not block an
+      // otherwise verifiable answer. These keys map to the exact source-health rows
+      // created by askBarRefreshRecords().
+      const GROUNDED_SOURCE_LABELS = Object.freeze({
+        staff:'Staff directory', oncall:'On-call schedule', leave:'Leave records', rotations:'Rotations',
+        units:'Training units', research_lines:'Research programmes', trials:'Clinical studies',
+        projects:'Innovation projects', library:'Research Library'
+      })
+      const GROUNDED_SOURCE_ALIASES = Object.freeze({
+        'staff':'staff','staff directory':'staff','medical staff':'staff',
+        'on-call schedule':'oncall','oncall schedule':'oncall','on-call':'oncall',
+        'leave records':'leave','leave':'leave','absence records':'leave',
+        'rotations':'rotations','resident rotations':'rotations',
+        'units':'units','training units':'units','clinical units':'units',
+        'research programmes':'research_lines','research programs':'research_lines','research lines':'research_lines',
+        'clinical studies':'trials','clinical trials':'trials','trials':'trials',
+        'innovation projects':'projects','projects':'projects',
+        'research library':'library','publications':'library',
+        // Legacy umbrella source. Fine-grained intent requirements below remain authoritative.
+        'research':'research_lines'
+      })
+      const groundedSourceKey = value => GROUNDED_SOURCE_ALIASES[String(value||'').trim().toLowerCase()] || null
+      const groundedSourceHealth = key => {
+        const label=GROUNDED_SOURCE_LABELS[key]
+        return (askBar.sourceHealth||[]).find(x=>x.label===label) || null
+      }
+      const groundedSourceGate = (keys=[]) => {
+        const required=[...new Set((keys||[]).filter(Boolean))]
+        const rows=required.map(key=>({key,label:GROUNDED_SOURCE_LABELS[key]||key,health:groundedSourceHealth(key)}))
+        const missing=rows.filter(r=>!r.health?.ready)
+        return {
+          ready:missing.length===0, required,
+          checked:rows.filter(r=>r.health?.ready).map(r=>r.key),
+          missing:missing.map(r=>r.key),
+          missingRows:missing.map(r=>({key:r.key,label:r.label,error:r.health?.error||'Source not verified'}))
+        }
+      }
+      const _groundedIntentSourceGroups = {
+        staff:['staff_summary','staff_attr','staff_roster','staff_contact','staff_with_phd','staff_can_pi','residents_by_year','certs_expiring','departments_overview'],
+        oncall:['oncall_upcoming','oncall_week','oncall_by_person','oncall_fairness','oncall_no_backup','oncall_swap','rank_oncall','coverage_board','coverage_areas_overview','callouts_overview','callout_fairness','callouts_recent','callout_by_person'],
+        leave:['absent_now','absence_upcoming','absence_scheduled','absence_by_person','absence_fairness','absence_by_type','absence_this_month','absence_returning','absence_overlap','leave_on_date'],
+        rotations:['rotations_active','rotations_upcoming','rotation_overdue','supervisor_load','resident_progress','residents_free','count_rotations_ending','rotations_ending','who_supervises','rotation_history','rotation_gaps','unsupervised_residents','rotations_deep','residents_board'],
+        units:['units_overview','units_at_capacity','unit_status','unit_profile','unit_forecast','unit_load','unit_supervisor_gap','unit_by_specialty','units_board','clinical_units_overview'],
+        trials:['trials_recruiting','trials_overview','trial_profile','study_governance','trials_by_person'],
+        research_lines:['research_lines','research_line_profile'],
+        projects:['innovation_projects','project_profile','innovation_attention'],
+        library:['publication_profile','publications']
+      }
+      const askBarRequiredSourceKeys = (intent, followup=null, answer=null) => {
+        const key=String(intent||followup?.kind||'')
+        // Follow-ups can be more precise than their parent intent.
+        if (/^staff_leave(?:_schedule|_on_date)?$/.test(key)) return ['staff','leave']
+        if (key==='staff_oncall') return ['staff','oncall']
+        if (key==='staff_rotation') return ['staff','rotations','units']
+        if (key==='staff_attr') {
+          const attr=followup?.attr || null
+          if (attr==='pi') return ['staff','trials']
+          return ['staff']
+        }
+        if (key==='research_record_context') return ['library','research_lines']
+        if (key==='research_subject_context') {
+          const t=followup?.subjectType
+          return t==='study'?['trials','research_lines','staff']:t==='project'?['projects','research_lines','staff']:['research_lines','trials','projects','library']
+        }
+        if (['briefing','today_snapshot','this_week_ahead','risk_scan','dept_health','issues'].includes(key)) return ['staff','oncall','leave','rotations','units']
+        if (['coverage_gaps','absence_coverage_risk','find_replacement','recommend_backup','workload_analysis'].includes(key)) return ['staff','oncall','leave','rotations']
+        if (['pis_oncall'].includes(key)) return ['staff','oncall','trials']
+        if (['research_summary','research_activity'].includes(key)) return ['staff','research_lines','trials','projects','library']
+        if (['place_resident'].includes(key)) return ['staff','rotations','units']
+        for (const [group,intents] of Object.entries(_groundedIntentSourceGroups)) {
+          if (intents.includes(key)) {
+            if (group==='staff') return ['staff']
+            if (group==='oncall') return ['staff','oncall']
+            if (group==='leave') return ['staff','leave']
+            if (group==='rotations') return ['staff','rotations','units']
+            if (group==='units') return ['staff','rotations','units']
+            if (group==='trials') return ['staff','trials','research_lines']
+            if (group==='research_lines') return ['research_lines']
+            if (group==='projects') return ['projects','research_lines','staff']
+            if (group==='library') return ['library','research_lines','staff']
+          }
+        }
+        // Answer-level legacy source declarations add precision for branches not yet
+        // migrated into the explicit map. Unknown aliases are ignored rather than
+        // turning into global requirements.
+        const fromAnswer=(answer?.sources||[]).map(groundedSourceKey).filter(Boolean)
+        if (fromAnswer.length) return [...new Set(fromAnswer)]
+        const mod=askBarIntentModule[key]
+        if (mod==='medical_staff') return ['staff']
+        if (mod==='oncall_schedule') return ['staff','oncall']
+        if (mod==='staff_absence') return ['staff','leave']
+        if (mod==='resident_rotations') return ['staff','rotations','units']
+        if (mod==='training_units') return ['staff','rotations','units']
+        if (mod==='clinical_trials') return ['staff','trials','research_lines']
+        if (mod==='research_lines') return ['research_lines']
+        if (mod==='innovation_projects') return ['projects','research_lines']
+        if (mod==='news_posts') return ['library','research_lines']
+        return []
+      }
+      const askBarAnswerKnowledge = (a={}, intent=null, followup=null) => {
+        const required=askBarRequiredSourceKeys(intent,followup,a)
+        const gate=groundedSourceGate(required)
+        const evidenceCount=Array.isArray(a.evidence)?a.evidence.length:(a.evidence?1:0)
+        return {
+          schema:'grounded.answer.v1',
+          requiredSources:required.map(k=>({key:k,label:GROUNDED_SOURCE_LABELS[k]||k})),
+          checkedSources:gate.checked.map(k=>({key:k,label:GROUNDED_SOURCE_LABELS[k]||k})),
+          unavailableSources:gate.missingRows,
+          evidenceCount,
+          temporalScope:a.timeScope||a.reviewScope||null,
+          retrievedAt:askBar.snapshotCapturedAt||null,
+          complete:gate.ready
+        }
+      }
+      const askBarConfidenceReason = (a={}, knowledge={}, conf='medium', uncertain=false, emptyState=false) => {
+        if (knowledge.unavailableSources?.length) return `Required source unavailable: ${knowledge.unavailableSources.map(x=>x.label).join(', ')}.`
+        if (uncertain) return 'The request is ambiguous or the available records do not support a unique answer.'
+        if (conf==='low') return 'The answer needs clarification or additional verified records.'
+        if (conf==='medium') return 'The records support a bounded answer, but additional operational confirmation may be needed.'
+        if (emptyState && knowledge.requiredSources?.length) return 'All required sources were verified and no matching records were found.'
+        if (knowledge.requiredSources?.length) return `${knowledge.checkedSources.length} required authoritative source${knowledge.checkedSources.length===1?'':'s'} verified for this answer.`
+        return 'Deterministic Grounded rule; no current-record source was required.'
       }
       // Audit trail: every question asked + action taken (clinical accountability).
       const askBarAudit = Vue.ref([])
@@ -14618,11 +14787,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return [t]
       }
 
-      // Conservative degraded reads: known read builders only; writes stay paused.
+      // Degraded reads are dependency-aware: only the sources required for the
+      // resolved answer must be healthy. Consequential writes remain paused while the
+      // refresh snapshot is incomplete and retain their dedicated revalidation path.
       const askBarPartialReply = (question,fu=null,forcedIntent=null) => {
         if(!question) return
         const health=askBar.sourceHealth||[]
-        const ready=label=>health.some(s=>s.label===label&&s.ready)
         const ctx=askBar.context||askBar.subject||{}
         let intent=forcedIntent||fu?.intent||askBarMatchIntent(question)
         let follow=fu?.followupKind?{...fu,kind:fu.followupKind,id:fu.subjectId||fu.id||ctx.id}:null
@@ -14631,17 +14801,43 @@ document.addEventListener('DOMContentLoaded', () => {
           const action=/same author/.test(q)?'same_author':/same (research )?line/.test(q)?'same_line':/public|visibility/.test(q)?'visibility':/publication|details|profile|summary/.test(q)?'profile':null
           if(action) follow={kind:'research_record_context',id:ctx.id,action}
         }
-        const publication=follow?.kind==='research_record_context'||intent==='publication_profile'||intent==='publications'
-        const allowed=/^(staff_summary|staff_attr|staff_oncall|staff_rotation|staff_leave|staff_leave_schedule|staff_leave_on_date|oncall_week|oncall_upcoming|absent_now|absence_scheduled|rotations_active|trials_recruiting|research_lines|trial_profile|project_profile|research_line_profile|publication_profile|publications)$/.test(intent||'')||/^(research_record_context|research_subject_context)$/.test(follow?.kind||'')
-        const needs=publication?['Staff directory','Research programmes','Research Library']:['Staff directory','On-call schedule','Leave records','Rotations','Training units','Research programmes','Clinical studies','Innovation projects']
-        const module=publication?'research_lines':(askBarIntentModule[intent]||'research_lines')
+        const effectiveIntent=follow?.kind||intent
+        // Keep this function extraction-safe for the historical V46.1 degraded-read
+        // regression harness; production uses the full 4.1A dependency registry.
+        const publicationFallback=follow?.kind==='research_record_context'||intent==='publication_profile'||intent==='publications'
+        const required=typeof askBarRequiredSourceKeys==='function'
+          ? askBarRequiredSourceKeys(effectiveIntent,follow)
+          : (publicationFallback?['Staff directory','Research programmes','Research Library']:['Staff directory','On-call schedule','Leave records','Rotations','Training units','Research programmes','Clinical studies','Innovation projects'])
+        const gate=typeof groundedSourceGate==='function'
+          ? groundedSourceGate(required)
+          : {
+              ready:required.every(label=>health.some(s=>s.label===label&&s.ready)),
+              missingRows:required.filter(label=>!health.some(s=>s.label===label&&s.ready)).map(label=>({label,error:(health.find(s=>s.label===label)||{}).error||'Source not verified'}))
+            }
+        const module=(askBarIntentModule||{})[intent] || (follow?.kind==='research_record_context'?'research_lines':null)
         let answer
         askBar.lastAsked=question
-        if(allowed&&needs.every(ready)&&hasPermission(module,'read')) {
-          try { answer=follow?askBarBuildFollowup(follow):askBarBuildAnswer(intent) } catch(e) {}
+        if(gate.ready && (!module || hasPermission(module,'read'))) {
+          try {
+            if (typeof askBarFinalizeAnswer==='function') {
+              const raw=follow?askBarBuildFollowup(follow):_askBarBuildAnswerRaw(intent)
+              answer=askBarFinalizeAnswer(raw,effectiveIntent,follow)
+            } else {
+              answer=follow?askBarBuildFollowup(follow):askBarBuildAnswer(intent)
+            }
+          } catch(e) {}
         }
-        if(!answer) answer={text:'I cannot verify the records needed for that request yet. Retry the unavailable sources below. Changes remain paused while the snapshot is incomplete.',sources:[],visual:{type:'reslist',items:health.filter(s=>!s.ready).map(s=>({title:s.label,meta:s.error,badge:'Unavailable',tone:'default'}))},actions:[],followups:[],confidence:'low'}
-        const turn=Vue.reactive({q:question,text:'',chips:answer.chips||[],actions:answer.actions||[],sources:answer.sources||[],followups:answer.followups||[],visual:answer.visual||null,evidence:answer.evidence||null,confidence:answer.confidence||'medium',asOf:askBarNow(),streaming:false})
+        if(!answer) {
+          const missing=gate.missingRows.length?gate.missingRows:health.filter(s=>!s.ready).map(s=>({label:s.label,error:s.error}))
+          const blocked={
+            text:'I cannot verify the records required for that request yet. Other Grounded questions may still work if their own sources are available. Changes remain paused while the snapshot is incomplete.',
+            sources:[],
+            visual:{type:'reslist',items:missing.map(s=>({title:s.label,meta:s.error,badge:'Unavailable',tone:'default'}))},
+            actions:[],followups:[],confidence:'low'
+          }
+          answer=typeof askBarFinalizeAnswer==='function'?askBarFinalizeAnswer(blocked,effectiveIntent,follow):blocked
+        }
+        const turn=Vue.reactive({q:question,text:'',chips:answer.chips||[],actions:answer.actions||[],sources:answer.sources||[],followups:answer.followups||[],visual:answer.visual||null,evidence:answer.evidence||null,confidence:answer.confidence||'medium',confidenceReason:answer.confidenceReason||'',knowledge:answer.knowledge||null,reviewScope:answer.reviewScope||null,timeScope:answer.timeScope||null,asOf:askBarNow(),streaming:false})
         askBar.view='conversation';askBar.query='';askBar.turns.push(turn);askBarStreamTurn(turn,answer.text||'')
       }
       const askBarResolve = (forcedIntent) => {
@@ -15337,14 +15533,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (answerGeneration !== askBarRefreshGeneration) return
           let ans, answerError = null
           try {
-            ans = followup ? askBarBuildFollowup(followup) : askBarBuildAnswer(forcedIntent || askBarMatchIntent(asked))
+            ans = followup ? askBarFinalizeAnswer(askBarBuildFollowup(followup), followup.kind, followup) : askBarBuildAnswer(forcedIntent || askBarMatchIntent(asked))
           } catch (e) {
             answerError = e
             ans = { text: "Sorry — I couldn't pull that together. Try rephrasing, or check the relevant view directly.", chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
           }
           const completedTrace = askBar.trace.map(step => ({ ...step, done: true }))
           const full = ans.text || ''
-          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, coreTraceId, asOf: askBarNow(), streaming: true, revealing: false, reviewScope: ans.reviewScope || null })
+          const turn = Vue.reactive({ q: asked, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', confidenceReason: ans.confidenceReason || '', knowledge: ans.knowledge || null, timeScope: ans.timeScope || null, visual: ans.visual || null, evidence: ans.evidence || null, evidenceOpen: false, isDraft: ans.isDraft || false, isClarify: ans.isClarify || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), trace: completedTrace, traceOpen: false, coreTraceId, asOf: askBarNow(), streaming: true, revealing: false, reviewScope: ans.reviewScope || null })
           groundedFinishExecutionTrace(coreTraceId, ans, answerError ? 'error' : 'ok', answerError, intent)
 
           // Keep the working surface visible for one calm beat, then replace it in place.
@@ -16812,7 +17008,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Visual: instrument bars for the top handful.
           const maxV = Math.max(...rows.map(r => r.v), 1)
           const bars = rows.slice(0, 5).map((r, i) => ({ name: r.s.full_name, value: r.v, pct: Math.round((r.v / maxV) * 100), win: i === 0 }))
-          return { text, visual: { type: 'bars', metric: metric.label, bars }, chips: rows.slice(0,4).map(r=>({label:`${r.s.full_name} · ${r.v}`,id:r.s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: [metric.source, 'staff'], followups: [], confidence: 'high' }
+          return { text, visual: { type: 'bars', metric: metric.label, bars }, chips: rows.slice(0,4).map(r=>({label:`${r.s.full_name} · ${r.v}`,id:r.s.id})), actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: [metric.source, 'staff'], followups: [], confidence: 'high', timeScope:'All recorded records', reviewScope:`All recorded records · ${metric.label}` }
         }
         if (intent === 'compare_staff') {
           // "who has more shifts, Antelo or López?"  /  "compare Antelo and López"
@@ -16830,7 +17026,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const maxV = Math.max(na, nb, 1)
           const bars = [{ name: a.full_name, value: na, pct: Math.round((na/maxV)*100), win: na >= nb }, { name: b.full_name, value: nb, pct: Math.round((nb/maxV)*100), win: nb > na }]
           const delta = Math.abs(na - nb)
-          return { text, visual: { type: 'bars', metric: metric.label, bars, delta: delta ? `Difference of ${delta} ${metric.label}` : 'They\u2019re even' }, chips: [{label:`${a.full_name} · ${na}`,id:a.id},{label:`${b.full_name} · ${nb}`,id:b.id}], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: [metric.source, 'staff'], followups: [], confidence: 'high' }
+          return { text, visual: { type: 'bars', metric: metric.label, bars, delta: delta ? `Difference of ${delta} ${metric.label}` : 'They\u2019re even' }, chips: [{label:`${a.full_name} · ${na}`,id:a.id},{label:`${b.full_name} · ${nb}`,id:b.id}], actions: [{ label: 'Open staff', view: 'medical_staff', primary: true }], sources: [metric.source, 'staff'], followups: [], confidence: 'high', timeScope:'All recorded records', reviewScope:`All recorded records · ${metric.label}` }
         }
         if (intent === 'oncall_upcoming') {
           const today = Utils.normalizeDate(new Date())
@@ -17115,15 +17311,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const txt = ((a && a.text) || '').toLowerCase()
         return /couldn'?t (map|tell|pull|find)|don'?t have enough|not enough data|try rephrasing|which .* did you mean|who do you mean|which .*\?/.test(txt)
       }
-      const askBarBuildAnswer = (intent) => {
-        const a = _askBarBuildAnswerRaw(intent) || {}
-        let conf = a.confidence || 'high'
-        const hasSources = Array.isArray(a.sources) && a.sources.length > 0
-        const emptyState = askBarAnswerIsEmpty(a)
-        if (askBarAnswerIsUncertain(a)) conf = 'low'
-        else if (!hasSources && conf === 'high') conf = 'medium'
-        return { text: a.text || '', chips: a.chips || [], actions: a.actions || [], sources: a.sources || [], followups: a.followups || [], confidence: conf, visual: a.visual || null, evidence: a.evidence || null, isDraft: a.isDraft || false, emptyState }
+      const askBarFinalizeAnswer = (raw={}, intent=null, followup=null) => {
+        const a=raw||{}
+        let conf=a.confidence||'high'
+        const hasSources=Array.isArray(a.sources)&&a.sources.length>0
+        const emptyState=a.emptyState!==undefined?!!a.emptyState:askBarAnswerIsEmpty(a)
+        const uncertain=askBarAnswerIsUncertain(a)
+        const knowledge=askBarAnswerKnowledge(a,intent,followup)
+        if (uncertain) conf='low'
+        else if (!knowledge.complete && knowledge.requiredSources.length) conf='low'
+        else if (!hasSources && knowledge.requiredSources.length && conf==='high') conf='medium'
+        const confidenceReason=a.confidenceReason||askBarConfidenceReason(a,knowledge,conf,uncertain,emptyState)
+        return {
+          text:a.text||'', chips:a.chips||[], actions:a.actions||[], sources:a.sources||[], followups:a.followups||[],
+          confidence:conf, confidenceReason, knowledge, visual:a.visual||null, evidence:a.evidence||null,
+          isDraft:a.isDraft||false, isClarify:a.isClarify||false, emptyState,
+          reviewScope:a.reviewScope||null, timeScope:a.timeScope||a.reviewScope||null
+        }
       }
+      const askBarBuildAnswer = (intent) => askBarFinalizeAnswer(_askBarBuildAnswerRaw(intent)||{},intent,null)
 
       const askBarGoTo = (action) => {
         if (!action) return
@@ -17230,9 +17436,9 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.loading = true
         setTimeout(() => {
           let ans
-          try { ans = askBarBuildFollowup(fu) } catch (e) { ans = { text: `Here's ${s.full_name}.`, chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' } }
+          try { ans = askBarFinalizeAnswer(askBarBuildFollowup(fu), fu.kind, fu) } catch (e) { ans = askBarFinalizeAnswer({ text: `Here's ${s.full_name}.`, chips: [], actions: [], sources: ['staff'], followups: [], confidence: 'high' }, fu.kind, fu) }
           askBar.loading = false; askBar.thinking = null; askBar.loadingSources = []
-          const turn = Vue.reactive({ q: s.full_name, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', visual: ans.visual || null, isDraft: ans.isDraft || false, emptyState: askBarAnswerIsEmpty(ans), asOf: askBarNow(), streaming: true })
+          const turn = Vue.reactive({ q: s.full_name, text: '', chips: ans.chips || [], actions: ans.actions || [], sources: ans.sources || [], followups: ans.followups || [], confidence: ans.confidence || 'high', confidenceReason: ans.confidenceReason || '', knowledge: ans.knowledge || null, timeScope: ans.timeScope || null, visual: ans.visual || null, isDraft: ans.isDraft || false, emptyState: ans.emptyState !== undefined ? ans.emptyState : askBarAnswerIsEmpty(ans), reviewScope: ans.reviewScope || null, asOf: askBarNow(), streaming: true })
           askBar.turns.push(turn)
           askBarStreamTurn(turn, ans.text || '')
         }, 260)
@@ -17322,7 +17528,7 @@ document.addEventListener('DOMContentLoaded', () => {
               end: fu.end || fu.date || ctx.date || null
             }
             if (followGeneration !== askBarRefreshGeneration) return
-            ans = askBarBuildFollowup(payload)
+            ans = askBarFinalizeAnswer(askBarBuildFollowup(payload), payload.kind, payload)
           } catch (e) {
             console.error('[Grounded follow-up]', e)
             ans = { text: 'Could not resolve that follow-up.', chips: [], actions: [], sources: [], followups: [], confidence: 'low' }
@@ -17339,6 +17545,9 @@ document.addEventListener('DOMContentLoaded', () => {
             sources: ans.sources || [],
             followups: ans.followups || [],
             confidence: ans.confidence || 'high',
+            confidenceReason: ans.confidenceReason || '',
+            knowledge: ans.knowledge || null,
+            timeScope: ans.timeScope || null,
             visual: ans.visual || null,
             evidence: ans.evidence || null,
             evidenceOpen: false,
@@ -17666,7 +17875,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bulkSelect, toggleBulkMode, toggleBulkItem, bulkApproveAbsences, bulkDeleteAbsences,
           exportCSV, downloadIcal, printView, downloadStaffSchedule, shareStaffProfile,
           // Ask bar (RAG intelligence surface)
-          askBar, askBarSuggestions, askBarSuggestLabel, askBarContextCard, askBarOpenContext, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarAudit, openAskBar, closeAskBar, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
+          askBar, askBarSuggestions, askBarSuggestLabel, askBarContextCard, askBarOpenContext, setAgentSubject, askBarScan, askBarScanCount, askBarNow, askBarTurnType, askBarAudit, openAskBar, closeAskBar, askBarOnKeydown, askBarReset, askBarResolve, runSuggestion, askBarGoTo, askBarCompleteProfile, askBarOpenStaff, askBarResolveClarified, askBarCopyAnswer, askBarEntityMenu, askBarEntityAction, askBarAlertAction, askBarSnooze, askBarRunFollowup,
           askBarContinuity, askBarChanges, askBarWatchedChanges, askBarTimeline, askBarWatchlist, askBarIsWatched, askBarToggleWatch, askBarToggleTimeline,
           groundedTraceRows, groundedToolCatalog, askBarToggleTrace, groundedClearTraces,
           brainRows: _brainRows, brainLoading: _brainLoading, loadBrain, brainAdd, brainToggle, brainDelete, teachForm, teachMsg, teachSubmit, teachTopicLabels, askBarToggleTeach,

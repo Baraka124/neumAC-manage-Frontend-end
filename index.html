@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-staff-phase4-ui-foundation">
+    <link rel="stylesheet" href="style.css?v=46.14-grounded-phase41b-ui-convergence">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46">
 
@@ -81,18 +81,16 @@
         <span v-if="askBarScanCount" class="grounded-orb-badge">{{ askBarScanCount }}</span>
     </button>
 
-    <!-- Expanded cloud -->
-    <div v-if="currentUser && entry.state === 'ready' && askBar.open" class="grounded-overlay" @click.self="closeAskBar()" @click="askBar.entityMenu = null">
-        <div class="askbar-panel grounded-cloud" :class="{'gr45-expanded': askBar.reviewWide}">
-            <span class="grounded-mist grounded-mist1"></span>
-            <span class="grounded-mist grounded-mist2"></span>
+    <!-- Grounded intelligence workspace — Phase 4.1B -->
+    <div v-if="currentUser && entry.state === 'ready' && askBar.open" class="grounded-overlay nd-intelligence-overlay" role="dialog" aria-modal="true" aria-labelledby="grounded-dialog-title" tabindex="-1" @keydown="askBarOnKeydown" @click.self="closeAskBar()" @click="askBar.entityMenu = null">
+        <div class="askbar-panel grounded-cloud nd-intelligence-shell" :class="{'gr45-expanded': askBar.reviewWide}">
             <div v-if="askBar.entityMenu" class="askbar-entmenu" :style="{ left: askBar.entityMenu.x + 'px', top: askBar.entityMenu.y + 'px' }" @click.stop>
                 <div class="askbar-entmenu-nm">{{ askBar.entityMenu.name }}</div>
                 <button class="askbar-entmenu-it" @click="askBarEntityAction('profile')"><svg width="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> View profile</button>
                 <button class="askbar-entmenu-it" @click="askBarEntityAction('oncall')"><svg width="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> On-call schedule</button>
                 <button class="askbar-entmenu-it" @click="askBarEntityAction('summary')"><svg width="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> Full summary</button>
             </div>
-            <div class="askbar-head grounded-head">
+            <div class="askbar-head grounded-head nd-intelligence-head nd-toolbar">
                 <div class="grounded-head-brand">
                     <span class="grounded-head-orb" :class="{ 'grounded-head-orb--think': askBar.loading }" aria-hidden="true">
                         <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -103,39 +101,38 @@
                         </svg>
                     </span>
                     <div class="grounded-head-copy">
-                        <div class="askbar-head-t">Grounded</div>
+                        <div id="grounded-dialog-title" class="askbar-head-t">Grounded</div>
                         <div class="askbar-head-s"><span class="askbar-head-dot"></span><span>Department intelligence</span></div>
                     </div>
                 </div>
-                <div class="grounded-head-tools">
-                    <button class="askbar-newchat" @click="askBar.reviewWide = !askBar.reviewWide" :aria-pressed="!!askBar.reviewWide" title="Toggle expanded review"><span>{{ askBar.reviewWide ? 'Compact' : 'Expand' }}</span></button>
-                    <button v-if="hasPermission('medical_staff','read')" class="askbar-newchat" @click="activity45Open(askBar.subject?.type === 'staff' ? askBar.subject.id : (askBar.context?.type === 'staff' ? askBar.context.id : ''))" title="Open Personal Activity / Portfolio Intelligence"><span>Personal activity</span></button>
-                    <button v-if="askBar.turns.length" class="askbar-newchat" @click="askBarReset()" title="Start a new Grounded conversation">
+                <div class="grounded-head-tools nd-intelligence-actions">
+                    <button class="askbar-newchat nd-btn nd-btn--secondary" @click="askBar.reviewWide = !askBar.reviewWide" :aria-pressed="!!askBar.reviewWide" title="Toggle expanded review"><span>{{ askBar.reviewWide ? 'Compact' : 'Expand' }}</span></button>
+                    <button v-if="askBar.turns.length" class="askbar-newchat nd-btn nd-btn--secondary" @click="askBarReset()" title="Start a new Grounded conversation">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>New</span>
                     </button>
-                    <button class="askbar-history-btn" @click="askBarToggleTimeline()" :class="{ 'askbar-history-btn--on': askBar.view === 'timeline' }" title="Department activity">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Activity</span><span v-if="askBarChanges.length" class="askbar-tool-count">{{ askBarChanges.length }}</span>
-                    </button>
-                    <button v-if="hasPermission('audit_logs','read')" class="askbar-history-btn" @click="askBarToggleTrace()" :class="{ 'askbar-history-btn--on': askBar.view === 'trace' }" title="Grounded execution traces">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/><path d="M2 21h20"/></svg><span>Trace</span><span v-if="groundedTraceRows.length" class="askbar-tool-count">{{ groundedTraceRows.length }}</span>
-                    </button>
-                    <button class="askbar-teach-btn" @click="askBarToggleTeach()" :class="{ 'askbar-teach-btn--on': askBar.view === 'teach' }" title="Teach Grounded">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg><span>Teach</span>
-                    </button>
-                    <button class="askbar-close" @click="closeAskBar()" aria-label="Close Grounded" title="Close">
+                    <details class="grounded-tools-menu">
+                        <summary class="nd-btn nd-btn--secondary" aria-label="More Grounded tools"><span>Tools</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></summary>
+                        <div class="grounded-tools-popover">
+                            <button v-if="hasPermission('medical_staff','read')" class="grounded-tools-item" @click="activity45Open(askBar.subject?.type === 'staff' ? askBar.subject.id : (askBar.context?.type === 'staff' ? askBar.context.id : ''))"><span>Personal activity</span><small>Portfolio intelligence</small></button>
+                            <button class="grounded-tools-item" @click="askBarToggleTimeline()" :aria-pressed="askBar.view === 'timeline'"><span>Activity</span><small>{{ askBarChanges.length }} recorded change{{ askBarChanges.length===1?'':'s' }}</small></button>
+                            <button v-if="hasPermission('audit_logs','read')" class="grounded-tools-item" @click="askBarToggleTrace()" :aria-pressed="askBar.view === 'trace'"><span>Trace</span><small>Operational telemetry</small></button>
+                            <button class="grounded-tools-item" @click="askBarToggleTeach()" :aria-pressed="askBar.view === 'teach'"><span>Teach Grounded</span><small>Department vocabulary</small></button>
+                        </div>
+                    </details>
+                    <button class="askbar-close nd-btn nd-btn--icon" @click="closeAskBar()" aria-label="Close Grounded" title="Close">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6 6 18"/></svg>
                     </button>
                 </div>
             </div>
 
-            <div class="gr431-readiness" role="status" aria-live="polite">
+            <div class="gr431-readiness nd-source-health" role="status" aria-live="polite">
                 <span v-if="askBar.refreshing">Checking current records… You can type while the sources load.</span>
                 <span v-else-if="askBar.refreshError">{{ askBar.refreshError }}</span>
                 <span v-else-if="askBar.refreshedAt">Records checked at {{ askBar.refreshedAt }}. Earlier answers retain their original timestamp.</span>
                 <button v-if="askBar.refreshError && !askBar.refreshing" @click="askBarRefreshRecords()">Retry</button>
                 <details v-if="askBar.sourceHealth && askBar.sourceHealth.some(s=>!s.ready) && !askBar.refreshing"><summary>Source loading details</summary><div v-for="source in askBar.sourceHealth" :key="source.label"><strong>{{ source.label }}</strong>: {{ source.ready ? 'Retrieved' : source.error }}</div></details>
             </div>
-            <div v-if="askBar.view === 'conversation' && askBarContextCard" class="gr43-contextbar">
+            <div v-if="askBar.view === 'conversation' && askBarContextCard" class="gr43-contextbar nd-context-strip">
                 <div class="gr43-contextmark" aria-hidden="true">{{ askBarContextCard.mark }}</div>
                 <div class="gr43-contextcopy">
                     <span>{{ askBarContextCard.label }}</span>
@@ -327,7 +324,7 @@
             <!-- CONVERSATION -->
             <div v-if="askBar.view === 'conversation'" class="askbar-conv" @scroll.passive="askBarOnConversationScroll">
                 <button v-if="askBar.showLatest && askBar.turns.length" class="gr45-latest" @click="askBarRevealLatestTurn(false)" aria-label="Go to latest answer">↓ Latest</button>
-                <div v-if="!askBar.turns.length" class="askbar-greeting">
+                <div v-if="!askBar.turns.length" class="askbar-greeting nd-intelligence-empty">
                     <div class="askbar-greeting-t">{{ askBarContextCard ? 'What do you need from this ' + askBarContextCard.noun + '?' : 'What would you like to know?' }}</div>
                     <div class="askbar-greeting-s">{{ askBarContextCard ? 'Grounded is using this record plus the connected department records it can verify.' : 'Ask across live operations, people, rotations and research — Grounded connects the records for you.' }}</div>
                 </div>
@@ -346,21 +343,21 @@
                     </div>
                 </div>
                 <template v-for="(turn, ti) in askBar.turns" :key="ti">
-                    <div v-if="turn.q" class="askbar-q-bub" :data-grounded-question="ti" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
-                    <div class="askbar-a-bub" :data-grounded-turn="ti" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual, 'askbar-turn--context-event': !!turn.contextEvent }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','research_brief'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
-                        <div class="askbar-a-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
+                    <div v-if="turn.q" class="askbar-q-bub nd-answer-question" :data-grounded-question="ti" @click="askBar.query = turn.q" title="Click to edit this question">{{ turn.q }}</div>
+                    <div class="askbar-a-bub nd-answer" :data-grounded-turn="ti" :class="[{ 'askbar-turn--reveal': turn.revealing, 'askbar-turn--unresolved': turn.confidence==='low' && (!turn.sources || !turn.sources.length) && !turn.visual, 'askbar-turn--context-event': !!turn.contextEvent }, 'askbar-turn--' + ((turn.proposal || turn.oncallProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.rotationProposal || turn.removeProposal) ? 'proposal' : ((turn.isClarify || turn.leaveClarify) ? 'clarification' : (turn.visual && turn.visual.type==='profile' ? 'profile' : (turn.visual && turn.visual.type==='risklist' ? 'alert' : (turn.visual && ['workload','occupancy','bars','enroll','scenario','research_brief'].includes(turn.visual.type) ? 'insight' : (turn.visual && ['board','reslist','roster','absence','publication_list'].includes(turn.visual.type) ? 'collection' : 'fact'))))))]">
+                        <div class="askbar-a-card nd-answer-card" :class="{ 'askbar-a-card--draft': turn.isDraft }">
                             <div v-if="turn.contextEvent" class="askbar-context-event">
                                 <span>{{ (turn.contextMeta && turn.contextMeta.eyebrow) || 'Context loaded' }}</span>
                                 <strong>{{ (turn.contextMeta && turn.contextMeta.title) || turn.text }}</strong>
                                 <small v-if="turn.contextMeta && turn.contextMeta.meta">{{ turn.contextMeta.meta }}</small>
                             </div>
-                            <div v-else-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state">
+                            <div v-else-if="turn.emptyState && !(turn.visual && turn.visual.type === 'profile')" class="askbar-empty-state nd-empty-state">
                                 <span class="askbar-empty-mark" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg></span>
                                 <div><div class="askbar-empty-title">{{ turn.text }}</div><div class="askbar-empty-sub">No matching current record was found in the sources Grounded checked.</div></div>
                             </div>
                             <div v-else class="askbar-a-tx">{{ turn.text }}<span v-if="turn.streaming" class="askbar-cursor"></span></div>
-                            <div v-if="turn.visual && !turn.isClarify && turn.visual.type !== 'profile'" class="gr45-review-control">
-                                <div><span>Answer scope</span><strong>{{ turn.reviewScope || 'Department records' }}</strong><small>{{ turn.snapshotAt ? 'Retrieved ' + askBarFormatSnapshotTime(turn.snapshotAt) : 'Source refresh time not recorded for this answer' }}</small></div>
+                            <div v-if="turn.visual && !turn.isClarify && turn.visual.type !== 'profile'" class="gr45-review-control nd-answer-scope">
+                                <div><span>Answer scope</span><strong>{{ turn.reviewScope || turn.timeScope || 'Department records' }}</strong><small>{{ turn.snapshotAt ? 'Retrieved ' + askBarFormatSnapshotTime(turn.snapshotAt) : 'Source refresh time not recorded for this answer' }}</small></div>
                                 <button @click="turn.reviewOpen = !turn.reviewOpen" :aria-expanded="!!turn.reviewOpen">{{ turn.reviewOpen ? 'Hide detail' : 'Show details' }}</button>
                             </div>
 
@@ -370,7 +367,7 @@
                             </div>
 
                             <!-- §9 structured PROPOSAL card (propose → confirm → write) -->
-                            <div v-if="turn.proposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                            <div v-if="turn.proposal" class="askbar-proposal nd-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
                                     <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
                                     <span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>record leave</b></span>
@@ -398,7 +395,7 @@
                             </div>
 
                             <!-- §9 on-call proposal card, with hard-block on leave conflict -->
-                            <div v-if="turn.oncallProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': turn.oncallProposal.blocked && !turn.committed }">
+                            <div v-if="turn.oncallProposal" class="askbar-proposal nd-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': turn.oncallProposal.blocked && !turn.committed }">
                                 <div class="askbar-proposal-h">
                                     <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
                                     <span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>schedule on-call</b></span>
@@ -466,7 +463,7 @@
                             </div>
 
                             <!-- §6 return-from-leave card -->
-                            <div v-if="turn.returnProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                            <div v-if="turn.returnProposal" class="askbar-proposal nd-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></span><span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>return from leave</b></span><span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span></div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.returnProposal.name }}</span></div>
@@ -485,7 +482,7 @@
                             <!-- §6 rotation-assignment card -->
 
                             <!-- §6 rotation-edit proposal -->
-                            <div v-if="turn.rotationEditProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                            <div v-if="turn.rotationEditProposal" class="askbar-proposal nd-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-label">{{ turn.committed ? 'Saved change' : 'Proposed change' }} · edit rotation</div>
                                 <div class="askbar-proposal-rows">
                                     <div v-for="r in turn.rotationEditProposal.rows" :key="r.k" class="askbar-proposal-row">
@@ -503,7 +500,7 @@
                             </div>
 
                             <!-- §6 leave-edit proposal -->
-                            <div v-if="turn.leaveEditProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                            <div v-if="turn.leaveEditProposal" class="askbar-proposal nd-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-label">{{ turn.committed ? 'Saved change' : 'Proposed change' }} · edit leave</div>
                                 <div class="askbar-proposal-rows">
                                     <div v-for="r in turn.leaveEditProposal.rows" :key="r.k" class="askbar-proposal-row">
@@ -521,7 +518,7 @@
                             </div>
 
                             <!-- §6 extend-rotation proposal -->
-                            <div v-if="turn.rotationExtendProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                            <div v-if="turn.rotationExtendProposal" class="askbar-proposal nd-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-label">{{ turn.committed ? 'Saved change' : 'Proposed change' }} · extend rotation</div>
                                 <div class="askbar-proposal-rows">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.rotationExtendProposal.name }}</span></div>
@@ -539,7 +536,7 @@
                             </div>
 
                             <!-- §6 multi-unit rotation proposal -->
-                            <div v-if="turn.multiRotation" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
+                            <div v-if="turn.multiRotation" class="askbar-proposal nd-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled }">
                                 <div class="askbar-proposal-h">
                                     <span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span>
                                     <span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>{{ turn.multiRotation.rows.length }} rotations</b></span>
@@ -569,7 +566,7 @@
                                 <div v-if="turn.cancelled" class="askbar-proposal-cx">Cancelled — nothing was saved.</div>
                             </div>
 
-                            <div v-if="turn.rotationProposal" class="askbar-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': turn.rotationProposal.blocked && !turn.committed }">
+                            <div v-if="turn.rotationProposal" class="askbar-proposal nd-proposal" :class="{ 'askbar-proposal--done': turn.committed, 'askbar-proposal--cancelled': turn.cancelled, 'askbar-proposal--blocked': turn.rotationProposal.blocked && !turn.committed }">
                                 <div class="askbar-proposal-h"><span class="askbar-proposal-ic"><svg width="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span>{{ turn.committed ? 'Saved change' : 'Proposed change' }} · <b>rotation</b></span><span class="askbar-proposal-tag" :class="{ 'askbar-proposal-tag--saved': turn.committed }">{{ turn.committed ? 'saved' : 'not saved yet' }}</span></div>
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.rotationProposal.resident.name }}</span></div>
@@ -849,12 +846,17 @@
                                 <div v-else-if="turn.chips && turn.chips.length" class="askbar-chips">
                                     <button v-for="c in turn.chips" :key="c.id" class="askbar-chip" @click.stop="c.clarifyAttr !== undefined ? askBarResolveClarified(c) : askBarEntityMenu(c, $event)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg> {{ c.label }}</button>
                                 </div>
-                                <div v-if="turn.confidence!=='low' || (turn.sources && turn.sources.length) || (turn.evidence && turn.evidence.length)" class="askbar-trust" :class="'askbar-trust--' + turn.confidence">
+                                <div v-if="turn.confidence!=='low' || (turn.sources && turn.sources.length) || (turn.evidence && turn.evidence.length)" class="askbar-trust nd-evidence-strip" :class="'askbar-trust--' + turn.confidence">
                                     <div class="askbar-trust-main">
-                                        <span class="askbar-trust-state">{{ turn.sources && turn.sources.length ? 'Source scope' : 'Source scope not established' }}</span>
-                                        <span v-if="turn.sources && turn.sources.length" class="askbar-trust-src">
+                                        <span class="askbar-trust-state">{{ turn.knowledge ? (turn.knowledge.complete ? 'Verified source scope' : 'Partial source scope') : (turn.sources && turn.sources.length ? 'Source scope' : 'Source scope not established') }}</span>
+                                        <span v-if="turn.knowledge && turn.knowledge.checkedSources && turn.knowledge.checkedSources.length" class="askbar-trust-src">
+                                            <span v-for="(src,si) in turn.knowledge.checkedSources" :key="src.key">{{ src.label }}<span v-if="si &lt; turn.knowledge.checkedSources.length-1" class="askbar-source-sep"> · </span></span>
+                                        </span>
+                                        <span v-else-if="turn.sources && turn.sources.length" class="askbar-trust-src">
                                             <span v-for="(src,si) in turn.sources" :key="src" :title="askBarSourceDesc(src)">{{ src }}<span v-if="si &lt; turn.sources.length-1" class="askbar-source-sep"> · </span></span>
                                         </span>
+                                        <small v-if="turn.confidenceReason" class="nd-evidence-reason">{{ turn.confidenceReason }}</small>
+                                        <small v-if="turn.knowledge && turn.knowledge.unavailableSources && turn.knowledge.unavailableSources.length" class="nd-evidence-warning">Unavailable: {{ turn.knowledge.unavailableSources.map(s => s.label).join(', ') }}</small>
                                     </div>
                                     <div class="askbar-trust-meta">
                                         <button v-if="turn.trace && turn.trace.length" class="askbar-trust-checks" @click="turn.traceOpen = !turn.traceOpen">{{ turn.traceOpen ? 'Hide method' : 'Method' }}</button>
@@ -872,7 +874,7 @@
                                         <span class="askbar-trace-src">{{ step.src }}</span>
                                     </div>
                                 </div>
-                                <div v-if="turn.evidenceOpen && turn.evidence && turn.evidence.length" class="askbar-evidence">
+                                <div v-if="turn.evidenceOpen && turn.evidence && turn.evidence.length" class="askbar-evidence nd-evidence-records">
                                     <div class="askbar-evidence-h">Based on these records</div>
                                     <div v-for="(ev,ei) in turn.evidence" :key="ei" class="askbar-evidence-row">
                                         <span class="askbar-evidence-dot"></span>
@@ -936,7 +938,7 @@
                 <button v-if="askBar.view === 'digest' && (askBarScanCount || askBarChanges.length)" class="askbar-mode-link" @click="askBar.view = 'conversation'">Ask Grounded about this context →</button>
                 <div v-else-if="askBar.view === 'teach'" class="askbar-mode-note"><span>Language layer</span><strong>Changes here are shared with the department.</strong></div>
                 <div v-else-if="askBar.view === 'timeline'" class="askbar-mode-note"><span>Department memory</span><strong>Activity is local to this Grounded workspace.</strong></div>
-                <div v-else class="askbar-input" :class="{ 'askbar-input--busy': askBar.loading }">
+                <div v-else class="askbar-input nd-intelligence-composer" :class="{ 'askbar-input--busy': askBar.loading }">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
                     <input v-model="askBar.query" @keyup.enter="askBarResolve()" :disabled="askBar.loading" :placeholder="askBar.loading ? 'Grounded is checking…' : 'Ask about people, coverage, rotations or research…'" autofocus>
                     <button class="askbar-send" @click="askBarResolve()" :disabled="askBar.loading || askBar.refreshing || !askBar.query.trim()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -11828,7 +11830,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="app.js?v=46.14-staff-phase31-profile-integrity"></script>
+    <script src="app.js?v=46.14-grounded-phase41b-ui-convergence"></script>
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

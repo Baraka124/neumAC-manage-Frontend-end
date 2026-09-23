@@ -2,13 +2,45 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v2.8 · Implementation checkpoint: V46.14 Staff Phase 4 Reusable UI Foundation · Supersedes Vision v0.1
+**Status:** Architecture v2.9 · Implementation checkpoint: V46.14 Grounded Phase 4.1B Intelligence UI Convergence · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — current Staff directory: 23 real departmental people, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
 ---
 
 ## Current implementation ledger — V46.14
+
+## V46.14 Grounded Phase 4.1B — Intelligence UI convergence
+
+Grounded now adopts the reusable neumDesk Phase 4 visual/accessibility language without weakening the knowledge contract introduced in 4.1A. The visible surface is a crisp **department intelligence workspace**, not a floating cloud/glass product. Legacy `askbar-*`, `grounded-*`, `gr43-*` and `gr45-*` classes remain as compatibility hooks while new `nd-*` contracts become the reusable presentation layer.
+
+Implemented convergence changes:
+- the visible cloud/mist treatment is removed; the modal workspace uses a crisp bordered surface with no backdrop blur;
+- the primary header is reduced to Expand/Compact, New, Tools and Close, while Personal Activity, Activity, Trace and Teach move into a secondary permission-aware Tools menu;
+- Grounded exposes dialog semantics, a labelled title, keyboard focus trapping, Escape close and return-focus behavior;
+- source readiness and active Person/object context use the shared `nd-source-health` / `nd-context-strip` language;
+- answer turns expose `nd-answer`, `nd-answer-scope`, `nd-evidence-strip`, `nd-evidence-records` and `nd-proposal` contracts while preserving the existing structured visual types;
+- the 4.1A typed knowledge envelope is now visible: verified/partial source scope, checked source labels, confidence reason and unavailable-source warnings render directly from structured answer metadata;
+- the Phase 4 40px primary-control rhythm and 11px meaningful support-text floor are applied across the Grounded workspace, with responsive/mobile rules and reduced-motion handling;
+- the composer, evidence controls and operational proposals share the same focus language established by Staff Phase 4.
+
+**Preservation boundary:** 4.1B does not change the Supabase schema, permission model, sync contract, Staff lifecycle, action-integrity confirmation rules, commit-time revalidation, Personal Activity snapshot semantics or the 4.1A source dependency model. Live authenticated visual acceptance and deployed partial-source simulation remain release validation gates.
+
+## V46.14 Grounded Phase 4.1A — Knowledge contract precision
+
+Grounded now treats source availability as an **intent-level dependency**, not a release-wide all-or-nothing condition. A failed Innovation Projects request no longer blocks a verified Leave or On-call answer when the resolved intent does not depend on Innovation. Consequential writes remain on their existing guarded confirmation and commit-time revalidation paths.
+
+Implemented knowledge-integrity changes:
+- exact source keys map the nine refreshed record families to each Grounded intent/follow-up;
+- degraded reads execute only when the sources required for that answer are verified;
+- every finalized factual answer carries a `grounded.answer.v1` knowledge envelope with required/checked/unavailable sources, evidence count, temporal scope and retrieval timestamp;
+- confidence now carries an explicit structured reason and source completeness can lower confidence independently of answer prose;
+- near-tie staff identity matches (within one fuzzy-token scoring step) trigger clarification rather than silently selecting the first person;
+- Teach vocabulary cannot override a conflicting strong built-in route, and the Teach UI blocks obvious strong-route collisions before persistence;
+- ranking/comparison answers now expose their current temporal meaning as **All recorded records** rather than leaving the reporting period implicit.
+
+**Preservation boundary:** no Supabase schema, Staff lifecycle, Leave/On-call/Rotation write semantics, permission model, sync architecture or Staff Phase 4 presentation contract changes in 4.1A. Grounded UI convergence is implemented immediately above as Phase 4.1B.
+
 
 ## Staff Phase 4 — reusable UI foundation
 
