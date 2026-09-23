@@ -2,7 +2,7 @@
 
 *The complete, integrated architecture: every idea that holds together, from the system running today to the full vision — structured so it can actually be built.*
 
-**Status:** Architecture v2.7 · Implementation checkpoint: V46.14 Staff Phase 3.1 DOM Template Safety · Supersedes Vision v0.1
+**Status:** Architecture v2.8 · Implementation checkpoint: V46.14 Staff Phase 4 Reusable UI Foundation · Supersedes Vision v0.1
 **First domain:** Pneumology, CHUAC (live production — current Staff directory: 23 real departmental people, real workflows)
 **Author's note:** This is the reference both of us build against. It is honest about what exists, what is buildable now, and what waits on infrastructure we don't yet have.
 
@@ -10,11 +10,11 @@
 
 ## Current implementation ledger — V46.14
 
-## Staff Phase 4 candidate — reusable UI foundation
+## Staff Phase 4 — reusable UI foundation
 
 The Staff directory and canonical Person profile now carry a parallel reusable `nd-*` component vocabulary while preserving every existing `staff46-*`, `pp2-*` and `pp3-*` compatibility hook. The extraction standardizes controls, focus treatment, operational table/status grammar, Person sections, record lists and support-text typography without changing lifecycle or runtime data behavior. `app.js`, Grounded and Personal Activity runtime files remain unchanged. See `UI-SYSTEM-V46.14.md`.
 
-This is still a **candidate** inside V46.14. Promotion depends on authenticated validation of Attending + Internal/Rotating/External Resident profiles and Table/People/Compact views.
+The Phase 4 implementation is now complete in the release artifact. Production acceptance remains gated by authenticated validation of Attending + Internal/Rotating/External Resident profiles and Table/People/Compact views; that live check is a deployment validation step, not unfinished architecture.
 
 
 ## V46.14 Staff Phase 3.1 — Browser DOM template safety hotfix
@@ -574,5 +574,5 @@ The lasting contribution isn't the AI. It's the knowledge architecture that make
 - Corrected the architecture maturity ladder: ACT is partial/real, not “not started.”
 - Set **Leave Action Integrity** as the next migration, followed by Resident Rotations.
 - Established this file as a required artifact in every future complete release package.
-**Phase 4 candidate automated validation:** 24 suites / 387 checks pass; production promotion is still gated by the four-profile authenticated comparison.
+**Phase 4 automated validation:** the complete historical suite remains green and the Phase 4 contract now includes accessibility/promotion hardening. Production acceptance is still gated by the four-profile authenticated comparison.
 

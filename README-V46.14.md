@@ -238,3 +238,12 @@ The Staff directory and canonical Person profile now carry a parallel reusable `
 This is still a **candidate** inside V46.14. Promotion depends on authenticated validation of Attending + Internal/Rotating/External Resident profiles and Table/People/Compact views.
 **Phase 4 automated validation:** 24 suites / 387 checks pass on the candidate, including DOM-template safety. Live authenticated four-profile and responsive comparison remains pending.
 
+
+
+## Staff Phase 4 — reusable UI foundation
+
+The Staff directory and canonical Person profile now expose a reusable `nd-*` presentation contract while preserving the existing `staff46-*`, `pp2-*` and `pp3-*` hooks. This phase is deliberately presentation-only: Staff lifecycle, Supabase schema, registration/edit behavior, Grounded, permissions and sync semantics are unchanged.
+
+Promotion hardening in this package fixes the malformed CSS comment boundary discovered in the candidate, adds ARIA state to the Table / People / Compact selector, adds Space-key activation to interactive directory records, uses roving focus and labelled panels in the Person tabs, and hardens overflow/mobile density. `app.js`, `grounded-core.js` and `activity45.js` remain byte-for-byte unchanged from the validated template-safe baseline.
+
+Automated validation now passes **24 suites / 393 checks** including the DOM-template guard and **24 dedicated Staff Phase 4 checks**. Production acceptance still requires authenticated review of one Attending, one Internal Resident, one Rotating Resident and one External Resident, plus Table / People / Compact at desktop, tablet and mobile widths.

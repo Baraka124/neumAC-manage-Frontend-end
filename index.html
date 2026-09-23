@@ -2118,7 +2118,7 @@
 
 
                 <!-- ============ CLINICAL STAFF VIEW · V46.14 STAFF PHASE 1 / PHASE 4 UI FOUNDATION ============ -->
-                <div v-if="currentView === 'medical_staff'" class="staff46-page nd-workspace" data-ui-foundation="staff-phase4">
+                <div v-if="currentView === 'medical_staff'" class="staff46-page nd-workspace" data-ui-foundation="staff-phase4" data-ui-phase="promoted">
 
                     <!-- Context inherited from cross-module navigation stays visible but never becomes a second breadcrumb bar. -->
                     <div v-if="staffFilters.department || staffFilters.residentCategory" class="staff46-context-strip nd-context-strip">
@@ -2169,15 +2169,15 @@
                     <!-- View/actions toolbar. View switches and operational actions are intentionally separated. -->
                     <div class="staff46-toolbar nd-toolbar">
                         <div class="staff46-view-switch nd-segmented" role="group" aria-label="Staff view">
-                            <button type="button" :class="{active:staffView==='table'}" @click="staffView='table'">
+                            <button type="button" :class="{active:staffView==='table'}" :aria-pressed="staffView==='table'" @click="staffView='table'">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
                                 Table
                             </button>
-                            <button type="button" :class="{active:staffView==='people'}" @click="staffView='people'">
+                            <button type="button" :class="{active:staffView==='people'}" :aria-pressed="staffView==='people'" @click="staffView='people'">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 20c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5M14 15c3.6 0 6 1.8 6 4.5"/></svg>
                                 People
                             </button>
-                            <button type="button" :class="{active:staffView==='compact'}" @click="staffView='compact'">
+                            <button type="button" :class="{active:staffView==='compact'}" :aria-pressed="staffView==='compact'" @click="staffView='compact'">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="5" width="18" height="5" rx="1"/><rect x="3" y="14" width="18" height="5" rx="1"/></svg>
                                 Compact
                             </button>
@@ -2223,7 +2223,7 @@
                             <option value="inactive">Inactive</option>
                         </select>
                         <button v-if="hasActiveStaffFilters" type="button" class="staff46-clear nd-filterbar__clear" @click="clearStaffFilters">Clear</button>
-                        <span v-if="hasActiveStaffFilters" class="staff46-result-count nd-filterbar__count">{{ filteredMedicalStaffAll.length }} results</span>
+                        <span v-if="hasActiveStaffFilters" class="staff46-result-count nd-filterbar__count" aria-live="polite">{{ filteredMedicalStaffAll.length }} results</span>
                     </div>
 
                     <!-- TABLE VIEW — first neumDesk operational-table specimen. -->
@@ -2239,7 +2239,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="staff in filteredMedicalStaff" :key="staff.id" @click="viewStaffDetails(staff)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(staff)">
+                                <tr v-for="staff in filteredMedicalStaff" :key="staff.id" role="button" @click="viewStaffDetails(staff)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(staff)" @keydown.space.prevent="viewStaffDetails(staff)">
                                     <td>
                                         <div class="staff46-person nd-identity">
                                             <div :class="nmAv(staff.full_name,staff.staff_type,'md')">{{ nmAvI(staff.full_name) }}</div>
@@ -2276,7 +2276,7 @@
                                     </td>
                                     <td class="staff46-actions-col" @click.stop>
                                         <details class="staff46-row-menu nd-menu nd-menu--row">
-                                            <summary aria-label="Staff actions" title="Staff actions">
+                                            <summary aria-label="Staff actions" title="Staff actions" aria-haspopup="menu">
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
                                             </summary>
                                             <div>
@@ -2308,7 +2308,7 @@
                     <div v-if="staffView==='people'" class="staff46-people nd-card-grid">
                         <template v-for="(item,idx) in compactStaffWithDividers" :key="item.id || 'people-divider-'+idx">
                             <div v-if="item._divider" class="staff46-people-divider"><span>{{ item._divider }}</span></div>
-                            <article v-else class="staff46-person-card nd-person-card" @click="viewStaffDetails(item)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(item)">
+                            <article v-else class="staff46-person-card nd-person-card" role="button" @click="viewStaffDetails(item)" tabindex="0" @keydown.enter.prevent="viewStaffDetails(item)" @keydown.space.prevent="viewStaffDetails(item)">
                                 <div class="staff46-person-card-head">
                                     <div :class="nmAv(item.full_name,item.staff_type,'lg')">{{ nmAvI(item.full_name) }}</div>
                                     <span :class="['staff46-state','nd-status','is-'+getStaffDirectoryRecordState(item).tone]">{{ getStaffDirectoryRecordState(item).label }}</span>
@@ -6429,7 +6429,7 @@ Use Section heading to structure longer clinical or research articles."></textar
         </transition>
         <transition name="drawer-slide">
             <div v-if="staffProfileModal.show && staffProfileModal.staff"
-                 class="profile-drawer person-profile-v2 nd-person-drawer" data-ui-foundation="staff-phase4"
+                 class="profile-drawer person-profile-v2 nd-person-drawer" data-ui-foundation="staff-phase4" data-ui-phase="promoted"
                  :class="'status-accent--' + (staffProfileModal.staff?.employment_status || 'active')"
                  role="dialog" aria-modal="true" aria-labelledby="pp2-profile-title" tabindex="-1"
                  @keydown="trapStaffProfileFocus">
@@ -6507,16 +6507,16 @@ Use Section heading to structure longer clinical or research articles."></textar
                     </div>
 
                     <nav class="pp2-tabs nd-tabs" aria-label="Person profile sections" role="tablist">
-                        <button role="tab" :aria-selected="staffProfileModal.activeTab==='overview'" aria-controls="pp2-panel-overview" :class="{active:staffProfileModal.activeTab==='overview'}" @click="staffProfileModal.activeTab='overview'">Overview</button>
-                        <button role="tab" :aria-selected="staffProfileModal.activeTab==='work'" aria-controls="pp2-panel-work" :class="{active:staffProfileModal.activeTab==='work'}" @click="staffProfileModal.activeTab='work'">Work &amp; training</button>
-                        <button role="tab" :aria-selected="staffProfileModal.activeTab==='schedule'" aria-controls="pp2-panel-schedule" :class="{active:staffProfileModal.activeTab==='schedule'}" @click="staffProfileModal.activeTab='schedule'">Schedule</button>
-                        <button v-if="canReadStaffResearch()" role="tab" :aria-selected="staffProfileModal.activeTab==='research'" aria-controls="pp2-panel-research" :class="{active:staffProfileModal.activeTab==='research'}" @click="staffProfileModal.activeTab='research'">Research</button>
-                        <button role="tab" :aria-selected="staffProfileModal.activeTab==='profile'" aria-controls="pp2-panel-profile" :class="{active:staffProfileModal.activeTab==='profile'}" @click="staffProfileModal.activeTab='profile'">Profile</button>
+                        <button id="pp2-tab-overview" role="tab" :aria-selected="staffProfileModal.activeTab==='overview'" :tabindex="staffProfileModal.activeTab==='overview' ? 0 : -1" aria-controls="pp2-panel-overview" :class="{active:staffProfileModal.activeTab==='overview'}" @click="staffProfileModal.activeTab='overview'">Overview</button>
+                        <button id="pp2-tab-work" role="tab" :aria-selected="staffProfileModal.activeTab==='work'" :tabindex="staffProfileModal.activeTab==='work' ? 0 : -1" aria-controls="pp2-panel-work" :class="{active:staffProfileModal.activeTab==='work'}" @click="staffProfileModal.activeTab='work'">Work &amp; training</button>
+                        <button id="pp2-tab-schedule" role="tab" :aria-selected="staffProfileModal.activeTab==='schedule'" :tabindex="staffProfileModal.activeTab==='schedule' ? 0 : -1" aria-controls="pp2-panel-schedule" :class="{active:staffProfileModal.activeTab==='schedule'}" @click="staffProfileModal.activeTab='schedule'">Schedule</button>
+                        <button v-if="canReadStaffResearch()" id="pp2-tab-research" role="tab" :aria-selected="staffProfileModal.activeTab==='research'" :tabindex="staffProfileModal.activeTab==='research' ? 0 : -1" aria-controls="pp2-panel-research" :class="{active:staffProfileModal.activeTab==='research'}" @click="staffProfileModal.activeTab='research'">Research</button>
+                        <button id="pp2-tab-profile" role="tab" :aria-selected="staffProfileModal.activeTab==='profile'" :tabindex="staffProfileModal.activeTab==='profile' ? 0 : -1" aria-controls="pp2-panel-profile" :class="{active:staffProfileModal.activeTab==='profile'}" @click="staffProfileModal.activeTab='profile'">Profile</button>
                     </nav>
 
                     <div class="pp2-body nd-person-body">
                         <!-- OVERVIEW -->
-                        <div v-if="staffProfileModal.activeTab==='overview'" class="pp2-view nd-view" id="pp2-panel-overview" role="tabpanel">
+                        <div v-if="staffProfileModal.activeTab==='overview'" class="pp2-view nd-view" id="pp2-panel-overview" role="tabpanel" aria-labelledby="pp2-tab-overview" tabindex="0">
                             <section v-if="isResidentType(staffProfileModal.staff.staff_type) && getResidentTrainingContext(staffProfileModal.staff)"
                                      class="pp2-section pp3-resident-overview nd-section"
                                      :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
@@ -6611,7 +6611,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                         <!-- WORK & TRAINING -->
-                        <div v-if="staffProfileModal.activeTab==='work'" class="pp2-view nd-view" id="pp2-panel-work" role="tabpanel">
+                        <div v-if="staffProfileModal.activeTab==='work'" class="pp2-view nd-view" id="pp2-panel-work" role="tabpanel" aria-labelledby="pp2-tab-work" tabindex="0">
                             <template v-if="isResidentType(staffProfileModal.staff.staff_type)">
                                 <section class="pp2-section pp3-training-context nd-section" :class="'is-' + getResidentProfileVariant(staffProfileModal.staff)">
                                     <div class="pp2-section-head nd-section-head">
@@ -6687,7 +6687,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                         <!-- SCHEDULE -->
-                        <div v-if="staffProfileModal.activeTab==='schedule'" class="pp2-view nd-view" id="pp2-panel-schedule" role="tabpanel">
+                        <div v-if="staffProfileModal.activeTab==='schedule'" class="pp2-view nd-view" id="pp2-panel-schedule" role="tabpanel" aria-labelledby="pp2-tab-schedule" tabindex="0">
                             <section class="pp2-section nd-section">
                                 <div class="pp2-section-head nd-section-head"><div><small>ON-CALL</small><h3>Duty schedule</h3></div><div class="pp2-section-actions"><button class="pp2-text-btn" @click="downloadStaffSchedule && downloadStaffSchedule(staffProfileModal.staff)">Download .ics</button><button v-if="hasPermission('oncall_schedule','create')" class="pp2-text-btn" @click="staffProfileModal.show=false; showAddOnCallModal(staffProfileModal.staff)">Schedule duty</button></div></div>
                                 <div v-if="getUpcomingOnCall(staffProfileModal.staff.id).length" class="pp2-list nd-record-list">
@@ -6715,7 +6715,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                         <!-- RESEARCH -->
-                        <div v-if="staffProfileModal.activeTab==='research'" class="pp2-view nd-view" id="pp2-panel-research" role="tabpanel">
+                        <div v-if="staffProfileModal.activeTab==='research'" class="pp2-view nd-view" id="pp2-panel-research" role="tabpanel" aria-labelledby="pp2-tab-research" tabindex="0">
                             <div v-if="staffProfileModal.loadingResearch" class="pp2-empty nd-empty-state">Loading research relationships…</div>
                             <template v-else-if="staffProfileModal.researchProfile">
                                 <section class="pp2-section nd-section" v-if="staffProfileModal.researchProfile.isCoordinator || (staffProfileModal.researchProfile.allResearchLines||[]).length">
@@ -6752,7 +6752,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                         <!-- PROFILE -->
-                        <div v-if="staffProfileModal.activeTab==='profile'" class="pp2-view nd-view" id="pp2-panel-profile" role="tabpanel">
+                        <div v-if="staffProfileModal.activeTab==='profile'" class="pp2-view nd-view" id="pp2-panel-profile" role="tabpanel" aria-labelledby="pp2-tab-profile" tabindex="0">
                             <section v-if="isResidentType(staffProfileModal.staff.staff_type)" class="pp2-section pp3-resident-record nd-section">
                                 <div class="pp2-section-head nd-section-head"><div><small>RESIDENT RECORD</small><h3>Programme &amp; origin data</h3></div></div>
                                 <div class="pp2-kv-grid nd-kv-grid">

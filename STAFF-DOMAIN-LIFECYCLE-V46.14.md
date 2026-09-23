@@ -168,10 +168,10 @@ Corrections:
 
 No Staff domain, resident lifecycle, backend or stored-data semantics changed.
 
-## Staff Phase 4 candidate — reusable UI foundation
+## Staff Phase 4 — reusable UI foundation
 
 The Staff directory and canonical Person profile now carry a parallel reusable `nd-*` component vocabulary while preserving every existing `staff46-*`, `pp2-*` and `pp3-*` compatibility hook. The extraction standardizes controls, focus treatment, operational table/status grammar, Person sections, record lists and support-text typography without changing lifecycle or runtime data behavior. `app.js`, Grounded and Personal Activity runtime files remain unchanged. See `UI-SYSTEM-V46.14.md`.
 
-This is still a **candidate** inside V46.14. Promotion depends on authenticated validation of Attending + Internal/Rotating/External Resident profiles and Table/People/Compact views.
-**Phase 4 candidate automated validation:** 24 suites / 387 checks pass. No lifecycle runtime file changed; live four-profile validation remains required.
+The Phase 4 implementation is complete in the release artifact. Authenticated four-profile and responsive checks remain the production acceptance gate; no lifecycle runtime behavior is changed by that gate.
+**Phase 4 automated validation:** the preserved historical suite and the expanded Phase 4 foundation checks pass. No lifecycle runtime file changed; live four-profile validation remains required before production acceptance.
 

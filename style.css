@@ -22498,7 +22498,8 @@ html body #app .leave14-workspace .filter-bar{background:#fff !important;border-
   .person-profile-v2 .pp3-route-arrow{font-size:0;}
   .person-profile-v2 .pp3-route-arrow::after{content:"↓";font-size:16px;}
 }
-   V46.14 · STAFF PHASE 4 CANDIDATE — REUSABLE UI FOUNDATION
+/* ======================================================================
+   V46.14 · STAFF PHASE 4 — REUSABLE UI FOUNDATION
    Presentation-only extraction from the validated Staff directory + Person
    surfaces. Legacy staff46-/pp2-/pp3- selectors remain as compatibility
    hooks; nd-* classes are the reusable neumDesk component contract.
@@ -22821,4 +22822,186 @@ html body #app .leave14-workspace .filter-bar{background:#fff !important;border-
   .nd-tabs button{scroll-snap-align:start;}
   .nd-person-head{min-height:auto;}
   .nd-record-row{gap:14px;}
+}
+
+
+/* ======================================================================
+   V46.14 · STAFF PHASE 4 — PROMOTION HARDENING
+   Accessibility, responsive density and visual-consistency hardening only.
+   No domain/runtime behavior is introduced here.
+   ====================================================================== */
+.nd-workspace{
+  --nd-page-max:1480px;
+  width:100%;
+  max-width:var(--nd-page-max);
+  margin-inline:auto;
+}
+.nd-context-strip button,
+.nd-filterbar__clear,
+.nd-menu summary,
+.nd-menu button{
+  -webkit-tap-highlight-color:transparent;
+}
+.nd-hero h2{
+  text-wrap:balance;
+}
+.nd-hero__copy p{
+  max-width:64ch;
+  text-wrap:pretty;
+}
+.nd-metric-strip button{
+  position:relative;
+}
+.nd-metric-strip button::after{
+  content:"";
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:0;
+  height:2px;
+  border-radius:999px 999px 0 0;
+  background:transparent;
+  transition:background var(--t);
+}
+.nd-metric-strip button:hover::after,
+.nd-metric-strip button:focus-visible::after{
+  background:rgba(92,214,216,.58);
+}
+.nd-toolbar,
+.nd-filterbar,
+.nd-table-shell,
+.nd-compact-list,
+.nd-person-card,
+.nd-section{
+  border-color:var(--nd-component-line);
+}
+.nd-filterbar select,
+.nd-search input{
+  font-size:13px;
+}
+.nd-search input::placeholder{
+  color:#8b989f;
+  opacity:1;
+}
+.nd-table{
+  table-layout:fixed;
+}
+.nd-table thead th{
+  background:#fbfcfb;
+  color:#62727c;
+}
+.nd-table tbody td{
+  vertical-align:middle;
+}
+.nd-table tbody tr[role="button"]{
+  cursor:pointer;
+}
+.nd-table tbody tr[role="button"]:hover{
+  background:var(--nd-component-hover);
+}
+.nd-identity strong,
+.nd-person-card h3{
+  overflow-wrap:anywhere;
+}
+.nd-context-list{
+  min-width:0;
+}
+.nd-context-item>div{
+  min-width:0;
+}
+.nd-context-item strong,
+.nd-context-item small{
+  overflow-wrap:anywhere;
+}
+.nd-status{
+  white-space:nowrap;
+}
+.nd-menu summary{
+  border-radius:8px;
+}
+.nd-person-card{
+  min-width:0;
+  outline:none;
+  transition:transform var(--t),border-color var(--t),box-shadow var(--t),background var(--t);
+}
+.nd-person-card:hover{
+  transform:translateY(-1px);
+  border-color:#cbd9d9;
+}
+.nd-person-card footer{
+  margin-top:auto;
+}
+.nd-compact-row[role="button"]{
+  cursor:pointer;
+}
+.nd-person-drawer{
+  overscroll-behavior:contain;
+}
+.nd-person-head>div:first-child{
+  min-width:0;
+}
+.nd-person-head h2,
+.nd-person-head p{
+  overflow-wrap:anywhere;
+}
+.nd-tabs{
+  scroll-padding-inline:16px;
+}
+.nd-tabs button[aria-selected="true"]{
+  color:#007f82;
+  border-bottom-color:#00aeb0;
+}
+.nd-tabs button[aria-selected="false"]{
+  color:#6a7887;
+}
+.nd-view{
+  width:100%;
+}
+.nd-section-head>div:first-child{
+  min-width:0;
+}
+.nd-section-head h3{
+  text-wrap:balance;
+}
+.nd-record-row>div:first-child{
+  min-width:0;
+}
+.nd-record-row strong,
+.nd-record-row small,
+.nd-record-meta{
+  overflow-wrap:anywhere;
+}
+.nd-empty-state{
+  color:var(--nd-person-muted);
+}
+.nd-person-drawer [role="tabpanel"]:focus{
+  outline:none;
+}
+
+@media (max-width:1180px){
+  .nd-workspace{--nd-page-max:none;}
+  .nd-table{min-width:900px;table-layout:auto;}
+}
+@media (max-width:980px){
+  .nd-hero__actions{width:100%;}
+  .nd-toolbar{gap:10px;}
+  .nd-person-head{gap:16px;}
+}
+@media (max-width:720px){
+  .nd-hero__actions .nd-btn{width:100%;justify-content:center;}
+  .nd-toolbar__actions{margin-left:0;}
+  .nd-filterbar__count{justify-self:start;}
+  .nd-person-head{align-items:flex-start;}
+  .nd-person-head-actions{flex:0 0 auto;}
+  .nd-tabs{padding-inline:4px;}
+  .nd-tabs button{min-width:max-content;padding-inline:13px;}
+  .nd-section-head{align-items:flex-start;}
+  .nd-record-row{flex-direction:column;align-items:flex-start;}
+  .nd-record-meta{max-width:none !important;text-align:left;justify-content:flex-start;}
+}
+@media (max-width:480px){
+  .nd-workspace{padding-inline:8px;}
+  .nd-eyebrow{letter-spacing:.085em;}
+  .nd-person-body{padding-inline:10px !important;}
+  .nd-section{border-radius:10px;}
 }

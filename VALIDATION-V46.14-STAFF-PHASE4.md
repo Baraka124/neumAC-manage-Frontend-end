@@ -2,7 +2,7 @@
 
 ## Automated result
 
-**24 regression suites passed · 387 checks/assertions passed.**
+**24 regression suites passed · 393 checks/assertions passed.**
 
 Coverage spans the preserved V43.1 → V46.14 history plus the new Staff Phase 4 UI-foundation suite:
 
@@ -24,7 +24,7 @@ Coverage spans the preserved V43.1 → V46.14 history plus the new Staff Phase 4
 
 ## Runtime preservation
 
-The Phase 4 candidate is presentation-only. These hashes match the template-safe complete baseline exactly:
+The Phase 4 implementation is presentation-only. These hashes match the template-safe complete baseline exactly:
 
 - `app.js` — `35f9bddab97ffc58bcaa0707184664be75e2ca82d34994d32b171a4c8631e10b`
 - `grounded-core.js` — `738ed64d64f02358079b94635591b63bf3f5a227301c5e46f473acc98697220b`
@@ -34,6 +34,15 @@ The Phase 4 candidate is presentation-only. These hashes match the template-safe
 
 The dedicated in-DOM Vue guard still passes: no raw `<` comparisons re-entered Vue-bound HTML attributes/interpolations, and the certificate fallback branch remains present after canonical class augmentation.
 
-## Still required before promotion
+## Still required before production acceptance
 
-Automated regression does **not** replace live authenticated validation. Phase 4 remains a candidate until one Attending, one Internal Resident, one Rotating Resident and one External Resident are compared in the deployed application, together with Staff Table / People / Compact views and desktop/tablet/mobile layout.
+Automated regression does **not** replace live authenticated validation. The Phase 4 artifact is implementation-complete, while production acceptance remains pending until one Attending, one Internal Resident, one Rotating Resident and one External Resident are compared in the deployed application, together with Staff Table / People / Compact views and desktop/tablet/mobile layout.
+
+
+## Promotion hardening added after the candidate
+
+- fixed the malformed opening comment boundary immediately before the `nd-*` foundation;
+- verified the final `style.css` parses with zero top-level CSS parser errors;
+- added view-switch ARIA state, keyboard Space activation, tab roving focus and labelled tab panels;
+- hardened long-content overflow and mobile record rows;
+- preserved `app.js`, `grounded-core.js` and `activity45.js` hashes.
