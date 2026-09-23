@@ -2,6 +2,10 @@
 
 V46.14 remains the active version. This revision completes the A→H Personal Activity programme **and** the subsequent implementation audit/hardening pass. The release stays on V46.14 deliberately: the feature is not promoted to another version until live authenticated browser and print validation confirms the workspace behaves as designed.
 
+## Access Gate 4.3 — login UI hierarchy
+
+The Access Gate now presents neumDesk as an authorised departmental workspace rather than an editorial landing page with a small form. The access column is wider and positioned higher; the sign-in state uses a stronger task hierarchy; loading shows Account → Permissions → Workspace progress; trusted-session resume remains a deliberate gate; public perspective navigation is suppressed while access is pending; and mobile keeps the authentication task first. Session persistence/security behavior remains exactly as defined by Access Gate 4.2.
+
 ## Grounded Phase 4.1B — intelligence UI convergence
 
 The current V46.14 artifact now includes Grounded Phase 4.1A/4.1B. Phase 4.1A tightens source dependencies, provenance/confidence and routing precision; Phase 4.1B makes those semantics visible through the shared Phase 4 UI system. Grounded is presented as a crisp department-intelligence workspace with structured source scope, evidence, proposal and context patterns rather than a separate cloud/glass interface. Dialog focus containment/return, a simplified primary header, 40px interaction rhythm and an 11px meaningful support-text floor are included.

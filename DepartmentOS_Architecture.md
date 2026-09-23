@@ -10,6 +10,12 @@
 
 ## Current implementation ledger — V46.14
 
+## V46.14 Access Gate 4.3 — Authoritative access hierarchy
+
+The login gate now gives the authentication task more visual and semantic weight without changing the Access Gate 4.2 session-integrity model. The right-hand access workspace is widened and moved higher in the reading order; sign-in, trusted-session resume and verification/opening states use explicit access language; the editorial neumAC panel is deliberately secondary and no longer exposes public-story navigation controls while departmental access is pending.
+
+**Preservation boundary:** `app.js`, `style.css`, authentication persistence semantics, permissions, Grounded, Staff and all operational modules are unchanged. 4.3 is an `index.html` + `entry46.css` UI checkpoint only.
+
 ## V46.14 Grounded Phase 4.1B — Intelligence UI convergence
 
 Grounded now adopts the reusable neumDesk Phase 4 visual/accessibility language without weakening the knowledge contract introduced in 4.1A. The visible surface is a crisp **department intelligence workspace**, not a floating cloud/glass product. Legacy `askbar-*`, `grounded-*`, `gr43-*` and `gr45-*` classes remain as compatibility hooks while new `nd-*` contracts become the reusable presentation layer.

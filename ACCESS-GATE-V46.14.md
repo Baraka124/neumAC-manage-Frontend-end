@@ -1,4 +1,27 @@
-# neumDesk V46.14 — Access Gate 4.2
+# neumDesk V46.14 — Access Gate 4.3
+
+## 4.3 UI hierarchy checkpoint
+
+Access Gate 4.3 preserves the 4.2 session-integrity contract and tightens only the access experience. The login surface is now treated as the front door to a departmental operating environment rather than a public/editorial landing page with a secondary form.
+
+### Visual contract
+
+- the access panel receives more visual weight and a 460px working column;
+- the editorial panel remains distinctive but no longer dominates the authentication task;
+- public-story navigation controls are suppressed on the access gate while the neumAC identity, selected perspective and artwork remain;
+- sign-in copy explicitly names the departmental workspace, authorised records, operational tools and research workflows;
+- the primary CTA is **Sign in to neumDesk**;
+- `Remember my email` remains distinct from the optional 12-hour trusted-browser choice;
+- signed-out, verifying/opening, trusted-session resume, unavailable and access-help states retain their separate semantics;
+- loading uses Account → Permissions → Workspace progress rather than a generic spinner;
+- restricted-access and audit language is visible in the access footer;
+- mobile places the access task before the editorial panel.
+
+### Preservation boundary
+
+4.3 changes only `index.html` access copy/cache metadata and `entry46.css`. `app.js`, `style.css`, Grounded, Staff, Clinical Units, session persistence rules, permissions, Supabase schema and write workflows are unchanged from Access Gate 4.2 / Grounded 4.1E.
+
+---
 
 ## Why this checkpoint exists
 

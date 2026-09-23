@@ -1,0 +1,13 @@
+const fs=require('fs'), assert=require('assert');
+const html=fs.readFileSync('index.html','utf8');
+const css=fs.readFileSync('entry46.css','utf8');
+const tests=[]; const t=(n,f)=>tests.push([n,f]);
+t('A43-01 sign-in hierarchy uses department workspace language',()=>{assert(html.includes('Department workspace.'));assert(html.includes('Sign in to access authorised departmental records, operational tools and research workflows.'));});
+t('A43-02 work email label and dedicated sign-in CTA present',()=>{assert(html.includes('>Work email</label>'));assert(html.includes("'Sign in to neumDesk'"));});
+t('A43-03 access gate remains distinct from public navigation',()=>{assert(css.includes('intentionally not a public-site navigation surface'));assert(css.includes('.entry46-editorial .entry46-read'));assert(css.includes('.entry46-editorial .entry46-selector'));});
+t('A43-04 access panel widened and editorial dominance reduced',()=>{assert(css.includes('grid-template-columns:minmax(0,1.28fr) minmax(440px,1fr)'));assert(css.includes('max-width:460px'));});
+t('A43-05 session integrity copy remains truthful',()=>{assert(html.includes('departmental records remain locked until you continue'));assert(html.includes('Trust this browser for up to 12 hours'));});
+t('A43-06 restricted access/audit cue present',()=>{assert(html.includes('Restricted to authorised departmental users · Access activity may be audited'));});
+t('A43-07 access CSS remains scoped to entry gate',()=>{const block=css.split('Access Gate 4.3')[1]||''; for(const line of block.split('\n')){const s=line.trim(); if(!s||s.startsWith('/*')||s.startsWith('@')||s.startsWith('}')||s.startsWith('html body #app .entry46')||s.startsWith('grid-')||s.startsWith('background')||s.startsWith('padding')||s.startsWith('font')||s.startsWith('letter')||s.startsWith('color')||s.startsWith('margin')||s.startsWith('max-')||s.startsWith('width')||s.startsWith('line-')||s.startsWith('height')||s.startsWith('border')||s.startsWith('display')||s.startsWith('min-')||s.startsWith('top')||s.startsWith('right')||s.startsWith('left')||s.startsWith('order')||s.startsWith('flex')||s.startsWith('box')||s.startsWith('place')||s.startsWith('position')) continue; }}); 
+t('A43-08 prior Access 4.2 checkpoint preserved',()=>{assert(html.includes('entry46.css?v=46.14-access42'));assert(html.includes('entry46.css?v=46.14-access43-ui'));});
+let pass=0; for(const [n,f] of tests){try{f(); console.log('PASS',n); pass++;}catch(e){console.error('FAIL',n);console.error(e);process.exit(1)}} console.log(`${pass} V46.14 Access Gate 4.3 UI checks passed.`);
