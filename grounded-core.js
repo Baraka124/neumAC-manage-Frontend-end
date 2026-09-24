@@ -1,4 +1,4 @@
-/* neumDesk V46.14 · Phase 5.1.2 · Production frontend · 2026-09-24 */
+/* neumDesk V46.14 · Phase 5.3E · Grounded permission-aware retrieval · 2026-09-24 */
 (function(root, factory){
   const api = factory()
   if (typeof module === 'object' && module.exports) module.exports = api
@@ -6,7 +6,7 @@
 })(typeof window !== 'undefined' ? window : globalThis, function(){
   'use strict'
 
-  const VERSION = '46.11'
+  const VERSION = '46.14-5.3E'
   const ACCESS = Object.freeze({ READ:'read', PROPOSE:'propose', WRITE:'write' })
   const TRACE_KEY = 'neumdesk:grounded:traces:v4611'
   const TRACE_LIMIT = 80
@@ -115,7 +115,7 @@
   const getSessionMemory = (key) => readSessionMemory()[key]
   const clearSessionMemory = () => { try { storage()?.removeItem(SESSION_MEMORY_KEY) } catch {} }
 
-  const createToolRegistry = ({ permissionCheck }={}) => {
+  const createToolRegistry = ({ permissionCheck, authorityCheck }={}) => {
     const defs = new Map()
     const register = (def) => {
       if (!def || !def.name || typeof def.run !== 'function') throw new Error('Grounded tool needs name + run()')
@@ -130,6 +130,20 @@
       const def = defs.get(name)
       if (!def) { const e=new Error(`Unknown Grounded tool: ${name}`); e.code='GROUND_TOOL_NOT_FOUND'; throw e }
       const requested = def.access || ACCESS.READ
+      // Phase 5.3E: the canonical authority plan is checked before the legacy
+      // module bridge. Grounded must fail closed when a source/action is not
+      // authorised; the legacy check remains only for transitional routes.
+      if (typeof authorityCheck === 'function') {
+        const verdict = authorityCheck(def, input, opts)
+        const allowed = verdict === true || verdict?.allowed === true
+        if (!allowed) {
+          const e = new Error(verdict?.reason || `Authority denied for ${name}`)
+          e.code = verdict?.code || 'GROUND_AUTHORITY_DENIED'
+          e.authority = sanitize(verdict || null)
+          if (opts.traceId) addTraceEvent(opts.traceId,'tool_blocked',{tool:name,access:requested,authority:sanitize(verdict||null)})
+          throw e
+        }
+      }
       const permissionAction = requested === ACCESS.WRITE ? 'write' : 'read'
       if (def.module && typeof permissionCheck === 'function' && !permissionCheck(def.module, permissionAction)) {
         const e = new Error(`Permission denied for ${name}`); e.code='GROUND_PERMISSION_DENIED'

@@ -1,4 +1,4 @@
-/* neumDesk V46.14 · Phase 5.1.2 · Production frontend · 2026-09-24 */
+// neumDesk V46.14 · Phase 5.3E · Grounded permission-aware retrieval · 2026-09-24
 document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
@@ -1493,7 +1493,17 @@ document.addEventListener('DOMContentLoaded', () => {
               }
               throw new Error('Session expired. Please log in again.')
             }
-            if (res.status === 403) throw new Error(endpoint === '/api/auth/login' ? 'This account cannot sign in. Contact your departmental administrator.' : 'You do not have permission to perform this action.')
+            if (res.status === 403) {
+              const errBody = await res.text().catch(() => '')
+              let payload = null
+              try { payload = errBody ? JSON.parse(errBody) : null } catch {}
+              const apiError = new Error(endpoint === '/api/auth/login'
+                ? 'This account cannot sign in. Contact your departmental administrator.'
+                : (payload?.message || 'You do not have permission to perform this action.'))
+              apiError.status = 403
+              apiError.payload = payload
+              throw apiError
+            }
             if (res.status === 429) throw new Error('Too many attempts. Please wait a few minutes before trying again.')
             if (res.status === 404) throw new Error('The requested resource was not found.')
             if (res.status === 503) {
@@ -1742,6 +1752,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       async reviewRotationDecision(payload) {
         return this.request('/api/rotations/review', { method:'POST', body: payload, timeoutMs:12000 })
+      }
+      async reviewLeaveDecision(payload) {
+        return this.request('/api/absence-records/review', { method:'POST', body: payload, timeoutMs:12000 })
+      }
+      async reviewOnCallDecision(payload) {
+        return this.request('/api/oncall/review', { method:'POST', body: payload, timeoutMs:12000 })
       }
       async getAllDepartments() { return this.getList('/api/departments?include_inactive=true') }
       async getDepartmentImpact(id) { return this.request(`/api/departments/${id}/impact`) }
@@ -2817,7 +2833,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.4 useOnCall ============
-    function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences, onCallSchedule: onCallScheduleRef }) {
+    function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences, onCallSchedule: onCallScheduleRef, hasPermission }) {
       const onCallSchedule = onCallScheduleRef || ref([])
             const todaysOnCall = ref([])
       const loadingSchedule = ref(false)
@@ -2979,6 +2995,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const onCallModal = reactive({
         show: false, mode: 'add',
         showBackup: false,  // progressive disclosure — expands when user clicks "+ Assign backup"
+        decision: null, decisionChecking: false, decisionError: '', overrideAllowed: false, overrideReason: '',
         form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', coverage_area_id: '', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_notes: '' }
       })
 
@@ -3174,6 +3191,40 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { todaysOnCall.value = []; console.error('[neumDesk] loadTodaysOnCall failed:', e) }
       }
 
+      let onCallDecisionSeq = 0
+      const onCallDecisionLocal = () => {
+        const f=onCallModal.form
+        if(!window.Decision51?.reviewOnCall || !f.primary_physician_id || !f.duty_date) return null
+        const staff=(medicalStaff.value||[]).find(x=>String(x.id)===String(f.primary_physician_id))||null
+        const backup=f.backup_physician_id?(medicalStaff.value||[]).find(x=>String(x.id)===String(f.backup_physician_id))||null:null
+        const area=(coverageAreas?.value||[]).find(x=>String(x.id)===String(f.coverage_area_id))||null
+        return window.Decision51.reviewOnCall({
+          proposal:{staffId:f.primary_physician_id,backupId:f.backup_physician_id||null,date:f.duty_date,coverageAreaId:f.coverage_area_id||null,shiftType:f.shift_type||'primary_call',startTime:f.start_time,endTime:f.end_time,excludeId:onCallModal.mode==='edit'?f.id:null},
+          staff,backup,coverageArea:area,absences:absences?.value||[],oncall:onCallSchedule.value||[],
+          action:onCallModal.mode==='edit'?'update':'assign',sourceState:{staff:'loaded',leave:'loaded',oncall:'loaded',coverageAreas:'loaded'}
+        })
+      }
+      const refreshOnCallDecision = async () => {
+        const f=onCallModal.form
+        const complete=!!(onCallModal.show&&f.primary_physician_id&&f.duty_date)
+        onCallModal.decisionError=''
+        if(!complete){onCallModal.decision=null;onCallModal.decisionChecking=false;return}
+        onCallModal.decision=onCallDecisionLocal()
+        const seq=++onCallDecisionSeq
+        onCallModal.decisionChecking=true
+        try{
+          const r=await API.reviewOnCallDecision({duty_date:Utils.normalizeDate(f.duty_date),shift_type:f.shift_type||'primary_call',start_time:f.start_time||'15:00',end_time:f.end_time||'08:00',primary_physician_id:f.primary_physician_id,backup_physician_id:f.backup_physician_id||null,coverage_area_id:f.coverage_area_id||null,exclude_id:onCallModal.mode==='edit'?f.id:null})
+          if(seq!==onCallDecisionSeq)return
+          onCallModal.decision=r?.decision||onCallModal.decision
+          onCallModal.overrideAllowed=!!r?.override_allowed
+        }catch(e){
+          if(seq!==onCallDecisionSeq)return
+          onCallModal.overrideAllowed=hasPermission?.('oncall_exceptions','write')||false
+          onCallModal.decisionError='Live verification is temporarily unavailable. The loaded-record review is shown; save will recheck before writing.'
+        }finally{if(seq===onCallDecisionSeq)onCallModal.decisionChecking=false}
+      }
+      watch(()=>[onCallModal.show,onCallModal.mode,onCallModal.form.duty_date,onCallModal.form.shift_type,onCallModal.form.coverage_area_id,onCallModal.form.primary_physician_id,onCallModal.form.backup_physician_id,onCallModal.form.start_time,onCallModal.form.end_time],Utils.debounce(()=>{if(onCallModal.show)refreshOnCallDecision()},180))
+
       const showAddOnCallModal = (physician = null) => {
         clearAll('oncall')
         onCallModal.mode = 'add'
@@ -3186,7 +3237,9 @@ document.addEventListener('DOMContentLoaded', () => {
           backup_physician_id: '', coverage_notes: ''
           // schedule_id is generated server-side — do not set here
         })
+        onCallModal.decision=null; onCallModal.decisionError=''; onCallModal.overrideReason=''; onCallModal.overrideAllowed=false
         onCallModal.show = true
+        Vue.nextTick(() => refreshOnCallDecision())
       }
 
       const editOnCallSchedule = (schedule) => {
@@ -3201,78 +3254,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Auto-expand backup field if one is already assigned
         onCallModal.showBackup = !!(schedule.backup_physician_id)
+        onCallModal.decision=null; onCallModal.decisionError=''; onCallModal.overrideReason=''; onCallModal.overrideAllowed=false
         onCallModal.show = true
+        Vue.nextTick(() => refreshOnCallDecision())
       }
 
       const saveOnCallSchedule = async (saving) => {
         if (!validateOnCall(onCallModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
-
-        // ── Absence conflict check ──────────────────────────────────────────
-        const f0 = onCallModal.form
-        if (f0.primary_physician_id && f0.duty_date) {
-          const dutyDate  = Utils.normalizeDate(f0.duty_date)
-          const absList   = absences?.value || []
-          const onAbsence = absList.filter(a => {
-            if (a.staff_member_id !== f0.primary_physician_id) return false
-            const s = Utils.absenceEffectiveStart(a)
-            const e = Utils.absenceEffectiveEnd(a)
-            return dutyDate >= s && dutyDate <= e && !['cancelled','returned_to_duty'].includes(a.current_status)
-          })
-          if (onAbsence.length > 0) {
-            const abs     = onAbsence[0]
-            const staffName = medicalStaff.value.find(x => x.id === f0.primary_physician_id)?.full_name || 'This physician'
-            const reason  = abs.absence_reason?.replace(/_/g,' ') || 'absence'
-            const fmt     = (d) => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-            let proceed = false
-            await new Promise((resolve) => {
-              showConfirmation({
-                title: '⚠️ Physician On Absence',
-                message: `${staffName} is recorded as absent on this date (${reason}).`,
-                details: `Absence period: ${fmt(abs.start_date)} → ${fmt(abs.end_date)}`,
-                icon: 'fa-user-slash',
-                confirmButtonText: 'Schedule Anyway',
-                confirmButtonClass: 'btn-danger',
-                onConfirm: () => { proceed = true; resolve() },
-                onCancel:  () => resolve()
-              })
-            })
-            if (!proceed) { saving.value = false; return }
-          }
-        }
-
+        if (saving?.value) return
         saving.value = true
         try {
           const f = onCallModal.form
-          const data = {
+          const reviewPayload = {
             duty_date: Utils.normalizeDate(f.duty_date), shift_type: f.shift_type || 'primary_call',
             start_time: f.start_time || '15:00', end_time: f.end_time || '08:00',
             primary_physician_id: f.primary_physician_id, backup_physician_id: f.backup_physician_id || null,
-            coverage_notes: f.coverage_notes || '',
-            coverage_area_id: f.coverage_area_id || null
-            // schedule_id omitted — backend always generates a collision-safe ID
+            coverage_area_id: f.coverage_area_id || null,
+            exclude_id: onCallModal.mode === 'edit' ? f.id : null
+          }
+          const reviewed = await API.reviewOnCallDecision(reviewPayload)
+          onCallModal.decision = reviewed?.decision || onCallModal.decision
+          onCallModal.overrideAllowed = !!reviewed?.override_allowed
+          if (onCallModal.decision && !onCallModal.decision.canCommit) {
+            onCallModal.decisionError = 'Resolve the blocking item below before saving.'
+            return
+          }
+          if (onCallModal.decision?.requiresOverride) {
+            if (!onCallModal.overrideAllowed) { onCallModal.decisionError='This duty needs an authorised on-call exception. You do not have approval permission.'; return }
+            if (String(onCallModal.overrideReason||'').trim().length < 8) { onCallModal.decisionError='Add a short reason for the exception before continuing.'; return }
+          }
+          const data = {
+            duty_date: reviewPayload.duty_date, shift_type: reviewPayload.shift_type,
+            start_time: reviewPayload.start_time, end_time: reviewPayload.end_time,
+            primary_physician_id: reviewPayload.primary_physician_id, backup_physician_id: reviewPayload.backup_physician_id,
+            coverage_notes: f.coverage_notes || '', coverage_area_id: reviewPayload.coverage_area_id
+          }
+          if (onCallModal.decision?.requiresOverride) data.decision_override = {
+            accepted:true, reason:String(onCallModal.overrideReason||'').trim(),
+            review_contract:onCallModal.decision.contract||'decision51.oncall.v1',
+            finding_codes:(onCallModal.decision.findings||[]).filter(x=>x.severity==='warning').map(x=>x.code)
           }
           if (onCallModal.mode === 'add') {
-            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, null, data.coverage_area_id);
-            if (exists) { showToast('Duplicate', `A ${data.shift_type === 'primary_call' ? 'Primary Call' : data.shift_type === 'backup_call' ? 'Backup Call' : 'Float'} shift already exists for this date${data.coverage_area_id ? ' and area' : ''}.`, 'warning'); saving.value = false; return; }
-          }
-          if (onCallModal.mode === 'edit') {
-            const exists = await checkExistingSchedule(data.duty_date, data.shift_type, f.id, data.coverage_area_id);
-            if (exists) { showToast('Duplicate Schedule', `Another ${data.shift_type === 'primary_call' ? 'primary' : 'backup'} shift already exists for this date.`, 'warning'); saving.value = false; return; }
-          }
-          if (onCallModal.mode === 'add') {
-            const result = await API.createOnCall(data);
-            onCallSchedule.value.unshift({ ...result, duty_date: Utils.normalizeDate(result.duty_date) });
-            showToast('Success', 'On-call scheduled', 'success');
+            const result = await API.createOnCall(data)
+            onCallSchedule.value.unshift({ ...result, duty_date: Utils.normalizeDate(result.duty_date) })
+            showToast('On-call scheduled', onCallModal.decision?.requiresOverride ? 'Duty saved with an authorised exception' : 'Duty saved after operational review', 'success')
           } else {
-            const result = await API.updateOnCall(f.id, data);
-            const idx = onCallSchedule.value.findIndex(s => s.id === result.id);
-            if (idx !== -1) onCallSchedule.value[idx] = { ...result, duty_date: Utils.normalizeDate(result.duty_date) };
-            showToast('Success', 'On-call updated', 'success');
+            const result = await API.updateOnCall(f.id, data)
+            const idx = onCallSchedule.value.findIndex(s => s.id === result.id)
+            if (idx !== -1) onCallSchedule.value[idx] = { ...result, duty_date: Utils.normalizeDate(result.duty_date) }
+            showToast('On-call updated', onCallModal.decision?.requiresOverride ? 'Changes saved with an authorised exception' : 'Changes saved after operational review', 'success')
           }
-          onCallModal.show = false; clearAll('oncall'); await loadTodaysOnCall();
+          onCallModal.show = false; clearAll('oncall'); await loadTodaysOnCall(); await loadOnCallSchedule()
         } catch (e) {
-          if (e.message && e.message.includes('duplicate key')) showToast('Error', 'A schedule for this shift type already exists on this date', 'error');
-          else showToast('Error', e.message || 'Failed to save on-call', 'error');
+          if (e?.payload?.decision) {
+            onCallModal.decision=e.payload.decision
+            onCallModal.overrideAllowed=e.payload.override_allowed ?? onCallModal.overrideAllowed
+            onCallModal.decisionError=e.payload.message||'The duty state changed during verification. Review the updated findings below.'
+          } else onCallModal.decisionError=e.message||'Failed to save on-call duty'
         } finally { saving.value = false }
       }
 
@@ -4382,13 +4420,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.6 useAbsences ============
-    function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule, absences: absencesRef }) {
+    function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule, rotations, absences: absencesRef, hasPermission }) {
       const absences = absencesRef || ref([])
             const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', showPast: false })
             const debouncedAbsenceSearch = ref('')
             watch(() => absenceFilters.search, Utils.debounce(v => { debouncedAbsenceSearch.value = v }, 250))
       const absenceModal = reactive({
         show: false, mode: 'add',
+        decision: null, decisionChecking: false, decisionError: '', overrideAllowed: false, overrideReason: '',
         form: {
           staff_member_id: '', absence_type: 'planned', absence_reason: 'vacation',
           start_date: Utils.normalizeDate(new Date()),
@@ -4554,39 +4593,55 @@ document.addEventListener('DOMContentLoaded', () => {
       const loadAbsences = async () => {
         try {
           const raw = await API.getAbsences()
-          const stalePatches = []
-
-          // Filter cancelled (soft-deleted) records — they must not reappear after refresh
+          // Phase 5.2 integrity rule: loading records is read-only. We may derive a
+          // display status from dates, but opening the Leave workspace must never
+          // perform hidden writes merely to "tidy" historical state.
           const active = raw.filter(a => a.current_status !== 'cancelled')
-
           absences.value = active.map(a => {
-            const normalized = { ...a, start_date: Utils.normalizeDate(a.start_date), end_date: Utils.normalizeDate(a.end_date) }
-            const derived = deriveAbsenceStatus(normalized)
-            // Silently patch stale records (ended but still 'currently_absent' in DB)
-            // deriveAbsenceStatus returns 'returned_to_duty' for past absences — never 'completed'
-            if (derived === 'returned_to_duty' &&
-                a.current_status &&
-                a.current_status !== 'returned_to_duty' &&
-                a.current_status !== 'cancelled') {
-              const patch = {
-                staff_member_id:   a.staff_member_id,
-                absence_type:      a.absence_type,
-                absence_reason:    a.absence_reason,
-                start_date:        Utils.normalizeDate(a.start_date),
-                end_date:          Utils.normalizeDate(a.end_date),
-                coverage_arranged: a.coverage_arranged || false,
-                covering_staff_id: a.covering_staff_id || null,
-                coverage_notes:    a.coverage_notes || '',
-                hod_notes:         a.hod_notes || ''
-              }
-              stalePatches.push(API.updateAbsence(a.id, patch).catch(() => {}))
+            const normalized = {
+              ...a,
+              start_date: Utils.normalizeDate(a.start_date),
+              end_date: Utils.normalizeDate(a.end_date),
+              actual_start_date: a.actual_start_date ? Utils.normalizeDate(a.actual_start_date) : null,
+              actual_return_date: a.actual_return_date ? Utils.normalizeDate(a.actual_return_date) : null
             }
-            return { ...normalized, current_status: derived }
+            return { ...normalized, current_status: deriveAbsenceStatus(normalized) }
           })
-
-          if (stalePatches.length) await Promise.all(stalePatches)
         } catch { showToast('Error', 'Failed to load absences', 'error') }
       }
+
+      let absenceDecisionSeq = 0
+      const absenceDecisionLocal = () => {
+        const f=absenceModal.form
+        if(!window.Decision51?.reviewLeave || !f.staff_member_id || !f.start_date || !f.end_date) return null
+        const staff=(medicalStaff.value||[]).find(x=>String(x.id)===String(f.staff_member_id))||null
+        const covering=f.covering_staff_id?(medicalStaff.value||[]).find(x=>String(x.id)===String(f.covering_staff_id))||null:null
+        return window.Decision51.reviewLeave({
+          proposal:{staffId:f.staff_member_id,coveringStaffId:f.covering_staff_id||null,start:f.start_date,end:f.end_date,absenceType:f.absence_type||'planned',reason:f.absence_reason||'other',coverageArranged:!!f.coverage_arranged,excludeId:absenceModal.mode==='edit'?f.id:null},
+          staff,coveringStaff:covering,absences:absences.value||[],rotations:rotations?.value||[],oncall:onCallSchedule?.value||[],
+          action:absenceModal.mode==='edit'?'update':'record',sourceState:{staff:'loaded',leave:'loaded',rotations:'loaded',oncall:'loaded'}
+        })
+      }
+      const refreshAbsenceDecision = async () => {
+        const f=absenceModal.form
+        const complete=!!(absenceModal.show&&f.staff_member_id&&f.start_date&&f.end_date)
+        absenceModal.decisionError=''
+        if(!complete){absenceModal.decision=null;absenceModal.decisionChecking=false;return}
+        absenceModal.decision=absenceDecisionLocal()
+        const seq=++absenceDecisionSeq
+        absenceModal.decisionChecking=true
+        try{
+          const r=await API.reviewLeaveDecision({staff_member_id:f.staff_member_id,absence_type:f.absence_type||'planned',absence_reason:f.absence_reason||'other',start_date:Utils.normalizeDate(f.start_date),end_date:Utils.normalizeDate(f.end_date),coverage_arranged:!!f.coverage_arranged,covering_staff_id:f.covering_staff_id||null,exclude_id:absenceModal.mode==='edit'?f.id:null})
+          if(seq!==absenceDecisionSeq)return
+          absenceModal.decision=r?.decision||absenceModal.decision
+          absenceModal.overrideAllowed=!!r?.override_allowed
+        }catch(e){
+          if(seq!==absenceDecisionSeq)return
+          absenceModal.overrideAllowed=hasPermission?.('leave_exceptions','write')||false
+          absenceModal.decisionError='Live verification is temporarily unavailable. The loaded-record review is shown; save will recheck before writing.'
+        }finally{if(seq===absenceDecisionSeq)absenceModal.decisionChecking=false}
+      }
+      watch(()=>[absenceModal.show,absenceModal.mode,absenceModal.form.staff_member_id,absenceModal.form.start_date,absenceModal.form.end_date,absenceModal.form.absence_type,absenceModal.form.absence_reason,absenceModal.form.coverage_arranged,absenceModal.form.covering_staff_id],Utils.debounce(()=>{if(absenceModal.show)refreshAbsenceDecision()},180))
 
       const showAddAbsenceModal = (staff = null) => {
         clearAll('absence'); absenceModal.mode = 'add'
@@ -4595,7 +4650,9 @@ document.addEventListener('DOMContentLoaded', () => {
           start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 7 * 86400000)),
           covering_staff_id: '', coverage_notes: '', coverage_arranged: false, hod_notes: ''
         })
+        absenceModal.decision=null; absenceModal.decisionError=''; absenceModal.overrideReason=''; absenceModal.overrideAllowed=false
         absenceModal.show = true
+        Vue.nextTick(() => refreshAbsenceDecision())
       }
 
       const editAbsence = (absence) => {
@@ -4613,55 +4670,34 @@ document.addEventListener('DOMContentLoaded', () => {
           hod_notes:          absence.hod_notes          || '',
           current_status:     absence.current_status     || null
         })
+        absenceModal.decision=null; absenceModal.decisionError=''; absenceModal.overrideReason=''; absenceModal.overrideAllowed=false
         absenceModal.show = true
+        Vue.nextTick(() => refreshAbsenceDecision())
       }
 
       const saveAbsence = async (saving) => {
         if (!validateAbsence(absenceModal.form)) { showToast('Validation Error', 'Please fix the highlighted fields', 'error'); return }
         if (saving?.value) return
-        if (saving) saving.value = true
-
-        // ── On-call conflict check ──────────────────────────────────────────
-        const f = absenceModal.form
-        if (f.staff_member_id && f.start_date && f.end_date) {
-          const absStart = Utils.normalizeDate(f.start_date)
-          const absEnd   = Utils.normalizeDate(f.end_date)
-          const conflicts = (onCallSchedule?.value || []).filter(s => {
-            const d = Utils.normalizeDate(s.duty_date)
-            return d >= absStart && d <= absEnd &&
-              (s.primary_physician_id === f.staff_member_id || s.backup_physician_id === f.staff_member_id)
-          })
-          if (conflicts.length > 0) {
-            const fmt    = (d) => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
-            const lines  = conflicts.slice(0, 4).map(s => {
-              const role = s.primary_physician_id === f.staff_member_id ? 'Primary' : 'Backup'
-              return `${fmt(s.duty_date)} · ${role} · ${s.start_time}–${s.end_time}`
-            }).join('\n')
-            const more   = conflicts.length > 4 ? `\n+${conflicts.length - 4} more` : ''
-            const staffName = medicalStaff.value.find(x => x.id === f.staff_member_id)?.full_name || 'This physician'
-            await new Promise((resolve) => {
-              showConfirmation({
-                title: '⚠️ On-Call Conflict Detected',
-                message: `${staffName} has ${conflicts.length} on-call shift${conflicts.length > 1 ? 's' : ''} during this absence period that will be left uncovered:`,
-                details: lines + more,
-                icon: 'fa-phone-slash',
-                confirmButtonText: 'Save Anyway',
-                confirmButtonClass: 'btn-danger',
-                onConfirm: () => resolve(true),
-                onCancel:  () => resolve(false)
-              })
-            }).then(async (confirmed) => {
-              if (!confirmed) { saving.value = false; return }
-              await _doSaveAbsence(saving)
-            })
-            return
+        saving.value = true
+        try {
+          const f=absenceModal.form
+          const reviewPayload={staff_member_id:f.staff_member_id,absence_type:f.absence_type||'planned',absence_reason:f.absence_reason||'other',start_date:Utils.normalizeDate(f.start_date),end_date:Utils.normalizeDate(f.end_date),coverage_arranged:!!f.coverage_arranged,covering_staff_id:f.covering_staff_id||null,exclude_id:absenceModal.mode==='edit'?f.id:null}
+          const reviewed=await API.reviewLeaveDecision(reviewPayload)
+          absenceModal.decision=reviewed?.decision||absenceModal.decision
+          absenceModal.overrideAllowed=!!reviewed?.override_allowed
+          if(absenceModal.decision&&!absenceModal.decision.canCommit){absenceModal.decisionError='Resolve the blocking item below before saving.';return}
+          if(absenceModal.decision?.requiresOverride){
+            if(!absenceModal.overrideAllowed){absenceModal.decisionError='This leave needs an authorised exception. You do not have leave-exception approval permission.';return}
+            if(String(absenceModal.overrideReason||'').trim().length<8){absenceModal.decisionError='Add a short reason for the exception before continuing.';return}
           }
-        }
-        await _doSaveAbsence(saving)
+          await _doSaveAbsence(saving)
+        }catch(e){
+          if(e?.payload?.decision){absenceModal.decision=e.payload.decision;absenceModal.overrideAllowed=e.payload.override_allowed??absenceModal.overrideAllowed;absenceModal.decisionError=e.payload.message||'The leave state changed during verification. Review the updated findings below.'}
+          else absenceModal.decisionError=e.message||'Failed to save absence'
+        }finally{saving.value=false}
       }
 
       const _doSaveAbsence = async (saving) => {
-        saving.value = true
         try {
           const f = absenceModal.form
           const data = {
@@ -4670,12 +4706,13 @@ document.addEventListener('DOMContentLoaded', () => {
             end_date: Utils.normalizeDate(f.end_date), coverage_arranged: f.coverage_arranged || false,
             covering_staff_id: f.covering_staff_id || null, coverage_notes: f.coverage_notes || '', hod_notes: f.hod_notes || ''
           }
+          if(absenceModal.decision?.requiresOverride) data.decision_override={accepted:true,reason:String(absenceModal.overrideReason||'').trim(),review_contract:absenceModal.decision.contract||'decision51.leave.v1',finding_codes:(absenceModal.decision.findings||[]).filter(x=>x.severity==='warning').map(x=>x.code)}
           const normalize = a => ({ ...(a?.data || a), start_date: Utils.normalizeDate((a?.data || a).start_date), end_date: Utils.normalizeDate((a?.data || a).end_date) })
           if (absenceModal.mode === 'add') {
             const sName = (medicalStaff.value || []).find(s => s.id === f.staff_member_id)?.full_name?.split(' ')[0] || 'Staff'
             const reason = (f.absence_reason || '').replace(/_/g, ' ')
             absences.value.unshift(normalize(await API.createAbsence(data)))
-            showToast('Absence recorded', `${sName} · ${reason} · ${f.start_date} – ${f.end_date}`, 'success')
+            showToast('Absence recorded', `${sName} · ${reason} · ${f.start_date} – ${f.end_date}${absenceModal.decision?.requiresOverride?' · exception recorded':''}`, 'success')
           } else {
             const prevAbs = absences.value.find(a => a.id === f.id)
             const record = normalize(await API.updateAbsence(f.id, data))
@@ -4686,11 +4723,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (prevAbs && prevAbs.end_date !== f.end_date) absChanges.push(`End → ${f.end_date}`)
             if (prevAbs && prevAbs.absence_reason !== f.absence_reason) absChanges.push(`Reason → ${(f.absence_reason||'').replace(/_/g,' ')}`)
             if (prevAbs && prevAbs.coverage_arranged !== f.coverage_arranged) absChanges.push(f.coverage_arranged ? 'Coverage arranged ✓' : 'Coverage removed')
+            if(absenceModal.decision?.requiresOverride) absChanges.push('Exception recorded')
             showToast('Absence updated', absChanges.length ? absChanges.join(' · ') : 'Saved', 'success')
           }
           absenceModal.show = false; clearAll('absence'); await loadAbsences()
-        } catch (e) { showToast('Error', e.message || 'Failed to save absence', 'error') }
-        finally { saving.value = false }
+        } catch (e) { throw e }
       }
 
       const deleteAbsence = (absence) => showConfirmation({
@@ -7871,7 +7908,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return diff > 0 ? diff : 0
         }
 
-        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule: onCallScheduleShared, absences: absencesShared })
+        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule: onCallScheduleShared, rotations, absences: absencesShared, hasPermission })
         const { absences } = absenceOps
 
         // ── Unit staff absence impact (needs absences in scope) ──────────────
@@ -8100,7 +8137,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch { return [] }
         }
 
-        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences, onCallSchedule: onCallScheduleShared })
+        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences, onCallSchedule: onCallScheduleShared, hasPermission })
         const { onCallSchedule, coverageAreas, oncallChipStyle } = onCallOps
 
         // ── Root-level cross-composable computed ─────────────────
@@ -10761,8 +10798,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const ALL_MODULES = [
         { key: 'medical_staff',        label: 'Medical Staff',      icon: '👤' },
         { key: 'oncall_schedule',       label: 'On-call Schedule',   icon: '📞' },
+        { key: 'oncall_exceptions',      label: 'On-call Exceptions', icon: '⚖️' },
         { key: 'resident_rotations',    label: 'Rotations',          icon: '🔄' },
         { key: 'rotation_exceptions',   label: 'Rotation Exceptions',icon: '⚖️' },
+        { key: 'leave_exceptions',      label: 'Leave Exceptions',   icon: '⚖️' },
         { key: 'training_units',        label: 'Clinical Units',     icon: '🏥' },
         { key: 'communications',        label: 'Communications',     icon: '📢' },
         { key: 'research_lines',        label: 'Research Lines',     icon: '🔬' },
@@ -12174,6 +12213,7 @@ document.addEventListener('DOMContentLoaded', () => {
         snoozed: [],       // dismissed alert keys (#16)
         entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
         coreTraceId: null, // V46.12 execution trace id (operational telemetry, never chain-of-thought)
+        authority: null,  // Phase 5.3E canonical Grounded access plan from /api/grounded/access
         view: 'digest'     // 'digest' | 'conversation' | 'timeline' | 'trace' | 'teach'
       })
 
@@ -12614,9 +12654,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         } catch (e) {}
-        const permissions = Array.isArray(currentUser.value?.permissions)
-          ? currentUser.value.permissions.filter(p=>p && (p.can_read || p.can_write)).map(p=>({module:p.module,read:!!p.can_read,write:!!p.can_write}))
-          : []
+        // Phase 5.3E: Grounded context records the canonical access plan rather
+        // than the legacy can_read/can_write module table. No protected records are
+        // copied into session memory; only permission metadata is retained.
+        const permissions = askBar.authority ? {
+          contract: askBar.authority.contract || 'grounded.access.v1',
+          ask: askBar.authority.ask || null,
+          actions: askBar.authority.actions || null,
+          sources: Object.fromEntries(Object.entries(askBar.authority.sources || {}).map(([k,v])=>[k,{allowed:!!v.allowed,available:!!v.available,scope:v.scope||'none',visibility:v.visibility||'none'}]))
+        } : null
         const envelope = GroundedCore.buildContextEnvelope({
           view: currentView.value,
           lens: currentView.value === 'training_units' ? trainingUnitView.value : null,
@@ -12769,54 +12815,73 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.refreshedAt = null
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 15000)
-        // Fetch explicitly: legacy loaders may swallow errors or write derived absence state.
-        // Retain successful reads independently and disclose failed sources.
-        const specs = [
-          ['/api/medical-staff?limit=500', medicalStaff, a => a.filter(x => !x.deleted_at)],
-          ['/api/oncall', onCallSchedule, a => a.map(x => ({...x, duty_date:Utils.normalizeDate(x.duty_date)}))],
-          ['/api/absence-records?limit=500', absences, a => a.filter(x => x.current_status !== 'cancelled').map(x => ({...x, start_date:Utils.normalizeDate(x.start_date), end_date:Utils.normalizeDate(x.end_date)}))],
-          ['/api/rotations?limit=500', rotations, a => a.map(x => ({...x, start_date:Utils.normalizeDate(x.start_date || x.rotation_start_date), end_date:Utils.normalizeDate(x.end_date || x.rotation_end_date)}))],
-          ['/api/training-units', trainingUnits],
-          ['/api/research-lines', researchOps.researchLines],
-          ['/api/clinical-trials?limit=500', researchOps.clinicalTrials],
-          ['/api/innovation-projects?limit=500', researchOps.innovationProjects],
-          ['/api/news?limit=100', newsPosts]
-        ]
         try {
-          const results = await Promise.allSettled(specs.map(async ([path]) => {
+          // Authority is resolved before retrieval. Grounded never retrieves a
+          // source first and then decides whether to hide it afterwards.
+          const access = await API.request('/api/grounded/access', {skipCache:true, signal:controller.signal})
+          if (generation !== askBarRefreshGeneration || currentUser.value?.id !== userId) return
+          askBar.authority = access || null
+          if (!access?.ask?.allowed) {
+            askBar.sourceHealth = []
+            askBar.refreshError = 'Grounded is not available for this account.'
+            return
+          }
+
+          const specs = [
+            {key:'staff',label:'Staff directory',path:'/api/medical-staff?limit=500',target:medicalStaff,normalize:a=>a.filter(x=>!x.deleted_at)},
+            {key:'oncall',label:'On-call schedule',path:'/api/oncall',target:onCallSchedule,normalize:a=>a.map(x=>({...x,duty_date:Utils.normalizeDate(x.duty_date)}))},
+            {key:'leave',label:'Leave records',path:'/api/absence-records?limit=500',target:absences,normalize:a=>a.filter(x=>x.current_status!=='cancelled').map(x=>({...x,start_date:Utils.normalizeDate(x.start_date),end_date:Utils.normalizeDate(x.end_date)}))},
+            {key:'rotations',label:'Rotations',path:'/api/rotations?limit=500',target:rotations,normalize:a=>a.map(x=>({...x,start_date:Utils.normalizeDate(x.start_date||x.rotation_start_date),end_date:Utils.normalizeDate(x.end_date||x.rotation_end_date)}))},
+            {key:'units',label:'Training units',path:'/api/training-units',target:trainingUnits},
+            {key:'research',label:'Research programmes',path:'/api/research-lines',target:researchOps.researchLines},
+            {key:'research',label:'Clinical studies',path:'/api/clinical-trials?limit=500',target:researchOps.clinicalTrials},
+            {key:'research',label:'Innovation projects',path:'/api/innovation-projects?limit=500',target:researchOps.innovationProjects},
+            {key:'library',label:'Research Library',path:'/api/news?limit=100',target:newsPosts}
+          ]
+          const results = await Promise.allSettled(specs.map(async spec => {
+            const source = access.sources?.[spec.key]
+            if (!source?.available) {
+              const e = new Error(source?.reason || 'Restricted by current access policy.')
+              e.name = source?.allowed ? 'ProjectionUnavailable' : 'AuthorityDenied'
+              throw e
+            }
             const collected = []
             for (let page = 1; page <= 100; page++) {
-              const endpoint = page === 1 ? path : path + (path.includes('?') ? '&' : '?') + 'page=' + page
+              const endpoint = page === 1 ? spec.path : spec.path + (spec.path.includes('?') ? '&' : '?') + 'page=' + page
               const result = await API.request(endpoint, {skipCache:true, signal:controller.signal})
               const rows = Array.isArray(result) ? result : result?.data
               if (!Array.isArray(rows) || result?.success === false) throw new Error('Unexpected source response')
               collected.push(...rows)
-              const more = result?.pagination ? collected.length < result.pagination.total : (path.startsWith('/api/news?') && rows.length === 100)
+              const more = result?.pagination ? collected.length < result.pagination.total : (spec.path.startsWith('/api/news?') && rows.length === 100)
               if (!more) return collected
               if (!rows.length) throw new Error('Incomplete source response')
             }
             throw new Error('Source exceeds verification limit')
           }))
           if (generation !== askBarRefreshGeneration || currentUser.value?.id !== userId) return
-          const labels=['Staff directory','On-call schedule','Leave records','Rotations','Training units','Research programmes','Clinical studies','Innovation projects','Research Library']
           let success=0
-          askBar.sourceHealth = specs.map(([path,target,normalize],i)=>{
+          askBar.sourceHealth = specs.map((spec,i)=>{
             const result=results[i]
+            const source=access.sources?.[spec.key]
             if(result.status==='fulfilled') {
-              try { target.value=normalize?normalize(result.value):result.value; success++; return {label:labels[i],ready:true,error:''} }
-              catch(e) { return {label:labels[i],ready:false,error:'The response could not be processed.'} }
+              try { spec.target.value=spec.normalize?spec.normalize(result.value):result.value; success++; return {label:spec.label,ready:true,error:'',scope:source?.scope||null,visibility:source?.visibility||null} }
+              catch(e) { return {label:spec.label,ready:false,error:'The authorised response could not be processed.'} }
             }
             const e=result.reason
-            return {label:labels[i],ready:false,error:e?.name==='AbortError'?'Request timed out.':String(e?.message||'Request failed.').slice(0,180)}
+            const restricted=e?.name==='AuthorityDenied' || e?.name==='ProjectionUnavailable'
+            return {label:spec.label,ready:false,restricted,error:restricted?(e?.message||'Restricted by current access policy.'):(e?.name==='AbortError'?'Request timed out.':String(e?.message||'Request failed.').slice(0,180))}
           })
           askBar.refreshedAt = success ? askBarNow() : null
           askBar.snapshotCapturedAt = new Date().toISOString()
-          const failed=askBar.sourceHealth.filter(x=>!x.ready)
-          askBar.refreshError = failed.length ? `${success} of ${specs.length} sources retrieved. Grounded will answer from verified sources when the resolved request does not depend on the unavailable records.` : ''
+          const failed=askBar.sourceHealth.filter(x=>!x.ready && !x.restricted)
+          askBar.refreshError = failed.length ? `${success} authorised sources retrieved. Grounded will answer only from verified sources; ${failed.length} authorised source${failed.length===1?' is':'s are'} currently unavailable.` : ''
         } catch (e) {
           controller.abort()
           if (generation === askBarRefreshGeneration && currentUser.value?.id === userId) {
-            askBar.refreshError = 'Records could not be verified. You can type and retry; current-record answers are unavailable.'
+            askBar.authority = null
+            askBar.refreshError = e?.status===403 || e?.code==='AUTHORITY_DENIED'
+              ? 'Grounded is not available for this account.'
+              : 'Grounded access could not be verified. Current-record answers are paused.'
           }
         } finally {
           clearTimeout(timeout)
@@ -13072,10 +13137,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const fmt = (iso) => { try { return new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) } catch (e) { return iso } }
         const dateLabel = ex.start === ex.end ? fmt(ex.start) : `${fmt(ex.start)} – ${fmt(ex.end)}`
         const blockLabel={staff_not_found:'Staff record not found',inactive_staff:'Staff member is inactive',invalid_date_window:'Invalid leave date range',overlapping_leave:'An existing leave record overlaps this period',covering_same_as_subject:'Covering clinician cannot be the person on leave',covering_staff_not_found:'Covering staff record not found',covering_staff_inactive:'Covering clinician is inactive'}
-        const warnings=[]
-        if(checked.onCallConflicts?.length) warnings.push(`${checked.onCallConflicts.length} on-call duty${checked.onCallConflicts.length===1?'':'ies'} overlap`)
-        if(checked.rotationConflicts?.length) warnings.push(`${checked.rotationConflicts.length} resident-supervision/rotation duty${checked.rotationConflicts.length===1?'':'ies'} overlap`)
-        if(checked.coveringConflicts?.length) warnings.push(`Covering clinician has ${checked.coveringConflicts.length} recorded conflict${checked.coveringConflicts.length===1?'':'s'}`)
+        const decision=checked.decision||null
+        const warningFindings=(decision?.findings||[]).filter(f=>f.severity==='warning')
+        const blockFindings=(decision?.findings||[]).filter(f=>f.severity==='block')
+        const warnings=warningFindings.map(f=>f.summary)
         const proposal={
           kind:'leave',traceId,
           subject:{id:ex.subject.id,name:ex.subject.full_name},
@@ -13083,7 +13148,8 @@ document.addEventListener('DOMContentLoaded', () => {
           start:ex.start,end:ex.end,days:checked.days,dateLabel,
           covering:ex.covering?{id:ex.covering.id,name:ex.covering.full_name}:null,
           conflicts:checked.onCallConflicts||[],rotationConflicts:checked.rotationConflicts||[],warnings,
-          blocked:(checked.blocked||[]).length>0,blockReasons:checked.blocked||[],blockReason:(checked.blocked||[]).map(r=>blockLabel[r]||r).join(' · '),
+          decision,findings:decision?.findings||[],blocked:decision?!decision.canCommit:(checked.blocked||[]).length>0,blockReasons:decision?blockFindings.map(f=>f.code):(checked.blocked||[]),blockReason:decision?blockFindings.map(f=>f.summary).join(' · '):(checked.blocked||[]).map(r=>blockLabel[r]||r).join(' · '),
+          requiresOverride:!!decision?.requiresOverride,overrideAllowed:hasPermission('leave_exceptions','write'),overrideReason:'',
           impact:askBarEvaluatePersonUnavailable(ex.subject,ex.start,ex.end)
         }
         askBar.turns.push(Vue.reactive({q:'',text:'',proposal,chips:[],actions:[],sources:['staff','leave records','on-call schedule','rotations'],followups:[],confidence:proposal.blocked?'low':(warnings.length?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
@@ -13091,13 +13157,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarConfirmLeave = async (proposal, turn) => {
         if(proposal.blocked) return
+        if(proposal.requiresOverride && !proposal.overrideAllowed){turn.commitError='This warning requires leave-exception approval permission.';return}
+        if(proposal.requiresOverride && String(proposal.overrideReason||'').trim().length<8){turn.commitError='Add a short reason for continuing with this exception.';return}
         turn.writing = true; turn.commitError=''
         const traceId=proposal.traceId||turn.coreTraceId||null
         try {
           if(traceId) GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:true,action:'record_leave'})
           const out=await groundedInvokeTool('leave.commit_absence',{
             staffId:proposal.subject.id,start:proposal.start,end:proposal.end,reason:proposal.reason,type:proposal.type,
-            coveringStaffId:proposal.covering?.id||null
+            coveringStaffId:proposal.covering?.id||null,overrideReason:proposal.overrideReason||''
           },{traceId,confirmed:true})
           turn.writing=false; turn.committed=true
           try { await absenceOps.loadAbsences() } catch(e) {}
@@ -13196,7 +13264,10 @@ document.addEventListener('DOMContentLoaded', () => {
           askBar.turns.push(Vue.reactive({q:asked,text:`I couldn't safely prepare that on-call change: ${err.message||err}`,chips:[],actions:[{label:'Open on-call schedule',view:'oncall_schedule'}],sources:['staff','on-call schedule','leave records'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}))
           return
         }
+        const decision=checked.decision||null
         const reasons=checked.blocked||[]
+        const warningFindings=(decision?.findings||[]).filter(f=>f.severity==='warning')
+        const blockFindings=(decision?.findings||[]).filter(f=>f.severity==='block')
         const blockLabel={
           staff_not_found:'Staff record not found',inactive_staff:'Staff member is inactive',not_oncall_eligible:'Not eligible for on-call',date_in_past:'Duty date is in the past',leave_conflict:'On leave that day',duplicate_person_duty:'Already scheduled that day',slot_occupied:'That on-call slot is already occupied',backup_not_eligible:'Backup is not eligible for on-call',backup_same_as_primary:'Primary and backup cannot be the same person'
         }
@@ -13204,24 +13275,28 @@ document.addEventListener('DOMContentLoaded', () => {
           kind:'oncall',traceId,
           subject:{id:ex.subject.id,name:ex.subject.full_name},
           backup:ex.backup?{id:ex.backup.id,name:ex.backup.full_name}:null,
-          date:ex.start,dateLabel:fmt(ex.start),blocked:reasons.length>0,blockReasons:reasons,blockReason:reasons.map(r=>blockLabel[r]||r).join(' · '),
+          date:ex.start,dateLabel:fmt(ex.start),decision,findings:decision?.findings||[],blocked:decision?!decision.canCommit:reasons.length>0,blockReasons:decision?blockFindings.map(f=>f.code):reasons,blockReason:decision?blockFindings.map(f=>f.summary).join(' · '):reasons.map(r=>blockLabel[r]||r).join(' · '),
+          warnings:warningFindings.map(f=>f.summary),requiresOverride:!!decision?.requiresOverride,overrideAllowed:hasPermission('oncall_exceptions','write'),overrideReason:'',
           alreadyOnCall:!!checked.slot?.duplicatePerson,noBackup:!ex.backup,alternatives:checked.alternatives||[],
           impact:{items:[
             {label:'Eligibility',value:checked.eligibility?.eligible?'Eligible':(blockLabel[checked.eligibility?.reason]||'Not eligible'),tone:checked.eligibility?.eligible?'clear':'attention',detail:'Based on active staff status and configured on-call eligibility'},
-            {label:'Availability',value:checked.slot?.onLeave?'Blocked by leave':'Available',tone:checked.slot?.onLeave?'attention':'clear',detail:checked.slot?.onLeave?'An active leave record overlaps this duty date':'No leave conflict found'},
+            {label:'Availability',value:checked.slot?.onLeave?'Leave recorded':'Available',tone:checked.slot?.onLeave?'attention':'clear',detail:checked.slot?.onLeave?'A leave record overlaps this duty date and needs explicit review':'No leave record overlaps the checked duty date'},
             {label:'Existing duty',value:checked.slot?.duplicatePerson?'Already scheduled':(checked.slot?.slotOccupied?'Slot occupied':'No duplicate duty'),tone:(checked.slot?.duplicatePerson||checked.slot?.slotOccupied)?'attention':'clear',detail:checked.slot?.slotOccupied?`Primary already recorded: ${checked.slot?.existingSlot?.primaryName||'another clinician'}`:'No conflicting primary duty found in the checked slot'},
-            {label:'Backup',value:ex.backup?ex.backup.full_name:'Not assigned',tone:ex.backup?'clear':'attention',detail:ex.backup?'Named backup passed eligibility check':'Backup remains optional but improves coverage resilience'}
+            {label:'Backup',value:ex.backup?ex.backup.full_name:'Not assigned',tone:'clear',detail:ex.backup?'Named backup passed eligibility check':'No named backup; advisory only unless the coverage area requires backup resilience'}
           ]}
         }
-        askBar.turns.push(Vue.reactive({q:'',text:'',oncallProposal:proposal,chips:[],actions:[],sources:['staff','on-call schedule','leave records'],followups:[],confidence:proposal.blocked?'low':(proposal.noBackup?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
+        askBar.turns.push(Vue.reactive({q:'',text:'',oncallProposal:proposal,chips:[],actions:[],sources:['staff','on-call schedule','leave records'],followups:[],confidence:proposal.blocked?'low':(decision?.decision==='warning'?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
       }
 
       const askBarConfirmOncall = async (proposal, turn) => {
+        if(proposal.blocked) return
+        if(proposal.requiresOverride && !proposal.overrideAllowed){turn.commitError='This warning requires on-call exception approval permission.';return}
+        if(proposal.requiresOverride && String(proposal.overrideReason||'').trim().length<8){turn.commitError='Add a short reason for continuing with this exception.';return}
         turn.writing=true; turn.commitError=''
         const traceId=proposal.traceId||turn.coreTraceId||null
         try {
           if(traceId) GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:true,action:'schedule_oncall'})
-          const out=await groundedInvokeTool('oncall.commit_assignment',{staffId:proposal.subject.id,date:proposal.date,backupId:proposal.backup?.id||null,coverageAreaId:null},{traceId,confirmed:true})
+          const out=await groundedInvokeTool('oncall.commit_assignment',{staffId:proposal.subject.id,date:proposal.date,backupId:proposal.backup?.id||null,coverageAreaId:null,overrideReason:proposal.overrideReason||''},{traceId,confirmed:true})
           turn.writing=false; turn.committed=true
           try{await onCallOps.loadOnCallSchedule()}catch(e){}
           turn.commitText=`✓ ${proposal.subject.name} is on call ${proposal.dateLabel}${proposal.backup?`, backup ${proposal.backup.name}`:''}.`
@@ -13955,8 +14030,41 @@ document.addEventListener('DOMContentLoaded', () => {
       // V46.8 · Domain tool contracts. Clinical Units is the first mature module
       // connected to the harness. Tools are deliberately small and semantic; Grounded
       // should not need raw unrestricted access to application internals.
+      const groundedToolSourceKey = (toolName='') => {
+        if (toolName.startsWith('clinical_units.')) return 'units'
+        if (toolName.startsWith('resident_rotations.')) return 'rotations'
+        if (toolName.startsWith('leave.')) return 'leave'
+        if (toolName.startsWith('oncall.')) return 'oncall'
+        if (toolName.startsWith('reporting.')) return 'staff'
+        return null
+      }
+      const groundedToolAuthorityCheck = (def) => {
+        const access = askBar.authority
+        if (!access?.ask?.allowed) return {allowed:false,code:'GROUND_ASK_DENIED',reason:'Grounded is not available for this account.'}
+        const sourceKey = groundedToolSourceKey(def?.name || '')
+        if (def?.access === GroundedCore.ACCESS.READ) {
+          if (!sourceKey) return {allowed:true}
+          const source = access.sources?.[sourceKey]
+          return source?.available
+            ? {allowed:true,scope:source.scope,visibility:source.visibility}
+            : {allowed:false,code:'GROUND_SOURCE_DENIED',reason:source?.reason || 'This Grounded source is not available for the current access level.'}
+        }
+        if (def?.access === GroundedCore.ACCESS.PROPOSE) {
+          return access.actions?.propose?.allowed
+            ? {allowed:true}
+            : {allowed:false,code:'GROUND_PROPOSE_DENIED',reason:'Your account may ask Grounded questions but may not request operational proposals.'}
+        }
+        if (def?.access === GroundedCore.ACCESS.WRITE) {
+          return access.actions?.commit?.allowed
+            ? {allowed:true}
+            : {allowed:false,code:'GROUND_COMMIT_DENIED',reason:'Your account may review Grounded results but may not confirm operational writes.'}
+        }
+        return {allowed:false,code:'GROUND_AUTHORITY_UNKNOWN',reason:'Grounded could not resolve authority for this tool.'}
+      }
       const groundedToolRegistry = GroundedCore ? GroundedCore.createToolRegistry({
-        permissionCheck: (module, action) => !module || hasPermission(module, action)
+        // Canonical authority supersedes the old module permission matrix for Grounded.
+        // Backend routes still independently enforce the same authority contract.
+        authorityCheck: groundedToolAuthorityCheck
       }) : null
 
       const groundedInvokeTool = (name, input={}, opts={}) => {
@@ -14117,18 +14225,26 @@ document.addEventListener('DOMContentLoaded', () => {
           run:({staffId,start,end,reason,type,coveringStaffId=null},opts={}) => {
             const traceId=opts.traceId||askBar.coreTraceId||null
             const window=groundedToolRegistry.invoke('leave.check_window',{staffId,start,end,coveringStaffId},{traceId,confirmed:false})
-            return {kind:'leave_proposal',window,reason,type,blocked:window.blocked||[],onCallConflicts:window.onCallConflicts||[],rotationConflicts:window.rotationConflicts||[],coveringConflicts:window.coveringConflicts||[],days:window.days,requiresHumanConfirmation:true}
+            const staff=(medicalStaff.value||[]).find(x=>String(x.id)===String(staffId))||null
+            const coveringStaff=coveringStaffId?(medicalStaff.value||[]).find(x=>String(x.id)===String(coveringStaffId))||null:null
+            const decision=globalThis.Decision51?.reviewLeave({proposal:{staffId,coveringStaffId,start,end,absenceType:type,reason,coverageArranged:!!coveringStaffId},staff,coveringStaff,absences:absences.value||[],rotations:rotations.value||[],oncall:onCallSchedule.value||[],action:'record',sourceState:{staff:'loaded',leave:'loaded',rotations:'loaded',oncall:'loaded'}})||null
+            return {kind:'leave_proposal',window,reason,type,decision,findings:decision?.findings||[],blocked:decision?!decision.canCommit:(window.blocked||[]).length>0,blockReasons:decision?(decision.findings||[]).filter(f=>f.severity==='block').map(f=>f.code):(window.blocked||[]),onCallConflicts:window.onCallConflicts||[],rotationConflicts:window.rotationConflicts||[],coveringConflicts:window.coveringConflicts||[],days:window.days,requiresOverride:!!decision?.requiresOverride,requiresHumanConfirmation:true}
           }
         })
         groundedToolRegistry.register({
           name:'leave.commit_absence', access:GroundedCore.ACCESS.WRITE, module:'staff_absence',
           description:'Commit human-confirmed leave after re-validating the source state immediately before write.',
-          inputSchema:{staffId:'uuid',start:'date',end:'date',reason:'string',type:'string',coveringStaffId:'uuid?'},
-          run:async({staffId,start,end,reason,type,coveringStaffId=null},opts={}) => {
+          inputSchema:{staffId:'uuid',start:'date',end:'date',reason:'string',type:'string',coveringStaffId:'uuid?',overrideReason:'string?'},
+          run:async({staffId,start,end,reason,type,coveringStaffId=null,overrideReason=null},opts={}) => {
             const traceId=opts.traceId||askBar.coreTraceId||null
             const proposal=groundedToolRegistry.invoke('leave.propose_absence',{staffId,start,end,reason,type,coveringStaffId},{traceId,confirmed:false})
-            if(proposal.blocked.length){ const er=new Error(`Leave recording blocked: ${proposal.blocked.join(', ')}`); er.code='LEAVE_RECORD_BLOCKED'; er.reasons=proposal.blocked; throw er }
+            if(proposal.blocked){ const er=new Error('Leave recording is blocked by a non-overridable constraint.'); er.code='LEAVE_RECORD_BLOCKED'; er.decision=proposal.decision; throw er }
+            if(proposal.requiresOverride){
+              if(!hasPermission('leave_exceptions','write')){const er=new Error('This leave requires authorised exception approval.');er.code='LEAVE_OVERRIDE_NOT_AUTHORIZED';er.decision=proposal.decision;throw er}
+              if(String(overrideReason||'').trim().length<8){const er=new Error('Add a short reason for the leave exception before confirming.');er.code='LEAVE_OVERRIDE_REASON_REQUIRED';er.decision=proposal.decision;throw er}
+            }
             const body={staff_member_id:staffId,absence_type:type,absence_reason:reason,start_date:start,end_date:end,coverage_arranged:!!coveringStaffId,covering_staff_id:coveringStaffId||null,coverage_notes:coveringStaffId?`Covered by ${getStaffName(coveringStaffId)}`:''}
+            if(proposal.requiresOverride) body.decision_override={accepted:true,reason:String(overrideReason).trim(),review_contract:proposal.decision?.contract||'decision51.leave.v1',finding_codes:(proposal.findings||[]).filter(f=>f.severity==='warning').map(f=>f.code)}
             const saved=await API.request('/api/absence-records',{method:'POST',body})
             return {saved,proposal}
           }
@@ -14197,27 +14313,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const eligibility=groundedToolRegistry.invoke('oncall.check_eligibility',{staffId},{traceId,confirmed:false})
             const slot=groundedToolRegistry.invoke('oncall.check_slot',{staffId,date,coverageAreaId},{traceId,confirmed:false})
             const backup=backupId ? groundedToolRegistry.invoke('oncall.check_eligibility',{staffId:backupId},{traceId,confirmed:false}) : null
-            const blocked=[]
-            if(!eligibility.eligible) blocked.push(eligibility.reason||'not_eligible')
-            if(slot.dateInPast) blocked.push('date_in_past')
-            if(slot.onLeave) blocked.push('leave_conflict')
-            if(slot.duplicatePerson) blocked.push('duplicate_person_duty')
-            if(slot.slotOccupied) blocked.push('slot_occupied')
-            if(backup && !backup.eligible) blocked.push('backup_not_eligible')
-            if(backupId && String(backupId)===String(staffId)) blocked.push('backup_same_as_primary')
+            const staff=(medicalStaff.value||[]).find(x=>String(x.id)===String(staffId))||null
+            const backupStaff=backupId?(medicalStaff.value||[]).find(x=>String(x.id)===String(backupId))||null:null
+            const area=coverageAreaId?(coverageAreas.value||[]).find(x=>String(x.id)===String(coverageAreaId))||null:null
+            const decision=window.Decision51?.reviewOnCall({proposal:{staffId,backupId,date,coverageAreaId,shiftType:'primary_call'},staff,backup:backupStaff,coverageArea:area,absences:absences.value||[],oncall:onCallSchedule.value||[],action:'assign',sourceState:{staff:'loaded',leave:'loaded',oncall:'loaded',coverageAreas:'loaded'}})||null
+            const blocked=decision?(decision.findings||[]).filter(f=>f.severity==='block').map(f=>f.code):[]
             const alternatives=blocked.length ? groundedToolRegistry.invoke('oncall.replacement_candidates',{date,excludeId:staffId},{traceId,confirmed:false}).slice(0,3) : []
-            return {kind:'oncall_proposal',eligibility,slot,backup,blocked,alternatives,requiresHumanConfirmation:true}
+            return {kind:'oncall_proposal',eligibility,slot,backup,decision,findings:decision?.findings||[],blocked,requiresOverride:!!decision?.requiresOverride,alternatives,requiresHumanConfirmation:true}
           }
         })
         groundedToolRegistry.register({
           name:'oncall.commit_assignment', access:GroundedCore.ACCESS.WRITE, module:'oncall_schedule',
           description:'Commit a human-confirmed primary on-call assignment after re-validating the proposal immediately before write.',
-          inputSchema:{staffId:'uuid',date:'date',backupId:'uuid?',coverageAreaId:'uuid?'},
-          run:async({staffId,date,backupId=null,coverageAreaId=null},opts={}) => {
+          inputSchema:{staffId:'uuid',date:'date',backupId:'uuid?',coverageAreaId:'uuid?',overrideReason:'string?'},
+          run:async({staffId,date,backupId=null,coverageAreaId=null,overrideReason=null},opts={}) => {
             const traceId=opts.traceId||askBar.coreTraceId||null
             const proposal=groundedToolRegistry.invoke('oncall.propose_assignment',{staffId,date,backupId,coverageAreaId},{traceId,confirmed:false})
-            if(proposal.blocked.length){ const e=new Error(`On-call assignment blocked: ${proposal.blocked.join(', ')}`); e.code='ONCALL_ASSIGNMENT_BLOCKED'; e.reasons=proposal.blocked; throw e }
+            if(proposal.blocked.length){ const e=new Error('On-call assignment is blocked by a non-overridable constraint.'); e.code='ONCALL_ASSIGNMENT_BLOCKED'; e.decision=proposal.decision; throw e }
+            if(proposal.requiresOverride){
+              if(!hasPermission('oncall_exceptions','write')){const e=new Error('This on-call duty requires authorised exception approval.');e.code='ONCALL_OVERRIDE_NOT_AUTHORIZED';e.decision=proposal.decision;throw e}
+              if(String(overrideReason||'').trim().length<8){const e=new Error('Add a short reason for the on-call exception before confirming.');e.code='ONCALL_OVERRIDE_REASON_REQUIRED';e.decision=proposal.decision;throw e}
+            }
             const body={duty_date:date,primary_physician_id:staffId,shift_type:'primary_call',start_time:'08:00',end_time:'08:00',backup_physician_id:backupId||null,coverage_area_id:coverageAreaId||null,coverage_notes:backupId?`Backup: ${getStaffName(backupId)}`:''}
+            if(proposal.requiresOverride) body.decision_override={accepted:true,reason:String(overrideReason).trim(),review_contract:proposal.decision?.contract||'decision51.oncall.v1',finding_codes:(proposal.findings||[]).filter(f=>f.severity==='warning').map(f=>f.code)}
             const saved=await API.request('/api/oncall',{method:'POST',body})
             return {saved,proposal}
           }
@@ -14724,7 +14842,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ready:missing.length===0, required,
           checked:rows.filter(r=>r.health?.ready).map(r=>r.key),
           missing:missing.map(r=>r.key),
-          missingRows:missing.map(r=>({key:r.key,label:r.label,error:r.health?.error||'Source not verified'}))
+          missingRows:missing.map(r=>({key:r.key,label:r.label,error:r.health?.error||'Source not verified',restricted:!!r.health?.restricted}))
         }
       }
       const _groundedIntentSourceGroups = {
@@ -15095,7 +15213,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const module=(askBarIntentModule||{})[intent] || (follow?.kind==='research_record_context'?'research_lines':null)
         let answer
         askBar.lastAsked=question
-        if(gate.ready && (!module || hasPermission(module,'read'))) {
+        if(gate.ready) {
           try {
             if (typeof askBarFinalizeAnswer==='function') {
               const raw=follow?askBarBuildFollowup(follow):_askBarBuildAnswerRaw(intent)
@@ -15107,10 +15225,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if(!answer) {
           const missing=gate.missingRows.length?gate.missingRows:health.filter(s=>!s.ready).map(s=>({label:s.label,error:s.error}))
+          const restricted = missing.some(s=>s.restricted)
           const blocked={
-            text:'I cannot verify the records required for that request yet. Other Grounded questions may still work if their own sources are available. Changes remain paused while the snapshot is incomplete.',
+            text: restricted
+              ? 'That request depends on information that is outside your current Grounded access. I can still answer questions using the sources available to your role and scope.'
+              : 'I cannot verify the records required for that request yet. Other Grounded questions may still work if their own sources are available. Changes remain paused while the snapshot is incomplete.',
             sources:[],
-            visual:{type:'reslist',items:missing.map(s=>({title:s.label,meta:s.error,badge:'Unavailable',tone:'default'}))},
+            visual:{type:'reslist',items:missing.map(s=>({title:s.label,meta:s.error,badge:s.restricted?'Restricted':'Unavailable',tone:'default'}))},
             actions:[],followups:[],confidence:'low'
           }
           answer=typeof askBarFinalizeAnswer==='function'?askBarFinalizeAnswer(blocked,effectiveIntent,follow):blocked
@@ -15120,6 +15241,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const askBarResolve = (forcedIntent) => {
         if (askBar.refreshing || askBar.loading) return
+        if (!askBar.authority?.ask?.allowed) {
+          askBar.refreshError = 'Grounded access has not been verified for this account.'
+          askBarPartialReply(askBar.query.trim(),null,forcedIntent)
+          return
+        }
         if (askBar.refreshError) { askBarPartialReply(askBar.query.trim(),null,forcedIntent); return }
         const asked0 = askBar.query.trim()
         // Multi-question: if the input holds several questions, answer each in turn.
