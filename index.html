@@ -1,4 +1,5 @@
-<!DOCTYPE html>       
+<!DOCTYPE html>
+<!-- neumDesk V46.14 · Phase 5.1.2 · Production frontend · 2026-09-24 -->       
 <html lang="en">   
 <head>
     <meta charset="UTF-8">
@@ -11,11 +12,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=46.14-grounded-phase41e-oncall-precision">
-    <link rel="stylesheet" href="decision51.css?v=46.14-phase51-decision-intelligence">
-    <link rel="stylesheet" href="activity45-ui.css?v=46.14">
-    <link rel="stylesheet" href="entry46.css?v=46.14-access44-login-polish">
-    <!-- Preserved Access Gate cache checkpoints for regression history: entry46.css?v=46.14-access43-ui · entry46.css?v=46.14-access42 -->
+    <link rel="stylesheet" href="style.css?v=46.14.5.1.2">
+    <link rel="stylesheet" href="decision51.css?v=46.14.5.1.2">
+    <!-- Preserved Phase 5.1 decision CSS checkpoint: decision51.css?v=46.14-phase51-decision-intelligence -->
+    <link rel="stylesheet" href="activity45-ui.css?v=46.14.5.1.2">
+    <link rel="stylesheet" href="entry46.css?v=46.14.5.1.2">
 
     
 </head>
@@ -3061,30 +3062,132 @@
                         <span class="breadcrumb-item active">Resident Rotations</span>
                     </nav>
 
-                    <!-- ── Phase 5.0 · temporal reconciliation strip ── -->
-                    <div v-if="rotationTemporalReviews && rotationTemporalReviews.length > 0" class="rgw-strip">
-                        <div class="rgw-header">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg>
-                            <span class="rgw-title">{{ rotationTemporalReviews.length }} historical rotation{{ rotationTemporalReviews.length !== 1 ? 's' : '' }} need an actual end date</span>
-                            <span class="rgw-sub">Planned dates are preserved · review only what is known</span>
-                        </div>
-                        <div class="rgw-list">
-                            <div v-for="r in rotationTemporalReviews" :key="'temporal-'+r.id" class="rgw-item"
-                                 @click="editRotation(r)"
-                                 :title="'Review actual end date for ' + getResidentName(r.resident_id)">
-                                <div class="rgw-avatar">{{ (getResidentName(r.resident_id)||'??').split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase() }}</div>
-                                <div class="rgw-info">
-                                    <span class="rgw-name">{{ getResidentName(r.resident_id) }}</span>
-                                    <span class="rgw-year">{{ getTrainingUnitName(r.training_unit_id) }}</span>
+                    <!-- ── Phase 5.1.2 · Rotation data-quality review ── -->
+                    <section v-if="rotationHasDataQualityIssues" class="rdq-panel" aria-labelledby="rdq-title">
+                        <button type="button"
+                                class="rdq-head"
+                                @click="rotationQualityExpanded = !rotationQualityExpanded"
+                                :aria-expanded="rotationQualityExpanded ? 'true' : 'false'">
+                            <span class="rdq-head-icon" aria-hidden="true">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7l8-4z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                            </span>
+                            <span class="rdq-head-copy">
+                                <span class="rdq-kicker">Data quality</span>
+                                <strong id="rdq-title">Rotation records to review</strong>
+                                <small>Historical checks only · no records are changed automatically</small>
+                            </span>
+                            <span class="rdq-metrics" aria-label="Rotation data-quality summary">
+                                <span v-if="rotationTemporalReviews.length" class="rdq-metric"><b>{{ rotationTemporalReviews.length }}</b> missing actual end</span>
+                                <span v-if="rotationOneDayReviews.length" class="rdq-metric"><b>{{ rotationOneDayReviews.length }}</b> one-day rotation{{ rotationOneDayReviews.length !== 1 ? 's' : '' }}</span>
+                                <span v-if="rotationMissingResidentReviews.length" class="rdq-metric"><b>{{ rotationMissingResidentReviews.length }}</b> missing resident link{{ rotationMissingResidentReviews.length !== 1 ? 's' : '' }}</span>
+                            </span>
+                            <span class="rdq-chevron" aria-hidden="true">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path v-if="rotationQualityExpanded" d="M18 15l-6-6-6 6"/>
+                                    <path v-else d="M6 9l6 6 6-6"/>
+                                </svg>
+                            </span>
+                        </button>
+
+                        <div v-if="rotationQualityExpanded" class="rdq-body">
+                            <section v-if="rotationTemporalReviews.length" class="rdq-section">
+                                <div class="rdq-section-head">
+                                    <div>
+                                        <strong>Missing actual end date</strong>
+                                        <small>Early-terminated rotations where the planned end is known but the effective final day is not.</small>
+                                    </div>
+                                    <span>{{ rotationTemporalReviews.length }}</span>
                                 </div>
-                                <div class="rgw-gaps">
-                                    <span class="rgw-gap-pill">planned {{ formatDate(r.start_date) }} – {{ formatDate(r.end_date) }}</span>
-                                    <span class="rgw-gap-pill">actual end unknown</span>
+                                <div class="rdq-rows">
+                                    <button v-for="r in rotationTemporalVisibleReviews"
+                                            :key="'temporal-'+r.id"
+                                            type="button"
+                                            class="rdq-row"
+                                            @click="editRotation(r)">
+                                        <span class="rdq-avatar">{{ (getResidentName(r.resident_id)||'??').split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase() }}</span>
+                                        <span class="rdq-record">
+                                            <strong>{{ getResidentName(r.resident_id) }}</strong>
+                                            <small>{{ getTrainingUnitName(r.training_unit_id) }}</small>
+                                        </span>
+                                        <span class="rdq-dates">
+                                            <span><em>Planned</em><b>{{ formatDate(r.start_date) }} → {{ formatDate(r.end_date) }}</b></span>
+                                            <span><em>Actual end</em><b class="rdq-unknown">Unknown</b></span>
+                                        </span>
+                                        <span class="rdq-action">Review <span aria-hidden="true">→</span></span>
+                                    </button>
                                 </div>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L8 18l-4 1 1-4z"/></svg>
+                                <button v-if="rotationTemporalReviews.length > 3"
+                                        type="button"
+                                        class="rdq-more"
+                                        @click="rotationTemporalShowAll = !rotationTemporalShowAll">
+                                    {{ rotationTemporalShowAll ? 'Show first 3' : 'Show remaining ' + rotationTemporalRemaining }}
+                                </button>
+                            </section>
+
+                            <section v-if="rotationOneDayReviews.length" class="rdq-section">
+                                <div class="rdq-section-head">
+                                    <div>
+                                        <strong>One-day clinical rotation records</strong>
+                                        <small>Planned start and end are the same day. This may be valid, but it is unusual enough to review rather than auto-correct.</small>
+                                    </div>
+                                    <span>{{ rotationOneDayReviews.length }}</span>
+                                </div>
+                                <div class="rdq-rows">
+                                    <button v-for="r in rotationOneDayVisibleReviews"
+                                            :key="'one-day-'+(r.id || r.start_date)"
+                                            type="button"
+                                            class="rdq-row"
+                                            @click="editRotation(r)">
+                                        <span class="rdq-avatar">{{ (getResidentName(r.resident_id)||'??').split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase() }}</span>
+                                        <span class="rdq-record">
+                                            <strong>{{ getResidentName(r.resident_id) }}</strong>
+                                            <small>{{ getTrainingUnitName(r.training_unit_id) }}</small>
+                                        </span>
+                                        <span class="rdq-dates">
+                                            <span><em>Planned</em><b>{{ formatDate(r.start_date) }}</b></span>
+                                            <span><em>Status</em><b>{{ formatRotationStatus(r.rotation_status) }}</b></span>
+                                        </span>
+                                        <span class="rdq-action">Review <span aria-hidden="true">→</span></span>
+                                    </button>
+                                </div>
+                                <p v-if="rotationOneDayReviews.length > 3" class="rdq-overflow-note">+ {{ rotationOneDayReviews.length - 3 }} additional one-day records remain available in the rotation table.</p>
+                            </section>
+
+                            <section v-if="rotationMissingResidentReviews.length" class="rdq-section">
+                                <div class="rdq-section-head">
+                                    <div>
+                                        <strong>Missing resident relationship</strong>
+                                        <small>The rotation record exists, but its resident link is absent or no longer resolves to a staff record.</small>
+                                    </div>
+                                    <span>{{ rotationMissingResidentReviews.length }}</span>
+                                </div>
+                                <div class="rdq-rows">
+                                    <button v-for="r in rotationMissingResidentVisibleReviews"
+                                            :key="'resident-link-'+(r.id || r.start_date)"
+                                            type="button"
+                                            class="rdq-row"
+                                            @click="editRotation(r)">
+                                        <span class="rdq-avatar rdq-avatar--unknown">?</span>
+                                        <span class="rdq-record">
+                                            <strong>Resident relationship unresolved</strong>
+                                            <small>{{ getTrainingUnitName(r.training_unit_id) }}</small>
+                                        </span>
+                                        <span class="rdq-dates">
+                                            <span><em>Planned</em><b>{{ formatDate(r.start_date) }} → {{ formatDate(r.end_date) }}</b></span>
+                                            <span><em>Resident</em><b class="rdq-unknown">Not linked</b></span>
+                                        </span>
+                                        <span class="rdq-action">Review <span aria-hidden="true">→</span></span>
+                                    </button>
+                                </div>
+                                <p v-if="rotationMissingResidentReviews.length > 3" class="rdq-overflow-note">+ {{ rotationMissingResidentReviews.length - 3 }} additional unresolved resident relationships remain in the table.</p>
+                            </section>
+
+                            <div class="rdq-boundary">
+                                <strong>Review boundary</strong>
+                                <span>These checks identify incomplete or unusual records; they do not prove that a record is wrong. Planned dates and historical state remain unchanged until an authorised user confirms a correction.</span>
                             </div>
                         </div>
-                    </div>
+                    </section>
 
                     <!-- ── Resident gap warning strip ── -->
                     <div v-if="residentGapWarnings.length > 0" class="rgw-strip">
@@ -11947,19 +12050,15 @@ Use Section heading to structure longer clinical or research articles."></textar
     </teleport>
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="activity45.js?v=46.14"></script>
-    <script src="activity50.js?v=46.14-phase50-temporal-integrity"></script>
-    <script src="entry-highlights.js?v=46"></script>
-    <script src="entry46.js?v=46"></script>
-    <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
-    <script src="decision51.js?v=46.14-phase51-decision-intelligence"></script>
-    <script src="temporal50.js?v=46.14-phase50-temporal-integrity"></script>
-    <script src="app.js?v=46.14-phase51.1-startup-integrity"></script>
-    <!-- Phase 5.0 cache-history contract: <script src="app.js?v=46.14-phase50-temporal-integrity"></script> -->
+    <script src="activity45.js?v=46.14.5.1.2"></script>
+    <script src="entry-highlights.js?v=46.14.5.1.2"></script>
+    <script src="entry46.js?v=46.14.5.1.2"></script>
+    <script src="grounded-core.js?v=46.14.5.1.2"></script>
+    <script src="decision51.js?v=46.14.5.1.2"></script>
+    <script src="temporal50.js?v=46.14.5.1.2"></script>
+    <script src="app.js?v=46.14.5.1.2"></script>
+    <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
-    <!-- Preserved Access Gate app cache checkpoint for regression history: app.js?v=46.14-access42-session-integrity -->
-    <!-- Preserved delivery checkpoints for historical regression contracts: app.js?v=46.14-grounded-phase41e-oncall-precision · style.css?v=46.14-grounded-phase41e-oncall-precision -->
-    <!-- Previous Grounded UI cache checkpoint retained for regression history: app.js?v=46.14-grounded-phase41b-ui-convergence · style.css?v=46.14-grounded-phase41b-ui-convergence -->
 
     <script>
     /* ── Login page — anatomical bronchial tree ── */

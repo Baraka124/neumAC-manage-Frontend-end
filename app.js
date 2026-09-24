@@ -1,3 +1,4 @@
+/* neumDesk V46.14 · Phase 5.1.2 · Production frontend · 2026-09-24 */
 document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
@@ -3638,6 +3639,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const pendingActivations = ref([])
       const rotationTemporalReviews = ref([])
+      // ── Phase 5.1.2 · Rotation data-quality surface ────────────────
+      // These checks never auto-correct history. They surface records that need
+      // human review while keeping the operational workspace compact.
+      const rotationQualityExpanded = ref(false)
+      const rotationTemporalShowAll = ref(false)
+
+      const rotationQualityRecords = computed(() => {
+        const byKey = new Map()
+        const all = [...(rotations.value || []), ...(rotationTemporalReviews.value || [])]
+        all.forEach((r, idx) => {
+          if (!r) return
+          const key = r.id || `${r.resident_id || 'none'}|${r.training_unit_id || 'none'}|${r.start_date || ''}|${r.end_date || ''}|${idx}`
+          if (!byKey.has(key)) byKey.set(key, r)
+        })
+        return Array.from(byKey.values())
+      })
+
+      const rotationOneDayReviews = computed(() => {
+        return rotationQualityRecords.value.filter(r => {
+          const start = Utils.normalizeDate(r.start_date || r.rotation_start_date)
+          const end = Utils.normalizeDate(r.end_date || r.rotation_end_date)
+          if (!start || !end || start !== end) return false
+          if (String(r.rotation_status || '') === 'cancelled') return false
+          const category = String(r.rotation_category || 'clinical_rotation')
+          return ['clinical_rotation', 'elective_rotation'].includes(category)
+        })
+      })
+
+      const rotationMissingResidentReviews = computed(() => {
+        const staff = (allStaffLookup?.value?.length ? allStaffLookup.value : (medicalStaff.value || []))
+        return rotationQualityRecords.value.filter(r => {
+          if (!r.resident_id) return true
+          return !staff.some(s => String(s.id) === String(r.resident_id))
+        })
+      })
+
+      const rotationTemporalVisibleReviews = computed(() =>
+        rotationTemporalShowAll.value ? rotationTemporalReviews.value : rotationTemporalReviews.value.slice(0, 3)
+      )
+      const rotationTemporalRemaining = computed(() =>
+        Math.max(0, rotationTemporalReviews.value.length - rotationTemporalVisibleReviews.value.length)
+      )
+      const rotationOneDayVisibleReviews = computed(() => rotationOneDayReviews.value.slice(0, 3))
+      const rotationMissingResidentVisibleReviews = computed(() => rotationMissingResidentReviews.value.slice(0, 3))
+      const rotationHasDataQualityIssues = computed(() =>
+        rotationTemporalReviews.value.length > 0 ||
+        rotationOneDayReviews.value.length > 0 ||
+        rotationMissingResidentReviews.value.length > 0
+      )
       const activationModal = reactive({ show: false, rotations: [], selectedRotation: null, notes: '', action: 'activate' })
 
       const getResidentName = (id) => {
@@ -4301,6 +4351,9 @@ document.addEventListener('DOMContentLoaded', () => {
         rotations, rotationFilters, rotationModal,
         filteredRotations, filteredRotationsAll, rotationTotalPages,
         loadRotations, rotationConflicts, showAddRotationModal, editRotation, saveRotation, deleteRotation, selectedUnitCapacity, rotationTemporalReviews,
+        rotationQualityExpanded, rotationTemporalShowAll, rotationOneDayReviews, rotationMissingResidentReviews,
+        rotationTemporalVisibleReviews, rotationTemporalRemaining, rotationOneDayVisibleReviews, rotationMissingResidentVisibleReviews,
+        rotationHasDataQualityIssues,
         checkRotationAvailability,
         pendingActivations, activationModal, checkAndUpdateRotations, updateRotationStatus,
         confirmPendingActivation, skipPendingActivation, postponeAllActivations, initAutoCheck,

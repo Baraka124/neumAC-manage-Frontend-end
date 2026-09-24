@@ -1,3 +1,4 @@
+/* neumDesk V46.14 · Phase 5.1.2 · Production frontend · 2026-09-24 */
 /* neumDesk V46.14 · Phase 5.1 Operational Decision Intelligence
  * Pure deterministic decision engine. Browser: window.Decision51. Node: module.exports.
  * UI-free and storage-free by design.
