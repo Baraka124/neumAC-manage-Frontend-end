@@ -12,6 +12,7 @@
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="style.css?v=46.14-grounded-phase41e-oncall-precision">
+    <link rel="stylesheet" href="decision51.css?v=46.14-phase51-decision-intelligence">
     <link rel="stylesheet" href="activity45-ui.css?v=46.14">
     <link rel="stylesheet" href="entry46.css?v=46.14-access44-login-polish">
     <!-- Preserved Access Gate cache checkpoints for regression history: entry46.css?v=46.14-access43-ui · entry46.css?v=46.14-access42 -->
@@ -580,11 +581,25 @@
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Under</span><span class="askbar-proposal-v">{{ turn.rotationProposal.supervisor ? turn.rotationProposal.supervisor.name : '— not set —' }}</span></div>
                                     <div v-if="turn.rotationProposal.startLabel" class="askbar-proposal-row"><span class="askbar-proposal-k">From</span><span class="askbar-proposal-v">{{ turn.rotationProposal.startLabel }}</span></div>
                                 </div>
+                                <div v-if="turn.rotationProposal.findings?.length && !turn.committed" class="odi-grounded-findings">
+                                    <div v-for="finding in turn.rotationProposal.findings" :key="finding.code" class="odi-grounded-finding">
+                                        <strong>{{ finding.title }} · {{ finding.severity }}</strong>
+                                        <small>{{ finding.summary }}</small>
+                                    </div>
+                                </div>
+                                <div v-if="turn.rotationProposal.requiresOverride && !turn.committed" class="odi-grounded-exception">
+                                    <template v-if="turn.rotationProposal.overrideAllowed">
+                                        <strong>Exception reason required</strong>
+                                        <textarea v-model="turn.rotationProposal.overrideReason" maxlength="2000" placeholder="Why should this warning be overridden?"></textarea>
+                                    </template>
+                                    <small v-else>This warning requires a user with rotation-exception approval permission.</small>
+                                </div>
                                 <div v-if="turn.rotationProposal.blocked" class="askbar-proposal-block">⛔ {{ turn.rotationProposal.blockReason || 'This rotation is blocked by a recorded constraint.' }}</div>
                                 <div v-if="turn.rotationProposal.warnings && turn.rotationProposal.warnings.length && !turn.committed" class="askbar-proposal-warn">⚠ {{ turn.rotationProposal.warnings.join(' · ') }}. Review this before confirming.</div>
                                 
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.rotationProposal.blocked" @click="askBarConfirmRotation(turn.rotationProposal, turn)">{{ turn.rotationProposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : 'Confirm & schedule') }}</button>
+                                    <!-- V46.11 blocked-confirm contract preserved: :disabled="turn.writing || turn.rotationProposal.blocked" -->
+                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.rotationProposal.blocked || (turn.rotationProposal.requiresOverride && (!turn.rotationProposal.overrideAllowed || String(turn.rotationProposal.overrideReason||'').trim().length &lt; 8))" @click="askBarConfirmRotation(turn.rotationProposal, turn)">{{ turn.rotationProposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : (turn.rotationProposal.requiresOverride ? 'Confirm with exception' : 'Confirm & schedule')) }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelRotation(turn)">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -8260,7 +8275,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                             <div class="uap-name">{{ u.unit_name }}</div>
                                             <div class="uap-cap"
                                                  :style="getUnitActiveRotationCount(u.id) >= u.maximum_residents ? 'color:#e24b4a' : getUnitActiveRotationCount(u.id)/u.maximum_residents > 0.5 ? 'color:#ef9f27' : 'color:#00b3b3'">
-                                                {{ getUnitActiveRotationCount(u.id) }}/{{ u.maximum_residents }}
+                                                {{ getUnitActiveRotationCount(u.id) }}/{{ u.maximum_residents }} now
                                             </div>
                                         </div>
                                         <div class="uap-bar">
@@ -8273,7 +8288,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         </div>
                                         <div class="uap-meta">
                                             <span v-if="getUnitActiveRotationCount(u.id) &lt; u.maximum_residents"  class="nd-v106">
-                                                {{ u.maximum_residents - getUnitActiveRotationCount(u.id) }} slot{{ u.maximum_residents - getUnitActiveRotationCount(u.id) !== 1 ? 's' : '' }} free
+                                                {{ u.maximum_residents - getUnitActiveRotationCount(u.id) }} current slot{{ u.maximum_residents - getUnitActiveRotationCount(u.id) !== 1 ? 's' : '' }} free
                                             </span>
                                             <span v-else  class="nd-v105">Full</span>
 
@@ -8315,41 +8330,54 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                         </div>
 
-                        <!-- Availability panel — fires when unit + dates are set -->
-                        <div v-if="rotationModal.form.training_unit_id && rotationModal.form.start_date && rotationModal.form.end_date"
-                             class="rot-avail-panel"
-                             :class="{
-                               'rot-avail-panel--checking': rotationModal.checkingAvailability,
-                               'rot-avail-panel--full':     !rotationModal.checkingAvailability && rotationModal.availability?.is_full,
-                               'rot-avail-panel--ok':       !rotationModal.checkingAvailability && rotationModal.availability && !rotationModal.availability.is_full,
-                             }">
-                            <template v-if="rotationModal.checkingAvailability">
-                                <svg class="rot-avail-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                                <span  class="nd-v010">Checking unit capacity…</span>
-                            </template>
-                            <template v-else-if="!rotationModal.availability">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-                                <span  class="nd-v010">Select a unit and dates to check capacity</span>
-                            </template>
-                            <template v-else-if="rotationModal.availability.is_full">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <!-- Phase 5.1 · Explainable assignment review -->
+                        <section v-if="rotationModal.form.resident_id && rotationModal.form.training_unit_id && rotationModal.form.supervising_attending_id && rotationModal.form.start_date && rotationModal.form.end_date"
+                                 class="odi-review" aria-live="polite">
+                            <div class="odi-review-head">
                                 <div>
-                                    <strong>{{ rotationModal.availability.unit_name }} is at capacity</strong>
-                                    — {{ rotationModal.availability.occupied }}/{{ rotationModal.availability.capacity }} slots filled during this period
-                                    <div v-if="rotationModal.availability.overlapping?.length"  class="nd-l098 nd-v086">
-                                        <span v-for="(r,i) in rotationModal.availability.overlapping.slice(0,3)" :key="r.id">{{ r.resident_name }}{{ i &lt; Math.min(rotationModal.availability.overlapping.length,3)-1 ? ', ' : '' }}</span>
-                                        <span v-if="rotationModal.availability.overlapping.length > 3"> +{{ rotationModal.availability.overlapping.length - 3 }} more</span>
+                                    <span class="odi-review-kicker">Operational decision intelligence</span>
+                                    <div class="odi-review-title">Assignment review</div>
+                                    <div class="odi-review-sub">Checks the exact proposed period against rotations, projected capacity, leave, supervision and on-call context.</div>
+                                </div>
+                                <span v-if="rotationModal.decision" class="odi-state" :class="'odi-state--'+rotationModal.decision.decision">{{ rotationModal.decision.decision }}</span>
+                                <span v-else class="odi-state">pending</span>
+                            </div>
+                            <div class="odi-review-body">
+                                <div v-if="rotationModal.decisionChecking" class="odi-checking"><span class="odi-spinner"></span> Rechecking current departmental records…</div>
+                                <div v-if="rotationModal.decision && !rotationModal.decision.findings.length" class="odi-empty">No material operational issue was found for this assignment.</div>
+                                <div v-for="finding in (rotationModal.decision?.findings || [])" :key="finding.code"
+                                     class="odi-finding" :class="'odi-finding--'+finding.severity">
+                                    <span class="odi-finding-mark"></span>
+                                    <div>
+                                        <div class="odi-finding-top"><strong>{{ finding.title }}</strong><span>{{ finding.severity }}</span></div>
+                                        <p>{{ finding.summary }}</p>
+                                        <div v-if="finding.evidence?.overlapDays || finding.evidence?.peakProjected || finding.evidence?.share !== undefined" class="odi-evidence">
+                                            <span v-if="finding.evidence?.overlapDays">{{ finding.evidence.overlapDays }} overlapping day{{ finding.evidence.overlapDays===1?'':'s' }}</span>
+                                            <span v-if="finding.evidence?.peakProjected">Projected {{ finding.evidence.peakProjected }}/{{ finding.evidence.capacity }}</span>
+                                            <span v-if="finding.evidence?.share !== undefined">{{ finding.evidence.share }}% of rotation</span>
+                                        </div>
+                                        <div v-if="finding.policy?.reason" class="odi-policy">{{ finding.policy.reason }}</div>
                                     </div>
                                 </div>
-                            </template>
-                            <template v-else>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17L4 12"/></svg>
-                                <span>
-                                    <strong>{{ rotationModal.availability.available }} slot{{ rotationModal.availability.available !== 1 ? 's' : '' }} available</strong>
-                                    — {{ rotationModal.availability.occupied }}/{{ rotationModal.availability.capacity }} filled during this period
-                                </span>
-                            </template>
-                        </div>
+
+                                <div v-if="rotationModal.decision?.requiresOverride" class="odi-exception" :class="{'odi-exception--locked': !rotationModal.overrideAllowed}">
+                                    <template v-if="rotationModal.overrideAllowed">
+                                        <strong>Authorised exception required</strong>
+                                        <p>The assignment is not a hard block, but the warning must be acknowledged with a reason. The decision and reason will be retained in the audit record.</p>
+                                        <textarea v-model="rotationModal.overrideReason" maxlength="2000" placeholder="Why is it appropriate to continue with this exception?"></textarea>
+                                    </template>
+                                    <template v-else>
+                                        <strong>Exception approval required</strong>
+                                        <p>You may edit the assignment, but a user with <code>rotation_exceptions</code> write permission must approve this warning.</p>
+                                    </template>
+                                </div>
+                                <div v-if="rotationModal.decisionError" class="odi-error">{{ rotationModal.decisionError }}</div>
+                                <div class="odi-foot">
+                                    <span>Planned window · {{ rotationModal.form.start_date }} → {{ rotationModal.form.end_date }}</span>
+                                    <span>{{ rotationModal.decisionChecking ? 'Verification in progress' : 'Revalidated again when saved' }}</span>
+                                </div>
+                            </div>
+                        </section>
 
                         <div class="sm-row">
                             <div class="sm-field">
@@ -8382,9 +8410,9 @@ Use Section heading to structure longer clinical or research articles."></textar
                     </div>
                     <div class="sm-form-footer">
                         <button class="sm-btn-back" @click="rotationModal.show = false">Cancel</button>
-                        <button class="sm-btn-save" @click="saveRotation(saving)" :disabled="saving">
+                        <button class="sm-btn-save" @click="saveRotation(saving)" :disabled="saving || rotationModal.decisionChecking || (rotationModal.decision && !rotationModal.decision.canCommit) || (rotationModal.decision?.requiresOverride && (!rotationModal.overrideAllowed || String(rotationModal.overrideReason||'').trim().length &lt; 8))">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                            {{ saving ? 'Saving…' : rotationModal.mode === 'add' ? 'Add Rotation' : 'Save changes' }}
+                            {{ saving ? 'Saving…' : rotationModal.decision?.requiresOverride ? 'Continue with exception' : rotationModal.mode === 'add' ? 'Add Rotation' : 'Save changes' }}
                         </button>
                     </div>
                 </div>
@@ -11924,8 +11952,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="entry-highlights.js?v=46"></script>
     <script src="entry46.js?v=46"></script>
     <script src="grounded-core.js?v=46.11-rotation-action-integrity"></script>
+    <script src="decision51.js?v=46.14-phase51-decision-intelligence"></script>
     <script src="temporal50.js?v=46.14-phase50-temporal-integrity"></script>
-    <script src="app.js?v=46.14-phase50-temporal-integrity"></script>
+    <script src="app.js?v=46.14-phase51-decision-intelligence"></script>
+    <!-- Phase 5.0 cache-history contract: <script src="app.js?v=46.14-phase50-temporal-integrity"></script> -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
     <!-- Preserved Access Gate app cache checkpoint for regression history: app.js?v=46.14-access42-session-integrity -->
     <!-- Preserved delivery checkpoints for historical regression contracts: app.js?v=46.14-grounded-phase41e-oncall-precision · style.css?v=46.14-grounded-phase41e-oncall-precision -->

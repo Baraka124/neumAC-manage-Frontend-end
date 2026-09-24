@@ -1,0 +1,55 @@
+/* neumDesk V46.14 · Phase 5.1 Operational Decision Intelligence
+   Scoped decision-review surfaces only. Does not alter global Phase 4 UI. */
+
+#app .odi-review{margin-top:14px;border:1px solid #dce6e5;border-radius:14px;background:#fbfdfc;overflow:hidden;box-shadow:none}
+#app .odi-review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:14px 16px;border-bottom:1px solid #e7eeed;background:#fff}
+#app .odi-review-kicker{display:block;font:700 10px/1.2 'DM Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6a7f80;margin-bottom:5px}
+#app .odi-review-title{font:700 14px/1.35 'DM Sans',sans-serif;color:#173b3d}
+#app .odi-review-sub{margin-top:4px;font:500 11px/1.45 'DM Sans',sans-serif;color:#6c7f80}
+#app .odi-state{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:5px 9px;border:1px solid #d7e2e1;border-radius:999px;background:#fff;font:700 10px/1 'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.04em;color:#557071}
+#app .odi-state::before{content:"";width:7px;height:7px;border-radius:50%;background:#7f9595}
+#app .odi-state--pass::before,#app .odi-state--context::before{background:#2f9f83}
+#app .odi-state--advisory::before{background:#4d8fa8}
+#app .odi-state--warning::before{background:#c5892f}
+#app .odi-state--block::before{background:#bd554f}
+#app .odi-review-body{padding:12px 14px 14px}
+#app .odi-checking{display:flex;align-items:center;gap:8px;padding:10px 2px;font:600 11px/1.4 'DM Sans',sans-serif;color:#65797a}
+#app .odi-spinner{width:12px;height:12px;border:2px solid #dbe5e4;border-top-color:#2d8f8d;border-radius:50%;animation:odi-spin .75s linear infinite}
+@keyframes odi-spin{to{transform:rotate(360deg)}}
+#app .odi-empty{padding:11px 12px;border:1px solid #e3ebea;border-radius:10px;background:#fff;font:600 11px/1.45 'DM Sans',sans-serif;color:#4f6c6d}
+#app .odi-finding{display:grid;grid-template-columns:8px minmax(0,1fr);gap:10px;padding:11px 4px;border-bottom:1px solid #e9efee}
+#app .odi-finding:last-child{border-bottom:0}
+#app .odi-finding-mark{width:8px;height:8px;border-radius:50%;margin-top:5px;background:#7f9595}
+#app .odi-finding--context .odi-finding-mark{background:#2f9f83}
+#app .odi-finding--advisory .odi-finding-mark{background:#4d8fa8}
+#app .odi-finding--warning .odi-finding-mark{background:#c5892f}
+#app .odi-finding--block .odi-finding-mark{background:#bd554f}
+#app .odi-finding-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+#app .odi-finding-top strong{font:700 12px/1.35 'DM Sans',sans-serif;color:#24494a}
+#app .odi-finding-top span{font:700 9px/1 'DM Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#718485}
+#app .odi-finding p{margin:4px 0 0;font:500 11px/1.5 'DM Sans',sans-serif;color:#617677}
+#app .odi-evidence{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:7px;font:600 10px/1.35 'DM Sans',sans-serif;color:#6f8283}
+#app .odi-policy{margin-top:7px;padding-left:10px;border-left:2px solid #dce6e5;font:500 10.5px/1.45 'DM Sans',sans-serif;color:#718182}
+#app .odi-exception{margin-top:12px;padding:12px;border:1px solid #ead8b7;border-radius:11px;background:#fffaf2}
+#app .odi-exception strong{display:block;font:700 11.5px/1.4 'DM Sans',sans-serif;color:#75541f}
+#app .odi-exception p{margin:3px 0 9px;font:500 10.5px/1.45 'DM Sans',sans-serif;color:#806c48}
+#app .odi-exception textarea{width:100%;min-height:72px;resize:vertical;border:1px solid #dbcba9;border-radius:9px;background:#fff;padding:9px 10px;font:500 11px/1.45 'DM Sans',sans-serif;color:#2d4243;outline:none}
+#app .odi-exception textarea:focus{border-color:#8eaa9f;box-shadow:0 0 0 3px rgba(45,143,141,.09)}
+#app .odi-exception--locked{background:#faf8f4;border-color:#ded8cd}
+#app .odi-error{margin-top:10px;padding:9px 11px;border:1px solid #ead0cd;border-radius:9px;background:#fff8f7;font:600 10.5px/1.45 'DM Sans',sans-serif;color:#8a4743}
+#app .odi-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px solid #e8eeed;font:600 9.5px/1.35 'DM Sans',sans-serif;color:#819091}
+#app .odi-save-note{display:block;margin-top:4px;font:500 10px/1.35 'DM Sans',sans-serif;color:#718182}
+
+/* Grounded proposal: same decision grammar, compact density. */
+#app .askbar-proposal .odi-grounded-findings{margin:9px 0 3px;border-top:1px solid #e5eceb}
+#app .askbar-proposal .odi-grounded-finding{padding:8px 0;border-bottom:1px solid #edf1f0}
+#app .askbar-proposal .odi-grounded-finding strong{display:block;font:700 11px/1.35 'DM Sans',sans-serif;color:#355556}
+#app .askbar-proposal .odi-grounded-finding small{display:block;margin-top:2px;font:500 10.5px/1.45 'DM Sans',sans-serif;color:#718485}
+#app .askbar-proposal .odi-grounded-exception{margin-top:9px;padding:9px;border:1px solid #ead8b7;border-radius:9px;background:#fffaf2}
+#app .askbar-proposal .odi-grounded-exception textarea{width:100%;min-height:58px;margin-top:6px;padding:8px;border:1px solid #dbcba9;border-radius:8px;font:500 10.5px/1.4 'DM Sans',sans-serif;resize:vertical}
+
+@media (max-width:720px){
+  #app .odi-review-head{padding:12px 13px}
+  #app .odi-review-body{padding:10px 12px 12px}
+  #app .odi-review-head{flex-direction:column;align-items:flex-start}
+}

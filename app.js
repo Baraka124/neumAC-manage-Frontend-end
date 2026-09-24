@@ -1501,9 +1501,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (res.status >= 500) throw new Error('A server error occurred. Please try again in a moment.')
             const errBody = await res.text().catch(() => `HTTP ${res.status}`)
-            let errMsg = errBody
+            let errMsg = errBody, parsedError = null
             try {
-              const j = JSON.parse(errBody)
+              parsedError = JSON.parse(errBody)
+              const j = parsedError
               // Common shapes: { message }, { error }, { detail }
               if (j.message) errMsg = j.message
               else if (j.error) errMsg = j.error
@@ -1519,9 +1520,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (parts.length) errMsg = parts.join(' · ')
               }
             } catch {}
-            // Always include the status so backend issues are diagnosable.
+            // Preserve structured backend decision data for intelligent workflows.
             console.error(`[neumDesk API] ${res.status} on ${endpoint}:`, errBody)
-            throw new Error(errMsg || `Request failed (HTTP ${res.status})`)
+            const apiError = new Error(errMsg || `Request failed (HTTP ${res.status})`)
+            apiError.status = res.status
+            apiError.payload = parsedError
+            throw apiError
             }
             const ct = res.headers.get('content-type')
           const result = ct?.includes('application/json') ? await res.json() : await res.text()
@@ -1734,6 +1738,9 @@ document.addEventListener('DOMContentLoaded', () => {
       async checkRotationAvailability(params) {
         const q = new URLSearchParams(params).toString()
         return this.request(`/api/rotations/availability?${q}`)
+      }
+      async reviewRotationDecision(payload) {
+        return this.request('/api/rotations/review', { method:'POST', body: payload, timeoutMs:12000 })
       }
       async getAllDepartments() { return this.getList('/api/departments?include_inactive=true') }
       async getDepartmentImpact(id) { return this.request(`/api/departments/${id}/impact`) }
@@ -3572,7 +3579,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.5 useRotations ============
-    function useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser }) {
+    function useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, absences, onCallSchedule, currentUser, hasPermission }) {
       // rotations is a shared ref hoisted in main setup — do not redeclare
       const rotationFilters = reactive({ resident: '', status: '', trainingUnit: '', supervisor: '', search: '' })
       const debouncedRotationSearch = ref('')
@@ -3580,27 +3587,53 @@ document.addEventListener('DOMContentLoaded', () => {
       const rotationModal = reactive({
         show: false, mode: 'add',
         form: { rotation_id: '', resident_id: '', training_unit_id: '', start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)), rotation_status: 'scheduled', rotation_category: 'clinical_rotation', supervising_attending_id: '' },
-        availability: null,  // result from /api/rotations/availability
-        checkingAvailability: false
+        availability: null, // legacy compatibility; Decision51 is now the authoritative preflight surface
+        checkingAvailability: false,
+        decision: null,
+        decisionChecking: false,
+        decisionError: '',
+        overrideAllowed: false,
+        overrideReason: ''
       })
 
-      // ── Rotation availability watcher — checks before save ──────
-      // Debounced: fires when unit + dates are all set
+      const rotationDecisionLocal = () => {
+        if (!window.Decision51) return null
+        const f=rotationModal.form
+        const resident=(allStaffLookup?.value||medicalStaff.value||[]).find(x=>String(x.id)===String(f.resident_id))||null
+        const unit=(trainingUnits.value||[]).find(x=>String(x.id)===String(f.training_unit_id))||null
+        const supervisor=(allStaffLookup?.value||medicalStaff.value||[]).find(x=>String(x.id)===String(f.supervising_attending_id))||null
+        return window.Decision51.reviewRotation({
+          proposal:{residentId:f.resident_id,unitId:f.training_unit_id,supervisorId:f.supervising_attending_id,start:f.start_date,end:f.end_date,excludeId:rotationModal.mode==='edit'?f.id:null,category:f.rotation_category||'clinical_rotation'},
+          resident,unit,supervisor,rotations:rotations.value||[],absences:absences?.value||[],oncall:onCallSchedule?.value||[],action:rotationModal.mode==='edit'?'update':'assign',
+          sourceState:{staff:'loaded',units:'loaded',rotations:'loaded',leave:'loaded',oncall:'loaded'}
+        })
+      }
+
+      // ── Phase 5.1 Decision Review ──────────────────────────────
+      // Local deterministic review renders immediately; the backend then repeats
+      // the same contract against authoritative records. Save always revalidates.
       let _availCheckTimer = null
       const checkRotationAvailability = () => {
         clearTimeout(_availCheckTimer)
-        const { training_unit_id, resident_id, start_date, end_date } = rotationModal.form
-        if (!training_unit_id || !start_date || !end_date) { rotationModal.availability = null; return }
-        _availCheckTimer = setTimeout(async () => {
-          rotationModal.checkingAvailability = true
-          try {
-            const params = { training_unit_id, start_date, end_date }
-            if (resident_id) params.resident_id = resident_id
-            if (rotationModal.mode === 'edit' && rotationModal.form.id) params.exclude_id = rotationModal.form.id
-            rotationModal.availability = await API.checkRotationAvailability(params)
-          } catch { rotationModal.availability = null }
-          finally { rotationModal.checkingAvailability = false }
-        }, 500)
+        const f=rotationModal.form
+        const complete=f.resident_id&&f.training_unit_id&&f.supervising_attending_id&&f.start_date&&f.end_date
+        rotationModal.decisionError=''
+        rotationModal.overrideReason=''
+        if (!complete) { rotationModal.decision=null; rotationModal.availability=null; rotationModal.decisionChecking=false; return }
+        rotationModal.decision=rotationDecisionLocal()
+        _availCheckTimer=setTimeout(async()=>{
+          rotationModal.decisionChecking=true
+          try{
+            const payload={resident_id:f.resident_id,training_unit_id:f.training_unit_id,supervising_attending_id:f.supervising_attending_id,start_date:Utils.normalizeDate(f.start_date),end_date:Utils.normalizeDate(f.end_date),rotation_category:f.rotation_category||'clinical_rotation'}
+            if(rotationModal.mode==='edit'&&f.id) payload.exclude_id=f.id
+            const r=await API.reviewRotationDecision(payload)
+            rotationModal.decision=r?.decision||rotationModal.decision
+            rotationModal.overrideAllowed=!!r?.override_allowed
+          }catch(e){
+            rotationModal.decisionError='Live verification is temporarily unavailable. The current loaded-record review is shown; save will recheck before writing.'
+            rotationModal.overrideAllowed=hasPermission?.('rotation_exceptions','write')||false
+          }finally{rotationModal.decisionChecking=false}
+        },450)
       }
 
       const pendingActivations = ref([])
@@ -3780,43 +3813,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e <= s) { setErr('rotation', 'end_date', 'End date must be after start date'); ok = false }
         }
         
-        // Overlap check — resident can't have two rotations overlapping
-        if (ok && form.resident_id && form.start_date && form.end_date) {
-          const newStart = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
-          const newEnd   = new Date(Utils.normalizeDate(form.end_date)   + 'T23:59:59')
-          const editId   = form.id || form.rotation_id
-          const overlap  = rotations.value.find(r =>
-            r.resident_id === form.resident_id &&
-            r.id !== editId &&
-            ['active','scheduled'].includes(r.rotation_status) &&
-            new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00') <= newEnd &&
-            new Date(Utils.normalizeDate(r.end_date)   + 'T23:59:59') >= newStart
-          )
-          if (overlap) {
-            setErr('rotation', 'start_date', `Overlaps with existing rotation at ${getTrainingUnitName(overlap.training_unit_id) || 'another unit'}`)
-            ok = false
-          }
-        }
-        // Capacity check — unit has a max_residents limit
-        if (ok && form.training_unit_id && form.start_date && form.end_date) {
-          const unit = trainingUnits.value.find(u => u.id === form.training_unit_id)
-          if (unit?.maximum_residents) {
-            const newStart = new Date(Utils.normalizeDate(form.start_date) + 'T00:00:00')
-            const newEnd   = new Date(Utils.normalizeDate(form.end_date)   + 'T23:59:59')
-            const editId   = form.id || form.rotation_id
-            const concurrent = rotations.value.filter(r =>
-              r.training_unit_id === form.training_unit_id &&
-              r.id !== editId &&
-              ['active','scheduled'].includes(r.rotation_status) &&
-              new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00') <= newEnd &&
-              new Date(Utils.normalizeDate(r.end_date)   + 'T23:59:59') >= newStart
-            ).length
-            if (concurrent >= unit.maximum_residents) {
-              setErr('rotation', 'training_unit_id', `${unit.unit_name} is at full capacity (${unit.maximum_residents} residents)`)
-              ok = false
-            }
-          }
-        }
+        // Phase 5.1: operational conflicts are not field-validation errors.
+        // Decision51 classifies them as context/advisory/warning/block and the
+        // review surface explains the exact record/policy before any write.
         return ok
       }
 
@@ -3860,6 +3859,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!unitId) return
         checkRotationAvailability()
       })
+      watch(() => [rotationModal.form.resident_id, rotationModal.form.supervising_attending_id, rotationModal.form.rotation_category], () => {
+        checkRotationAvailability()
+      })
 
       const loadRotations = async () => {
         try {
@@ -3885,6 +3887,7 @@ document.addEventListener('DOMContentLoaded', () => {
           start_date: Utils.normalizeDate(new Date()), end_date: Utils.normalizeDate(new Date(Date.now() + 30 * 86400000)),
           rotation_status: 'scheduled', rotation_category: 'clinical_rotation', supervising_attending_id: ''
         })
+        rotationModal.decision=null; rotationModal.decisionError=''; rotationModal.overrideReason=''; rotationModal.overrideAllowed=false
         rotationModal.show = true
       }
 
@@ -3898,7 +3901,9 @@ document.addEventListener('DOMContentLoaded', () => {
           actual_end_date: Utils.normalizeDate(rotation.actual_end_date) || '',
           termination_reason: rotation.termination_reason || ''
         }
+        rotationModal.decision=null; rotationModal.decisionError=''; rotationModal.overrideReason=''; rotationModal.overrideAllowed=false
         rotationModal.show = true
+        Vue.nextTick(() => checkRotationAvailability())
       }
 
       const saveRotation = async (saving) => {
@@ -3913,42 +3918,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const duration = Math.ceil((endDate - startDate) / 86400000)
         if (duration > 365) { setErr('rotation', 'end_date', `Cannot exceed 365 days (current: ${duration})`); showToast('Error', 'Rotation cannot exceed 365 days', 'error'); return }
 
-        // Lock button immediately — prevents double-submit during async refresh below
+        // Lock button immediately. Phase 5.1 performs an authoritative decision
+        // review before the write instead of throwing a generic overlap/capacity toast.
         saving.value = true
-
-        // Refresh from server before overlap check to avoid stale-cache false conflicts
-        API.invalidate('/api/rotations')
-        try {
-          const fresh = await API.request('/api/rotations', { skipCache: true })
-          const freshList = Utils.ensureArray(fresh)
-          if (freshList.length > 0) rotations.value = freshList.map(r => ({ ...r, start_date: Utils.normalizeDate(r.start_date), end_date: Utils.normalizeDate(r.end_date) }))
-        } catch { /* proceed with cached data */ }
-
-        const excludeId = rotationModal.mode === 'edit' ? f.id : null
-        // Only scheduled/active/extended block new slots — completed/cancelled do NOT
-        const BLOCKING_STATUSES = ['scheduled', 'active', 'extended']
-        const hasOverlap = rotations.value.some(r => {
-          if (r.resident_id !== f.resident_id) return false
-          if (!BLOCKING_STATUSES.includes(r.rotation_status)) return false
-          if (excludeId && r.id === excludeId) return false
-          const eS = new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00')
-          const eE = new Date(Utils.normalizeDate(r.end_date) + 'T23:59:59')
-          if (isNaN(eS.getTime()) || isNaN(eE.getTime())) return false
-          return startDate <= eE && endDate >= eS
-        })
-        if (hasOverlap) {
-          const conflicting = rotations.value.find(r => {
-            if (r.resident_id !== f.resident_id || !BLOCKING_STATUSES.includes(r.rotation_status)) return false
-            if (excludeId && r.id === excludeId) return false
-            const eS = new Date(Utils.normalizeDate(r.start_date) + 'T00:00:00')
-            const eE = new Date(Utils.normalizeDate(r.end_date) + 'T23:59:59')
-            return startDate <= eE && endDate >= eS
-          })
-          const conflictUnit = conflicting ? getTrainingUnitName(conflicting.training_unit_id) : ''
-          const conflictDates = conflicting ? `${Utils.formatDateShort(conflicting.start_date)} – ${Utils.formatDateShort(conflicting.end_date)}` : ''
-          setErr('rotation', 'start_date', 'Dates overlap with an active or scheduled rotation')
-          showToast('Scheduling Conflict', `${getResidentName(f.resident_id)} already has a ${conflicting?.rotation_status || ''} rotation at ${conflictUnit} (${conflictDates}).`, 'error')
-          saving.value = false; return
+        rotationModal.decisionError = ''
+        const terminalHistorical = rotationModal.mode === 'edit' && ['terminated_early','completed','cancelled'].includes(String(f.rotation_status||''))
+        if (!terminalHistorical) {
+          try {
+            const reviewPayload={resident_id:f.resident_id,training_unit_id:f.training_unit_id,supervising_attending_id:f.supervising_attending_id,start_date:startISO,end_date:endISO,rotation_category:f.rotation_category||'clinical_rotation'}
+            if(rotationModal.mode==='edit'&&f.id) reviewPayload.exclude_id=f.id
+            const reviewed=await API.reviewRotationDecision(reviewPayload)
+            rotationModal.decision=reviewed?.decision||rotationModal.decision
+            rotationModal.overrideAllowed=!!reviewed?.override_allowed
+            if(rotationModal.decision && !rotationModal.decision.canCommit){
+              rotationModal.decisionError='Resolve the blocking item below before saving.'
+              saving.value=false; return
+            }
+            if(rotationModal.decision?.requiresOverride){
+              if(!rotationModal.overrideAllowed){rotationModal.decisionError='This assignment needs an authorised exception. You do not have rotation-exception approval permission.';saving.value=false;return}
+              if(String(rotationModal.overrideReason||'').trim().length<8){rotationModal.decisionError='Add a short reason for the exception before continuing.';saving.value=false;return}
+            }
+          }catch(e){
+            if(e?.payload?.decision) rotationModal.decision=e.payload.decision
+            rotationModal.decisionError=e?.payload?.message||e.message||'Could not verify the assignment.'
+            saving.value=false; return
+          }
         }
 
         try {
@@ -3977,6 +3971,14 @@ document.addEventListener('DOMContentLoaded', () => {
             start_date: startISO, end_date: endISO,
             rotation_category: f.rotation_category || 'clinical_rotation',
             rotation_status: derivedStatus
+          }
+          if (!terminalHistorical && rotationModal.decision?.requiresOverride) {
+            data.decision_override = {
+              accepted:true,
+              reason:String(rotationModal.overrideReason||'').trim(),
+              review_contract:rotationModal.decision.contract||'decision51.rotation.v1',
+              finding_codes:(rotationModal.decision.findings||[]).filter(x=>x.severity==='warning').map(x=>x.code)
+            }
           }
           if (rotationModal.mode === 'edit' && f.rotation_status === 'terminated_early') {
             const actualEnd = Utils.normalizeDate(f.actual_end_date)
@@ -4018,10 +4020,15 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           rotationModal.show = false; clearAll('rotation'); await loadRotations()
         } catch (e) {
-          let msg = e.message || 'Failed to save rotation'
-          if (msg.includes('overlapping')) msg = 'Dates conflict with an existing rotation.'
-          if (msg.includes('date')) msg = 'Invalid date — check start and end dates.'
-          showToast('Error', msg, 'error')
+          if(e?.payload?.decision){
+            rotationModal.decision=e.payload.decision
+            rotationModal.overrideAllowed=e.payload.override_allowed ?? rotationModal.overrideAllowed
+            rotationModal.decisionError=e.payload.message||'The assignment changed during verification. Review the updated findings below.'
+          } else {
+            const msg=e.message||'Failed to save rotation'
+            rotationModal.decisionError=msg
+            showToast('Could not save rotation', msg, 'error')
+          }
         } finally { saving.value = false }
       }
 
@@ -7766,7 +7773,7 @@ document.addEventListener('DOMContentLoaded', () => {
           unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount
         } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, medicalStaff, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
-        const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, currentUser })
+        const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, absences, onCallSchedule, currentUser, hasPermission })
 
         const openPlacementRotation = (unit) => {
           if (!unit) return
@@ -10698,6 +10705,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { key: 'medical_staff',        label: 'Medical Staff',      icon: '👤' },
         { key: 'oncall_schedule',       label: 'On-call Schedule',   icon: '📞' },
         { key: 'resident_rotations',    label: 'Rotations',          icon: '🔄' },
+        { key: 'rotation_exceptions',   label: 'Rotation Exceptions',icon: '⚖️' },
         { key: 'training_units',        label: 'Clinical Units',     icon: '🏥' },
         { key: 'communications',        label: 'Communications',     icon: '📢' },
         { key: 'research_lines',        label: 'Research Lines',     icon: '🔬' },
@@ -13559,12 +13567,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try{checked=groundedInvokeTool('resident_rotations.propose_assignment',{residentId:ex.resident.id,unitId:ex.unit.id,supervisorId:ex.supervisor.id,start:ex.start,end:ex.end},{traceId})}
         catch(err){groundedFinishExecutionTrace(traceId,{sources:['staff','units','rotations','leave records'],confidence:'low'},'error',err,'assign_rotation');askBar.turns.push(Vue.reactive({q:asked,text:`I couldn't prepare that rotation: ${err?.message||'validation failed'}.`,chips:[],actions:[],sources:['staff','units','rotations'],followups:[],confidence:'low',asOf:askBarNow(),streaming:false}));return}
         const fmt=d=>{try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}catch(e){return d}}
-        const labels={resident_not_found:'Resident record not found',resident_inactive:'Resident is inactive',resident_not_eligible:'Selected person is not a resident/fellow',unit_not_found:'Clinical unit not found',unit_inactive:'Clinical unit is inactive',supervisor_not_found:'Supervisor record not found',supervisor_inactive:'Supervisor is inactive',supervisor_not_eligible:'Selected supervisor is not eligible to supervise residents',invalid_date_window:'Invalid rotation date range',resident_overlap:'Resident already has a rotation in this period',unit_capacity:'Clinical unit has no resident capacity for the full period'}
-        const warnings=[]
-        if(checked.leaveConflicts?.length) warnings.push(`${checked.leaveConflicts.length} recorded leave period${checked.leaveConflicts.length===1?'':'s'} overlaps this rotation`)
-        if(checked.supervisorLeave?.length) warnings.push(`Supervisor has ${checked.supervisorLeave.length} recorded leave period${checked.supervisorLeave.length===1?'':'s'} during the rotation`)
-        const proposal={kind:'rotation',traceId,resident:{id:ex.resident.id,name:ex.resident.full_name},unit:{id:ex.unit.id,name:ex.unit.unit_name},supervisor:{id:ex.supervisor.id,name:ex.supervisor.full_name},start:ex.start,end:ex.end,startLabel:fmt(ex.start),endLabel:fmt(ex.end),blocked:(checked.blocked||[]).length>0,blockReasons:checked.blocked||[],blockReason:(checked.blocked||[]).map(x=>labels[x]||x).join(' · '),warnings,occ:`${checked.capacity?.state?.peak??0}/${checked.capacity?.state?.capacity??ex.unit.maximum_residents??'—'}`,atCapacity:(checked.blocked||[]).includes('unit_capacity'),rotationOverlap:(checked.blocked||[]).includes('resident_overlap')?'existing rotation':null,leaveOverlap:checked.leaveConflicts?.length?checked.leaveConflicts.map(x=>`${fmt(x.start)}–${fmt(x.end)}`).join(', '):null}
-        askBar.turns.push(Vue.reactive({q:'',text:'',rotationProposal:proposal,chips:[],actions:[],sources:['staff','units','rotations','leave records'],followups:[],confidence:proposal.blocked?'low':(warnings.length?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
+        const decision=checked.decision
+        const capacityFinding=(decision?.findings||[]).find(f=>['UNIT_CAPACITY_EXCEEDED','UNIT_REACHES_CAPACITY'].includes(f.code))
+        const blockFindings=(decision?.findings||[]).filter(f=>f.severity==='block')
+        const warningFindings=(decision?.findings||[]).filter(f=>f.severity==='warning')
+        const proposal={kind:'rotation',traceId,resident:{id:ex.resident.id,name:ex.resident.full_name},unit:{id:ex.unit.id,name:ex.unit.unit_name},supervisor:{id:ex.supervisor.id,name:ex.supervisor.full_name},start:ex.start,end:ex.end,startLabel:fmt(ex.start),endLabel:fmt(ex.end),decision,findings:decision?.findings||[],blocked:!decision?.canCommit,blockReasons:blockFindings.map(f=>f.code),blockReason:blockFindings.map(f=>f.summary).join(' · '),warnings:warningFindings.map(f=>f.summary),requiresOverride:!!decision?.requiresOverride,overrideAllowed:hasPermission('rotation_exceptions','write'),overrideReason:'',occ:capacityFinding?.evidence?.capacity?`${capacityFinding.evidence.peakProjected}/${capacityFinding.evidence.capacity}`:`—/${ex.unit.maximum_residents??'—'}`}
+        askBar.turns.push(Vue.reactive({q:'',text:'',rotationProposal:proposal,chips:[],actions:[],sources:['staff','units','rotations','leave records','on-call schedule'],followups:[],confidence:proposal.blocked?'low':(proposal.requiresOverride?'medium':'high'),coreTraceId:traceId,asOf:askBarNow(),streaming:false}))
       }
       const askBarConfirmRotationEdit = async (p, turn) => {
         turn.writing = true
@@ -13622,11 +13630,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const askBarConfirmRotation = async (p, turn) => {
         if(p.blocked) return
+        if(p.requiresOverride && !p.overrideAllowed){turn.commitError='This warning requires rotation-exception approval permission.';return}
+        if(p.requiresOverride && String(p.overrideReason||'').trim().length<8){turn.commitError='Add a short reason for continuing with this exception.';return}
         turn.writing=true;turn.commitError=''
         const traceId=p.traceId||turn.coreTraceId||null
         try{
           if(traceId)GroundedCore?.addTraceEvent(traceId,'human_confirmation',{confirmed:true,action:'assign_rotation'})
-          await groundedInvokeTool('resident_rotations.commit_assignment',{residentId:p.resident.id,unitId:p.unit.id,supervisorId:p.supervisor.id,start:p.start,end:p.end},{traceId,confirmed:true})
+          await groundedInvokeTool('resident_rotations.commit_assignment',{residentId:p.resident.id,unitId:p.unit.id,supervisorId:p.supervisor.id,start:p.start,end:p.end,overrideReason:p.overrideReason||''},{traceId,confirmed:true})
           turn.writing=false;turn.committed=true
           try{await rotationOps.loadRotations()}catch(e){}
           turn.commitText=`✓ ${p.resident.name} scheduled in ${p.unit.name} under ${p.supervisor.name}.`
@@ -13960,41 +13970,50 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         groundedToolRegistry.register({
           name:'resident_rotations.check_assignment', access:GroundedCore.ACCESS.READ, module:'resident_rotations',
-          description:'Validate resident, unit, formal supervisor, exact capacity and overlapping assignments for a proposed rotation.',
+          description:'Run the shared Operational Decision Intelligence review for a proposed resident rotation.',
+          // V46.11 terminology preserved for regression/history mapping only:
+          // resident_overlap → ROTATION_CONCURRENT_PRIMARY; unit_capacity → UNIT_CAPACITY_EXCEEDED;
+          // supervisor_not_eligible → SUPERVISOR_NOT_ELIGIBLE; resident_not_eligible → RESIDENT_NOT_ELIGIBLE;
+          // invalid_date_window → INVALID_DATE_WINDOW. leaveConflicts are now typed Decision51 findings, never hard-blocked by name.
           inputSchema:{residentId:'uuid',unitId:'uuid',supervisorId:'uuid',start:'date',end:'date'},
           run:({residentId,unitId,supervisorId,start,end},opts={})=>{
-            const traceId=opts.traceId||askBar.coreTraceId||null
-            const resident=(medicalStaff.value||[]).find(x=>String(x.id)===String(residentId));const unit=(trainingUnits.value||[]).find(x=>String(x.id)===String(unitId));const blocked=[]
-            if(!resident)blocked.push('resident_not_found');else{if((resident.employment_status||'active')!=='active')blocked.push('resident_inactive');if(!/resident|medical_resident|fellow|mir/.test((resident.staff_type||'').toLowerCase()))blocked.push('resident_not_eligible')}
-            if(!unit)blocked.push('unit_not_found');else if((unit.unit_status||'active')==='inactive')blocked.push('unit_inactive')
-            const ss=Utils.normalizeDate(start),ee=Utils.normalizeDate(end);if(!ss||!ee||ss>ee)blocked.push('invalid_date_window')
-            const supervisor=groundedToolRegistry.invoke('resident_rotations.check_supervisor',{supervisorId},{traceId,confirmed:false});if(!supervisor.eligible)blocked.push(supervisor.reason||'supervisor_not_eligible')
-            const conflicts=resident&&ss&&ee?groundedToolRegistry.invoke('resident_rotations.conflicts',{residentId,start:ss,end:ee},{traceId,confirmed:false}):[];if(conflicts.length)blocked.push('resident_overlap')
-            const capacity=unit&&ss&&ee?groundedToolRegistry.invoke('clinical_units.capacity_window',{unitId,start:ss,end:ee},{traceId,confirmed:false}):null;if(capacity&&(capacity.state.overCapacity||capacity.state.minFree<1))blocked.push('unit_capacity')
-            const leaveConflicts=resident&&ss&&ee?(absences.value||[]).filter(a=>String(a.staff_member_id)===String(residentId)&&!['returned_to_duty','cancelled'].includes(a.current_status)&&Utils.absenceEffectiveStart(a)<=ee&&Utils.absenceEffectiveEnd(a)>=ss).map(a=>({id:a.id,start:Utils.absenceEffectiveStart(a),end:Utils.absenceEffectiveEnd(a),plannedStart:a.start_date,plannedEnd:a.end_date,type:a.absence_reason||a.absence_type||null})):[]
-            const supervisorLeave=supervisor?.person&&ss&&ee?(absences.value||[]).filter(a=>String(a.staff_member_id)===String(supervisorId)&&!['returned_to_duty','cancelled'].includes(a.current_status)&&Utils.absenceEffectiveStart(a)<=ee&&Utils.absenceEffectiveEnd(a)>=ss).map(a=>({id:a.id,start:Utils.absenceEffectiveStart(a),end:Utils.absenceEffectiveEnd(a),plannedStart:a.start_date,plannedEnd:a.end_date,type:a.absence_reason||a.absence_type||null})):[]
-            return{resident:resident?{id:resident.id,name:resident.full_name}:null,unit:unit?{id:unit.id,name:unit.unit_name}:null,supervisor,capacity,conflicts,leaveConflicts,supervisorLeave,blocked:[...new Set(blocked)],start:ss,end:ee}
+            const resident=(medicalStaff.value||[]).find(x=>String(x.id)===String(residentId))||null
+            const unit=(trainingUnits.value||[]).find(x=>String(x.id)===String(unitId))||null
+            const supervisor=(medicalStaff.value||[]).find(x=>String(x.id)===String(supervisorId))||null
+            const decision=window.Decision51?.reviewRotation({
+              proposal:{residentId,unitId,supervisorId,start:Utils.normalizeDate(start),end:Utils.normalizeDate(end),category:'clinical_rotation'},
+              resident,unit,supervisor,rotations:rotations.value||[],absences:absences.value||[],oncall:onCallSchedule.value||[],action:'assign',
+              sourceState:{staff:'loaded',units:'loaded',rotations:'loaded',leave:'loaded',oncall:'loaded'}
+            })
+            if(!decision) throw new Error('Operational decision engine is unavailable.')
+            return {resident:resident?{id:resident.id,name:resident.full_name}:null,unit:unit?{id:unit.id,name:unit.unit_name}:null,supervisor:supervisor?{person:{id:supervisor.id,name:supervisor.full_name},eligible:!decision.findings.some(f=>f.code.startsWith('SUPERVISOR_')&&f.severity==='block')}:null,decision,blocked:decision.findings.filter(f=>f.severity==='block').map(f=>f.code),warnings:decision.findings.filter(f=>f.severity==='warning'),start:decision.proposal.start,end:decision.proposal.end}
           }
         })
         groundedToolRegistry.register({
           name:'resident_rotations.propose_assignment', access:GroundedCore.ACCESS.PROPOSE, module:'resident_rotations',
-          description:'Build a non-destructive resident-rotation proposal using formal supervision, exact date overlap and resident-capacity validation.',
+          description:'Build a non-destructive rotation proposal from the shared Decision51 findings contract.',
           inputSchema:{residentId:'uuid',unitId:'uuid',supervisorId:'uuid',start:'date',end:'date'},
           run:({residentId,unitId,supervisorId,start,end},opts={})=>{const traceId=opts.traceId||askBar.coreTraceId||null;const checked=groundedToolRegistry.invoke('resident_rotations.check_assignment',{residentId,unitId,supervisorId,start,end},{traceId,confirmed:false});return{kind:'rotation_proposal',...checked,requiresHumanConfirmation:true}}
         })
         groundedToolRegistry.register({
           name:'resident_rotations.commit_assignment', access:GroundedCore.ACCESS.WRITE, module:'resident_rotations',
-          description:'Commit a human-confirmed resident rotation after re-validating resident overlap, unit capacity and formal supervisor immediately before write.',
-          inputSchema:{residentId:'uuid',unitId:'uuid',supervisorId:'uuid',start:'date',end:'date'},
-          run:async({residentId,unitId,supervisorId,start,end},opts={})=>{
+          description:'Commit a human-confirmed rotation after Decision51 revalidation. Overridable warnings require explicit exception permission and a reason.',
+          inputSchema:{residentId:'uuid',unitId:'uuid',supervisorId:'uuid',start:'date',end:'date',overrideReason:'string?'},
+          run:async({residentId,unitId,supervisorId,start,end,overrideReason},opts={})=>{
             const traceId=opts.traceId||askBar.coreTraceId||null
             const proposal=groundedToolRegistry.invoke('resident_rotations.propose_assignment',{residentId,unitId,supervisorId,start,end},{traceId,confirmed:false})
-            if(proposal.blocked.length){const er=new Error(`Rotation assignment blocked: ${proposal.blocked.join(', ')}`);er.code='ROTATION_ASSIGNMENT_BLOCKED';er.reasons=proposal.blocked;throw er}
+            const decision=proposal.decision
+            if(!decision?.canCommit){const er=new Error('Rotation assignment is blocked by a non-overridable constraint.');er.code='ROTATION_ASSIGNMENT_BLOCKED';er.decision=decision;throw er}
+            if(decision.requiresOverride){
+              if(!hasPermission('rotation_exceptions','write')){const er=new Error('This rotation needs an authorised exception.');er.code='ROTATION_OVERRIDE_NOT_AUTHORIZED';er.decision=decision;throw er}
+              if(String(overrideReason||'').trim().length<8){const er=new Error('Add a short reason for the rotation exception before confirming.');er.code='ROTATION_OVERRIDE_REASON_REQUIRED';er.decision=decision;throw er}
+            }
             const ss=Utils.normalizeDate(start),ee=Utils.normalizeDate(end),today=Utils.normalizeDate(new Date())
             const status=ss>today?'scheduled':(ee<today?'completed':'active')
             const body={resident_id:residentId,training_unit_id:unitId,supervising_attending_id:supervisorId,start_date:ss,end_date:ee,rotation_status:status,rotation_category:'clinical_rotation'}
+            if(decision.requiresOverride) body.decision_override={accepted:true,reason:String(overrideReason).trim(),review_contract:decision.contract,finding_codes:(decision.findings||[]).filter(f=>f.severity==='warning').map(f=>f.code)}
             const saved=await API.request('/api/rotations',{method:'POST',body})
-            return{saved,proposal,status}
+            return{saved,proposal,status,decision}
           }
         })
         // V46.10 · Leave is the third module migrated onto the Grounded harness.
