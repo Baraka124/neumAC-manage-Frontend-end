@@ -1,27 +1,15 @@
-neumDesk V46.14 — Phase 5.1 FRONTEND DEPLOYMENT BUNDLE
+neumDesk V46.14 — Phase 5.1.1 Startup Integrity
 
-This ZIP contains the complete current frontend runtime/assets referenced by index.html.
-Upload these files together to the frontend root, preserving the filenames.
+This frontend bundle supersedes the Phase 5.1 frontend bundle.
 
-Core current files:
-- index.html
-- app.js
-- temporal50.js
-- activity50.js
-- decision51.js
-- decision51.css
+Fix:
+- eliminates Vue setup() temporal-dead-zone crash:
+  "Cannot access 'absences' before initialization"
+- Leave, On-call and Rotations now share refs created before composable initialization
+- index.html cache-busts app.js as v=46.14-phase51.1-startup-integrity
+- no backend or database migration change is required for this hotfix
 
-Preserved runtime/UI dependencies also included:
-- style.css
-- activity45.js
-- activity45-ui.css
-- grounded-core.js
-- entry46.js
-- entry46.css
-- entry-highlights.js
-- neumact-logo.png
-- entry-art-*.svg
-
-Important:
-- Deploy the database/backend changes before this frontend if Phase 5.0/5.1 migrations are not already installed.
-- Hard-refresh once after deployment to clear previous cached app assets.
+Deployment:
+Upload the contents of frontend/ over the current frontend deployment.
+At minimum app.js and index.html must be replaced together.
+After deployment hard-refresh once if the CDN/browser still shows an older cached page.

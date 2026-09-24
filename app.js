@@ -2816,8 +2816,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.4 useOnCall ============
-    function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences }) {
-      const onCallSchedule = ref([])
+    function useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences, onCallSchedule: onCallScheduleRef }) {
+      const onCallSchedule = onCallScheduleRef || ref([])
             const todaysOnCall = ref([])
       const loadingSchedule = ref(false)
       const onCallFilters = reactive({ date: '', shiftType: '', physician: '', coverageArea: '', search: '' })
@@ -4329,8 +4329,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.6 useAbsences ============
-    function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule }) {
-      const absences = ref([])
+    function useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule, absences: absencesRef }) {
+      const absences = absencesRef || ref([])
             const absenceFilters = reactive({ staff: '', status: '', reason: '', startDate: '', search: '', showPast: false })
             const debouncedAbsenceSearch = ref('')
             watch(() => absenceFilters.search, Utils.debounce(v => { debouncedAbsenceSearch.value = v }, 250))
@@ -7748,6 +7748,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // so when either load function fills it all consumers see it immediately.
         const trainingUnits = ref([])
         const rotations     = ref([])
+        // Phase 5.1.1: shared operational refs must exist before any composable consumes them.
+        // This removes the setup() temporal-dead-zone between Rotations, Leave and On-call.
+        const absencesShared = ref([])
+        const onCallScheduleShared = ref([])
         // researchLines hoisted so useStaff can clear coordinator assignments on role revoke
         const researchLinesShared = ref([])
         // allDepartmentsLookup hoisted so useTrainingUnits can filter units by department
@@ -7773,7 +7777,7 @@ document.addEventListener('DOMContentLoaded', () => {
           unitStaffCache, unitStaffLoading, unitStaffErrors, loadUnitStaff, getUnitAttendingCount
         } = useTrainingUnits({ showToast, showConfirmation, trainingUnits, rotations, medicalStaff, allStaffLookup, allDepartmentsLookup: allDepartmentsLookupShared })
 
-        const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, absences, onCallSchedule, currentUser, hasPermission })
+        const rotationOps = useRotations({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, trainingUnits, rotations, absences: absencesShared, onCallSchedule: onCallScheduleShared, currentUser, hasPermission })
 
         const openPlacementRotation = (unit) => {
           if (!unit) return
@@ -7814,7 +7818,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return diff > 0 ? diff : 0
         }
 
-        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule: ref([]) })
+        const absenceOps = useAbsences({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, onCallSchedule: onCallScheduleShared, absences: absencesShared })
         const { absences } = absenceOps
 
         // ── Unit staff absence impact (needs absences in scope) ──────────────
@@ -8043,7 +8047,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } catch { return [] }
         }
 
-        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences })
+        const onCallOps = useOnCall({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, setErr, clearAll, medicalStaff, allStaffLookup, absences, onCallSchedule: onCallScheduleShared })
         const { onCallSchedule, coverageAreas, oncallChipStyle } = onCallOps
 
         // ── Root-level cross-composable computed ─────────────────
