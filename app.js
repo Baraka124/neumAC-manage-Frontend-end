@@ -1,4 +1,4 @@
-// neumDesk V46.14 · Phase 5.3E · Grounded permission-aware retrieval · 2026-09-24
+// neumDesk V46.14 · Phase 5.3H · Scoped portfolio access + runtime fixes · 2026-09-25
 document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
@@ -733,6 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const teachTopicLabels = { oncall_upcoming:'On-call / duty', absent_now:'Leave / absence', rotations_deep:'Rotations', units_overview:'Clinical units', trials_recruiting:'Trials', research_lines:'Research lines', staff_with_phd:'PhD holders', staff_can_pi:'PI-eligible', departments_overview:'Departments', briefing:'Daily briefing', issues:'Issues / conflicts' }
     const teachForm = Vue.reactive({ intent: '', content: '', lang: 'Spanish' })
     const teachMsg = Vue.ref('')
+    let matchTeachPhrase = () => null
     const teachSubmit = async () => {
       if (!teachForm.intent || !teachForm.content.trim()) return
       const _clean = teachForm.content.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g,'').trim()
@@ -741,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // `askBarMatchTableOnly` is declared later in setup but is available by the
       // time a user can submit this form.
       try {
-        const collision = typeof askBarMatchTableOnly === 'function' ? askBarMatchTableOnly(_clean) : null
+        const collision = matchTeachPhrase(_clean)
         if (collision && collision.priority >= 50 && collision.intent !== teachForm.intent) {
           teachMsg.value = `Not saved — that phrase already maps strongly to ${collision.intent.replace(/_/g,' ')}. Use a more specific local phrase.`
           return
@@ -1134,7 +1135,8 @@ document.addEventListener('DOMContentLoaded', () => {
       static formatDateShort(d) {
         if (!d) return ''
         try {
-          const date = typeof d === 'string' ? new Date(Utils.normalizeDate(d) + 'T00:00:00') : d
+          const date = d instanceof Date ? d : new Date(Utils.normalizeDate(d) + 'T00:00:00')
+          if (Number.isNaN(date.getTime())) return ''
           return date.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })
         } catch { return '' }
       }
@@ -2097,7 +2099,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.2 useUI ============
-    function useUI() {
+    function useUI({ navigate, getAbsences, getRotations }) {
       const toasts = ref([])
       const sidebarCollapsed = ref(false)
       const mobileMenuOpen = ref(false)
@@ -2200,11 +2202,11 @@ document.addEventListener('DOMContentLoaded', () => {
               'a': 'staff_absence',
               'h': 'research_hub',
               'n': 'news',
-              ',': 'system_settings',
+              ',': 'settings',
             }
             if (navMap[e.key]) {
               e.preventDefault()
-              switchView(navMap[e.key])
+              navigate(navMap[e.key])
             }
             return
           }
@@ -2224,10 +2226,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const sidebarLiveStatus = computed(() => {
         try {
-          const absentNow  = absences.value
-            .map(a => ({...a, ...deriveAbsenceStatus(a)}))
-            .filter(a => a.current_status === 'currently_absent').length
-          const activeRots = rotations.value.filter(r => r.rotation_status === 'active').length
+          const today = Utils.normalizeDate(new Date())
+          const absentNow = getAbsences().filter(a => !['cancelled','completed','returned_to_duty'].includes(a.current_status) && Utils.normalizeDate(a.start_date) <= today && Utils.normalizeDate(a.end_date) >= today).length
+          const activeRots = getRotations().filter(r => r.rotation_status === 'active').length
           const parts = []
           if (activeRots > 0) parts.push(`${activeRots} resident${activeRots!==1?'s':''} on rotation`)
           if (absentNow  > 0) parts.push(`${absentNow} absent`)
@@ -2249,7 +2250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.3 useStaff ============
-    function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser, researchLines, loadResearchLines }) {
+    function useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser, researchLines, loadResearchLines, loadStaffTypes }) {
       const medicalStaff    = ref([])
       const allStaffLookup  = ref([])   // ALL staff including inactive, for name resolution
       const staffView = ref('table') // 'table' | 'people' | 'compact'
@@ -4814,7 +4815,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.7 useDepartments ============
-    function useDepartments({ showToast, showConfirmation, medicalStaff, trainingUnits, rotations }) {
+    function useDepartments({ showToast, showConfirmation, medicalStaff, allStaffLookup, trainingUnits, rotations }) {
       const departments = ref([])
             const allDepartmentsLookup = ref([])  // includes inactive — for name resolution only
       const departmentFilters = reactive({ search: '', status: '' })
@@ -6906,7 +6907,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.12 useAnalytics ============
-    function useAnalytics({ showToast, hasPermission }) {
+    function useAnalytics({ showToast, hasPermission, getResearch }) {
       const researchDashboard = ref(null)
       const researchLinesPerformance = ref([])
       const partnerCollaborations = ref(null)
@@ -6935,6 +6936,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Portfolio KPIs — computed from local refs, instant, no API needed
       const portfolioKPIs = computed(() => {
         try {
+          const {researchLines,clinicalTrials,innovationProjects} = getResearch()
           const totalLines    = (researchLines.value || []).length
           const activeLines   = (researchLines.value || []).filter(l => l.active !== false).length
           const totalTrials   = (clinicalTrials.value || []).length
@@ -7015,7 +7017,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const handleExport = async () => {
-        if (!hasPermission('analytics', 'export')) { showToast('Error', 'No permission to export data', 'error'); return }
+        if (!hasPermission('research_lines', 'read')) { showToast('Error', 'No permission to export data', 'error'); return }
         exportModal.loading = true
         try {
           const data = await API.exportData(exportModal.type, exportModal.format)
@@ -7773,7 +7775,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const auth = useAuth()
         const { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings } = auth
-        const ui = useUI()
+        const ui = useUI({navigate:view=>switchView(view),getAbsences:()=>absencesShared.value,getRotations:()=>rotations.value})
         const { showToast, showConfirmation, currentView, userMenuOpen, userProfileModal } = ui
 
         // One-time internal-workspace orientation note. This replaces the persistent
@@ -7824,7 +7826,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // without requiring useDepartments to be initialised first
         const allDepartmentsLookupShared = ref([])
 
-        const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser, researchLines: researchLinesShared, loadResearchLines: async () => { try { researchLinesShared.value = await API.getResearchLines() } catch {} } })
+        const staffOps = useStaff({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, fieldErrors, setErr, clearAll, currentUser, loadStaffTypes: () => loadStaffTypes(), researchLines: researchLinesShared, loadResearchLines: async () => { try { researchLinesShared.value = await API.getResearchLines() } catch {} } })
         const { medicalStaff, allStaffLookup, hospitalsList } = staffOps
 
         const { trainingUnitFilters, trainingUnitModal, unitsByDepartment, unitResidentsModal, unitCliniciansModal,
@@ -7865,6 +7867,7 @@ document.addEventListener('DOMContentLoaded', () => {
           deptPanel, openDeptPanel, closeDeptPanel,
           deptPanelAttending, deptPanelResidents, deptPanelUnits,
           getUnitSupervisorName } = useDepartments({
+          allStaffLookup,
           showToast, showConfirmation, medicalStaff, trainingUnits, rotations
         })
 
@@ -8250,7 +8253,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const commsOps = useComms({ showToast, showConfirmation, medicalStaff, onCallSchedule, absences, rotations })
         const liveOps = useLiveStatus({ showToast, showConfirmation, medicalStaff, currentUser })
-        const analyticsOps = useAnalytics({ showToast, hasPermission })
+        const analyticsOps = useAnalytics({ showToast, hasPermission, getResearch: () => researchOps })
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
 
         const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
@@ -10279,7 +10282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // switchView(view, filters) — supports cross-navigation with pre-applied filters
         // filters example: { department: deptId, category: 'external_resident' }
         const switchView = async (view, filters = {}) => {
-          const moduleForView={medical_staff:'medical_staff',staff_absence:'staff_absence',resident_rotations:'resident_rotations',oncall_schedule:'oncall_schedule',training_units:'training_units',research_lines:'research_lines',clinical_trials:'clinical_trials',innovation_projects:'innovation_projects'}[view]
+          const moduleForView={medical_staff:'medical_staff',staff_absence:'staff_absence',resident_rotations:'resident_rotations',oncall_schedule:'oncall_schedule',training_units:'training_units',research_lines:'research_lines',clinical_trials:'clinical_trials',innovation_projects:'innovation_projects',research_hub:'research_lines',news:'news_posts'}[view]
           if((moduleForView&&!hasPermission(moduleForView,'read')) || (view==='settings'&&!canManageSettings())) {showToast('Restricted access','Your account cannot open this section.','info');return}
           currentView.value = view; ui.mobileMenuOpen.value = false
           // Cross-module navigation should land on the surface that was requested,
@@ -10287,14 +10290,14 @@ document.addEventListener('DOMContentLoaded', () => {
           uiRevealModuleTop(view)
           // Apply pre-filters if provided (cross-view navigation)
           if (filters.department) {
-            if (staffFilters && staffFilters.department !== undefined) staffFilters.department = filters.department
+            if (staffOps.staffFilters && staffOps.staffFilters.department !== undefined) staffOps.staffFilters.department = filters.department
             if (trainingUnitFilters && trainingUnitFilters.department !== undefined) trainingUnitFilters.department = filters.department
           }
-          if (filters.residentCategory && staffFilters) { staffFilters.staffType = 'medical_resident'; staffFilters.residentCategory = filters.residentCategory }
-          if (filters.status && staffFilters) staffFilters.status = filters.status
-          if (filters.staffType && staffFilters) staffFilters.staffType = filters.staffType
-          if (filters.rotationStatus && rotationFilters) rotationFilters.status = filters.rotationStatus
-          if (filters.trainingUnit && rotationFilters) rotationFilters.trainingUnit = filters.trainingUnit
+          if (filters.residentCategory && staffOps.staffFilters) { staffOps.staffFilters.staffType = 'medical_resident'; staffOps.staffFilters.residentCategory = filters.residentCategory }
+          if (filters.status && staffOps.staffFilters) staffOps.staffFilters.status = filters.status
+          if (filters.staffType && staffOps.staffFilters) staffOps.staffFilters.staffType = filters.staffType
+          if (filters.rotationStatus && rotationOps.rotationFilters) rotationOps.rotationFilters.status = filters.rotationStatus
+          if (filters.trainingUnit && rotationOps.rotationFilters) rotationOps.rotationFilters.trainingUnit = filters.trainingUnit
           ui.searchResultsOpen.value = false
           if (pagination[view]) pagination[view].page = 1
           // Trigger entrance animation on content area
@@ -11024,7 +11027,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form.image_urls.length >= 5) { showToast('Limit reached', 'Maximum 5 images per post', 'warning'); return }
         newsImageUploading.value = true
         try {
-          const token = localStorage.getItem(CONFIG.TOKEN_KEY) || ''
+          const token = API.token || ''
           const fd = new FormData()
           fd.append('file', file)
           const res = await fetch(CONFIG.API_BASE_URL + '/api/upload/news-image', {
@@ -11054,7 +11057,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!file) return
         staffPhotoUploading.value = true
         try {
-          const token = localStorage.getItem(CONFIG.TOKEN_KEY) || ''
+          const token = API.token || ''
           const fd = new FormData()
           fd.append('file', file)
           const res = await fetch(CONFIG.API_BASE_URL + '/api/upload/staff-photo', {
@@ -11073,22 +11076,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       const toggleResidentManagerRole = () => {
-        const f = medicalStaffModal.form
-        if (f.staff_type === 'attending_physician' && !(isRoleTaken('resident_manager') && !f.is_resident_manager)) {
-          handleRoleAssignment('resident_manager', !f.is_resident_manager)
+        const f = staffOps.medicalStaffModal.form
+        if (f.staff_type === 'attending_physician' && !(staffOps.isRoleTaken('resident_manager') && !f.is_resident_manager)) {
+          staffOps.handleRoleAssignment('resident_manager', !f.is_resident_manager)
           f.is_resident_manager = !f.is_resident_manager
         }
       }
       const toggleOncallManagerRole = () => {
-        const f = medicalStaffModal.form
-        if (f.staff_type === 'attending_physician' && !(isRoleTaken('oncall_manager') && !f.is_oncall_manager)) {
-          handleRoleAssignment('oncall_manager', !f.is_oncall_manager)
+        const f = staffOps.medicalStaffModal.form
+        if (f.staff_type === 'attending_physician' && !(staffOps.isRoleTaken('oncall_manager') && !f.is_oncall_manager)) {
+          staffOps.handleRoleAssignment('oncall_manager', !f.is_oncall_manager)
           f.is_oncall_manager = !f.is_oncall_manager
         }
       }
       const toggleResearchCoordinator = () => {
-        medicalStaffModal.form.is_research_coordinator = !medicalStaffModal.form.is_research_coordinator
-        if (!medicalStaffModal.form.is_research_coordinator) medicalStaffModal.form._coordLineId = null
+        staffOps.medicalStaffModal.form.is_research_coordinator = !staffOps.medicalStaffModal.form.is_research_coordinator
+        if (!staffOps.medicalStaffModal.form.is_research_coordinator) staffOps.medicalStaffModal.form._coordLineId = null
       }
 
       const loadNotifications = async () => {
@@ -11187,9 +11190,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Data export ───────────────────────────────────────────────────
       const exportCSV = async (type) => {
+        if(!window.NeumAccess.allowed(currentUser.value?.access,({staff:'staff.directory.view',rotations:'rotation.view',absences:'leave.view',oncall:'oncall.view'})[type],true)){showToast('Restricted access','Full record access is required for export.','info');return}
         try {
-          const token = localStorage.getItem('neumax_token') || ''
-          const BACKEND = window.CONFIG?.BACKEND_URL || 'https://neumac-manage-back-end-production.up.railway.app'
+          const token = API.token || ''
+          const BACKEND = CONFIG.API_BASE_URL
           const url = BACKEND + '/api/export/' + type
           const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } })
           if (!res.ok) throw new Error('Export failed: ' + res.status)
@@ -11207,8 +11211,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const downloadIcal = async () => {
         try {
-          const token = localStorage.getItem('neumax_token') || ''
-          const BACKEND = window.CONFIG?.BACKEND_URL || 'https://neumac-manage-back-end-production.up.railway.app'
+          const token = API.token || ''
+          const BACKEND = CONFIG.API_BASE_URL
           const res = await fetch(BACKEND + '/api/ical/oncall', { headers: { Authorization: 'Bearer ' + token } })
           if (!res.ok) throw new Error('iCal export failed')
           const blob = await res.blob()
@@ -11395,14 +11399,14 @@ document.addEventListener('DOMContentLoaded', () => {
               liveOps.loadActiveMedicalStaff(),
               (hasPermission('research_lines','read') ? researchOps.loadResearchLines() : Promise.resolve()),
               loadSystemStats(),
-              newsOps.preloadNews() // silent prefetch — no loading flag
+              (hasPermission('news_posts','read') ? newsOps.preloadNews() : Promise.resolve()) // silent prefetch — no loading flag
             ]).then(() => updateDashboardStats())
 
             // Low priority — research analytics
             Promise.allSettled([
               (hasPermission('clinical_trials','read') ? researchOps.loadClinicalTrials() : Promise.resolve()),
               (hasPermission('innovation_projects','read') ? researchOps.loadInnovationProjects() : Promise.resolve()),
-              analyticsOps.loadAnalyticsSummary()
+              (currentUser.value?.access?.decisions?.['research.view']?.all?.decision === 'ALLOW' ? analyticsOps.loadAnalyticsSummary() : Promise.resolve())
             ])
 
           } catch { showToast('Error', 'Failed to load some data', 'error') }
@@ -11822,7 +11826,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rotation = getCurrentRotationForStaff(staff.id)
         if (rotation) {
           const unit = getTrainingUnitName(rotation.training_unit_id) || rotation.training_unit_name || rotation.unit_name || 'Clinical Unit'
-          const dates = [rotation.start_date, rotation.end_date].filter(Boolean).map(formatDateShort)
+          const dates = [rotation.start_date, rotation.end_date].filter(Boolean).map(d => Utils.formatDateShort(d))
           items.push({ type: 'rotation', title: unit, meta: dates.length === 2 ? `${dates[0]} → ${dates[1]}` : 'Active rotation' })
         }
         if (!items.length) {
@@ -12833,7 +12837,7 @@ document.addEventListener('DOMContentLoaded', () => {
               const rows = Array.isArray(result) ? result : result?.data
               if (!Array.isArray(rows) || result?.success === false) throw new Error('Unexpected source response')
               collected.push(...rows)
-              const more = result?.pagination ? collected.length < result.pagination.total : (spec.path.startsWith('/api/news?') && rows.length === 100)
+              const more = result?.pagination ? (result.pagination.has_more ?? (collected.length < result.pagination.total)) : (spec.path.startsWith('/api/news?') && rows.length === 100)
               if (!more) return collected
               if (!rows.length) throw new Error('Incomplete source response')
             }
@@ -12969,8 +12973,8 @@ document.addEventListener('DOMContentLoaded', () => {
         closeAskBar()
         Vue.nextTick(() => {
           try {
-            if (alert.resolve === 'reassign_oncall' && typeof showAddOnCallModal === 'function') {
-              switchView('oncall_schedule'); showAddOnCallModal()
+            if (alert.resolve === 'reassign_oncall' && typeof onCallOps.showAddOnCallModal === 'function') {
+              switchView('oncall_schedule'); onCallOps.showAddOnCallModal()
             } else if (alert.resolve === 'assign_supervisor') {
               switchView('resident_rotations')
             } else if (alert.resolve === 'open_trial' && alert.trialId && researchOps.openStudy) {
@@ -14541,6 +14545,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return best
       }
 
+      matchTeachPhrase = askBarMatchTableOnly
       const askBarMatchScored = (qRaw) => {
         // V46.14 Grounded 4.1A: authoritative specific routes beat conflicting
         // taught vocabulary. Teach remains powerful when it fills a genuine language
@@ -18226,6 +18231,8 @@ document.addEventListener('DOMContentLoaded', () => {
           previewIntro, dismissPreviewIntro,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
+          canEditPortfolio: record => record?._access?.can_edit === true,
+          canExport: type => window.NeumAccess.allowed(currentUser.value?.access,({staff:'staff.directory.view',rotations:'rotation.view',absences:'leave.view',oncall:'oncall.view'})[type],true),
           canRecord: (key,record,domain='staff') => {
             const ids=domain==='leave'?[record.staff_member_id]:domain==='rotation'?[record.resident_id]:domain==='oncall'?[record.primary_physician_id,record.backup_physician_id].filter(Boolean):[record.id];
             return window.NeumAccess.canRecord(currentUser.value?.access,key,ids.map(id=>medicalStaff.value.find(s=>s.id===id)||{id,department_id:domain==='staff'?record.department_id:null}));
