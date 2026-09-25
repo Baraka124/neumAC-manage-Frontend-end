@@ -7760,6 +7760,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (/session.*expired|sign in again/.test(lower)) return { kind:'session', title:'Your session has ended', message }
           return { kind:'generic', title:'Sign-in could not be completed', message }
         })
+        const recovery = reactive({email:'',busy:false,message:'',error:''})
+        const requestPasswordRecovery = async () => {
+          if(recovery.busy)return
+          recovery.busy=true;recovery.error='';recovery.message=''
+          try { await API.request('/api/auth/forgot-password',{method:'POST',body:{email:recovery.email.trim()}});recovery.message='If this email belongs to an active account, a reset link has been requested. Check your inbox or ask your administrator for help.' }
+          catch(e){recovery.error='Could not request recovery. Try again shortly or contact your administrator.'}
+          finally{recovery.busy=false}
+        }
         const handleForgotPassword = () => { entry.mode = 'help'; loginError.value = '' }
         const backToSignIn = () => { entry.mode = 'signin'; loginError.value = ''; Vue.nextTick(() => document.getElementById('entry-email')?.focus()) }
         const entryBusy = computed(() => loginLoading.value || entry.state === 'checking' || entry.state === 'opening' || entry.state === 'entering')
@@ -18479,7 +18487,7 @@ document.addEventListener('DOMContentLoaded', () => {
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
           formatRotationStatus, getUserRoleDisplay, formatAudience, formatStudyStatus,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
-          showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword,
+          showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword, recovery, requestPasswordRecovery,
           normalizeDate: (d) => Utils.normalizeDate(d),
           formatDate: (d) => Utils.formatDate(d),
           formatDrName: (n) => Utils.formatDrName(n),

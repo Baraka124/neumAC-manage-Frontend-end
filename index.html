@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=46.14.5.2">
 
     
-<link rel="stylesheet" href="access.css?v=46.14.5.3H">
+<link rel="stylesheet" href="access.css?v=46.14.5.3I">
 </head>
 <body>
 <div id="app" v-cloak>
@@ -1046,8 +1046,8 @@
                 <template v-else-if="entry.mode === 'help'">
                     <span class="entry44-kicker">Account support</span>
                     <h2 id="entry-title">Help with access.</h2>
-                    <p class="entry44-subtitle">For a forgotten password, a disabled account or first-time access, contact your departmental neumDesk administrator.</p>
-                    <div class="entry44-help-note">Ask your administrator to verify your account and arrange password recovery. Self-service recovery is not available from this screen.</div>
+                    <p class="entry44-subtitle">Request a new password using your registered email. For first-time access or a disabled account, contact your administrator.</p>
+                    <form @submit.prevent="requestPasswordRecovery" class="ac-recovery"><label for="recovery-email">Registered email</label><input id="recovery-email" type="email" autocomplete="email" required v-model="recovery.email"><p v-if="recovery.message" role="status">{{recovery.message}}</p><p v-if="recovery.error" role="alert">{{recovery.error}}</p><button class="entry44-submit" :disabled="recovery.busy">{{recovery.busy?'Requesting…':'Request password reset'}}</button></form>
                     <button type="button" class="entry44-submit" @click="backToSignIn()">Back to sign in <span aria-hidden="true">→</span></button>
                 </template>
                 <template v-else>
@@ -4722,10 +4722,12 @@
                     <!-- Page header -->
                     <div  class="nd-l253">
                         <div>
-                            <div  class="nd-v244">Settings</div>
-                            <div  class="nd-l075 nd-v202">Staff types, degrees, services, coverage areas &amp; system configuration</div>
+                            <div  class="nd-v244">Administration</div>
+                            <div  class="nd-l075 nd-v202">Team access, identity and department configuration</div>
                         </div>
                     </div>
+
+                    <access-center :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center>
 
                     <!-- ═══ EXCEL SYNC (on-call, preview-only) ═══ -->
                     <div class="card mb-6">
@@ -5097,7 +5099,7 @@
                         </div>
                     </div>
 
-                    <access-center :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center>
+
 
                     <!-- Link-staff picker modal -->
                     <div v-if="linkStaffModal.show" class="link-staff-overlay" @click.self="linkStaffModal.show = false">
@@ -12063,11 +12065,11 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=46.14.5.2"></script>
     <script src="entry-highlights.js?v=46.14.5.2"></script>
     <script src="entry46.js?v=46.14.5.2"></script>
-    <script src="grounded-core.js?v=46.14.5.3H"></script>
+    <script src="grounded-core.js?v=46.14.5.3I"></script>
     <script src="decision51.js?v=46.14.5.2"></script>
     <script src="temporal50.js?v=46.14.5.2"></script>
-    <script src="access.js?v=46.14.5.3H"></script>
-    <script src="app.js?v=46.14.5.3H"></script>
+    <script src="access.js?v=46.14.5.3I"></script>
+    <script src="app.js?v=46.14.5.3I"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 
