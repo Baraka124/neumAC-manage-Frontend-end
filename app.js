@@ -1497,6 +1497,7 @@ document.addEventListener('DOMContentLoaded', () => {
               const errBody = await res.text().catch(() => '')
               let payload = null
               try { payload = errBody ? JSON.parse(errBody) : null } catch {}
+              if(endpoint !== '/api/auth/login' && (payload?.account_status || payload?.error==='Invalid token')) { this.clearAuthStorage(); this.clearCache(); window.location.reload(); }
               const apiError = new Error(endpoint === '/api/auth/login'
                 ? 'This account cannot sign in. Contact your departmental administrator.'
                 : (payload?.message || 'You do not have permission to perform this action.'))
@@ -2086,35 +2087,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const loginForm = reactive({ email: '', password: '', remember_me: false, keep_signed_in: false })
       const loginLoading = ref(false)
 
-      // hasPermission reads from the explicit permissions array returned by the backend
-      // at login and /api/auth/me — no static matrix, no role inference.
-      // action: 'read' checks can_read, anything else checks can_write.
-      const hasPermission = (module, action = 'read') => {
-        const user = currentUser.value
-        if (!user) return false
-        // Unified admin authority: a system_admin OR admin_level>=1 passes every check.
-        // This reconciles the three signals (user_role, admin_level, user_permissions)
-        // so "admin" means admin everywhere — no more "admin but not permitted".
-        if (user.user_role === 'system_admin' || (user.admin_level ?? 0) >= 1) return true
-        // staff_absence has no permission module of its own — it's staff management.
-        if (module === 'staff_absence') module = 'medical_staff'
-        const perms = user.permissions
-        if (!Array.isArray(perms)) return false
-        const p = perms.find(x => x.module === module)
-        if (!p) return false
-        return action === 'read' ? p.can_read : p.can_write
-      }
-
-      // isAdmin — system_admin role or any admin_level. Used for admin-only UI.
-      const isAdmin = () => {
-        const u = currentUser.value
-        return !!u && (u.user_role === 'system_admin' || (u.admin_level ?? 0) >= 1)
-      }
-      // canManageSettings — who may see/edit the Settings area (admins + dept heads).
-      const canManageSettings = () => {
-        const u = currentUser.value
-        return !!u && (['system_admin','department_head'].includes(u.user_role) || (u.admin_level ?? 0) >= 1)
-      }
+      // Backend-resolved capability snapshot; never infer authority from admin_level.
+      const hasPermission = (module, action='read') => window.NeumAccess.hasPermission(currentUser.value?.access,module,action)
+      const isAdmin = () => window.NeumAccess.allowed(currentUser.value?.access,'identity.users.manage')
+      const canManageSettings = () => window.NeumAccess.allowed(currentUser.value?.access,'identity.users.view') || window.NeumAccess.allowed(currentUser.value?.access,'system.settings.view')
       const _isAdminHelpersDefined = true
 
       return { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings }
@@ -10194,7 +10170,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const openEntryWorkspace = async (user, { attempt = null } = {}) => {
           entry.state = 'opening'; entry.pendingUser = null; entry.message = ''; entry.notice = ''
-          currentUser.value = user; currentView.value = 'dashboard'
+          const access = await API.request('/api/authority/capabilities',{skipCache:true})
+          currentUser.value = {...user,access}; currentView.value = 'dashboard'
           if (typeof API.storeSessionUser === 'function') API.storeSessionUser(user)
           else try { localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user)) } catch (_) {}
           maybeShowPreviewIntro(user)
@@ -10215,6 +10192,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // - Same-tab sessionStorage sessions may resume automatically after /auth/me verification.
         // - Explicit trusted-browser sessions are bounded and require a deliberate Continue action on a new browser session.
         // - Legacy unbounded localStorage tokens are never silently promoted.
+        let accessRefreshBusy=false
+        const refreshAccess = async () => {
+          if(!currentUser.value || accessRefreshBusy || document.hidden) return
+          accessRefreshBusy=true
+          try {
+            const fresh=await API.request('/api/authority/capabilities',{skipCache:true})
+            if(JSON.stringify(fresh)!==JSON.stringify(currentUser.value?.access)) { API.clearCache(); window.location.reload(); }
+          } catch(e) { if(e.status===403) { API.clearAuthStorage(); window.location.reload(); } }
+          finally {accessRefreshBusy=false}
+        }
+        onMounted(()=>window.addEventListener('focus',refreshAccess))
+        const accessRefreshTimer=setInterval(refreshAccess,60000)
+        onUnmounted(()=>{clearInterval(accessRefreshTimer);window.removeEventListener('focus',refreshAccess)})
         let entryAttempt = 0
         const validateEntrySession = async () => {
           const attempt = ++entryAttempt
@@ -10289,6 +10279,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // switchView(view, filters) — supports cross-navigation with pre-applied filters
         // filters example: { department: deptId, category: 'external_resident' }
         const switchView = async (view, filters = {}) => {
+          const moduleForView={medical_staff:'medical_staff',staff_absence:'staff_absence',resident_rotations:'resident_rotations',oncall_schedule:'oncall_schedule',training_units:'training_units',research_lines:'research_lines',clinical_trials:'clinical_trials',innovation_projects:'innovation_projects'}[view]
+          if((moduleForView&&!hasPermission(moduleForView,'read')) || (view==='settings'&&!canManageSettings())) {showToast('Restricted access','Your account cannot open this section.','info');return}
           currentView.value = view; ui.mobileMenuOpen.value = false
           // Cross-module navigation should land on the surface that was requested,
           // not preserve an unrelated deep scroll position from the previous module.
@@ -10325,7 +10317,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!staffTypesList.value.length) loadStaffTypes(true)
             if (!rotationServices.value.length) loadRotationServices()
             if (!onCallOps.coverageAreas.value.length) onCallOps.loadCoverageAreas()
-            if (isAdmin() && !permMgmt.users.length && !permMgmt.loading) loadPermissionUsers()
+            // Access & Identity Center loads canonical identities when opened.
             return
           }
           if (view === 'research_hub' || view === 'research_lines') {
@@ -10973,19 +10965,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return base + 'background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.45);color:#059669'
       }
 
-      const toggleAdminLevel = async (user) => {
-        const newLevel = (user.admin_level >= 1) ? 0 : 1
-        try {
-          await API.request(`/api/permissions/${user.id}/admin-level`, {
-            method: 'PUT',
-            body: { admin_level: newLevel }
-          })
-          user.admin_level = newLevel
-          showToast('Updated', newLevel ? `${user.full_name} is now an admin` : `Admin removed from ${user.full_name}`, 'success')
-        } catch (e) {
-          showToast('Error', 'Could not update admin level', 'error')
-        }
-      }
+      const toggleAdminLevel = async () => { showToast('Access & Identity','Use the account role in Access & Identity.','info') }
 
 
       // ── Soft-delete with undo ──────────────────────────────────────────
@@ -11384,9 +11364,9 @@ document.addEventListener('DOMContentLoaded', () => {
               loadRotationServices(),
               onCallOps.loadCoverageAreas(),
               loadSystemSettings(),
-              staffOps.loadMedicalStaff(true),
+              (hasPermission('medical_staff','read') ? staffOps.loadMedicalStaff(true) : Promise.resolve()),
               loadDepartments(),
-              loadTrainingUnits()
+              (hasPermission('training_units','read') ? loadTrainingUnits() : Promise.resolve())
             ])
             primaryLoads.forEach((result, i) => {
               if (result.status === 'rejected') console.error(`[neumDesk] primary loader ${i} failed without cancelling startup:`, result.reason)
@@ -11395,9 +11375,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Second batch: depends on staff + units being loaded. Keep each
             // source isolated so a schedule/absence problem cannot blank the app.
             const operationalLoads = await Promise.allSettled([
-              rotationOps.loadRotations(),
-              onCallOps.loadOnCallSchedule(),
-              absenceOps.loadAbsences()
+              (hasPermission('resident_rotations','read') ? rotationOps.loadRotations() : Promise.resolve()),
+              (hasPermission('oncall_schedule','read') ? onCallOps.loadOnCallSchedule() : Promise.resolve()),
+              (hasPermission('staff_absence','read') ? absenceOps.loadAbsences() : Promise.resolve())
             ])
             operationalLoads.forEach((result, i) => {
               if (result.status === 'rejected') console.error(`[neumDesk] operational loader ${i} failed:`, result.reason)
@@ -11413,15 +11393,15 @@ document.addEventListener('DOMContentLoaded', () => {
               commsOps.loadAnnouncements(),
               liveOps.loadClinicalStatus(),
               liveOps.loadActiveMedicalStaff(),
-              researchOps.loadResearchLines(),
+              (hasPermission('research_lines','read') ? researchOps.loadResearchLines() : Promise.resolve()),
               loadSystemStats(),
               newsOps.preloadNews() // silent prefetch — no loading flag
             ]).then(() => updateDashboardStats())
 
             // Low priority — research analytics
             Promise.allSettled([
-              researchOps.loadClinicalTrials(),
-              researchOps.loadInnovationProjects(),
+              (hasPermission('clinical_trials','read') ? researchOps.loadClinicalTrials() : Promise.resolve()),
+              (hasPermission('innovation_projects','read') ? researchOps.loadInnovationProjects() : Promise.resolve()),
               analyticsOps.loadAnalyticsSummary()
             ])
 
@@ -11472,6 +11452,7 @@ document.addEventListener('DOMContentLoaded', () => {
           window.addEventListener('neumax:session-expired', () => {
             entry.state = 'signin'; entry.mode = 'signin'; entry.pendingUser = null; entry.trustUntil = null; loginForm.password = ''; showPassword.value = false
             closeAskBar(); askBar.turns = []; askBar.context = null; askBar.subject = null
+            API.clearCache(); window.location.reload();
             currentUser.value = null
             currentView.value = 'login'
             // Close all open panels/modals
@@ -14049,6 +14030,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ? {allowed:true,scope:source.scope,visibility:source.visibility}
             : {allowed:false,code:'GROUND_SOURCE_DENIED',reason:source?.reason || 'This Grounded source is not available for the current access level.'}
         }
+        if (def?.access !== GroundedCore.ACCESS.READ && sourceKey && !access.sources?.[sourceKey]?.available) return {allowed:false,code:'GROUND_SOURCE_DENIED',reason:'The source needed for this action is restricted.'}
         if (def?.access === GroundedCore.ACCESS.PROPOSE) {
           return access.actions?.propose?.allowed
             ? {allowed:true}
@@ -18244,7 +18226,17 @@ document.addEventListener('DOMContentLoaded', () => {
           previewIntro, dismissPreviewIntro,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
+          canRecord: (key,record,domain='staff') => {
+            const ids=domain==='leave'?[record.staff_member_id]:domain==='rotation'?[record.resident_id]:domain==='oncall'?[record.primary_physician_id,record.backup_physician_id].filter(Boolean):[record.id];
+            return window.NeumAccess.canRecord(currentUser.value?.access,key,ids.map(id=>medicalStaff.value.find(s=>s.id===id)||{id,department_id:domain==='staff'?record.department_id:null}));
+          },
           ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
+          editMedicalStaff: (staff) => {
+            if(staff.id===currentUser.value?.medical_staff_id && !['system_admin','department_head','coordinator'].includes(currentUser.value?.user_role)) {
+              window.dispatchEvent(new CustomEvent('neumact:edit-own-profile',{detail:staff}));return;
+            }
+            staffOps.editMedicalStaff(staff);
+          },
           deleteMedicalStaff,          // override useStaff's deactivateStaffMember with full workflow
           reassignmentModal, confirmReassignAndDeactivate,
           ...onCallOps,
@@ -18572,6 +18564,9 @@ document.addEventListener('DOMContentLoaded', () => {
       showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info) 
     }
 
+    app.component('access-center', window.NeumAccess.createCenter({Vue,API}))
+    app.component('self-profile', window.NeumAccess.createSelfProfile({Vue,API}))
+    app.component('invitation-setup', window.NeumAccess.createInvitation({Vue,API}))
     app.mount('#app')
 
   } catch (error) {

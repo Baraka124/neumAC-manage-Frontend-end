@@ -20,9 +20,13 @@
     <link rel="stylesheet" href="entry46.css?v=46.14.5.2">
 
     
+<link rel="stylesheet" href="access.css?v=46.14.5.3G">
 </head>
 <body>
 <div id="app" v-cloak>
+<invitation-setup></invitation-setup>
+<self-profile></self-profile>
+
 
     <!-- Grounded splash screen — shows on first load, fades out after 1.8s -->
     <transition name="splash-fade">
@@ -2363,8 +2367,8 @@
                                             <div>
                                                 <button type="button" @click="viewStaffDetails(staff)">Open record</button>
                                                 <button type="button" @click="activity45Open(staff.id)">Personal activity</button>
-                                                <button type="button" v-if="hasPermission('medical_staff','update')" @click="editMedicalStaff(staff)">Edit profile</button>
-                                                <button type="button" class="danger" v-if="hasPermission('medical_staff','delete')" @click="deleteMedicalStaff(staff)">Remove from active staff</button>
+                                                <button type="button" v-if="canRecord('staff.profile.edit',staff)" @click="editMedicalStaff(staff)">Edit profile</button>
+                                                <button type="button" class="danger" v-if="canRecord('staff.archive',staff)" @click="deleteMedicalStaff(staff)">Remove from active staff</button>
                                             </div>
                                         </details>
                                     </td>
@@ -2695,8 +2699,8 @@
                                                         @click.stop="openLogCalloutModal(); calloutModal.form.staff_id = schedule.primary_physician_id">
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5"/><path d="M4 19h16"/></svg>
                                                 </button>
-                                                <button class="tbl-btn" @click.stop="editOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule','update')" aria-label="Edit on-call shift" title="Edit on-call shift"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteOnCallSchedule(schedule)" v-if="hasPermission('oncall_schedule','delete')" aria-label="Delete on-call shift" title="Delete on-call shift"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                                <button class="tbl-btn" @click.stop="editOnCallSchedule(schedule)" v-if="canRecord('oncall.edit',schedule,'oncall')" aria-label="Edit on-call shift" title="Edit on-call shift"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteOnCallSchedule(schedule)" v-if="canRecord('oncall.cancel',schedule,'oncall')" aria-label="Delete on-call shift" title="Delete on-call shift"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -3529,7 +3533,7 @@
                                         class="staff-table-row"
                                         :class="'row-' + rotation.rotation_status"
                                         :title="rotation.rotation_status === 'terminated_early' ? 'Terminated early — this rotation was ended before completion' : rotation.rotation_status === 'completed' ? 'Completed rotation' : ''"
-                                        @click="hasPermission('resident_rotations', 'update') && editRotation(rotation)">
+                                        @click="canRecord('rotation.edit',rotation,'rotation') && editRotation(rotation)">
                                         <td>
                                             <div class="staff-name-cell"
                                                  @mouseenter="showIntelPopover(rotation.resident_id, $event)"
@@ -3596,8 +3600,8 @@
                                         </td>
                                         <td>
                                             <div class="table-actions">
-                                                <button class="tbl-btn" @click.stop="editRotation(rotation)" v-if="hasPermission('resident_rotations', 'update')" title="Edit rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
-                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteRotation(rotation)" v-if="hasPermission('resident_rotations', 'delete') && ['active','scheduled'].includes(rotation.rotation_status)" title="Terminate rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                                                <button class="tbl-btn" @click.stop="editRotation(rotation)" v-if="canRecord('rotation.edit',rotation,'rotation')" title="Edit rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg></button>
+                                                <button class="tbl-btn tbl-btn--danger" @click.stop="deleteRotation(rotation)" v-if="canRecord('rotation.terminate',rotation,'rotation') && ['active','scheduled'].includes(rotation.rotation_status)" title="Terminate rotation"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -4057,7 +4061,7 @@
                                             'row-returned':         absence.current_status === 'returned_to_duty',
                                             'row-cancelled':        absence.current_status === 'cancelled',
                                         }"
-                                        @click="hasPermission('staff_absence', 'update') && editAbsence(absence)">
+                                        @click="canRecord('leave.edit',absence,'leave') && editAbsence(absence)">
                                         <td>
                                             <div class="staff-name-cell"
                                                  @mouseenter="showIntelPopover(absence.staff_member_id, $event)"
@@ -4092,19 +4096,19 @@
                                             <div class="table-actions">
                                                 <!-- Active/Planned: Edit + Return + Cancel -->
                                                 <button class="tbl-btn" @click.stop="editAbsence(absence)"
-                                                        v-if="hasPermission('staff_absence','update') && ['currently_absent','planned_leave'].includes(absence.current_status)"
+                                                        v-if="canRecord('leave.edit',absence,'leave') && ['currently_absent','planned_leave'].includes(absence.current_status)"
                                                         title="Edit">
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                                     Edit
                                                 </button>
                                                 <button class="tbl-btn tbl-btn--teal" @click.stop="openResolutionModal(absence)"
-                                                        v-if="hasPermission('staff_absence','update') && absence.current_status === 'currently_absent'"
+                                                        v-if="canRecord('leave.return_to_duty',absence,'leave') && absence.current_status === 'currently_absent'"
                                                         title="Mark returned to duty">
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
                                                     Return
                                                 </button>
                                                 <button class="tbl-btn tbl-btn--danger tbl-btn--icon" @click.stop="deleteAbsence(absence)"
-                                                        v-if="hasPermission('staff_absence','delete') && ['currently_absent','planned_leave'].includes(absence.current_status)"
+                                                        v-if="canRecord('leave.cancel',absence,'leave') && ['currently_absent','planned_leave'].includes(absence.current_status)"
                                                         title="Cancel absence">
                                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                                                 </button>
@@ -5093,104 +5097,7 @@
                         </div>
                     </div>
 
-                    <!-- ══ USERS & PERMISSIONS ══════════════════════════════════ -->
-                    <div class="card mb-6 nd-l093" v-if="isAdmin()" >
-                        <div class="card-header nd-l161"  @click="maybeLoadPermUsers()">
-                            <div class="card-title">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                                Users &amp; Permissions
-                            </div>
-                            <button class="btn btn-primary btn-sm" @click.stop="loadPermissionUsers" :disabled="permMgmt.loading">
-                                {{ permMgmt.loading ? 'Loading…' : permMgmt.users.length ? 'Refresh' : 'Load Users' }}
-                            </button>
-                        </div>
-
-                        <div v-if="permMgmt.error"  class="nd-l219 nd-v213">{{ permMgmt.error }}</div>
-
-                        <div v-if="permMgmt.users.length"  class="nd-l218">
-                            <!-- Premium legend + filter -->
-                            <div class="pm-legend">
-                                <div class="pm-legend-left">
-                                    <span class="pm-legend-title">Click any tag to cycle access:</span>
-                                    <div class="pm-legend-chips">
-                                        <span class="pm-legend-chip pm-legend-chip--none">○ No access</span>
-                                        <svg class="pm-legend-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                                        <span class="pm-legend-chip pm-legend-chip--read">◉ Read</span>
-                                        <svg class="pm-legend-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                                        <span class="pm-legend-chip pm-legend-chip--write">✎ Read + Write</span>
-                                    </div>
-                                </div>
-                                <select v-model="permMgmt.moduleFilter" class="pm-filter-select">
-                                    <option value="">Who has access to…</option>
-                                    <option v-for="mod in ALL_MODULES" :key="mod.key" :value="mod.key">{{ mod.icon }} {{ mod.label }}</option>
-                                </select>
-                            </div>
-                            <div v-if="permMgmt.moduleFilter"  class="nd-l217 nd-v010">
-                                {{ sortedPermUsers.length }} {{ sortedPermUsers.length === 1 ? 'person' : 'people' }} with access to {{ ALL_MODULES.find(m=>m.key===permMgmt.moduleFilter)?.label }}
-                                <a href="#" @click.prevent="permMgmt.moduleFilter=''"  class="nd-l216 nd-v212">Clear</a>
-                            </div>
-
-                            <!-- User cards — admins first, then by how many modules they can access -->
-                            <div  class="nd-l215">
-                                <div v-for="user in sortedPermUsers" :key="user.id"
-                                      class="nd-l187 nd-v211">
-                                    <div  class="nd-l214">
-                                        <div  class="nd-l213 nd-v210">
-                                            {{ user.full_name?.split(' ').map(w=>w[0]).slice(0,2).join('') }}
-                                        </div>
-                                        <div  class="nd-l027">
-                                            <div  class="nd-l139 nd-v209">{{ user.full_name }}</div>
-                                            <div  class="nd-l139 nd-v010">{{ user.job_title || user.user_role || 'No title' }}</div>
-                                        </div>
-                                        <button v-if="user.id !== currentUser?.id"
-                                            @click="toggleAdminLevel(user)"
-                                            :style="user.admin_level >= 1 ? 'padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid rgba(245,158,11,.5);background:rgba(245,158,11,.12);color:#d97706;flex-shrink:0' : 'padding:3px 9px;border-radius:100px;font-size:11px;cursor:pointer;border:1px solid var(--nm-border);background:transparent;color:var(--nm-text3);flex-shrink:0'">
-                                            {{ user.admin_level >= 1 ? '★ Admin' : 'Make Admin' }}
-                                        </button>
-                                        <span v-else  class="nd-l003 nd-v010">(you)</span>
-                                    </div>
-
-                                    <!-- Linked clinical profile status + action -->
-                                    <div class="pm-link-row">
-                                        <template v-if="user.linked_staff">
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                                            <span class="pm-link-label">Linked: <strong>{{ user.linked_staff.full_name }}</strong></span>
-                                            <button v-if="isAdmin()" class="pm-link-btn pm-link-btn--unlink" @click="unlinkUserStaff(user)">Unlink</button>
-                                        </template>
-                                        <template v-else>
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--nm-text3)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.5 9.5a2.5 2.5 0 015 0M9 15h6"/></svg>
-                                            <span class="pm-link-label nd-v208" >No linked clinical profile</span>
-                                            <button v-if="isAdmin()" class="pm-link-btn" @click="openLinkStaff(user)">+ Link profile</button>
-                                        </template>
-                                    </div>
-
-                                    <!-- Permission summary — at-a-glance "what can this person do" -->
-                                    <div class="pm-summary">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/></svg>
-                                        <span>{{ permSummaryText(user) }}</span>
-                                    </div>
-
-                                    <!-- Permission pills -->
-                                    <div  class="nd-l212">
-                                        <button v-for="mod in ALL_MODULES" :key="mod.key"
-                                            @click="cyclePermission(user, mod.key)"
-                                            :disabled="permMgmt.saving === user.id + ':' + mod.key"
-                                            :style="permPillStyle(user, mod.key)">
-                                            {{ mod.icon }} {{ mod.label }}
-                                            <span v-if="getUserPerm(user, mod.key)?.can_write"> ✎</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-if="permMgmt.moduleFilter && !sortedPermUsers.length"  class="nd-l141 nd-v014">
-                                Nobody currently has access to {{ ALL_MODULES.find(m=>m.key===permMgmt.moduleFilter)?.label }}.
-                            </div>
-                        </div>
-
-                        <div v-if="!permMgmt.users.length && !permMgmt.loading && !permMgmt.error"  class="nd-l141 nd-v014">
-                            Click "Load Users" to manage permissions
-                        </div>
-                    </div>
+                    <access-center :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center>
 
                     <!-- Link-staff picker modal -->
                     <div v-if="linkStaffModal.show" class="link-staff-overlay" @click.self="linkStaffModal.show = false">
@@ -6710,7 +6617,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <p v-if="!isResidentType(staffProfileModal.staff.staff_type) || !getResidentTrainingContext(staffProfileModal.staff)">Current operational context, clinical relationships and professional record.</p>
                         </div>
                         <div class="pp2-head-actions">
-                            <button v-if="hasPermission('medical_staff','update')" @click="editMedicalStaff(staffProfileModal.staff)" class="pp2-btn pp2-btn--quiet">Edit profile</button>
+                            <button v-if="canRecord('staff.profile.edit',staffProfileModal.staff)" @click="editMedicalStaff(staffProfileModal.staff)" class="pp2-btn pp2-btn--quiet">Edit profile</button>
                         </div>
                     </header>
 
@@ -12154,10 +12061,11 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=46.14.5.2"></script>
     <script src="entry-highlights.js?v=46.14.5.2"></script>
     <script src="entry46.js?v=46.14.5.2"></script>
-    <script src="grounded-core.js?v=46.14.5.3E"></script>
+    <script src="grounded-core.js?v=46.14.5.3G"></script>
     <script src="decision51.js?v=46.14.5.2"></script>
     <script src="temporal50.js?v=46.14.5.2"></script>
-    <script src="app.js?v=46.14.5.3E"></script>
+    <script src="access.js?v=46.14.5.3G"></script>
+    <script src="app.js?v=46.14.5.3G"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 
