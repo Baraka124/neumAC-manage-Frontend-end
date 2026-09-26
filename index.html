@@ -1,4 +1,4 @@
-<!-- neumDesk V46.14 · Phase 5.3E · Grounded permission-aware retrieval · stable production filenames -->
+<!-- neumDesk V46.14 · Phase 5.3Q · Settings visual integration · stable production filenames -->
 <!DOCTYPE html>
 <!-- neumDesk V46.14 · Phase 5.2 · Leave + On-call Decision Intelligence · Production frontend · 2026-09-24 -->       
 <html lang="en">   
@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=46.14.5.2">
 
     
-<link rel="stylesheet" href="access.css?v=46.14.5.3P">
+<link rel="stylesheet" href="access.css?v=46.14.5.3Q">
 </head>
 <body>
 <div id="app" v-cloak>
@@ -4724,10 +4724,10 @@
                 <div v-if="currentView === 'system_settings'">
 
                     <div class="admin-studio">
-                    <header class="admin-masthead"><div><p class="admin-kicker">NEUMACT / WORKSPACE</p><h1>Settings</h1><p>People, access and department configuration.</p></div><span class="admin-context">People · Access · Department</span></header>
-                    <nav class="admin-navigation" aria-label="Administration sections"><button v-for="section in [{id:'people',name:'People & access',hint:'Your team, connected',icon:'01'},{id:'department',name:'Department setup',hint:'Roles, services & coverage',icon:'02'},{id:'import',name:'Schedule import',hint:'Review before applying',icon:'03'},{id:'preferences',name:'Preferences',hint:'Workspace behaviour',icon:'04'}]" :key="section.id" :aria-pressed="adminSection===section.id" :class="{active:adminSection===section.id}" @click="adminSection=section.id"><span class="admin-nav-number">{{section.icon}}</span><span><strong>{{section.name}}</strong><small>{{section.hint}}</small></span></button></nav>
+                    <header class="admin-masthead nd-hero"><div class="nd-hero__copy"><p class="admin-kicker">WORKSPACE ADMINISTRATION</p><h1>Settings</h1><p>Manage the people and structure of your department.</p></div><div class="admin-header-note">Neumact<span>Department workspace</span></div></header>
+                    <nav class="admin-navigation" aria-label="Settings sections"><button v-for="section in [{id:'people',name:'People & access'},{id:'department',name:'Department'},{id:'import',name:'Schedule import'},{id:'preferences',name:'Preferences'}]" :key="section.id" :aria-pressed="adminSection===section.id" :class="{active:adminSection===section.id}" @click="adminSection=section.id">{{section.name}}</button></nav>
                     <section v-show="adminSection==='people'" aria-label="People and access"><access-center @test-user="startUserTest" :active="adminSection==='people'&&currentView==='system_settings'" :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center></section>
-                    <section v-show="adminSection==='import'" class="admin-config" aria-label="Schedule import"><div class="admin-section-intro"><p class="admin-kicker">SCHEDULE IMPORT</p><h2>Review together. Apply with confidence.</h2><p>Match the spreadsheet to your team and inspect the proposed changes.</p></div>
+                    <section v-show="adminSection==='import'" class="admin-config" aria-label="Schedule import"><div class="admin-section-intro"><p class="admin-kicker">SCHEDULE IMPORT</p><h2>Schedule import</h2><p>Match the spreadsheet to your team and inspect the proposed changes.</p></div>
                     <!-- Reviewed on-call import -->
                     <div class="card mb-6">
                         <div class="card-header"><span class="section-title">Sync on-call from Excel <span class="nd-l216 nd-v243">review before applying</span></span></div>
@@ -4802,7 +4802,7 @@
                     </div>
 
                     </section>
-                    <section v-show="adminSection==='department'" class="admin-config" aria-label="Department setup"><div class="admin-section-intro"><p class="admin-kicker">DEPARTMENT SETUP</p><h2>The structure behind your team.</h2><p>Maintain staff categories, qualifications, rotation services and coverage areas.</p></div>
+                    <section v-show="adminSection==='department'" class="admin-config" aria-label="Department setup"><div class="admin-section-intro"><p class="admin-kicker">DEPARTMENT SETUP</p><h2>Department</h2><p>Maintain staff categories, qualifications, rotation services and coverage areas.</p></div>
                     <nav class="admin-subnav" aria-label="Department configuration"><button v-for="item in [{id:'staff',name:'Staff categories'},{id:'degrees',name:'Qualifications'},{id:'services',name:'Services'},{id:'coverage',name:'On-call coverage'}]" :key="item.id" :class="{active:adminDepartmentSection===item.id}" :aria-pressed="adminDepartmentSection===item.id" @click="adminDepartmentSection=item.id">{{item.name}}</button></nav>
                     <!-- STAFF TYPES ══════════════════════════════════════════ -->
                     <div v-show="adminDepartmentSection==='staff'" class="card mb-6">
@@ -4956,7 +4956,7 @@
                     </div>
 
                     </section>
-                    <section v-show="adminSection==='preferences'" class="admin-config" aria-label="Workspace preferences"><div class="admin-section-intro"><p class="admin-kicker">PREFERENCES</p><h2>Make the workspace work for you.</h2><p>Department details and platform behaviour in one place.</p></div>
+                    <section v-show="adminSection==='preferences'" class="admin-config" aria-label="Workspace preferences"><div class="admin-section-intro"><p class="admin-kicker">PREFERENCES</p><h2>Preferences</h2><p>Department details and platform behaviour in one place.</p></div>
                     <!-- CORE SETTINGS ══════════════════════════════════ -->
                     <div class="card mb-6 nd-l093"  v-if="hasPermission('system_settings','read')">
                         <div class="card-header">
@@ -12084,13 +12084,13 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=46.14.5.2"></script>
     <script src="entry-highlights.js?v=46.14.5.2"></script>
     <script src="entry46.js?v=46.14.5.2"></script>
-    <script src="grounded-core.js?v=46.14.5.3P"></script>
-    <script src="decision51.js?v=46.14.5.3P"></script>
+    <script src="grounded-core.js?v=46.14.5.3Q"></script>
+    <script src="decision51.js?v=46.14.5.3Q"></script>
     <script src="temporal50.js?v=46.14.5.2"></script>
-    <script src="oncall-sync.js?v=46.14.5.3P"></script>
-    <script src="test-session.js?v=46.14.5.3P"></script>
-    <script src="access.js?v=46.14.5.3P"></script>
-    <script src="app.js?v=46.14.5.3P"></script>
+    <script src="oncall-sync.js?v=46.14.5.3Q"></script>
+    <script src="test-session.js?v=46.14.5.3Q"></script>
+    <script src="access.js?v=46.14.5.3Q"></script>
+    <script src="app.js?v=46.14.5.3Q"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 
