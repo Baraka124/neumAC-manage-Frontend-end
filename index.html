@@ -20,10 +20,12 @@
     <link rel="stylesheet" href="entry46.css?v=46.14.5.2">
 
     
-<link rel="stylesheet" href="access.css?v=46.14.5.3J">
+<link rel="stylesheet" href="access.css?v=46.14.5.3O">
 </head>
 <body>
 <div id="app" v-cloak>
+        <div v-if="testSession" class="test-session-banner" role="status"><span>Development test · {{testSession.name}} · Actions use this person's permissions and affect real development records.</span><button type="button" @click="returnToAdministrator">Return to system administrator</button></div>
+
 <invitation-setup></invitation-setup>
 <self-profile></self-profile>
 
@@ -1082,6 +1084,11 @@
                                 <span id="entry-password-error" class="entry44-field-error" aria-live="polite">{{ loginFieldErrors.password }}</span>
                                 <span id="entry-caps" class="entry44-caps" role="status">{{ entry.capsLock ? 'Caps Lock is on' : '' }}</span>
                             </div>
+                            <button type="submit" class="entry44-submit" :disabled="entryBusy">
+                                <span v-if="loginLoading" class="entry46-submit-spinner" aria-hidden="true"></span>
+                                <span>{{ loginLoading ? 'Verifying access…' : 'Sign in to neumDesk' }}</span>
+                                <span v-if="!loginLoading" aria-hidden="true">→</span>
+                            </button>
                             <div class="entry44-form-meta">
                                 <label><input type="checkbox" v-model="loginForm.remember_me"> Remember my email</label>
                                 <button type="button" @click="handleForgotPassword()">Access help</button>
@@ -1091,11 +1098,7 @@
                                 <span class="entry46-trust-copy"><strong>Trust this browser for up to 12 hours</strong><small>Keeps this browser trusted for a bounded period. neumDesk still re-verifies your account before records are shown.</small></span>
                                 <input class="entry46-trust-check" type="checkbox" v-model="loginForm.keep_signed_in" aria-label="Trust this browser for up to 12 hours">
                             </label>
-                            <button type="submit" class="entry44-submit" :disabled="entryBusy">
-                                <span v-if="loginLoading" class="entry46-submit-spinner" aria-hidden="true"></span>
-                                <span>{{ loginLoading ? 'Verifying access…' : 'Sign in to neumDesk' }}</span>
-                                <span v-if="!loginLoading" aria-hidden="true">→</span>
-                            </button>
+
                             <div class="entry46-session-policy"><span class="entry46-policy-dot"></span><p><strong>Session protected</strong><br>Without browser trust, your sign-in stays in this browser tab and is not retained after the session closes.</p></div>
                         </form>
                     </div>
@@ -2498,6 +2501,7 @@
                                 <option value="primary_call">Primary Call</option>
                                 <option value="backup_call">Backup Call</option>
                                 <option value="float_physician">Float Physician</option>
+                                    <option value="on_call_home">Localizada</option><option value="on_call_mixed">Mixta</option><option value="on_call_present">Presencial</option>
                             </select>
                             <select class="form-select" v-model="onCallFilters.coverageArea">
                                 <option value="">All Areas</option>
@@ -2669,7 +2673,7 @@
                                                           ></span>
                                                 </div>
                                                 <div>
-                                                    <div class="oc-physician-name intel-name">{{ getPhysicianName(schedule.primary_physician_id) }}</div>
+                                                    <div class="oc-physician-name intel-name">{{ getPhysicianName(schedule.primary_physician_id) }}</div><div v-if="schedule.resident_physician_id" class="ac-meta">Resident: {{schedule.resident_physician?.full_name||getPhysicianName(schedule.resident_physician_id)}}</div>
                                                     <div  v-if="isToday(schedule.duty_date)" class="nd-l122 nd-v010">
                                                         On duty now
                                                     </div>
@@ -4720,13 +4724,13 @@
                 <div v-if="currentView === 'system_settings'">
 
                     <div class="admin-studio">
-                    <header class="admin-masthead"><div><p class="admin-kicker">NEUMACT / WORKSPACE</p><h1>Administration<span>.</span></h1><p>A connected team starts here.</p></div><span class="admin-context">People · Access · Department</span></header>
+                    <header class="admin-masthead"><div><p class="admin-kicker">NEUMACT / WORKSPACE</p><h1>Settings</h1><p>People, access and department configuration.</p></div><span class="admin-context">People · Access · Department</span></header>
                     <nav class="admin-navigation" aria-label="Administration sections"><button v-for="section in [{id:'people',name:'People & access',hint:'Your team, connected',icon:'01'},{id:'department',name:'Department setup',hint:'Roles, services & coverage',icon:'02'},{id:'import',name:'Schedule import',hint:'Review before applying',icon:'03'},{id:'preferences',name:'Preferences',hint:'Workspace behaviour',icon:'04'}]" :key="section.id" :aria-pressed="adminSection===section.id" :class="{active:adminSection===section.id}" @click="adminSection=section.id"><span class="admin-nav-number">{{section.icon}}</span><span><strong>{{section.name}}</strong><small>{{section.hint}}</small></span></button></nav>
-                    <section v-show="adminSection==='people'" aria-label="People and access"><access-center :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center></section>
+                    <section v-show="adminSection==='people'" aria-label="People and access"><access-center @test-user="startUserTest" :active="adminSection==='people'&&currentView==='system_settings'" :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center></section>
                     <section v-show="adminSection==='import'" class="admin-config" aria-label="Schedule import"><div class="admin-section-intro"><p class="admin-kicker">SCHEDULE IMPORT</p><h2>Review together. Apply with confidence.</h2><p>Match the spreadsheet to your team and inspect the proposed changes.</p></div>
-                    <!-- ═══ EXCEL SYNC (on-call, preview-only) ═══ -->
+                    <!-- Reviewed on-call import -->
                     <div class="card mb-6">
-                        <div class="card-header"><span class="section-title">📊 Sync on-call from Excel <span  class="nd-l216 nd-v243">preview only — nothing is saved</span></span></div>
+                        <div class="card-header"><span class="section-title">Sync on-call from Excel <span class="nd-l216 nd-v243">review before applying</span></span></div>
                         <div  class="nd-l252">
                             <div  class="nd-l222 nd-v242">
                                 Upload your <b>Guardias</b> Excel file. The system reads the schedule, matches the surnames to staff, and shows exactly what a sync <i>would</i> change — without saving anything. You review first.
@@ -4742,57 +4746,66 @@
 
                             <div v-if="oncallSync.done"  class="nd-l121">
                                 <div  class="nd-l149 nd-v202">{{ oncallSync.fileName }} · sheet "{{ oncallSync.stats.sheet }}" · {{ oncallSync.stats.total }} shifts read</div>
-                                <!-- diff summary -->
-                                <div  class="nd-l249">
-                                    <div  class="nd-l248 nd-v239"><div  class="nd-v238">{{ oncallSync.stats.add }}</div><div  class="nd-v231">to add</div></div>
-                                    <div  class="nd-l248 nd-v237"><div  class="nd-v236">{{ oncallSync.stats.update }}</div><div  class="nd-v231">to update</div></div>
-                                    <div  class="nd-l248 nd-v235"><div  class="nd-v234">{{ oncallSync.stats.unchanged }}</div><div  class="nd-v231">unchanged</div></div>
-                                    <div  class="nd-l248 nd-v233"><div  class="nd-v232">{{ oncallSync.stats.unmatchedRows }}</div><div  class="nd-v231">unmatched</div></div>
-                                </div>
+                                <fieldset class="sync-controls" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed">
+                                  <legend>01 / Choose your period</legend>
+                                  <div class="sync-months"><button v-for="m in oncallSyncMonths" :key="m" type="button" :class="{active:oncallSync.filter.start===m+'-01'}" @click="oncallSyncPeriod(m)">{{new Date(m+'-01T12:00:00').toLocaleDateString('en',{month:'short',year:'numeric'})}}</button></div>
+                                  <div class="sync-filters"><label>From<input type="date" v-model="oncallSync.filter.start"></label><label>Through<input type="date" v-model="oncallSync.filter.end" :min="oncallSync.filter.start"></label><label>Find a person<input type="search" v-model="oncallSync.filter.search" placeholder="Staff or resident name"></label><label>Show<select v-model="oncallSync.filter.status"><option value="">All assignments</option><option value="new">New</option><option value="conflict">Conflicts</option><option value="replacement">Approved replacements</option><option value="matching">Already matches</option><option value="kept">Keeping current</option><option value="blocked">Needs mapping / invalid</option><option value="skipped">Skipped</option></select></label></div>
+                                  <div class="sync-shortcuts"><button type="button" @click="oncallSyncPeriod(oncallSyncMonths[0],3)">First three months</button><button type="button" @click="oncallSyncPeriod(oncallSync.filter.start?.slice(0,7)||oncallSyncMonths[0],3)">Three months from selected start</button><button type="button" @click="oncallSync.filter.start='';oncallSync.filter.end=''">Whole file</button></div>
+                                </fieldset>
+                                <p v-if="oncallSync.blocked.length" class="ac-notice">{{oncallSync.blocked.length}} rows in the file need attention. Rows with invalid dates are visible under Whole file.</p>
                                 <!-- unmatched names — now mappable -->
                                 <div v-if="oncallSync.unmatched.length"  class="nd-l247 nd-v230">
-                                    <div  class="nd-l090 nd-v225">Map unmatched names to staff ({{ oncallSync.unmatched.length }}) — or skip:</div>
+                                    <div  class="nd-l090 nd-v225">Match staff and resident names ({{ oncallSync.unmatched.length }}) — or skip:</div>
                                     <div v-for="u in oncallSync.unmatched" :key="u.surname"  class="nd-l246">
                                         <span  class="nd-l245 nd-v229">{{ u.surname }} <span  class="nd-v228">({{ u.count }})</span></span>
-                                        <select :value="oncallSync.mappings[u.surname]||''" @change="oncallSyncMap(u.surname, $event.target.value)"  class="nd-l244 nd-v227">
+                                        <select :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" :value="oncallSync.mappings[u.surname]||''" @change="oncallSyncMap(u.surname, $event.target.value)"  class="nd-l244 nd-v227">
                                             <option value="">— choose —</option>
                                             <option value="skip">Skip these shifts</option>
-                                            <option v-for="s in medicalStaff.filter(x=>x.employment_status==='active')" :key="s.id" :value="s.id">{{ s.full_name }}</option>
+                                            <option v-for="s in oncallSync.sourceStaff.filter(x=>x.employment_status==='active')" :key="s.id" :value="s.id">{{ s.full_name }}</option>
                                         </select>
                                     </div>
-                                    <div  class="nd-l243 nd-v010">Mappings are saved — you only need to map each name once. <a href="#" @click.prevent="Object.keys(oncallSync.mappings).length && (oncallSync.mappings={}, localStorage.removeItem('neumdesk_oncall_sync_mappings'))"  class="nd-v226">Clear saved mappings</a></div>
+                                    <div  class="nd-l243 nd-v010">Mappings are remembered in this browser and rechecked against active staff. <a href="#" @click.prevent="oncallSyncClearMappings()"  class="nd-v226">Clear saved mappings</a></div>
                                 </div>
-                                <!-- sample of changes -->
-                                <div v-if="oncallSync.toAdd.length"  class="nd-l039">
-                                    <div  class="nd-l013 nd-v225">Sample of shifts to add:</div>
-                                    <div v-for="(r,i) in oncallSync.toAdd.slice(0,8)" :key="i"  class="nd-l242 nd-v224">
-                                        <span  class="nd-l241 nd-v223">{{ r.date }}</span>
-                                        <span  class="nd-v222">{{ r.staffName }}</span>
-                                        <span  class="nd-l001 nd-v208">{{ r.shiftType }}</span>
-                                    </div>
-                                    <div v-if="oncallSync.toAdd.length>8"  class="nd-l121 nd-v010">…and {{ oncallSync.toAdd.length - 8 }} more</div>
+                                <div class="sync-review-heading"><div><p class="admin-kicker">02 / REVIEW ASSIGNMENTS</p><h3>{{oncallSyncVisible.length}} in view <span>of {{oncallSync.entries.length}} in this file</span></h3></div><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" @click="oncallSyncSelectNew">Select new in view</button><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed" @click="oncallSync.selection={}">Clear selection</button></div>
+                                <p class="ac-meta">Nothing is selected automatically. Changing filters or mappings clears selection. Changing a conflict decision deselects that row. Current assignments stay until you approve and select a replacement.</p>
+                                <div class="sync-table-wrap" tabindex="0" aria-label="On-call import comparison">
+                                  <table class="sync-table"><thead><tr><th scope="col">Apply</th><th scope="col">Date</th><th scope="col">Current schedule</th><th scope="col">From Excel</th><th scope="col">Review / result</th></tr></thead><tbody>
+                                    <tr v-for="r in oncallSyncVisible" :key="r.key" :class="{'sync-selected':oncallSync.selection[r.key]}">
+                                      <td><input type="checkbox" v-model="oncallSync.selection[r.key]" :aria-label="'Apply assignment on '+r.date" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed||!['new','replacement'].includes(r.status)"></td>
+                                      <td><strong>{{r.date||'Invalid date'}}</strong><small>Source row {{r.source_row}}</small></td>
+                                      <td><template v-if="r.current"><strong>{{r.currentName}}</strong><small>Resident: {{r.currentResident||'None'}}</small><small>{{oncallSyncType(r.current.shift_type)}}</small></template><span v-else>{{r.status==='conflict'?'Multiple assignments':'No assignment'}}</span></td>
+                                      <td><strong :class="{'sync-difference':r.current&&r.current.primary_physician_id!==r.staffId}">{{r.staffName||r.surname}}</strong><small :class="{'sync-difference':r.current&&(r.current.resident_physician_id||null)!==(r.residentId||null)}">Resident: {{r.residentName||r.mir||'None'}}</small><small :class="{'sync-difference':r.current&&r.current.shift_type!==r.shiftType}">{{oncallSyncType(r.shiftType)}}</small></td>
+                                      <td><template v-if="oncallSync.results[r.date]"><span class="sync-status" :data-status="oncallSync.results[r.date].status">{{({inserted:'Added',updated:'Updated',not_saved:'Not saved'})[oncallSync.results[r.date].status]}}</span><small>{{oncallSync.results[r.date].message}}</small></template><template v-else><span class="sync-status" :data-status="r.status">{{({new:'New',conflict:'Conflict',replacement:'Replacement approved',matching:'Already matches',kept:'Keeping current',blocked:'Needs attention',skipped:'Skipped'})[r.status]}}</span><small v-if="r.issue&&['blocked','conflict'].includes(r.status)">{{r.issue}}</small><small v-if="oncallSyncChecked&&oncallSync.checkResults[r.date]" :class="{'sync-check-error':oncallSync.checkResults[r.date].status!=='ready'}">{{oncallSync.checkResults[r.date].status==='ready'?'Checked · Ready to apply':oncallSync.checkResults[r.date].message}}</small><div v-if="r.expected&&!oncallSync.committed" class="sync-row-actions"><button v-if="r.status!=='kept'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'keep')">Keep current</button><button v-if="r.status!=='replacement'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'replace')">Approve replacement</button><button v-if="r.status==='replacement'||r.status==='kept'" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncChoice(r.date,'')">Undo decision</button></div><small v-if="oncallSync.committed&&oncallSync.selection[r.key]">Not confirmed. Reload before retrying.</small></template></td>
+                                    </tr>
+                                    <tr v-if="!oncallSyncVisible.length"><td colspan="5" class="sync-empty">No assignments match this view. Adjust the period or filters.</td></tr>
+                                  </tbody></table>
                                 </div>
+                                <p class="ac-meta">New shifts use the current default hours, 15:00–08:00. Existing times, coverage areas and backup assignments are preserved. Blank source assignments do not delete records.</p>
+                                <label><input type="checkbox" v-model="oncallSync.historyAccepted" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed"> Include historical assignments from this file (requires exception-approval permission)</label>
+                                <div class="sync-preflight"><div><p class="admin-kicker">03 / CHECK BEFORE APPLYING</p><p>{{oncallSyncReady?'Selected assignments passed the current checks.':oncallSyncChecked?'Some selected assignments need attention. Resolve or deselect those rows, then check again.':'Check your selection for permissions, leave conflicts and overlapping duties.'}}</p><small>Checks do not save assignments. The server checks again when you apply.</small></div><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed||!oncallSyncSelected.length||currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW'" @click="oncallSyncCheck">{{oncallSync.checking?'Checking…':'Check selected assignments'}}</button></div>
+                                <p v-if="oncallSync.checkError" class="ac-alert" role="alert">{{oncallSync.checkError}}</p>
                                 <!-- COMMIT -->
                                 <div v-if="!oncallSync.committed"  class="nd-l240">
-                                    <button class="btn btn-secondary" @click="oncallSyncReset">Upload another</button>
-                                    <button class="btn btn-primary" :disabled="oncallSync.committing || (oncallSync.toAdd.length + oncallSync.toUpdate.length === 0)"
+                                    <button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncReset">Upload another</button>
+                                    <button class="btn btn-primary" :disabled="!oncallSyncReady || oncallSync.checking||oncallSync.committing || currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW' || (oncallSyncSelected.length === 0)"
                                             @click="oncallSyncConfirmCommit()">
-                                        {{ oncallSync.committing ? 'Syncing…' : ('Commit ' + (oncallSync.toAdd.length + oncallSync.toUpdate.length) + ' shifts') }}
+                                        {{ oncallSync.committing ? 'Syncing…' : ('Apply ' + oncallSyncSelected.length + ' assignments · ' + oncallSyncSelected.filter(r=>r.status==='replacement').length + ' replacements') }}
                                     </button>
                                 </div>
                                 <div v-if="oncallSync.commitResult" :style="'margin-top:12px;padding:11px 14px;border-radius:10px;font-size:13px;border:1px solid ' + (oncallSync.commitResult.ok ? 'rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#059669' : 'rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#b91c1c')">
-                                    {{ oncallSync.commitResult.msg }}
+                                    {{ oncallSync.commitResult.msg }}<ul v-if="oncallSync.commitResult.failures?.length"><li v-for="(r,i) in oncallSync.commitResult.failures" :key="i">{{r.date}}: {{r.message}}</li></ul>
                                 </div>
                                 <div v-if="oncallSync.committed"  class="nd-l131"><button class="btn btn-secondary" @click="oncallSyncReset">Sync another file</button></div>
-                                <div v-if="!oncallSync.committed && !oncallSync.commitResult"  class="nd-l068 nd-v010">Review the diff above before committing. Only matched/mapped shifts are written.</div>
+                                <div v-if="!oncallSync.committed && !oncallSync.commitResult"  class="nd-l068 nd-v010">Review the diff above before committing. Only selected assignments in the current view are written.</div>
                             </div>
                         </div>
                     </div>
 
                     </section>
                     <section v-show="adminSection==='department'" class="admin-config" aria-label="Department setup"><div class="admin-section-intro"><p class="admin-kicker">DEPARTMENT SETUP</p><h2>The structure behind your team.</h2><p>Maintain staff categories, qualifications, rotation services and coverage areas.</p></div>
+                    <nav class="admin-subnav" aria-label="Department configuration"><button v-for="item in [{id:'staff',name:'Staff categories'},{id:'degrees',name:'Qualifications'},{id:'services',name:'Services'},{id:'coverage',name:'On-call coverage'}]" :key="item.id" :class="{active:adminDepartmentSection===item.id}" :aria-pressed="adminDepartmentSection===item.id" @click="adminDepartmentSection=item.id">{{item.name}}</button></nav>
                     <!-- STAFF TYPES ══════════════════════════════════════════ -->
-                    <div class="card mb-6">
+                    <div v-show="adminDepartmentSection==='staff'" class="card mb-6">
                         <div class="card-header">
                             <div class="card-title">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -4836,7 +4849,7 @@
                     </div>
 
                     <!-- ACADEMIC DEGREES ══════════════════════════════════ -->
-                    <div class="card mb-6 nd-l093" >
+                    <div v-show="adminDepartmentSection==='degrees'" class="card mb-6 nd-l093" >
                         <div class="card-header">
                             <div class="card-title">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
@@ -4875,7 +4888,7 @@
                     </div>
 
                     <!-- ROTATION SERVICES ══════════════════════════════════ -->
-                    <div class="card mb-6 nd-l093" >
+                    <div v-show="adminDepartmentSection==='services'" class="card mb-6 nd-l093" >
                         <div class="card-header">
                             <div class="card-title">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -5031,7 +5044,7 @@
 
 
                     </section>
-                    <section v-show="adminSection==='department'" class="admin-config" aria-label="Coverage areas">
+                    <section v-show="adminSection==='department'&&adminDepartmentSection==='coverage'" class="admin-config" aria-label="Coverage areas">
                     <!-- ══ COVERAGE AREAS ══════════════════════════════════════════ -->
                     <div class="card mb-6 nd-l093" v-if="hasPermission('system_settings','read')" >
                         <div class="card-header">
@@ -7609,7 +7622,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div class="sm-divider">Residency period</div>
                                 <div class="sm-row">
                                     <div class="sm-field">
-                                        <div class="sm-label">Start date <span class="hint">— MIR programme</span></div>
+                                        <div class="sm-label">Start date <span class="hint">— Residency programme</span></div>
                                         <input type="month" class="sm-input"
                                                :value="medicalStaffModal.form.residency_start_date ? medicalStaffModal.form.residency_start_date.slice(0,7) : ''"
                                                @change="e => medicalStaffModal.form.residency_start_date = e.target.value ? e.target.value + '-01' : null">
@@ -7968,6 +7981,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div  class="nd-v115">Primary</div>
                             </div>
                         </div>
+                        <div v-if="onCallModal.form.resident_physician_id" class="ac-meta">Resident: {{getPhysicianName(onCallModal.form.resident_physician_id)}}</div>
                         <div v-if="onCallModal.form.backup_physician_id"  class="nd-l056">
                             <div  class="nd-l055 nd-v114">
                                 {{ (allStaffLookup.find(s=>s.id===onCallModal.form.backup_physician_id)?.full_name||'').split(' ').slice(0,2).map(n=>n[0]).join('') }}
@@ -8006,6 +8020,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <option value="primary_call">Primary Call</option>
                                     <option value="backup_call">Backup Call</option>
                                     <option value="float_physician">Float Physician</option>
+                                    <option value="on_call_home">Localizada</option><option value="on_call_mixed">Mixta</option><option value="on_call_present">Presencial</option>
                                 </select>
                                 <small  class="nd-l105 nd-v001">Weekend shifts use the same roles — date determines weekend/weekday</small>
                             </div>
@@ -11762,6 +11777,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                     <option value="primary_call">Primary Call</option>
                     <option value="backup_call">Backup Call</option>
                     <option value="float_physician">Float Physician</option>
+                                    <option value="on_call_home">Localizada</option><option value="on_call_mixed">Mixta</option><option value="on_call_present">Presencial</option>
                   </select>
                 </div>
               </div>
@@ -12068,11 +12084,13 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=46.14.5.2"></script>
     <script src="entry-highlights.js?v=46.14.5.2"></script>
     <script src="entry46.js?v=46.14.5.2"></script>
-    <script src="grounded-core.js?v=46.14.5.3J"></script>
-    <script src="decision51.js?v=46.14.5.2"></script>
+    <script src="grounded-core.js?v=46.14.5.3O"></script>
+    <script src="decision51.js?v=46.14.5.3O"></script>
     <script src="temporal50.js?v=46.14.5.2"></script>
-    <script src="access.js?v=46.14.5.3J"></script>
-    <script src="app.js?v=46.14.5.3J"></script>
+    <script src="oncall-sync.js?v=46.14.5.3O"></script>
+    <script src="test-session.js?v=46.14.5.3O"></script>
+    <script src="access.js?v=46.14.5.3O"></script>
+    <script src="app.js?v=46.14.5.3O"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 

@@ -1377,7 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try { return localStorage.getItem(CONFIG.TOKEN_KEY) } catch (_) { return null }
       }
 
-      get token() { return this.sessionToken || this.persistentToken }
+      get token() { return this.sessionToken || (window.NeumTestSession?.read(sessionStorage)?null:this.persistentToken) }
       get tokenSource() { return this.sessionToken ? 'session' : (this.persistentToken ? 'persistent' : null) }
 
       get trustMeta() {
@@ -1401,6 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       clearAuthStorage() {
+        if(window.NeumTestSession?.read(sessionStorage)){try{sessionStorage.removeItem(CONFIG.SESSION_TOKEN_KEY);sessionStorage.removeItem(CONFIG.SESSION_USER_KEY)}catch{};return}
         try { sessionStorage.removeItem(CONFIG.SESSION_TOKEN_KEY) } catch (_) {}
         try { sessionStorage.removeItem(CONFIG.SESSION_USER_KEY) } catch (_) {}
         try { localStorage.removeItem(CONFIG.TOKEN_KEY) } catch (_) {}
@@ -1417,6 +1418,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       storeAuthenticatedSession(data, { persist = false } = {}) {
         if (!data?.token || !data?.user?.id) return
+        if(window.NeumTestSession?.read(sessionStorage))throw Error('Return to system administrator before signing in again.')
         const now = Date.now()
         try {
           sessionStorage.setItem(CONFIG.SESSION_TOKEN_KEY, data.token)
@@ -3032,12 +3034,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (onCallFilters.date) f = f.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
         if (onCallFilters.shiftType) f = f.filter(s => s.shift_type === onCallFilters.shiftType)
-        if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
+        if (onCallFilters.physician) f = f.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician || s.resident_physician_id === onCallFilters.physician)
         // M6 FIX: coverage_area is not a real DB column — filter on coverage_notes instead
         if (onCallFilters.coverageArea) f = f.filter(s => s.coverage_area_id === onCallFilters.coverageArea || s.coverage_area?.id === onCallFilters.coverageArea)
         if (debouncedOnCallSearch.value) {
           const q = debouncedOnCallSearch.value.toLowerCase()
-          f = f.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_notes || '').toLowerCase().includes(q))
+          f = f.filter(s => [s.primary_physician_id,s.resident_physician_id,s.backup_physician_id].filter(Boolean).some(id=>getPhysicianName(id).toLowerCase().includes(q)) || (s.coverage_notes || '').toLowerCase().includes(q))
         }
         return applySort(f, 'oncall')
       })
@@ -3058,18 +3060,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (onCallFilters.date)       shifts = shifts.filter(s => Utils.normalizeDate(s.duty_date) === onCallFilters.date)
         if (onCallFilters.shiftType)  shifts = shifts.filter(s => s.shift_type === onCallFilters.shiftType)
         if (onCallFilters.coverageArea) shifts = shifts.filter(s => s.coverage_area_id === onCallFilters.coverageArea || s.coverage_area?.id === onCallFilters.coverageArea)
-        if (onCallFilters.physician)  shifts = shifts.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician)
+        if (onCallFilters.physician)  shifts = shifts.filter(s => s.primary_physician_id === onCallFilters.physician || s.backup_physician_id === onCallFilters.physician || s.resident_physician_id === onCallFilters.physician)
         if (debouncedOnCallSearch.value) {
           const q = debouncedOnCallSearch.value.toLowerCase()
-          shifts = shifts.filter(s => getPhysicianName(s.primary_physician_id).toLowerCase().includes(q) || (s.coverage_notes || '').toLowerCase().includes(q))
+          shifts = shifts.filter(s => [s.primary_physician_id,s.resident_physician_id,s.backup_physician_id].filter(Boolean).some(id=>getPhysicianName(id).toLowerCase().includes(q)) || (s.coverage_notes || '').toLowerCase().includes(q))
         }
         const map = {}
         shifts.forEach(shift => {
           const dutyDate = Utils.normalizeDate(shift.duty_date)
-          const id = shift.primary_physician_id
-          if (!id) return
+          for (const id of new Set([shift.primary_physician_id,shift.resident_physician_id].filter(Boolean))) {
+          if (!id) continue
           const staff = allStaffLookup?.value?.find(s => s.id === id) || medicalStaff.value.find(s => s.id === id)
-          if (!staff) return
+          if (!staff) continue
           if (!map[id]) map[id] = {
             id, name: staff.full_name, staffType: staff.staff_type,
             full_name: staff.full_name, staff_type: staff.staff_type,
@@ -3090,6 +3092,7 @@ document.addEventListener('DOMContentLoaded', () => {
             areaColor: areaObj?.color || null,
             backupName: shift.backup_physician_id ? ((allStaffLookup?.value?.find(s => s.id === shift.backup_physician_id) || medicalStaff.value.find(s => s.id === shift.backup_physician_id))?.full_name || null) : null
           })
+          }
         })
         Object.values(map).forEach(p => p.shifts.sort((a, b) => a.dutyDate.localeCompare(b.dutyDate)))
         return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
@@ -3325,9 +3328,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (onCallFilters.date && date !== onCallFilters.date) return
           if (onCallFilters.shiftType && shift.shift_type !== onCallFilters.shiftType) return
           if (onCallFilters.physician && shift.primary_physician_id !== onCallFilters.physician &&
-              shift.backup_physician_id !== onCallFilters.physician) return
+              shift.backup_physician_id !== onCallFilters.physician && shift.resident_physician_id !== onCallFilters.physician) return
           if (debouncedOnCallSearch.value) {
-            const physicianName = getPhysicianName(shift.primary_physician_id).toLowerCase()
+            const physicianName = [shift.primary_physician_id,shift.backup_physician_id,shift.resident_physician_id].filter(Boolean).map(getPhysicianName).join(' ').toLowerCase()
             if (!physicianName.includes(debouncedOnCallSearch.value.toLowerCase())) return
           }
 
@@ -7557,6 +7560,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onCallSchedule.value.filter(s => Utils.normalizeDate(s.duty_date) === today).forEach(s => {
           if (s.primary_physician_id) unique.add(s.primary_physician_id)
           if (s.backup_physician_id) unique.add(s.backup_physician_id)
+          if (s.resident_physician_id) unique.add(s.resident_physician_id)
         })
         systemStats.value.onCallNow = unique.size
       }
@@ -7740,7 +7744,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 7. ROOT APP ============
     const app = createApp({
       setup() {
+        const testSession = ref(window.NeumTestSession?.read(sessionStorage)||null)
+        let testStartBusy=false
+        const returnToAdministrator=()=>{try{window.NeumTestSession.end(sessionStorage,{token:CONFIG.SESSION_TOKEN_KEY,user:CONFIG.SESSION_USER_KEY});API.clearCache();window.location.reload()}catch(e){showToast('Error','Could not restore the session. Keep this tab open and try again.','error')}}
+        const startUserTest=async user=>{
+          if(testSession.value||testStartBusy)return
+          testStartBusy=true
+          try{const response=await API.request('/api/identity/users/'+user.id+'/test-session',{method:'POST',body:{}});window.NeumTestSession.begin(sessionStorage,{token:CONFIG.SESSION_TOKEN_KEY,user:CONFIG.SESSION_USER_KEY},{token:API.token,user:currentUser.value},response);API.clearCache();window.location.reload()}catch(e){showToast('Error',e.message,'error')}finally{testStartBusy=false}
+        }
         const adminSection = ref('people')
+        const adminDepartmentSection = ref('staff')
         const loading = ref(false)
         const saving = ref(false)
 
@@ -8141,7 +8154,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return (onCallSchedule?.value || []).filter(shift => {
             const d = Utils.normalizeDate(shift.duty_date)
             return d >= s && d <= e &&
-              (shift.primary_physician_id === pid || shift.backup_physician_id === pid)
+              (shift.primary_physician_id === pid || shift.backup_physician_id === pid || shift.resident_physician_id === pid)
           }).map(shift => ({
             date: new Date(shift.duty_date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }),
             role: shift.primary_physician_id === pid ? 'Primary' : 'Backup',
@@ -8343,8 +8356,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 out = out.concat((onCallSchedule.value || []).map(o => ({
                   id: 'oncall:' + o.id, type: 'Activity',
                   attributes: { kind: 'on_call', date: o.duty_date, shift_type: o.shift_type || 'primary_call',
-                    primary: o.primary_physician_id, backup: o.backup_physician_id },
-                  relationships: [o.primary_physician_id && { rel: 'assigned_to', targetType: 'Person', targetId: o.primary_physician_id }].filter(Boolean),
+                    primary: o.primary_physician_id, backup: o.backup_physician_id, resident:o.resident_physician_id },
+                  relationships: [o.primary_physician_id && { rel: 'assigned_to', targetType: 'Person', targetId: o.primary_physician_id },o.resident_physician_id&&{rel:'assigned_to',targetType:'Person',targetId:o.resident_physician_id}].filter(Boolean),
                   evidence: [{ source: 'oncall_schedule', recordId: o.id }], status: 'active', _raw: o,
                 })))
               }
@@ -8385,128 +8398,66 @@ document.addEventListener('DOMContentLoaded', () => {
         // introspection helper (for verification/debug)
         const knowledgeCoverage = () => ({ Person: true, Activity: true, Event: true })
 
-        // ══ EXCEL → PLATFORM SYNC (on-call, Phase 1: PREVIEW ONLY, non-destructive) ══
-        // Parses Guardias sheet, resolves surnames → staff, computes a diff.
-        // NOTHING is written — this only shows what a sync WOULD do.
-        const oncallSync = reactive({ fileName:'', parsing:false, done:false, error:'', rows:[], toAdd:[], toUpdate:[], unmatched:[], stats:null, mappings:{}, committing:false, committed:false, commitResult:null })
-        const _syncNorm = (s) => (s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()
-        const _buildStaffIndex = () => {
-          const idx = {}
-          ;(medicalStaff.value || []).filter(s => s.employment_status==='active' && !s.deleted_at).forEach(s => {
-            _syncNorm(s.full_name).split(/\s+/).forEach(w => { if (w.length>2) (idx[w] = idx[w] || []).push(s) })
-          })
-          return idx
+        // Excel → on-call: preview staff/MIR assignments, review differences, explicitly commit.
+        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
+        const oncallSyncVisible=computed(()=>window.NeumOncallSync.visible(oncallSync.entries,oncallSync.filter))
+        const oncallSyncSelected=computed(()=>window.NeumOncallSync.selected(oncallSync.entries,oncallSync.filter,oncallSync.selection))
+        const oncallSyncPayload=()=>oncallSyncSelected.value.map(r=>({duty_date:r.date,primary_physician_id:r.staffId,resident_physician_id:r.residentId||null,shift_type:r.shiftType,expected:r.expected||null,source_sheet:r.source_sheet,source_row:r.source_row}))
+        const oncallSyncCheckKey=computed(()=>JSON.stringify({shifts:oncallSyncPayload(),history:oncallSync.historyAccepted}))
+        const oncallSyncChecked=computed(()=>oncallSyncSelected.value.length>0&&oncallSync.checkKey===oncallSyncCheckKey.value)
+        const oncallSyncReady=computed(()=>oncallSyncChecked.value&&oncallSyncSelected.value.every(r=>oncallSync.checkResults[r.date]?.status==='ready'))
+        watch(oncallSyncCheckKey,()=>{oncallSync.checkKey='';oncallSync.checkResults={};oncallSync.checkError=''},{flush:'sync'})
+        const oncallSyncCheck=async()=>{
+          if(oncallSync.checking||oncallSync.committing||oncallSync.committed||!oncallSyncSelected.value.length||currentUser.value?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW')return
+          const shifts=oncallSyncPayload(),key=oncallSyncCheckKey.value,history=oncallSync.historyAccepted
+          oncallSync.checking=true;oncallSync.checkKey='';oncallSync.checkResults={};oncallSync.checkError=''
+          const checked={}
+          try{
+            for(let i=0;i<shifts.length;i+=10){const chunk=shifts.slice(i,i+10);const result=await API.request('/api/oncall/batch',{method:'POST',body:{shifts:chunk,dry_run:true,acknowledge_history:history}});if(result.dry_run!==true||!Array.isArray(result.results)||result.results.length!==chunk.length||chunk.some(r=>result.results.filter(x=>x.date===r.duty_date&&['ready','needs_attention'].includes(x.status)).length!==1))throw Error('Check could not be confirmed. Refresh and try again.');for(const row of result.results)checked[row.date]=row}
+            if(key===oncallSyncCheckKey.value){oncallSync.checkResults=checked;oncallSync.checkKey=key}
+          }catch(e){oncallSync.checkError=e.message}finally{oncallSync.checking=false}
         }
-        const _resolveSurname = (surname, idx) => {
-          const hits = idx[_syncNorm(surname)] || []
-          if (hits.length === 1) return { status:'matched', staff: hits[0] }
-          if (hits.length > 1)  return { status:'ambiguous', options: hits }
-          return { status:'unmatched' }
+        const oncallSyncMonths=computed(()=>[...new Set(oncallSync.rows.map(r=>r.date?.slice(0,7)).filter(Boolean))].sort())
+        const oncallSyncType=t=>({on_call_home:'Home call',on_call_mixed:'Mixed call',on_call_present:'In-person call',primary_call:'Primary call',backup_call:'Backup call',float_physician:'Float physician'}[t]||t||'—')
+        const oncallSyncPeriod=(month,count=1)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};const last=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1+count,0);Object.assign(oncallSync.filter,{start:month+'-01',end:Utils.normalizeDate(last)})}
+        const oncallSyncSelectNew=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const next={...oncallSync.selection};oncallSyncVisible.value.filter(r=>r.status==='new').forEach(r=>next[r.key]=true);oncallSync.selection=next}
+        watch(()=>JSON.stringify(oncallSync.filter),()=>{oncallSync.selection={}},{flush:'sync'})
+        const SYNC_MAP_KEY='neumdesk_oncall_sync_mappings'
+        const syncRebuild=()=>{
+          const p=window.NeumOncallSync.plan(oncallSync.rows,oncallSync.sourceStaff,oncallSync.existing,oncallSync.mappings,oncallSync.choices)
+          Object.assign(oncallSync,p,{stats:{total:oncallSync.rows.length,sheet:oncallSync.rows[0]?.source_sheet||'',add:p.toAdd.length,update:p.toUpdate.length,unchanged:p.counts.unchanged,unmatchedRows:p.blocked.length,skipped:p.counts.skipped}})
         }
-        const _shiftTypeMap = (t) => {
-          const n = _syncNorm(t)
-          if (n.includes('localizada')) return 'on_call_home'
-          if (n.includes('mixta')) return 'on_call_mixed'
-          if (n.includes('presencial')) return 'on_call_present'
-          return 'primary_call'
+        const oncallSyncParse=async(file)=>{
+          if(oncallSync.checking||oncallSync.committing)return
+          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},filter:{start:'',end:'',search:'',status:''}})
+          try{
+            const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const active=String(new Date().getFullYear());const sheet=wb.SheetNames.find(n=>n===active+'+'||n===active)||wb.SheetNames.find(n=>/^\d{4}\+?$/.test(n));if(!sheet)throw Error('No dated Guardias sheet found.')
+            const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,raw:true});oncallSync.rows=window.NeumOncallSync.parse(aoa,sheet)
+            if(!oncallSync.rows.length)throw Error('No populated assignments found.')
+            const dates=oncallSync.rows.map(r=>r.date).filter(Boolean).sort();if(!dates.length)throw Error('No valid assignment dates found.')
+            const [existing,staff]=await Promise.all([API.request('/api/oncall?start_date='+dates[0]+'&end_date='+dates.at(-1),{skipCache:true}),API.request('/api/identity/staff',{skipCache:true})]);oncallSync.existing=Array.isArray(existing)?existing:existing.data||[];oncallSync.sourceStaff=staff.data||[]
+            try{oncallSync.mappings=JSON.parse(localStorage.getItem(SYNC_MAP_KEY)||'{}')}catch{oncallSync.mappings={}}
+            syncRebuild();oncallSyncPeriod(dates[0].slice(0,7));oncallSync.done=true
+          }catch(e){oncallSync.error=e.message}finally{oncallSync.parsing=false}
         }
-        const oncallSyncParse = async (file) => {
-          oncallSync.fileName = file.name; oncallSync.parsing = true; oncallSync.done = false
-          oncallSync.error=''; oncallSync.rows=[]; oncallSync.toAdd=[]; oncallSync.toUpdate=[]; oncallSync.unmatched=[]
-          try {
-            if (typeof XLSX === 'undefined') throw new Error('Spreadsheet library not loaded — refresh and try again.')
-            const buf = await file.arrayBuffer()
-            const wb = XLSX.read(buf, { type:'array', cellDates:true })
-            let sheetName = wb.SheetNames.find(n => /^\d{4}\+?$/.test(n)) || wb.SheetNames[0]
-            const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, raw:false, dateNF:'yyyy-mm-dd' })
-            let hr = aoa.findIndex(r => r && r.some(c => _syncNorm(c)==='fecha'))
-            if (hr < 0) throw new Error('Could not find a "Fecha" header — is this the on-call sheet?')
-            const header = aoa[hr].map(_syncNorm)
-            const cF = header.indexOf('fecha'), cS = header.findIndex(h=>h.includes('staff')), cT = header.findIndex(h=>h.includes('tipo')), cM = header.findIndex(h=>h.includes('mir'))
-            const idx = _buildStaffIndex(); const rows=[]; const um={}
-            for (let i=hr+1; i<aoa.length; i++) {
-              const r = aoa[i]; if (!r) continue
-              const rd = r[cF]; const rs = cS>=0 ? r[cS] : null
-              if (!rd || !rs) continue
-              let d = rd; if (d instanceof Date) d = d.toISOString().slice(0,10)
-              else { const pp = new Date(d); if (!isNaN(pp)) d = pp.toISOString().slice(0,10); else continue }
-              const res = _resolveSurname(rs, idx)
-              rows.push({ date:d, surname:String(rs).trim(), shiftType:_shiftTypeMap(r[cT]), mir: cM>=0?r[cM]:null, resolution:res, staffId: res.status==='matched'?res.staff.id:null, staffName: res.status==='matched'?res.staff.full_name:null })
-              if (res.status!=='matched') um[String(rs).trim()] = (um[String(rs).trim()]||0)+1
-            }
-            const existing = onCallSchedule.value || []; const byDate={}; existing.forEach(o=>{byDate[Utils.normalizeDate(o.duty_date)]=o})
-            const toAdd=[], toUpdate=[]
-            rows.forEach(row=>{ if(!row.staffId) return; const ex=byDate[row.date]; if(!ex) toAdd.push(row); else if(ex.primary_physician_id!==row.staffId) toUpdate.push({...row, wasName:getStaffName(ex.primary_physician_id)}) })
-            oncallSync.rows=rows; oncallSync.toAdd=toAdd; oncallSync.toUpdate=toUpdate
-            oncallSync.unmatched=Object.entries(um).map(([surname,count])=>({surname,count}))
-            const umRows=Object.values(um).reduce((a,b)=>a+b,0)
-            oncallSync.stats={ total:rows.length, sheet:sheetName, add:toAdd.length, update:toUpdate.length, unchanged: rows.length-toAdd.length-toUpdate.length-umRows, unmatchedRows:umRows }
-            // Auto-apply any saved mappings from previous sessions
-            const saved = _loadMappings()
-            oncallSync.mappings = { ...saved }
-            const hasSaved = Object.keys(saved).some(k => um[k])
-            if (hasSaved) { Object.entries(saved).forEach(([sn, sid]) => { if (um[sn] && sid) oncallSyncMap(sn, sid) }) }
-            oncallSync.done=true
-          } catch(e){ oncallSync.error = e.message || 'Could not parse the file.' } finally { oncallSync.parsing=false }
+        const oncallSyncReset=()=>{if(!oncallSync.checking&&!oncallSync.committing)Object.assign(oncallSync,{done:false,fileName:'',error:'',rows:[],entries:[],selection:{},results:{},toAdd:[],toUpdate:[],conflicts:[],blocked:[],unmatched:[],choices:{},commitResult:null,committed:false})}
+        const oncallSyncFile=ev=>{const file=ev.target.files?.[0];if(file)oncallSyncParse(file);ev.target.value=''}
+        const oncallSyncMap=(name,id)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={...oncallSync.mappings,[name]:id};try{localStorage.setItem(SYNC_MAP_KEY,JSON.stringify(oncallSync.mappings))}catch{};syncRebuild()}
+        const oncallSyncChoice=(date,choice)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const selection={...oncallSync.selection};oncallSync.entries.filter(r=>r.date===date).forEach(r=>delete selection[r.key]);oncallSync.selection=selection;oncallSync.choices={...oncallSync.choices,[date]:choice};syncRebuild()}
+        const oncallSyncClearMappings=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={};try{localStorage.removeItem(SYNC_MAP_KEY)}catch{};syncRebuild()}
+        const oncallSyncConfirmCommit=()=>{if(oncallSync.checking||oncallSync.committing)return;const n=oncallSyncSelected.value.length;const replacements=oncallSyncSelected.value.filter(r=>r.status==='replacement').length;if(n&&window.confirm('Apply '+n+' selected assignments, including '+replacements+' replacements, from '+oncallSync.filter.start+' to '+oncallSync.filter.end+'?'))oncallSyncCommit()}
+        const oncallSyncCommit=async()=>{
+          if(!oncallSyncReady.value||oncallSync.checking||oncallSync.committing||oncallSync.committed||currentUser.value?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW')return
+          const shifts=oncallSyncPayload()
+          if(!shifts.length)return
+          oncallSync.committing=true;oncallSync.commitResult=null
+          let inserted=0,updated=0,skipped=0;const failures=[]
+          try{
+            for(let i=0;i<shifts.length;i+=10){const result=await API.request('/api/oncall/batch',{method:'POST',body:{shifts:shifts.slice(i,i+10),source_file:oncallSync.fileName,acknowledge_history:oncallSync.historyAccepted}});if(!Number.isInteger(result.inserted)||!Number.isInteger(result.updated)||!Number.isInteger(result.skipped))throw Error('Server returned unrecognised results. Reload before retrying.');inserted+=result.inserted;updated+=result.updated;skipped+=result.skipped;failures.push(...(result.results||[]).filter(r=>r.status==='not_saved'));for(const row of result.results||[])oncallSync.results[row.date]=row}
+            oncallSync.commitResult={ok:skipped===0,msg:inserted+' added · '+updated+' updated · '+skipped+' not saved.',failures}
+          }catch(e){oncallSync.commitResult={ok:false,msg:inserted+' confirmed added · '+updated+' confirmed updated. '+e.message+' Reload the file before retrying; a failed request may have partially completed.',failures}}
+          finally{oncallSync.committed=true;oncallSync.committing=false;API.clearCache();try{await onCallOps.loadOnCallSchedule()}catch{}}
         }
-        const oncallSyncReset = () => Object.assign(oncallSync, {fileName:'',parsing:false,done:false,error:'',rows:[],toAdd:[],toUpdate:[],unmatched:[],stats:null,mappings:{},committing:false,committed:false,commitResult:null})
-        const oncallSyncFile = (ev) => { const f = ev.target.files && ev.target.files[0]; if (f) oncallSyncParse(f) }
-
-        // Phase 1b: map an unmatched surname → a staff id (or 'skip'), then recompute the diff
-        // Mappings persist in localStorage so you only map once
-        const SYNC_MAP_KEY = 'neumdesk_oncall_sync_mappings'
-        const _loadMappings = () => { try { return JSON.parse(localStorage.getItem(SYNC_MAP_KEY)||'{}') } catch { return {} } }
-        const _saveMappings = (m) => { try { localStorage.setItem(SYNC_MAP_KEY, JSON.stringify(m)) } catch {} }
-        const oncallSyncMap = (surname, staffId) => {
-          oncallSync.mappings = { ...oncallSync.mappings, [surname]: staffId }
-          _saveMappings(oncallSync.mappings)
-          // re-resolve rows using the manual mappings, then rebuild the diff
-          oncallSync.rows.forEach(row => {
-            if (row.resolution.status !== 'matched' && oncallSync.mappings[row.surname] && oncallSync.mappings[row.surname] !== 'skip') {
-              row.staffId = oncallSync.mappings[row.surname]
-              row.staffName = getStaffName(row.staffId)
-              row.resolution = { status: 'mapped', staff: { id: row.staffId } }
-            }
-          })
-          const existing = onCallSchedule.value || []; const byDate = {}; existing.forEach(o=>{byDate[Utils.normalizeDate(o.duty_date)]=o})
-          const toAdd=[], toUpdate=[]; const um={}
-          oncallSync.rows.forEach(row=>{
-            if (!row.staffId) { if (oncallSync.mappings[row.surname] !== 'skip') um[row.surname]=(um[row.surname]||0)+1; return }
-            const ex=byDate[row.date]; if(!ex) toAdd.push(row); else if(ex.primary_physician_id!==row.staffId) toUpdate.push({...row, wasName:getStaffName(ex.primary_physician_id)})
-          })
-          oncallSync.toAdd=toAdd; oncallSync.toUpdate=toUpdate
-          oncallSync.unmatched=Object.entries(um).map(([surname,count])=>({surname,count}))
-          const umRows=Object.values(um).reduce((a,b)=>a+b,0)
-          oncallSync.stats={ ...oncallSync.stats, add:toAdd.length, update:toUpdate.length, unchanged: oncallSync.rows.length-toAdd.length-toUpdate.length-umRows, unmatchedRows:umRows }
-        }
-        // Commit: send the matched/mapped shifts to the batch endpoint (after user confirms)
-        const oncallSyncConfirmCommit = () => {
-          const n = oncallSync.toAdd.length + oncallSync.toUpdate.length
-          if (n === 0) return
-          if (window.confirm('Sync ' + n + ' on-call shifts into the platform? This writes to the schedule.')) oncallSyncCommit()
-        }
-        const oncallSyncCommit = async () => {
-          const shifts = [...oncallSync.toAdd, ...oncallSync.toUpdate]
-            .filter(r => r.staffId)
-            .map(r => ({ duty_date: r.date, primary_physician_id: r.staffId, shift_type: r.shiftType }))
-          if (!shifts.length) { oncallSync.commitResult = { ok:false, msg:'Nothing matched to commit.' }; return }
-          oncallSync.committing = true; oncallSync.commitResult = null
-          try {
-            // batch endpoint caps at 200 — chunk if needed
-            let saved = 0
-            for (let i=0; i<shifts.length; i+=180) {
-              const chunk = shifts.slice(i, i+180)
-              await API.request('/api/oncall/batch', { method:'POST', body:{ shifts: chunk } })
-              saved += chunk.length
-            }
-            try { await onCallOps.loadOnCallSchedule() } catch(e){}
-            oncallSync.committed = true
-            oncallSync.commitResult = { ok:true, msg:`✓ Synced ${saved} shift${saved===1?'':'s'} from ${oncallSync.fileName} (new + updated).` }
-          } catch (e) {
-            oncallSync.commitResult = { ok:false, msg: (e && e.message) ? e.message : 'Sync failed — nothing partial was rolled back; check the on-call view.' }
-          } finally { oncallSync.committing = false }
-        }
-
 
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
         watch(researchOps.researchLines, (v) => { researchLinesShared.value = v }, { immediate: true })
@@ -8849,7 +8800,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const calloutFairnessAlert = computed(() => {
           if (!availablePhysicians?.value?.length) return false
           const totals = availablePhysicians.value.map(p =>
-            (onCallOps.filteredOnCallSchedules.value || []).filter(s => s.primary_physician_id === p.id || s.backup_physician_id === p.id).length +
+            (onCallOps.filteredOnCallSchedules.value || []).filter(s => s.primary_physician_id === p.id || s.backup_physician_id === p.id || s.resident_physician_id === p.id).length +
             (calloutSummary.value.find(s => s.staff_id === p.id)?.total || 0)
           )
           const avg = totals.reduce((a,b) => a+b, 0) / Math.max(1, totals.length)
@@ -8862,7 +8813,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const physicians = availablePhysicians.value
           const items = physicians.map(p => {
             const scheduled = (onCallOps.filteredOnCallSchedules.value || []).filter(
-              s => s.primary_physician_id === p.id || s.backup_physician_id === p.id
+              s => s.primary_physician_id === p.id || s.backup_physician_id === p.id || s.resident_physician_id === p.id
             ).length
             const summary = calloutSummary.value.find(s => s.staff_id === p.id) || {}
             const callouts = summary.total || 0
@@ -9715,8 +9666,8 @@ document.addEventListener('DOMContentLoaded', () => {
             Utils.normalizeDate(a.end_date) >= today
           ) || null
         }
-        const isOnCallToday = (staffId) => { const today = Utils.normalizeDate(new Date()); return onCallSchedule.value.some(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId) && Utils.normalizeDate(s.duty_date) === today) }
-        const getUpcomingOnCall = (staffId) => { if (!staffId) return []; const today = Utils.normalizeDate(new Date()); return onCallSchedule.value.filter(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId) && Utils.normalizeDate(s.duty_date) >= today).sort((a, b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date))) }
+        const isOnCallToday = (staffId) => { const today = Utils.normalizeDate(new Date()); return onCallSchedule.value.some(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId || s.resident_physician_id === staffId) && Utils.normalizeDate(s.duty_date) === today) }
+        const getUpcomingOnCall = (staffId) => { if (!staffId) return []; const today = Utils.normalizeDate(new Date()); return onCallSchedule.value.filter(s => (s.primary_physician_id === staffId || s.backup_physician_id === staffId || s.resident_physician_id === staffId) && Utils.normalizeDate(s.duty_date) >= today).sort((a, b) => Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date))) }
         const getUpcomingLeave = (staffId) => {
           if (!staffId) return []
           const today = Utils.normalizeDate(new Date())
@@ -9834,7 +9785,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const out = []
           ;(onCallSchedule.value || []).forEach(s => {
             const d = Utils.normalizeDate(s.duty_date)
-            if ((s.primary_physician_id === staffId || s.backup_physician_id === staffId) && d >= today) {
+            if ((s.primary_physician_id === staffId || s.backup_physician_id === staffId || s.resident_physician_id === staffId) && d >= today) {
               out.push({ key:`oncall:${s.id}`, kind:'oncall', date:d, title:'On-call duty', detail:s.shift_type === 'primary_call' ? 'Primary duty' : s.shift_type === 'backup_call' ? 'Backup duty' : String(s.shift_type || 'Duty').replace(/_/g,' ') })
             }
           })
@@ -11249,7 +11200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const name = staff.full_name || 'staff'
           const shifts = (onCallSchedule?.value || []).filter(s =>
-            s.primary_physician_id === staff.id || s.backup_physician_id === staff.id)
+            s.primary_physician_id === staff.id || s.backup_physician_id === staff.id || s.resident_physician_id === staff.id)
           const rots = (rotations?.value || []).filter(r =>
             r.resident_id === staff.id || r.supervising_attending_id === staff.id)
           const esc = (t) => String(t || '').replace(/[,;\\]/g, ' ').replace(/\n/g, ' ')
@@ -14253,7 +14204,7 @@ document.addEventListener('DOMContentLoaded', () => {
           run:({staffId,from=null}) => {
             const min=from ? Utils.normalizeDate(from) : null
             return (onCallSchedule.value||[]).filter(o=>
-              (String(o.primary_physician_id)===String(staffId) || String(o.backup_physician_id)===String(staffId)) &&
+              (String(o.primary_physician_id)===String(staffId) || String(o.backup_physician_id)===String(staffId) || String(o.resident_physician_id)===String(staffId)) &&
               (!min || Utils.normalizeDate(o.duty_date)>=min)
             ).map(o=>({id:o.id,date:Utils.normalizeDate(o.duty_date),role:String(o.primary_physician_id)===String(staffId)?'primary':'backup',coverageAreaId:o.coverage_area_id||null}))
           }
@@ -15036,7 +14987,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const absList = (absences.value || []).filter(a => !['returned_to_duty','cancelled'].includes(a.current_status))
         const onLeaveNow = (id) => absList.some(a => a.staff_member_id === id && Utils.absenceEffectiveStart(a) <= today && Utils.absenceEffectiveEnd(a) >= today)
         const rows = staff.map(s => {
-          const callCount = shifts.filter(x => x.primary_physician_id === s.id || x.backup_physician_id === s.id).length
+          const callCount = shifts.filter(x => x.primary_physician_id === s.id || x.backup_physician_id === s.id || x.resident_physician_id === s.id).length
           const supervising = rots.filter(r => r.rotation_status === 'active' && r.supervising_attending_id === s.id).length
           const pTrials = trials.filter(t => t.principal_investigator_id === s.id && /reclut|activ|recruit/i.test(t.status || '')).length
           const onLeave = onLeaveNow(s.id)
@@ -15096,7 +15047,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarEvaluatePersonUnavailable = (person, start, end = start) => {
         if (!person || !start) return { items:[], alternatives:[] }
         const shifts = (onCallSchedule.value || []).filter(o =>
-          (o.primary_physician_id === person.id || o.backup_physician_id === person.id) &&
+          (o.primary_physician_id === person.id || o.backup_physician_id === person.id || o.resident_physician_id === person.id) &&
           askBarOverlap(start,end,o.duty_date,o.duty_date))
         const supervised = (rotations.value || []).filter(r =>
           r.supervising_attending_id === person.id && ['active','scheduled'].includes(r.rotation_status) &&
@@ -16168,7 +16119,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Full summary: role + status + on-call/leave/rotation + research flags
           const today = Utils.normalizeDate(new Date())
           const onLeave = (absences.value || []).find(a => a.staff_member_id === fu.id && !['returned_to_duty','cancelled'].includes(a.current_status))
-          const nextShift = (onCallSchedule.value || []).filter(x => (x.primary_physician_id === fu.id || x.backup_physician_id === fu.id) && Utils.normalizeDate(x.duty_date) >= today).sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))[0]
+          const nextShift = (onCallSchedule.value || []).filter(x => (x.primary_physician_id === fu.id || x.backup_physician_id === fu.id || x.resident_physician_id === fu.id) && Utils.normalizeDate(x.duty_date) >= today).sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))[0]
           const rot = (rotations.value || []).find(r => r.resident_id === fu.id && r.rotation_status === 'active')
           let text = `${name} — ${_toTitle(s.staff_type || 'staff')}${s.specialization ? ', ' + s.specialization : ''}.`
           const extras = []
@@ -16345,7 +16296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (fu.kind === 'staff_oncall') {
           const allShifts = (onCallSchedule.value || [])
-            .filter(s => s.primary_physician_id === fu.id || s.backup_physician_id === fu.id)
+            .filter(s => s.primary_physician_id === fu.id || s.backup_physician_id === fu.id || s.resident_physician_id === fu.id)
             .slice().sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
           const roleLabel = s => s.primary_physician_id === fu.id ? 'primary' : 'backup'
           const upcoming = allShifts.filter(s => Utils.normalizeDate(s.duty_date) >= today)
@@ -17363,7 +17314,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const person = askBarResolveStaff(askBar.lastAsked||askBar.query)
           if (!person) return { text: 'Whose on-call? Name the person.', chips: [], actions: [], sources: ['on-call schedule'], followups: [], confidence: 'low' }
           const today = Utils.normalizeDate(new Date())
-          const mine = (onCallSchedule.value||[]).filter(o => (o.primary_physician_id===person.id||o.backup_physician_id===person.id) && Utils.normalizeDate(o.duty_date)>=today)
+          const mine = (onCallSchedule.value||[]).filter(o => (o.primary_physician_id===person.id||o.backup_physician_id===person.id||o.resident_physician_id===person.id) && Utils.normalizeDate(o.duty_date)>=today)
             .sort((a,b)=>Utils.normalizeDate(a.duty_date).localeCompare(Utils.normalizeDate(b.duty_date)))
           if (!mine.length) return { text: `${person.full_name} has no upcoming on-call shifts.`, chips: [{label:person.full_name,id:person.id}], actions: [{ label: 'Open on-call', view: 'oncall_schedule' }], sources: ['on-call schedule'], followups: [], confidence: 'high' }
           const items = mine.slice(0,10).map(o => ({ title: Utils.formatDateShort(o.duty_date), badge: o.primary_physician_id===person.id?'primary':'backup', tone: o.primary_physician_id===person.id?'active':'default', meta: '' }))
@@ -17559,6 +17510,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const roster = (fullRoster ? up : up.slice(0,7)).map(s => ({
             id: s.primary_physician_id, name: staffName(s.primary_physician_id),
             date: fmt(s.duty_date), today: Utils.normalizeDate(s.duty_date) === today,
+            resident: s.resident_physician_id ? staffName(s.resident_physician_id) : null,
             backup: s.backup_physician_id ? staffName(s.backup_physician_id) : null
           }))
           if (up.length===1 && up[0]?.primary_physician_id) {
@@ -17569,7 +17521,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // #provenance: the exact records backing this answer
           const evidence = up.slice(0,8).map(s => ({
             label: `${staffName(s.primary_physician_id)} — on-call ${fmt(s.duty_date)}`,
-            detail: `duty_date ${Utils.normalizeDate(s.duty_date)}${s.backup_physician_id ? ' · backup ' + staffName(s.backup_physician_id) : ''}`,
+            detail: `duty_date ${Utils.normalizeDate(s.duty_date)}${s.resident_physician_id ? ' · Resident ' + staffName(s.resident_physician_id) : ''}${s.backup_physician_id ? ' · backup ' + staffName(s.backup_physician_id) : ''}`,
             source: 'oncall_schedule'
           }))
           return { text, visual: { type: 'roster', rows: roster }, evidence, chips: [], actions: [{ label: 'Open on-call schedule', view: 'oncall_schedule', primary: true }], sources: ['on-call schedule'], followups: [{ label: 'Anyone on leave that day?', followupKind: 'leave_on_date', date: up[0]?.duty_date || null }], reviewScope: dayLabel ? `On-call schedule · ${dayLabel}` : 'Upcoming on-call schedule' }
@@ -18243,7 +18195,7 @@ document.addEventListener('DOMContentLoaded', () => {
           canEditPortfolio: record => record?._access?.can_edit === true,
           canExport: type => window.NeumAccess.allowed(currentUser.value?.access,({staff:'staff.directory.view',rotations:'rotation.view',absences:'leave.view',oncall:'oncall.view'})[type],true),
           canRecord: (key,record,domain='staff') => {
-            const ids=domain==='leave'?[record.staff_member_id]:domain==='rotation'?[record.resident_id]:domain==='oncall'?[record.primary_physician_id,record.backup_physician_id].filter(Boolean):[record.id];
+            const ids=domain==='leave'?[record.staff_member_id]:domain==='rotation'?[record.resident_id]:domain==='oncall'?[record.primary_physician_id,record.backup_physician_id,record.resident_physician_id].filter(Boolean):[record.id];
             return window.NeumAccess.canRecord(currentUser.value?.access,key,ids.map(id=>medicalStaff.value.find(s=>s.id===id)||{id,department_id:domain==='staff'?record.department_id:null}));
           },
           ...staffOps,  // medicalStaff, allStaffLookup, hospitalsList (clinicalUnits removed — unused)
@@ -18378,7 +18330,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
-          toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
+          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
@@ -18488,7 +18440,7 @@ document.addEventListener('DOMContentLoaded', () => {
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
           formatRotationStatus, getUserRoleDisplay, formatAudience, formatStudyStatus,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
-          adminSection, showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword, recovery, requestPasswordRecovery,
+          testSession, returnToAdministrator, startUserTest, adminDepartmentSection, adminSection, showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword, recovery, requestPasswordRecovery,
           normalizeDate: (d) => Utils.normalizeDate(d),
           formatDate: (d) => Utils.formatDate(d),
           formatDrName: (n) => Utils.formatDrName(n),
