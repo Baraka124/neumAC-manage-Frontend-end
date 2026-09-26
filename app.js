@@ -7740,6 +7740,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 7. ROOT APP ============
     const app = createApp({
       setup() {
+        const adminSection = ref('people')
         const loading = ref(false)
         const saving = ref(false)
 
@@ -18487,7 +18488,7 @@ document.addEventListener('DOMContentLoaded', () => {
           formatStaffType, formatStaffTypeShortFn, getStaffTypeClass, formatEmploymentStatus, formatAbsenceReason,
           formatRotationStatus, getUserRoleDisplay, formatAudience, formatStudyStatus,
           getCurrentViewTitle, getCurrentViewSubtitle, getSearchPlaceholder,
-          showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword, recovery, requestPasswordRecovery,
+          adminSection, showPassword, loginError, loginFieldErrors, clearLoginError, handleForgotPassword, recovery, requestPasswordRecovery,
           normalizeDate: (d) => Utils.normalizeDate(d),
           formatDate: (d) => Utils.formatDate(d),
           formatDrName: (n) => Utils.formatDrName(n),

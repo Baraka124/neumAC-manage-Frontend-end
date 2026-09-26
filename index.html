@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=46.14.5.2">
 
     
-<link rel="stylesheet" href="access.css?v=46.14.5.3I">
+<link rel="stylesheet" href="access.css?v=46.14.5.3J">
 </head>
 <body>
 <div id="app" v-cloak>
@@ -4719,16 +4719,11 @@
                 <!-- ============ SYSTEM SETTINGS VIEW ============ -->
                 <div v-if="currentView === 'system_settings'">
 
-                    <!-- Page header -->
-                    <div  class="nd-l253">
-                        <div>
-                            <div  class="nd-v244">Administration</div>
-                            <div  class="nd-l075 nd-v202">Team access, identity and department configuration</div>
-                        </div>
-                    </div>
-
-                    <access-center :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center>
-
+                    <div class="admin-studio">
+                    <header class="admin-masthead"><div><p class="admin-kicker">NEUMACT / WORKSPACE</p><h1>Administration<span>.</span></h1><p>A connected team starts here.</p></div><span class="admin-context">People · Access · Department</span></header>
+                    <nav class="admin-navigation" aria-label="Administration sections"><button v-for="section in [{id:'people',name:'People & access',hint:'Your team, connected',icon:'01'},{id:'department',name:'Department setup',hint:'Roles, services & coverage',icon:'02'},{id:'import',name:'Schedule import',hint:'Review before applying',icon:'03'},{id:'preferences',name:'Preferences',hint:'Workspace behaviour',icon:'04'}]" :key="section.id" :aria-pressed="adminSection===section.id" :class="{active:adminSection===section.id}" @click="adminSection=section.id"><span class="admin-nav-number">{{section.icon}}</span><span><strong>{{section.name}}</strong><small>{{section.hint}}</small></span></button></nav>
+                    <section v-show="adminSection==='people'" aria-label="People and access"><access-center :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center></section>
+                    <section v-show="adminSection==='import'" class="admin-config" aria-label="Schedule import"><div class="admin-section-intro"><p class="admin-kicker">SCHEDULE IMPORT</p><h2>Review together. Apply with confidence.</h2><p>Match the spreadsheet to your team and inspect the proposed changes.</p></div>
                     <!-- ═══ EXCEL SYNC (on-call, preview-only) ═══ -->
                     <div class="card mb-6">
                         <div class="card-header"><span class="section-title">📊 Sync on-call from Excel <span  class="nd-l216 nd-v243">preview only — nothing is saved</span></span></div>
@@ -4794,6 +4789,8 @@
                         </div>
                     </div>
 
+                    </section>
+                    <section v-show="adminSection==='department'" class="admin-config" aria-label="Department setup"><div class="admin-section-intro"><p class="admin-kicker">DEPARTMENT SETUP</p><h2>The structure behind your team.</h2><p>Maintain staff categories, qualifications, rotation services and coverage areas.</p></div>
                     <!-- STAFF TYPES ══════════════════════════════════════════ -->
                     <div class="card mb-6">
                         <div class="card-header">
@@ -4945,6 +4942,8 @@
                         </div>
                     </div>
 
+                    </section>
+                    <section v-show="adminSection==='preferences'" class="admin-config" aria-label="Workspace preferences"><div class="admin-section-intro"><p class="admin-kicker">PREFERENCES</p><h2>Make the workspace work for you.</h2><p>Department details and platform behaviour in one place.</p></div>
                     <!-- CORE SETTINGS ══════════════════════════════════ -->
                     <div class="card mb-6 nd-l093"  v-if="hasPermission('system_settings','read')">
                         <div class="card-header">
@@ -5031,6 +5030,8 @@
                     </div>
 
 
+                    </section>
+                    <section v-show="adminSection==='department'" class="admin-config" aria-label="Coverage areas">
                     <!-- ══ COVERAGE AREAS ══════════════════════════════════════════ -->
                     <div class="card mb-6 nd-l093" v-if="hasPermission('system_settings','read')" >
                         <div class="card-header">
@@ -5101,6 +5102,8 @@
 
 
 
+                    </section>
+                    </div>
                     <!-- Link-staff picker modal -->
                     <div v-if="linkStaffModal.show" class="link-staff-overlay" @click.self="linkStaffModal.show = false">
                         <div class="link-staff-modal">
@@ -12065,11 +12068,11 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="activity45.js?v=46.14.5.2"></script>
     <script src="entry-highlights.js?v=46.14.5.2"></script>
     <script src="entry46.js?v=46.14.5.2"></script>
-    <script src="grounded-core.js?v=46.14.5.3I"></script>
+    <script src="grounded-core.js?v=46.14.5.3J"></script>
     <script src="decision51.js?v=46.14.5.2"></script>
     <script src="temporal50.js?v=46.14.5.2"></script>
-    <script src="access.js?v=46.14.5.3I"></script>
-    <script src="app.js?v=46.14.5.3I"></script>
+    <script src="access.js?v=46.14.5.3J"></script>
+    <script src="app.js?v=46.14.5.3J"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 
