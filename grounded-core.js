@@ -1,4 +1,4 @@
-/* neumDesk V46.14 · Phase 5.3E · Grounded permission-aware retrieval · 2026-09-24 */
+/* neumDesk V46.14 · Phase 5.3E · Grounded permission-aware retrieval · 2026-09-27 */
 (function(root, factory){
   const api = factory()
   if (typeof module === 'object' && module.exports) module.exports = api
@@ -115,12 +115,12 @@
   const getSessionMemory = (key) => readSessionMemory()[key]
   const clearSessionMemory = () => { try { storage()?.removeItem(SESSION_MEMORY_KEY) } catch {} }
 
-  const createToolRegistry = ({ permissionCheck, authorityCheck }={}) => {
+  const createToolRegistry = ({ permissionCheck }={}) => {
     const defs = new Map()
     const register = (def) => {
       if (!def || !def.name || typeof def.run !== 'function') throw new Error('Grounded tool needs name + run()')
       defs.set(def.name, Object.freeze({
-        description:'', access:ACCESS.READ, module:null, inputSchema:null, ...def
+        description:'', access:ACCESS.READ, module:null, permissionKey:null, inputSchema:null, ...def
       }))
       return defs.get(def.name)
     }
@@ -130,25 +130,17 @@
       const def = defs.get(name)
       if (!def) { const e=new Error(`Unknown Grounded tool: ${name}`); e.code='GROUND_TOOL_NOT_FOUND'; throw e }
       const requested = def.access || ACCESS.READ
-      // Phase 5.3E: the canonical authority plan is checked before the legacy
-      // module bridge. Grounded must fail closed when a source/action is not
-      // authorised; the legacy check remains only for transitional routes.
-      if (typeof authorityCheck === 'function') {
-        const verdict = authorityCheck(def, input, opts)
-        const allowed = verdict === true || verdict?.allowed === true
+      const permissionAction = requested === ACCESS.WRITE ? 'write' : (requested === ACCESS.PROPOSE ? 'propose' : 'read')
+      if (typeof permissionCheck === 'function') {
+        const verdict = permissionCheck(def.module, permissionAction, def)
+        const allowed = verdict === true || (verdict && verdict.allowed === true)
         if (!allowed) {
-          const e = new Error(verdict?.reason || `Authority denied for ${name}`)
-          e.code = verdict?.code || 'GROUND_AUTHORITY_DENIED'
-          e.authority = sanitize(verdict || null)
-          if (opts.traceId) addTraceEvent(opts.traceId,'tool_blocked',{tool:name,access:requested,authority:sanitize(verdict||null)})
+          const e = new Error((verdict && verdict.reason) || `Permission denied for ${name}`); e.code='GROUND_PERMISSION_DENIED'
+          e.permission = (verdict && verdict.permission) || def.permissionKey || null
+          if (opts.traceId) addTraceEvent(opts.traceId,'tool_blocked',{tool:name,module:def.module,permission:e.permission,access:requested,reason:(verdict&&verdict.reason)||null})
           throw e
         }
-      }
-      const permissionAction = requested === ACCESS.WRITE ? 'write' : 'read'
-      if (def.module && typeof permissionCheck === 'function' && !permissionCheck(def.module, permissionAction)) {
-        const e = new Error(`Permission denied for ${name}`); e.code='GROUND_PERMISSION_DENIED'
-        if (opts.traceId) addTraceEvent(opts.traceId,'tool_blocked',{tool:name,module:def.module,access:requested})
-        throw e
+        if (opts.traceId && verdict && typeof verdict === 'object') addTraceEvent(opts.traceId,'authority_checked',{tool:name,permission:verdict.permission||def.permissionKey||null,decision:verdict.decision||'ALLOW',visibility:verdict.visibility||null,scope:verdict.scope||null})
       }
       if (requested === ACCESS.WRITE && opts.confirmed !== true) {
         const e = new Error(`Human confirmation required for ${name}`); e.code='GROUND_CONFIRMATION_REQUIRED'
