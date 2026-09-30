@@ -13,20 +13,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=recovery-20260928">
-    <link rel="stylesheet" href="decision51.css?v=recovery-20260928">
+    <link rel="stylesheet" href="style.css?v=5.3-production.1">
+    <link rel="stylesheet" href="decision51.css?v=5.3-production.1">
     <!-- Preserved Phase 5.1 decision CSS checkpoint: decision51.css?v=46.14-phase51-decision-intelligence -->
-    <link rel="stylesheet" href="activity45-ui.css?v=recovery-20260928">
-    <link rel="stylesheet" href="entry46.css?v=recovery-20260928">
+    <link rel="stylesheet" href="activity45-ui.css?v=5.3-production.1">
+    <link rel="stylesheet" href="entry46.css?v=5.3-production.1">
 
     
-<link rel="stylesheet" href="access.css?v=recovery-20260928">
+<link rel="stylesheet" href="access.css?v=5.3-production.1">
 </head>
 <body>
 <div id="app" v-cloak>
         <div v-if="testSession" class="test-session-banner" role="status"><span>Development test · {{testSession.name}} · Actions use this person's permissions and affect real development records.</span><button type="button" @click="returnToAdministrator">Return to system administrator</button></div>
 
 <invitation-setup></invitation-setup>
+<production-password-setup></production-password-setup>
+<release-status></release-status>
 <self-profile></self-profile>
 
 
@@ -1844,6 +1846,7 @@
 
                 <!-- ============ DASHBOARD VIEW ============ -->
                 <div v-if="currentView === 'dashboard'" class="view-dashboard nd-l295" >
+<operational-review :rotations="rotations" :absences="absences" :oncall="onCallSchedule" :staff="medicalStaff" :can="hasPermission" @navigate="switchView"></operational-review>
 
                     <!-- ═══ DASHBOARD ELITE REDESIGN ═══════════════════════
                          1. dbh-frame  — dark navy hero (greeting + alerts)
@@ -6636,7 +6639,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <p v-if="isResidentType(staffProfileModal.staff.staff_type) && getResidentTrainingContext(staffProfileModal.staff)">{{ getResidentTrainingContext(staffProfileModal.staff).summary }}</p>
                             <p v-if="!isResidentType(staffProfileModal.staff.staff_type) || !getResidentTrainingContext(staffProfileModal.staff)">Current operational context, clinical relationships and professional record.</p>
                         </div>
-                        <div class="pp2-head-actions">
+                        <div class="pp2-head-actions"><record-readiness kind="profile" :record="staffProfileModal.staff"></record-readiness>
                             <button v-if="canRecord('staff.profile.edit',staffProfileModal.staff)" @click="editMedicalStaff(staffProfileModal.staff)" class="pp2-btn pp2-btn--quiet">Edit profile</button>
                         </div>
                     </header>
@@ -7170,7 +7173,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
             <aside class="nrd-v24-reader-tools nrd-v27-reader-tools"><button class="nrd-v24-circle" @click="newsDrawer.detailsOpen=!newsDrawer.detailsOpen" :class="{'is-active':newsDrawer.detailsOpen}" title="Record details" aria-label="Record details">i</button><div class="nrd-v24-manage" v-if="canEditPortfolio(newsDrawer.post)"><button class="nrd-v24-circle" @click="newsDrawer.manageOpen=!newsDrawer.manageOpen" :class="{'is-active':newsDrawer.manageOpen}" title="Manage" aria-label="Manage">•••</button><div v-if="newsDrawer.manageOpen" class="nrd-v24-manage-menu"><div class="nrd-v24-manage-title">Manage record</div><button @click="toggleNewsSaved(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-bookmark"></i><span>{{ newsIsSaved(newsDrawer.post.id) ? 'Remove from My Library' : 'Save to My Library' }}</span></button><button @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-pen"></i><span>Edit</span></button><button v-if="newsDrawer.post.status==='draft'" @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-clipboard-check"></i><span>Review &amp; publish</span></button><button v-if="newsDrawer.post.status==='published'" @click="toggleNewsPublic(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas" :class="newsDrawer.post.is_public ? 'fa-lock' : 'fa-globe'"></i><span>{{ newsDrawer.post.is_public ? 'Make Internal' : 'Make Public' }}</span></button><button @click="toggleNewsFeature(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-star"></i><span>{{ newsDrawer.post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}</span></button><div class="nrd-v24-manage-sep"></div><button @click="archiveNews(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-archive"></i><span>Archive</span></button><button class="is-danger" v-if="canEditPortfolio(newsDrawer.post)" @click="deleteNews(newsDrawer.post, closeNewsDrawer); newsDrawer.manageOpen=false"><i class="fas fa-trash"></i><span>Delete</span></button></div></div></aside>
 
-            <aside v-if="newsDrawer.detailsOpen" class="nrd-v24-details nrd-v27-details"><button @click="newsDrawer.detailsOpen=false" aria-label="Close details">×</button><span class="nrd-v24-details-kicker">Record details</span><dl><div><dt>Type</dt><dd>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</dd></div><div><dt>Status</dt><dd>{{ newsDrawer.post.status }}</dd></div><div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span></dd></div><div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div><div v-if="newsDrawerAuthorFull"><dt>Author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div><div v-if="newsDrawerKeywords.length"><dt>Index terms</dt><dd>{{ newsDrawerKeywords.join(' · ') }}</dd></div><div><dt>Created</dt><dd>{{ formatDate(newsDrawer.post.created_at) }}</dd></div><div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div><div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div></dl><div class="nrd-v28-lifecycle-history"><span>Lifecycle</span><div v-for="ev in newsDrawerLifecycle" :key="ev.label+ev.date"><b>{{ ev.label }}</b><time>{{ formatDate(ev.date) }}</time></div><small>Lifecycle timestamps available from the current backend record. This is not a fabricated version audit trail.</small></div><button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button></aside>
+            <aside v-if="newsDrawer.detailsOpen" class="nrd-v24-details nrd-v27-details"><button @click="newsDrawer.detailsOpen=false" aria-label="Close details">×</button><span class="nrd-v24-details-kicker">Record details</span><record-readiness kind="publication" :record="newsDrawer.post"></record-readiness><dl><div><dt>Type</dt><dd>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</dd></div><div><dt>Status</dt><dd>{{ newsDrawer.post.status }}</dd></div><div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span></dd></div><div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div><div v-if="newsDrawerAuthorFull"><dt>Author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div><div v-if="newsDrawerKeywords.length"><dt>Index terms</dt><dd>{{ newsDrawerKeywords.join(' · ') }}</dd></div><div><dt>Created</dt><dd>{{ formatDate(newsDrawer.post.created_at) }}</dd></div><div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div><div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div></dl><div class="nrd-v28-lifecycle-history"><span>Lifecycle</span><div v-for="ev in newsDrawerLifecycle" :key="ev.label+ev.date"><b>{{ ev.label }}</b><time>{{ formatDate(ev.date) }}</time></div><small>Lifecycle timestamps available from the current backend record. This is not a fabricated version audit trail.</small></div><button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button></aside>
           </section>
         </template>
 
@@ -12081,16 +12084,18 @@ Use Section heading to structure longer clinical or research articles."></textar
     </teleport>
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="activity45.js?v=recovery-20260928"></script>
-    <script src="entry-highlights.js?v=recovery-20260928"></script>
-    <script src="entry46.js?v=recovery-20260928"></script>
-    <script src="grounded-core.js?v=recovery-20260928"></script>
-    <script src="decision51.js?v=recovery-20260928"></script>
-    <script src="temporal50.js?v=recovery-20260928"></script>
-    <script src="oncall-sync.js?v=recovery-20260928"></script>
-    <script src="test-session.js?v=recovery-20260928"></script>
-    <script src="access.js?v=recovery-20260928"></script>
-    <script src="app.js?v=recovery-20260928"></script>
+    <script src="activity45.js?v=5.3-production.1"></script>
+    <script src="entry-highlights.js?v=5.3-production.1"></script>
+    <script src="entry46.js?v=5.3-production.1"></script>
+    <script src="grounded-core.js?v=5.3-production.1"></script>
+    <script src="decision51.js?v=5.3-production.1"></script>
+    <script src="temporal50.js?v=5.3-production.1"></script>
+    <script src="oncall-sync.js?v=5.3-production.1"></script>
+    <script src="test-session.js?v=5.3-production.1"></script>
+    <script src="access.js?v=5.3-production.1"></script>
+    <script src="review53.js?v=5.3-production.1"></script>
+    <script src="production-ui.js?v=5.3-production.1"></script>
+    <script src="app.js?v=5.3-production.1"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 

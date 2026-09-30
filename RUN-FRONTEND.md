@@ -1,17 +1,13 @@
-# Frontend recovery — 28 September 2026
+# Frontend — 5.3-production.1
 
-This package is frontend-only. index.html is at the archive root; no npm build is required.
+Apply the backend migration and deploy the matched backend first, then upload ALL files in this frontend archive to your frontend project root. No build step is required. index.html is at the archive root. Keep the backend and frontend paired.
 
-## Existing deployment
-Replace the frontend site's runtime files with all files from this archive. Deploy the paired backend first. CNAME retains desk.neumact.org. Open https://desk.neumact.org and hard-refresh once (Ctrl+Shift+R).
+Refresh https://desk.neumact.org after deployment. The release indicator should read "Frontend & backend matched". If it does not, refresh or deploy the matching pair before making changes.
 
-Asset query versions were refreshed to recovery-20260928 to avoid mixing cached code. All frontend runtime code otherwise matches commit 4ae3ba8b2658343b64c53b7cc9246ae8573a541d. Phase labels in source comments are not the version authority.
+The production API remains https://neumac-manage-back-end-production.up.railway.app. For a changed API hostname, update CONFIG.API_BASE_URL in app.js and regenerate the release checksums before deploying.
 
-The production API remains https://neumac-manage-back-end-production.up.railway.app. If your API address has changed, update CONFIG.API_BASE_URL in app.js before deployment.
+Local use: run `python -m http.server 8080` (Windows: `py -m http.server 8080`), then open http://localhost:8080 with the backend running on port 3000. Use localhost, not 127.0.0.1 or file://, for the existing local API selection.
 
-## Local run
-Start the backend on port 3000. From this frontend directory run `python -m http.server 8080` (or `py -m http.server 8080` on Windows), then open http://localhost:8080. Use localhost, not a file:// URL or 127.0.0.1: the existing API selection recognizes localhost. The backend must allow http://localhost:8080 in ALLOWED_ORIGINS.
+People & access now supports production temporary credentials. No development mode is required. The administrator must confirm their own password. Issued credentials are shown once and expire after 24 hours. The recipient must choose a personal password before accessing departmental data.
 
-Checks: all packaged JavaScript passed syntax checking; local CSS asset paths resolve; browser app mounting, access-help recovery form, invitation form/token removal, required assets and mobile invitation width were checked with mocked API responses. Live sign-in, database-backed modules and email delivery still require testing on your deployment.
-
-Do not upload backend files into this frontend directory. Unshipped Phase 5.3F changes are excluded.
+Keep this guide and RELEASE-NOTES.md with the release. Validate the pair using `python verify_release.py --frontend . --backend ../backend` with your actual folder paths. Live sign-in, operational data and email delivery still require deployment checks.

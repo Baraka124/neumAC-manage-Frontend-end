@@ -1445,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       headers() {
-        const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+        const h = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Neumdesk-Release': window.NeumProduction.RELEASE }
         const t = this.token
         if (t?.trim()) h['Authorization'] = `Bearer ${t}`
         return h
@@ -1489,6 +1489,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res.status === 204) return null
           if (!res.ok) {
             if (res.status === 401) {
+              if (endpoint === '/api/auth/complete-password-setup'){const err=await res.json().catch(()=>({}));throw new Error(err.error||'Setup expired. Sign in again.')}
               if (endpoint === '/api/auth/login') throw new Error('Email or password not recognised. Please try again.')
               if (!this._sessionExpired) {
                 this._sessionExpired = true
@@ -1503,7 +1504,7 @@ document.addEventListener('DOMContentLoaded', () => {
               try { payload = errBody ? JSON.parse(errBody) : null } catch {}
               if(endpoint !== '/api/auth/login' && (payload?.account_status || payload?.error==='Invalid token')) { this.clearAuthStorage(); this.clearCache(); window.location.reload(); }
               const apiError = new Error(endpoint === '/api/auth/login'
-                ? 'This account cannot sign in. Contact your departmental administrator.'
+                ? (payload?.message || 'This account cannot sign in. Contact your departmental administrator.')
                 : (payload?.message || 'You do not have permission to perform this action.'))
               apiError.status = 403
               apiError.payload = payload
@@ -10122,6 +10123,7 @@ document.addEventListener('DOMContentLoaded', () => {
           loginLoading.value = true; loginError.value = ''; entry.notice = ''; entry.state = 'signin'
           try {
             const response = await API.login(loginForm.email, loginForm.password, { persist: loginForm.keep_signed_in === true })
+            if(response?.password_setup_required && response.setup_token){API.clearAuthStorage();API.clearCache();loginForm.password='';window.dispatchEvent(new CustomEvent('neumdesk:password-setup',{detail:{token:response.setup_token}}));return}
             if (!response?.token || !response?.user?.id) throw new Error('The server returned an incomplete sign-in response. Please try again.')
             try { if (loginForm.remember_me) localStorage.setItem('neumdesk_entry_email',loginForm.email); else localStorage.removeItem('neumdesk_entry_email') } catch (_) {}
             loginForm.password = ''; showPassword.value = false; entry.capsLock = false
@@ -10992,7 +10994,7 @@ document.addEventListener('DOMContentLoaded', () => {
           fd.append('file', file)
           const res = await fetch(CONFIG.API_BASE_URL + '/api/upload/news-image', {
             method: 'POST',
-            headers: { Authorization: 'Bearer ' + token },
+            headers: { Authorization: 'Bearer ' + token, 'X-Neumdesk-Release':window.NeumProduction.RELEASE },
             body: fd
           })
           const data = await res.json()
@@ -11022,7 +11024,7 @@ document.addEventListener('DOMContentLoaded', () => {
           fd.append('file', file)
           const res = await fetch(CONFIG.API_BASE_URL + '/api/upload/staff-photo', {
             method: 'POST',
-            headers: { Authorization: 'Bearer ' + token },
+            headers: { Authorization: 'Bearer ' + token, 'X-Neumdesk-Release':window.NeumProduction.RELEASE },
             body: fd
           })
           const data = await res.json()
@@ -18534,6 +18536,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     app.component('access-center', window.NeumAccess.createCenter({Vue,API}))
     app.component('self-profile', window.NeumAccess.createSelfProfile({Vue,API}))
+    app.component('operational-review',window.NeumReview53.createReview({Vue}))
+    app.component('record-readiness',window.NeumReview53.createReadiness({Vue}))
+    app.component('production-password-setup',window.NeumProduction.createSetup({Vue,API}))
+    app.component('release-status',window.NeumProduction.createRelease({Vue,API}))
     app.component('invitation-setup', window.NeumAccess.createInvitation({Vue,API}))
     app.mount('#app')
 
