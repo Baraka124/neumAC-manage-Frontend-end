@@ -34,3 +34,5 @@ Baseline confirmed against the current GitHub deployment sources: frontend 813fb
 
 ## Remaining scope and limits
 Live database compatibility, delivery by your email provider, authenticated operational writes and the public website must be checked on your deployment. This is a production-account release with focused improvements across the other areas, not a claim that all ten broad workstreams are complete. Deeper Grounded proposal UX, comprehensive module-wide design standardisation, research/profile analytics and an expanded public publishing workflow remain further work.
+
+Header layout fix (2026-10-01): restored the date-and-actions header to the top of the dashboard. Operational Review now follows the summary statistics. Compatible with backend 5.3-production.2; no backend deployment or SQL change is required for this frontend fix.

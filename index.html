@@ -1846,7 +1846,6 @@
 
                 <!-- ============ DASHBOARD VIEW ============ -->
                 <div v-if="currentView === 'dashboard'" class="view-dashboard nd-l295" >
-<operational-review :rotations="rotations" :absences="absences" :oncall="onCallSchedule" :staff="medicalStaff" :can="hasPermission" @navigate="switchView"></operational-review>
 
                     <!-- ═══ DASHBOARD ELITE REDESIGN ═══════════════════════
                          1. dbh-frame  — dark navy hero (greeting + alerts)
@@ -1962,6 +1961,9 @@
                             <div class="dbsr-accent dbsr-accent--indigo"></div>
                         </div>
                     </div>
+
+                    <!-- Advisory review follows the dashboard header and summary statistics. -->
+                    <operational-review :rotations="rotations" :absences="absences" :oncall="onCallSchedule" :staff="medicalStaff" :can="hasPermission" @navigate="switchView"></operational-review>
 
                     <!-- 3. MAIN CONTENT GRID -->
                     <div class="db-main-grid">

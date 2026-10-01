@@ -13,3 +13,5 @@ People & access now supports production temporary credentials. No development mo
 Keep this guide and RELEASE-NOTES.md with the release. Validate the pair using `python verify_release.py --frontend . --backend ../backend` with your actual folder paths. Live sign-in, operational data and email delivery still require deployment checks.
 
 Update .2: existing system-administrator passwords cannot be changed or reset within the application. Entering your current administrator password only confirms your identity. Generated user credentials now appear visibly and scroll into view. If the .1 migration was already applied, no further SQL is needed.
+
+Header layout fix (2026-10-01): restored the date-and-actions header to the top of the dashboard. Operational Review now follows the summary statistics. Compatible with backend 5.3-production.2; no backend deployment or SQL change is required for this frontend fix.
