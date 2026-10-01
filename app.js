@@ -1479,13 +1479,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const config = { method, headers: this.headers(), mode: 'cors', cache: 'no-cache', credentials: 'include', ...(options.signal ? { signal: options.signal } : {}) }
-        const timeoutController = options.timeoutMs && !options.signal ? new AbortController() : null
-        const timeoutId = timeoutController ? setTimeout(() => timeoutController.abort(), options.timeoutMs) : null
+        const timeoutMs = options.timeoutMs ?? (isGet ? 30000 : 60000)
+        const timeoutController = !options.signal ? new AbortController() : null
+        const timeoutId = timeoutController ? setTimeout(() => timeoutController.abort(), timeoutMs) : null
+        let responseStatus = null
         if (timeoutController) config.signal = timeoutController.signal
         if (options.body) config.body = JSON.stringify(options.body)
 
         try {
           const res = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, config)
+          responseStatus = res.status
           if (res.status === 204) return null
           if (!res.ok) {
             if (res.status === 401) {
@@ -1559,9 +1562,16 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return result
         } catch (e) {
-          if (e.name === 'AbortError') throw new Error('The connection took too long. Please try again.')
-          if (e.message.includes('fetch') || e.message.includes('NetworkError'))
-            throw new Error('Cannot connect to server. Check your network connection.')
+          if (e.name === 'AbortError') {
+            const error = new Error(isGet ? 'The server took too long to respond. Please retry.' : 'The server took too long to respond. Check whether the change was saved before trying again.')
+            error.code = 'REQUEST_TIMEOUT'; error.endpoint = endpoint; throw error
+          }
+          if (responseStatus === null && (e instanceof TypeError || e.name === 'NetworkError')) {
+            const error = new Error(navigator.onLine === false ? 'You are offline. Reconnect and retry.' : 'The request could not reach the server. Please retry. If it continues, contact your administrator.')
+            error.code = 'NETWORK_UNREACHABLE'; error.endpoint = endpoint; error.cause = e; throw error
+          }
+          if (responseStatus && !e.status) e.status = responseStatus
+          e.endpoint = endpoint
           throw e
         } finally {
           if (timeoutId) clearTimeout(timeoutId)
@@ -2408,8 +2418,8 @@ document.addEventListener('DOMContentLoaded', () => {
           try {
             staff = await API.getMedicalStaff({ skipCache: !!force, timeoutMs: 20000 })
           } catch (firstError) {
-            // Railway can occasionally be cold on the first request. Retry once
-            // after a short pause, bypassing any stale cache.
+            // Retry transient failures only; access denials need no second request.
+            if (!['NETWORK_UNREACHABLE','REQUEST_TIMEOUT'].includes(firstError.code) && !(firstError.status >= 500)) throw firstError
             console.warn('[neumDesk] medical staff first attempt failed; retrying once', firstError)
             await new Promise(resolve => setTimeout(resolve, 900))
             staff = await API.getMedicalStaff({ skipCache: true, timeoutMs: 25000 })
@@ -2434,8 +2444,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         } catch (e) {
           console.error('[neumDesk] CRITICAL medical staff load failed:', e)
-          showOnScreenError('Medical staff load failed', e, '/api/medical-staff')
-          showToast('Staff data unavailable', e?.message || 'Failed to load medical staff', 'error', 0)
+          showToast('Staff data could not be refreshed', e?.message || 'Please retry loading staff.', 'error', 0, e.status === 401 || e.status === 403 ? null : { label:'Retry staff loading', fn:() => loadMedicalStaff(true) })
           return false
         }
 
@@ -7762,7 +7771,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const loginError = ref('')
         const loginFieldErrors = reactive({ email: '', password: '' })
         const clearLoginError = (field) => { if (field === 'email') loginFieldErrors.email = ''; if (field === 'password') loginFieldErrors.password = ''; loginError.value = '' }
-        const entry = reactive({ state:'checking', mode:'signin', message:'', notice:'', capsLock:false, pendingUser:null, trustUntil:null })
+        const entry = reactive({ state:'checking', accessReady:false, mode:'signin', message:'', notice:'', capsLock:false, pendingUser:null, trustUntil:null })
         const entryLoginIssue = computed(() => {
           const message = String(loginError.value || '').trim()
           if (!message) return null
@@ -7771,7 +7780,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (/cannot sign in|permission|authori[sz]ed|disabled account|not active/.test(lower)) return { kind:'access', title:'Department access is not available', message }
           if (/too many attempts|wait a few minutes/.test(lower)) return { kind:'rate', title:'Too many sign-in attempts', message }
           if (/maintenance/.test(lower)) return { kind:'maintenance', title:'neumDesk is temporarily unavailable', message }
-          if (/network|cannot connect|connection took too long|server error|could not verify|could not open/.test(lower)) return { kind:'connection', title:'We could not verify access', message }
+          if (/network|cannot connect|could not reach|offline|too long|server error|could not verify|could not open/.test(lower)) return { kind:'connection', title:'We could not verify access', message }
           if (/session.*expired|sign in again/.test(lower)) return { kind:'session', title:'Your session has ended', message }
           return { kind:'generic', title:'Sign-in could not be completed', message }
         })
@@ -10134,8 +10143,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const openEntryWorkspace = async (user, { attempt = null } = {}) => {
-          entry.state = 'opening'; entry.pendingUser = null; entry.message = ''; entry.notice = ''
-          const access = await API.request('/api/authority/capabilities',{skipCache:true})
+          entry.state = 'opening'; entry.accessReady = false; entry.pendingUser = null; entry.message = ''; entry.notice = ''
+          const access = await API.request('/api/authority/capabilities',{skipCache:true,timeoutMs:15000})
+          entry.accessReady = true
           currentUser.value = {...user,access}; currentView.value = 'dashboard'
           if (typeof API.storeSessionUser === 'function') API.storeSessionUser(user)
           else try { localStorage.setItem(CONFIG.USER_KEY, JSON.stringify(user)) } catch (_) {}

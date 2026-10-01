@@ -15,3 +15,5 @@ Keep this guide and RELEASE-NOTES.md with the release. Validate the pair using `
 Update .2: existing system-administrator passwords cannot be changed or reset within the application. Entering your current administrator password only confirms your identity. Generated user credentials now appear visibly and scroll into view. If the .1 migration was already applied, no further SQL is needed.
 
 Header layout fix (2026-10-01): restored the date-and-actions header to the top of the dashboard. Operational Review now follows the summary statistics. Compatible with backend 5.3-production.2; no backend deployment or SQL change is required for this frontend fix.
+
+Login and recovery update (2026-10-01): revised desktop/mobile sign-in and loading screen; accurate permission verification progress; default request timeouts; classified connection/server/access errors; retry for failed staff reads with existing records preserved. Includes the dashboard header fix. Compatible with backend 5.3-production.2; no new SQL or backend deployment. Live cause of the previously reported connection failure remains unconfirmed.
