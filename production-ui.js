@@ -1,6 +1,6 @@
 /* Production account setup and release identity. */
 (function(root){'use strict';
-const RELEASE='5.3-production.1';
+const RELEASE='5.3-production.2';
 function createSetup({Vue,API}){return{setup(){
  const s=Vue.reactive({token:'',password:'',confirm:'',busy:false,error:'',done:false,show:false});
  let previousFocus=null,previousOverflow='';
