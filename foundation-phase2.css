@@ -1,0 +1,41 @@
+/* Phase 2: shared shell tokens. Deliberately scoped; module layouts stay intact. */
+:root{
+ --shell-font:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+ --shell-navy:#102d40;--shell-navy-raised:#19384b;--shell-navy-hover:#203f52;--shell-navy-selected:#294d60;
+ --shell-ink:#173449;--shell-muted:#526b7c;--shell-line:#d9e3e9;--shell-paper:#ffffff;--shell-soft:#f4f7fa;
+ --shell-accent:#087c86;--shell-accent-light:#97e1e2;--shell-text-on-dark:#dce7ed;--shell-muted-on-dark:#b2c7d2;
+ --shell-radius:7px;--shell-control:40px;--shell-gap:12px;--shell-title:24px;--shell-label:14px;
+}
+html body #app .shell2.top-navbar{height:76px!important;min-height:76px!important;flex:0 0 76px!important;position:relative!important;padding:0 24px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:24px;background:var(--shell-paper)!important;border:0!important;border-bottom:1px solid var(--shell-line)!important;box-shadow:none!important;backdrop-filter:none!important;font-family:var(--shell-font)!important;z-index:120}
+html body #app .shell2::before,html body #app .shell2::after,html body #app .shell2 .navbar-title-block::before{display:none!important}
+html body #app .shell2 .navbar-left{display:flex;align-items:center;min-width:0;gap:12px;flex:1}
+html body #app .shell2 .navbar-title-block{display:flex!important;flex-direction:column!important;gap:3px;min-width:0;padding:0!important;margin:0!important;border:0!important}
+html body #app .shell2 .navbar-title{font:600 var(--shell-title)/1.25 var(--shell-font)!important;color:var(--shell-ink)!important;letter-spacing:-.6px!important;margin:0!important;padding:0!important;max-width:none!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body #app .shell2 .navbar-subtitle{font:400 12px/1.5 var(--shell-font)!important;color:var(--shell-muted)!important;letter-spacing:0!important;margin:0!important;padding:0!important;max-width:none!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body #app .shell2 .navbar-right,html body #app .shell2 .shell2-actions{display:flex!important;align-items:center!important;gap:var(--shell-gap)!important;flex-shrink:0}
+html body #app .shell2 .search-container{width:clamp(190px,23vw,300px)!important;min-width:0!important}
+html body #app .shell2 .search-box{position:relative;width:100%!important;min-width:0;border:0!important;background:none!important;padding:0!important}
+html body #app .shell2 .search-input{height:var(--shell-control)!important;min-height:var(--shell-control)!important;width:100%!important;box-sizing:border-box!important;padding:9px 12px 9px 36px!important;border:1px solid var(--shell-line)!important;border-radius:var(--shell-radius)!important;background:var(--shell-soft)!important;color:var(--shell-ink)!important;font:400 13px/1.4 var(--shell-font)!important;box-shadow:none!important}
+html body #app .shell2 .search-input::placeholder{color:var(--shell-muted)!important;opacity:1!important}
+html body #app .shell2 .search-box>svg{position:absolute!important;left:12px!important;top:50%!important;transform:translateY(-50%)!important;color:var(--shell-muted)!important;opacity:1!important;pointer-events:none;width:15px;height:15px}
+html body #app .shell2 .btn-icon,html body #app .shell2 .navbar-user-btn,html body #app .shell2 .nm-hamburger,html body #app .shell2-mobile-search{width:var(--shell-control)!important;height:var(--shell-control)!important;min-height:var(--shell-control)!important;min-width:var(--shell-control)!important;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--shell-line)!important;border-radius:var(--shell-radius)!important;background:var(--shell-paper)!important;color:var(--shell-ink)!important;box-shadow:none!important;cursor:pointer;transform:none!important}
+html body #app .shell2 .btn-icon svg,html body #app .shell2 .nm-hamburger svg{width:18px!important;height:18px!important;color:var(--shell-ink)!important;opacity:1!important}
+html body #app .shell2 .btn-icon:hover,html body #app .shell2 .navbar-user-btn:hover,html body #app .shell2 .nm-hamburger:hover,html body #app .shell2-mobile-search:hover{background:var(--shell-soft)!important;border-color:#a4bac8!important}
+html body #app .shell2 .navbar-user-btn>svg{display:none!important}
+html body #app .shell2 .navbar-user-btn>div{width:28px!important;height:28px!important;border-radius:6px!important;background:var(--shell-navy)!important;color:#e6f5f6!important;display:grid;place-items:center;font:600 11px/1 var(--shell-font)!important;border:0!important}
+html body #app .shell2-account{position:relative}
+html body #app .shell2 .user-dropdown,html body #app .shell2 .search-results-dropdown,html body #app .shell2-notifications{background:var(--shell-paper)!important;border:1px solid var(--shell-line)!important;border-radius:10px!important;color:var(--shell-ink)!important;box-shadow:0 10px 28px #12364a20!important;font-family:var(--shell-font)!important}
+html body #app .shell2 .user-dropdown{position:absolute!important;top:calc(100% + 10px)!important;right:0!important;width:200px!important;padding:6px!important;z-index:150}
+html body #app .shell2 .user-dropdown button{min-height:42px!important;width:100%;padding:10px!important;border:0!important;border-radius:5px;font:500 13px/1.4 var(--shell-font)!important;color:var(--shell-ink)!important;background:none!important;display:flex;align-items:center;gap:10px;cursor:pointer}
+html body #app .shell2 .user-dropdown button:hover,html body #app .shell2 .search-result-item:hover{background:var(--shell-soft)!important}
+html body #app .shell2 .search-results-dropdown{top:calc(100% + 8px)!important;right:0!important;left:auto!important;width:380px!important;max-width:calc(100vw - 24px)!important;max-height:min(420px,65dvh)!important;overflow:auto}
+html body #app .shell2 .search-result-item{display:flex;width:100%;text-align:left;border:0!important;border-radius:0;background:var(--shell-paper);font-family:var(--shell-font);color:var(--shell-ink);padding:12px;gap:10px;cursor:pointer}
+html body #app .shell2 .search-result-name{font-size:14px!important;color:var(--shell-ink)!important}
+html body #app .shell2 .search-result-meta{font-size:12px!important;color:var(--shell-muted)!important}
+html body #app .shell2 .search-group-label{font:600 11px/1.5 var(--shell-font)!important;color:var(--shell-muted)!important;padding:12px;background:var(--shell-soft)}
+html body #app .shell2 :focus-visible{outline:2px solid var(--shell-accent)!important;outline-offset:3px!important;box-shadow:none!important}
+html body #app .shell2 .search-input:focus{border-color:var(--shell-accent)!important}
+html body #app .shell2 .nm-hamburger,html body #app .shell2-mobile-search{display:none!important}
+@media(max-width:1100px){html body #app .shell2.top-navbar{padding:0 18px!important;gap:16px}html body #app .shell2 .search-container{width:190px!important}html body #app .shell2 .navbar-right,html body #app .shell2 .shell2-actions{gap:8px!important}html body #app .shell2 .navbar-title{font-size:22px!important}}
+@media(max-width:768px){html body #app .shell2.top-navbar{height:68px!important;min-height:68px!important;flex-basis:68px!important;padding:0 12px!important;gap:8px}html body #app .shell2 .navbar-left{gap:8px}html body #app .shell2 .navbar-title{font-size:18px!important;letter-spacing:-.3px!important}html body #app .shell2 .navbar-subtitle{display:none!important}html body #app .shell2 .search-container{display:none!important}html body #app .shell2 .nm-hamburger,html body #app .shell2-mobile-search{display:inline-flex!important}html body #app .shell2 .shell2-actions>button[aria-label="New announcement"]{display:none!important}html body #app .shell2 .navbar-user-btn{display:none!important}html body #app .shell2 .navbar-right,html body #app .shell2 .shell2-actions{gap:6px!important}html body #app .shell2-notifications{position:fixed!important;top:76px!important;left:12px!important;right:12px!important;width:auto!important;max-height:calc(100dvh - 100px)!important;overflow:auto!important}}
+@media(prefers-reduced-motion:reduce){html body #app .shell2 *{transition:none!important}}

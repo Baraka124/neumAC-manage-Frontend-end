@@ -2115,7 +2115,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function useUI({ navigate, getAbsences, getRotations }) {
       const toasts = ref([])
       const sidebarCollapsed = ref(false)
+      const sidebarShortcut = /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘ K' : 'Ctrl K'
+      const handleSidebarKeydown = (event) => {
+        if (!mobileMenuOpen.value) return
+        if (event.key === 'Escape') { mobileMenuOpen.value = false; return }
+        if (event.key !== 'Tab') return
+        const nodes = Array.from(event.currentTarget.querySelectorAll('a,button,summary')).filter(n => n.getClientRects().length && !n.disabled && (!n.closest('details:not([open])') || n.tagName === 'SUMMARY'))
+        const first = nodes[0], last = nodes[nodes.length - 1]
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+      }
+
       const mobileMenuOpen = ref(false)
+      let sidebarReturnFocus = null
+      watch(mobileMenuOpen, async (open) => {
+        if (open) sidebarReturnFocus = document.activeElement
+        await Vue.nextTick()
+        if (open) document.querySelector('.sb1-close')?.focus()
+        else if (sidebarReturnFocus?.isConnected) sidebarReturnFocus.focus()
+      })
 
       // ── Splash screen ──────────────────────────────────────────────
       // V44 entry has a real validation state; no timed branding interstitial.
@@ -2253,7 +2271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toasts, removeToast, showToast,
         confirmationModal, showConfirmation, confirmAction, cancelConfirmation,
         userProfileModal, systemAlerts, activeAlertsCount, dismissAlert,
-        sidebarCollapsed, mobileMenuOpen, userMenuOpen, statsSidebarOpen, searchResultsOpen,
+        sidebarCollapsed, sidebarShortcut, handleSidebarKeydown, mobileMenuOpen, userMenuOpen, statsSidebarOpen, searchResultsOpen,
         splashVisible, dbDrawer, openDbDrawer, closeDbDrawer,
         globalSearchQuery, currentView, sidebarLiveStatus,
         cmdPaletteOpen,

@@ -13,14 +13,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=5.3-production.2-login1">
-    <link rel="stylesheet" href="decision51.css?v=5.3-production.2-login1">
+    <link rel="stylesheet" href="style.css?v=5.3-production.2-entry3">
+    <link rel="stylesheet" href="decision51.css?v=5.3-production.2-entry3">
     <!-- Preserved Phase 5.1 decision CSS checkpoint: decision51.css?v=46.14-phase51-decision-intelligence -->
-    <link rel="stylesheet" href="activity45-ui.css?v=5.3-production.2-login1">
-    <link rel="stylesheet" href="entry46.css?v=5.3-production.2-login1">
+    <link rel="stylesheet" href="activity45-ui.css?v=5.3-production.2-entry3">
+    <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=5.3-production.2-login1">
+<link rel="stylesheet" href="access.css?v=5.3-production.2-entry3">
+<link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
+<link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
+<link rel="stylesheet" href="entry-phase3.css?v=5.3-production.2-entry3">
 </head>
 <body>
 <div id="app" v-cloak>
@@ -1014,19 +1017,22 @@
     </div>
 
     <!-- V46 · Separate editorial and access panels; V44 session protection retained. -->
-    <main v-if="!currentUser || entry.state !== 'ready'" class="entry44 entry46" :class="{ 'entry46--departing': entry.state === 'entering' }">
+    <main v-if="!currentUser || entry.state !== 'ready'" class="entry44 entry46 entry3" :class="{ 'entry46--departing': entry.state === 'entering', 'entry3--transition': ['checking','opening','entering'].includes(entry.state) }">
+        <header class="entry3-masthead"><a href="https://neumact.org" target="_blank" rel="noopener noreferrer" aria-label="neumact public website (opens in a new tab)"><img src="neumact-logo.png" alt="neumact"></a><div class="entry3-institution">Pneumology<span>Área Sanitaria de A Coruña y Cee</span></div><span class="entry3-workspace">neum<span>Desk</span></span></header>
         <section class="entry44-access" aria-labelledby="entry-title">
-            <div class="entry44-access-top"><span class="entry46-wordmark">neum<span>Desk</span><i>.</i></span><span class="entry44-access-label">Department access</span></div>
+
             <div class="entry44-form-area">
                 <template v-if="entry.state === 'checking' || entry.state === 'opening' || entry.state === 'entering'">
-                    <span class="entry44-kicker">Welcome to neumDesk</span>
+                    <div class="entry3-loading-mark" aria-hidden="true"><span></span></div>
+                    <span class="entry44-kicker">neumDesk · Department access</span>
                     <h2 id="entry-title">{{ entry.state === 'checking' ? 'Verifying your session.' : (entry.state === 'entering' ? 'Workspace ready.' : 'Preparing your workspace.') }}</h2>
                     <p class="entry44-subtitle">{{ entry.state === 'checking' ? 'Checking your saved session…' : (entry.state === 'entering' ? 'Access verified. Entering your authorised departmental workspace.' : 'Your account is verified. Loading your workspace…') }}</p>
-                    <div class="entry46-access-chain" role="status" aria-live="polite">
+                    <p class="entry3-live-status" role="status" aria-live="polite">{{ entry.state === 'checking' ? 'Verifying your saved session…' : entry.state === 'entering' ? 'Ready to enter.' : entry.accessReady ? 'Loading departmental records…' : 'Confirming your permissions…' }}</p>
+                    <details class="entry3-progress"><summary>Connection details</summary><div class="entry46-access-chain">
                         <div :class="{ 'is-done': entry.state === 'opening' || entry.state === 'entering', 'is-active': entry.state === 'checking' }"><span></span><div><strong>Account</strong><small>{{ entry.state === 'checking' ? 'Verifying identity' : 'Verified' }}</small></div></div>
                         <div :class="{ 'is-done': entry.accessReady, 'is-active': entry.state === 'opening' && !entry.accessReady }"><span></span><div><strong>Permissions</strong><small>{{ entry.accessReady ? 'Access confirmed' : 'Checking your access' }}</small></div></div>
                         <div :class="{ 'is-done': entry.state === 'entering', 'is-active': entry.state === 'opening' && entry.accessReady }"><span></span><div><strong>Workspace</strong><small>{{ !entry.accessReady ? 'Waiting for access confirmation' : (entry.state === 'entering' ? 'Ready' : 'Loading departmental records') }}</small></div></div>
-                    </div>
+                    </div></details>
                 </template>
                 <template v-else-if="entry.state === 'resume'">
                     <span class="entry44-kicker">Welcome back</span>
@@ -1056,9 +1062,9 @@
                 </template>
                 <template v-else>
                     <div class="entry46-auth-focus">
-                        <span class="entry44-kicker">Welcome to neumDesk</span>
-                        <h2 id="entry-title">Sign in to neumDesk.</h2>
-                        <p class="entry44-subtitle">Your team, schedules and research in one place.</p>
+                        <span class="entry44-kicker">Department access</span>
+                        <h2 id="entry-title">Welcome back.</h2>
+                        <p class="entry44-subtitle">Sign in to your neumDesk workspace.</p>
                         <div v-if="entry.notice" class="entry46-notice" role="status">{{ entry.notice }}</div>
                         <div v-if="entryLoginIssue" class="entry46-auth-issue" :class="'entry46-auth-issue--' + entryLoginIssue.kind" role="alert">
                             <span class="entry46-auth-issue-icon" aria-hidden="true">
@@ -1095,24 +1101,25 @@
                                 <label><input type="checkbox" v-model="loginForm.remember_me"> Remember my email</label>
                                 <button type="button" @click="handleForgotPassword()">Access help</button>
                             </div>
-                            <label class="entry46-trust-option" :class="{ 'is-selected': loginForm.keep_signed_in }">
+                            <details class="entry3-options"><summary>Sign-in preferences</summary><label class="entry46-trust-option" :class="{ 'is-selected': loginForm.keep_signed_in }">
                                 <span class="entry46-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.7 2.9 8 7 10 4.1-2 7-5.3 7-10V6l-7-3Zm-2.5 9 1.7 1.7 3.8-4"/></svg></span>
                                 <span class="entry46-trust-copy"><strong>Trust this browser for up to 12 hours</strong><small>Use only on your personal device. Avoid shared clinical computers.</small></span>
                                 <input class="entry46-trust-check" type="checkbox" v-model="loginForm.keep_signed_in" aria-label="Trust this browser for up to 12 hours">
                             </label>
 
-                            <div class="entry46-session-policy"><span class="entry46-policy-dot"></span><p><strong>Session protected</strong><br>By default, you stay signed in only for this browser session.</p></div>
+                            </details><p class="entry3-device-note">Using a shared computer? Leave browser trust off and sign out when you finish.</p>
                         </form>
                     </div>
                 </template>
             </div>
-            <footer class="entry44-access-foot"><span><strong>neumDesk · Department workspace</strong><br>Restricted to authorised departmental users · Access activity may be audited</span><button type="button" v-if="entry.state === 'signin' && entry.mode !== 'help'" @click="handleForgotPassword()">Access support</button></footer>
+
         </section>
-        <section class="entry46-editorial" aria-label="At neumact — public highlights" :class="'entry46-editorial--'+entry46Story.accent">
-            <img v-if="entry46Story.image && !entry46ImageErrors[entry46Story.image]" class="entry46-art" :src="entry46Story.image" :alt="entry46Story.imageAlt" @error="entry46ImageErrors[entry46Story.image]=true">
-            <div class="entry46-shade" aria-hidden="true"></div>
-            <header class="entry46-mast"><img class="entry46-neumact-logo" src="neumact-logo.png" alt="neumact"><span class="entry46-location">Pneumology<br>Área Sanitaria de A Coruña y Cee</span></header>
-            <div class="entry46-story" id="entry46-story" role="region" aria-label="Selected highlight">
+        <section class="entry3-introduction" aria-labelledby="entry3-intro-title">
+          <div class="entry3-intro-copy"><p class="entry3-eyebrow">Clinical practice · Research · Collaboration</p>
+          <h1 id="entry3-intro-title">The department,<br><em>connected.</em></h1>
+          <p class="entry3-intro-text">One workspace for the people, daily work and research of Pneumology.</p>
+          <div class="entry3-domains"><div><span>People &amp; teams</span><p>Staff, clinical units and resident training.</p></div><div><span>Daily coordination</span><p>On-call schedules, rotations and leave.</p></div><div><span>Research &amp; knowledge</span><p>Studies, innovation and shared publications.</p></div></div>
+          <details class="entry3-perspectives"><summary>From neumact <span aria-hidden="true">↗</span></summary>            <div class="entry46-story" id="entry46-story" role="region" aria-label="Selected highlight">
                 <div class="entry46-overline"><span class="entry46-dot" aria-hidden="true"></span><span>At neumact</span><span class="entry46-rule" aria-hidden="true"></span><span>{{ entry46Story.category }}</span></div>
                 <h1>{{ entry46Story.title }}</h1>
                 <p class="entry46-summary">{{ entry46Story.summary }}</p>
@@ -1123,9 +1130,10 @@
             <div class="entry46-bottom">
                 <div class="entry46-selection-label"><span>Explore perspectives</span><span>{{ String(entry46Stories.findIndex(s=>s.id===entry46Story.id)+1).padStart(2,'0') }} / {{ String(entry46Stories.length).padStart(2,'0') }}</span></div>
                 <nav class="entry46-selector" aria-label="Choose a highlight"><button v-for="(story,i) in entry46Stories" :key="story.id" type="button" @click="entry46Select(story.id)" :aria-pressed="entry46Story.id===story.id" aria-controls="entry46-story"><span class="entry46-number">{{ String(i+1).padStart(2,'0') }}</span><span>{{ story.navTitle }}</span></button></nav>
-                <footer class="entry46-foot"><span>A Coruña · Galicia</span><span>{{ entry46Story.imageCredit }}</span></footer>
-            </div>
+</div></details></div>
+          <div class="entry3-place">A Coruña, Galicia<span>Department workspace</span></div>
         </section>
+        <footer class="entry3-footer"><span>For authorised departmental users. Access activity may be audited.</span><a href="mailto:baraka@enkiama.com">Contact support ↗</a></footer>
     </main>
 
     <!-- ============ MAIN APPLICATION ============ -->
@@ -1237,14 +1245,10 @@
         <div class="mobile-backdrop" :class="{ visible: mobileMenuOpen }" @click="mobileMenuOpen = false"></div>
 
         <!-- Sidebar -->
-        <aside class="sidebar nmsb" :class="{ 'nmsb--collapsed': sidebarCollapsed, 'sidebar-collapsed': sidebarCollapsed, 'mobile-open': mobileMenuOpen }"
-               aria-label="Main navigation">
-
-            <!-- ── Header ── -->
-            <div class="nmsb-head">
+<aside class="sidebar nmsb sb1" :class="{ 'nmsb--collapsed': (sidebarCollapsed && !mobileMenuOpen), 'sidebar-collapsed': (sidebarCollapsed && !mobileMenuOpen), 'mobile-open': mobileMenuOpen }" aria-label="Main navigation" @keydown="handleSidebarKeydown">            <div class="nmsb-head">
                 <div class="nmsb-logo">
                     <!-- Expanded: icon + wordmark -->
-                    <div v-if="!sidebarCollapsed" class="nmsb-logo-full">
+                    <div v-if="!(sidebarCollapsed && !mobileMenuOpen)" class="nmsb-logo-full">
                         <!-- Icon mark -->
                         <svg width="28" height="28" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"  class="nd-l003">
                             <defs>
@@ -1271,7 +1275,7 @@
                         </svg>
                     </div>
                     <!-- Collapsed: icon only -->
-                    <svg v-if="sidebarCollapsed" width="28" height="28" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="neumDesk"  class="nd-l003">
+                    <svg v-if="(sidebarCollapsed && !mobileMenuOpen)" width="28" height="28" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="neumDesk"  class="nd-l003">
                         <defs>
                             <linearGradient id="nm-logo-grad-c" x1="0%" y1="0%" x2="100%" y2="100%">
                                 <stop offset="0%" stop-color="#8BE9FF"/>
@@ -1283,218 +1287,153 @@
                         <path d="M172 322 V236 M172 268 C172 244 192 228 220 228 C256 228 276 250 276 288 V322" fill="none" stroke="url(#nm-logo-grad-c)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
-                <button class="nmsb-collapse" @click="sidebarCollapsed = !sidebarCollapsed"
-                        :aria-label="sidebarCollapsed ? 'Expand' : 'Collapse'"
-                        :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                <button type="button" class="nmsb-collapse" @click="sidebarCollapsed = !sidebarCollapsed"
+                        :aria-label="(sidebarCollapsed && !mobileMenuOpen) ? 'Expand sidebar' : 'Collapse sidebar'" :aria-expanded="!(sidebarCollapsed && !mobileMenuOpen)"
+                        :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Expand sidebar' : 'Collapse sidebar'">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path v-if="!sidebarCollapsed" d="M15 18l-6-6 6-6"/>
+                        <path v-if="!(sidebarCollapsed && !mobileMenuOpen)" d="M15 18l-6-6 6-6"/>
                         <path v-else d="M9 18l6-6-6-6"/>
                     </svg>
                 </button>
+                <button type="button" class="sb1-close" @click="mobileMenuOpen = false" aria-label="Close navigation">×</button>
             </div>
+            <div v-if="!(sidebarCollapsed && !mobileMenuOpen)" class="sb1-institution">Pneumology<span>A Coruña · neumact</span></div>
 
-            <!-- ── Nav ── -->
-            <nav class="nmsb-nav" aria-label="Primary navigation">
-
-                <!-- 01 Dashboard -->
-                <div class="nmsb-section">
-                    <div class="nmsb-section-lbl" v-if="!sidebarCollapsed">
-                        <span class="nmsb-section-num">01</span> Dashboard
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'dashboard' }"
+<div class="sb1-search-wrap"><button type="button" class="nmsb-search" @click="mobileMenuOpen = false; cmdPaletteOpen = true; cmdQuery = ''" aria-label="Search the workspace" title="Search the workspace">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><span v-if="!(sidebarCollapsed && !mobileMenuOpen)">Search workspace</span><kbd v-if="!(sidebarCollapsed && !mobileMenuOpen)">{{ sidebarShortcut }}</kbd></button></div><nav class="nmsb-nav" aria-label="Primary navigation"><div class="nmsb-section">
+<a href="#" class="nmsb-item" aria-label="Overview" :aria-current="currentView === 'dashboard' ? 'page' : null" :class="{ active: currentView === 'dashboard' }"
                        @click.prevent="switchView('dashboard'); mobileMenuOpen = false"
-                       :title="sidebarCollapsed ? 'Overview' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Overview' : null">
                         <span class="nmsb-icon nmsb-icon--slate">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
                         </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
                             Overview
-                            <em class="nmsb-sub">Today · {{ systemStats.totalStaff || 0 }} staff</em>
+                            
                         </span>
-                    </a>
-                </div>
-
-                <!-- 02 Clinical -->
-                <div class="nmsb-section">
-                    <div class="nmsb-section-lbl" v-if="!sidebarCollapsed">
-                        <span class="nmsb-section-num">02</span> Clinical
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'medical_staff' }"
+                    </a></div>
+<div class="nmsb-section" v-if="['medical_staff','training_units','resident_rotations','oncall_schedule','staff_absence','communications'].some(m => hasPermission(m, 'read'))"><div class="nmsb-section-lbl" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Department</div>
+<a href="#" class="nmsb-item" aria-label="Medical Staff" :aria-current="currentView === 'medical_staff' ? 'page' : null" :class="{ active: currentView === 'medical_staff' }"
                        @click.prevent="switchView('medical_staff'); mobileMenuOpen = false"
                        v-if="hasPermission('medical_staff', 'read')"
-                       :title="sidebarCollapsed ? 'Medical Staff' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Medical Staff' : null">
                         <span class="nmsb-icon nmsb-icon--green">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
                             Medical Staff
-                            <em class="nmsb-sub">{{ medicalStaff.length }} members</em>
+                            
                         </span>
                     </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'oncall_schedule' }"
-                       @click.prevent="switchView('oncall_schedule'); mobileMenuOpen = false"
-                       v-if="hasPermission('oncall_schedule', 'read')"
-                       :title="sidebarCollapsed ? 'On-call' : null">
-                        <span class="nmsb-icon nmsb-icon--green">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.54a16 16 0 0 0 6 6l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16l-.58.92z"/></svg>
-                        </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
-                            On-call
-                            <em class="nmsb-sub">Schedule · this week</em>
-                        </span>
-                        <span class="nmsb-live-dot" title="Live"></span>
-                    </a>
-                </div>
-
-                <!-- 03 Structure -->
-                <div class="nmsb-section">
-                    <div class="nmsb-section-lbl" v-if="!sidebarCollapsed">
-                        <span class="nmsb-section-num">03</span> Structure
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'training_units' }"
+<a href="#" class="nmsb-item" aria-label="Clinical Units" :aria-current="currentView === 'training_units' ? 'page' : null" :class="{ active: currentView === 'training_units' }"
                        @click.prevent="switchView('training_units'); mobileMenuOpen = false"
                        v-if="hasPermission('training_units', 'read')"
-                       :title="sidebarCollapsed ? 'Clinical Units' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Clinical Units' : null">
                         <span class="nmsb-icon nmsb-icon--cyan">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg>
                         </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
                             Clinical Units
-                            <em class="nmsb-sub">{{ trainingUnits.length }} units</em>
+                            
                         </span>
                     </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'resident_rotations' }"
+<a href="#" class="nmsb-item" aria-label="Rotations" :aria-current="currentView === 'resident_rotations' ? 'page' : null" :class="{ active: currentView === 'resident_rotations' }"
                        @click.prevent="switchView('resident_rotations'); mobileMenuOpen = false"
                        v-if="hasPermission('resident_rotations', 'read')"
-                       :title="sidebarCollapsed ? 'Rotations' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Rotations' : null">
                         <span class="nmsb-icon nmsb-icon--cyan">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 12C4 16.4 7.6 20 12 20C16.4 20 20 16.4 20 12C20 7.6 16.4 4 12 4"/><path d="M8 4H12V8"/></svg>
                         </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
                             Rotations
-                            <em class="nmsb-sub">{{ rotations.filter(r=>r.rotation_status==='active').length }} active</em>
+                            
                         </span>
                         <span v-if="systemStats.endingThisWeek > 0" class="nmsb-badge nmsb-badge--alert" :title="systemStats.endingThisWeek + ' ending this week'">{{ systemStats.endingThisWeek }}</span>
                     </a>
-                </div>
-
-                <!-- 04 Operations -->
-                <div class="nmsb-section">
-                    <div class="nmsb-section-lbl" v-if="!sidebarCollapsed">
-                        <span class="nmsb-section-num">04</span> Operations
-                    </div>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'staff_absence' }"
+<a href="#" class="nmsb-item" aria-label="On-call" :aria-current="currentView === 'oncall_schedule' ? 'page' : null" :class="{ active: currentView === 'oncall_schedule' }"
+                       @click.prevent="switchView('oncall_schedule'); mobileMenuOpen = false"
+                       v-if="hasPermission('oncall_schedule', 'read')"
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'On-call' : null">
+                        <span class="nmsb-icon nmsb-icon--green">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.41 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.54a16 16 0 0 0 6 6l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.5 16l-.58.92z"/></svg>
+                        </span>
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
+                            On-call
+                            
+                        </span>
+                        
+                    </a>
+<a href="#" class="nmsb-item" aria-label="Leave" :aria-current="currentView === 'staff_absence' ? 'page' : null" :class="{ active: currentView === 'staff_absence' }"
                        @click.prevent="switchView('staff_absence'); mobileMenuOpen = false"
                        v-if="hasPermission('staff_absence', 'read')"
-                       :title="sidebarCollapsed ? 'Leave' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Leave' : null">
                         <span class="nmsb-icon nmsb-icon--amber">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>
                         </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
                             Leave
-                            <em class="nmsb-sub">{{ absenceKPIs.absentNow > 0 ? absenceKPIs.absentNow + ' absent · ' + (absenceKPIs.noCoverage > 0 ? absenceKPIs.noCoverage + ' uncovered' : 'all covered') : absenceKPIs.upcoming > 0 ? absenceKPIs.upcoming + ' planned' : 'All present' }}</em>
+                            
                         </span>
                         <span v-if="absenceKPIs.absentNow > 0" class="nmsb-badge nmsb-badge--alert">{{ absenceKPIs.absentNow }}</span>
                     </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'communications' }"
+<a href="#" class="nmsb-item" aria-label="Ops Room" :aria-current="currentView === 'communications' ? 'page' : null" :class="{ active: currentView === 'communications' }"
                        @click.prevent="switchView('communications'); mobileMenuOpen = false"
                        v-if="hasPermission('communications', 'read')"
-                       :title="sidebarCollapsed ? 'Ops Room' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Ops Room' : null">
                         <span class="nmsb-icon nmsb-icon--amber">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
                         </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
                             Ops Room
-                            <em class="nmsb-sub" v-if="livebroadcasts && livebroadcasts.filter(b=>!b._dismissed).length > 0">
-                                {{ livebroadcasts.filter(b=>!b._dismissed).length }} broadcast{{ livebroadcasts.filter(b=>!b._dismissed).length > 1 ? 's' : '' }} live
-                            </em>
-                            <em class="nmsb-sub" v-else>Briefings · comms</em>
+                            
+                            
                         </span>
                         <span v-if="livebroadcasts && livebroadcasts.filter(b=>!b._dismissed).length > 0"
                               class="nmsb-badge nmsb-badge--live">{{ livebroadcasts.filter(b=>!b._dismissed).length }}</span>
-                    </a>
-                    <a href="#" class="nmsb-item" :class="{ active: currentView === 'system_settings' }"
-                       @click.prevent="switchView('system_settings'); mobileMenuOpen = false"
-                       v-if="canManageSettings()"
-                       :title="sidebarCollapsed ? 'Settings' : null">
-                        <span class="nmsb-icon nmsb-icon--amber">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-                        </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
-                            Settings
-                            <em class="nmsb-sub">Staff types · services</em>
-                        </span>
-                    </a>
-                </div>
-
-                <!-- 05 Research -->
-                <div class="nmsb-section" v-if="hasPermission('research_lines', 'read') || hasPermission('news_posts', 'read')">
-                    <div class="nmsb-section-lbl" v-if="!sidebarCollapsed">
-                        <span class="nmsb-section-num">05</span> Research
-                    </div>
-                    <a v-if="hasPermission('research_lines','read')" href="#" class="nmsb-item" :class="{ active: currentView === 'research_hub' }"
+                    </a></div>
+<div class="nmsb-section" v-if="hasPermission('research_lines','read') || hasPermission('news_posts','read')"><div class="nmsb-section-lbl" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Research & knowledge</div>
+<a v-if="hasPermission('research_lines','read')" href="#" class="nmsb-item" aria-label="Research" :aria-current="currentView === 'research_hub' ? 'page' : null" :class="{ active: currentView === 'research_hub' }"
                        @click.prevent="switchView('research_hub'); mobileMenuOpen = false"
-                       :title="sidebarCollapsed ? 'Research' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Research' : null">
                         <span class="nmsb-icon nmsb-icon--violet">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 4H15M10 4V10L5 19H19L14 10V4"/></svg>
                         </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
                             Research
-                            <em class="nmsb-sub">{{ researchLines.length }} lines · {{ clinicalTrials.length }} studies</em>
+                            
                         </span>
                     </a>
-                    <a v-if="hasPermission('news_posts','read')" href="#" class="nmsb-item" :class="{ active: currentView === 'news' }"
+<a v-if="hasPermission('news_posts','read')" href="#" class="nmsb-item" aria-label="Research Library" :aria-current="currentView === 'news' ? 'page' : null" :class="{ active: currentView === 'news' }"
                        @click.prevent="switchView('news'); mobileMenuOpen = false"
-                       :title="sidebarCollapsed ? 'Research Library' : null">
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Research Library' : null">
                         <span class="nmsb-icon nmsb-icon--violet">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                         </span>
-                        <span class="nmsb-label" v-if="!sidebarCollapsed">
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
                             Research Library
-                            <em class="nmsb-sub">{{ newsPosts.filter(p=>p.status==='published').length }} published{{ newsPosts.filter(p=>p.status==='draft').length ? ' · ' + newsPosts.filter(p=>p.status==='draft').length + ' drafts' : '' }}</em>
+                            
                         </span>
-                        <span v-if="!sidebarCollapsed && newsPosts.filter(p=>p.status==='draft').length > 0"
+                        <span v-if="!(sidebarCollapsed && !mobileMenuOpen) && newsPosts.filter(p=>p.status==='draft').length > 0"
                               class="nmsb-badge nmsb-badge--count">{{ newsPosts.filter(p=>p.status==='draft').length }}</span>
-                    </a>
-                </div>
-
-            </nav>
-
-            <!-- ── Footer: search + user ── -->
-            <div class="nmsb-footer">
-
-                <!-- ⌘K search -->
-                <button class="nmsb-search" v-if="!sidebarCollapsed"
-                        @click="cmdPaletteOpen = true; cmdQuery = ''">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    <span>Search or jump to…</span>
-                    <kbd>⌘K</kbd>
-                </button>
-                <button class="nmsb-search nmsb-search--icon" v-if="sidebarCollapsed"
-                        @click="cmdPaletteOpen = true; cmdQuery = ''"
-                        title="Search (⌘K)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                </button>
-
-                <!-- User card -->
-                <div class="nmsb-user">
-                    <div class="nmsb-user-av">
-                        {{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() : '?' }}
-                        <span class="nmsb-user-dot"></span>
-                    </div>
-                    <div class="nmsb-user-body" v-if="!sidebarCollapsed">
-                        <div class="nmsb-user-name" :title="currentUser && currentUser.full_name">{{ currentUser && currentUser.full_name ? currentUser.full_name.split(' ').slice(0,2).join(' ') : '—' }}</div>
-                        <div class="nmsb-user-role">{{ currentUser && currentUser.user_role ? getUserRoleDisplay(currentUser.user_role) : '' }}</div>
-                    </div>
-                    <button v-if="!sidebarCollapsed" class="nmsb-logout"
-                            @click="handleLogout" title="Sign out">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                    </button>
-                </div>
-
-            </div>
-
-        </aside>
+                    </a></div>
+<div class="nmsb-section" v-if="canManageSettings()"><div class="nmsb-section-lbl" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Administration</div>
+<a href="#" class="nmsb-item" aria-label="Settings" :aria-current="currentView === 'system_settings' ? 'page' : null" :class="{ active: currentView === 'system_settings' }"
+                       @click.prevent="switchView('system_settings'); mobileMenuOpen = false"
+                       v-if="canManageSettings()"
+                       :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Settings' : null">
+                        <span class="nmsb-icon nmsb-icon--amber">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+                        </span>
+                        <span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">
+                            Settings
+                            
+                        </span>
+                    </a></div>
+</nav><div class="nmsb-footer"><details class="sb1-account" @keydown.esc.prevent="$event.currentTarget.removeAttribute('open'); $event.currentTarget.querySelector('summary').focus()">
+<summary class="nmsb-user" aria-label="Account options" title="Account options">
+<span class="nmsb-user-av">{{ currentUser?.full_name ? currentUser.full_name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() : '?' }}</span>
+<span class="nmsb-user-body" v-if="!(sidebarCollapsed && !mobileMenuOpen)"><span class="nmsb-user-name">{{ currentUser?.full_name || 'Account' }}</span><span class="nmsb-user-role">{{ getUserRoleDisplay(currentUser?.user_role) }}</span></span><span v-if="!(sidebarCollapsed && !mobileMenuOpen)" class="sb1-account-more" aria-hidden="true">···</span>
+</summary><div class="sb1-account-options"><p>{{ currentUser?.full_name }}<small>{{ getUserRoleDisplay(currentUser?.user_role) }}</small></p><button type="button" @click="$event.currentTarget.closest('details').open = false; mobileMenuOpen = false; showUserProfileModal()">Profile settings</button><a href="mailto:baraka@enkiama.com">Access support ↗</a><button type="button" @click="$event.currentTarget.closest('details').open = false; handleLogout()">Sign out</button></div></details></div></aside>
 
         <!-- Live Statistics Sidebar Toggle -->
         <button class="stats-toggle-btn" @click="toggleStatsSidebar"
@@ -1681,29 +1620,29 @@
         <main class="main-content" :class="{ 'main-content-expanded': sidebarCollapsed }">
 
             <!-- Top Navigation Bar -->
-            <header class="top-navbar" :class="{'top-navbar--research-context': ['research_hub','news'].includes(currentView)}">
+            <header class="top-navbar shell2" :class="{'top-navbar--research-context': ['research_hub','news'].includes(currentView)}">
                 <div class="navbar-left">
                     <!-- Hamburger — visible on mobile only via CSS -->
-                    <button class="nm-hamburger" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle menu" title="Toggle menu">
+                    <button class="nm-hamburger" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle navigation" title="Toggle navigation" :aria-expanded="mobileMenuOpen">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                             <path v-if="!mobileMenuOpen" d="M3 6h18M3 12h18M3 18h18"/>
                             <path v-else d="M6 6l12 12M18 6L6 18"/>
                         </svg>
                     </button>
                     <div class="navbar-title-block">
-                        <span class="navbar-title">{{ getCurrentViewTitle() }}</span>
+                        <h1 class="navbar-title">{{ getCurrentViewTitle() }}</h1>
                         <span class="navbar-subtitle" v-if="getCurrentViewSubtitle()">{{ getCurrentViewSubtitle() }}</span>
                     </div>
                 </div>
                 <div class="navbar-right">
-                    <div class="search-container nd-l008" >
+                    <button type="button" class="shell2-mobile-search" aria-label="Search the workspace" @click="cmdPaletteOpen = true; cmdQuery = ''"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
+                    <div class="search-container nd-l008" @focusout="!$event.currentTarget.contains($event.relatedTarget) && clearSearch()" @keydown.esc="clearSearch(); $event.currentTarget.querySelector('input').focus()">
                         <div class="search-box">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg>
                             <input type="text" class="search-input" :placeholder="getSearchPlaceholder()"
                                    v-model="globalSearchQuery"
                                    @keyup="handleGlobalSearch"
                                    @keyup.escape="clearSearch"
-                                   @blur="closeSearchOnBlur"
                                    aria-label="Search across system">
                         </div>
                         <!-- Live results dropdown -->
@@ -1721,13 +1660,13 @@
                                       group === 'studies' ? 'Clinical studies' :
                                       group === 'projects' ? 'Clinical innovation' : group
                                     }}</div>
-                                    <div v-for="item in items" :key="item.id" class="search-result-item" @mousedown="item.action">
+                                    <button type="button" v-for="item in items" :key="item.id" class="search-result-item" @mousedown.prevent @click="item.action(); clearSearch()">
                                         <i class="fas" :class="item.icon"></i>
                                         <div class="search-result-text">
                                             <div class="search-result-name">{{ item.name }}</div>
                                             <div class="search-result-meta">{{ item.meta }}</div>
                                         </div>
-                                    </div>
+                                    </button>
                                 </div>
                             </template>
                             <div v-else class="search-no-results">
@@ -1736,7 +1675,7 @@
                             </div>
                         </div>
                     </div>
-                    <div  class="nd-l296">
+                    <div class="nd-l296 shell2-actions">
                         <button class="btn btn-icon btn-secondary" @click="showCommunicationsModal"
                                 v-if="hasPermission('communications', 'create')" aria-label="New announcement" title="New announcement">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
@@ -1744,11 +1683,11 @@
 
                         <!-- Notification Bell -->
                         <div  class="nd-l008">
-                            <button class="btn btn-icon btn-secondary nd-l008" @click="toggleNotifBell()" aria-label="Notifications" title="Notifications" >
+                            <button class="btn btn-icon btn-secondary nd-l008" @click="toggleNotifBell()" aria-label="Notifications" title="Notifications" :aria-expanded="notifications.open" >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                                 <span v-if="alertCount > 0"  class="nd-l307 nd-v283">{{ alertCount > 9 ? '9+' : alertCount }}</span>
                             </button>
-                            <div v-if="notifications.open"  class="nd-l306 nd-v282">
+                            <div v-if="notifications.open" class="nd-l306 nd-v282 shell2-notifications" @keydown.esc.stop="notifications.open = false">
                                 <div  class="nd-l305 nd-v281">
                                     <span  class="nd-v280">Notifications</span>
                                     <button v-if="notifications.unread > 0" @click="markAllNotifsRead"  class="nd-l304 nd-v279">Mark all read</button>
@@ -1783,13 +1722,15 @@
                                 </div>
                             </div>
                         </div>
-                            <button class="navbar-user-btn" @click="userMenuOpen = !userMenuOpen">
+                            <div class="shell2-account" @keydown.esc.stop="userMenuOpen = false; $event.currentTarget.querySelector('button').focus()">
+                            <button type="button" class="navbar-user-btn" @click="userMenuOpen = !userMenuOpen" aria-label="Account menu" title="Account menu" :aria-expanded="userMenuOpen">
                                 <div :class="nmAv(currentUser && currentUser.full_name, currentUser && currentUser.staff_type, 'sm')"  class="nd-v274">{{ currentUser && currentUser.full_name ? nmAvI(currentUser.full_name) : 'BA' }}</div>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg>
                             </button>
                             <div v-if="userMenuOpen" class="user-dropdown">
-                                <button @click="showUserProfileModal"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile Settings</span></button>
+                                <button @click="userMenuOpen = false; showUserProfileModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile Settings</span></button>
                                 <button @click="handleLogout"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg><span>Logout</span></button>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -12086,18 +12027,18 @@ Use Section heading to structure longer clinical or research articles."></textar
     </teleport>
     </div><!-- end app-layout -->
 </div><!-- end #app -->
-    <script src="activity45.js?v=5.3-production.2-login1"></script>
-    <script src="entry-highlights.js?v=5.3-production.2-login1"></script>
-    <script src="entry46.js?v=5.3-production.2-login1"></script>
-    <script src="grounded-core.js?v=5.3-production.2-login1"></script>
-    <script src="decision51.js?v=5.3-production.2-login1"></script>
-    <script src="temporal50.js?v=5.3-production.2-login1"></script>
-    <script src="oncall-sync.js?v=5.3-production.2-login1"></script>
-    <script src="test-session.js?v=5.3-production.2-login1"></script>
-    <script src="access.js?v=5.3-production.2-login1"></script>
-    <script src="review53.js?v=5.3-production.2-login1"></script>
-    <script src="production-ui.js?v=5.3-production.2-login1"></script>
-    <script src="app.js?v=5.3-production.2-login1"></script>
+    <script src="activity45.js?v=5.3-production.2-entry3"></script>
+    <script src="entry-highlights.js?v=5.3-production.2-entry3"></script>
+    <script src="entry46.js?v=5.3-production.2-entry3"></script>
+    <script src="grounded-core.js?v=5.3-production.2-entry3"></script>
+    <script src="decision51.js?v=5.3-production.2-entry3"></script>
+    <script src="temporal50.js?v=5.3-production.2-entry3"></script>
+    <script src="oncall-sync.js?v=5.3-production.2-entry3"></script>
+    <script src="test-session.js?v=5.3-production.2-entry3"></script>
+    <script src="access.js?v=5.3-production.2-entry3"></script>
+    <script src="review53.js?v=5.3-production.2-entry3"></script>
+    <script src="production-ui.js?v=5.3-production.2-entry3"></script>
+    <script src="app.js?v=5.3-production.2-entry3"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 
