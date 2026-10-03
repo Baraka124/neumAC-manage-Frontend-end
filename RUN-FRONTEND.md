@@ -39,3 +39,18 @@ Built on Phase 3 commit 45e3a91. Includes the completed institutional sidebar, s
 Deploy ALL files in this frontend archive, including dashboard-phase4.css. Keep backend 5.3-production.2; no backend redeployment or new SQL is required for Phase 4. Backend and frontend release IDs intentionally remain matched. Existing administrator-password restrictions and temporary-password workflows are unchanged.
 
 Validation: actual Vue app with mocked APIs at desktop, tablet and mobile widths; 21-person summary projection without employment_status; unavailable/restricted/zero states; review dependencies and termination records; keyboard navigation and dashboard order; Phase 3 entry/recovery and Phase 2 header/sidebar regression checks; account credential setup UI; request error classification and staff retry checks. All packaged JavaScript syntax, local assets, release pairing and SHA-256 checksums verified. Not deployed or tested against live accounts; previous live connection failure's root cause remains unconfirmed.
+
+
+Milestone 5 — Role-aware navigation and background work (2026-10-03)
+
+Baseline: Phase 4 commit 2452708. Includes Phases 1–4 without replacing their designs.
+
+- Shared capability-based navigation checks cover the actual system_settings destination, communications, research analytics and unknown destinations. Settings alias remains supported.
+- Workspace commands and header search filter destinations and record results by current access. Create commands require both module read access and the appropriate create capability. Activation checks permissions again so queued commands cannot bypass changed access.
+- Dashboard module links and expand controls follow the same read permissions. Mobile More correctly marks the communications page as active.
+- Background on-call/leave polling and relevant startup reads skip denied sources. Automatic rotation status checks return immediately for signed-out or read-only sessions.
+- Backend policy, credential issuance, administrator password protection and database schema are unchanged. These UI checks complement existing server-side enforcement; they do not grant permissions.
+
+Validation: backend-generated capability snapshots for clinician, resident and system administrator; rendered every available command destination in the real Vue app with mocked APIs; checked permitted creation commands, rejected navigation, stale queued commands, cached search results after denial, restricted polling and mobile widths. Rotation auto-update guard checks passed. Phase 2 header/sidebar, Phase 3 entry/recovery and Phase 4 dashboard regression suites passed. No live-account sign-in, deployment or production-data mutations performed.
+
+Deploy every file in the full frontend archive. Keep backend 5.3-production.2; no backend redeployment or new SQL is required. The optional patch archive contains only changed files and requires the exact completed Phase 4 baseline.

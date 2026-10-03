@@ -3780,6 +3780,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       const checkAndUpdateRotations = async (requireValidation = true) => {
+        if (!currentUser.value || !hasPermission('resident_rotations','update')) return
         const today = new Date(); today.setHours(0, 0, 0, 0)
         const todayStr = Utils.localDateStr(today)  // local date — not UTC
         const updates = [], pending = []
@@ -10291,9 +10292,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // switchView(view, filters) — supports cross-navigation with pre-applied filters
         // filters example: { department: deptId, category: 'external_resident' }
+        const canOpenView = view => window.NeumAccess.canOpenView(currentUser.value?.access,view)
+        const canCommand = item => window.NeumAccess.canCommand(currentUser.value?.access,item)
         const switchView = async (view, filters = {}) => {
-          const moduleForView={medical_staff:'medical_staff',staff_absence:'staff_absence',resident_rotations:'resident_rotations',oncall_schedule:'oncall_schedule',training_units:'training_units',research_lines:'research_lines',clinical_trials:'clinical_trials',innovation_projects:'innovation_projects',research_hub:'research_lines',news:'news_posts'}[view]
-          if((moduleForView&&!hasPermission(moduleForView,'read')) || (view==='settings'&&!canManageSettings())) {showToast('Restricted access','Your account cannot open this section.','info');return}
+          if (!canOpenView(view)) { showToast('Restricted access','Your account cannot open this section.','info'); return }
+          if (view === 'settings') view = 'system_settings'
           currentView.value = view; ui.mobileMenuOpen.value = false
           // Cross-module navigation should land on the surface that was requested,
           // not preserve an unrelated deep scroll position from the previous module.
@@ -10496,7 +10499,11 @@ document.addEventListener('DOMContentLoaded', () => {
             action: () => { currentView.value = 'research_hub'; lineTab.value = 'projects'; researchOps.openProject(p, 'allprojects'); close() }
           }))
 
-          return results
+          const destinations = {staff:'medical_staff',rotations:'resident_rotations',oncall:'oncall_schedule',absences:'staff_absence',areas:'oncall_schedule',units:'training_units',research:'research_hub',studies:'clinical_trials',projects:'innovation_projects'}
+          return Object.fromEntries(Object.entries(results).filter(([group]) => canOpenView(destinations[group])).map(([group,rows]) => [group,rows.map(row => ({...row,action:() => {
+            if (!canOpenView(destinations[group])) { showToast('Restricted access','Your account cannot open this section.','info'); close(); return }
+            row.action()
+          }}))]))
         })
 
         const clearSearch = () => { ui.globalSearchQuery.value = ''; ui.searchResultsOpen.value = false }
@@ -11345,10 +11352,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const startRealtimePolling = () => {
         if (_realtimePoll) return
         _realtimePoll = setInterval(async () => {
+          if (!currentUser.value) return
           try {
             await Promise.allSettled([
-              onCallOps?.loadOnCallSchedule?.(),
-              absenceOps?.loadAbsences?.()
+              (hasPermission('oncall_schedule','read') ? onCallOps?.loadOnCallSchedule?.() : Promise.resolve()),
+              (hasPermission('staff_absence','read') ? absenceOps?.loadAbsences?.() : Promise.resolve())
             ])
           } catch (e) { /* non-fatal */ }
         }, 30000)
@@ -11403,10 +11411,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Third batch: non-critical, fire and forget
             Promise.allSettled([
-              onCallOps.loadTodaysOnCall(),
-              commsOps.loadAnnouncements(),
+              (hasPermission('oncall_schedule','read') ? onCallOps.loadTodaysOnCall() : Promise.resolve()),
+              (hasPermission('communications','read') ? commsOps.loadAnnouncements() : Promise.resolve()),
               liveOps.loadClinicalStatus(),
-              liveOps.loadActiveMedicalStaff(),
+              (hasPermission('medical_staff','read') ? liveOps.loadActiveMedicalStaff() : Promise.resolve()),
               (hasPermission('research_lines','read') ? researchOps.loadResearchLines() : Promise.resolve()),
               loadSystemStats(),
               (hasPermission('news_posts','read') ? newsOps.preloadNews() : Promise.resolve()) // silent prefetch — no loading flag
@@ -11650,31 +11658,32 @@ document.addEventListener('DOMContentLoaded', () => {
           const actionKeywords = ['add','new','log','create','assign','absence','rotation','callout','call-out','duty','guardia','aviso']
           const hasActionWord = actionKeywords.some(k => q.includes(k))
           if (q.includes('rotation') || q.includes('assign') || (hasActionWord && q.includes('rotat'))) {
-            actionItems.push({ type:'action', id:'add_rotation', label:'Add rotation', sub:'Assign a resident to a unit', icon:'fa-calendar-plus', fn: () => rotationOps.showAddRotationModal() })
+            actionItems.push({ type:'action', id:'add_rotation', module:'resident_rotations', permission:'create', label:'Add rotation', sub:'Assign a resident to a unit', icon:'fa-calendar-plus', fn: () => rotationOps.showAddRotationModal() })
           }
           if (q.includes('absence') || q.includes('ausencia') || (hasActionWord && q.includes('abs'))) {
-            actionItems.push({ type:'action', id:'add_absence', label:'Log absence', sub:'Record a new absence', icon:'fa-user-minus', fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.()) } })
+            actionItems.push({ type:'action', id:'add_absence', module:'staff_absence', permission:'create', label:'Log absence', sub:'Record a new absence', icon:'fa-user-minus', fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.()) } })
           }
           if (q.includes('callout') || q.includes('call-out') || q.includes('aviso') || q.includes('guardia') || (hasActionWord && q.includes('call'))) {
-            actionItems.push({ type:'action', id:'log_callout', label:'Log call-out', sub:'Record an emergency duty call', icon:'fa-phone', fn: () => { switchView('oncall_schedule'); Vue.nextTick(() => { if (typeof openLogCalloutModal === 'function') openLogCalloutModal() }) } })
+            actionItems.push({ type:'action', id:'log_callout', module:'oncall_schedule', permission:'create', label:'Log call-out', sub:'Record an emergency duty call', icon:'fa-phone', fn: () => { switchView('oncall_schedule'); Vue.nextTick(() => { if (typeof openLogCalloutModal === 'function') openLogCalloutModal() }) } })
           }
           if (!q || q.includes('staff') || q.includes('medico') || q.includes('doctor') || (hasActionWord && (q.includes('new') || q.includes('add')))) {
-            if (q && hasActionWord) actionItems.push({ type:'action', id:'add_staff', label:'Add staff member', sub:'Register a new physician or resident', icon:'fa-user-plus', fn: () => { switchView('medical_staff'); Vue.nextTick(() => staffOps?.showAddMedicalStaffModal?.()) } })
+            if (q && hasActionWord) actionItems.push({ type:'action', id:'add_staff', module:'medical_staff', permission:'create', label:'Add staff member', sub:'Register a new physician or resident', icon:'fa-user-plus', fn: () => { switchView('medical_staff'); Vue.nextTick(() => staffOps?.showAddMedicalStaffModal?.()) } })
           }
           // Staff action items — when query contains a staff name + action word
           const staffActionItems = !q ? [] : medicalStaff.value
             .filter(s => s.full_name?.toLowerCase().includes(q) && hasActionWord)
             .slice(0,3)
             .flatMap(s => [
-              { type:'action', id:'rot_'+s.id, label:'Assign rotation — ' + (s.full_name.split(' ').slice(-1)[0]), sub:'Open rotation modal pre-filled', fn: () => rotationOps.showAddRotationModal(s) },
-              { type:'action', id:'abs_'+s.id, label:'Log absence — ' + (s.full_name.split(' ').slice(-1)[0]),    sub:'Open absence modal pre-filled',  fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.(s)) } },
+              { type:'action', id:'rot_'+s.id, module:'resident_rotations', permission:'create', label:'Assign rotation — ' + (s.full_name.split(' ').slice(-1)[0]), sub:'Open rotation modal pre-filled', fn: () => rotationOps.showAddRotationModal(s) },
+              { type:'action', id:'abs_'+s.id, module:'staff_absence', permission:'create', label:'Log absence — ' + (s.full_name.split(' ').slice(-1)[0]),    sub:'Open absence modal pre-filled',  fn: () => { switchView('staff_absence'); Vue.nextTick(() => absenceOps?.showAddAbsenceModal?.(s)) } },
             ])
           const viewItems = views.filter(v => !q || v.label.toLowerCase().includes(q) || v.sub.toLowerCase().includes(q))
-          return [...actionItems, ...staffActionItems, ...staffItems, ...unitItems, ...viewItems].slice(0, 12)
+          return [...actionItems, ...staffActionItems, ...staffItems, ...unitItems, ...viewItems].filter(canCommand).slice(0, 12)
         })
 
         const executeCmdItem = (item) => {
           if (!item) return
+          if (!canCommand(item)) { showToast('Restricted access','This action is no longer available to your account.','info'); return }
           ui.cmdPaletteOpen.value = false
           cmdQuery.value = ''
           if (item.type === 'action' && item.fn) { item.fn(); return }
@@ -18248,7 +18257,7 @@ document.addEventListener('DOMContentLoaded', () => {
           entry, entryBusy, entryLoginIssue, backToSignIn, validateEntrySession, resumeEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,
           askBarRefreshRecords,
-          loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, isAdmin,
+          loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, canOpenView, isAdmin,
           previewIntro, dismissPreviewIntro,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,

@@ -1870,11 +1870,11 @@
                                     On-call · Next 3 Days
                                 </span>
                                 <div  class="nd-l052">
-                                    <button class="db-panel-expand" @click="openDbDrawer('oncall')" title="Expand panel">
+                                    <button class="db-panel-expand" v-if="canOpenView('oncall_schedule')" @click="openDbDrawer('oncall')" title="Expand panel">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                                         Expand
                                     </button>
-                                    <button class="db-panel-link" @click="switchView('oncall_schedule')">Full schedule <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                                    <button class="db-panel-link" v-if="canOpenView('oncall_schedule')" @click="switchView('oncall_schedule')">Full schedule <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
                                 </div>
                             </div>
                             <div v-if="loadingSchedule" class="db-panel-loading">
@@ -1984,11 +1984,11 @@
                                         Rotations · This Week
                                     </span>
                                     <div  class="nd-l052">
-                                        <button class="db-panel-expand" @click="openDbDrawer('rotations')" title="Expand panel">
+                                        <button class="db-panel-expand" v-if="canOpenView('resident_rotations')" @click="openDbDrawer('rotations')" title="Expand panel">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                                             Expand
                                         </button>
-                                        <button class="db-panel-link" @click="switchView('resident_rotations')">All rotations <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                                        <button class="db-panel-link" v-if="canOpenView('resident_rotations')" @click="switchView('resident_rotations')">All rotations <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
                                     </div>
                                 </div>
                                 <div v-if="!dashboardSourceReady('resident_rotations')" class="db-panel-empty">{{ dashboardSourceLabel('resident_rotations') }}</div>
@@ -2022,7 +2022,7 @@
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="14" height="14" rx="1"/><rect x="14" y="3" width="14" height="14" rx="1"/><rect x="3" y="14" width="14" height="14" rx="1"/><rect x="14" y="14" width="14" height="14" rx="1"/></svg>
                                         Rotation Units · Occupancy
                                     </span>
-                                    <button class="db-panel-link" @click="switchView('training_units')">All units <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                                    <button class="db-panel-link" v-if="canOpenView('training_units')" @click="switchView('training_units')">All units <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
                                 </div>
                                 <div  class="nd-l358">
                                     <div v-if="!dashboardSourceReady('training_units') || !dashboardSourceReady('resident_rotations')" class="db-panel-empty">Occupancy requires available unit and rotation records.</div>
@@ -11248,7 +11248,7 @@ Use Section heading to structure longer clinical or research articles."></textar
             <button class="mobile-nav-item" :class="{ active: currentView === 'staff_absence' }" @click="switchView('staff_absence')" v-if="hasPermission('staff_absence','read')">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2v-2a4 4 0 0 1 4-4h3"/><circle cx="9" cy="7" r="4"/><circle cx="17" cy="17" r="4"/><path d="M17 15v2l1 1"/></svg><span>Absences</span>
             </button>
-            <button class="mobile-nav-item" :class="{ active: ['oncall_schedule','training_units','research_hub','news','system_settings'].includes(currentView) }" @click="mobileMenuOpen = !mobileMenuOpen">
+            <button class="mobile-nav-item" :class="{ active: ['oncall_schedule','training_units','research_hub','news','system_settings','communications'].includes(currentView) }" @click="mobileMenuOpen = !mobileMenuOpen">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg><span>More</span>
             </button>
         </nav>
@@ -11991,10 +11991,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="temporal50.js?v=5.3-production.2-entry3"></script>
     <script src="oncall-sync.js?v=5.3-production.2-entry3"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
-    <script src="access.js?v=5.3-production.2-entry3"></script>
+    <script src="access.js?v=5.3-production.2-roles5"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
     <script src="production-ui.js?v=5.3-production.2-entry3"></script>
-    <script src="app.js?v=5.3-production.2-dashboard4"></script>
+    <script src="app.js?v=5.3-production.2-roles5"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 

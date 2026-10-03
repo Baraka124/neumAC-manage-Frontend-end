@@ -12,6 +12,22 @@ const hasPermission=(access,module,action='read')=>{
   const legacy=access.legacy?.[module];
   return action==='read'?legacy?.read===true:legacy?.write===true;
 };
+// Shared navigation policy: use the capability snapshot, never the role label.
+const VIEW_MODULES=Object.freeze({medical_staff:'medical_staff',staff_absence:'staff_absence',resident_rotations:'resident_rotations',oncall_schedule:'oncall_schedule',training_units:'training_units',communications:'communications',research_lines:'research_lines',research_hub:'research_lines',clinical_trials:'clinical_trials',innovation_projects:'innovation_projects',news:'news_posts',analytics_dashboard:'analytics',analytics_performance:'analytics',analytics_partners:'analytics',research_intelligence:'analytics'});
+function canOpenView(access,view){
+ if(!access)return false;
+ if(view==='dashboard')return true;
+ if(view==='settings'||view==='system_settings')return allowed(access,'identity.users.view')||allowed(access,'system.settings.view');
+ return !!VIEW_MODULES[view]&&hasPermission(access,VIEW_MODULES[view],'read');
+}
+function canCommand(access,item){
+ if(!item)return false;
+ if(item.type==='view')return canOpenView(access,item.id);
+ if(item.type==='staff')return hasPermission(access,'medical_staff','read');
+ if(item.type==='unit')return hasPermission(access,'training_units','read');
+ if(item.type==='action')return !!item.module&&!!item.permission&&hasPermission(access,item.module,'read')&&hasPermission(access,item.module,item.permission);
+ return false;
+}
 function canRecord(access,key,records) {
  if(!access) return false;
  return records.length>0 && records.every(record=>{
@@ -262,6 +278,6 @@ return {setup(){
  return {token,state,submit,reset,finish};
 },template:`<div v-if="token||state.done" class="ac-setup"><section class="ac-setup-card" aria-labelledby="setup-title"><h1 id="setup-title">{{reset?'Choose your individual password':'Set up your Neumact account'}}</h1><template v-if="state.done"><p role="status">Your password is set. You can now sign in.</p><button class="btn btn-primary" @click="finish">Continue to sign in</button></template><form v-else @submit.prevent="submit"><p>{{reset?'Choose a new password to restore access.':'Choose your password to accept the invitation.'}}</p><p v-if="state.error" role="alert" class="ac-alert">{{state.error}}</p><label>Password<input type="password" autocomplete="new-password" minlength="15" maxlength="72" required v-model="state.password"></label><label>Confirm password<input type="password" autocomplete="new-password" minlength="15" maxlength="72" required v-model="state.confirm"></label><p class="ac-meta">Use at least 15 characters (up to 72 UTF-8 bytes).</p><button class="btn btn-primary" :disabled="state.busy">{{state.busy?'Saving…':reset?'Set password':'Activate account'}}</button></form></section></div>`};
 }
-root.NeumAccess={allowed,hasPermission,canRecord,createSelfProfile,createCenter,createInvitation};
+root.NeumAccess={canOpenView,canCommand,allowed,hasPermission,canRecord,createSelfProfile,createCenter,createInvitation};
 if(typeof module!=='undefined')module.exports=root.NeumAccess;
 })(typeof window!=='undefined'?window:globalThis);
