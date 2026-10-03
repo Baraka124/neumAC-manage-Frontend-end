@@ -23,3 +23,19 @@ Phase 1 — Institutional sidebar (2026-10-01): grouped Department, Research & k
 Phase 2 — Shared shell foundation (2026-10-01): shared typography, navy/teal colours and control tokens for sidebar and application header; consistent header height, title and subtitle; readable search fields; accessible search result buttons with keyboard focus and Escape; aligned account and notification controls; compact mobile header with workspace search and contained notification panel. Built on completed Phase 1. Compatible with backend 5.3-production.2; no SQL or backend deployment. Login composition (Phase 3) and dashboard refinement (Phase 4) remain pending.
 
 Phase 3 — Institutional login and entry (2026-10-01): neumact institutional masthead; light editorial introduction and integrated sign-in form; compact sign-in preferences with trust off by default; optional public perspectives retained; separate centered verification screen with expandable real progress; responsive recovery and resume states. Matched/checking release badges are hidden on entry; mismatch and unavailable messages remain visible. Authentication, administrator password protection and temporary-password setup are unchanged. Includes Phases 1–2 and previous repairs. Compatible with backend 5.3-production.2; no SQL or backend deployment. Phase 4 dashboard refinement remains pending.
+
+
+Phase 4 — Dashboard refinement (2026-10-03)
+
+Built on Phase 3 commit 45e3a91. Includes the completed institutional sidebar, shared header and login/entry redesign, plus prior production repairs.
+
+- Navy dashboard header, readable summary cards, responsive two-column mobile summary, visible keyboard focus and native button navigation.
+- Staff total and breakdown now use the same visible roster. Summary records need no private employment-status field. Unknown types appear as other/unclassified; counts do not claim everyone is active.
+- Summary values distinguish loaded zero, waiting, updating, unavailable and restricted sources. Counts refer to the records returned to the current account, not complete departmental totals.
+- On-call summary counts today's duty records, not verified staffing coverage. The briefing describes absent visible primary records without asserting departmental coverage failure.
+- Rotation-date checks and duty/leave overlap checks show whether their required sources loaded. Missing termination dates include the separate terminated-rotation query. Findings navigate to the correct on-call module.
+- The next-week rotation panel uses actual start/end dates and excludes overdue entries. Summary counts no longer depend on the asynchronously updated system-stats aggregate.
+
+Deploy ALL files in this frontend archive, including dashboard-phase4.css. Keep backend 5.3-production.2; no backend redeployment or new SQL is required for Phase 4. Backend and frontend release IDs intentionally remain matched. Existing administrator-password restrictions and temporary-password workflows are unchanged.
+
+Validation: actual Vue app with mocked APIs at desktop, tablet and mobile widths; 21-person summary projection without employment_status; unavailable/restricted/zero states; review dependencies and termination records; keyboard navigation and dashboard order; Phase 3 entry/recovery and Phase 2 header/sidebar regression checks; account credential setup UI; request error classification and staff retry checks. All packaged JavaScript syntax, local assets, release pairing and SHA-256 checksums verified. Not deployed or tested against live accounts; previous live connection failure's root cause remains unconfirmed.

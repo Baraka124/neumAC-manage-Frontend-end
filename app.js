@@ -1362,6 +1362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     class ApiService {
       constructor() {
         this.cache = new Map()
+        this.readState = reactive({})
         this._isOnline = navigator.onLine
         this._sessionExpired = false
         window.addEventListener('online',  () => { this._isOnline = true;  window.dispatchEvent(new CustomEvent('neumax:online'))  })
@@ -1401,6 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       clearAuthStorage() {
+        if (this.readState) Object.keys(this.readState).forEach(key => delete this.readState[key])
         if(window.NeumTestSession?.read(sessionStorage)){try{sessionStorage.removeItem(CONFIG.SESSION_TOKEN_KEY);sessionStorage.removeItem(CONFIG.SESSION_USER_KEY)}catch{};return}
         try { sessionStorage.removeItem(CONFIG.SESSION_TOKEN_KEY) } catch (_) {}
         try { sessionStorage.removeItem(CONFIG.SESSION_USER_KEY) } catch (_) {}
@@ -1472,12 +1474,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const method = options.method || 'GET'
         const isGet = method === 'GET'
         const cacheKey = `${method}:${endpoint}`
+        // Only canonical dashboard collections: detail and filtered queries cannot
+        // overwrite the availability of the roster used by the dashboard.
+        const source = isGet && ({
+          '/api/medical-staff?limit=500': 'medical_staff',
+          '/api/rotations?limit=500': 'resident_rotations',
+          '/api/rotations?limit=500&rotation_status=terminated_early': 'terminated_rotations',
+          '/api/oncall': 'oncall_schedule',
+          '/api/absence-records?limit=500': 'staff_absence',
+          '/api/research-lines': 'research_lines',
+          '/api/training-units': 'training_units'
+        })[endpoint]
+        const mark = state => { if (source && this.readState) this.readState[source] = state }
+        const markResult = result => mark(result?.success === false ? 'unavailable' :
+          (Array.isArray(result) || Array.isArray(result?.data) || Array.isArray(result?.results) ? 'ready' : 'unavailable'))
+
 
         if (isGet && !options.skipCache) {
           const cached = this.getCached(cacheKey)
-          if (cached) return cached
+          if (cached) { markResult(cached); return cached }
         }
 
+        mark('loading')
         const config = { method, headers: this.headers(), mode: 'cors', cache: 'no-cache', credentials: 'include', ...(options.signal ? { signal: options.signal } : {}) }
         const timeoutMs = options.timeoutMs ?? (isGet ? 30000 : 60000)
         const timeoutController = !options.signal ? new AbortController() : null
@@ -1489,7 +1507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const res = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, config)
           responseStatus = res.status
-          if (res.status === 204) return null
+          if (res.status === 204) { mark('unavailable'); return null }
           if (!res.ok) {
             if (res.status === 401) {
               if (endpoint === '/api/auth/complete-password-setup'){const err=await res.json().catch(()=>({}));throw new Error(err.error||'Setup expired. Sign in again.')}
@@ -1549,6 +1567,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const ct = res.headers.get('content-type')
           const result = ct?.includes('application/json') ? await res.json() : await res.text()
+          markResult(result)
           if (isGet && !options.skipCache) this.setCached(cacheKey, result)
           // After any write, invalidate cached GETs for this resource so the next
           // read returns fresh data — fixes "have to refresh to see my change".
@@ -1562,6 +1581,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return result
         } catch (e) {
+          mark(responseStatus === 403 ? 'restricted' : 'unavailable')
           if (e.name === 'AbortError') {
             const error = new Error(isGet ? 'The server took too long to respond. Please retry.' : 'The server took too long to respond. Check whether the change was saved before trying again.')
             error.code = 'REQUEST_TIMEOUT'; error.endpoint = endpoint; throw error
@@ -7668,7 +7688,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!hasPrimary) ocGaps.push(d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))
         }
         if (ocGaps.length > 0) {
-          items.push({ icon: 'fa-phone-slash', type: 'danger', text: `${ocGaps.length} day${ocGaps.length>1?'s':''} without primary on-call — ${ocGaps.slice(0,2).join(', ')}${ocGaps.length>2?'…':''}`, action: 'oncall_schedule', urgent: true })
+          items.push({ icon: 'fa-phone-slash', type: 'danger', text: `${ocGaps.length} day${ocGaps.length>1?'s':''} without a visible primary duty record — ${ocGaps.slice(0,2).join(', ')}${ocGaps.length>2?'…':''}`, action: 'oncall_schedule', urgent: true })
         }
 
         // Gap + slot match — pair residents finishing soon with units opening soon
@@ -7736,7 +7756,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const dailyBriefing = computed(() => {
         const dataReady = medicalStaff.value.length > 0 || rotations.value.length > 0 || onCallSchedule.value.length > 0
         if (!dataReady) return []
-        return situationItems.value.slice(0, 4)
+        return situationItems.value.filter(item => item.action && API.readState[item.action] === 'ready').slice(0, 4)
       })
 
       // systemSummary — department health overview for dashboard
@@ -18213,6 +18233,16 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(()=>currentUser.value?.id,(id,old)=>{ if(id!==old && activity45.open) activity45Close() })
 
         return {
+          dashboardReadState: API.readState, dashboardResidentType: isResidentType,
+          dashboardSourceReady: key => hasPermission(key,'read') && API.readState[key] === 'ready',
+          dashboardSourceLabel: key => window.NeumReview53.sourceState(API.readState,hasPermission,key) === 'restricted' ? 'Restricted · these records are outside your access.' : API.readState[key] === 'unavailable' ? 'Unavailable · open the module to retry.' : 'Waiting for records…',
+          dashboardWeekRotations: computed(() => {
+            const start = Utils.normalizeDate(new Date()); const end = new Date(); end.setDate(end.getDate()+7);
+            return rotations.value.filter(r => {
+              const date = Utils.normalizeDate(r.rotation_status === 'scheduled' ? r.start_date : r.end_date);
+              return ['active','scheduled'].includes(r.rotation_status) && date >= start && date <= Utils.normalizeDate(end);
+            });
+          }),
           activity45, activity45Open, activity45Close, activity45Generate, activity45Invalidate, activity45MarkDirty, activity45PeriodPresets, activity45ApplyPreset, activity45ToggleSection, activity45SelectedCount, activity45FilteredPeople, activity45TimelineGroups, activity45Metric, activity45MetricValue, activity45SourceState, activity45SourceKnown, activity45EmptyText, activity45SetView, activity45PrettyDate, activity45DateRange, activity45SourceTone, activity45OpenSource, activity45OpenRecord, activity45AskGrounded, activity45Download, activity45Print, activity45Key, askBarRevealLatestTurn, askBarOnConversationScroll, askBarFormatSnapshotTime, askBarClearPinnedContext,
           // Existing returns
           entry, entryBusy, entryLoginIssue, backToSignIn, validateEntrySession, resumeEntrySession, useAnotherEntryAccount,
@@ -18564,6 +18594,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     app.component('access-center', window.NeumAccess.createCenter({Vue,API}))
     app.component('self-profile', window.NeumAccess.createSelfProfile({Vue,API}))
+    app.component('dashboard-summary',window.NeumReview53.createSummary({Vue}))
     app.component('operational-review',window.NeumReview53.createReview({Vue}))
     app.component('record-readiness',window.NeumReview53.createReadiness({Vue}))
     app.component('production-password-setup',window.NeumProduction.createSetup({Vue,API}))

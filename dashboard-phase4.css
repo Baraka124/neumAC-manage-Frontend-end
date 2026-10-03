@@ -1,0 +1,40 @@
+/* Scoped precedence is required by the legacy dashboard’s !important theme rules. */
+html body #app .view-dashboard.dashboard4 { --dash-ink:var(--shell-ink,#142d3a) !important; --dash-line:#dae3e7 !important; }
+html body #app .view-dashboard.dashboard4 .dbh-frame { background:var(--shell-navy,#132e3d) !important; border-radius:16px !important; padding:28px 30px 22px !important; box-shadow:none !important; }
+html body #app .view-dashboard.dashboard4 .dbh-top { align-items:flex-start !important; gap:24px !important; }
+html body #app .view-dashboard.dashboard4 .dbh-dayname { color:#a8c9cf !important; font-size:12px !important; letter-spacing:.1em !important; }
+html body #app .view-dashboard.dashboard4 .dbh-date { font-size:clamp(24px,2.2vw,32px) !important; letter-spacing:-.035em !important; font-weight:600 !important; }
+html body #app .view-dashboard.dashboard4 .dbh-context { color:#c2d3db !important; font-size:12px !important; line-height:1.6 !important; margin-top:9px !important; }
+html body #app .view-dashboard.dashboard4 .dbh-actions { gap:8px !important; flex-wrap:wrap !important; }
+html body #app .view-dashboard.dashboard4 .dbh-btn { min-height:38px !important; border-radius:7px !important; font-size:12px !important; }
+.dashboard4-section-label { display:flex !important; flex-wrap:wrap !important; gap:8px 16px !important; color:#f3f8fa !important; font-size:12px !important; font-weight:600 !important; margin:24px 0 10px !important; }
+.dashboard4-section-label span { color:#b8cdd6 !important; font-weight:400 !important; }
+html body #app .view-dashboard.dashboard4 .dbh-alert { font-family:inherit !important; text-align:left !important; width:100% !important; font-size:12px !important; line-height:1.5 !important; padding:12px !important; border-radius:7px !important; }
+html body #app .view-dashboard.dashboard4 .dbsr { display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important; gap:0 !important; margin:20px 0 !important; border:1px solid var(--dash-line) !important; border-radius:14px !important; background:#fff !important; overflow:hidden !important; }
+html body #app .view-dashboard.dashboard4 .dbsr-stat { display:flex !important; flex-direction:column !important; align-items:flex-start !important; gap:9px !important; min-width:0 !important; padding:23px 22px !important; border:0 !important; border-right:1px solid var(--dash-line) !important; background:transparent !important; font:inherit !important; color:var(--dash-ink) !important; text-align:left !important; cursor:pointer !important; }
+html body #app .view-dashboard.dashboard4 .dbsr-stat:last-child { border-right:0 !important; }
+html body #app .view-dashboard.dashboard4 .dbsr-stat:hover:not(:disabled) { background:#f4f8f8 !important; }
+html body #app .view-dashboard.dashboard4 .dbsr-stat:disabled { cursor:default !important; opacity:1 !important; background:#f8fafb !important; }
+html body #app .view-dashboard.dashboard4 .dbsr-num { display:block !important; color:var(--dash-ink) !important; font-size:38px !important; font-weight:600 !important; line-height:1.15 !important; letter-spacing:-.04em !important; }
+html body #app .view-dashboard.dashboard4 .dbsr-lbl { color:#4c6573 !important; font-size:12px !important; text-transform:none !important; letter-spacing:.01em !important; font-weight:600 !important; }
+.dashboard4-detail { font-size:12px !important; line-height:1.6 !important; color:#294d59 !important; }
+.dashboard4-scope { font-size:11px !important; line-height:1.6 !important; color:#5e707c !important; margin-top:auto !important; }
+html body #app .view-dashboard.dashboard4 .dbsr-accent { display:none !important; }
+html body #app .view-dashboard.dashboard4 .review53 { margin:0 0 24px !important; padding:23px 26px !important; border:1px solid var(--dash-line) !important; border-left:3px solid #3f7a80 !important; border-radius:12px !important; background:#fff !important; box-shadow:none !important; }
+html body #app .view-dashboard.dashboard4 .review53 h2 { font-size:19px !important; color:var(--dash-ink) !important; letter-spacing:-.02em !important; }
+html body #app .view-dashboard.dashboard4 .review53 header p { max-width:760px !important; color:#5b6d77 !important; line-height:1.7 !important; }
+.dashboard4-checks { display:flex !important; flex-wrap:wrap !important; gap:10px !important; margin:16px 0 10px !important; }
+.dashboard4-checks>span { display:flex !important; flex-wrap:wrap !important; gap:7px 12px !important; border:1px solid var(--dash-line) !important; padding:8px 12px !important; border-radius:6px !important; font-size:12px !important; color:#475c67 !important; }
+.dashboard4-checks strong { font-weight:600 !important; color:#244d59 !important; }
+html body #app .view-dashboard.dashboard4 .review53-clear { background:#f4f7f8 !important; color:#526772 !important; font-size:12px !important; }
+html body #app .view-dashboard.dashboard4 .db-panel { border:1px solid var(--dash-line) !important; border-radius:12px !important; box-shadow:none !important; }
+html body #app .view-dashboard.dashboard4 button:focus-visible { outline:3px solid #59a7b1 !important; outline-offset:-3px !important; }
+@media(max-width:1100px){html body #app .view-dashboard.dashboard4 .dbsr{grid-template-columns:repeat(2,minmax(0,1fr)) !important}html body #app .view-dashboard.dashboard4 .dbsr-stat:nth-child(2){border-right:0 !important}html body #app .view-dashboard.dashboard4 .dbsr-stat:nth-child(-n+2){border-bottom:1px solid var(--dash-line) !important}}
+@media(max-width:640px){html body #app .view-dashboard.dashboard4 .dbh-frame{padding:21px 18px !important}html body #app .view-dashboard.dashboard4 .dbh-top{flex-direction:column !important;gap:18px !important}html body #app .view-dashboard.dashboard4 .dbh-actions{justify-content:flex-start !important}html body #app .view-dashboard.dashboard4 .dbh-alerts--grid{grid-template-columns:1fr !important}html body #app .view-dashboard.dashboard4 .dbsr-stat{padding:18px 13px !important}html body #app .view-dashboard.dashboard4 .dbsr-num{font-size:32px !important}html body #app .view-dashboard.dashboard4 .review53{padding:19px 17px !important}html body #app .view-dashboard.dashboard4 .review53 header{flex-direction:column !important;gap:12px !important}.dashboard4-checks{flex-direction:column !important}}
+
+html body #app .view-dashboard.dashboard4 .dbh-date, html body #app .view-dashboard.dashboard4 .dbsr-num {font-family:var(--shell-font,"DM Sans",Arial,sans-serif) !important;}
+html body #app .view-dashboard.dashboard4 .dbh-frame::before, html body #app .view-dashboard.dashboard4 .dbh-frame::after {display:none !important;}
+html body #app .view-dashboard.dashboard4 .dbh-context {font-family:inherit !important;letter-spacing:0 !important;text-transform:none !important;display:block !important;}
+html body #app .view-dashboard.dashboard4 .dbh-alert-text {white-space:normal !important;overflow:visible !important;text-overflow:clip !important;}
+html body #app .view-dashboard.dashboard4 .dbh-date-block {text-align:left !important;}
+html body #app .view-dashboard.dashboard4 .dbsr-stat .dbsr-num {font-family:"DM Sans",Arial,sans-serif !important;font-weight:600 !important;font-style:normal !important;color:var(--dash-ink) !important;}
