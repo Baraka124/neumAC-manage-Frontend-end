@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="dashboard-phase4.css?v=5.3-production.2-dashboard4">
 <link rel="stylesheet" href="units-milestone6.css?v=5.3-production.2-units6">
 <link rel="stylesheet" href="workflow7.css?v=5.3-production.2-workflow7">
+<link rel="stylesheet" href="grounded8.css?v=5.3-production.2-grounded8">
 </head>
 <body>
 <div id="app" v-cloak>
@@ -124,7 +125,7 @@
                     </div>
                 </div>
                 <div class="grounded-head-tools nd-intelligence-actions">
-                    <button class="askbar-newchat nd-btn nd-btn--secondary" @click="askBar.reviewWide = !askBar.reviewWide" :aria-pressed="!!askBar.reviewWide" title="Toggle expanded review"><span>{{ askBar.reviewWide ? 'Compact' : 'Expand' }}</span></button>
+                    <button class="askbar-newchat nd-btn nd-btn--secondary" @click="askBar.reviewWide = !askBar.reviewWide" :aria-pressed="!!askBar.reviewWide" title="Toggle expanded review" aria-label="Toggle expanded review"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg><span>{{ askBar.reviewWide ? 'Compact' : 'Expand' }}</span></button>
                     <button v-if="askBar.turns.length" class="askbar-newchat nd-btn nd-btn--secondary" @click="askBarReset()" title="Start a new Grounded conversation">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><span>New</span>
                     </button>
@@ -148,7 +149,15 @@
                 <span v-else-if="askBar.refreshError">{{ askBar.refreshError }}</span>
                 <span v-else-if="askBar.refreshedAt">Records checked at {{ askBar.refreshedAt }}. Earlier answers retain their original timestamp.</span>
                 <button v-if="askBar.refreshError && !askBar.refreshing" @click="askBarRefreshRecords()">Retry</button>
-                <details v-if="askBar.sourceHealth && askBar.sourceHealth.some(s=>!s.ready) && !askBar.refreshing"><summary>Source loading details</summary><div v-for="source in askBar.sourceHealth" :key="source.label"><strong>{{ source.label }}</strong>: {{ source.ready ? 'Retrieved' : source.error }}</div></details>
+                <small v-if="askBar.accessDetail" class="grounded8-access-detail">{{ askBar.accessDetail }}</small>
+                <details v-if="askBar.sourceHealth?.length && !askBar.refreshing" class="grounded8-sources">
+                    <summary>Sources · {{ askBar.sourceHealth.filter(s=>s.ready).length }} of {{ askBar.sourceHealth.length }} retrieved</summary>
+                    <div class="grounded8-source-grid"><div v-for="source in askBar.sourceHealth" :key="source.label" class="grounded8-source" :class="{'is-unavailable':!source.ready}">
+                        <strong>{{ source.label }}</strong><span>{{ source.ready ? 'Retrieved' : source.restricted ? 'Restricted' : 'Unavailable' }}</span>
+                        <small v-if="source.ready">{{ source.count }} records · {{ source.scope === 'all' ? 'Platform scope' : source.scope === 'own' ? 'Your records' : source.scope }} · {{ source.visibility }} fields</small>
+                        <small v-else>{{ source.error }}</small>
+                    </div></div>
+                </details>
             </div>
             <div v-if="askBar.view === 'conversation' && askBarContextCard" class="gr43-contextbar nd-context-strip">
                 <div class="gr43-contextmark" aria-hidden="true">{{ askBarContextCard.mark }}</div>
@@ -384,6 +393,12 @@
                                 <button @click="turn.reviewOpen = !turn.reviewOpen" :aria-expanded="!!turn.reviewOpen">{{ turn.reviewOpen ? 'Hide detail' : 'Show details' }}</button>
                             </div>
 
+                            <div v-if="!turn.committed && !turn.cancelled && (turn.proposal || turn.oncallProposal || turn.rotationProposal || turn.rotaDraft || turn.returnProposal || turn.rotationEditProposal || turn.leaveEditProposal || turn.rotationExtendProposal || turn.multiRotation || turn.removeProposal)" class="grounded8-preview" role="note">
+                                <strong>Proposed change · not saved</strong>
+                                <span>Review the person, dates and findings below. Saving requires your confirmation and a server check.</span>
+                                <small v-if="!askBar.authority?.actions?.commit?.allowed">Confirmation is unavailable under the current Grounded access plan.</small>
+                            </div>
+
                             <!-- §3 clarify: pick leave reason -->
                             <div v-if="turn.leaveClarify" class="askbar-leave-reasons">
                                 <button v-for="r in turn.leaveReasons" :key="r[0]" class="askbar-leave-reason" @click="askBarPickLeaveReason(turn.leaveClarify, r[0])">{{ r[1] }}</button>
@@ -421,7 +436,7 @@
                                 </div>
                                 <div v-if="turn.proposal.blocked" class="askbar-proposal-block">⛔ {{ turn.proposal.blockReason || 'This leave change is blocked by a recorded constraint.' }}</div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.proposal.blocked || (turn.proposal.requiresOverride && (!turn.proposal.overrideAllowed || String(turn.proposal.overrideReason||'').trim().length &lt; 8))" @click="askBarConfirmLeave(turn.proposal, turn)">{{ turn.proposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : (turn.proposal.requiresOverride ? 'Confirm with exception' : 'Confirm & record')) }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing || turn.proposal.blocked || (turn.proposal.requiresOverride && (!turn.proposal.overrideAllowed || String(turn.proposal.overrideReason||'').trim().length &lt; 8))" @click="askBarConfirmLeave(turn.proposal, turn)">{{ turn.proposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : (turn.proposal.requiresOverride ? 'Confirm with exception' : 'Confirm & record')) }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelLeave(turn)">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -470,7 +485,7 @@
                                     </div>
                                 </div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.oncallProposal.blocked || (turn.oncallProposal.requiresOverride && (!turn.oncallProposal.overrideAllowed || String(turn.oncallProposal.overrideReason||'').trim().length &lt; 8))" @click="askBarConfirmOncall(turn.oncallProposal, turn)">{{ turn.oncallProposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : (turn.oncallProposal.requiresOverride ? 'Confirm with exception' : 'Confirm & schedule')) }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing || turn.oncallProposal.blocked || (turn.oncallProposal.requiresOverride && (!turn.oncallProposal.overrideAllowed || String(turn.oncallProposal.overrideReason||'').trim().length &lt; 8))" @click="askBarConfirmOncall(turn.oncallProposal, turn)">{{ turn.oncallProposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : (turn.oncallProposal.requiresOverride ? 'Confirm with exception' : 'Confirm & schedule')) }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelOncall(turn)">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -495,7 +510,7 @@
                                 </div>
                                 <div v-if="turn.rotaDraft.gaps && !turn.committed" class="askbar-proposal-warn">⚠ {{ turn.rotaDraft.gaps }} day{{ turn.rotaDraft.gaps===1?'':'s' }} couldn't be filled — those will be skipped.</div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmRota(turn.rotaDraft, turn)">{{ turn.writing ? 'Publishing…' : 'Confirm & publish rota' }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing" @click="askBarConfirmRota(turn.rotaDraft, turn)">{{ turn.writing ? 'Publishing…' : 'Confirm & publish rota' }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelRota(turn)">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -512,7 +527,7 @@
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Back</span><span class="askbar-proposal-v">today</span></div>
                                 </div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmReturn(turn.returnProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & mark back' }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing" @click="askBarConfirmReturn(turn.returnProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & mark back' }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelReturn(turn)">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -532,7 +547,7 @@
                                     </div>
                                 </div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmRotationEdit(turn.rotationEditProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & update' }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing" @click="askBarConfirmRotationEdit(turn.rotationEditProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & update' }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="turn.cancelled = true">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -550,7 +565,7 @@
                                     </div>
                                 </div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmLeaveEdit(turn.leaveEditProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & update' }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing" @click="askBarConfirmLeaveEdit(turn.leaveEditProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & update' }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="turn.cancelled = true">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -568,7 +583,7 @@
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Now until</span><span class="askbar-proposal-v nd-v293" >{{ turn.rotationExtendProposal.newEndLabel }}</span></div>
                                 </div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing" @click="askBarConfirmExtendRotation(turn.rotationExtendProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & extend' }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing" @click="askBarConfirmExtendRotation(turn.rotationExtendProposal, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & extend' }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="turn.cancelled = true">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -599,7 +614,7 @@
                                 <div v-if="turn.multiRotation.rows.some(r=>r.noSup||r.supWarn) && !turn.committed" class="askbar-proposal-block">⛔ Every rotation needs an eligible supervisor. Add one per unit, e.g. "…under Antelo and …under Marcos."</div>
                                 <div v-if="turn.multiRotation.anyMissingDate && !turn.committed" class="askbar-proposal-warn">⚠ A rotation is missing its start date — add one per clause, e.g. "from October 1 … and in December."</div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.multiRotation.rows.some(r=>r.noSup||r.supWarn||!r.start)" @click="askBarConfirmMultiRotation(turn.multiRotation, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & schedule all' }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing || turn.multiRotation.rows.some(r=>r.noSup||r.supWarn||!r.start)" @click="askBarConfirmMultiRotation(turn.multiRotation, turn)">{{ turn.writing ? 'Saving…' : 'Confirm & schedule all' }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelMultiRotation(turn)">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -633,7 +648,7 @@
                                 
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
                                     <!-- V46.11 blocked-confirm contract preserved: :disabled="turn.writing || turn.rotationProposal.blocked" -->
-                                    <button class="askbar-proposal-confirm" :disabled="turn.writing || turn.rotationProposal.blocked || (turn.rotationProposal.requiresOverride && (!turn.rotationProposal.overrideAllowed || String(turn.rotationProposal.overrideReason||'').trim().length &lt; 8))" @click="askBarConfirmRotation(turn.rotationProposal, turn)">{{ turn.rotationProposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : (turn.rotationProposal.requiresOverride ? 'Confirm with exception' : 'Confirm & schedule')) }}</button>
+                                    <button class="askbar-proposal-confirm" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing || turn.rotationProposal.blocked || (turn.rotationProposal.requiresOverride && (!turn.rotationProposal.overrideAllowed || String(turn.rotationProposal.overrideReason||'').trim().length &lt; 8))" @click="askBarConfirmRotation(turn.rotationProposal, turn)">{{ turn.rotationProposal.blocked ? 'Blocked' : (turn.writing ? 'Saving…' : (turn.rotationProposal.requiresOverride ? 'Confirm with exception' : 'Confirm & schedule')) }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelRotation(turn)">Cancel</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -668,7 +683,7 @@
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Remove</span><span class="askbar-proposal-v">{{ turn.removeProposal.what }}</span></div>
                                 </div>
                                 <div v-if="!turn.committed && !turn.cancelled" class="askbar-proposal-actions">
-                                    <button class="askbar-proposal-confirm askbar-proposal-confirm--danger" :disabled="turn.writing" @click="askBarConfirmRemove(turn.removeProposal, turn)">{{ turn.writing ? 'Removing…' : 'Confirm & remove' }}</button>
+                                    <button class="askbar-proposal-confirm askbar-proposal-confirm--danger" :disabled="!askBar.authority?.actions?.commit?.allowed || askBar.refreshing || turn.writing" @click="askBarConfirmRemove(turn.removeProposal, turn)">{{ turn.writing ? 'Removing…' : 'Confirm & remove' }}</button>
                                     <button class="askbar-proposal-cancel" :disabled="turn.writing" @click="askBarCancelRemove(turn)">Keep it</button>
                                 </div>
                                 <div v-if="turn.committed" class="askbar-proposal-ok">{{ turn.commitText }}</div>
@@ -12010,7 +12025,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
     <script src="production-ui.js?v=5.3-production.2-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
-    <script src="app.js?v=5.3-production.2-workflow7"></script>
+    <script src="app.js?v=5.3-production.2-grounded8"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 

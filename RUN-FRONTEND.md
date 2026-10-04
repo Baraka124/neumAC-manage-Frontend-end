@@ -82,3 +82,18 @@ Preview responses are rejected if their proposal no longer matches the form or t
 Validation: actual Vue modal flows with mocked review endpoints for all three domains; unavailable/server states, evidence expansion, related-module navigation and draft return, preserved dates, delayed rotation responses and mobile widths. Clinical Units and role-access regression suites, request-error classification and operational review tests passed. No live accounts or production records used; not deployed.
 
 Upload all files in the full frontend archive, including workflow7.js and workflow7.css. The changed-files patch requires the completed Milestone 6 release. Backend remains 5.3-production.2; no new backend deployment or SQL is required.
+
+
+Milestone 8 — Grounded access and review (2026-10-04)
+
+Baseline: completed Milestone 7, commit 8d502bf. All previous interface and workflow work is retained.
+
+Grounded reads now use the fresh /api/grounded/access plan for projected sources rather than a second general capability check. A browser regression test reproduced an administrator denial with an incomplete general capability snapshot despite a successful Grounded access plan; this case now passes. Explicit source restrictions still block retrieval. No role-based bypass was added. The standalone brain configuration now uses clinical_trials consistently with the embedded runtime.
+
+Access responses must match the expected contract and signed-in identity. An actual restriction is distinguished from server, network or incompatible-response failures; available server reasons are shown. Retry preserves the query. Refresh clears prior authority while rechecking. Source details show retrieval state, record count, scope and field visibility in a bounded, scrollable mobile panel. Counts refer to returned source rows, not department-wide totals.
+
+Operational previews explicitly say they are not saved, explain confirmation and server checking, and disable confirmation when Grounded commit authority is absent or being refreshed. Existing tool confirmation, server validation and exception approval requirements remain in place.
+
+Validation: actual Vue browser tests with mocked APIs cover administrator access with incomplete general capabilities, restricted-source retrieval, explicit 403, server failure, malformed access response, retry, proposal confirmation availability and 390px layout. Milestone 5 role/navigation and Milestone 7 workflow browser suites passed; request-error and operational review/authority tests passed. No live account or production record was used. The precise cause of the reported live denial has not been verified; the new access detail exposes the returned reason if it persists.
+
+Deploy all files in the full frontend archive. The changed-files archive requires completed Milestone 7. Backend stays 5.3-production.2, provided separately and unchanged; no new SQL or backend redeployment is required if that version is already installed. Frontend/backend release IDs deliberately remain paired at 5.3-production.2.

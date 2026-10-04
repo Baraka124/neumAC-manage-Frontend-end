@@ -307,7 +307,7 @@
         "clinical_trials"
       ],
       "recipe": "trials_recruiting",
-      "permission": "research_hub",
+      "permission": "clinical_trials",
       "trace": [
         [
           "Reviewing trials",

@@ -12258,6 +12258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         snoozed: [],       // dismissed alert keys (#16)
         entityMenu: null,  // #3 inline entity action popover { id, name, x, y }
         coreTraceId: null, // V46.12 execution trace id (operational telemetry, never chain-of-thought)
+        accessDetail: '', // Server denial or verification failure, without guessing the cause
         authority: null,  // Phase 5.3E canonical Grounded access plan from /api/grounded/access
         view: 'digest'     // 'digest' | 'conversation' | 'timeline' | 'trace' | 'teach'
       })
@@ -12856,6 +12857,8 @@ document.addEventListener('DOMContentLoaded', () => {
         askBar.refreshing = true
         askBar.loading = false
         askBar.refreshError = ''
+        askBar.accessDetail = ''
+        askBar.authority = null
         askBar.sourceHealth = []
         askBar.refreshedAt = null
         const controller = new AbortController()
@@ -12865,10 +12868,12 @@ document.addEventListener('DOMContentLoaded', () => {
           // source first and then decides whether to hide it afterwards.
           const access = await API.request('/api/grounded/access', {skipCache:true, signal:controller.signal})
           if (generation !== askBarRefreshGeneration || currentUser.value?.id !== userId) return
-          askBar.authority = access || null
+          if (access?.contract !== 'grounded.access.v1' || access?.actor?.user_id !== userId || typeof access?.ask?.allowed !== 'boolean') throw new Error('The server returned an incompatible Grounded access response. Verify the matching backend release.')
+          askBar.authority = access
           if (!access?.ask?.allowed) {
             askBar.sourceHealth = []
-            askBar.refreshError = 'Grounded is not available for this account.'
+            askBar.refreshError = 'Grounded is restricted for this account.'
+            askBar.accessDetail = access.ask.reason || 'The server denied grounded.ask for the current account.'
             return
           }
 
@@ -12909,11 +12914,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const result=results[i]
             const source=access.sources?.[spec.key]
             if(result.status==='fulfilled') {
-              try { spec.target.value=spec.normalize?spec.normalize(result.value):result.value; success++; return {label:spec.label,ready:true,error:'',scope:source?.scope||null,visibility:source?.visibility||null} }
+              try { spec.target.value=spec.normalize?spec.normalize(result.value):result.value; success++; return {label:spec.label,ready:true,error:'',count:result.value.length,retrievedAt:new Date().toISOString(),scope:source?.scope||null,visibility:source?.visibility||null} }
               catch(e) { return {label:spec.label,ready:false,error:'The authorised response could not be processed.'} }
             }
             const e=result.reason
-            const restricted=e?.name==='AuthorityDenied' || e?.name==='ProjectionUnavailable'
+            const restricted=e?.status===403 || e?.name==='AuthorityDenied' || e?.name==='ProjectionUnavailable'
             return {label:spec.label,ready:false,restricted,error:restricted?(e?.message||'Restricted by current access policy.'):(e?.name==='AbortError'?'Request timed out.':String(e?.message||'Request failed.').slice(0,180))}
           })
           askBar.refreshedAt = success ? askBarNow() : null
@@ -12925,8 +12930,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (generation === askBarRefreshGeneration && currentUser.value?.id === userId) {
             askBar.authority = null
             askBar.refreshError = e?.status===403 || e?.code==='AUTHORITY_DENIED'
-              ? 'Grounded is not available for this account.'
+              ? 'Grounded is restricted for this account.'
               : 'Grounded access could not be verified. Current-record answers are paused.'
+            askBar.accessDetail = e?.payload?.reason || e?.message || 'Retry the access check.'
           }
         } finally {
           clearTimeout(timeout)
@@ -15260,7 +15266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const module=(askBarIntentModule||{})[intent] || (follow?.kind==='research_record_context'?'research_lines':null)
         let answer
         askBar.lastAsked=question
-        if(gate.ready) {
+        if(askBar.authority?.ask?.allowed && gate.ready) {
           try {
             if (typeof askBarFinalizeAnswer==='function') {
               const raw=follow?askBarBuildFollowup(follow):_askBarBuildAnswerRaw(intent)
@@ -15289,8 +15295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const askBarResolve = (forcedIntent) => {
         if (askBar.refreshing || askBar.loading) return
         if (!askBar.authority?.ask?.allowed) {
-          askBar.refreshError = 'Grounded access has not been verified for this account.'
-          askBarPartialReply(askBar.query.trim(),null,forcedIntent)
+          askBar.refreshError = askBar.refreshError || 'Grounded access has not been verified for this account.'
           return
         }
         if (askBar.refreshError) { askBarPartialReply(askBar.query.trim(),null,forcedIntent); return }
@@ -15974,13 +15979,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // traced through the new harness from context → tools → outcome.
         const coreTraceId = groundedStartExecutionTrace(asked, intent, { followup: followup?.kind || null })
 
-        // #37 permission-aware: if the intent's module is one the user can't read, decline.
-        // Permission module: brain's intent.permission wins; else legacy map.
+        // Grounded's fresh server plan is authoritative for its projected sources.
+        // A stale general capability snapshot must not veto an authorised read.
+        // Legacy-only modules retain their own access check.
         const bIntent = (getBrain().intents || {})[intent]
         const mod = (bIntent && 'permission' in bIntent) ? bIntent.permission : askBarIntentModule[intent]
-        if (mod && !hasPermission(mod, 'read')) {
+        const sourceForModule = {medical_staff:'staff',oncall_schedule:'oncall',staff_absence:'leave',resident_rotations:'rotations',training_units:'units',clinical_units:'units',research_hub:'research',research_lines:'research',clinical_trials:'research',innovation_projects:'research',news_posts:'library'}
+        const sourceKey = sourceForModule[mod]
+        const canRead = sourceKey ? askBar.authority?.sources?.[sourceKey]?.available === true : (!mod || hasPermission(mod, 'read'))
+        if (!canRead) {
           askBar.loading = false; askBar.thinking = null
-          const turn = Vue.reactive({ q: asked, text: `You don't have access to that information. Ask an administrator if you need ${mod.replace(/_/g,' ')} access.`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })
+          const turn = Vue.reactive({ q: asked, text: sourceKey ? (askBar.authority?.sources?.[sourceKey]?.reason || 'This source is unavailable under the current Grounded access plan.') : `Your current permissions do not include ${mod.replace(/_/g,' ')}.`, chips: [], actions: [], sources: [], followups: [], confidence: 'low', asOf: askBarNow(), streaming: false })
           askBar.turns.push(turn)
           askBar.query = ''
           if (coreTraceId) { GroundedCore?.addTraceEvent(coreTraceId,'permission_block',{module:mod,access:'read'}); groundedFinishExecutionTrace(coreTraceId, turn, 'blocked', new Error('Permission denied'), intent) }

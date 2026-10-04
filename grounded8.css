@@ -1,0 +1,9 @@
+/* Grounded · milestone 8: access, sources and proposed changes. */
+.grounded8-access-detail{display:block;flex-basis:100%;overflow-wrap:anywhere;color:#665b43}
+.grounded8-sources{width:100%;margin-top:8px}
+.grounded8-sources summary{cursor:pointer;font-weight:600;color:#294a53;padding:5px 0}
+.grounded8-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 3px;max-height:240px;overflow-y:auto;overscroll-behavior:contain}
+.grounded8-source{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;padding:12px;border:1px solid #dce7e7;border-radius:10px;background:#fff;font-size:12px}
+.grounded8-source>span{color:#247467;font-size:11px}.grounded8-source small{grid-column:1/-1;line-height:1.5;color:#64747b;overflow-wrap:anywhere}.grounded8-source.is-unavailable>span{color:#8a6133}
+.grounded8-preview{display:grid;gap:6px;margin:16px 0 8px;padding:14px 16px;border:1px solid #d7e4e4;border-left:3px solid #326c72;border-radius:10px;background:#f5f9f9;color:#35555c;font-size:12px;line-height:1.6}.grounded8-preview strong{font-size:12px}.grounded8-preview small{color:#8a6133}
+@media(max-width:600px){.grounded8-source-grid{grid-template-columns:1fr}.grounded8-preview{padding:12px}.grounded8-source{padding:10px}}
