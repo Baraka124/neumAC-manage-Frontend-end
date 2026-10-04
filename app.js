@@ -1483,7 +1483,8 @@ document.addEventListener('DOMContentLoaded', () => {
           '/api/oncall': 'oncall_schedule',
           '/api/absence-records?limit=500': 'staff_absence',
           '/api/research-lines': 'research_lines',
-          '/api/training-units': 'training_units'
+          '/api/training-units': 'training_units',
+          '/api/coverage-areas': 'coverage_areas'
         })[endpoint]
         const mark = state => { if (source && this.readState) this.readState[source] = state }
         const markResult = result => mark(result?.success === false ? 'unavailable' :
@@ -1837,7 +1838,7 @@ document.addEventListener('DOMContentLoaded', () => {
       async linkPartnerToProject(projectId, d) { return this.request(`/api/innovation-projects/${projectId}/partners`, { method: 'POST', body: d }) }
       async unlinkPartnerFromProject(projectId, partnerId) { return this.request(`/api/innovation-projects/${projectId}/partners/${partnerId}`, { method: 'DELETE' }) }
 
-      async getTrainingUnits() { return this.getList('/api/training-units') }
+      async getTrainingUnits() { return this.getListStrict('/api/training-units', { skipCache: true }) }
       async createTrainingUnit(d) { this.invalidate('/api/training-units'); return this.request('/api/training-units', { method: 'POST', body: d }) }
       async updateTrainingUnit(id, d) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'PUT', body: d }) }
       async deleteTrainingUnit(id) { this.invalidate('/api/training-units'); return this.request(`/api/training-units/${id}`, { method: 'DELETE' }) }
@@ -3229,24 +3230,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return window.Decision51.reviewOnCall({
           proposal:{staffId:f.primary_physician_id,backupId:f.backup_physician_id||null,date:f.duty_date,coverageAreaId:f.coverage_area_id||null,shiftType:f.shift_type||'primary_call',startTime:f.start_time,endTime:f.end_time,excludeId:onCallModal.mode==='edit'?f.id:null},
           staff,backup,coverageArea:area,absences:absences?.value||[],oncall:onCallSchedule.value||[],
-          action:onCallModal.mode==='edit'?'update':'assign',sourceState:{staff:'loaded',leave:'loaded',oncall:'loaded',coverageAreas:'loaded'}
+          action:onCallModal.mode==='edit'?'update':'assign',sourceState:{staff:window.NeumReview53.sourceState(API.readState,hasPermission,'medical_staff'),leave:window.NeumReview53.sourceState(API.readState,hasPermission,'staff_absence'),oncall:window.NeumReview53.sourceState(API.readState,hasPermission,'oncall_schedule'),coverageAreas:API.readState.coverage_areas||'pending'}
         })
       }
       const refreshOnCallDecision = async () => {
         const f=onCallModal.form
         const complete=!!(onCallModal.show&&f.primary_physician_id&&f.duty_date)
         onCallModal.decisionError=''
-        if(!complete){onCallModal.decision=null;onCallModal.decisionChecking=false;return}
-        onCallModal.decision=onCallDecisionLocal()
-        const seq=++onCallDecisionSeq
+        if(!complete){onCallModal.reviewSource='pending'; onCallModal.decision=null;onCallModal.decisionChecking=false;return}
+        onCallModal.reviewSource='local'; onCallModal.decision=onCallDecisionLocal()
+        const fingerprint=JSON.stringify(f); const seq=++onCallDecisionSeq
         onCallModal.decisionChecking=true
         try{
           const r=await API.reviewOnCallDecision({duty_date:Utils.normalizeDate(f.duty_date),shift_type:f.shift_type||'primary_call',start_time:f.start_time||'15:00',end_time:f.end_time||'08:00',primary_physician_id:f.primary_physician_id,backup_physician_id:f.backup_physician_id||null,coverage_area_id:f.coverage_area_id||null,exclude_id:onCallModal.mode==='edit'?f.id:null})
-          if(seq!==onCallDecisionSeq)return
-          onCallModal.decision=r?.decision||onCallModal.decision
+          if(seq!==onCallDecisionSeq || !onCallModal.show || fingerprint!==JSON.stringify(onCallModal.form))return
+          if (!r?.decision || !Array.isArray(r.decision.findings)) throw new Error('Review response unavailable')
+          onCallModal.reviewSource='server'; onCallModal.decision=r.decision
           onCallModal.overrideAllowed=!!r?.override_allowed
         }catch(e){
-          if(seq!==onCallDecisionSeq)return
+          if(seq!==onCallDecisionSeq || !onCallModal.show || fingerprint!==JSON.stringify(onCallModal.form))return
           onCallModal.overrideAllowed=hasPermission?.('oncall_exceptions','write')||false
           onCallModal.decisionError='Live verification is temporarily unavailable. The loaded-record review is shown; save will recheck before writing.'
         }finally{if(seq===onCallDecisionSeq)onCallModal.decisionChecking=false}
@@ -3301,7 +3303,8 @@ document.addEventListener('DOMContentLoaded', () => {
             exclude_id: onCallModal.mode === 'edit' ? f.id : null
           }
           const reviewed = await API.reviewOnCallDecision(reviewPayload)
-          onCallModal.decision = reviewed?.decision || onCallModal.decision
+          if (!reviewed?.decision || typeof reviewed.decision.canCommit !== 'boolean' || !Array.isArray(reviewed.decision.findings)) throw new Error('The server review could not be verified. Retry before saving.')
+          onCallModal.reviewSource='server'; onCallModal.decision=reviewed.decision
           onCallModal.overrideAllowed = !!reviewed?.override_allowed
           if (onCallModal.decision && !onCallModal.decision.canCommit) {
             onCallModal.decisionError = 'Resolve the blocking item below before saving.'
@@ -3672,34 +3675,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return window.Decision51.reviewRotation({
           proposal:{residentId:f.resident_id,unitId:f.training_unit_id,supervisorId:f.supervising_attending_id,start:f.start_date,end:f.end_date,excludeId:rotationModal.mode==='edit'?f.id:null,category:f.rotation_category||'clinical_rotation'},
           resident,unit,supervisor,rotations:rotations.value||[],absences:absences?.value||[],oncall:onCallSchedule?.value||[],action:rotationModal.mode==='edit'?'update':'assign',
-          sourceState:{staff:'loaded',units:'loaded',rotations:'loaded',leave:'loaded',oncall:'loaded'}
+          sourceState:{staff:window.NeumReview53.sourceState(API.readState,hasPermission,'medical_staff'),units:window.NeumReview53.sourceState(API.readState,hasPermission,'training_units'),rotations:window.NeumReview53.sourceState(API.readState,hasPermission,'resident_rotations'),leave:window.NeumReview53.sourceState(API.readState,hasPermission,'staff_absence'),oncall:window.NeumReview53.sourceState(API.readState,hasPermission,'oncall_schedule')}
         })
       }
 
       // ── Phase 5.1 Decision Review ──────────────────────────────
       // Local deterministic review renders immediately; the backend then repeats
       // the same contract against authoritative records. Save always revalidates.
+      let rotationDecisionSeq = 0
       let _availCheckTimer = null
       const checkRotationAvailability = () => {
         clearTimeout(_availCheckTimer)
+        const seq=++rotationDecisionSeq
         const f=rotationModal.form
+        const fingerprint=JSON.stringify(f)
         const complete=f.resident_id&&f.training_unit_id&&f.supervising_attending_id&&f.start_date&&f.end_date
         rotationModal.decisionError=''
         rotationModal.overrideReason=''
-        if (!complete) { rotationModal.decision=null; rotationModal.availability=null; rotationModal.decisionChecking=false; return }
-        rotationModal.decision=rotationDecisionLocal()
+        if (!complete) { rotationModal.reviewSource='pending'; rotationModal.decision=null; rotationModal.availability=null; rotationModal.decisionChecking=false; return }
+        rotationModal.reviewSource='local'; rotationModal.decision=rotationDecisionLocal()
         _availCheckTimer=setTimeout(async()=>{
           rotationModal.decisionChecking=true
           try{
             const payload={resident_id:f.resident_id,training_unit_id:f.training_unit_id,supervising_attending_id:f.supervising_attending_id,start_date:Utils.normalizeDate(f.start_date),end_date:Utils.normalizeDate(f.end_date),rotation_category:f.rotation_category||'clinical_rotation'}
             if(rotationModal.mode==='edit'&&f.id) payload.exclude_id=f.id
             const r=await API.reviewRotationDecision(payload)
-            rotationModal.decision=r?.decision||rotationModal.decision
+            if(seq!==rotationDecisionSeq || !rotationModal.show || fingerprint!==JSON.stringify(rotationModal.form))return
+            if (!r?.decision || !Array.isArray(r.decision.findings)) throw new Error('Review response unavailable')
+          rotationModal.reviewSource='server'; rotationModal.decision=r.decision
             rotationModal.overrideAllowed=!!r?.override_allowed
           }catch(e){
+            if(seq!==rotationDecisionSeq || !rotationModal.show || fingerprint!==JSON.stringify(rotationModal.form))return
             rotationModal.decisionError='Live verification is temporarily unavailable. The current loaded-record review is shown; save will recheck before writing.'
             rotationModal.overrideAllowed=hasPermission?.('rotation_exceptions','write')||false
-          }finally{rotationModal.decisionChecking=false}
+          }finally{if(seq===rotationDecisionSeq)rotationModal.decisionChecking=false}
         },450)
       }
 
@@ -4045,7 +4054,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const reviewPayload={resident_id:f.resident_id,training_unit_id:f.training_unit_id,supervising_attending_id:f.supervising_attending_id,start_date:startISO,end_date:endISO,rotation_category:f.rotation_category||'clinical_rotation'}
             if(rotationModal.mode==='edit'&&f.id) reviewPayload.exclude_id=f.id
             const reviewed=await API.reviewRotationDecision(reviewPayload)
-            rotationModal.decision=reviewed?.decision||rotationModal.decision
+            if (!reviewed?.decision || typeof reviewed.decision.canCommit !== 'boolean' || !Array.isArray(reviewed.decision.findings)) throw new Error('The server review could not be verified. Retry before saving.')
+          rotationModal.reviewSource='server'; rotationModal.decision=reviewed.decision
             rotationModal.overrideAllowed=!!reviewed?.override_allowed
             if(rotationModal.decision && !rotationModal.decision.canCommit){
               rotationModal.decisionError='Resolve the blocking item below before saving.'
@@ -4648,24 +4658,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return window.Decision51.reviewLeave({
           proposal:{staffId:f.staff_member_id,coveringStaffId:f.covering_staff_id||null,start:f.start_date,end:f.end_date,absenceType:f.absence_type||'planned',reason:f.absence_reason||'other',coverageArranged:!!f.coverage_arranged,excludeId:absenceModal.mode==='edit'?f.id:null},
           staff,coveringStaff:covering,absences:absences.value||[],rotations:rotations?.value||[],oncall:onCallSchedule?.value||[],
-          action:absenceModal.mode==='edit'?'update':'record',sourceState:{staff:'loaded',leave:'loaded',rotations:'loaded',oncall:'loaded'}
+          action:absenceModal.mode==='edit'?'update':'record',sourceState:{staff:window.NeumReview53.sourceState(API.readState,hasPermission,'medical_staff'),leave:window.NeumReview53.sourceState(API.readState,hasPermission,'staff_absence'),rotations:window.NeumReview53.sourceState(API.readState,hasPermission,'resident_rotations'),oncall:window.NeumReview53.sourceState(API.readState,hasPermission,'oncall_schedule')}
         })
       }
       const refreshAbsenceDecision = async () => {
         const f=absenceModal.form
         const complete=!!(absenceModal.show&&f.staff_member_id&&f.start_date&&f.end_date)
         absenceModal.decisionError=''
-        if(!complete){absenceModal.decision=null;absenceModal.decisionChecking=false;return}
-        absenceModal.decision=absenceDecisionLocal()
-        const seq=++absenceDecisionSeq
+        if(!complete){absenceModal.reviewSource='pending'; absenceModal.decision=null;absenceModal.decisionChecking=false;return}
+        absenceModal.reviewSource='local'; absenceModal.decision=absenceDecisionLocal()
+        const fingerprint=JSON.stringify(f); const seq=++absenceDecisionSeq
         absenceModal.decisionChecking=true
         try{
           const r=await API.reviewLeaveDecision({staff_member_id:f.staff_member_id,absence_type:f.absence_type||'planned',absence_reason:f.absence_reason||'other',start_date:Utils.normalizeDate(f.start_date),end_date:Utils.normalizeDate(f.end_date),coverage_arranged:!!f.coverage_arranged,covering_staff_id:f.covering_staff_id||null,exclude_id:absenceModal.mode==='edit'?f.id:null})
-          if(seq!==absenceDecisionSeq)return
-          absenceModal.decision=r?.decision||absenceModal.decision
+          if(seq!==absenceDecisionSeq || !absenceModal.show || fingerprint!==JSON.stringify(absenceModal.form))return
+          if (!r?.decision || !Array.isArray(r.decision.findings)) throw new Error('Review response unavailable')
+          absenceModal.reviewSource='server'; absenceModal.decision=r.decision
           absenceModal.overrideAllowed=!!r?.override_allowed
         }catch(e){
-          if(seq!==absenceDecisionSeq)return
+          if(seq!==absenceDecisionSeq || !absenceModal.show || fingerprint!==JSON.stringify(absenceModal.form))return
           absenceModal.overrideAllowed=hasPermission?.('leave_exceptions','write')||false
           absenceModal.decisionError='Live verification is temporarily unavailable. The loaded-record review is shown; save will recheck before writing.'
         }finally{if(seq===absenceDecisionSeq)absenceModal.decisionChecking=false}
@@ -4712,7 +4723,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const f=absenceModal.form
           const reviewPayload={staff_member_id:f.staff_member_id,absence_type:f.absence_type||'planned',absence_reason:f.absence_reason||'other',start_date:Utils.normalizeDate(f.start_date),end_date:Utils.normalizeDate(f.end_date),coverage_arranged:!!f.coverage_arranged,covering_staff_id:f.covering_staff_id||null,exclude_id:absenceModal.mode==='edit'?f.id:null}
           const reviewed=await API.reviewLeaveDecision(reviewPayload)
-          absenceModal.decision=reviewed?.decision||absenceModal.decision
+          if (!reviewed?.decision || typeof reviewed.decision.canCommit !== 'boolean' || !Array.isArray(reviewed.decision.findings)) throw new Error('The server review could not be verified. Retry before saving.')
+          absenceModal.reviewSource='server'; absenceModal.decision=reviewed.decision
           absenceModal.overrideAllowed=!!reviewed?.override_allowed
           if(absenceModal.decision&&!absenceModal.decision.canCommit){absenceModal.decisionError='Resolve the blocking item below before saving.';return}
           if(absenceModal.decision?.requiresOverride){
@@ -5097,8 +5109,9 @@ document.addEventListener('DOMContentLoaded', () => {
         unitStaffLoading.value = { ...unitStaffLoading.value, [unitId]: true }
         unitStaffErrors.value = { ...unitStaffErrors.value, [unitId]: null }
         try {
-          const res = await API.request(`/api/training-units/${unitId}/staff`)
-          unitStaffCache.value = { ...unitStaffCache.value, [unitId]: Array.isArray(res?.data) ? res.data : [] }
+          const res = await API.request(`/api/training-units/${unitId}/staff`, { skipCache: force })
+          if (!Array.isArray(res?.data)) throw new Error('Unit staff response unavailable. Please retry.')
+          unitStaffCache.value = { ...unitStaffCache.value, [unitId]: res.data }
         } catch (e) {
           unitStaffErrors.value = { ...unitStaffErrors.value, [unitId]: e?.message || 'Could not load attending links' }
           console.error('[neumDesk] unit staff load failed', unitId, e)
@@ -5270,7 +5283,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── V46.4 Clinical Units: two time scales, one operational model ──────
       // Residents are planned in month-scale rotation windows; clinical-team readiness
       // is shown separately in a weekly/day-scale view. Do not mix those semantics.
-      const trainingUnitView           = ref('timeline')  // timeline | weekly | detail
+      const trainingUnitView           = ref('detail')  // timeline | weekly | detail
       const trainingUnitHorizon        = ref(6)           // months to show: 3 | 6 | 12
       const trainingUnitPlanningOffset = ref(0)           // month offset from the current month
       const clinicalUnitWeekOffset     = ref(0)           // team-availability week offset
@@ -5757,6 +5770,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextFree = getNextFreeMonth(unit.id)
         unitDetailDrawer.unit = { ...unit, occ, nextFree }
         unitDetailDrawer.show = true
+        loadUnitStaff(unit.id)
       }
 
       const loadTrainingUnits = async () => {
@@ -8032,7 +8046,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const clinicalUnitTeamSetupExpanded = ref(false)
         const clinicalUnitTeamSetupState = computed(() => {
           const rows = clinicalUnitWeeklyTeamGrid.value.rows || []
-          const missing = rows.filter(r => !unitStaffLoading.value[r.unitId] && !unitStaffErrors.value[r.unitId] && !r.team.length)
+          const missing = rows.filter(r => Object.prototype.hasOwnProperty.call(unitStaffCache.value,r.unitId) && !unitStaffLoading.value[r.unitId] && !unitStaffErrors.value[r.unitId] && !r.team.length)
           const configured = rows.filter(r => r.team.length)
           const failed = rows.filter(r => !!unitStaffErrors.value[r.unitId])
           const threshold = Math.max(3, Math.ceil(rows.length * .6))
@@ -8051,6 +8065,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const closeClinicalUnitTeamDay = () => { clinicalUnitTeamDayDetail.show=false }
 
+        let unitDrawerReturnFocus = null
+        const unitDrawerKeydown = event => {
+          if (event.key === 'Escape') { event.stopPropagation(); unitDetailDrawer.show=false; return }
+          if (event.key !== 'Tab') return
+          const nodes=[...event.currentTarget.querySelectorAll('button:not([disabled]),a[href],input,select,[tabindex="0"]')].filter(n=>n.getClientRects().length)
+          const first=nodes[0],last=nodes[nodes.length-1];if(!first)return
+          if(event.shiftKey && document.activeElement===first){event.preventDefault();last.focus()}
+          else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus()}
+        }
+        watch(()=>unitDetailDrawer.show,show=>{
+          if(show){unitDrawerReturnFocus=document.activeElement;Vue.nextTick(()=>document.querySelector('.units6-drawer .udd-close')?.focus())}
+          else Vue.nextTick(()=>{if(unitDrawerReturnFocus?.isConnected)unitDrawerReturnFocus.focus()})
+        })
+        const unitSourceReady = key => hasPermission(key,'read') && API.readState[key] === 'ready'
+        const unitTeamState = id => unitStaffLoading.value[id] ? 'loading' : unitStaffErrors.value[id] ? 'unavailable' : Object.prototype.hasOwnProperty.call(unitStaffCache.value,id) ? 'ready' : 'pending'
+        const unitSourcesComplete = computed(() => ['training_units','resident_rotations','staff_absence'].every(unitSourceReady) && filteredTrainingUnits.value.every(u => unitTeamState(u.id)==='ready'))
         const clinicalUnitHeaderContext = computed(() => {
           if (trainingUnitView.value === 'weekly') {
             const days=clinicalUnitWeeklyTeamGrid.value.days || []
@@ -8105,6 +8135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const clinicalUnitAttentionItems = computed(() => {
           const items=[]
+          if (!unitSourcesComplete.value) return items
           const firstMonth=getPlanningMonths(1)[0]
           const overRows = firstMonth ? clinicalUnitPlanningRows.value.filter(row=>row.months[0]?.state?.overCapacity) : []
           if (overRows.length) items.push({tone:'red',view:'timeline',text:`${overRows.length} clinical unit${overRows.length===1?'':'s'} exceed resident capacity in ${firstMonth.label}`})
@@ -8129,7 +8160,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!unit?.id) return null
           const today = Utils.normalizeDate(new Date())
           const team = unitStaffCache.value[unit.id] || []
-          const teamError = unitStaffErrors.value[unit.id] || null
+          const teamError = unitTeamState(unit.id)==='ready' ? null : unitStaffErrors.value[unit.id] || 'Attending links have not finished loading.'
           const absentMembers = team.filter(m => m.staff?.id && absences.value.some(ab =>
             ab.staff_member_id === m.staff.id &&
             !['cancelled','returned_to_duty'].includes(ab.current_status) &&
@@ -8143,13 +8174,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const currentCapacity = getUnitCapacityWindow(unit.id, today, today)
           const nextOpening = getNextFreeWindow(unit.id, today, 24)
           const alerts=[]
-          if (currentCapacity.overCapacity) alerts.push({tone:'red',title:'Resident capacity exceeded',detail:`${currentCapacity.peak}/${currentCapacity.capacity} residents recorded today`})
+          if (unitSourceReady('resident_rotations') && currentCapacity.overCapacity) alerts.push({tone:'red',title:'Resident capacity exceeded',detail:`${currentCapacity.peak}/${currentCapacity.capacity} residents recorded today`})
           const overlap = getUnitOverlapWarning(unit.id)
-          if (overlap) alerts.push({tone:'red',title:'Rotation overlap',detail:`Capacity conflict around ${Utils.formatDateShort(overlap.date)}`})
+          if (unitSourceReady('resident_rotations') && overlap) alerts.push({tone:'red',title:'Rotation overlap',detail:`Capacity conflict around ${Utils.formatDateShort(overlap.date)}`})
           if (teamError) alerts.push({tone:'red',title:'Attending links unavailable',detail:'Unit staff relationships could not be loaded.'})
           else if (!team.length) alerts.push({tone:'plain',title:'Attending links not configured',detail:'This is a data-completeness item, not a resident-capacity constraint.'})
-          else if (!presentMembers.length) alerts.push({tone:'amber',title:'All linked attendings recorded away today',detail:`${absentMembers.length} of ${team.length} linked attendings have recorded leave.`})
-          else if (absentMembers.length) alerts.push({tone:'plain',title:'Recorded attending leave',detail:`${absentMembers.length} of ${team.length} linked attendings are recorded away today.`})
+          else if (unitSourceReady('staff_absence') && !presentMembers.length) alerts.push({tone:'amber',title:'All linked attendings recorded away today',detail:`${absentMembers.length} of ${team.length} linked attendings have recorded leave.`})
+          else if (unitSourceReady('staff_absence') && absentMembers.length) alerts.push({tone:'plain',title:'Recorded attending leave',detail:`${absentMembers.length} of ${team.length} linked attendings are recorded away today.`})
           return { unit, team, teamError, absentMembers, presentMembers, active, scheduled, currentCapacity, nextOpening, alerts }
         })
 
@@ -10018,14 +10049,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // ── Training Units ─────────────────────────────────────────────
             if (v === 'training_units') {
-              const units = trainingUnits.value || []
-              const active = units.filter(u => u.unit_status === 'active').length
-              const withSlots = units.filter(u => {
-                const cur = (rotations.value || []).filter(r => r.training_unit_id === u.id && r.rotation_status === 'active').length
-                return u.unit_status === 'active' && cur < (u.maximum_residents || 999)
-              }).length
-              if (!active) return 'No active units'
-              return `${active} unit${active !== 1 ? 's' : ''} · ${withSlots} with open slot${withSlots !== 1 ? 's' : ''}`
+              if (!unitSourceReady('training_units')) return 'Unit records unavailable or loading'
+              const active = (trainingUnits.value || []).filter(u => u.unit_status === 'active').length
+              return `${active} visible active unit${active !== 1 ? 's' : ''} · ${unitSourceReady('resident_rotations') ? 'recorded rotation capacity' : 'capacity unavailable'}`
             }
             // ── Staff Absence ──────────────────────────────────────────────
             if (v === 'staff_absence') {
@@ -10292,6 +10318,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // switchView(view, filters) — supports cross-navigation with pre-applied filters
         // filters example: { department: deptId, category: 'external_resident' }
+        const workflowReturn = ref(null)
+        const workflowOpenRelated = async (domain,link) => {
+          if(!canOpenView(link.view))return
+          const modal=domain==='rotation'?rotationOps.rotationModal:domain==='leave'?absenceOps.absenceModal:onCallOps.onCallModal
+          workflowReturn.value={domain,view:currentView.value,label:link.label,recordId:link.recordId}
+          modal.show=false
+          await switchView(link.view)
+        }
+        const workflowResume = async () => {
+          const back=workflowReturn.value;if(!back)return
+          if(!canOpenView(back.view))return
+          await switchView(back.view)
+          const modal=back.domain==='rotation'?rotationOps.rotationModal:back.domain==='leave'?absenceOps.absenceModal:onCallOps.onCallModal
+          modal.show=true;workflowReturn.value=null
+        }
         const canOpenView = view => window.NeumAccess.canOpenView(currentUser.value?.access,view)
         const canCommand = item => window.NeumAccess.canCommand(currentUser.value?.access,item)
         const switchView = async (view, filters = {}) => {
@@ -14153,7 +14194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const decision=window.Decision51?.reviewRotation({
               proposal:{residentId,unitId,supervisorId,start:Utils.normalizeDate(start),end:Utils.normalizeDate(end),category:'clinical_rotation'},
               resident,unit,supervisor,rotations:rotations.value||[],absences:absences.value||[],oncall:onCallSchedule.value||[],action:'assign',
-              sourceState:{staff:'loaded',units:'loaded',rotations:'loaded',leave:'loaded',oncall:'loaded'}
+              sourceState:{staff:window.NeumReview53.sourceState(API.readState,hasPermission,'medical_staff'),units:window.NeumReview53.sourceState(API.readState,hasPermission,'training_units'),rotations:window.NeumReview53.sourceState(API.readState,hasPermission,'resident_rotations'),leave:window.NeumReview53.sourceState(API.readState,hasPermission,'staff_absence'),oncall:window.NeumReview53.sourceState(API.readState,hasPermission,'oncall_schedule')}
             })
             if(!decision) throw new Error('Operational decision engine is unavailable.')
             return {resident:resident?{id:resident.id,name:resident.full_name}:null,unit:unit?{id:unit.id,name:unit.unit_name}:null,supervisor:supervisor?{person:{id:supervisor.id,name:supervisor.full_name},eligible:!decision.findings.some(f=>f.code.startsWith('SUPERVISOR_')&&f.severity==='block')}:null,decision,blocked:decision.findings.filter(f=>f.severity==='block').map(f=>f.code),warnings:decision.findings.filter(f=>f.severity==='warning'),start:decision.proposal.start,end:decision.proposal.end}
@@ -14232,7 +14273,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const window=groundedToolRegistry.invoke('leave.check_window',{staffId,start,end,coveringStaffId},{traceId,confirmed:false})
             const staff=(medicalStaff.value||[]).find(x=>String(x.id)===String(staffId))||null
             const coveringStaff=coveringStaffId?(medicalStaff.value||[]).find(x=>String(x.id)===String(coveringStaffId))||null:null
-            const decision=globalThis.Decision51?.reviewLeave({proposal:{staffId,coveringStaffId,start,end,absenceType:type,reason,coverageArranged:!!coveringStaffId},staff,coveringStaff,absences:absences.value||[],rotations:rotations.value||[],oncall:onCallSchedule.value||[],action:'record',sourceState:{staff:'loaded',leave:'loaded',rotations:'loaded',oncall:'loaded'}})||null
+            const decision=globalThis.Decision51?.reviewLeave({proposal:{staffId,coveringStaffId,start,end,absenceType:type,reason,coverageArranged:!!coveringStaffId},staff,coveringStaff,absences:absences.value||[],rotations:rotations.value||[],oncall:onCallSchedule.value||[],action:'record',sourceState:{staff:window.NeumReview53.sourceState(API.readState,hasPermission,'medical_staff'),leave:window.NeumReview53.sourceState(API.readState,hasPermission,'staff_absence'),rotations:window.NeumReview53.sourceState(API.readState,hasPermission,'resident_rotations'),oncall:window.NeumReview53.sourceState(API.readState,hasPermission,'oncall_schedule')}})||null
             return {kind:'leave_proposal',window,reason,type,decision,findings:decision?.findings||[],blocked:decision?!decision.canCommit:(window.blocked||[]).length>0,blockReasons:decision?(decision.findings||[]).filter(f=>f.severity==='block').map(f=>f.code):(window.blocked||[]),onCallConflicts:window.onCallConflicts||[],rotationConflicts:window.rotationConflicts||[],coveringConflicts:window.coveringConflicts||[],days:window.days,requiresOverride:!!decision?.requiresOverride,requiresHumanConfirmation:true}
           }
         })
@@ -14321,7 +14362,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const staff=(medicalStaff.value||[]).find(x=>String(x.id)===String(staffId))||null
             const backupStaff=backupId?(medicalStaff.value||[]).find(x=>String(x.id)===String(backupId))||null:null
             const area=coverageAreaId?(coverageAreas.value||[]).find(x=>String(x.id)===String(coverageAreaId))||null:null
-            const decision=window.Decision51?.reviewOnCall({proposal:{staffId,backupId,date,coverageAreaId,shiftType:'primary_call'},staff,backup:backupStaff,coverageArea:area,absences:absences.value||[],oncall:onCallSchedule.value||[],action:'assign',sourceState:{staff:'loaded',leave:'loaded',oncall:'loaded',coverageAreas:'loaded'}})||null
+            const decision=window.Decision51?.reviewOnCall({proposal:{staffId,backupId,date,coverageAreaId,shiftType:'primary_call'},staff,backup:backupStaff,coverageArea:area,absences:absences.value||[],oncall:onCallSchedule.value||[],action:'assign',sourceState:{staff:window.NeumReview53.sourceState(API.readState,hasPermission,'medical_staff'),leave:window.NeumReview53.sourceState(API.readState,hasPermission,'staff_absence'),oncall:window.NeumReview53.sourceState(API.readState,hasPermission,'oncall_schedule'),coverageAreas:API.readState.coverage_areas||'pending'}})||null
             const blocked=decision?(decision.findings||[]).filter(f=>f.severity==='block').map(f=>f.code):[]
             const alternatives=blocked.length ? groundedToolRegistry.invoke('oncall.replacement_candidates',{date,excludeId:staffId},{traceId,confirmed:false}).slice(0,3) : []
             return {kind:'oncall_proposal',eligibility,slot,backup,decision,findings:decision?.findings||[],blocked,requiresOverride:!!decision?.requiresOverride,alternatives,requiresHumanConfirmation:true}
@@ -18242,6 +18283,8 @@ document.addEventListener('DOMContentLoaded', () => {
       watch(()=>currentUser.value?.id,(id,old)=>{ if(id!==old && activity45.open) activity45Close() })
 
         return {
+          workflowReturn, workflowOpenRelated, workflowResume,
+          unitDrawerKeydown, unitSourceReady, unitTeamState, unitSourcesComplete,
           dashboardReadState: API.readState, dashboardResidentType: isResidentType,
           dashboardSourceReady: key => hasPermission(key,'read') && API.readState[key] === 'ready',
           dashboardSourceLabel: key => window.NeumReview53.sourceState(API.readState,hasPermission,key) === 'restricted' ? 'Restricted · these records are outside your access.' : API.readState[key] === 'unavailable' ? 'Unavailable · open the module to retry.' : 'Waiting for records…',
@@ -18604,6 +18647,8 @@ document.addEventListener('DOMContentLoaded', () => {
     app.component('access-center', window.NeumAccess.createCenter({Vue,API}))
     app.component('self-profile', window.NeumAccess.createSelfProfile({Vue,API}))
     app.component('dashboard-summary',window.NeumReview53.createSummary({Vue}))
+    app.component('workflow-review-status',window.Workflow7.statusComponent({Vue}))
+    app.component('workflow-evidence',window.Workflow7.evidenceComponent({Vue}))
     app.component('operational-review',window.NeumReview53.createReview({Vue}))
     app.component('record-readiness',window.NeumReview53.createReadiness({Vue}))
     app.component('production-password-setup',window.NeumProduction.createSetup({Vue,API}))

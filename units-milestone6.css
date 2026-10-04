@@ -1,0 +1,67 @@
+/* Milestone 6. Scoped precedence preserves other modules and legacy matrices. */
+html body #app .cu46-page.units6 {padding:24px !important;background:#f3f6f8 !important;color:#173545 !important;}
+html body #app .units6 .cu46-hero {display:flex !important;flex-wrap:wrap !important;align-items:flex-start !important;gap:22px !important;background:#122f3f !important;color:#fff !important;border:0 !important;border-radius:14px !important;padding:28px !important;box-shadow:none !important;}
+html body #app .units6 .cu46-hero::before,html body #app .units6 .cu46-hero::after{display:none !important;}
+html body #app .units6 .cu465-command-main {flex:1 1 420px !important;}
+html body #app .units6 .cu46-hero h1 {font:600 30px/1.2 "DM Sans",Arial,sans-serif !important;letter-spacing:-.035em !important;color:#fff !important;margin:10px 0 !important;}
+html body #app .units6 .cu46-hero p {font:400 13px/1.7 "DM Sans",Arial,sans-serif !important;color:#c7d9e1 !important;max-width:620px !important;}
+html body #app .units6 .cu46-eyebrow {color:#9bcbd0 !important;font-size:11px !important;letter-spacing:.12em !important;}
+html body #app .units6 .cu465-context-chip {color:#c7d9e1 !important;background:transparent !important;border:1px solid #486170 !important;}
+html body #app .units6 .cu46-action {border-radius:7px !important;min-height:40px !important;font-size:12px !important;}
+html body #app .units6 .cu46-action--quiet {background:#234351 !important;color:#fff !important;border:1px solid #4a6674 !important;}
+html body #app .units6 .cu46-action--primary {background:#c0e6e4 !important;color:#123c46 !important;border:0 !important;}
+html body #app .units6 .cu465-attention-rail {flex-basis:100% !important;margin:0 !important;background:#1d3c4b !important;border:1px solid #385564 !important;border-radius:8px !important;padding:12px 15px !important;color:#d9e7ed !important;}
+html body #app .units6 .cu465-attention-item,html body #app .units6 .cu465-attention-label {color:inherit !important;font-size:12px !important;white-space:normal !important;}
+html body #app .units6 .cu467-sticky-context {position:static !important;background:transparent !important;padding:0 !important;box-shadow:none !important;}
+html body #app .units6 .cu46-lenses {display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:10px !important;background:transparent !important;border:0 !important;padding:0 !important;margin:20px 0 14px !important;}
+html body #app .units6 .cu46-lens {text-align:left !important;border:1px solid #d7e2e7 !important;border-radius:10px !important;padding:16px 18px !important;background:#fff !important;color:#244758 !important;min-width:0 !important;}
+html body #app .units6 .cu46-lens.is-active {background:#e9f4f3 !important;border-color:#39868a !important;box-shadow:inset 0 -3px #39868a !important;}
+html body #app .units6 .cu46-lens strong {font:600 15px/1.5 "DM Sans",Arial,sans-serif !important;color:#193e4d !important;}
+html body #app .units6 .cu46-lens small,html body #app .units6 .cu46-lens-kicker {color:#566c77 !important;font-size:11px !important;}
+html body #app .units6 .cu46-filterbar {background:#fff !important;border:1px solid #d7e2e7 !important;border-radius:10px !important;padding:12px !important;gap:10px !important;flex-wrap:wrap !important;}
+html body #app .units6 .cu46-search,html body #app .units6 .cu46-select {min-height:40px !important;border-radius:6px !important;font-size:13px !important;}
+html body #app .units6 .cu46-section-head {margin:26px 0 18px !important;}
+html body #app .units6 .cu46-section-head h2 {font:600 21px/1.4 "DM Sans",Arial,sans-serif !important;color:#173b4b !important;letter-spacing:-.025em !important;}
+html body #app .units6 .cu46-section-head p {font-size:13px !important;line-height:1.7 !important;color:#566d79 !important;max-width:850px !important;}
+html body #app .units6 .cu46-directory-grid {display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;gap:16px !important;}
+html body #app .units6 .cu46-directory-card {display:flex !important;flex-direction:column !important;gap:14px !important;padding:22px !important;border:1px solid #d7e2e7 !important;border-radius:12px !important;background:#fff !important;box-shadow:none !important;cursor:default !important;min-width:0 !important;}
+html body #app .units6 .cu46-directory-card h3 {font:600 19px/1.35 "DM Sans",Arial,sans-serif !important;color:#173b4b !important;}
+html body #app .units6 .cu46-dir-code {font:600 11px/1.4 "DM Sans",Arial,sans-serif !important;letter-spacing:.08em !important;color:#397c81 !important;}
+html body #app .units6 .cu46-dir-cap {background:#edf5f5 !important;border-radius:8px !important;padding:9px !important;color:#245660 !important;}
+html body #app .units6 .cu46-dir-cap strong {font:600 24px/1.2 "DM Sans",Arial,sans-serif !important;}
+html body #app .units6 .cu46-dir-facts {font-size:12px !important;line-height:1.7 !important;flex-wrap:wrap !important;color:#465e6b !important;}
+html body #app .units6 .cu46-dir-next {padding:12px !important;background:#f4f7f8 !important;border-radius:7px !important;}
+html body #app .units6 .cu46-directory-card footer {margin-top:auto !important;padding-top:12px !important;border-top:1px solid #e0e8ec !important;display:flex !important;flex-wrap:wrap !important;gap:10px !important;}
+html body #app .units6 button:focus-visible,html body #app .units6 input:focus-visible,html body #app .units6 select:focus-visible,html body #app .units6-drawer button:focus-visible {outline:3px solid #30949e !important;outline-offset:2px !important;}
+html body #app .units6 .cu46-month-summary article {border:1px solid #d7e2e7 !important;border-radius:9px !important;background:#fff !important;}
+html body #app .units6 .cu46-month-summary strong {font-family:"DM Sans",Arial,sans-serif !important;font-size:30px !important;font-style:normal !important;color:#214653 !important;}
+.units6-state {margin:22px 0;padding:28px;border:1px solid #ccdce4;border-radius:12px;background:#fff;}
+.units6-state h2 {font-size:20px;color:#173b4b;}.units6-state p {font-size:14px;line-height:1.7;color:#566d79;}.units6-reset {padding:9px 12px;background:#eef4f6;border:1px solid #d5e0e5;border-radius:6px;color:#294c5a;}.units6-muted{font-size:12px;color:#657782;line-height:1.6;}
+html body #app .units6-drawer {background:#f8fafb !important;}
+html body #app .units6-drawer .udd-header {background:#fff !important;border-bottom:1px solid #d7e2e7 !important;}
+html body #app .units6-drawer .udd-body {padding:24px !important;}
+html body #app .units6-drawer h2 {font-family:"DM Sans",Arial,sans-serif !important;font-size:25px !important;font-style:normal !important;color:#173b4b !important;}
+@media(max-width:1200px){html body #app .units6 .cu46-directory-grid {grid-template-columns:repeat(2,minmax(0,1fr)) !important;}}
+@media(max-width:640px){html body #app .cu46-page.units6{padding:14px !important;}html body #app .units6 .cu46-hero{padding:20px !important;}html body #app .units6 .cu46-hero h1{font-size:26px !important;}html body #app .units6 .cu46-directory-grid{grid-template-columns:1fr !important;}html body #app .units6 .cu46-lens{padding:12px 9px !important;}html body #app .units6 .cu46-lens strong{font-size:12px !important;}html body #app .units6 .cu46-lens small{display:none !important;}html body #app .units6 .cu46-filterbar>*{max-width:100% !important;}html body #app .units6 .cu46-select{flex:1 1 140px !important;min-width:0 !important;}}
+html body #app .units6 .cu46-filterbar {display:flex !important;align-items:center !important;}
+html body #app .units6 .cu46-search {flex:1 1 250px !important;}
+html body #app .units6 .cu46-search input {width:100% !important;border:0 !important;background:transparent !important;font-size:13px !important;}
+html body #app .units6 .cu46-select {width:auto !important;flex:0 1 200px !important;font-weight:400 !important;}
+html body #app .units6 .cu46-directory,html body #app .units6 .cu46-planning,html body #app .units6 .cu46-team {padding:0 !important;background:transparent !important;}
+html body #app .units6 .cu46-dir-facts>span,html body #app .units6 .cu46-dir-roster small,html body #app .units6 .cu46-dir-next small,html body #app .units6 .cu46-directory-card footer button {font-size:12px !important;line-height:1.6 !important;font-weight:400 !important;}
+html body #app .units6 .cu46-dir-facts b {font-size:15px !important;}
+html body #app .units6 .cu46-dir-next strong {font-size:12px !important;}
+html body #app .units6 .cu46-directory-card header p {font-size:12px !important;color:#526b79 !important;}
+html body #app .units6 .cu46-directory-card footer button {min-height:36px !important;}
+@media(max-width:640px){html body #app .units6 .cu465-command-main{flex:0 1 auto !important;width:100% !important;min-height:0 !important;}html body #app .units6 .cu46-hero{height:auto !important;min-height:0 !important;gap:18px !important;}html body #app .units6 .cu465-attention-rail{display:flex !important;flex-direction:column !important;align-items:flex-start !important;gap:8px !important;}html body #app .units6 .cu46-select{flex:1 1 140px !important;width:auto !important;}html body #app .units6 .cu46-search{flex:1 1 100% !important;}}
+/* The unit record is teleported to body, outside #app. */
+html body .udd.units6-drawer .udd-header {background:#122f3f !important;border-bottom:0 !important;padding:22px !important;}
+html body .udd.units6-drawer .udd-unit-name {font:600 23px/1.35 "DM Sans",Arial,sans-serif !important;color:#fff !important;}
+html body .udd.units6-drawer .udd-unit-meta {font-size:12px !important;color:#c3d6e0 !important;}
+html body .udd.units6-drawer .udd-body {background:#f6f9fa !important;padding:20px !important;}
+html body .udd.units6-drawer .udd466-overview {border:1px solid #d7e2e7 !important;border-radius:9px !important;background:#fff !important;}
+html body .udd.units6-drawer .udd466-overview strong {font-family:"DM Sans",Arial,sans-serif !important;font-style:normal !important;}
+html body .udd.units6-drawer .udd466-team-list article {display:flex !important;align-items:center !important;gap:12px !important;padding:12px !important;background:#fff !important;border:1px solid #d7e2e7 !important;border-radius:8px !important;}
+html body .udd.units6-drawer .udd466-team-list article>div {display:flex !important;flex-direction:column !important;gap:4px !important;}
+html body .udd.units6-drawer .udd466-team-list article b {margin-left:auto !important;font-size:11px !important;font-weight:500 !important;color:#41626d !important;}
+html body .udd.units6-drawer button:focus-visible{outline:3px solid #3997a0 !important;outline-offset:2px !important;}

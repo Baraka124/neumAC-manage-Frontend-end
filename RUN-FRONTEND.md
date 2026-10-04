@@ -54,3 +54,31 @@ Baseline: Phase 4 commit 2452708. Includes Phases 1–4 without replacing their 
 Validation: backend-generated capability snapshots for clinician, resident and system administrator; rendered every available command destination in the real Vue app with mocked APIs; checked permitted creation commands, rejected navigation, stale queued commands, cached search results after denial, restricted polling and mobile widths. Rotation auto-update guard checks passed. Phase 2 header/sidebar, Phase 3 entry/recovery and Phase 4 dashboard regression suites passed. No live-account sign-in, deployment or production-data mutations performed.
 
 Deploy every file in the full frontend archive. Keep backend 5.3-production.2; no backend redeployment or new SQL is required. The optional patch archive contains only changed files and requires the exact completed Phase 4 baseline.
+
+
+Milestone 6 — Clinical Units (2026-10-04)
+
+Baseline: completed Milestone 5 commit a4ce9aa. This release includes all earlier phases and role-access fixes.
+
+Clinical Units now opens with the unit directory. The institutional header, three view selectors, compact filters, unit cards and unit detail dialog use a consistent navy/teal palette and readable typography. The existing rotation capacity and attending-team views remain available. Clear filters, labelled controls, selected-view states, keyboard focus, Escape dismissal and focus return improve navigation. Existing assignment, editing and permission workflows remain in place.
+
+Unit collection loads now use strict error handling and explicit retries rather than converting failures into an empty directory. Attending-link failures remain distinct from loaded empty teams, and Retry bypasses cached results. Capacity and leave-context panels require their respective sources; unavailable sources no longer imply free slots or available staff. Capacity is described as based on the visible rotation records. This does not certify complete departmental coverage or staffing adequacy. Unit grouping rules and capacity calculations are preserved.
+
+Validation: real Vue app with mocked APIs; directory search/filter reset, unit details, Escape/focus return, planning month navigation, attending-link retry, missing-source states and 1440/768/390 layouts. Backend-derived clinician/resident/admin navigation tests and previous login/dashboard regression suites passed. No live sign-in, deployment or production data changes performed.
+
+Deploy all files in the full frontend archive, or apply the changed-files patch only over the completed Milestone 5 release. Include units-milestone6.css. Keep backend 5.3-production.2: no new backend deployment or SQL migration is required.
+
+
+Milestone 7 — Connected operational reviews (2026-10-04)
+
+Baseline: completed Milestone 6, b28efc7. All previous releases are included.
+
+Leave, rotation and on-call review panels now distinguish local previews from server review results. Local source badges report actual loaded, pending, unavailable or restricted states. Local empty results no longer show a server-style all-clear message. Blocking, warning and advisory/context meanings are explained consistently.
+
+Related evidence expands within the draft. Suggested resolutions can open permitted related modules; a return banner preserves the draft and displays the related record reference where available. Navigation opens the module, not an automatically selected record. Draft preservation lasts within the current session and is not persistent draft storage.
+
+Preview responses are rejected if their proposal no longer matches the form or the modal closed. Rotation previews also use request sequencing. Save paths reject malformed server review responses instead of falling back to local decisions. Existing backend checks, authority requirements and exception-reason workflows remain unchanged. Review sections keep their full height inside scrolling forms so evidence controls remain reachable.
+
+Validation: actual Vue modal flows with mocked review endpoints for all three domains; unavailable/server states, evidence expansion, related-module navigation and draft return, preserved dates, delayed rotation responses and mobile widths. Clinical Units and role-access regression suites, request-error classification and operational review tests passed. No live accounts or production records used; not deployed.
+
+Upload all files in the full frontend archive, including workflow7.js and workflow7.css. The changed-files patch requires the completed Milestone 6 release. Backend remains 5.3-production.2; no new backend deployment or SQL is required.
