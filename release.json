@@ -4,5 +4,5 @@
   "frontend_baseline": "813fb4c3a830f692199b56ffea653882cb2b525a",
   "backend_baseline": "1e9fa8ce57210d08e83233976fc8cb97c2057526",
   "migration": "MIGRATION-5.3-PRODUCTION.sql",
-  "frontend_patch": "tower-entry-2026-10-05"
+  "frontend_patch": "tower-masthead-2026-10-05"
 }

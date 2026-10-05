@@ -1,9 +1,9 @@
 /* Phase 3: institutional entry. Auth handlers and access policy remain unchanged. */
 html body #app main.entry44.entry46.entry3{display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(400px,.85fr)!important;grid-template-rows:auto 1fr auto;min-height:100dvh!important;background:#fcfcfa!important;color:var(--shell-ink);font-family:var(--shell-font);padding:0!important;gap:0!important;isolation:isolate}
-html body #app .entry3-masthead{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:28px;min-height:84px;padding:16px clamp(28px,4vw,72px);border-bottom:1px solid #dce4e5;background:#fcfcfa;box-sizing:border-box}
+html body #app .entry3-masthead{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:20px;min-height:84px;padding:16px clamp(28px,4vw,72px);border-bottom:1px solid #dce4e5;background:#fcfcfa;box-sizing:border-box}
 html body #app .entry3-masthead a{display:flex;flex-shrink:0}
 html body #app .entry3-masthead img{width:142px;height:auto;display:block}
-html body #app .entry3-institution{font:600 13px/1.55 var(--shell-font);color:#294451;padding-left:28px;border-left:1px solid #cbd8dc}
+html body #app .entry3-institution{font:600 13px/1.55 var(--shell-font);color:#294451;padding-left:20px;border-left:1px solid #cbd8dc}
 html body #app .entry3-institution span{display:block;font-size:12px;font-weight:400;color:#59707c}
 html body #app .entry3-workspace{margin-left:auto;font:650 25px/1 var(--shell-font);letter-spacing:-1px;color:#173b4d}
 html body #app .entry3-workspace>span{color:#087781}
