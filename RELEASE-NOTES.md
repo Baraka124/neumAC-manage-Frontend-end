@@ -118,3 +118,29 @@ Operational previews explicitly say they are not saved, explain confirmation and
 Validation: actual Vue browser tests with mocked APIs cover administrator access with incomplete general capabilities, restricted-source retrieval, explicit 403, server failure, malformed access response, retry, proposal confirmation availability and 390px layout. Milestone 5 role/navigation and Milestone 7 workflow browser suites passed; request-error and operational review/authority tests passed. No live account or production record was used. The precise cause of the reported live denial has not been verified; the new access detail exposes the returned reason if it persists.
 
 Deploy all files in the full frontend archive. The changed-files archive requires completed Milestone 7. Backend stays 5.3-production.2, provided separately and unchanged; no new SQL or backend redeployment is required if that version is already installed. Frontend/backend release IDs deliberately remain paired at 5.3-production.2.
+
+
+Milestone 9 — Research reliability (2026-10-05)
+
+Baseline: completed Milestone 8, commit 93c5f48. Existing research design, page structure, filters and navigation are preserved.
+
+Research source loads distinguish pending, loading, ready, restricted and unavailable states. Failed refreshes retain previously retrieved records with a visible warning and retry. Restricted results clear their cached source. Empty states require a successful source load; portfolio summary totals are withheld while their sources are not verified. Research list responses are shape-checked and pagination is followed when supplied. Out-of-order responses cannot replace newer loads.
+
+Successful edits update the open study, innovation project or programme immediately from the save response; successful collection refreshes reconcile the selected record. Origin, delivery model and institutional role controls are disabled and explicitly read-only because the current backend does not persist those values. No new schema or persistence functionality is claimed.
+
+Validation: mocked-API Vue browser checks for saving all three record types, selected-record synchronization, unavailable/malformed/restricted/empty source states, retained records, retry, disabled relationship fields and 390px layout. Grounded milestone 8 regression passed. Release checks verify syntax, hashes, files and frontend/backend pairing. No live accounts or production writes used; not deployed.
+
+Install all files from the full frontend archive. The changed-files patch requires Milestone 8. Backend 5.3-production.2 is unchanged; no SQL or backend redeployment is required if already installed.
+
+
+Milestone 10 — Audited public publishing fixes (2026-10-05)
+
+Matched release: 5.3-production.3. Frontend baseline: Milestone 9, b56e318. Backend baseline: 88604a5. Install both matching packages. No new database migration is required for this update; existing 5.3 schema requirements still apply. Back up the installed files, replace the backend server files and restart, then upload the frontend files and refresh. During the version mismatch the existing release guard blocks writes. Rollback requires restoring both matched previous packages.
+
+The public team endpoint now requires active, public, non-deleted staff. Its publication context requires published, public, unexpired, non-deleted records. Linked project counts include only projects flagged for website display. These corrections can reduce public results; private flags are not automatically changed.
+
+News feature updates use a partial schema without injecting creation defaults. Feature-only updates preserve titles, status and publication dates. New records persist the selected feature flag, subject to the existing five-record check; count failures abort the write. The existing count-then-write limit is not a database-atomic concurrent quota.
+
+Public visibility is distinguished from public-feed eligibility. Grounded and publishing messages no longer assert website delivery based solely on the public flag. The publication review shows proposed eligibility, expiry, content fields and image URLs. Metadata exposed by the public API is described separately. This is a preview of feed content, not a rendering or delivery receipt from neumact.org. Existing website refresh/caching behaviour has not been inspected or changed.
+
+Validation: actual backend handler tests with a mock database cover public staff/publication exclusion, feature creation and partial update, limit rejection and database errors. Vue browser tests cover review eligibility, expired records, content preview, mobile controls and feature-only writes. Research and Grounded regression suites passed. Actual backend startup/integration checks preserve administrator password protections and release matching. Release verification covers hashes, JavaScript syntax, modules, assets and archive integrity. No live production reads or writes, deployment or repository push occurred.

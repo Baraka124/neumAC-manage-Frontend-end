@@ -28,6 +28,8 @@
 <link rel="stylesheet" href="units-milestone6.css?v=5.3-production.2-units6">
 <link rel="stylesheet" href="workflow7.css?v=5.3-production.2-workflow7">
 <link rel="stylesheet" href="grounded8.css?v=5.3-production.2-grounded8">
+<link rel="stylesheet" href="research9.css?v=5.3-production.2-research9">
+<link rel="stylesheet" href="publishing10.css?v=5.3-production.3-publishing10">
 </head>
 <body>
 <div id="app" v-cloak>
@@ -85,7 +87,7 @@
 
     <!-- ============ ASK BAR — Intelligence surface (proactive · conversational · sourced) ============ -->
     <!-- Floating trigger with proactive badge -->
-    <button v-if="currentUser && entry.state === 'ready' && !askBar.open" class="grounded-orb-wrap" :class="{ 'grounded-orb--alert': askBarScanCount }" @click="openAskBar()" :title="askBarScanCount ? askBarScanCount + ' things need attention' : 'Ask Grounded'">
+    <button v-if="currentUser && entry.state === 'ready' && !askBar.open && !newsPublishReview" class="grounded-orb-wrap" :class="{ 'grounded-orb--alert': askBarScanCount }" @click="openAskBar()" :title="askBarScanCount ? askBarScanCount + ' things need attention' : 'Ask Grounded'">
         <span class="grounded-orb" aria-hidden="true">
             <svg class="grounded-mark-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path class="grounded-mark-g" d="M48.5 18.1C44.2 13.8 38.1 11.3 31.4 11.3C18.5 11.3 9.2 20.8 9.2 33.1C9.2 45.5 18.6 54.7 31.5 54.7C39.1 54.7 45.2 51.8 49.5 46.7V37.1H35.4"/>
@@ -5073,6 +5075,15 @@
 
                 <!-- ============ RESEARCH HUB (unified) ============ -->
                 <div v-if="currentView === 'research_hub'" class="research-hub nd-l183" >
+                    <div v-if="Object.values(researchSources).some(s=>s.status!=='ready')" class="research9-status" role="status" aria-live="polite">
+                        <div v-for="(source,key) in researchSources" :key="key" v-show="source.status!=='ready'">
+                            <strong>{{ source.label }}</strong>
+                            <span>{{ source.status === 'loading' || source.status === 'pending' ? 'Loading records…' : source.status === 'restricted' ? 'Access restricted.' : 'Records could not be refreshed.' }} {{ source.loaded ? 'Previously retrieved records remain visible.' : 'Current totals are unavailable.' }}</span>
+                            <small v-if="source.error">{{ source.error }}</small>
+                            <button v-if="source.status==='unavailable'" type="button" @click="key==='lines' ? loadResearchLines() : key==='studies' ? loadClinicalTrials() : loadInnovationProjects()">Retry</button>
+                        </div>
+                    </div>
+
 
                     <!-- ══ V31 · RESEARCH PORTFOLIO / PROGRAMME VIEW ═════════════════════ -->
                     <div v-if="researchHubPage === 'overview'" class="rv31-page rv31-overview">
@@ -5093,13 +5104,13 @@
                         </header>
 
                         <nav class="rv31-nav" aria-label="Research sections">
-                            <button class="rv31-nav-item on" @click="openResearchPage('overview')">Research lines <span>{{ researchLines.length }}</span></button>
-                            <button class="rv31-nav-item" @click="openResearchPage('allstudies')">Clinical studies <span>{{ clinicalTrials.length }}</span></button>
-                            <button class="rv31-nav-item" @click="openResearchPage('allprojects')">Clinical innovation <span>{{ innovationProjects.length }}</span></button>
+                            <button class="rv31-nav-item on" @click="openResearchPage('overview')">Research lines <span>{{ researchSources.lines.status==='ready' ? researchLines.length : '—' }}</span></button>
+                            <button class="rv31-nav-item" @click="openResearchPage('allstudies')">Clinical studies <span>{{ researchSources.studies.status==='ready' ? clinicalTrials.length : '—' }}</span></button>
+                            <button class="rv31-nav-item" @click="openResearchPage('allprojects')">Clinical innovation <span>{{ researchSources.projects.status==='ready' ? innovationProjects.length : '—' }}</span></button>
                             <button class="rv31-nav-item" @click="openResearchPage('analytics')">Intelligence</button>
                         </nav>
 
-                        <section class="rv31-pulse" aria-label="Research portfolio summary">
+                        <section v-if="Object.values(researchSources).every(s=>s.status==='ready')" class="rv31-pulse" aria-label="Research portfolio summary">
                             <div class="rv31-pulse-cell rv31-pulse-cell--lead">
                                 <span class="rv31-pulse-kicker">Research programmes</span>
                                 <strong>{{ researchPortfolioSummary.activeLines }}</strong>
@@ -5140,7 +5151,7 @@
                                 </label>
                             </div>
 
-                            <div v-if="filteredResearchLines.length === 0 && !researchLoading" class="rv31-empty">
+                            <div v-if="researchSources.lines.status==='ready' && filteredResearchLines.length === 0 && !researchLoading" class="rv31-empty">
                                 <strong>No research lines found</strong>
                                 <span>{{ researchLineFilters.search ? 'Try another search.' : 'Create the first research programme.' }}</span>
                             </div>
@@ -5278,7 +5289,7 @@
                         <div v-if="lineTab==='overview' && selectedLine" class="rv31-line-overview">
                             <section class="rv31-workstream">
                                 <div class="rv31-workstream-head"><div><span>Clinical evidence</span><h2>Studies in this programme</h2></div><button @click="lineTab='studies'">View all →</button></div>
-                                <div v-if="!researchLineStudies(selectedLine.id).length" class="rv31-stream-empty">No clinical studies are linked to this research line.</div>
+                                <div v-if="researchSources.studies.status==='ready' && !researchLineStudies(selectedLine.id).length" class="rv31-stream-empty">No clinical studies are linked to this research line.</div>
                                 <button v-for="trial in researchLineStudies(selectedLine.id).slice(0,3)" :key="trial.id" class="rv31-stream-row" @click="openStudy(trial)">
                                     <span class="rv31-stream-status" :class="'is-'+trialStatusKey(trial)"></span>
                                     <span class="rv31-stream-main"><b>{{ trial.title }}</b><small>{{ trial.study_type || 'Clinical study' }} · {{ TRIAL_STATUS_LABEL[trialStatusKey(trial)] }}<template v-if="trial.phase"> · {{ trial.phase }}</template></small></span>
@@ -5289,7 +5300,7 @@
 
                             <section class="rv31-workstream">
                                 <div class="rv31-workstream-head"><div><span>Clinical innovation</span><h2>Development activity</h2></div><button @click="lineTab='projects'">View all →</button></div>
-                                <div v-if="!researchLineProjects(selectedLine.id).length" class="rv31-stream-empty">No clinical innovation projects are linked to this research line.</div>
+                                <div v-if="researchSources.projects.status==='ready' && !researchLineProjects(selectedLine.id).length" class="rv31-stream-empty">No clinical innovation projects are linked to this research line.</div>
                                 <button v-for="project in researchLineProjects(selectedLine.id).slice(0,3)" :key="project.id" class="rv31-stream-row" @click="openProject(project)">
                                     <span class="rv31-stage-mark"></span>
                                     <span class="rv31-stream-main"><b>{{ project.title }}</b><small>{{ formatInnovationCategory(project.category) }} · {{ formatInnovationStage(project.current_stage || project.development_stage) }}</small></span>
@@ -5313,7 +5324,7 @@
                         <!-- Clinical studies -->
                         <div v-if="lineTab === 'studies'" class="rv31-line-list rv33-line-register">
                             <div class="rv31-list-head"><div><span>Clinical evidence</span><h2>Clinical studies</h2><p>Studies, trials, cohorts and registries linked to this programme.</p></div><button v-if="hasPermission('clinical_trials','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddTrialModal(selectedLine)"><span class="rv31-action-glyph">＋</span><span>New study</span></button></div>
-                            <div v-if="!researchLineStudies(selectedLine?.id).length" class="rv31-empty"><strong>No clinical studies yet</strong><span>Add the first study to this programme.</span></div>
+                            <div v-if="researchSources.studies.status==='ready' && !researchLineStudies(selectedLine?.id).length" class="rv31-empty"><strong>No clinical studies yet</strong><span>Add the first study to this programme.</span></div>
                             <div class="rv33-line-records" v-else>
                                 <article v-for="trial in researchLineStudies(selectedLine?.id)" :key="trial.id" class="rv33-study-row" role="button" tabindex="0" @click="openStudy(trial)" @keydown.enter.prevent="openStudy(trial)" @keydown.space.prevent="openStudy(trial)">
                                     <div class="rv33-state"><i :class="'is-'+trialStatusKey(trial)"></i><span>{{ TRIAL_STATUS_LABEL[trialStatusKey(trial)] }}</span></div>
@@ -5337,7 +5348,7 @@
                         <!-- Clinical innovation -->
                         <div v-if="lineTab === 'projects'" class="rv31-line-list rv33-line-register">
                             <div class="rv31-list-head"><div><span>Clinical innovation</span><h2>Innovation projects</h2><p>Clinical needs moving through development, validation and implementation.</p></div><button v-if="hasPermission('innovation_projects','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddProjectModal(selectedLine)"><span class="rv31-action-glyph">＋</span><span>New project</span></button></div>
-                            <div v-if="!researchLineProjects(selectedLine?.id).length" class="rv31-empty"><strong>No clinical innovation projects yet</strong><span>Add the first innovation project to this programme.</span></div>
+                            <div v-if="researchSources.projects.status==='ready' && !researchLineProjects(selectedLine?.id).length" class="rv31-empty"><strong>No clinical innovation projects yet</strong><span>Add the first innovation project to this programme.</span></div>
                             <div class="rv33-line-records" v-else>
                                 <article v-for="proj in researchLineProjects(selectedLine?.id)" :key="proj.id" class="rv33-project-row" role="button" tabindex="0" @click="openProject(proj)" @keydown.enter.prevent="openProject(proj)" @keydown.space.prevent="openProject(proj)">
                                     <div class="rv33-stage"><span>{{ formatInnovationStage(proj.current_stage || proj.development_stage) }}</span><i></i></div>
@@ -5633,7 +5644,7 @@
                             <button v-if="hasPermission('clinical_trials','create')" class="rv32-add-action" @click="showAddTrialModal(null)"><span>＋</span> New clinical study</button>
                         </header>
 
-                        <section class="rv32-pulse-row">
+                        <section v-if="researchSources.studies.status==='ready'" class="rv32-pulse-row">
                             <div><span>Active studies</span><strong>{{ clinicalTrials.filter(t=>['active','recruiting'].includes(trialStatusKey(t))).length }}</strong><small>{{ countTrialsByStatus('recruiting') }} recruiting</small></div>
                             <div><span>Recruitment</span><strong>{{ clinicalTrials.reduce((s,t)=>s+(Number(t.actual_enrollment)||0),0) }}<template v-if="clinicalTrials.reduce((s,t)=>s+(Number(t.enrollment_target)||0),0)"> / {{ clinicalTrials.reduce((s,t)=>s+(Number(t.enrollment_target)||0),0) }}</template></strong><small>enrolled across studies with a recorded target</small></div>
                             <div><span>Multicentre</span><strong>{{ clinicalTrials.filter(t=>t.is_multicentre).length }}</strong><small>studies marked multicentre</small></div>
@@ -5649,7 +5660,7 @@
                         </section>
 
                         <nav class="rv32-state-rail" aria-label="Study status filters">
-                            <button :class="{on:trialFilters.status===''}" @click="trialFilters.status=''">All <span>{{ clinicalTrials.length }}</span></button>
+                            <button :class="{on:trialFilters.status===''}" @click="trialFilters.status=''">All <span>{{ researchSources.studies.status==='ready' ? clinicalTrials.length : '—' }}</span></button>
                             <button :class="{on:trialFilters.status==='recruiting'}" @click="trialFilters.status=trialFilters.status==='recruiting'?'':'recruiting'">Recruiting <span>{{ countTrialsByStatus('recruiting') }}</span></button>
                             <button :class="{on:trialFilters.status==='active'}" @click="trialFilters.status=trialFilters.status==='active'?'':'active'">Active <span>{{ countTrialsByStatus('active') }}</span></button>
                             <button :class="{on:trialFilters.status==='prep'}" @click="trialFilters.status=trialFilters.status==='prep'?'':'prep'">In preparation <span>{{ countTrialsByStatus('prep') }}</span></button>
@@ -5657,7 +5668,7 @@
                         </nav>
 
                         <section class="rv32-record-list">
-                            <div v-if="!filteredTrialsAll.length" class="rv32-empty"><strong>No clinical studies found</strong><span>Adjust the current filters or create a new study.</span></div>
+                            <div v-if="researchSources.studies.status==='ready' && !filteredTrialsAll.length" class="rv32-empty"><strong>No clinical studies found</strong><span>Adjust the current filters or create a new study.</span></div>
                             <article v-for="trial in filteredTrialsAll" :key="trial.id" class="rv32-study-row" role="button" tabindex="0" @click="openStudy(trial, 'allstudies')" @keydown.enter.prevent="openStudy(trial, 'allstudies')" @keydown.space.prevent="openStudy(trial, 'allstudies')">
                                 <div class="rv32-row-state"><i :class="'is-'+trialStatusKey(trial)"></i><span>{{ TRIAL_STATUS_LABEL[trialStatusKey(trial)] }}</span></div>
                                 <div class="rv32-row-main">
@@ -5684,15 +5695,15 @@
                             <button v-if="hasPermission('innovation_projects','create')" class="rv32-add-action" @click="showAddProjectModal(null)"><span>＋</span> New innovation project</button>
                         </header>
 
-                        <section class="rv32-pulse-row">
-                            <div><span>Projects</span><strong>{{ innovationProjects.length }}</strong><small>across the recorded portfolio</small></div>
+                        <section v-if="researchSources.projects.status==='ready'" class="rv32-pulse-row">
+                            <div><span>Projects</span><strong>{{ researchSources.projects.status==='ready' ? innovationProjects.length : '—' }}</strong><small>across the recorded portfolio</small></div>
                             <div><span>Validation onward</span><strong>{{ innovationProjects.filter(p=>/valid|implement|deploy|scale|escal|comercial/i.test(p.current_stage||p.development_stage||'')).length }}</strong><small>projects in later development</small></div>
                             <div><span>Funded</span><strong>{{ innovationProjects.filter(p=>p.funding_status==='funded').length }}</strong><small>projects marked funded</small></div>
                             <div :class="{'attention':innovationProjects.filter(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found)).length}"><span>Attention</span><strong>{{ innovationProjects.filter(p=>!p.scope_finalized || ((p.partner_needs||[]).length && !p.partner_found)).length }}</strong><small>scope or unresolved partner needs</small></div>
                         </section>
 
                         <section class="rv32-project-stage-rail">
-                            <button :class="{on:projectFilters.stage===''}" @click="projectFilters.stage=''" class="rv32-stage-all"><span>All stages</span><strong>{{ innovationProjects.length }}</strong></button>
+                            <button :class="{on:projectFilters.stage===''}" @click="projectFilters.stage=''" class="rv32-stage-all"><span>All stages</span><strong>{{ researchSources.projects.status==='ready' ? innovationProjects.length : '—' }}</strong></button>
                             <button v-for="stage in PROJECT_STAGES" :key="stage.key" :class="{on:projectFilters.stage===stage.key}" @click="projectFilters.stage=projectFilters.stage===stage.key?'':stage.key"><i :style="{background:stage.color}"></i><span>{{ stage.label }}</span><strong>{{ innovationProjects.filter(p=>(p.current_stage||p.development_stage)===stage.key).length }}</strong></button>
                         </section>
 
@@ -5705,7 +5716,7 @@
                         </section>
 
                         <section class="rv32-record-list">
-                            <div v-if="!filteredProjectsAll.length" class="rv32-empty"><strong>No clinical innovation projects found</strong><span>Adjust the current filters or create a new project.</span></div>
+                            <div v-if="researchSources.projects.status==='ready' && !filteredProjectsAll.length" class="rv32-empty"><strong>No clinical innovation projects found</strong><span>Adjust the current filters or create a new project.</span></div>
                             <article v-for="proj in filteredProjectsAll" :key="proj.id" class="rv32-project-row" role="button" tabindex="0" @click="openProject(proj, 'allprojects')" @keydown.enter.prevent="openProject(proj, 'allprojects')" @keydown.space.prevent="openProject(proj, 'allprojects')">
                                 <div class="rv32-project-stage"><span>{{ formatInnovationStage(proj.current_stage || proj.development_stage) }}</span><i></i></div>
                                 <div class="rv32-row-main">
@@ -5726,9 +5737,9 @@
                         <header class="rv32-collection-hero rv33-intelligence-hero"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>Portfolio signals across enrolment, study requirements, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
 
                         <section class="rv32-pulse-row rv33-intel-pulse">
-                            <div><span>Clinical studies</span><strong>{{ clinicalTrials.length }}</strong><small>{{ countTrialsByStatus('recruiting') }} recruiting</small></div>
+                            <div><span>Clinical studies</span><strong>{{ researchSources.studies.status==='ready' ? clinicalTrials.length : '—' }}</strong><small>{{ countTrialsByStatus('recruiting') }} recruiting</small></div>
                             <div><span>Enrolled</span><strong>{{ clinicalTrials.reduce((s,t)=>s+(Number(t.actual_enrollment)||0),0) }}</strong><small>participants enrolled across recorded studies</small></div>
-                            <div><span>Clinical innovation</span><strong>{{ innovationProjects.length }}</strong><small>{{ innovationProjects.filter(p=>/valid|implement|deploy|scale|escal|comercial/i.test(p.current_stage||p.development_stage||'')).length }} validation / later</small></div>
+                            <div><span>Clinical innovation</span><strong>{{ researchSources.projects.status==='ready' ? innovationProjects.length : '—' }}</strong><small>{{ innovationProjects.filter(p=>/valid|implement|deploy|scale|escal|comercial/i.test(p.current_stage||p.development_stage||'')).length }} validation / later</small></div>
                             <div :class="{'attention':clinicalTrials.filter(t=>studyGovernance(t).any).length}"><span>Study requirements</span><strong>{{ clinicalTrials.filter(t=>studyGovernance(t).any).length }}</strong><small>study records with recorded gaps</small></div>
                         </section>
 
@@ -5952,12 +5963,12 @@
                                         <span v-if="post.status !== 'published'" class="knowledge-v23-status" :class="'is-' + post.status">{{ post.status === 'draft' ? 'Draft' : 'Archived' }}</span>
                                         <template v-else>
                                             <span class="knowledge-v23-visibility"
-                                                  :title="post.is_public ? 'Public — reflected in the public view on the web.' : 'Internal — department only.'">
+                                                  :title="post.is_public ? 'Public visibility — feed eligibility also depends on status and expiry.' : 'Internal — department only.'">
                                                 <span class="knowledge-state-dot" :class="post.is_public ? 'is-public' : 'is-internal'"></span>
                                                 <i class="fas" :class="post.is_public ? 'fa-globe' : 'fa-lock'"></i>
                                                 {{ post.is_public ? 'Public' : 'Internal' }}
                                             </span>
-                                            <span v-if="post.is_public" class="knowledge-v23-info" title="Public records are reflected in the public view on the web." aria-label="Public records are reflected in the public view on the web.">i</span>
+                                            <span v-if="post.is_public" class="knowledge-v23-info" title="Public visibility requires published status and a valid expiry to qualify for the public feed." aria-label="Public visibility requires published status and a valid expiry to qualify for the public feed.">i</span>
                                         </template>
                                     </div>
                                 </div>
@@ -6124,7 +6135,7 @@
                                         <span>{{ newsModal.form.status==='published' ? 'Published' : newsModal.form.status==='archived' ? 'Archived' : 'Draft' }}</span><i></i>
                                         <button @click="newsModal.form.is_public=false" :class="{'is-active':!newsModal.form.is_public}">Internal</button>
                                         <button @click="newsModal.form.is_public=true" :class="{'is-active':newsModal.form.is_public}">Public</button>
-                                        <span v-if="newsModal.form.is_public" class="news-v24-public-info" title="Public records are reflected in the public view on the web.">i</span>
+                                        <span v-if="newsModal.form.is_public" class="news-v24-public-info" title="Public visibility requires published status and a valid expiry to qualify for the public feed.">i</span>
                                     </div>
                                     <div class="news-v27-preview-switch" aria-label="Preview surface">
                                         <span>Preview</span>
@@ -6214,7 +6225,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                         <label><span>Research line</span><select v-model="newsModal.form.research_line_id"><option value="">No research line</option><option v-for="l in researchLines" :key="l.id" :value="l.id">L{{ l.line_number }} — {{ l.short_name || l.research_line_name || l.name }}</option></select></label>
                                         <label v-if="newsModal.form.post_type!=='publication'"><span>Publish date</span><input type="date" v-model="newsModal.form.published_at"></label>
                                         <label v-if="newsModal.form.post_type!=='publication'"><span>Expiry</span><input type="date" v-model="newsModal.form.expires_at"></label>
-                                        <div class="news-v27-inspector-state"><span>Visibility</span><strong>{{ newsModal.form.is_public ? 'Public' : 'Internal' }}</strong><small v-if="newsModal.form.is_public">Reflected in the public view on the web.</small><small v-else>Department only.</small></div>
+                                        <div class="news-v27-inspector-state"><span>Visibility</span><strong>{{ newsModal.form.is_public ? 'Public' : 'Internal' }}</strong><small v-if="newsModal.form.is_public">Public-feed eligibility depends on published status and expiry.</small><small v-else>Department only.</small></div>
                                     </div>
                                 </aside>
                             </div>
@@ -6231,18 +6242,21 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <article v-else-if="newsModal.form.post_type==='highlight'" class="news-v24-preview-highlight"><figure v-if="newsModal.form.image_urls?.[0]"><img :src="newsModal.form.image_urls[0]" alt=""></figure><div><span>Highlight</span><h3>{{ newsModal.form.title || 'Untitled highlight' }}</h3><p>{{ newsModal.form.body || 'Short visual context.' }}</p></div></article>
                                     <article v-else class="news-v24-preview-update"><time>{{ newsModal.form.published_at || 'Today' }}</time><span>Department update</span><h3>{{ newsModal.form.title || 'Untitled update' }}</h3><p>{{ newsModal.form.body || 'The update will appear here.' }}</p></article>
                                 </div>
-                                <footer><span>{{ newsModal.form.is_public ? '● Public' : '● Internal' }}</span><span v-if="newsModal.form.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span><span v-if="newsModal.form.research_line_id">{{ newsLineName(newsModal.form.research_line_id) }}</span></footer>
+                                <footer><span>{{ newsModal.form.is_public ? '● Public' : '● Internal' }}</span><span v-if="newsModal.form.is_public" title="Public visibility requires published status and a valid expiry to qualify for the public feed.">ⓘ</span><span v-if="newsModal.form.research_line_id">{{ newsLineName(newsModal.form.research_line_id) }}</span></footer>
                                 <div v-if="newsModal.previewMode==='public' && !newsModal.form.is_public" class="news-v27-preview-warning">Preview only — this record is currently Internal.</div>
                             </aside>
                         </div>
 
                         <footer v-if="newsModal.stage==='compose'" class="news-v24-studio-foot news-v27-editor-foot">
-                            <div class="news-v24-foot-left"><button v-if="newsModal.mode==='edit' && newsModal.form.id" @click="closeNewsEditorToReader" class="news-v24-text-action">Return to reader</button><span v-if="newsModal.form.is_public" class="news-v24-foot-public"><b>Public</b> · reflected in the public view on the web</span><span v-else class="news-v24-foot-public"><b>Internal</b> · department only</span></div>
+                            <div class="news-v24-foot-left"><button v-if="newsModal.mode==='edit' && newsModal.form.id" @click="closeNewsEditorToReader" class="news-v24-text-action">Return to reader</button><span v-if="newsModal.form.is_public" class="news-v24-foot-public"><b>Public visibility</b> · published and unexpired records qualify for the public feed</span><span v-else class="news-v24-foot-public"><b>Internal</b> · department only</span></div>
                             <div class="news-v24-foot-actions"><button class="news-v24-save" @click="saveNewsEditor(false)" :disabled="newsModal.busy">{{ newsModal.mode==='edit' ? 'Save changes' : 'Save draft' }}</button><button v-if="newsModal.form.status!=='published'" class="news-v24-publish" @click="newsPublishReview=true" :disabled="newsModal.busy"><span>Review &amp; publish</span><i>→</i></button><button v-else class="news-v24-done" @click="closeNewsEditorToReader">Done</button></div>
                         </footer>
 
                         <div v-if="newsPublishReview" class="news-v27-publish-review" @click.self="newsPublishReview=false">
-                            <section><span class="news-v27-review-kicker">Publication check</span><h3>Ready to publish?</h3><p>{{ newsModal.form.title || 'Untitled record' }}</p><div class="news-v29-publish-path"><span class="is-done">Draft</span><i></i><span class="is-done">Ready for review</span><i></i><span class="is-current">Publication check</span><i></i><span>Published</span></div><dl><div><dt>Type</dt><dd>{{ newsModal.form.post_type }}</dd></div><div><dt>Visibility</dt><dd>{{ newsModal.form.is_public ? 'Public' : 'Internal' }}</dd></div><div v-if="newsModal.form.research_line_id"><dt>Research line</dt><dd>{{ newsLineName(newsModal.form.research_line_id) }}</dd></div></dl><div v-if="newsModal.form.is_public" class="news-v27-review-public"><span>i</span>This record will be reflected in the public view on the web.</div><footer><button @click="newsPublishReview=false">Back</button><button class="is-primary" @click="newsPublishReview=false; saveNewsEditor(true)" :disabled="newsModal.busy">{{ newsModal.busy ? 'Publishing…' : 'Publish' }} <span>→</span></button></footer></section>
+                            <section><span class="news-v27-review-kicker">Publication check</span><h3>Ready to publish?</h3><p>{{ newsModal.form.title || 'Untitled record' }}</p><div class="news-v29-publish-path"><span class="is-done">Draft</span><i></i><span class="is-done">Ready for review</span><i></i><span class="is-current">Publication check</span><i></i><span>Published</span></div><dl><div><dt>Type</dt><dd>{{ newsModal.form.post_type }}</dd></div><div><dt>Visibility</dt><dd>{{ newsModal.form.is_public ? 'Public' : 'Internal' }}</dd></div><div v-if="newsModal.form.research_line_id"><dt>Research line</dt><dd>{{ newsLineName(newsModal.form.research_line_id) }}</dd></div></dl><div class="news-v27-review-public"><div><strong>{{ newsPublicEligibility(newsPublicationPreview).label }}</strong><p>{{ newsPublicEligibility(newsPublicationPreview).reason }}</p><small>After the proposed publication · expiry: {{ newsPublicationPreview.expires_at || 'No expiry' }}</small></div></div>
+                            <details class="publishing10-preview"><summary>Review public-feed content</summary><p>These are the content fields exposed by the public feed when the record is eligible. The website controls their presentation.</p><dl>
+                            <div v-for="field in ['title','post_type','body','author','research_line','journal_name','authors_text','doi','published_at','expires_at','is_featured']" :key="field"><dt>{{ field.replace(/_/g,' ') }}</dt><dd>{{ newsPublicationPreview[field] === true ? 'Yes' : newsPublicationPreview[field] === false ? 'No' : newsPublicationPreview[field] || 'Not set' }}</dd></div>
+                            <div><dt>Images</dt><dd><span v-for="url in newsPublicationPreview.image_urls" :key="url" class="publishing10-image-url">{{ url }}</span><span v-if="!newsPublicationPreview.image_urls.length">None</span></dd></div></dl><p>The feed also includes record and linked-record IDs, creation time, word count, public visibility and homepage flags. The first image is the featured image. Saving here does not confirm delivery to the website.</p></details><footer><button @click="newsPublishReview=false">Back</button><button class="is-primary" @click="newsPublishReview=false; saveNewsEditor(true)" :disabled="newsModal.busy">{{ newsModal.busy ? 'Publishing…' : 'Publish' }} <span>→</span></button></footer></section>
                         </div>
                     </section>
                 </div>
@@ -7096,7 +7110,7 @@ Use Section heading to structure longer clinical or research articles."></textar
 
             <aside class="nrd-v24-reader-tools nrd-v27-reader-tools"><button class="nrd-v24-circle" @click="newsDrawer.detailsOpen=!newsDrawer.detailsOpen" :class="{'is-active':newsDrawer.detailsOpen}" title="Record details" aria-label="Record details">i</button><div class="nrd-v24-manage" v-if="canEditPortfolio(newsDrawer.post)"><button class="nrd-v24-circle" @click="newsDrawer.manageOpen=!newsDrawer.manageOpen" :class="{'is-active':newsDrawer.manageOpen}" title="Manage" aria-label="Manage">•••</button><div v-if="newsDrawer.manageOpen" class="nrd-v24-manage-menu"><div class="nrd-v24-manage-title">Manage record</div><button @click="toggleNewsSaved(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-bookmark"></i><span>{{ newsIsSaved(newsDrawer.post.id) ? 'Remove from My Library' : 'Save to My Library' }}</span></button><button @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-pen"></i><span>Edit</span></button><button v-if="newsDrawer.post.status==='draft'" @click="openNewsEditorFromReader(newsDrawer.post)"><i class="fas fa-clipboard-check"></i><span>Review &amp; publish</span></button><button v-if="newsDrawer.post.status==='published'" @click="toggleNewsPublic(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas" :class="newsDrawer.post.is_public ? 'fa-lock' : 'fa-globe'"></i><span>{{ newsDrawer.post.is_public ? 'Make Internal' : 'Make Public' }}</span></button><button @click="toggleNewsFeature(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-star"></i><span>{{ newsDrawer.post.is_featured ? 'Remove from homepage' : 'Feature on homepage' }}</span></button><div class="nrd-v24-manage-sep"></div><button @click="archiveNews(newsDrawer.post); newsDrawer.manageOpen=false"><i class="fas fa-archive"></i><span>Archive</span></button><button class="is-danger" v-if="canEditPortfolio(newsDrawer.post)" @click="deleteNews(newsDrawer.post, closeNewsDrawer); newsDrawer.manageOpen=false"><i class="fas fa-trash"></i><span>Delete</span></button></div></div></aside>
 
-            <aside v-if="newsDrawer.detailsOpen" class="nrd-v24-details nrd-v27-details"><button @click="newsDrawer.detailsOpen=false" aria-label="Close details">×</button><span class="nrd-v24-details-kicker">Record details</span><record-readiness kind="publication" :record="newsDrawer.post"></record-readiness><dl><div><dt>Type</dt><dd>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</dd></div><div><dt>Status</dt><dd>{{ newsDrawer.post.status }}</dd></div><div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="Public records are reflected in the public view on the web.">ⓘ</span></dd></div><div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div><div v-if="newsDrawerAuthorFull"><dt>Author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div><div v-if="newsDrawerKeywords.length"><dt>Index terms</dt><dd>{{ newsDrawerKeywords.join(' · ') }}</dd></div><div><dt>Created</dt><dd>{{ formatDate(newsDrawer.post.created_at) }}</dd></div><div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div><div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div></dl><div class="nrd-v28-lifecycle-history"><span>Lifecycle</span><div v-for="ev in newsDrawerLifecycle" :key="ev.label+ev.date"><b>{{ ev.label }}</b><time>{{ formatDate(ev.date) }}</time></div><small>Lifecycle timestamps available from the current backend record. This is not a fabricated version audit trail.</small></div><button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button></aside>
+            <aside v-if="newsDrawer.detailsOpen" class="nrd-v24-details nrd-v27-details"><button @click="newsDrawer.detailsOpen=false" aria-label="Close details">×</button><span class="nrd-v24-details-kicker">Record details</span><record-readiness kind="publication" :record="newsDrawer.post"></record-readiness><dl><div><dt>Type</dt><dd>{{ newsDrawer.post.post_type === 'publication' ? 'Publication' : newsDrawer.post.post_type === 'article' ? 'Article' : newsDrawer.post.post_type === 'highlight' ? 'Highlight' : 'Update' }}</dd></div><div><dt>Status</dt><dd>{{ newsDrawer.post.status }}</dd></div><div><dt>Public feed</dt><dd>{{ newsPublicEligibility(newsDrawer.post).label }}<small>{{ newsPublicEligibility(newsDrawer.post).reason }}</small></dd></div><div><dt>Visibility</dt><dd>{{ newsDrawer.post.is_public ? 'Public' : 'Internal' }} <span v-if="newsDrawer.post.is_public" title="Public visibility requires published status and a valid expiry to qualify for the public feed.">ⓘ</span></dd></div><div v-if="newsDrawerLineName"><dt>Research line</dt><dd>{{ newsDrawerLineName }}</dd></div><div v-if="newsDrawerAuthorFull"><dt>Author</dt><dd>{{ newsDrawerAuthorFull }}</dd></div><div v-if="newsDrawerKeywords.length"><dt>Index terms</dt><dd>{{ newsDrawerKeywords.join(' · ') }}</dd></div><div><dt>Created</dt><dd>{{ formatDate(newsDrawer.post.created_at) }}</dd></div><div v-if="newsDrawer.post.expires_at"><dt>Expiry</dt><dd>{{ formatDate(newsDrawer.post.expires_at) }}</dd></div><div v-if="newsDrawer.post.doi"><dt>DOI</dt><dd>{{ newsDrawer.post.doi }}</dd></div></dl><div class="nrd-v28-lifecycle-history"><span>Lifecycle</span><div v-for="ev in newsDrawerLifecycle" :key="ev.label+ev.date"><b>{{ ev.label }}</b><time>{{ formatDate(ev.date) }}</time></div><small>Lifecycle timestamps available from the current backend record. This is not a fabricated version audit trail.</small></div><button v-if="newsDrawer.post.is_public" class="nrd-v26-public-preview-action" @click="newsDrawer.publicPreview=true; newsDrawer.detailsOpen=false">Preview public view <span>→</span></button></aside>
           </section>
         </template>
 
@@ -9941,12 +9955,12 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </section>
 
                         <div class="rv33-editor-boundary">
-                            <div class="rv33-boundary-head"><div><span>Institutional relationship</span><strong>Origin · delivery model · our role</strong></div><b>NOT SAVED YET</b></div>
-                            <p>Prepared for the next backend migration. Values in this section are visible here but are not sent to the API.</p>
+                            <div class="rv33-boundary-head"><div><span>Institutional relationship</span><strong>Origin · delivery model · our role</strong></div><b>UNAVAILABLE</b></div>
+                            <p>These relationship fields are read-only in this release. Changes cannot be saved yet.</p>
                             <div class="rv33-boundary-grid">
-                                <label><span>Origin</span><select class="sm-select" v-model="clinicalTrialModal.form.research_origin"><option value="">Not recorded</option><option value="department">neumAC-originated</option><option value="external">External</option><option value="investigator">Investigator-initiated</option></select></label>
-                                <label><span>Delivery model</span><select class="sm-select" v-model="clinicalTrialModal.form.delivery_model"><option value="">Not recorded</option><option>Single-centre</option><option>Multicentre</option></select></label>
-                                <label><span>Our role</span><select class="sm-select" v-model="clinicalTrialModal.form.institutional_role"><option value="">Not recorded</option><option>Coordinating centre</option><option>Participating site</option><option>Local PI site</option><option>Sponsor-investigator</option></select></label>
+                                <label><span>Origin</span><select class="sm-select" disabled title="Editing is unavailable in this release" v-model="clinicalTrialModal.form.research_origin"><option value="">Not recorded</option><option value="department">neumAC-originated</option><option value="external">External</option><option value="investigator">Investigator-initiated</option></select></label>
+                                <label><span>Delivery model</span><select class="sm-select" disabled title="Editing is unavailable in this release" v-model="clinicalTrialModal.form.delivery_model"><option value="">Not recorded</option><option>Single-centre</option><option>Multicentre</option></select></label>
+                                <label><span>Our role</span><select class="sm-select" disabled title="Editing is unavailable in this release" v-model="clinicalTrialModal.form.institutional_role"><option value="">Not recorded</option><option>Coordinating centre</option><option>Participating site</option><option>Local PI site</option><option>Sponsor-investigator</option></select></label>
                             </div>
                         </div>
 
@@ -10197,12 +10211,12 @@ Use Section heading to structure longer clinical or research articles."></textar
                         </div>
 
                     <div class="rv33-editor-boundary rv33-editor-boundary--innovation col-span-2">
-                        <div class="rv33-boundary-head"><div><span>Institutional relationship</span><strong>Origin · delivery model · our role</strong></div><b>NOT SAVED YET</b></div>
-                        <p>UI-ready fields for the next backend migration. They are intentionally excluded from the current API payload so working innovation CRUD remains unchanged.</p>
+                        <div class="rv33-boundary-head"><div><span>Institutional relationship</span><strong>Origin · delivery model · our role</strong></div><b>UNAVAILABLE</b></div>
+                        <p>These relationship fields are read-only in this release. Changes cannot be saved yet.</p>
                         <div class="rv33-boundary-grid">
-                            <label><span>Origin</span><select class="form-select" v-model="innovationProjectModal.form.research_origin"><option value="">Not recorded</option><option value="department">neumAC-originated</option><option value="external">External</option><option value="consortium">External consortium</option></select></label>
-                            <label><span>Delivery model</span><select class="form-select" v-model="innovationProjectModal.form.delivery_model"><option value="">Not recorded</option><option>Departmental</option><option>Multi-institutional</option><option>Consortium</option></select></label>
-                            <label><span>Our role</span><select class="form-select" v-model="innovationProjectModal.form.institutional_role"><option value="">Not recorded</option><option>Coordinator</option><option>Partner</option><option>Clinical validation site</option><option>WP leader</option><option>Technology partner</option></select></label>
+                            <label><span>Origin</span><select class="form-select" disabled title="Editing is unavailable in this release" v-model="innovationProjectModal.form.research_origin"><option value="">Not recorded</option><option value="department">neumAC-originated</option><option value="external">External</option><option value="consortium">External consortium</option></select></label>
+                            <label><span>Delivery model</span><select class="form-select" disabled title="Editing is unavailable in this release" v-model="innovationProjectModal.form.delivery_model"><option value="">Not recorded</option><option>Departmental</option><option>Multi-institutional</option><option>Consortium</option></select></label>
+                            <label><span>Our role</span><select class="form-select" disabled title="Editing is unavailable in this release" v-model="innovationProjectModal.form.institutional_role"><option value="">Not recorded</option><option>Coordinator</option><option>Partner</option><option>Clinical validation site</option><option>WP leader</option><option>Technology partner</option></select></label>
                         </div>
                     </div>
 
@@ -10245,7 +10259,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             <div class="rv40-procedure-note">
                                 <span>PROCEDURAL RECORD</span>
                                 <p>This is about the protocol to be followed and ethics committee / CEIm clearance — not a generic governance score.</p>
-                                <b>NOT SAVED YET</b>
+                                <b>UNAVAILABLE</b>
                             </div>
                             <div class="sm-row">
                                 <div class="sm-field">
@@ -12023,9 +12037,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
     <script src="access.js?v=5.3-production.2-roles5"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
-    <script src="production-ui.js?v=5.3-production.2-entry3"></script>
+    <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
-    <script src="app.js?v=5.3-production.2-grounded8"></script>
+    <script src="publishing10.js?v=5.3-production.3-publishing10"></script>
+    <script src="app.js?v=5.3-production.3-publishing10"></script>
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 

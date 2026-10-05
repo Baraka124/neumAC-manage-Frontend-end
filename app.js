@@ -1886,8 +1886,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       async getSystemStats() { try { return await this.request('/api/system-stats') || {} } catch { return {} } }
 
+      async getResearchCollection(path) {
+        const collected = []
+        for (let page = 1; page <= 100; page++) {
+          const r = await this.request(path + (page === 1 ? '' : '?page=' + page), {skipCache:true})
+          const rows = Array.isArray(r) ? r : r?.data
+          if (!Array.isArray(rows) || r?.success === false) throw new Error('The research response could not be read. Please retry.')
+          collected.push(...rows)
+          const more = r?.pagination && (r.pagination.has_more ?? collected.length < r.pagination.total)
+          if (!more) return collected
+          if (!rows.length) throw new Error('The research response is incomplete. Please retry.')
+        }
+        throw new Error('The research response exceeded the retrieval limit.')
+      }
+
       async getResearchLines() {
-        try { const r = await this.request('/api/research-lines'); return r?.data || Utils.ensureArray(r) } catch { return [] }
+        return this.getResearchCollection('/api/research-lines')
       }
       async createResearchLine(d) { this.invalidate('/api/research-lines'); const r = await this.request('/api/research-lines', { method: 'POST', body: d }); return r?.data || r } // C1 FIX: unwrap { success, data }
       async updateResearchLine(id, d) { this.invalidate('/api/research-lines'); const r = await this.request(`/api/research-lines/${id}`, { method: 'PUT', body: d }); return r?.data || r } // C1 FIX
@@ -1898,14 +1912,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       async getAllClinicalTrials() {
-        try { const r = await this.request('/api/clinical-trials'); return r?.data || Utils.ensureArray(r) } catch { return [] }
+        return this.getResearchCollection('/api/clinical-trials')
       }
       async createClinicalTrial(d) { this.invalidate('/api/clinical-trials'); const r = await this.request('/api/clinical-trials', { method: 'POST', body: d }); return r?.data || r } // C1 FIX
       async updateClinicalTrial(id, d) { this.invalidate('/api/clinical-trials'); const r = await this.request(`/api/clinical-trials/${id}`, { method: 'PUT', body: d }); return r?.data || r } // C1 FIX
       async deleteClinicalTrial(id) { this.invalidate('/api/clinical-trials'); return this.request(`/api/clinical-trials/${id}`, { method: 'DELETE' }) }
 
       async getAllInnovationProjects() {
-        try { const r = await this.request('/api/innovation-projects'); return r?.data || Utils.ensureArray(r) } catch { return [] }
+        return this.getResearchCollection('/api/innovation-projects')
       }
       async createInnovationProject(d) { this.invalidate('/api/innovation-projects'); const r = await this.request('/api/innovation-projects', { method: 'POST', body: d }); return r?.data || r } // C1 FIX
       async updateInnovationProject(id, d) { this.invalidate('/api/innovation-projects'); const r = await this.request(`/api/innovation-projects/${id}`, { method: 'PUT', body: d }); return r?.data || r } // C1 FIX
@@ -6299,7 +6313,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ============ 6.11 useResearch ============
-    function useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations }) {
+    function useResearch({ hasPermission, currentUser, showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations }) {
       const researchLines         = ref([])
       const clinicalTrials        = ref([])
       const innovationProjects    = ref([])
@@ -6651,9 +6665,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const researchLoading = ref(false)
 
-      const loadResearchLines = async () => { try { researchLines.value = await API.getResearchLines() } catch (e) { console.error('[neumDesk] loadResearchLines failed:', e) } }
-      const loadClinicalTrials = async () => { try { clinicalTrials.value = await API.getAllClinicalTrials() } catch (e) { console.error('[neumDesk] loadClinicalTrials failed:', e) } }
-      const loadInnovationProjects = async () => { try { innovationProjects.value = await API.getAllInnovationProjects() } catch (e) { console.error('[neumDesk] loadInnovationProjects failed:', e) } }
+      const researchSources = reactive({
+        lines:{label:'Research programmes',status:'pending',error:'',loaded:false},
+        studies:{label:'Clinical studies',status:'pending',error:'',loaded:false},
+        projects:{label:'Clinical innovation',status:'pending',error:'',loaded:false}
+      })
+      const researchLoadSeq = {lines:0,studies:0,projects:0}
+      const loadResearchSource = async (key, module, target, selected, fetchRows) => {
+        const generation = ++researchLoadSeq[key], actor = currentUser.value?.id
+        const state = researchSources[key]
+        if (!hasPermission(module,'read')) {
+          target.value=[]; selected.value=null
+          Object.assign(state,{status:'restricted',error:'Your account cannot view this source.',loaded:false})
+          return
+        }
+        Object.assign(state,{status:'loading',error:''})
+        try {
+          const rows = await fetchRows()
+          if (generation !== researchLoadSeq[key] || currentUser.value?.id !== actor) return
+          target.value = rows
+          const fresh = selected.value && rows.find(row=>String(row.id)===String(selected.value.id))
+          if (fresh) selected.value = fresh
+          Object.assign(state,{status:'ready',loaded:true,error:''})
+        } catch(e) {
+          if (generation !== researchLoadSeq[key] || currentUser.value?.id !== actor) return
+          if (e.status===403) {target.value=[];selected.value=null;state.loaded=false}
+          Object.assign(state,{status:e.status===403?'restricted':'unavailable',error:e.message||'Please retry.'})
+        }
+      }
+      const loadResearchLines = () => loadResearchSource('lines','research_lines',researchLines,selectedLine,()=>API.getResearchLines())
+      const loadClinicalTrials = () => loadResearchSource('studies','clinical_trials',clinicalTrials,selectedStudy,()=>API.getAllClinicalTrials())
+      const loadInnovationProjects = () => loadResearchSource('projects','innovation_projects',innovationProjects,selectedProject,()=>API.getAllInnovationProjects())
 
       // Load all three research datasets together — used by on-demand navigation
       const loadAllResearch = async () => {
@@ -6758,7 +6800,7 @@ document.addEventListener('DOMContentLoaded', () => {
           delete payload.full_name
           delete payload.professional_email
           if (researchLineModal.mode === 'add') { researchLines.value.unshift(await API.createResearchLine(payload)); showToast('Success', 'Research line created', 'success') }
-          else { const result = await API.updateResearchLine(f.id, payload); const idx = researchLines.value.findIndex(l => l.id === result.id); if (idx !== -1) researchLines.value[idx] = result; showToast('Success', 'Research line updated', 'success') }
+          else { const result = await API.updateResearchLine(f.id, payload); const idx = researchLines.value.findIndex(l => l.id === result.id); if (idx !== -1) researchLines.value[idx] = result; if (String(selectedLine.value?.id) === String(result.id)) selectedLine.value = {...selectedLine.value,...result}; showToast('Success', 'Research line updated', 'success') }
           researchLineModal.show = false; await loadResearchLines(); loadAnalyticsSummary()
         } catch (e) { showToast('Error', e?.message || 'An unexpected error occurred', 'error') }
         finally { saving.value = false }
@@ -6786,7 +6828,7 @@ document.addEventListener('DOMContentLoaded', () => {
           delete payload._milestoneDate
           delete payload._extMemberDraft
           if (clinicalTrialModal.mode === 'add') { clinicalTrials.value.unshift(await API.createClinicalTrial(payload)); showToast('Success', 'Clinical study created', 'success') }
-          else { const result = await API.updateClinicalTrial(payload.id, payload); const idx = clinicalTrials.value.findIndex(t => t.id === result.id); if (idx !== -1) clinicalTrials.value[idx] = result; showToast('Success', 'Clinical study updated', 'success') }
+          else { const result = await API.updateClinicalTrial(payload.id, payload); const idx = clinicalTrials.value.findIndex(t => t.id === result.id); if (idx !== -1) clinicalTrials.value[idx] = result; if (String(selectedStudy.value?.id) === String(result.id)) selectedStudy.value = {...selectedStudy.value,...result}; showToast('Success', 'Clinical study updated', 'success') }
           _captureStudyBaseline(); clinicalTrialModal.show = false; await loadClinicalTrials(); loadAnalyticsSummary()
         } catch (e) { showToast('Error', e?.message || 'Failed to save study', 'error') }
         finally { saving.value = false }
@@ -6825,7 +6867,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (payload.partner_found) payload.partner_needs = []
           else payload.partner_name = ''
           if (innovationProjectModal.mode === 'add') { innovationProjects.value.unshift(await API.createInnovationProject(payload)); showToast('Success', 'Innovation project created', 'success') }
-          else { const result = await API.updateInnovationProject(payload.id, payload); const idx = innovationProjects.value.findIndex(p => p.id === result.id); if (idx !== -1) innovationProjects.value[idx] = result; showToast('Success', 'Innovation project updated', 'success') }
+          else { const result = await API.updateInnovationProject(payload.id, payload); const idx = innovationProjects.value.findIndex(p => p.id === result.id); if (idx !== -1) innovationProjects.value[idx] = result; if (String(selectedProject.value?.id) === String(result.id)) selectedProject.value = {...selectedProject.value,...result}; showToast('Success', 'Innovation project updated', 'success') }
           _captureProjectBaseline(); innovationProjectModal.show = false; await loadInnovationProjects(); loadAnalyticsSummary(); loadPartnerCollaborations()
         } catch (e) { showToast('Error', e?.message || 'Failed to save project', 'error') }
         finally { saving.value = false }
@@ -6956,7 +6998,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
@@ -7350,6 +7392,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return true
       }
 
+      const newsPublicEligibility = record => window.NeumPublishing10.eligibility(record)
+      const newsPublicationPreview = computed(() => ({...newsPayload(true), author:(allStaffLookup?.value?.[newsModal.form.author_id] || medicalStaff.value.find(x=>String(x.id)===String(newsModal.form.author_id)))?.full_name || (newsModal.form.author_id ? 'Not available in your current staff data' : 'Not set'), research_line:(researchLines.value.find(x=>String(x.id)===String(newsModal.form.research_line_id)))?.name || (newsModal.form.research_line_id ? 'Not available in your current programme data' : 'Not set')}))
+
       const newsPayload = (publishNow=false) => {
         const _t = (v) => (v == null ? '' : String(v)).trim()
         const status = publishNow ? 'published' : (newsModal.form.status || 'draft')
@@ -7453,19 +7498,20 @@ document.addEventListener('DOMContentLoaded', () => {
           const res = await API.request(`/api/news/${post.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ is_featured: featuring })
+            body: { is_featured: featuring }
           })
           if (res.error) {
             // Max 5 reached
             showToast('Limit reached', res.message || 'Maximum 5 featured posts allowed', 'warning')
             return
           }
-          // Update local state
+          // The server accepted the feature preference; this is not a website delivery receipt.
+          post.is_featured = featuring
           const idx = newsPosts.value.findIndex(p => p.id === post.id)
           if (idx !== -1) newsPosts.value[idx] = { ...newsPosts.value[idx], is_featured: featuring }
-          showToast('Updated', featuring ? 'Record featured on homepage' : 'Record removed from homepage', 'success')
+          showToast('Updated', featuring ? 'Feature preference saved. Public-feed eligibility still applies.' : 'Feature preference removed.', 'success')
         } catch (e) {
-          showToast('Error', 'Failed to update feature status', 'error')
+          showToast('Error', e.message || 'Failed to update feature status', 'error')
         }
       }
 
@@ -7505,8 +7551,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextPublic = !post.is_public
         const label = nextPublic ? 'Make Public?' : 'Make Internal?'
         const message = nextPublic
-          ? 'This record will be reflected in the public view on the web.'
-          : 'This record will no longer be reflected in the public view on the web.'
+          ? 'Public visibility allows this record into the public feed only when published and unexpired. Website display is not verified here.'
+          : 'This record will be excluded from the public feed. Previously cached website pages may take time to update.'
         showConfirmation({
           title: label,
           message,
@@ -7524,7 +7570,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return {
         newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews, normaliseNewsKeywords, newsKeywordBackendCapable,
-        newsWordCount, newsWordLimit, activeNewsMenu,
+        newsWordCount, newsWordLimit, activeNewsMenu, newsPublicEligibility, newsPublicationPreview,
         loadNews, preloadNews, showAddNewsModal, chooseNewsType, editNews, saveNews,
         publishNews, archiveNews, deleteNews, toggleNewsFeature, togglePublic,
         formatAuthorName, getLineName, autoExpiry
@@ -8358,7 +8404,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const analyticsOps = useAnalytics({ showToast, hasPermission, getResearch: () => researchOps })
         const { loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations } = analyticsOps
 
-        const researchOps = useResearch({ showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
+        const researchOps = useResearch({ hasPermission, currentUser, showToast, showConfirmation, paginate, totalPages, resetPage, applySort, clearAll, medicalStaff, loadAnalyticsSummary, loadResearchLinesPerformance, loadPartnerCollaborations })
         // V31 — programme-level Research navigation. Kept outside useResearch so
         // the existing CRUD/data composable remains untouched.
         const lineTab = ref('overview')
@@ -16193,7 +16239,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if(fu.action==='connections') text=related.length ? `${p.title} has ${related.length} connected Research Library record${related.length===1?'':'s'} through ${line?'its research line':''}${line&&author?' and ':''}${author?'its contributor':''}.` : `No connected Research Library records are currently linked through the same research line or contributor.`
           else if(fu.action==='line') text=line ? `${p.title} is connected to ${line}.` : `No research line is recorded for ${p.title}.`
           else if(fu.action==='author') text=author ? `${author} is the linked internal contributor for ${p.title}.` : `No internal contributor is linked to ${p.title}.`
-          else if(fu.action==='visibility') text=p.is_public ? `${p.title} is Public. It is reflected in the public view on the web.` : `${p.title} is Internal. It is not reflected in the public web view.`
+          else if(fu.action==='visibility') text=`${p.title}: ${newsOps.newsPublicEligibility(p).label}. ${newsOps.newsPublicEligibility(p).reason}`
           else text=`${p.title} is a ${p.post_type} in the Research Library.`
           const visual = fu.action==='connections' && related.length ? { type:'reslist', items:related.slice(0,6).map(x=>({ title:x.title || 'Untitled record', meta:`${_toTitle(x.post_type || 'record')}${newsOps.getLineName(x.research_line_id) ? ' · ' + newsOps.getLineName(x.research_line_id) : ''}`, badge:x.is_public ? 'Public' : 'Internal', tone:x.is_public ? 'ok' : 'default' })) } : null
           return { text, visual, chips:[], actions:[], sources:['Research Library'], followups:[], confidence:'high' }
@@ -18429,6 +18475,7 @@ document.addEventListener('DOMContentLoaded', () => {
           newsPosts, newsLoading, newsLoaded, newsModal, newsFilters, filteredNews,
           newsWordCount, newsWordLimit,
           loadNews, showAddNewsModal, chooseNewsType, editNews, saveNews, saveNewsEditor, closeNewsEditorToReader,
+          newsPublicEligibility:newsOps.newsPublicEligibility, newsPublicationPreview:newsOps.newsPublicationPreview,
           publishNews, archiveNews, deleteNews, toggleNewsFeature, toggleNewsPublic,
           newsAuthorName, newsLineName,
           newsLibraryHeaderOpen, newsLibraryFiltersOpen, newsReturnFocusId,
