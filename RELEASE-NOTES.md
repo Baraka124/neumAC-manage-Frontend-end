@@ -144,3 +144,22 @@ News feature updates use a partial schema without injecting creation defaults. F
 Public visibility is distinguished from public-feed eligibility. Grounded and publishing messages no longer assert website delivery based solely on the public flag. The publication review shows proposed eligibility, expiry, content fields and image URLs. Metadata exposed by the public API is described separately. This is a preview of feed content, not a rendering or delivery receipt from neumact.org. Existing website refresh/caching behaviour has not been inspected or changed.
 
 Validation: actual backend handler tests with a mock database cover public staff/publication exclusion, feature creation and partial update, limit rejection and database errors. Vue browser tests cover review eligibility, expired records, content preview, mobile controls and feature-only writes. Research and Grounded regression suites passed. Actual backend startup/integration checks preserve administrator password protections and release matching. Release verification covers hashes, JavaScript syntax, modules, assets and archive integrity. No live production reads or writes, deployment or repository push occurred.
+
+
+Sign-in composition update — 2026-10-05
+
+Built from frontend Milestone 10 d13f4f8; compatible with backend 5.3-production.3 (57b4355). The full frontend retains Milestones 1–10. This update changes only the entry markup/styles and adds a local decorative respiratory SVG. Compact masthead, deep teal identity panel, framed access card, responsive spacing and compact laptop layout. Auth handlers, permissions, administrator password protections, API calls and authenticated navigation are unchanged.
+
+Install all files from this frontend archive and refresh the browser. The entry stylesheet has a new cache key. Backend 5.3-production.3 is unchanged and needs no reinstall if already running. No new migration. Rollback: restore the Milestone 10 frontend.
+
+Validation: mocked browser checks at widths 1440, 1366, 390 and 320; footer fits 1366×768; password reveal, validation, trust preference, public highlights, recovery, saved-session and unavailable states, centered loading and invitation rendering. Authenticated header/dashboard layout checks passed. No missing local assets or browser exceptions. Release checksum, JavaScript syntax and matched package verification passed. Real production login and deployment were not performed.
+
+
+Private entrance correction — 2026-10-05
+The public sign-in page now shows institutional identity and access controls only. Removed the module catalogue, workspace overview and expandable editorial highlights from entry markup. Retains the respiratory visual. Supersedes the earlier entry-composition archive. Backend and authentication behaviour unchanged. Browser checks cover absence of the removed sections and the existing sign-in states at desktop/mobile widths.
+
+
+Tower entrance — 2026-10-05
+Built from ba83af1 (latest private-entry correction), retaining Milestones 1–10. Implements the approved Tower of Hercules concept with a local AI-generated decorative coastal asset, a neumAC wordmark using the supplied blue-to-teal palette, and the single-line health-area affiliation. Public entry contains no module catalogue or editorial highlights. The sign-in form sits directly on a light surface; shared-device guidance is inside Browser preferences. Existing handlers, auth policy, administrator password protections and authenticated UI are unchanged. Mobile prioritises the form and institutional identity.
+Install all frontend files and refresh. The entry CSS uses a new cache key. Backend remains 5.3-production.3; no backend reinstall or new migration is required if that version is already installed. Rollback by restoring the private-entry frontend.
+Validation: mocked browser tests passed at widths 1440, 1366, 390, 320; 1366×768 footer fit; validation, password visibility, browser preferences, saved-session/unavailable/loading states, recovery and invitation rendering, authenticated dashboard/header checks. No missing assets or browser exceptions. Release/package verification passed. No live login, deployment or push performed.

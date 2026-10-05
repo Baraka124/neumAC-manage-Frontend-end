@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="access.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
-<link rel="stylesheet" href="entry-phase3.css?v=5.3-production.2-entry3">
+<link rel="stylesheet" href="entry-phase3.css?v=tower-entry-5.3-production.2-entry3">
 <link rel="stylesheet" href="dashboard-phase4.css?v=5.3-production.2-dashboard4">
 <link rel="stylesheet" href="units-milestone6.css?v=5.3-production.2-units6">
 <link rel="stylesheet" href="workflow7.css?v=5.3-production.2-workflow7">
@@ -1038,7 +1038,7 @@
 
     <!-- V46 · Separate editorial and access panels; V44 session protection retained. -->
     <main v-if="!currentUser || entry.state !== 'ready'" class="entry44 entry46 entry3" :class="{ 'entry46--departing': entry.state === 'entering', 'entry3--transition': ['checking','opening','entering'].includes(entry.state) }">
-        <header class="entry3-masthead"><a href="https://neumact.org" target="_blank" rel="noopener noreferrer" aria-label="neumact public website (opens in a new tab)"><img src="neumact-logo.png" alt="neumact"></a><div class="entry3-institution">Pneumology<span>Área Sanitaria de A Coruña y Cee</span></div><span class="entry3-workspace">neum<span>Desk</span></span></header>
+        <header class="entry3-masthead"><a href="https://neumact.org" target="_blank" rel="noopener noreferrer" aria-label="neumAC public website (opens in a new tab)"><img src="neumac-entry.svg" alt="neumAC"></a><div class="entry3-institution">Área Sanitaria de A Coruña y Cee</div></header>
         <section class="entry44-access" aria-labelledby="entry-title">
 
             <div class="entry44-form-area">
@@ -1082,9 +1082,7 @@
                 </template>
                 <template v-else>
                     <div class="entry46-auth-focus">
-                        <span class="entry44-kicker">Department access</span>
-                        <h2 id="entry-title">Welcome back.</h2>
-                        <p class="entry44-subtitle">Sign in to your neumDesk workspace.</p>
+                        <h2 id="entry-title">Sign in</h2>
                         <div v-if="entry.notice" class="entry46-notice" role="status">{{ entry.notice }}</div>
                         <div v-if="entryLoginIssue" class="entry46-auth-issue" :class="'entry46-auth-issue--' + entryLoginIssue.kind" role="alert">
                             <span class="entry46-auth-issue-icon" aria-hidden="true">
@@ -1114,20 +1112,20 @@
                             </div>
                             <button type="submit" class="entry44-submit" :disabled="entryBusy">
                                 <span v-if="loginLoading" class="entry46-submit-spinner" aria-hidden="true"></span>
-                                <span>{{ loginLoading ? 'Verifying access…' : 'Sign in to neumDesk' }}</span>
+                                <span>{{ loginLoading ? 'Verifying access…' : 'Sign in' }}</span>
                                 <span v-if="!loginLoading" aria-hidden="true">→</span>
                             </button>
                             <div class="entry44-form-meta">
                                 <label><input type="checkbox" v-model="loginForm.remember_me"> Remember my email</label>
                                 <button type="button" @click="handleForgotPassword()">Access help</button>
                             </div>
-                            <details class="entry3-options"><summary>Sign-in preferences</summary><label class="entry46-trust-option" :class="{ 'is-selected': loginForm.keep_signed_in }">
+                            <details class="entry3-options"><summary>Browser preferences</summary><label class="entry46-trust-option" :class="{ 'is-selected': loginForm.keep_signed_in }">
                                 <span class="entry46-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.7 2.9 8 7 10 4.1-2 7-5.3 7-10V6l-7-3Zm-2.5 9 1.7 1.7 3.8-4"/></svg></span>
                                 <span class="entry46-trust-copy"><strong>Trust this browser for up to 12 hours</strong><small>Use only on your personal device. Avoid shared clinical computers.</small></span>
                                 <input class="entry46-trust-check" type="checkbox" v-model="loginForm.keep_signed_in" aria-label="Trust this browser for up to 12 hours">
                             </label>
 
-                            </details><p class="entry3-device-note">Using a shared computer? Leave browser trust off and sign out when you finish.</p>
+                            <p class="entry3-device-note">Using a shared computer? Leave browser trust off and sign out when you finish.</p></details>
                         </form>
                     </div>
                 </template>
@@ -1135,23 +1133,8 @@
 
         </section>
         <section class="entry3-introduction" aria-labelledby="entry3-intro-title">
-          <div class="entry3-intro-copy"><p class="entry3-eyebrow">Clinical practice · Research · Collaboration</p>
-          <h1 id="entry3-intro-title">The department,<br><em>connected.</em></h1>
-          <p class="entry3-intro-text">One workspace for the people, daily work and research of Pneumology.</p>
-          <div class="entry3-domains"><div><span>People &amp; teams</span><p>Staff, clinical units and resident training.</p></div><div><span>Daily coordination</span><p>On-call schedules, rotations and leave.</p></div><div><span>Research &amp; knowledge</span><p>Studies, innovation and shared publications.</p></div></div>
-          <details class="entry3-perspectives"><summary>From neumact <span aria-hidden="true">↗</span></summary>            <div class="entry46-story" id="entry46-story" role="region" aria-label="Selected highlight">
-                <div class="entry46-overline"><span class="entry46-dot" aria-hidden="true"></span><span>At neumact</span><span class="entry46-rule" aria-hidden="true"></span><span>{{ entry46Story.category }}</span></div>
-                <h1>{{ entry46Story.title }}</h1>
-                <p class="entry46-summary">{{ entry46Story.summary }}</p>
-                <button v-if="entry46Story.detail" class="entry46-read" type="button" @click="entry46Expanded=!entry46Expanded" :aria-expanded="entry46Expanded" aria-controls="entry46-detail">{{ entry46Expanded ? 'Close perspective' : 'Read the perspective' }} <span aria-hidden="true">{{ entry46Expanded ? '−' : '↗' }}</span></button>
-                <p v-if="entry46Expanded" id="entry46-detail" class="entry46-detail">{{ entry46Story.detail }}</p>
-                <a v-if="entry46Story.linkUrl" class="entry46-read entry46-link" :href="entry46Story.linkUrl" target="_blank" rel="noopener noreferrer">{{ entry46Story.linkLabel }} <span aria-hidden="true">↗</span><span class="entry46-sr">(opens a new tab)</span></a>
-            </div>
-            <div class="entry46-bottom">
-                <div class="entry46-selection-label"><span>Explore perspectives</span><span>{{ String(entry46Stories.findIndex(s=>s.id===entry46Story.id)+1).padStart(2,'0') }} / {{ String(entry46Stories.length).padStart(2,'0') }}</span></div>
-                <nav class="entry46-selector" aria-label="Choose a highlight"><button v-for="(story,i) in entry46Stories" :key="story.id" type="button" @click="entry46Select(story.id)" :aria-pressed="entry46Story.id===story.id" aria-controls="entry46-story"><span class="entry46-number">{{ String(i+1).padStart(2,'0') }}</span><span>{{ story.navTitle }}</span></button></nav>
-</div></details></div>
-          <div class="entry3-place">A Coruña, Galicia<span>Department workspace</span></div>
+          <img class="entry3-tower" src="entry-tower.png" alt="" aria-hidden="true" fetchpriority="high">
+          <div class="entry3-intro-copy"><h1 id="entry3-intro-title">neum<span>Desk</span></h1></div>
         </section>
         <footer class="entry3-footer"><span>For authorised departmental users. Access activity may be audited.</span><a href="mailto:baraka@enkiama.com">Contact support ↗</a></footer>
     </main>
