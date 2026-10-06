@@ -23,13 +23,14 @@
 <link rel="stylesheet" href="access.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
-<link rel="stylesheet" href="entry-phase3.css?v=tower-masthead-5.3-production.2-entry3">
+<link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
 <link rel="stylesheet" href="dashboard-phase4.css?v=5.3-production.2-dashboard4">
 <link rel="stylesheet" href="units-milestone6.css?v=5.3-production.2-units6">
 <link rel="stylesheet" href="workflow7.css?v=5.3-production.2-workflow7">
 <link rel="stylesheet" href="grounded8.css?v=5.3-production.2-grounded8">
 <link rel="stylesheet" href="research9.css?v=5.3-production.2-research9">
 <link rel="stylesheet" href="publishing10.css?v=5.3-production.3-publishing10">
+<link rel="stylesheet" href="module-headers.css?v=20261006-1">
 </head>
 <body>
 <div id="app" v-cloak>
@@ -1133,7 +1134,7 @@
 
         </section>
         <section class="entry3-introduction" aria-labelledby="entry3-intro-title">
-          <img class="entry3-tower" src="entry-tower.png" alt="" aria-hidden="true" fetchpriority="high">
+          <img class="entry3-tower" src="entry-tower-wide.png" alt="" aria-hidden="true" fetchpriority="high">
           <div class="entry3-intro-copy"><h1 id="entry3-intro-title">neum<span>Desk</span></h1></div>
         </section>
         <footer class="entry3-footer"><span>For authorised departmental users. Access activity may be audited.</span><a href="mailto:baraka@enkiama.com">Contact support ↗</a></footer>
@@ -2126,7 +2127,7 @@
                     </div>
 
                     <!-- Contextual hero: global navbar already owns the module name. -->
-                    <section class="staff46-hero nd-hero" aria-labelledby="staff46-hero-title">
+                    <section class="staff46-hero nd-hero module-header" aria-labelledby="staff46-hero-title">
                         <div class="staff46-hero-copy nd-hero__copy">
                             <span class="staff46-eyebrow nd-eyebrow">WORKFORCE DIRECTORY</span>
                             <h2 id="staff46-hero-title">{{ deptPulseStats.active }} active staff</h2>
@@ -2337,6 +2338,7 @@
 
                 <!-- ============ ON-CALL SCHEDULE VIEW (ENHANCED) ============ -->
                 <div v-if="currentView === 'oncall_schedule'">
+                    <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">DUTY COORDINATION</span><h2>Plan the on-call service</h2><p>Schedules, duty logs and monthly review.</p></div></header>
 
                     <!-- ── Tab bar ── -->
                     <div class="rhub-tabs nd-l344 nd-v322" >
@@ -2985,14 +2987,8 @@
 
                 <!-- ============ RESIDENT ROTATIONS VIEW (ENHANCED) ============ -->
                 <div v-if="currentView === 'resident_rotations'">
-                    <!-- Breadcrumb -->
-                    <nav class="breadcrumb">
-                        <span class="breadcrumb-link" @click="switchView('dashboard')">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg> Dashboard
-                        </span>
-                        <span class="breadcrumb-sep">/</span>
-                        <span class="breadcrumb-item active">Resident Rotations</span>
-                    </nav>
+                    <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">TRAINING & PLACEMENTS</span><h2>Coordinate resident rotations</h2><p>Placements, timelines and rotation records to review.</p></div></header>
+
 
                     <!-- ── Phase 5.1.2 · Rotation data-quality review ── -->
                     <section v-if="rotationHasDataQualityIssues" class="rdq-panel" aria-labelledby="rdq-title">
@@ -3540,7 +3536,7 @@
                 </div><!-- /resident_rotations -->
                 <!-- ============ CLINICAL UNITS · V46.7 VISUAL + ADAPTIVE INTELLIGENCE ============ -->
                 <div v-if="currentView === 'training_units'" class="cu46-page units6">
-                    <section class="cu46-hero cu465-command-hero">
+                    <section class="cu46-hero cu465-command-hero module-header">
                         <div class="cu465-command-main">
                             <div class="cu46-eyebrow"><span></span>{{ trainingUnitView==='timeline' ? 'Resident rotations' : trainingUnitView==='weekly' ? 'Unit staff' : 'Clinical structure' }}</div>
                             <div class="cu465-title-row cu4612-title-row">
@@ -3833,7 +3829,7 @@
                 <!-- ============ STAFF ABSENCE VIEW ============ -->
                 <div v-if="currentView === 'staff_absence'">
                     <!-- V46.14 · temporal operational shell: today ≠ upcoming ≠ coverage -->
-                    <section class="leave14-hero" aria-labelledby="leave14-headline">
+                    <section class="leave14-hero module-header" aria-labelledby="leave14-headline">
                         <div class="leave14-hero-copy">
                             <div class="leave14-kicker">WORKFORCE AVAILABILITY</div>
                             <h2 id="leave14-headline">{{ absencePageContext.headline }}</h2>
@@ -4435,6 +4431,7 @@
 
                 <!-- ============ COMMUNICATIONS VIEW ============ -->
                 <div v-if="currentView === 'communications'" class="ops-view">
+                    <header class="module-header module-header--compact"><div class="module-header-copy"><span class="module-header-kicker">DEPARTMENT COMMUNICATION</span><h2>Keep the team informed</h2><p>Announcements, departmental updates and operational context.</p></div></header>
 
                     <!-- ══ TWO-COLUMN LAYOUT ════════════════════════════════════════
                          Left: pulse tiles + feed  |  Right: compose + broadcasts
@@ -4635,7 +4632,7 @@
                 <div v-if="currentView === 'system_settings'">
 
                     <div class="admin-studio">
-                    <header class="admin-masthead nd-hero"><div class="nd-hero__copy"><p class="admin-kicker">WORKSPACE ADMINISTRATION</p><h1>Settings</h1><p>Manage the people and structure of your department.</p></div><div class="admin-header-note">Neumact<span>Department workspace</span></div></header>
+                    <header class="admin-masthead nd-hero module-header"><div class="nd-hero__copy"><p class="admin-kicker">WORKSPACE ADMINISTRATION</p><h1>Settings</h1><p>Manage the people and structure of your department.</p></div><div class="admin-header-note">Neumact<span>Department workspace</span></div></header>
                     <nav class="admin-navigation" aria-label="Settings sections"><button v-for="section in [{id:'people',name:'People & access'},{id:'department',name:'Department'},{id:'import',name:'Schedule import'},{id:'preferences',name:'Preferences'}]" :key="section.id" :aria-pressed="adminSection===section.id" :class="{active:adminSection===section.id}" @click="adminSection=section.id">{{section.name}}</button></nav>
                     <section v-show="adminSection==='people'" aria-label="People and access"><access-center @test-user="startUserTest" :active="adminSection==='people'&&currentView==='system_settings'" :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center></section>
                     <section v-show="adminSection==='import'" class="admin-config" aria-label="Schedule import"><div class="admin-section-intro"><p class="admin-kicker">SCHEDULE IMPORT</p><h2>Schedule import</h2><p>Match the spreadsheet to your team and inspect the proposed changes.</p></div>
@@ -5070,7 +5067,7 @@
 
                     <!-- ══ V31 · RESEARCH PORTFOLIO / PROGRAMME VIEW ═════════════════════ -->
                     <div v-if="researchHubPage === 'overview'" class="rv31-page rv31-overview">
-                        <header class="rv31-masthead">
+                        <header class="rv31-masthead module-header">
                             <div class="rv31-masthead-copy">
                                 <div class="rv31-eyebrow">PNEUMOLOGY · RESEARCH PORTFOLIO</div>
                                 <h1>Research</h1>
@@ -5781,7 +5778,7 @@
                      RESEARCH LIBRARY — V23 institutional editorial system
                 ============================================================ -->
                 <div v-if="currentView === 'news'" class="news-view news-studio news-v23 nd-l183">
-                    <header class="news-v25-masthead" :class="{'is-collapsed':!newsLibraryHeaderOpen}">
+                    <header class="news-v25-masthead module-header" :class="{'is-collapsed':!newsLibraryHeaderOpen}">
                         <div class="news-v25-mast-main">
                             <div class="news-v25-ident">
                                 <div class="news-editorial-kicker">neumAC · Research &amp; Innovation</div>

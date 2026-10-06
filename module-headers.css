@@ -1,0 +1,46 @@
+/* Module introductions inherit Overview's visual language; controls and data stay owned by each module. */
+html body #app .content-area .module-header {
+ background:var(--shell-navy,#102d40)!important;color:#f3f8fa!important;
+ border:0!important;border-radius:16px!important;box-shadow:none!important;
+ padding:28px 30px 22px!important;margin-bottom:20px!important;
+ font-family:var(--shell-font,'DM Sans',sans-serif)!important;
+ gap:24px!important;min-width:0;overflow:visible;
+}
+html body #app .content-area .module-header::before,
+html body #app .content-area .module-header::after{display:none!important}
+html body #app .content-area .module-header :is(h1,h2){
+ font-family:var(--shell-font,'DM Sans',sans-serif)!important;font-size:clamp(24px,2.2vw,32px)!important;
+ font-weight:600!important;line-height:1.2!important;letter-spacing:-.035em!important;
+ color:#f3f8fa!important;margin:8px 0 0!important;text-wrap:balance;
+}
+html body #app .content-area .module-header :is(.staff46-eyebrow,.cu46-eyebrow,.leave14-kicker,.admin-kicker,.rv31-eyebrow,.news-editorial-kicker,.module-header-kicker){
+ color:#a8c9cf!important;font:600 11px/1.5 var(--shell-font,'DM Sans',sans-serif)!important;
+ letter-spacing:.1em!important;text-transform:uppercase!important;margin:0!important;
+}
+html body #app .content-area .module-header p:not(.admin-kicker){color:#c2d3db!important;font-size:13px!important;line-height:1.6!important;margin:9px 0 0!important;max-width:64ch}
+html body #app .content-area .module-header :is(.staff46-hero-actions,.cu46-hero-actions,.leave14-hero-actions,.rv31-masthead-actions,.news-v25-mast-actions){display:flex!important;gap:8px!important;flex-wrap:wrap!important;align-items:center!important}
+html body #app .content-area .module-header button{font-family:inherit!important;min-height:38px;border-radius:7px!important}
+html body #app .content-area .module-header :is(.rv31-text-action,.news-v25-collapse,.cu46-action--quiet){color:#e4edf2!important;background:rgba(255,255,255,.06)!important;border:1px solid #567080!important}
+html body #app .content-area .module-header :is(.rv31-text-action--primary,.news-v23-new,.leave14-primary,.cu46-action--primary,.staff46-btn--primary){background:#087c86!important;color:#fff!important;border:1px solid #3ba1a9!important}
+html body #app .content-area .module-header button:focus-visible{outline:2px solid #97e1e2!important;outline-offset:3px!important}
+html body #app .content-area .module-header :is(.news-v25-record-count,.news-v25-record-count strong,.news-v25-index,.news-v25-index strong,.admin-header-note){color:#d5e5ec!important}
+html body #app .content-area .module-header .news-v25-index{border-color:#365364!important}
+html body #app .content-area .module-header .news-v25-index-public{color:#97e1e2!important}
+html body #app .content-area .module-header.is-collapsed{padding:16px 30px!important}
+html body #app .content-area .module-header.is-collapsed h2{font-size:24px!important;margin:0!important}
+@media(max-width:900px){
+ html body #app .content-area .module-header :is(.news-v25-mast-main,.rv31-masthead-copy,.cu465-title-row){min-width:0!important}
+ html body #app .content-area .module-header .news-v25-mast-main{flex-wrap:wrap!important;gap:18px!important}
+}
+@media(max-width:640px){
+ html body #app .content-area .module-header{padding:21px 18px!important;gap:18px!important;flex-direction:column!important;align-items:stretch!important}
+ html body #app .content-area .module-header.is-collapsed{padding:16px 18px!important}
+ html body #app .content-area .module-header :is(.staff46-hero-actions,.cu46-hero-actions,.leave14-hero-actions,.rv31-masthead-actions,.news-v25-mast-actions){justify-content:flex-start!important}
+ html body #app .content-area .module-header .news-v25-index{flex-wrap:wrap!important}
+}
+html body #app .content-area .module-header :is(.news-v25-index-label,.news-v25-record-count span,.admin-header-note span){color:#b8cdd6!important}
+/* Preserve readable navigation immediately below the research introduction. */
+@media(max-width:640px){
+ html body #app .rv31-overview>.rv31-nav{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;gap:20px!important}
+ html body #app .rv31-overview>.rv31-nav .rv31-nav-item{flex:0 0 auto!important;white-space:nowrap!important}
+}

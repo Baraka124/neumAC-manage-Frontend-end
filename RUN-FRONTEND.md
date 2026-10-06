@@ -1,3 +1,13 @@
+# Module headers — 6 October 2026
+
+Frontend-only update based on commit 5d415e3, preserving the latest tower sign-in. Uses the existing 5.3-production.3 backend; no backend deployment or migration is required for this update. Upload the complete frontend archive to the existing frontend root, or apply the patch only to the entry-refinement build from 6 October.
+
+Overview-based navy headers now cover Staff, Clinical Units, Leave, On-call, Rotations, Ops Room, Settings, Research overview and Research Library. Existing actions, permissions, summaries and Library collapse behavior remain. Research detail pages retain their contextual headers. Mobile Research tabs scroll without overlapping. Global navbar and authentication are unchanged.
+
+Verified nine entry views at 1366px and 390px with mocked data; no Vue render errors or missing assets. Checked Library collapse and clinician Staff action restrictions. Live production data and deployment have not been tested.
+
+---
+
 # Frontend — 5.3-production.2
 
 Apply the backend migration and deploy the matched backend first, then upload ALL files in this frontend archive to your frontend project root. No build step is required. index.html is at the archive root. Keep the backend and frontend paired.
@@ -146,3 +156,12 @@ Validation: mocked browser tests passed at widths 1440, 1366, 390, 320; 1366×76
 
 Masthead spacing — 2026-10-05
 Desktop logo-to-divider gap and divider-to-affiliation padding reduced from 28px to 20px. Mobile spacing and logo size unchanged. Built from a620a9e; retains the Tower entrance and all prior functionality. Install the full frontend, or the small patch over the Tower entry release only. Backend 5.3-production.3 unchanged. Browser entry checks and release verification passed. Not deployed.
+
+
+Compact masthead correction: desktop flex gap 8px, affiliation padding 12px. Small inherent SVG whitespace adds about 6px to the visible logo gap. Logo size and mobile rules unchanged. Supersedes previous 20px spacing patch. Apply over Tower entry or its masthead patch. Backend unchanged.
+
+
+Entry framing refinement — 2026-10-06
+Baseline e3671e6. Replaces the portrait decorative tower asset with a locally packaged AI-generated landscape variant to preserve lantern and base at wide desktop aspect ratios. Adds a subtle teal overlay, reduces wordmark size and improves its contrast, tightens form spacing, and styles browser autofill consistently with normal inputs while preserving focus outlines. Existing compact masthead spacing is retained. No authentication handlers, backend, or authenticated UI changed.
+The small patch applies over any Tower entry release in this thread. Replace all included files and refresh; a new stylesheet query and new asset filename avoid reusing the old styles/image. Full archive also available. Backend 5.3-production.3 unchanged.
+Mocked browser checks passed at 1920, 2560, 1440, 1366, 390 and 320px widths; screenshots inspected for wide-screen framing. Existing validation, reveal, preferences, session, recovery/invitation and dashboard-layout checks passed. CSS autofill treatment added; real password-manager autofill and production login were not exercised. Local masthead values confirmed; installed production stylesheet not inspected. No deployment or push.

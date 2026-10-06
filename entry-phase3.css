@@ -1,9 +1,9 @@
 /* Phase 3: institutional entry. Auth handlers and access policy remain unchanged. */
 html body #app main.entry44.entry46.entry3{display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(400px,.85fr)!important;grid-template-rows:auto 1fr auto;min-height:100dvh!important;background:#fcfcfa!important;color:var(--shell-ink);font-family:var(--shell-font);padding:0!important;gap:0!important;isolation:isolate}
-html body #app .entry3-masthead{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:20px;min-height:84px;padding:16px clamp(28px,4vw,72px);border-bottom:1px solid #dce4e5;background:#fcfcfa;box-sizing:border-box}
+html body #app .entry3-masthead{grid-column:1/-1;grid-row:1;display:flex;align-items:center;gap:8px;min-height:84px;padding:16px clamp(28px,4vw,72px);border-bottom:1px solid #dce4e5;background:#fcfcfa;box-sizing:border-box}
 html body #app .entry3-masthead a{display:flex;flex-shrink:0}
 html body #app .entry3-masthead img{width:142px;height:auto;display:block}
-html body #app .entry3-institution{font:600 13px/1.55 var(--shell-font);color:#294451;padding-left:20px;border-left:1px solid #cbd8dc}
+html body #app .entry3-institution{font:600 13px/1.55 var(--shell-font);color:#294451;padding-left:12px;border-left:1px solid #cbd8dc}
 html body #app .entry3-institution span{display:block;font-size:12px;font-weight:400;color:#59707c}
 html body #app .entry3-workspace{margin-left:auto;font:650 25px/1 var(--shell-font);letter-spacing:-1px;color:#173b4d}
 html body #app .entry3-workspace>span{color:#087781}
@@ -82,19 +82,19 @@ html body #app .entry3-masthead{min-height:80px;padding-block:14px}
 html body #app .entry3-masthead img{width:156px;height:auto}
 html body #app .entry3-institution{font-size:14px;font-weight:400;line-height:1.5;padding-block:8px}
 html body #app .entry3-introduction{position:relative;overflow:hidden;padding:clamp(36px,6vh,64px) clamp(28px,4vw,72px);background:#08435a;min-height:580px}
-html body #app .entry3-tower{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 68%}
+html body #app .entry3-tower{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:70% center}
 html body #app .entry3-intro-copy{margin:0;position:relative;z-index:1}
-html body #app .entry3 h1#entry3-intro-title{font:600 clamp(40px,4.2vw,62px)/1.1 var(--shell-font)!important;letter-spacing:-2px!important;margin:0!important;color:#f5faf9!important}
-html body #app .entry3 h1#entry3-intro-title span{color:#a0d6d5}
+html body #app .entry3 h1#entry3-intro-title{font:600 clamp(38px,3.4vw,52px)/1.1 var(--shell-font)!important;letter-spacing:-2px!important;margin:0!important;color:#f5faf9!important}
+html body #app .entry3 h1#entry3-intro-title span{color:#c0e3df}
 html body #app .entry3 .entry44-access{background:#fafaf7!important;padding:48px clamp(32px,5vw,80px)!important}
 html body #app .entry3 .entry44-form-area{max-width:400px;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
-html body #app .entry3 .entry44-access h2#entry-title{font-size:36px!important;letter-spacing:-1px!important;margin:0 0 32px!important}
+html body #app .entry3 .entry44-access h2#entry-title{font-size:36px!important;letter-spacing:-1px!important;margin:0 0 24px!important}
 html body #app .entry3 .entry44-form{gap:20px!important}
 html body #app .entry3 .entry44-field label,html body #app .entry3 .ac-recovery label{font-size:14px!important;font-weight:500!important}
 html body #app .entry3 .entry44-submit{background:#104b5a!important;border-color:#104b5a!important;font-size:15px!important;border-radius:4px!important}
 html body #app .entry3 .entry44-form-meta{font-size:13px!important}
 html body #app .entry3 .entry44-form-meta button{font-size:13px!important;text-decoration:none}
-html body #app .entry3-options{padding-top:20px}
+html body #app .entry3-options{padding-top:14px}
 html body #app .entry3-options>summary{font-size:13px;min-height:32px}
 html body #app .entry3-device-note{margin-top:14px}
 html body #app .entry3-footer{background:#fafaf7}
@@ -102,3 +102,9 @@ html body #app .entry3-footer{background:#fafaf7}
 @media(max-width:820px){html body #app .entry3-masthead{gap:16px;flex-wrap:nowrap;padding:16px 24px}html body #app .entry3-masthead img{width:112px}html body #app .entry3-institution{display:block;font-size:11px;padding-left:16px;line-height:1.5}html body #app .entry3 .entry44-access{padding:40px 28px!important;background:#fafaf7!important}html body #app .entry3 .entry44-form-area{padding:0!important}html body #app .entry3 .entry44-access h2#entry-title{font-size:32px!important}html body #app .entry3-introduction{display:none}}
 @media(max-width:360px){html body #app .entry3-masthead{padding-inline:18px;gap:12px}html body #app .entry3-masthead img{width:98px}html body #app .entry3-institution{padding-left:12px}html body #app .entry3 .entry44-access{padding-inline:22px!important}}
 @media(max-width:820px){html body #app main.entry44.entry46.entry3{grid-template-columns:minmax(0,1fr)!important}html body #app .entry3 .entry44-access{width:100%;min-width:0;box-sizing:border-box}html body #app .entry3 .entry44-form-area{width:100%;min-width:0}}
+
+/* Wide landscape framing and consistent entry field states. */
+html body #app .entry3-introduction:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(5,39,51,.22),rgba(5,39,51,.08) 55%,rgba(5,39,51,.12));z-index:0}
+html body #app .entry3 .entry44-form{gap:16px!important}
+html body #app .entry3 .entry44-field input:-webkit-autofill,html body #app .entry3 .ac-recovery input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px #fff inset!important;box-shadow:0 0 0 1000px #fff inset!important;-webkit-text-fill-color:#173d50!important;caret-color:#173d50}
+html body #app .entry3 .entry44-field input:autofill,html body #app .entry3 .ac-recovery input:autofill{box-shadow:0 0 0 1000px #fff inset!important;color:#173d50!important;caret-color:#173d50}
