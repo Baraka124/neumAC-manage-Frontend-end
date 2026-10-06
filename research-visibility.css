@@ -1,0 +1,61 @@
+/* Research and Library visibility repair. Scoped to these workspaces only. */
+html body #app .research-hub :is(
+ .rv31-nav-item,.rv31-nav-item span,.rv31-section-head p,
+ .rv31-person-link--empty,.rv31-person-link b,.rv31-person-avatar,
+ .rv31-domain small,.rv31-domain-label,.rv31-programme-open,
+ .rv31-line-tabs button,.rv31-stream-metric small,.rv31-stream-arrow,
+ .rv31-governance-metrics span,.rv31-output-row span,.rv31-output-row small,.rv31-output-row i,
+ .rv32-pulse-row span,.rv32-pulse-row small,.rv36-filter-count,
+ .rv32-state-rail button,.rv32-state-rail button span,
+ .rv32-stage-rail button,.rv32-stage-rail button span,.rv32-stage-rail button strong,
+ .rv32-row-governance>span,.rv32-row-recruitment>span,.rv32-row-recruitment small,
+ .rv32-project-context>span,.rv32-row-arrow,.rv32-record-meta>span,
+ .rv32-not-recorded,.rv32-governance-intro small,.rv32-governance-item span,
+ .rv32-governance-item small,.rv32-project-step span,.rv32-section-heading>div>span,
+ .rv32-fact-grid span,.rv32-fact-grid small,.rv32-side-section>span,
+ .rv32-side-facts small,.rv32-line-link i,
+ .rv33-relationship-band span,.rv33-relationship-band small,.rv33-life-lane-head span,
+ .rv33-life-node span,.rv33-life-lane>p,.rv35-section-intro small,.rv35-section-intro>span
+){color:#4c6576!important}
+html body #app .research-hub .rv31-pulse-cell:not(.rv31-pulse-cell--lead) :is(.rv31-pulse-kicker,small){color:#4c6576!important}
+/* Dark panels need explicit light text; generic heading rules previously won. */
+html body #app .research-hub .rv32-innovation-need h2{color:#f3f8fa!important;line-height:1.45!important}
+html body #app .research-hub .rv32-study-command .rv32-not-recorded{color:#c2d7df!important}
+html body #app .research-hub :is(.rv31-nav-item.on,.rv31-line-tabs button.on,.rv32-state-rail button.on){color:#123d50!important}
+html body #app .research-hub :is(.rv31-search,.rv32-search) input::placeholder{color:#526b7c!important;opacity:1!important}
+html body #app .research-hub :is(.rv31-search,.rv32-search):focus-within{outline:2px solid #087c86;outline-offset:4px}
+html body #app .research-hub .module-header .rv31-text-action{padding:9px 12px!important}
+html body #app .research-hub .module-header .rv31-action-glyph{background:transparent!important;color:inherit!important;border-color:currentColor!important}
+html body #app .news-view :is(.news-v25-tabs button span,.knowledge-v23-visibility,.publication-v23-missing,.knowledge-v23-meta span){color:#4c6576!important}
+html body #app .news-view .publication-v23-year{color:#4c6576!important}
+html body #app .news-view .news-v25-search input::placeholder{color:#526b7c!important;opacity:1!important}
+html body #app .news-view .news-v25-search:focus-within{outline:2px solid #087c86!important;outline-offset:4px!important}
+html body #app :is(.research-hub,.news-view) :is(button,a):focus-visible{outline:2px solid #087c86!important;outline-offset:3px!important}
+html body #app :is(.research-hub,.news-view) .module-header button:focus-visible{outline-color:#97e1e2!important}
+html body #app .news-view .news-editorial-kicker{text-transform:none!important}
+/* Prevent flex shrinking from superimposing labels; keep all controls reachable. */
+html body #app .news-view :is(.news-v25-tabs,.news-v28-lensbar){gap:18px!important;overflow-x:auto!important;flex-wrap:nowrap!important;scrollbar-width:thin!important}
+html body #app .news-view :is(.news-v25-tabs,.news-v28-lensbar)>button{flex:0 0 auto!important;white-space:nowrap!important;min-height:42px!important}
+html body #app .news-view .news-v25-tabs{min-width:0!important;max-width:100%!important}
+html body #app .news-view .news-v28-lens-label{flex-shrink:0!important}
+@media(max-width:720px){
+ html body #app .news-view .news-v25-commandbar,
+ html body #app .news-view .news-v25-commandbar:has(.news-v27-command-context){display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:12px!important;padding:0 18px 14px!important}
+ html body #app .news-view .news-v25-tabs{grid-column:1/-1!important;width:100%!important}
+ html body #app .news-view .news-v25-search{display:flex!important;min-width:0!important;width:100%!important;grid-column:1!important}
+ html body #app .news-view .news-v25-search input{min-width:0!important;width:100%!important}
+ html body #app .news-view .news-v25-filter-toggle{grid-column:2!important}
+ html body #app .news-view .news-v25-shown{grid-column:1/-1!important}
+ html body #app .news-view .news-v25-collapse{width:auto!important;padding:0 10px!important;gap:7px!important}
+ html body #app .news-view .news-v37-collapse-label{display:inline!important}
+ html body #app .research-hub .rv31-search{width:100%!important;max-width:none!important}
+ html body #app .research-hub .rv31-section-head{flex-direction:column!important;align-items:stretch!important;gap:18px!important}
+ html body #app .research-hub .rv31-nav{overflow-x:auto!important;flex-wrap:nowrap!important;gap:20px!important}
+ html body #app .research-hub .rv31-nav-item{flex:0 0 auto!important}
+}
+html body #app .research-hub :is(
+ .rv32-project-stage-rail button span,.rv32-project-stage-rail button strong,
+ .rv33-intel-panel header span,.rv33-intel-panel header small,
+ .rv33-programme-table em,.rv33-programme-table i,.rv33-intel-list small,.rv33-intel-list i,
+ .rv31-governance-title small,.rv31-line-tabs button span,.rv31-workstream-head>div>span
+){color:#4c6576!important}

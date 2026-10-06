@@ -1,3 +1,13 @@
+# Research and Library visibility — 6 October 2026
+
+Frontend-only repair based on module-header commit 6678289. Includes all prior header and sign-in work. Uses the existing 5.3-production.3 backend; no backend or migration update is required. Upload the complete frontend archive, or apply the patch to the module-headers build from 6 October.
+
+Fixes low-contrast Research metadata/counts, dark text on the innovation rationale panel, faint Library metadata, overlapping mobile navigation, hidden mobile Library search, and missing plus glyphs. All changes are scoped to Research and Library. No data or permission logic changes.
+
+Verification: eight populated views at 1366px and 390px (portfolio, studies, innovation, intelligence, programme, study detail, project detail and Library). Computed solid-background text contrast checks pass at 4.5:1 for rendered fixture text; this is a targeted check, not full accessibility certification. No page overflow or Vue errors. Library search, collapse and navigation spacing checked. Screenshots use synthetic data. Not deployed or tested against live records.
+
+---
+
 # Module headers — 6 October 2026
 
 Frontend-only update based on commit 5d415e3, preserving the latest tower sign-in. Uses the existing 5.3-production.3 backend; no backend deployment or migration is required for this update. Upload the complete frontend archive to the existing frontend root, or apply the patch only to the entry-refinement build from 6 October.

@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="research9.css?v=5.3-production.2-research9">
 <link rel="stylesheet" href="publishing10.css?v=5.3-production.3-publishing10">
 <link rel="stylesheet" href="module-headers.css?v=20261006-1">
+<link rel="stylesheet" href="research-visibility.css?v=20261006-1">
 </head>
 <body>
 <div id="app" v-cloak>
@@ -5078,7 +5079,7 @@
                                     <span class="rv31-action-glyph">↓</span><span>Export</span>
                                 </button>
                                 <button v-if="hasPermission('research_lines','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddResearchLineModal">
-                                    <span class="rv31-action-glyph">＋</span><span>New research line</span>
+                                    <span class="rv31-action-glyph"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span><span>New research line</span>
                                 </button>
                             </div>
                         </header>
@@ -5303,7 +5304,7 @@
 
                         <!-- Clinical studies -->
                         <div v-if="lineTab === 'studies'" class="rv31-line-list rv33-line-register">
-                            <div class="rv31-list-head"><div><span>Clinical evidence</span><h2>Clinical studies</h2><p>Studies, trials, cohorts and registries linked to this programme.</p></div><button v-if="hasPermission('clinical_trials','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddTrialModal(selectedLine)"><span class="rv31-action-glyph">＋</span><span>New study</span></button></div>
+                            <div class="rv31-list-head"><div><span>Clinical evidence</span><h2>Clinical studies</h2><p>Studies, trials, cohorts and registries linked to this programme.</p></div><button v-if="hasPermission('clinical_trials','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddTrialModal(selectedLine)"><span class="rv31-action-glyph"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span><span>New study</span></button></div>
                             <div v-if="researchSources.studies.status==='ready' && !researchLineStudies(selectedLine?.id).length" class="rv31-empty"><strong>No clinical studies yet</strong><span>Add the first study to this programme.</span></div>
                             <div class="rv33-line-records" v-else>
                                 <article v-for="trial in researchLineStudies(selectedLine?.id)" :key="trial.id" class="rv33-study-row" role="button" tabindex="0" @click="openStudy(trial)" @keydown.enter.prevent="openStudy(trial)" @keydown.space.prevent="openStudy(trial)">
@@ -5327,7 +5328,7 @@
 
                         <!-- Clinical innovation -->
                         <div v-if="lineTab === 'projects'" class="rv31-line-list rv33-line-register">
-                            <div class="rv31-list-head"><div><span>Clinical innovation</span><h2>Innovation projects</h2><p>Clinical needs moving through development, validation and implementation.</p></div><button v-if="hasPermission('innovation_projects','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddProjectModal(selectedLine)"><span class="rv31-action-glyph">＋</span><span>New project</span></button></div>
+                            <div class="rv31-list-head"><div><span>Clinical innovation</span><h2>Innovation projects</h2><p>Clinical needs moving through development, validation and implementation.</p></div><button v-if="hasPermission('innovation_projects','create')" class="rv31-text-action rv31-text-action--primary" @click="showAddProjectModal(selectedLine)"><span class="rv31-action-glyph"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span><span>New project</span></button></div>
                             <div v-if="researchSources.projects.status==='ready' && !researchLineProjects(selectedLine?.id).length" class="rv31-empty"><strong>No clinical innovation projects yet</strong><span>Add the first innovation project to this programme.</span></div>
                             <div class="rv33-line-records" v-else>
                                 <article v-for="proj in researchLineProjects(selectedLine?.id)" :key="proj.id" class="rv33-project-row" role="button" tabindex="0" @click="openProject(proj)" @keydown.enter.prevent="openProject(proj)" @keydown.space.prevent="openProject(proj)">
@@ -5797,7 +5798,7 @@
                                     </svg>
                                 </button>
                                 <button class="news-v23-new" @click="showAddNewsModal" v-if="hasPermission('news_posts','create')" title="New record">
-                                    <span class="news-v23-new-orb">＋</span><span>New record</span>
+                                    <span class="news-v23-new-orb"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span><span>New record</span>
                                 </button>
                             </div>
                         </div>
