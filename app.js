@@ -3059,8 +3059,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const onCallModal = reactive({
         show: false, mode: 'add',
         showBackup: false,  // progressive disclosure — expands when user clicks "+ Assign backup"
+        physQuery: '',      // searchable primary-physician picker text
         decision: null, decisionChecking: false, decisionError: '', overrideAllowed: false, overrideReason: '',
         form: { duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call', coverage_area_id: '', start_time: '15:00', end_time: '08:00', primary_physician_id: '', backup_physician_id: '', coverage_notes: '' }
+      })
+      // Searchable list for the single on-call modal's primary physician picker.
+      const onCallPhysMatches = computed(() => {
+        const norm = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim()
+        const q = norm(onCallModal.physQuery)
+        const elig = (medicalStaff.value || []).filter(s => s.employment_status === 'active' && isOnCallEligible(s.staff_type))
+        const match = q ? elig.filter(s => norm(s.full_name).includes(q)) : elig
+        return match.slice().sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''))
       })
 
       const getPhysicianName = (id) => {
@@ -3291,12 +3300,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       watch(()=>[onCallModal.show,onCallModal.mode,onCallModal.form.duty_date,onCallModal.form.shift_type,onCallModal.form.coverage_area_id,onCallModal.form.primary_physician_id,onCallModal.form.backup_physician_id,onCallModal.form.start_time,onCallModal.form.end_time],Utils.debounce(()=>{if(onCallModal.show)refreshOnCallDecision()},180))
 
-      const showAddOnCallModal = (physician = null) => {
+      const showAddOnCallModal = (physician = null, date = null) => {
         clearAll('oncall')
         onCallModal.mode = 'add'
         onCallModal.showBackup = false  // collapsed by default for new shifts
+        onCallModal.physQuery = ''
         Object.assign(onCallModal.form, {
-          duty_date: Utils.normalizeDate(new Date()), shift_type: 'primary_call',
+          duty_date: date || Utils.normalizeDate(new Date()), shift_type: 'primary_call',
           coverage_area_id: '',
           start_time: '15:00', end_time: '08:00',
           primary_physician_id: physician?.id || '',
@@ -3320,6 +3330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Auto-expand backup field if one is already assigned
         onCallModal.showBackup = !!(schedule.backup_physician_id)
+        onCallModal.physQuery = ''
         onCallModal.decision=null; onCallModal.decisionError=''; onCallModal.overrideReason=''; onCallModal.overrideAllowed=false
         onCallModal.show = true
         Vue.nextTick(() => refreshOnCallDecision())
@@ -3670,7 +3681,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
         filteredOnCallSchedules, filteredOnCallAll, oncallTotalPages, todaysOnCallCount,
-        loadOnCallSchedule, loadCoverageAreas, coverageAreas, filteredCoverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal,
+        loadOnCallSchedule, loadCoverageAreas, coverageAreas, filteredCoverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal, onCallPhysMatches,
         editOnCallSchedule, saveOnCallSchedule, bulkOncall, bulkCalDays, bulkClinicianMatches, bulkToggleDate, bulkAddToQueue, bulkClone, bulkTotalShifts, bulkTotalConflicts, bulkSave, openBulkOncall, deleteOnCallSchedule, contactPhysician,
         onCallAbsenceConflict,
         // absenceOnCallConflict exposed at root level
