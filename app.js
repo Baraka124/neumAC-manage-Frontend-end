@@ -2908,6 +2908,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saving:   false,
         // Clone target
         cloneSource: null,  // queue index to clone dates from
+        query:    '',       // clinician search text for the step-1 searchable picker
       })
 
       // Calendar days for bulk picker
@@ -2956,6 +2957,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (idx >= 0) bulkOncall.current._dates.splice(idx, 1)
         else bulkOncall.current._dates.push(day.date)
       }
+
+      // Searchable clinician picker for step 1 — type a name instead of scrolling a <select>.
+      const bulkClinicianMatches = Vue.computed(() => {
+        const norm = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim()
+        const q = norm(bulkOncall.query)
+        const active = (medicalStaff.value || []).filter(s => s.employment_status === 'active')
+        const match = q ? active.filter(s => norm(s.full_name).includes(q)) : active
+        const byName = (a,b) => (a.full_name||'').localeCompare(b.full_name||'')
+        return {
+          attendings: match.filter(s => !isResidentType(s.staff_type)).sort(byName),
+          residents:  match.filter(s =>  isResidentType(s.staff_type)).sort(byName),
+          total: match.length
+        }
+      })
 
       const bulkAddToQueue = () => {
         const cur = bulkOncall.current
@@ -3035,6 +3050,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bulkOncall.show  = true
         bulkOncall.step  = 1
         bulkOncall.queue = []
+        bulkOncall.query = ''
         Object.assign(bulkOncall.current, { physician_id: '', coverage_area_id: '', shift_type: 'primary_call', start_time: '15:00', end_time: '08:00', _dates: [] })
         bulkOncall.calYear  = new Date().getFullYear()
         bulkOncall.calMonth = new Date().getMonth()
@@ -3655,7 +3671,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onCallSchedule, todaysOnCall, loadingSchedule, onCallFilters, onCallModal,
         filteredOnCallSchedules, filteredOnCallAll, oncallTotalPages, todaysOnCallCount,
         loadOnCallSchedule, loadCoverageAreas, coverageAreas, filteredCoverageAreas, coverageAreaModal, showAddCoverageAreaModal, editCoverageArea, saveCoverageArea, deleteCoverageArea, loadTodaysOnCall, showAddOnCallModal,
-        editOnCallSchedule, saveOnCallSchedule, bulkOncall, bulkCalDays, bulkToggleDate, bulkAddToQueue, bulkClone, bulkTotalShifts, bulkTotalConflicts, bulkSave, openBulkOncall, deleteOnCallSchedule, contactPhysician,
+        editOnCallSchedule, saveOnCallSchedule, bulkOncall, bulkCalDays, bulkClinicianMatches, bulkToggleDate, bulkAddToQueue, bulkClone, bulkTotalShifts, bulkTotalConflicts, bulkSave, openBulkOncall, deleteOnCallSchedule, contactPhysician,
         onCallAbsenceConflict,
         // absenceOnCallConflict exposed at root level
         oncallChipStyle,
