@@ -8531,7 +8531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const knowledgeCoverage = () => ({ Person: true, Activity: true, Event: true })
 
         // Excel → on-call: preview staff/MIR assignments, review differences, explicitly commit.
-        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
+        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
         const oncallSyncVisible=computed(()=>window.NeumOncallSync.visible(oncallSync.entries,oncallSync.filter))
         const oncallSyncSelected=computed(()=>window.NeumOncallSync.selected(oncallSync.entries,oncallSync.filter,oncallSync.selection))
         const oncallSyncPayload=()=>oncallSyncSelected.value.map(r=>({duty_date:r.date,primary_physician_id:r.staffId,resident_physician_id:r.residentId||null,shift_type:r.shiftType,expected:r.expected||null,source_sheet:r.source_sheet,source_row:r.source_row}))
@@ -8600,13 +8600,26 @@ document.addEventListener('DOMContentLoaded', () => {
           if(!oncallSyncReady.value){showToast('Not ready','Check the selected assignments before applying.','info');return}
           const shifts=oncallSyncPayload()
           if(!shifts.length){showToast('Nothing selected','Select at least one assignment to apply.','info');return}
-          oncallSync.committing=true;oncallSync.commitResult=null
+          const total=shifts.length
+          oncallSync.committing=true;oncallSync.commitResult=null;oncallSync.progress={done:0,total}
           let inserted=0,updated=0,skipped=0;const failures=[]
           try{
-            for(let i=0;i<shifts.length;i+=10){const result=await API.request('/api/oncall/batch',{method:'POST',body:{shifts:shifts.slice(i,i+10),source_file:oncallSync.fileName,acknowledge_history:oncallSync.historyAccepted}});if(!Number.isInteger(result.inserted)||!Number.isInteger(result.updated)||!Number.isInteger(result.skipped))throw Error('Server returned unrecognised results. Reload before retrying.');inserted+=result.inserted;updated+=result.updated;skipped+=result.skipped;failures.push(...(result.results||[]).filter(r=>r.status==='not_saved'));for(const row of result.results||[])oncallSync.results[row.date]=row}
-            oncallSync.commitResult={ok:skipped===0,msg:inserted+' added · '+updated+' updated · '+skipped+' not saved.',failures}
-          }catch(e){oncallSync.commitResult={ok:false,msg:inserted+' confirmed added · '+updated+' confirmed updated. '+e.message+' Reload the file before retrying; a failed request may have partially completed.',failures}}
-          finally{oncallSync.committed=true;oncallSync.committing=false;API.clearCache();try{await onCallOps.loadOnCallSchedule()}catch{};if(oncallSync.commitResult)showToast(oncallSync.commitResult.ok?'On-call sync complete':'Sync finished with issues',oncallSync.commitResult.msg,oncallSync.commitResult.ok?'success':'error')}
+            for(let i=0;i<shifts.length;i+=10){
+              const result=await API.request('/api/oncall/batch',{method:'POST',body:{shifts:shifts.slice(i,i+10),source_file:oncallSync.fileName,acknowledge_history:oncallSync.historyAccepted}})
+              if(!Number.isInteger(result.inserted)||!Number.isInteger(result.updated)||!Number.isInteger(result.skipped))throw Error('Server returned unrecognised results. Reload before retrying.')
+              inserted+=result.inserted;updated+=result.updated;skipped+=result.skipped
+              failures.push(...(result.results||[]).filter(r=>r.status==='not_saved'))
+              for(const row of result.results||[])oncallSync.results[row.date]=row
+              oncallSync.progress={done:Math.min(i+10,total),total}
+            }
+            // Human-readable result instead of "1 added · 0 updated · 0 not saved".
+            const parts=[]
+            if(inserted)parts.push(inserted+(inserted===1?' shift added':' shifts added'))
+            if(updated)parts.push(updated+(updated===1?' shift updated':' shifts updated'))
+            const base=parts.length?parts.join(' · '):'No changes to save'
+            oncallSync.commitResult={ok:skipped===0,msg:skipped===0?base+' · all saved ✓':base+' · '+skipped+' could not be saved (see the rows marked “Not saved”)',failures}
+          }catch(e){oncallSync.commitResult={ok:false,msg:'Saved '+inserted+' and updated '+updated+' before the sync hit an error: '+e.message+' Reload the file before retrying — part of the request may have completed.',failures}}
+          finally{oncallSync.committed=true;oncallSync.committing=false;oncallSync.progress=null;API.clearCache();try{await onCallOps.loadOnCallSchedule()}catch{};if(oncallSync.commitResult)showToast(oncallSync.commitResult.ok?'On-call sync complete':'Sync finished with issues',oncallSync.commitResult.msg,oncallSync.commitResult.ok?'success':'error')}
         }
 
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data

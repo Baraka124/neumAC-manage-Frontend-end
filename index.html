@@ -4700,9 +4700,10 @@
                                     <button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing" @click="oncallSyncReset">Upload another</button>
                                     <button class="btn btn-primary" :disabled="!oncallSyncReady || oncallSync.checking||oncallSync.committing || currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW' || (oncallSyncSelected.length === 0)"
                                             @click="oncallSyncConfirmCommit()">
-                                        {{ oncallSync.committing ? 'Syncing…' : ('Apply ' + oncallSyncSelected.length + ' assignments · ' + oncallSyncSelected.filter(r=>r.status==='replacement').length + ' replacements') }}
+                                        {{ oncallSync.committing ? ('Syncing… ' + (oncallSync.progress ? oncallSync.progress.done + '/' + oncallSync.progress.total : '')) : ('Apply ' + oncallSyncSelected.length + ' assignments · ' + oncallSyncSelected.filter(r=>r.status==='replacement').length + ' replacements') }}
                                     </button>
                                 </div>
+                                <p v-if="oncallSync.committing" class="ac-meta" role="status" aria-live="polite">Saving your schedule to the system… <span v-if="oncallSync.progress">{{ oncallSync.progress.done }} of {{ oncallSync.progress.total }} shifts</span></p>
                                 <div v-if="oncallSync.commitResult" :style="'margin-top:12px;padding:11px 14px;border-radius:10px;font-size:13px;border:1px solid ' + (oncallSync.commitResult.ok ? 'rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#059669' : 'rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#b91c1c')">
                                     {{ oncallSync.commitResult.msg }}<ul v-if="oncallSync.commitResult.failures?.length"><li v-for="(r,i) in oncallSync.commitResult.failures" :key="i">{{r.date}}: {{r.message}}</li></ul>
                                 </div>
