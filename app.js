@@ -44,7 +44,22 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (_) { /* never let the diagnostic itself break the page */ }
     }
     window.addEventListener('error', (e) => showOnScreenError('Script error', e.error || e.message))
-    window.addEventListener('unhandledrejection', (e) => showOnScreenError('Unhandled promise rejection', e.reason))
+    // Transient connectivity failures (offline, server unreachable, request timeout) are
+    // environmental, not bugs — logging them quietly keeps the diagnostic overlay for real
+    // programming errors instead of flashing it on every network blip.
+    function __isBenignNetworkError(reason) {
+      const code = reason && reason.code
+      const msg = (reason && (reason.message || String(reason))) || ''
+      return code === 'NETWORK_UNREACHABLE' || code === 'REQUEST_TIMEOUT' ||
+        /you are offline|could not reach the server|took too long to respond|failed to fetch|networkerror|load failed/i.test(msg)
+    }
+    window.addEventListener('unhandledrejection', (e) => {
+      if (__isBenignNetworkError(e && e.reason)) {
+        try { console.warn('[neumDesk] connectivity issue (overlay suppressed):', (e.reason && (e.reason.message || e.reason)) || e.reason) } catch (_) {}
+        return
+      }
+      showOnScreenError('Unhandled promise rejection', e.reason)
+    })
 
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
@@ -836,13 +851,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
     // ============ 3. ENHANCED UTILS CLASS ============
+    // Keys MUST be the English values the DB chk_current_stage_en constraint stores
+    // (concept/development/pilot/validation/scaling/completed). They were Spanish, so
+    // every stage click wrote a value the backend dropped — the stage never saved and
+    // the active stage never highlighted. Labels stay human-facing.
     const PROJECT_STAGES_DATA = [
-      { key: 'Idea',             label: 'Idea',            icon: 'fa-lightbulb',    color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
-      { key: 'Prototipo',        label: 'Prototype',       icon: 'fa-cube',         color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
-      { key: 'Piloto',           label: 'Pilot',          icon: 'fa-play-circle',  color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
-      { key: 'Validación',       label: 'Validation',      icon: 'fa-check-double', color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
-      { key: 'Escalamiento',     label: 'Scale-up',    icon: 'fa-chart-line',   color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
-      { key: 'Comercialización', label: 'Commercialisation',icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 6 }
+      { key: 'concept',    label: 'Idea',             icon: 'fa-lightbulb',    color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
+      { key: 'development',label: 'Prototype',        icon: 'fa-cube',         color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
+      { key: 'pilot',      label: 'Pilot',            icon: 'fa-play-circle',  color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
+      { key: 'validation', label: 'Validation',       icon: 'fa-check-double', color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
+      { key: 'scaling',    label: 'Scale-up',         icon: 'fa-chart-line',   color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
+      { key: 'completed',  label: 'Commercialisation',icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 6 }
     ]
 
     // ── Pulmonology disease options ──────────────────────────────
@@ -1364,6 +1383,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Global in-flight request counter → drives the thin top loading bar, so the
+    // app is no longer silent while it works. Counts real network calls only.
+    const __neumaxFlight = {
+      n: 0, _bar: null,
+      bar() { if (!this._bar && typeof document !== 'undefined') this._bar = document.getElementById('neumax-topbar'); return this._bar },
+      inc() { this.n++; const b = this.bar(); if (b) b.classList.add('is-active') },
+      dec() { this.n = Math.max(0, this.n - 1); if (this.n === 0) { const b = this.bar(); if (b) b.classList.remove('is-active') } }
+    }
+
     // ============ 4. ENHANCED API SERVICE ============
     class ApiService {
       constructor() {
@@ -1503,6 +1531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         mark('loading')
+        __neumaxFlight.inc()
         const config = { method, headers: this.headers(), mode: 'cors', cache: 'no-cache', credentials: 'include', ...(options.signal ? { signal: options.signal } : {}) }
         const timeoutMs = options.timeoutMs ?? (isGet ? 30000 : 60000)
         const timeoutController = !options.signal ? new AbortController() : null
@@ -1550,8 +1579,26 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
               parsedError = JSON.parse(errBody)
               const j = parsedError
+              // Humanise a single field path (e.g. "study_type" → "Study type")
+              const prettyField = p => String(p || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim()
+              // Turn a Joi/DB validation message into something a human can act on,
+              // keeping the permitted values when the backend lists them.
+              const prettyDetail = (field, message) => {
+                let m = String(message || '').replace(/^"[^"]*"\s*/, '').trim()   // drop Joi's leading "field"
+                if (m && /must be one of|not allowed|permitted|one of \[/i.test(m)) m = m.replace(/^must be/i, 'must be')
+                const label = prettyField(field)
+                if (!m) return label ? `${label}: invalid value` : 'Invalid value'
+                return label ? `${label} — ${m.charAt(0).toUpperCase() + m.slice(1)}` : (m.charAt(0).toUpperCase() + m.slice(1))
+              }
+              // Joi-middleware shape FIRST: { error:'Validation failed', details:[{field,message}] }.
+              // This is the one that was being swallowed as a bare "Validation failed".
+              if (Array.isArray(j.details) && j.details.length) {
+                errMsg = j.details
+                  .map(d => (d && typeof d === 'object') ? prettyDetail(d.field, d.message) : String(d))
+                  .filter(Boolean).join(' · ')
+              }
               // Common shapes: { message }, { error }, { detail }
-              if (j.message) errMsg = j.message
+              else if (j.message) errMsg = j.message
               else if (j.error) errMsg = j.error
               else if (j.detail) errMsg = j.detail
               else {
@@ -1560,7 +1607,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parts = []
                 for (const [field, val] of Object.entries(j)) {
                   const msg = Array.isArray(val) ? val.join(', ') : (typeof val === 'string' ? val : JSON.stringify(val))
-                  parts.push(`${field}: ${msg}`)
+                  parts.push(`${prettyField(field)}: ${msg}`)
                 }
                 if (parts.length) errMsg = parts.join(' · ')
               }
@@ -1602,6 +1649,7 @@ document.addEventListener('DOMContentLoaded', () => {
           throw e
         } finally {
           if (timeoutId) clearTimeout(timeoutId)
+          __neumaxFlight.dec()
         }
       }
 
@@ -2143,13 +2191,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const loginForm = reactive({ email: '', password: '', remember_me: false, keep_signed_in: false })
       const loginLoading = ref(false)
 
+      // Best-effort public maintenance flag, so the login screen can warn that only
+      // administrators can sign in right now — read before any authentication.
+      const maintenanceMode = ref(false)
+      const checkMaintenanceStatus = async () => {
+        try {
+          const res = await fetch(`${CONFIG.API_BASE_URL}/api/public/status`, { cache: 'no-store' })
+          if (res.ok) { const d = await res.json(); maintenanceMode.value = d?.maintenance_mode === true }
+        } catch { /* banner is best-effort; ignore failures */ }
+      }
+
       // Backend-resolved capability snapshot; never infer authority from admin_level.
       const hasPermission = (module, action='read') => window.NeumAccess.hasPermission(currentUser.value?.access,module,action)
       const isAdmin = () => window.NeumAccess.allowed(currentUser.value?.access,'identity.users.manage')
       const canManageSettings = () => window.NeumAccess.allowed(currentUser.value?.access,'identity.users.view') || window.NeumAccess.allowed(currentUser.value?.access,'system.settings.view')
       const _isAdminHelpersDefined = true
 
-      return { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings }
+      return { currentUser, loginForm, loginLoading, maintenanceMode, checkMaintenanceStatus, hasPermission, isAdmin, canManageSettings }
     }
 
     // ============ 6.2 useUI ============
@@ -2213,7 +2271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (i > -1) toasts.value.splice(i, 1)
       }
 
-      const showConfirmation = (opts) => Object.assign(confirmationModal, { show: true, ...opts })
+      const showConfirmation = (opts) => Object.assign(confirmationModal, { show: true, reversible: false, confirmButtonIcon: null, ...opts })
 
       const confirmAction = async () => {
         if (confirmationModal.onConfirm) {
@@ -3855,7 +3913,18 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         if (pending.length > 0 && requireValidation) { pendingActivations.value = pending; showActivationModal() }
-        if (updates.length > 0) { await Promise.all(updates); await loadRotations(); showToast('Rotations Updated', `${updates.length} rotation(s) automatically updated.`, 'info') }
+        if (updates.length > 0) {
+          // allSettled, not all: this is an automatic background routine, so one
+          // rotation failing (e.g. a transient connection blip) must not reject the
+          // whole batch — that rejection was surfacing as a scary error overlay.
+          const results = await Promise.allSettled(updates)
+          const ok = results.filter(r => r.status === 'fulfilled').length
+          const failed = results.length - ok
+          await loadRotations()
+          if (ok > 0) showToast('Rotations Updated', `${ok} rotation(s) automatically updated.`, 'info')
+          if (failed > 0) showToast('Some rotations pending', `${failed} couldn't be updated just now (likely a brief connection issue). They'll be retried automatically.`, 'warning')
+          return { updates: ok, failed, pending: pending.length }
+        }
         return { updates: updates.length, pending: pending.length }
       }
 
@@ -3927,15 +3996,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const initAutoCheck = () => {
-        // Silent: scheduled→active and active→completed are date facts, not decisions
-        setTimeout(() => checkAndUpdateRotations(false), 2000)
+        // Silent: scheduled→active and active→completed are date facts, not decisions.
+        // Guard the fire-and-forget calls so a background failure can never bubble up
+        // as an unhandled rejection.
+        setTimeout(() => { checkAndUpdateRotations(false).catch(e => console.warn('[neumDesk] auto rotation check skipped:', e?.message || e)) }, 2000)
         const interval = setInterval(() => {
           // M5 FIX: compare numeric timestamps — avoids timezone/clock parsing issues
           const lastCheck = localStorage.getItem('last_rotation_check')
           const now = Date.now()
           const lastCheckMs = lastCheck ? parseInt(lastCheck, 10) : 0
           if (!lastCheck || isNaN(lastCheckMs) || (now - lastCheckMs) > 4 * 60 * 60 * 1000) {
-            checkAndUpdateRotations(false)
+            checkAndUpdateRotations(false).catch(e => console.warn('[neumDesk] auto rotation check skipped:', e?.message || e))
             localStorage.setItem('last_rotation_check', now.toString())
           }
         }, 60 * 60 * 1000)
@@ -6445,7 +6516,7 @@ document.addEventListener('DOMContentLoaded', () => {
         phase: '', status: 'En preparación',
         description: '', inclusion_criteria: '', exclusion_criteria: '',
         principal_investigator_id: '', co_investigators: [], sub_investigators: [],
-        contact_email: '', featured_in_website: true, display_order: 0,
+        contact_email: '', featured_in_website: false, display_order: 0,
         start_date: '', end_date: '', estimated_end_date: '', actual_end_date: '',
         sponsor_name: '', sponsor_type: '', study_type: 'Observational',
         enrollment_target: null, actual_enrollment: null, funding_amount: null,
@@ -6467,6 +6538,13 @@ document.addEventListener('DOMContentLoaded', () => {
         _extMemberDraft: { name: '', institution: '', role: '', email: '' },
       }})
 
+      // Trial phase (Phase I–IV) is a concept of interventional / trial-type designs.
+      // Observational designs (cohort, registry, prospective, retrospective…) have no phase,
+      // so the Phase control is shown only for the designs where it is meaningful — not
+      // tied to the single literal label "Clinical Trial".
+      const STUDY_TYPES_WITH_PHASE = ['Clinical Trial', 'Interventional', 'Experimental', 'Expanded Access']
+      const trialPhaseApplies = computed(() => STUDY_TYPES_WITH_PHASE.includes(clinicalTrialModal.form.study_type))
+
       const trialDetailModal = reactive({ show: false, trial: null, study: null })
 
       const innovationProjectModal = reactive({ show: false, mode: 'add', baseline: '', form: {
@@ -6478,7 +6556,7 @@ document.addEventListener('DOMContentLoaded', () => {
         budget: null, trl_level: null, ip_status: '',
         keywords: [], keywordsInput: '', tags: [], milestones: [],
         additional_line_ids: [],
-        featured_in_website: true, display_order: 0,
+        featured_in_website: false, display_order: 0,
         start_date: '', estimated_end_date: '',
         scope_finalized: false, target_diseases: [],
         scope_type: 'specific', scope_note: '',
@@ -6752,7 +6830,7 @@ document.addEventListener('DOMContentLoaded', () => {
           protocol_id: `HUAC-${Date.now().toString().slice(-6)}`, title: '', research_line_id: line?.id || '',
           phase: '', status: 'En preparación', description: '', inclusion_criteria: '', exclusion_criteria: '',
           principal_investigator_id: '', co_investigators: [], sub_investigators: [], data_manager_id: '',
-          contact_email: '', featured_in_website: true, display_order: clinicalTrials.value.length + 1,
+          contact_email: '', featured_in_website: false, display_order: clinicalTrials.value.length + 1,
           start_date: '', end_date: '', estimated_end_date: '', actual_end_date: '', sponsor_name: '', sponsor_type: '',
           study_type: 'Observational', enrollment_target: null, actual_enrollment: null, funding_amount: null,
           tags: [], milestones: [], additional_line_ids: [], protocol_finalized: false, ethics_status: null,
@@ -6767,11 +6845,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const showAddProjectModal = (line = null) => {
         innovationProjectModal.mode = 'add'
         Object.assign(innovationProjectModal.form, {
-          title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '',
+          title: '', category: 'Dispositivo', current_stage: 'concept', description: '', clinical_rationale: '',
           research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [],
           partner_found: false, partner_name: '', funding_status: 'not_applicable', funding_source: '', budget: null,
           trl_level: null, ip_status: '', keywords: [], keywordsInput: '', tags: [], milestones: [], additional_line_ids: [],
-          featured_in_website: true, is_featured: false, display_order: innovationProjects.value.length + 1,
+          featured_in_website: false, is_featured: false, display_order: innovationProjects.value.length + 1,
           start_date: '', estimated_end_date: '', scope_finalized: false, target_diseases: [], scope_type: 'specific',
           scope_note: '', regulatory_pathway: 'none', population_type: 'adult', team_roles: {}, external_team: [],
           project_nature: 'clinical_innovation', project_url: '', repo_url: '', demo_url: '',
@@ -6809,7 +6887,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clinicalTrialModal.show = true
         _captureStudyBaseline()
       }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '', _protocol_applicability: (p.validation_protocol_id || p.ethics_status) ? 'required' : '', _validation_protocol_id: p.validation_protocol_id || '', _validation_protocol_status: p.validation_protocol_finalized ? 'final' : '', _ethics_clearance: p.ethics_status || '' }; innovationProjectModal.show = true; _captureProjectBaseline() }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || 'development', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '', _protocol_applicability: (p.validation_protocol_id || p.ethics_status) ? 'required' : '', _validation_protocol_id: p.validation_protocol_id || '', _validation_protocol_status: p.validation_protocol_finalized ? 'final' : '', _ethics_clearance: p.ethics_status || '' }; innovationProjectModal.show = true; _captureProjectBaseline() }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.study = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
@@ -7075,7 +7153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
@@ -7128,7 +7206,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const activeTrials  = (clinicalTrials.value || []).filter(t => ['active','recruiting'].includes(normalizeTrialStatusKey(t))).length
           const recruitingTrials = (clinicalTrials.value || []).filter(t => normalizeRecruitmentStatusKey(t) === 'recruiting').length
           const totalProjects = (innovationProjects.value || []).length
-          const lateStageProjects = (innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalamiento','Comercialización'].includes(p.current_stage)).length
+          const lateStageProjects = (innovationProjects.value || []).filter(p => ['pilot','validation','scaling','completed'].includes(p.current_stage)).length
           const totalEnrolled = (clinicalTrials.value || []).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
           const totalTarget   = (clinicalTrials.value || []).reduce((s, t) => s + (t.enrollment_target || 0), 0)
           return { totalLines, activeLines, totalTrials, activeTrials, recruitingTrials, totalProjects, lateStageProjects, totalEnrolled, totalTarget }
@@ -7982,7 +8060,8 @@ document.addEventListener('DOMContentLoaded', () => {
         watch(()=>entry.state,()=>{ entry46Clock.value=Date.now() })
 
         const auth = useAuth()
-        const { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings } = auth
+        const { currentUser, loginForm, loginLoading, maintenanceMode, checkMaintenanceStatus, hasPermission, isAdmin, canManageSettings } = auth
+        onMounted(() => { checkMaintenanceStatus() })
         const ui = useUI({navigate:view=>switchView(view),getAbsences:()=>absencesShared.value,getRotations:()=>rotations.value})
         const { showToast, showConfirmation, currentView, userMenuOpen, userProfileModal } = ui
 
@@ -8604,6 +8683,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Excel → on-call: preview staff/MIR assignments, review differences, explicitly commit.
         const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
         const oncallSyncVisible=computed(()=>window.NeumOncallSync.visible(oncallSync.entries,oncallSync.filter))
+        // Tint review rows by duty date: today/future = green (actionable), past = orange (historical import).
+        const oncallSyncRowClass=(dateStr)=>{
+          if(!dateStr||!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return ''
+          return dateStr >= Utils.localDateStr(new Date()) ? 'sync-row-future' : 'sync-row-past'
+        }
         const oncallSyncSelected=computed(()=>window.NeumOncallSync.selected(oncallSync.entries,oncallSync.filter,oncallSync.selection))
         const oncallSyncPayload=()=>oncallSyncSelected.value.map(r=>({duty_date:r.date,primary_physician_id:r.staffId,resident_physician_id:r.residentId||null,shift_type:r.shiftType,expected:r.expected||null,source_sheet:r.source_sheet,source_row:r.source_row}))
         const oncallSyncCheckKey=computed(()=>JSON.stringify({shifts:oncallSyncPayload(),history:oncallSync.historyAccepted}))
@@ -8744,7 +8828,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeTrials     = (researchOps.clinicalTrials.value || []).filter(t => ['active','recruiting'].includes(researchOps.trialStatusKey(t))).length
             const recruitingTrials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialRecruitmentKey(t) === 'recruiting').length
             const totalProjects    = (researchOps.innovationProjects.value || []).length
-            const lateStageProjects = (researchOps.innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalamiento','Comercialización'].includes(p.current_stage)).length
+            const lateStageProjects = (researchOps.innovationProjects.value || []).filter(p => ['pilot','validation','scaling','completed'].includes(p.current_stage)).length
             const totalEnrolled    = (researchOps.clinicalTrials.value || []).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
             const totalTarget      = (researchOps.clinicalTrials.value || []).reduce((s, t) => s + (t.enrollment_target || 0), 0)
             return { totalLines, activeLines, totalTrials, activeTrials, recruitingTrials, totalProjects, lateStageProjects, totalEnrolled, totalTarget }
@@ -8816,6 +8900,9 @@ document.addEventListener('DOMContentLoaded', () => {
           'Tecnologia Quirurgica':'Surgical technology'
         })[value] || value || 'Clinical innovation'
         const formatInnovationStage = (value) => ({
+          // English keys are what the DB stores; Spanish kept as legacy aliases.
+          'concept':'Idea',        'development':'Prototype', 'pilot':'Pilot',
+          'validation':'Validation','scaling':'Scale-up',     'completed':'Commercialisation',
           'Idea':'Idea',
           'Prototipo':'Prototype',
           'Piloto':'Pilot',
@@ -10957,6 +11044,7 @@ document.addEventListener('DOMContentLoaded', () => {
             message: 'This blocks all non-admin access to the API immediately, for everyone, system-wide.',
             details: 'You will still have access. Everyone else will see a maintenance notice until you turn this back off.',
             icon: 'fa-exclamation-triangle', confirmButtonText: 'Enable Maintenance Mode', confirmButtonClass: 'btn-danger',
+            reversible: true, confirmButtonIcon: 'fas fa-wrench',
             onConfirm: () => { systemSettings.maintenance_mode = true; saveSystemSettings() }
           })
         }
@@ -18463,7 +18551,7 @@ document.addEventListener('DOMContentLoaded', () => {
           entry, entryBusy, entryLoginIssue, backToSignIn, validateEntrySession, resumeEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,
           askBarRefreshRecords,
-          loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, canOpenView, isAdmin,
+          loading, saving, currentUser, loginForm, loginLoading, maintenanceMode, hasPermission, canManageSettings, canOpenView, isAdmin,
           previewIntro, dismissPreviewIntro,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
@@ -18606,7 +18694,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
-          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
+          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
