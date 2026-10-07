@@ -1364,6 +1364,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Global in-flight request counter → drives the thin top loading bar, so the
+    // app is no longer silent while it works. Counts real network calls only.
+    const __neumaxFlight = {
+      n: 0, _bar: null,
+      bar() { if (!this._bar && typeof document !== 'undefined') this._bar = document.getElementById('neumax-topbar'); return this._bar },
+      inc() { this.n++; const b = this.bar(); if (b) b.classList.add('is-active') },
+      dec() { this.n = Math.max(0, this.n - 1); if (this.n === 0) { const b = this.bar(); if (b) b.classList.remove('is-active') } }
+    }
+
     // ============ 4. ENHANCED API SERVICE ============
     class ApiService {
       constructor() {
@@ -1503,6 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         mark('loading')
+        __neumaxFlight.inc()
         const config = { method, headers: this.headers(), mode: 'cors', cache: 'no-cache', credentials: 'include', ...(options.signal ? { signal: options.signal } : {}) }
         const timeoutMs = options.timeoutMs ?? (isGet ? 30000 : 60000)
         const timeoutController = !options.signal ? new AbortController() : null
@@ -1602,6 +1612,7 @@ document.addEventListener('DOMContentLoaded', () => {
           throw e
         } finally {
           if (timeoutId) clearTimeout(timeoutId)
+          __neumaxFlight.dec()
         }
       }
 
@@ -8560,6 +8571,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Excel → on-call: preview staff/MIR assignments, review differences, explicitly commit.
         const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,progress:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
         const oncallSyncVisible=computed(()=>window.NeumOncallSync.visible(oncallSync.entries,oncallSync.filter))
+        // Tint review rows by duty date: today/future = green (actionable), past = orange (historical import).
+        const oncallSyncRowClass=(dateStr)=>{
+          if(!dateStr||!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return ''
+          return dateStr >= Utils.localDateStr(new Date()) ? 'sync-row-future' : 'sync-row-past'
+        }
         const oncallSyncSelected=computed(()=>window.NeumOncallSync.selected(oncallSync.entries,oncallSync.filter,oncallSync.selection))
         const oncallSyncPayload=()=>oncallSyncSelected.value.map(r=>({duty_date:r.date,primary_physician_id:r.staffId,resident_physician_id:r.residentId||null,shift_type:r.shiftType,expected:r.expected||null,source_sheet:r.source_sheet,source_row:r.source_row}))
         const oncallSyncCheckKey=computed(()=>JSON.stringify({shifts:oncallSyncPayload(),history:oncallSync.historyAccepted}))
@@ -18562,7 +18578,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Phase 3 features
           deleteWithUndo, pendingDeletes,
           notifications, loadNotifications, markNotifRead, markAllNotifsRead,
-          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
+          oncallSyncCheck, oncallSyncChecked, oncallSyncReady, oncallSyncVisible, oncallSyncRowClass, oncallSyncSelected, oncallSyncMonths, oncallSyncPeriod, oncallSyncSelectNew, oncallSyncType, toggleNotifBell, clickNotifItem, maybeLoadPermUsers, liveAlerts, alertCount, dismissLiveAlert, clickLiveAlert, oncallSyncChoice, oncallSyncClearMappings, oncallSync, oncallSyncFile, oncallSyncReset, oncallSyncMap, oncallSyncCommit, oncallSyncConfirmCommit,
           addNewsImage, uploadNewsImage, newsImageUploading, triggerNewsImagePicker,
           uploadStaffPhoto, staffPhotoUploading, triggerStaffPhotoPicker,
           toggleResidentManagerRole, toggleOncallManagerRole, toggleResearchCoordinator,
