@@ -6911,6 +6911,59 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       }
 
+      // ── Studies preview: a read-only spreadsheet-style table over all studies, with
+      // inline public/private toggling and a real .xlsx export (SheetJS is loaded).
+      const studiesPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '' })
+      const openStudiesPreview = () => { studiesPreview.show = true }
+      const studiesPreviewSort = (key) => {
+        if (studiesPreview.sortKey === key) studiesPreview.sortDir *= -1
+        else { studiesPreview.sortKey = key; studiesPreview.sortDir = 1 }
+      }
+      const _studyRow = (t) => {
+        const enr = trialEnrollment(t)
+        return {
+          id: t.id,
+          title: t.title || '(untitled)',
+          protocol_id: t.protocol_id || '',
+          line: getResearchLineName(t.research_line_id) || '',
+          study_type: t.study_type || '',
+          phase: t.phase || '',
+          status: TRIAL_STATUS_LABEL[trialStatusKey(t)] || t.status || '',
+          enrolment: enr ? `${enr.actual}/${enr.target}` : '',
+          featured_in_website: !!t.featured_in_website,
+          updated: t.updated_at ? String(t.updated_at).slice(0, 10) : '',
+          _raw: t
+        }
+      }
+      const studiesPreviewRows = computed(() => {
+        let rows = (filteredTrialsAll.value || clinicalTrials.value || []).map(_studyRow)
+        if (studiesPreview.visibility === 'public')  rows = rows.filter(r => r.featured_in_website)
+        if (studiesPreview.visibility === 'private') rows = rows.filter(r => !r.featured_in_website)
+        const k = studiesPreview.sortKey, dir = studiesPreview.sortDir
+        return rows.slice().sort((a, b) => {
+          const av = a[k], bv = b[k]
+          if (typeof av === 'boolean') return (av === bv ? 0 : av ? -1 : 1) * dir
+          return String(av ?? '').localeCompare(String(bv ?? ''), undefined, { numeric: true }) * dir
+        })
+      })
+      const exportStudiesXlsx = () => {
+        try {
+          if (!window.XLSX) { showToast('Export unavailable', 'Spreadsheet engine not loaded', 'error'); return }
+          const data = studiesPreviewRows.value.map(r => ({
+            Title: r.title, Protocol: r.protocol_id, 'Research line': r.line,
+            Type: r.study_type, Phase: r.phase, Status: r.status,
+            Enrolment: r.enrolment, Visibility: r.featured_in_website ? 'Public' : 'Private',
+            'Last updated': r.updated
+          }))
+          const ws = window.XLSX.utils.json_to_sheet(data)
+          ws['!cols'] = [{wch:44},{wch:18},{wch:26},{wch:16},{wch:11},{wch:16},{wch:12},{wch:11},{wch:13}]
+          const wb = window.XLSX.utils.book_new()
+          window.XLSX.utils.book_append_sheet(wb, ws, 'Studies')
+          window.XLSX.writeFile(wb, `neumACt-studies-${new Date().toISOString().slice(0, 10)}.xlsx`)
+          showToast('Exported', `${data.length} stud${data.length===1?'y':'ies'} → Excel`, 'success')
+        } catch (e) { showToast('Export failed', e?.message || 'Could not build the Excel file', 'error') }
+      }
+
       const saveInnovationProject = async (saving) => {
         const f = innovationProjectModal.form
         if (!f.title?.trim()) { showToast('Validation Error', 'Project title is required', 'error'); return }
@@ -7075,7 +7128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
