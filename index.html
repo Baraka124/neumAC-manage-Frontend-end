@@ -5376,6 +5376,12 @@
                                 </div>
                                 <p v-if="selectedStudy?._access?.visibility &amp;&amp; selectedStudy._access.visibility !== 'full'" class="ac-notice" role="status">Summary access. Detailed research and clearance fields are restricted.</p>
                                 <button v-if="canEditPortfolio(selectedStudy)" class="rv32-circle-action" @click="editTrial(selectedStudy)" title="Edit clinical study" aria-label="Edit clinical study">✎</button>
+                                <button v-if="canEditPortfolio(selectedStudy)" @click="toggleTrialPublic(selectedStudy)"
+                                        :title="selectedStudy.featured_in_website ? 'Visible on neumact.org — click to make private' : 'Private — click to publish to neumact.org'"
+                                        :style="{display:'inline-flex',alignItems:'center',gap:'7px',padding:'6px 13px',border:'1px solid '+(selectedStudy.featured_in_website?'#10b981':'#cbd5d5'),borderRadius:'999px',background:selectedStudy.featured_in_website?'rgba(16,185,129,.1)':'#fff',color:selectedStudy.featured_in_website?'#0b6b4f':'#64748b',font:'inherit',fontSize:'12.5px',fontWeight:'600',cursor:'pointer'}">
+                                    <span :style="{width:'8px',height:'8px',borderRadius:'50%',background:selectedStudy.featured_in_website?'#10b981':'#94a3b8'}"></span>
+                                    {{ selectedStudy.featured_in_website ? 'Public on website' : 'Private' }}
+                                </button>
                             </header>
 
                             <section class="rv32-study-command">
@@ -5514,6 +5520,12 @@
                                 </div>
                                 <p v-if="selectedProject?._access?.visibility &amp;&amp; selectedProject._access.visibility !== 'full'" class="ac-notice" role="status">Summary access. Detailed research and clearance fields are restricted.</p>
                                 <button v-if="canEditPortfolio(selectedProject)" class="rv32-circle-action" @click="editProject(selectedProject)" title="Edit clinical innovation project" aria-label="Edit clinical innovation project">✎</button>
+                                <button v-if="canEditPortfolio(selectedProject)" @click="toggleProjectPublic(selectedProject)"
+                                        :title="selectedProject.featured_in_website ? 'Visible on neumact.org — click to make private' : 'Private — click to publish to neumact.org'"
+                                        :style="{display:'inline-flex',alignItems:'center',gap:'7px',padding:'6px 13px',border:'1px solid '+(selectedProject.featured_in_website?'#10b981':'#cbd5d5'),borderRadius:'999px',background:selectedProject.featured_in_website?'rgba(16,185,129,.1)':'#fff',color:selectedProject.featured_in_website?'#0b6b4f':'#64748b',font:'inherit',fontSize:'12.5px',fontWeight:'600',cursor:'pointer'}">
+                                    <span :style="{width:'8px',height:'8px',borderRadius:'50%',background:selectedProject.featured_in_website?'#10b981':'#94a3b8'}"></span>
+                                    {{ selectedProject.featured_in_website ? 'Public on website' : 'Private' }}
+                                </button>
                             </header>
 
                             <section class="rv32-innovation-need">
@@ -9951,6 +9963,15 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     <small v-if="researchLines.length &lt;= 1">No other lines to choose from.</small>
                                 </div>
                             </div>
+
+                            <!-- Website visibility — studies were public-by-default with no control; this exposes it -->
+                            <label class="sm-field" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+                                <input type="checkbox" v-model="clinicalTrialModal.form.featured_in_website" style="margin-top:3px;width:18px;height:18px">
+                                <span>
+                                    <span class="sm-label" style="margin:0">Show on public website</span>
+                                    <small class="rv34-help">When on, this study appears on neumact.org. When off, it stays internal to neumDesk.</small>
+                                </span>
+                            </label>
                         </section>
 
                         <div class="rv33-editor-boundary">
