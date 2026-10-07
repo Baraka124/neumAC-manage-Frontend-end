@@ -44,7 +44,22 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (_) { /* never let the diagnostic itself break the page */ }
     }
     window.addEventListener('error', (e) => showOnScreenError('Script error', e.error || e.message))
-    window.addEventListener('unhandledrejection', (e) => showOnScreenError('Unhandled promise rejection', e.reason))
+    // Transient connectivity failures (offline, server unreachable, request timeout) are
+    // environmental, not bugs — logging them quietly keeps the diagnostic overlay for real
+    // programming errors instead of flashing it on every network blip.
+    function __isBenignNetworkError(reason) {
+      const code = reason && reason.code
+      const msg = (reason && (reason.message || String(reason))) || ''
+      return code === 'NETWORK_UNREACHABLE' || code === 'REQUEST_TIMEOUT' ||
+        /you are offline|could not reach the server|took too long to respond|failed to fetch|networkerror|load failed/i.test(msg)
+    }
+    window.addEventListener('unhandledrejection', (e) => {
+      if (__isBenignNetworkError(e && e.reason)) {
+        try { console.warn('[neumDesk] connectivity issue (overlay suppressed):', (e.reason && (e.reason.message || e.reason)) || e.reason) } catch (_) {}
+        return
+      }
+      showOnScreenError('Unhandled promise rejection', e.reason)
+    })
 
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
@@ -3855,7 +3870,18 @@ document.addEventListener('DOMContentLoaded', () => {
         })
 
         if (pending.length > 0 && requireValidation) { pendingActivations.value = pending; showActivationModal() }
-        if (updates.length > 0) { await Promise.all(updates); await loadRotations(); showToast('Rotations Updated', `${updates.length} rotation(s) automatically updated.`, 'info') }
+        if (updates.length > 0) {
+          // allSettled, not all: this is an automatic background routine, so one
+          // rotation failing (e.g. a transient connection blip) must not reject the
+          // whole batch — that rejection was surfacing as a scary error overlay.
+          const results = await Promise.allSettled(updates)
+          const ok = results.filter(r => r.status === 'fulfilled').length
+          const failed = results.length - ok
+          await loadRotations()
+          if (ok > 0) showToast('Rotations Updated', `${ok} rotation(s) automatically updated.`, 'info')
+          if (failed > 0) showToast('Some rotations pending', `${failed} couldn't be updated just now (likely a brief connection issue). They'll be retried automatically.`, 'warning')
+          return { updates: ok, failed, pending: pending.length }
+        }
         return { updates: updates.length, pending: pending.length }
       }
 
@@ -3927,15 +3953,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const initAutoCheck = () => {
-        // Silent: scheduled→active and active→completed are date facts, not decisions
-        setTimeout(() => checkAndUpdateRotations(false), 2000)
+        // Silent: scheduled→active and active→completed are date facts, not decisions.
+        // Guard the fire-and-forget calls so a background failure can never bubble up
+        // as an unhandled rejection.
+        setTimeout(() => { checkAndUpdateRotations(false).catch(e => console.warn('[neumDesk] auto rotation check skipped:', e?.message || e)) }, 2000)
         const interval = setInterval(() => {
           // M5 FIX: compare numeric timestamps — avoids timezone/clock parsing issues
           const lastCheck = localStorage.getItem('last_rotation_check')
           const now = Date.now()
           const lastCheckMs = lastCheck ? parseInt(lastCheck, 10) : 0
           if (!lastCheck || isNaN(lastCheckMs) || (now - lastCheckMs) > 4 * 60 * 60 * 1000) {
-            checkAndUpdateRotations(false)
+            checkAndUpdateRotations(false).catch(e => console.warn('[neumDesk] auto rotation check skipped:', e?.message || e))
             localStorage.setItem('last_rotation_check', now.toString())
           }
         }, 60 * 60 * 1000)
