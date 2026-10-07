@@ -34,6 +34,7 @@
 <link rel="stylesheet" href="research-visibility.css?v=20261006-1">
 </head>
 <body>
+    <div id="neumax-topbar" aria-hidden="true"></div>
 <div id="app" v-cloak>
         <div v-if="testSession" class="test-session-banner" role="status"><span>Development test · {{testSession.name}} · Actions use this person's permissions and affect real development records.</span><button type="button" @click="returnToAdministrator">Return to system administrator</button></div>
 
@@ -4681,7 +4682,7 @@
                                 <p class="ac-meta">Nothing is selected automatically. Changing filters or mappings clears selection. Changing a conflict decision deselects that row. Current assignments stay until you approve and select a replacement.</p>
                                 <div class="sync-table-wrap" tabindex="0" aria-label="On-call import comparison">
                                   <table class="sync-table"><thead><tr><th scope="col">Apply</th><th scope="col">Date</th><th scope="col">Current schedule</th><th scope="col">From Excel</th><th scope="col">Review / result</th></tr></thead><tbody>
-                                    <tr v-for="r in oncallSyncVisible" :key="r.key" :class="{'sync-selected':oncallSync.selection[r.key]}">
+                                    <tr v-for="r in oncallSyncVisible" :key="r.key" :class="[oncallSyncRowClass(r.date), {'sync-selected':oncallSync.selection[r.key]}]">
                                       <td><input type="checkbox" v-model="oncallSync.selection[r.key]" :aria-label="'Apply assignment on '+r.date" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed||!['new','replacement'].includes(r.status)"></td>
                                       <td><strong>{{r.date||'Invalid date'}}</strong><small v-if="r.date">{{ new Date(r.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long'}) }}</small><small>Source row {{r.source_row}}</small></td>
                                       <td><template v-if="r.current"><strong>{{r.currentName}}</strong><small>Resident: {{r.currentResident||'None'}}</small><small>{{oncallSyncType(r.current.shift_type)}}</small></template><span v-else>{{r.status==='conflict'?'Multiple assignments':'No assignment'}}</span></td>
