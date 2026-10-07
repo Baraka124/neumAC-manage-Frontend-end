@@ -6945,6 +6945,50 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { saving.value = false }
       }
 
+      // Flip website visibility straight from the list/detail — no need to open the editor.
+      // Sends the full record (Joi requires title) plus the flipped flag.
+      const toggleTrialPublic = (trial) => {
+        if (!trial?.id) return
+        const next = !trial.featured_in_website
+        showConfirmation({
+          title: next ? 'Publish to website?' : 'Make private?',
+          message: next
+            ? 'This study will appear on neumact.org (public research site). Only publication-eligible fields are shown there.'
+            : 'This study will be removed from neumact.org. Cached pages may take a little time to update.',
+          confirmButtonText: next ? 'Publish' : 'Make private',
+          onConfirm: async () => {
+            try {
+              await API.updateClinicalTrial(trial.id, { ...trial, featured_in_website: next })
+              const idx = clinicalTrials.value.findIndex(t => t.id === trial.id)
+              if (idx !== -1) clinicalTrials.value[idx] = { ...clinicalTrials.value[idx], featured_in_website: next }
+              if (String(selectedStudy.value?.id) === String(trial.id)) selectedStudy.value = { ...selectedStudy.value, featured_in_website: next }
+              showToast('Updated', next ? 'Now public on the website' : 'Now private', 'success')
+            } catch (e) { showToast('Error', e?.message || 'Could not update visibility', 'error') }
+          }
+        })
+      }
+
+      const toggleProjectPublic = (project) => {
+        if (!project?.id) return
+        const next = !project.featured_in_website
+        showConfirmation({
+          title: next ? 'Publish to website?' : 'Make private?',
+          message: next
+            ? 'This project will appear in the Active Projects section on neumact.org.'
+            : 'This project will be removed from neumact.org. Cached pages may take a little time to update.',
+          confirmButtonText: next ? 'Publish' : 'Make private',
+          onConfirm: async () => {
+            try {
+              await API.updateInnovationProject(project.id, { ...project, featured_in_website: next })
+              const idx = innovationProjects.value.findIndex(p => p.id === project.id)
+              if (idx !== -1) innovationProjects.value[idx] = { ...innovationProjects.value[idx], featured_in_website: next }
+              if (String(selectedProject.value?.id) === String(project.id)) selectedProject.value = { ...selectedProject.value, featured_in_website: next }
+              showToast('Updated', next ? 'Now public on the website' : 'Now private', 'success')
+            } catch (e) { showToast('Error', e?.message || 'Could not update visibility', 'error') }
+          }
+        })
+      }
+
       const saveInnovationProject = async (saving) => {
         const f = innovationProjectModal.form
         if (!f.title?.trim()) { showToast('Validation Error', 'Project title is required', 'error'); return }
@@ -7109,7 +7153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
