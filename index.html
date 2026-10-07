@@ -10197,7 +10197,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <option value="Dispositivo">Medical device</option>
                                 <option value="Salud Digital">Digital health</option>
                                 <option value="IA / ML">AI / ML</option>
-                                <option value="Tecnologia Quirurgica">Surgical technology</option>
+                                <option value="Tecnología Quirúrgica">Surgical technology</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -10326,7 +10326,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div class="sm-field"><div class="sm-label">Regulatory pathway</div><select class="sm-select" v-model="innovationProjectModal.form.regulatory_pathway"><option value="none">Not defined / not applicable</option><option value="ce_mdr">CE MDR</option><option value="samd">SaMD</option><option value="aemps">AEMPS</option><option value="fda">FDA</option><option value="other">Other</option></select></div>
                             </div>
                             <div class="sm-row">
-                                <div class="sm-field"><div class="sm-label">IP status</div><input class="sm-input" v-model="innovationProjectModal.form.ip_status" placeholder="e.g. background IP, under review, protected"></div>
+                                <div class="sm-field"><div class="sm-label">IP status</div><select class="sm-select" v-model="innovationProjectModal.form.ip_status"><option :value="null">Not recorded</option><option value="None">None</option><option value="Patent pending">Patent pending</option><option value="Patent granted">Patent granted</option><option value="Software registered">Software registered</option><option value="Trade secret">Trade secret</option></select></div>
                                 <div class="sm-field"><div class="sm-label">Funding status</div><select class="sm-select" v-model="innovationProjectModal.form.funding_status"><option value="not_applicable">Not applicable</option><option value="seeking">Seeking funding</option><option value="applied">Applied</option><option value="funded">Funded</option><option value="completed">Completed</option></select></div>
                             </div>
                             <div class="sm-row">
