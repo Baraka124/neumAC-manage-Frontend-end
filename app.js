@@ -2261,7 +2261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (i > -1) toasts.value.splice(i, 1)
       }
 
-      const showConfirmation = (opts) => Object.assign(confirmationModal, { show: true, ...opts })
+      const showConfirmation = (opts) => Object.assign(confirmationModal, { show: true, reversible: false, confirmButtonIcon: null, ...opts })
 
       const confirmAction = async () => {
         if (confirmationModal.onConfirm) {
@@ -10989,6 +10989,7 @@ document.addEventListener('DOMContentLoaded', () => {
             message: 'This blocks all non-admin access to the API immediately, for everyone, system-wide.',
             details: 'You will still have access. Everyone else will see a maintenance notice until you turn this back off.',
             icon: 'fa-exclamation-triangle', confirmButtonText: 'Enable Maintenance Mode', confirmButtonClass: 'btn-danger',
+            reversible: true, confirmButtonIcon: 'fas fa-wrench',
             onConfirm: () => { systemSettings.maintenance_mode = true; saveSystemSettings() }
           })
         }

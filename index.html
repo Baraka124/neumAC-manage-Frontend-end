@@ -9403,8 +9403,8 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8V12M12 16H12.01"/></svg>
                         <span>{{ confirmationModal.details }}</span>
                     </div>
-                    <!-- Destructive action warning -->
-                    <div v-if="confirmationModal.confirmButtonClass === 'btn-danger'" class="confirm-warning-strip">
+                    <!-- Destructive action warning — suppressed for reversible actions (e.g. maintenance mode) -->
+                    <div v-if="confirmationModal.confirmButtonClass === 'btn-danger' && !confirmationModal.reversible" class="confirm-warning-strip">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         <span>This action is <strong>permanent</strong> and cannot be undone.</span>
                     </div>
