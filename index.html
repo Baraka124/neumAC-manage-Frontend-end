@@ -9966,12 +9966,12 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <section class="rv34-editor-section" id="rv39-study-design">
                             <header><div><span>Clinical design</span><strong>Indication, population, sponsor and delivery context</strong></div></header>
                             <div class="sm-row">
-                                <div class="sm-field" v-if="clinicalTrialModal.form.study_type === 'Clinical Trial'">
+                                <div class="sm-field" v-if="trialPhaseApplies">
                                     <div class="sm-label">Trial phase</div>
                                     <select class="sm-select" v-model="clinicalTrialModal.form.phase">
                                         <option value="">Not recorded</option><option value="Phase I">Phase I</option><option value="Phase II">Phase II</option><option value="Phase III">Phase III</option><option value="Phase IV">Phase IV</option>
                                     </select>
-                                    <small class="rv34-help">Shown only for records explicitly classified as Clinical Trial.</small>
+                                    <small class="rv34-help">Shown for interventional / trial-type designs, where a clinical phase applies.</small>
                                 </div>
                                 <div class="sm-field">
                                     <div class="sm-label">Operational status <span class="req">·</span></div>
