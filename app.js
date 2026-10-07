@@ -1550,8 +1550,26 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
               parsedError = JSON.parse(errBody)
               const j = parsedError
+              // Humanise a single field path (e.g. "study_type" → "Study type")
+              const prettyField = p => String(p || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim()
+              // Turn a Joi/DB validation message into something a human can act on,
+              // keeping the permitted values when the backend lists them.
+              const prettyDetail = (field, message) => {
+                let m = String(message || '').replace(/^"[^"]*"\s*/, '').trim()   // drop Joi's leading "field"
+                if (m && /must be one of|not allowed|permitted|one of \[/i.test(m)) m = m.replace(/^must be/i, 'must be')
+                const label = prettyField(field)
+                if (!m) return label ? `${label}: invalid value` : 'Invalid value'
+                return label ? `${label} — ${m.charAt(0).toUpperCase() + m.slice(1)}` : (m.charAt(0).toUpperCase() + m.slice(1))
+              }
+              // Joi-middleware shape FIRST: { error:'Validation failed', details:[{field,message}] }.
+              // This is the one that was being swallowed as a bare "Validation failed".
+              if (Array.isArray(j.details) && j.details.length) {
+                errMsg = j.details
+                  .map(d => (d && typeof d === 'object') ? prettyDetail(d.field, d.message) : String(d))
+                  .filter(Boolean).join(' · ')
+              }
               // Common shapes: { message }, { error }, { detail }
-              if (j.message) errMsg = j.message
+              else if (j.message) errMsg = j.message
               else if (j.error) errMsg = j.error
               else if (j.detail) errMsg = j.detail
               else {
@@ -1560,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parts = []
                 for (const [field, val] of Object.entries(j)) {
                   const msg = Array.isArray(val) ? val.join(', ') : (typeof val === 'string' ? val : JSON.stringify(val))
-                  parts.push(`${field}: ${msg}`)
+                  parts.push(`${prettyField(field)}: ${msg}`)
                 }
                 if (parts.length) errMsg = parts.join(' · ')
               }
