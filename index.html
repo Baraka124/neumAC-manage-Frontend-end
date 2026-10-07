@@ -2408,7 +2408,6 @@
                             <select class="form-select" v-model="onCallFilters.shiftType">
                                 <option value="">All Roles</option>
                                 <option value="primary_call">Primary Call</option>
-                                <option value="backup_call">Backup Call</option>
                                 <option value="float_physician">Float Physician</option>
                                     <option value="on_call_home">Localizada</option><option value="on_call_mixed">Mixta</option><option value="on_call_present">Presencial</option>
                             </select>
@@ -2526,7 +2525,7 @@
                                 <table class="table table-striped table-oncall"><thead><tr>
                                     <th>Shift Period</th><th>Physician</th>
                                     <th>Type</th><th>Status</th>
-                                    <th>Backup</th><th>Actions</th>
+                                    <th>Actions</th>
                                 </tr></thead></table>
                                 <div  class="nd-l272">
                                     <div v-for="i in 8" :key="i"  class="nd-l341 nd-v190">
@@ -2546,7 +2545,6 @@
                                         <th>Physician</th>
                                         <th>Type</th>
                                         <th>Status</th>
-                                        <th>Backup</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -2600,10 +2598,6 @@
                                               <span class="oc-status-dot"></span>
                                               {{ new Date(schedule.duty_date + 'T' + (schedule.start_time||'00:00')) > new Date() ? 'Upcoming' : isToday(schedule.duty_date) ? 'Live' : 'Done' }}
                                             </span>
-                                        </td>
-                                        <td :data-label="'Backup'" :title="schedule.backup_physician_id ? getPhysicianName(schedule.backup_physician_id) : ''">
-                                            <span v-if="schedule.backup_physician_id">{{ getPhysicianName(schedule.backup_physician_id) }}</span>
-                                            <span v-else class="na-value">—</span>
                                         </td>
                                         <td :data-label="'Actions'">
                                             <div class="table-actions">
@@ -7907,16 +7901,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                         </div>
                         <div v-if="onCallModal.form.resident_physician_id" class="ac-meta">Resident: {{getPhysicianName(onCallModal.form.resident_physician_id)}}</div>
-                        <div v-if="onCallModal.form.backup_physician_id"  class="nd-l056">
-                            <div  class="nd-l055 nd-v114">
-                                {{ (allStaffLookup.find(s=>s.id===onCallModal.form.backup_physician_id)?.full_name||'').split(' ').slice(0,2).map(n=>n[0]).join('') }}
-                            </div>
-                            <div>
-                                <div  class="nd-v098">{{ allStaffLookup.find(s=>s.id===onCallModal.form.backup_physician_id)?.full_name }}</div>
-                                <div  class="nd-v113">Backup</div>
-                            </div>
-                        </div>
-                        <div v-if="!onCallModal.form.primary_physician_id && !onCallModal.form.backup_physician_id"  class="nd-v091">No staff assigned yet</div>
+                        <div v-if="!onCallModal.form.primary_physician_id"  class="nd-v091">No staff assigned yet</div>
                     </div>
                     <div class="sm-req-note"><div class="sm-req-dot"></div> Required fields</div>
                 </div>
@@ -7943,7 +7928,6 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div class="sm-label">Role <span class="req">·</span></div>
                                 <select class="sm-select" v-model="onCallModal.form.shift_type" :class="{'is-invalid': fieldErrors.oncall?.shift_type}">
                                     <option value="primary_call">Primary Call</option>
-                                    <option value="backup_call">Backup Call</option>
                                     <option value="float_physician">Float Physician</option>
                                     <option value="on_call_home">Localizada</option><option value="on_call_mixed">Mixta</option><option value="on_call_present">Presencial</option>
                                 </select>
@@ -8008,33 +7992,6 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 </div>
                             </template>
                             <small v-if="fieldErrors.oncall?.primary_physician_id" class="error-text">{{ fieldErrors.oncall.primary_physician_id }}</small>
-                        </div>
-                        <!-- Backup: progressive disclosure — collapsed by default, expands on click -->
-                        <div class="sm-field" v-if="!onCallModal.showBackup">
-                            <button type="button" class="sm-add-backup-btn"
-                                    @click="onCallModal.showBackup = true">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                                Assign backup
-                            </button>
-                            <span class="sm-add-backup-hint">Optional — in case of changes or emergencies</span>
-                        </div>
-                        <div class="sm-field" v-else>
-                            <div class="sm-label nd-l106" >
-                                <span>Backup Physician</span>
-                                <button type="button" class="sm-backup-remove"
-                                        @click="onCallModal.form.backup_physician_id = ''; onCallModal.showBackup = false"
-                                        title="Remove backup">
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg>
-                                    Remove
-                                </button>
-                            </div>
-                            <select class="sm-select" v-model="onCallModal.form.backup_physician_id">
-                                <option value="">Select backup…</option>
-                                <option v-for="s in medicalStaff.filter(s=>s.employment_status==='active' && isOnCallEligible(s.staff_type) && s.id!==onCallModal.form.primary_physician_id)" :key="s.id" :value="s.id">{{ s.full_name }}</option>
-                            </select>
-                            <small  class="nd-l105 nd-v001">
-                                Available if primary is unreachable — can be updated any time
-                            </small>
                         </div>
                         <div class="sm-field">
                             <div class="sm-label">Shift Notes <span class="hint">— optional</span></div>
@@ -11742,7 +11699,6 @@ Use Section heading to structure longer clinical or research articles."></textar
                   <div class="sm-label">Role <span class="req">·</span></div>
                   <select class="sm-select" v-model="bulkOncall.current.shift_type">
                     <option value="primary_call">Primary Call</option>
-                    <option value="backup_call">Backup Call</option>
                     <option value="float_physician">Float Physician</option>
                                     <option value="on_call_home">Localizada</option><option value="on_call_mixed">Mixta</option><option value="on_call_present">Presencial</option>
                   </select>
