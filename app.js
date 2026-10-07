@@ -2191,13 +2191,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const loginForm = reactive({ email: '', password: '', remember_me: false, keep_signed_in: false })
       const loginLoading = ref(false)
 
+      // Best-effort public maintenance flag, so the login screen can warn that only
+      // administrators can sign in right now — read before any authentication.
+      const maintenanceMode = ref(false)
+      const checkMaintenanceStatus = async () => {
+        try {
+          const res = await fetch(`${CONFIG.API_BASE_URL}/api/public/status`, { cache: 'no-store' })
+          if (res.ok) { const d = await res.json(); maintenanceMode.value = d?.maintenance_mode === true }
+        } catch { /* banner is best-effort; ignore failures */ }
+      }
+
       // Backend-resolved capability snapshot; never infer authority from admin_level.
       const hasPermission = (module, action='read') => window.NeumAccess.hasPermission(currentUser.value?.access,module,action)
       const isAdmin = () => window.NeumAccess.allowed(currentUser.value?.access,'identity.users.manage')
       const canManageSettings = () => window.NeumAccess.allowed(currentUser.value?.access,'identity.users.view') || window.NeumAccess.allowed(currentUser.value?.access,'system.settings.view')
       const _isAdminHelpersDefined = true
 
-      return { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings }
+      return { currentUser, loginForm, loginLoading, maintenanceMode, checkMaintenanceStatus, hasPermission, isAdmin, canManageSettings }
     }
 
     // ============ 6.2 useUI ============
@@ -8006,7 +8016,8 @@ document.addEventListener('DOMContentLoaded', () => {
         watch(()=>entry.state,()=>{ entry46Clock.value=Date.now() })
 
         const auth = useAuth()
-        const { currentUser, loginForm, loginLoading, hasPermission, isAdmin, canManageSettings } = auth
+        const { currentUser, loginForm, loginLoading, maintenanceMode, checkMaintenanceStatus, hasPermission, isAdmin, canManageSettings } = auth
+        onMounted(() => { checkMaintenanceStatus() })
         const ui = useUI({navigate:view=>switchView(view),getAbsences:()=>absencesShared.value,getRotations:()=>rotations.value})
         const { showToast, showConfirmation, currentView, userMenuOpen, userProfileModal } = ui
 
@@ -18495,7 +18506,7 @@ document.addEventListener('DOMContentLoaded', () => {
           entry, entryBusy, entryLoginIssue, backToSignIn, validateEntrySession, resumeEntrySession, useAnotherEntryAccount,
           entry46Stories, entry46Story, entry46Select, entry46Expanded, entry46ImageErrors,
           askBarRefreshRecords,
-          loading, saving, currentUser, loginForm, loginLoading, hasPermission, canManageSettings, canOpenView, isAdmin,
+          loading, saving, currentUser, loginForm, loginLoading, maintenanceMode, hasPermission, canManageSettings, canOpenView, isAdmin,
           previewIntro, dismissPreviewIntro,
           ...Object.fromEntries(Object.entries(ui).filter(([k]) => k !== 'showToast')),
           showToast, showConfirmation, ui,
