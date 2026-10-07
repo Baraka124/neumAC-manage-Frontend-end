@@ -3,7 +3,13 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof Vue === 'undefined') throw new Error('Vue.js not loaded')   
 
-    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue 
+    const { createApp, ref, reactive, computed, onMounted, watch, onUnmounted } = Vue
+
+    // On-call shift types that mean "this person holds the duty (primary) that day".
+    // Guardias imported from Excel use on_call_home/mixed/present — they ARE the day's
+    // primary, just in a different mode — so they must count as a primary assignment
+    // everywhere the dashboard asks "is this day covered / who is on call".
+    const ONCALL_PRIMARY_TYPES = ['primary_call','primary','weekend_coverage','on_call_home','on_call_mixed','on_call_present']
 
     // ── DIAGNOSTIC: visible error banner ─────────────────────────────────
     // Built with plain DOM calls (no Vue) so it still works even when the
@@ -3217,7 +3223,7 @@ document.addEventListener('DOMContentLoaded', () => {
           todaysOnCall.value = data.map(item => {
             const startTime = item.start_time?.substring(0, 5) || 'N/A'
             const endTime = item.end_time?.substring(0, 5) || 'N/A'
-            const isPrimary = ['primary_call', 'primary'].includes(item.shift_type || '')
+            const isPrimary = ONCALL_PRIMARY_TYPES.includes(item.shift_type || '')
             const matchingStaff = medicalStaff.value.find(s => s.id === item.primary_physician_id)
             return {
               id: item.id, startTime, endTime,
@@ -3461,7 +3467,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hadCall = (onCallSchedule.value || []).some(s =>
               Utils.normalizeDate(s.duty_date) === d &&
               s.primary_physician_id === physicianId &&
-              ['primary_call','primary'].includes(s.shift_type)
+              ONCALL_PRIMARY_TYPES.includes(s.shift_type)
             )
             if (hadCall) count++
             else break
@@ -3477,7 +3483,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const monthEnd   = Utils.normalizeDate(new Date(now.getFullYear(), now.getMonth() + 1, 0))
           return (onCallSchedule.value || []).filter(s =>
             s.primary_physician_id === physicianId &&
-            ['primary_call','primary'].includes(s.shift_type) &&
+            ONCALL_PRIMARY_TYPES.includes(s.shift_type) &&
             Utils.normalizeDate(s.duty_date) >= monthStart &&
             Utils.normalizeDate(s.duty_date) <= monthEnd
           ).length
@@ -3509,10 +3515,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (areaId) {
             let slot = map[d].areas.find(a => a.id === areaId)
             if (!slot) { slot = { id: areaId, name: areaName, color: areaColor, primary: null, backup: null }; map[d].areas.push(slot) }
-            if (['primary_call','primary'].includes(s.shift_type)) slot.primary = enrich(s, d)
+            if (ONCALL_PRIMARY_TYPES.includes(s.shift_type)) slot.primary = enrich(s, d)
             else if (s.shift_type === 'backup_call') slot.backup = s
           } else {
-            if (['primary_call','primary'].includes(s.shift_type)) map[d].noArea.primary = enrich(s, d)
+            if (ONCALL_PRIMARY_TYPES.includes(s.shift_type)) map[d].noArea.primary = enrich(s, d)
             else if (s.shift_type === 'backup_call') map[d].noArea.backup = s
           }
         })
@@ -7745,7 +7751,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 7; i++) {
           const d = new Date(todayDate.getTime() + i * 86400000)
           const ds = Utils.normalizeDate(d)
-          const hasPrimary = onCallSchedule.value.some(s => Utils.normalizeDate(s.duty_date) === ds && ['primary_call','primary','weekend_coverage'].includes(s.shift_type))
+          const hasPrimary = onCallSchedule.value.some(s => Utils.normalizeDate(s.duty_date) === ds && ONCALL_PRIMARY_TYPES.includes(s.shift_type))
           if (!hasPrimary) ocGaps.push(d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))
         }
         if (ocGaps.length > 0) {
@@ -7793,7 +7799,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const todayStr = Utils.normalizeDate(new Date())
           const hasCoverage = onCallSchedule.value.some(s =>
             Utils.normalizeDate(s.duty_date) === todayStr &&
-            ['primary_call','primary','weekend_coverage'].includes(s.shift_type)
+            ONCALL_PRIMARY_TYPES.includes(s.shift_type)
           )
           const hasActiveRotations = rotations.value.some(r => r.rotation_status === 'active')
           items.push({
@@ -7829,7 +7835,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const scheduledRots   = rotations.value.filter(r => r.rotation_status === 'scheduled').length
         const todayHasCoverage= onCallSchedule.value.some(s =>
           Utils.normalizeDate(s.duty_date) === today &&
-          ['primary_call','primary','weekend_coverage'].includes(s.shift_type)
+          ONCALL_PRIMARY_TYPES.includes(s.shift_type)
         )
         const dangerAlerts = situationItems.value.filter(i => i.type === 'danger').length
         const warnAlerts   = situationItems.value.filter(i => i.type === 'warn').length
@@ -8525,7 +8531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const knowledgeCoverage = () => ({ Person: true, Activity: true, Event: true })
 
         // Excel → on-call: preview staff/MIR assignments, review differences, explicitly commit.
-        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
+        const oncallSync = reactive({fileName:'',parsing:false,done:false,error:'',rows:[],entries:[],selection:{},filter:{start:'',end:'',search:'',status:''},results:{},checking:false,checkKey:'',checkResults:{},checkError:'',toAdd:[],toUpdate:[],unmatched:[],conflicts:[],blocked:[],stats:null,summary:null,mappings:{},choices:{},existing:[],sourceStaff:[],committing:false,committed:false,commitResult:null,historyAccepted:false})
         const oncallSyncVisible=computed(()=>window.NeumOncallSync.visible(oncallSync.entries,oncallSync.filter))
         const oncallSyncSelected=computed(()=>window.NeumOncallSync.selected(oncallSync.entries,oncallSync.filter,oncallSync.selection))
         const oncallSyncPayload=()=>oncallSyncSelected.value.map(r=>({duty_date:r.date,primary_physician_id:r.staffId,resident_physician_id:r.residentId||null,shift_type:r.shiftType,expected:r.expected||null,source_sheet:r.source_sheet,source_row:r.source_row}))
@@ -8555,15 +8561,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const oncallSyncParse=async(file)=>{
           if(oncallSync.checking||oncallSync.committing)return
-          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},filter:{start:'',end:'',search:'',status:''}})
+          Object.assign(oncallSync,{fileName:file.name,parsing:true,done:false,error:'',choices:{},committed:false,commitResult:null,historyAccepted:false,selection:{},results:{},summary:null,filter:{start:'',end:'',search:'',status:''}})
           try{
             const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const active=String(new Date().getFullYear());const sheet=wb.SheetNames.find(n=>n===active+'+'||n===active)||wb.SheetNames.find(n=>/^\d{4}\+?$/.test(n));if(!sheet)throw Error('No dated Guardias sheet found.')
             const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,raw:true});oncallSync.rows=window.NeumOncallSync.parse(aoa,sheet)
             if(!oncallSync.rows.length)throw Error('No populated assignments found.')
             const dates=oncallSync.rows.map(r=>r.date).filter(Boolean).sort();if(!dates.length)throw Error('No valid assignment dates found.')
+            // Summarise the file's date coverage so the user is told up-front whether there is
+            // anything current or future to sync — the point is to sync forward, not re-import history.
+            const todayStr=Utils.normalizeDate(new Date());
+            const upcoming=dates.filter(d=>d>=todayStr).length;
+            oncallSync.summary={min:dates[0],max:dates.at(-1),total:dates.length,upcoming,pastOnly:dates.at(-1)<todayStr};
             const [existing,staff]=await Promise.all([API.request('/api/oncall?start_date='+dates[0]+'&end_date='+dates.at(-1),{skipCache:true}),API.request('/api/identity/staff',{skipCache:true})]);oncallSync.existing=Array.isArray(existing)?existing:existing.data||[];oncallSync.sourceStaff=staff.data||[]
             try{oncallSync.mappings=JSON.parse(localStorage.getItem(SYNC_MAP_KEY)||'{}')}catch{oncallSync.mappings={}}
-            syncRebuild();oncallSyncPeriod(dates[0].slice(0,7));oncallSync.done=true
+            // Land on the current month when the file has upcoming shifts, so the user sees
+            // current/future on-call by default instead of the file's first (oldest) month.
+            const landMonth=upcoming>0&&dates.at(-1)>=todayStr?todayStr.slice(0,7):dates[0].slice(0,7);
+            syncRebuild();oncallSyncPeriod(landMonth);oncallSync.done=true
           }catch(e){oncallSync.error=e.message}finally{oncallSync.parsing=false}
         }
         const oncallSyncReset=()=>{if(!oncallSync.checking&&!oncallSync.committing)Object.assign(oncallSync,{done:false,fileName:'',error:'',rows:[],entries:[],selection:{},results:{},toAdd:[],toUpdate:[],conflicts:[],blocked:[],unmatched:[],choices:{},commitResult:null,committed:false})}
@@ -8571,18 +8585,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const oncallSyncMap=(name,id)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={...oncallSync.mappings,[name]:id};try{localStorage.setItem(SYNC_MAP_KEY,JSON.stringify(oncallSync.mappings))}catch{};syncRebuild()}
         const oncallSyncChoice=(date,choice)=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;const selection={...oncallSync.selection};oncallSync.entries.filter(r=>r.date===date).forEach(r=>delete selection[r.key]);oncallSync.selection=selection;oncallSync.choices={...oncallSync.choices,[date]:choice};syncRebuild()}
         const oncallSyncClearMappings=()=>{if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return;oncallSync.selection={};oncallSync.mappings={};try{localStorage.removeItem(SYNC_MAP_KEY)}catch{};syncRebuild()}
-        const oncallSyncConfirmCommit=()=>{if(oncallSync.checking||oncallSync.committing)return;const n=oncallSyncSelected.value.length;const replacements=oncallSyncSelected.value.filter(r=>r.status==='replacement').length;if(n&&window.confirm('Apply '+n+' selected assignments, including '+replacements+' replacements, from '+oncallSync.filter.start+' to '+oncallSync.filter.end+'?'))oncallSyncCommit()}
+        const oncallSyncConfirmCommit=()=>{
+          if(oncallSync.checking||oncallSync.committing)return
+          const n=oncallSyncSelected.value.length
+          // Tell the user WHY nothing happens instead of silently returning.
+          if(!n){showToast('Nothing selected','Tick the assignments you want to apply first — nothing is selected yet.','info');return}
+          if(!oncallSyncReady.value){showToast('Not checked yet',oncallSync.summary?.pastOnly?'These dates are in the past. Turn on “Include historical assignments”, then run the check again.':'Run “Check selected assignments” first, or re-run it — your selection changed since the last check.','info');return}
+          const replacements=oncallSyncSelected.value.filter(r=>r.status==='replacement').length
+          if(window.confirm('Apply '+n+' selected assignments, including '+replacements+' replacements, from '+oncallSync.filter.start+' to '+oncallSync.filter.end+'?'))oncallSyncCommit()
+        }
         const oncallSyncCommit=async()=>{
-          if(!oncallSyncReady.value||oncallSync.checking||oncallSync.committing||oncallSync.committed||currentUser.value?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW')return
+          if(oncallSync.checking||oncallSync.committing||oncallSync.committed)return
+          if(currentUser.value?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW'){showToast('Permission needed','Your account cannot commit an on-call sync. Ask a system administrator to grant it.','error');return}
+          if(!oncallSyncReady.value){showToast('Not ready','Check the selected assignments before applying.','info');return}
           const shifts=oncallSyncPayload()
-          if(!shifts.length)return
+          if(!shifts.length){showToast('Nothing selected','Select at least one assignment to apply.','info');return}
           oncallSync.committing=true;oncallSync.commitResult=null
           let inserted=0,updated=0,skipped=0;const failures=[]
           try{
             for(let i=0;i<shifts.length;i+=10){const result=await API.request('/api/oncall/batch',{method:'POST',body:{shifts:shifts.slice(i,i+10),source_file:oncallSync.fileName,acknowledge_history:oncallSync.historyAccepted}});if(!Number.isInteger(result.inserted)||!Number.isInteger(result.updated)||!Number.isInteger(result.skipped))throw Error('Server returned unrecognised results. Reload before retrying.');inserted+=result.inserted;updated+=result.updated;skipped+=result.skipped;failures.push(...(result.results||[]).filter(r=>r.status==='not_saved'));for(const row of result.results||[])oncallSync.results[row.date]=row}
             oncallSync.commitResult={ok:skipped===0,msg:inserted+' added · '+updated+' updated · '+skipped+' not saved.',failures}
           }catch(e){oncallSync.commitResult={ok:false,msg:inserted+' confirmed added · '+updated+' confirmed updated. '+e.message+' Reload the file before retrying; a failed request may have partially completed.',failures}}
-          finally{oncallSync.committed=true;oncallSync.committing=false;API.clearCache();try{await onCallOps.loadOnCallSchedule()}catch{}}
+          finally{oncallSync.committed=true;oncallSync.committing=false;API.clearCache();try{await onCallOps.loadOnCallSchedule()}catch{};if(oncallSync.commitResult)showToast(oncallSync.commitResult.ok?'On-call sync complete':'Sync finished with issues',oncallSync.commitResult.msg,oncallSync.commitResult.ok?'success':'error')}
         }
 
         // Keep the hoisted ref in sync so useStaff coordinator-clear logic sees live data
