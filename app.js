@@ -836,13 +836,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
     // ============ 3. ENHANCED UTILS CLASS ============
+    // Keys MUST be the English values the DB chk_current_stage_en constraint stores
+    // (concept/development/pilot/validation/scaling/completed). They were Spanish, so
+    // every stage click wrote a value the backend dropped — the stage never saved and
+    // the active stage never highlighted. Labels stay human-facing.
     const PROJECT_STAGES_DATA = [
-      { key: 'Idea',             label: 'Idea',            icon: 'fa-lightbulb',    color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
-      { key: 'Prototipo',        label: 'Prototype',       icon: 'fa-cube',         color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
-      { key: 'Piloto',           label: 'Pilot',          icon: 'fa-play-circle',  color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
-      { key: 'Validación',       label: 'Validation',      icon: 'fa-check-double', color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
-      { key: 'Escalamiento',     label: 'Scale-up',    icon: 'fa-chart-line',   color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
-      { key: 'Comercialización', label: 'Commercialisation',icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 6 }
+      { key: 'concept',    label: 'Idea',             icon: 'fa-lightbulb',    color: '#94a3b8', bg: 'rgba(148,163,184,.12)', step: 1 },
+      { key: 'development',label: 'Prototype',        icon: 'fa-cube',         color: '#60a5fa', bg: 'rgba(96,165,250,.12)',  step: 2 },
+      { key: 'pilot',      label: 'Pilot',            icon: 'fa-play-circle',  color: '#34d399', bg: 'rgba(52,211,153,.12)',  step: 3 },
+      { key: 'validation', label: 'Validation',       icon: 'fa-check-double', color: '#fbbf24', bg: 'rgba(251,191,36,.12)',  step: 4 },
+      { key: 'scaling',    label: 'Scale-up',         icon: 'fa-chart-line',   color: '#f97316', bg: 'rgba(249,115,22,.12)',  step: 5 },
+      { key: 'completed',  label: 'Commercialisation',icon: 'fa-rocket',       color: '#10b981', bg: 'rgba(16,185,129,.12)',  step: 6 }
     ]
 
     // ── Pulmonology disease options ──────────────────────────────
@@ -6792,7 +6796,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const showAddProjectModal = (line = null) => {
         innovationProjectModal.mode = 'add'
         Object.assign(innovationProjectModal.form, {
-          title: '', category: 'Dispositivo', current_stage: 'Idea', description: '', clinical_rationale: '',
+          title: '', category: 'Dispositivo', current_stage: 'concept', description: '', clinical_rationale: '',
           research_line_id: line?.id || '', lead_investigator_id: '', co_investigators: [], partner_needs: [],
           partner_found: false, partner_name: '', funding_status: 'not_applicable', funding_source: '', budget: null,
           trl_level: null, ip_status: '', keywords: [], keywordsInput: '', tags: [], milestones: [], additional_line_ids: [],
@@ -6834,7 +6838,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clinicalTrialModal.show = true
         _captureStudyBaseline()
       }
-      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || p.development_stage || 'Idea', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '', _protocol_applicability: (p.validation_protocol_id || p.ethics_status) ? 'required' : '', _validation_protocol_id: p.validation_protocol_id || '', _validation_protocol_status: p.validation_protocol_finalized ? 'final' : '', _ethics_clearance: p.ethics_status || '' }; innovationProjectModal.show = true; _captureProjectBaseline() }
+      const editProject = (p) => { innovationProjectModal.mode = 'edit'; const coI = Array.isArray(p.co_investigators) && p.co_investigators.length ? p.co_investigators : (Array.isArray(p.co_leads) ? p.co_leads : []); const kws = Array.isArray(p.keywords) && p.keywords.length ? p.keywords : (Array.isArray(p.tags) ? p.tags : []); innovationProjectModal.form = { ...p, current_stage: p.current_stage || 'development', partner_needs: Array.isArray(p.partner_needs) ? [...p.partner_needs] : [], co_investigators: [...coI], keywords: [...kws], keywordsInput: kws.length ? kws.join(', ') : '', partner_found: p.partner_found || false, partner_name: p.partner_name || '', funding_status: p.funding_status || 'not_applicable', clinical_rationale: p.clinical_rationale || '', additional_line_ids: Array.isArray(p.additional_lines) ? p.additional_lines.map(l => l.id) : [], _extMemberDraft: { name: '', institution: '', role: '', email: '' }, _milestoneLabel: '', _milestoneDate: '', research_origin: p.research_origin || '', delivery_model: p.delivery_model || '', institutional_role: p.institutional_role || '', _protocol_applicability: (p.validation_protocol_id || p.ethics_status) ? 'required' : '', _validation_protocol_id: p.validation_protocol_id || '', _validation_protocol_status: p.validation_protocol_finalized ? 'final' : '', _ethics_clearance: p.ethics_status || '' }; innovationProjectModal.show = true; _captureProjectBaseline() }
       const viewTrial = (t) => { trialDetailModal.trial = t; trialDetailModal.study = t; trialDetailModal.show = true }
 
       const saveResearchLine = async (saving) => {
@@ -7109,7 +7113,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const activeTrials  = (clinicalTrials.value || []).filter(t => ['active','recruiting'].includes(normalizeTrialStatusKey(t))).length
           const recruitingTrials = (clinicalTrials.value || []).filter(t => normalizeRecruitmentStatusKey(t) === 'recruiting').length
           const totalProjects = (innovationProjects.value || []).length
-          const lateStageProjects = (innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalamiento','Comercialización'].includes(p.current_stage)).length
+          const lateStageProjects = (innovationProjects.value || []).filter(p => ['pilot','validation','scaling','completed'].includes(p.current_stage)).length
           const totalEnrolled = (clinicalTrials.value || []).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
           const totalTarget   = (clinicalTrials.value || []).reduce((s, t) => s + (t.enrollment_target || 0), 0)
           return { totalLines, activeLines, totalTrials, activeTrials, recruitingTrials, totalProjects, lateStageProjects, totalEnrolled, totalTarget }
@@ -8725,7 +8729,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeTrials     = (researchOps.clinicalTrials.value || []).filter(t => ['active','recruiting'].includes(researchOps.trialStatusKey(t))).length
             const recruitingTrials = (researchOps.clinicalTrials.value || []).filter(t => researchOps.trialRecruitmentKey(t) === 'recruiting').length
             const totalProjects    = (researchOps.innovationProjects.value || []).length
-            const lateStageProjects = (researchOps.innovationProjects.value || []).filter(p => ['Piloto','Validación','Escalamiento','Comercialización'].includes(p.current_stage)).length
+            const lateStageProjects = (researchOps.innovationProjects.value || []).filter(p => ['pilot','validation','scaling','completed'].includes(p.current_stage)).length
             const totalEnrolled    = (researchOps.clinicalTrials.value || []).reduce((s, t) => s + (t.actual_enrollment || 0), 0)
             const totalTarget      = (researchOps.clinicalTrials.value || []).reduce((s, t) => s + (t.enrollment_target || 0), 0)
             return { totalLines, activeLines, totalTrials, activeTrials, recruitingTrials, totalProjects, lateStageProjects, totalEnrolled, totalTarget }
@@ -8797,6 +8801,9 @@ document.addEventListener('DOMContentLoaded', () => {
           'Tecnologia Quirurgica':'Surgical technology'
         })[value] || value || 'Clinical innovation'
         const formatInnovationStage = (value) => ({
+          // English keys are what the DB stores; Spanish kept as legacy aliases.
+          'concept':'Idea',        'development':'Prototype', 'pilot':'Pilot',
+          'validation':'Validation','scaling':'Scale-up',     'completed':'Commercialisation',
           'Idea':'Idea',
           'Prototipo':'Prototype',
           'Piloto':'Pilot',
