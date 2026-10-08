@@ -6991,7 +6991,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Studies preview: a read-only spreadsheet-style table over all studies, with
       // inline public/private toggling and a real .xlsx export (SheetJS is loaded).
-      const studiesPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {} })
+      const STUDY_PDF_FIELDS = [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrolment'],['featured_in_website','Visibility'],['updated','Updated']]
+      const studiesPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(STUDY_PDF_FIELDS.map(f => [f[0], true])) })
       const openStudiesPreview = () => { studiesPreview.show = true }
       const studiesPreviewSort = (key) => {
         if (studiesPreview.sortKey === key) studiesPreview.sortDir *= -1
@@ -7040,6 +7041,41 @@ document.addEventListener('DOMContentLoaded', () => {
           window.XLSX.writeFile(wb, `neumACt-studies-${new Date().toISOString().slice(0, 10)}.xlsx`)
           showToast('Exported', `${data.length} stud${data.length===1?'y':'ies'} → Excel`, 'success')
         } catch (e) { showToast('Export failed', e?.message || 'Could not build the Excel file', 'error') }
+      }
+
+      // Print-to-PDF of the shown studies, with the user's chosen fields. No new
+      // dependency: builds a clean print document in a new window and calls print()
+      // (the browser's "Save as PDF" does the rest). "Selected only" prints ticked rows.
+      const exportStudiesPdf = (selectedOnly = false) => {
+        const cols = STUDY_PDF_FIELDS.filter(f => studiesPreview.pdfFields[f[0]])
+        if (!cols.length) { showToast('Pick at least one field', 'Select the information to include first.', 'info'); return }
+        let rows = studiesPreviewRows.value
+        if (selectedOnly) rows = rows.filter(r => studiesPreview.sel[r.id])
+        if (!rows.length) { showToast('Nothing to print', selectedOnly ? 'No rows are selected.' : 'No studies to print.', 'info'); return }
+        const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+        const cell = (r, k) => k === 'featured_in_website' ? (r.featured_in_website ? 'Public' : 'Private') : esc(r[k] || '—')
+        const head = cols.map(c => `<th>${esc(c[1])}</th>`).join('')
+        const body = rows.map(r => `<tr>${cols.map(c => `<td>${cell(r, c[0])}</td>`).join('')}</tr>`).join('')
+        const today = new Date().toISOString().slice(0, 10)
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>neumACt — Clinical studies ${today}</title>
+          <style>
+            @page{margin:16mm}
+            body{font:12px/1.5 Arial,Helvetica,sans-serif;color:#1c2b2b}
+            h1{font-size:18px;margin:0 0 2px}.sub{color:#5d6b74;font-size:11px;margin:0 0 16px}
+            table{border-collapse:collapse;width:100%}
+            th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#5d6b74;border-bottom:2px solid #0f3d3d;padding:7px 8px}
+            td{padding:7px 8px;border-bottom:1px solid #e3eae8;vertical-align:top}
+            tr{break-inside:avoid}
+          </style></head><body>
+          <h1>Clinical studies — neumACt</h1>
+          <p class="sub">${rows.length} record(s) · generated ${today}${selectedOnly ? ' · selected only' : ''}</p>
+          <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+          <script>window.onload=function(){window.print()}<\/script>
+          </body></html>`
+        const w = window.open('', '_blank')
+        if (!w) { showToast('Pop-up blocked', 'Allow pop-ups to download the PDF.', 'error'); return }
+        w.document.open(); w.document.write(html); w.document.close()
+        studiesPreview.showPdf = false
       }
 
       // ── Projects preview: same spreadsheet-style read-only grid, for innovation projects.
@@ -7289,7 +7325,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,

@@ -5638,6 +5638,20 @@
                                     <select v-model="studiesPreview.visibility" style="padding:8px 10px;border:1px solid #cedcda;border-radius:9px;font:inherit;font-size:13px">
                                         <option value="">All visibility</option><option value="public">Public only</option><option value="private">Private only</option>
                                     </select>
+                                    <div style="position:relative">
+                                        <button @click="studiesPreview.showPdf = !studiesPreview.showPdf" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #cbd7d7;border-radius:9px;background:#fff;color:#0f3d3d;font:inherit;font-size:13px;font-weight:600;cursor:pointer">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                                            PDF ▾
+                                        </button>
+                                        <div v-if="studiesPreview.showPdf" style="position:absolute;top:calc(100% + 6px);right:0;z-index:10;background:#fff;border:1px solid #dde6e3;border-radius:11px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:12px 14px;width:230px">
+                                            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5d6b74;margin-bottom:8px">Fields to include</div>
+                                            <label v-for="f in STUDY_PDF_FIELDS" :key="f[0]" style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" v-model="studiesPreview.pdfFields[f[0]]"> {{ f[1] }}
+                                            </label>
+                                            <button @click="exportStudiesPdf(false)" style="width:100%;margin-top:10px;padding:8px;border:0;border-radius:8px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Download PDF (all shown)</button>
+                                            <button v-if="previewSelCount(studiesPreview)" @click="exportStudiesPdf(true)" style="width:100%;margin-top:6px;padding:8px;border:1px solid #cbd7d7;border-radius:8px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Download selected only ({{ previewSelCount(studiesPreview) }})</button>
+                                        </div>
+                                    </div>
                                     <button @click="exportStudiesXlsx()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border:0;border-radius:9px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
                                         Download Excel
