@@ -64,8 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============ 1. CONFIGURATION ====----===--====-=
     const CONFIG = {
       API_BASE_URL: window.location.hostname.includes('localhost')
-        ? 'http://localhost:3000' 
-        : 'https://neumac-manage-back-end-production.up.railway.app',      
+        ? 'http://localhost:3000'
+        : 'https://api.neumact.org',
       // V46.14 Access Gate 4.2: active sessions are tab-scoped by default.
       // The legacy localStorage keys are retained only for migration/explicit trusted-browser persistence.
       TOKEN_KEY: 'neumocare_token',
