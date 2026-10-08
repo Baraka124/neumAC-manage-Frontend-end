@@ -7073,7 +7073,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Studies preview: a read-only spreadsheet-style table over all studies, with
       // inline public/private toggling and a real .xlsx export (SheetJS is loaded).
       const STUDY_PDF_FIELDS = [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrolment'],['featured_in_website','Visibility'],['updated','Updated']]
-      const studiesPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(STUDY_PDF_FIELDS.map(f => [f[0], true])) })
+      const studiesPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', statusFilter: '', sel: {}, showPdf: false, showCols: false, cols: { protocol_id: true, line: true, study_type: true, phase: true, enrolment: true, updated: true }, pdfFields: Object.fromEntries(STUDY_PDF_FIELDS.map(f => [f[0], true])) })
       const openStudiesPreview = () => { studiesPreview.show = true }
       const studiesPreviewSort = (key) => {
         if (studiesPreview.sortKey === key) studiesPreview.sortDir *= -1
@@ -7100,6 +7100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let rows = (filteredTrialsAll.value || clinicalTrials.value || []).map(_studyRow)
         if (studiesPreview.visibility === 'public')  rows = rows.filter(r => r.featured_in_website)
         if (studiesPreview.visibility === 'private') rows = rows.filter(r => !r.featured_in_website)
+        if (studiesPreview.statusFilter) rows = rows.filter(r => r.statusKey === studiesPreview.statusFilter)
         const k = studiesPreview.sortKey, dir = studiesPreview.sortDir
         return rows.slice().sort((a, b) => {
           const av = a[k], bv = b[k]
@@ -7235,7 +7236,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const PROJ_STAGE_LABEL = { concept:'Idea', development:'Prototype', pilot:'Pilot', validation:'Validation', scaling:'Scale-up', completed:'Commercialisation' }
       const PROJ_CAT_LABEL = { 'Dispositivo':'Medical device', 'Salud Digital':'Digital health', 'IA / ML':'AI / ML', 'Tecnología Quirúrgica':'Surgical technology' }
       const PROJECT_PDF_FIELDS = [['title','Title'],['line','Research line'],['category','Category'],['stage','Stage'],['funding','Funding'],['featured_in_website','Visibility'],['updated','Updated']]
-      const projectsPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(PROJECT_PDF_FIELDS.map(f => [f[0], true])) })
+      const projectsPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', stageFilter: '', sel: {}, showPdf: false, showCols: false, cols: { line: true, category: true, stage: true, funding: true, updated: true }, pdfFields: Object.fromEntries(PROJECT_PDF_FIELDS.map(f => [f[0], true])) })
       const openProjectsPreview = () => { projectsPreview.show = true }
       const projectsPreviewSort = (key) => {
         if (projectsPreview.sortKey === key) projectsPreview.sortDir *= -1
@@ -7256,6 +7257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let rows = (filteredProjectsAll.value || innovationProjects.value || []).map(_projectRow)
         if (projectsPreview.visibility === 'public')  rows = rows.filter(r => r.featured_in_website)
         if (projectsPreview.visibility === 'private') rows = rows.filter(r => !r.featured_in_website)
+        if (projectsPreview.stageFilter) rows = rows.filter(r => (r._raw.current_stage || r._raw.development_stage) === projectsPreview.stageFilter)
         const k = projectsPreview.sortKey, dir = projectsPreview.sortDir
         return rows.slice().sort((a, b) => {
           const av = a[k], bv = b[k]

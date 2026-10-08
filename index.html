@@ -5699,6 +5699,19 @@
                                     <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid #d9e1e1;border-radius:999px;font-size:12px;color:#64748b"><span style="width:7px;height:7px;border-radius:50%;background:#94a3b8"></span><strong style="font-size:13px">{{ studiesPreviewRows.filter(r=>!r.featured_in_website).length }}</strong> private</span>
                                     <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid rgba(16,185,129,.3);border-radius:999px;font-size:12px;color:#0b6b4f"><strong style="font-size:13px">{{ studiesPreviewRows.filter(r=>r.statusKey==='recruiting').length }}</strong> recruiting</span>
                                 </div>
+                                <div style="display:flex;align-items:center;gap:7px;padding:9px 20px;border-bottom:1px solid #eef3f1;flex-wrap:wrap">
+                                    <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#8a979c;margin-right:2px">Status</span>
+                                    <button v-for="s in [['','All'],['recruiting','Recruiting'],['active','Active'],['prep','In prep'],['done','Completed']]" :key="s[0]" @click="studiesPreview.statusFilter = s[0]" :style="{padding:'4px 11px',borderRadius:'999px',border:'1px solid '+(studiesPreview.statusFilter===s[0]?'#008f8f':'#dde6e3'),background:studiesPreview.statusFilter===s[0]?'rgba(0,143,143,.08)':'#fff',color:studiesPreview.statusFilter===s[0]?'#007575':'#5d6b74',font:'inherit',fontSize:'12px',fontWeight:'600',cursor:'pointer'}">{{ s[1] }}</button>
+                                    <div style="margin-left:auto;position:relative">
+                                        <button @click="studiesPreview.showCols=!studiesPreview.showCols" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #dde6e3;border-radius:9px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">⚙ Columns</button>
+                                        <div v-if="studiesPreview.showCols" @click.self.stop style="position:absolute;top:calc(100% + 6px);right:0;z-index:10;background:#fff;border:1px solid #dde6e3;border-radius:11px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:12px 14px;width:200px">
+                                            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5d6b74;margin-bottom:8px">Show columns</div>
+                                            <label v-for="c in [['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['enrolment','Enrolment'],['updated','Updated']]" :key="c[0]" style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" v-model="studiesPreview.cols[c[0]]"> {{ c[1] }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div v-if="previewSelCount(studiesPreview)" style="display:flex;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,143,143,.08);border-bottom:1px solid #d6e6e6">
                                     <span style="font-size:13px;font-weight:600;color:#0f3d3d">{{ previewSelCount(studiesPreview) }} selected</span>
                                     <button @click="bulkSetVisibility('study', true)" style="padding:6px 13px;border:1px solid #10b981;border-radius:999px;background:rgba(16,185,129,.1);color:#0b6b4f;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make public</button>
@@ -5713,7 +5726,7 @@
                                         <thead>
                                             <tr style="position:sticky;top:0;background:#f4f8f8;z-index:1">
                                                 <th style="padding:11px 12px;width:36px;border-bottom:1px solid #dde6e3"><input type="checkbox" :checked="studiesPreviewRows.length && previewSelCount(studiesPreview)===studiesPreviewRows.length" @change="previewSelAll(studiesPreview, studiesPreviewRows, $event.target.checked)"></th>
-                                                <th v-for="col in [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrol.'],['featured_in_website','Visibility'],['updated','Updated']]" :key="col[0]" @click="studiesPreviewSort(col[0])" style="text-align:left;padding:11px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5d6b74;cursor:pointer;white-space:nowrap;border-bottom:1px solid #dde6e3;user-select:none">
+                                                <th v-for="col in [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrol.'],['featured_in_website','Visibility'],['updated','Updated']].filter(c => ['title','status','featured_in_website'].includes(c[0]) || studiesPreview.cols[c[0]])" :key="col[0]" @click="studiesPreviewSort(col[0])" style="text-align:left;padding:11px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5d6b74;cursor:pointer;white-space:nowrap;border-bottom:1px solid #dde6e3;user-select:none">
                                                     {{ col[1] }}<span v-if="studiesPreview.sortKey===col[0]"> {{ studiesPreview.sortDir>0?'▲':'▼' }}</span>
                                                 </th>
                                             </tr>
@@ -5722,10 +5735,10 @@
                                             <tr v-for="r in studiesPreviewRows" :key="r.id" :style="{borderBottom:'1px solid #eef3f1', background: studiesPreview.sel[r.id] ? 'rgba(0,143,143,.06)' : ''}">
                                                 <td style="padding:10px 12px"><input type="checkbox" :checked="!!studiesPreview.sel[r.id]" @change="previewToggleSel(studiesPreview, r.id)"></td>
                                                 <td style="padding:10px 12px;max-width:320px"><div style="font-weight:600;color:#0f3d3d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div></td>
-                                                <td style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.protocol_id || '—' }}</td>
-                                                <td style="padding:10px 12px">{{ r.line || '—' }}</td>
-                                                <td style="padding:10px 12px;white-space:nowrap">{{ r.study_type || '—' }}</td>
-                                                <td style="padding:10px 12px;white-space:nowrap">{{ r.phase || '—' }}</td>
+                                                <td v-if="studiesPreview.cols.protocol_id" style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.protocol_id || '—' }}</td>
+                                                <td v-if="studiesPreview.cols.line" style="padding:10px 12px">{{ r.line || '—' }}</td>
+                                                <td v-if="studiesPreview.cols.study_type" style="padding:10px 12px;white-space:nowrap">{{ r.study_type || '—' }}</td>
+                                                <td v-if="studiesPreview.cols.phase" style="padding:10px 12px;white-space:nowrap">{{ r.phase || '—' }}</td>
                                                 <td style="padding:10px 12px;white-space:nowrap">
                                                     <span style="display:inline-flex;align-items:center;gap:8px">
                                                         <span v-if="r.status" :style="{display:'inline-flex',alignItems:'center',gap:'6px',padding:'3px 10px',borderRadius:'999px',fontSize:'12px',fontWeight:'600',background:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[0],color:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[1]}">
@@ -5734,14 +5747,14 @@
                                                         <button v-if="r.statusKey!=='done' && canEditPortfolio(r._raw)" @click="openCompletion('study', r._raw)" title="Mark this study completed" style="border:1px solid #cfe0de;border-radius:7px;background:#fff;color:#007575;font:inherit;font-size:11px;font-weight:600;padding:2px 8px;cursor:pointer">✓ Complete</button>
                                                     </span>
                                                 </td>
-                                                <td style="padding:10px 12px;white-space:nowrap">{{ r.enrolment || '—' }}</td>
+                                                <td v-if="studiesPreview.cols.enrolment" style="padding:10px 12px;white-space:nowrap">{{ r.enrolment || '—' }}</td>
                                                 <td style="padding:10px 12px">
                                                     <button v-if="canEditPortfolio(r._raw)" @click="toggleTrialPublic(r._raw)" :title="r.featured_in_website?'Public — click to make private':'Private — click to publish'" :style="{display:'inline-flex',alignItems:'center',gap:'6px',padding:'4px 10px',border:'1px solid '+(r.featured_in_website?'#10b981':'#cbd5d5'),borderRadius:'999px',background:r.featured_in_website?'rgba(16,185,129,.1)':'#fff',color:r.featured_in_website?'#0b6b4f':'#64748b',font:'inherit',fontSize:'12px',fontWeight:'600',cursor:'pointer',whiteSpace:'nowrap'}">
                                                         <span :style="{width:'7px',height:'7px',borderRadius:'50%',background:r.featured_in_website?'#10b981':'#94a3b8'}"></span>{{ r.featured_in_website?'Public':'Private' }}
                                                     </button>
                                                     <span v-else style="font-size:12px;color:#94a3b8">{{ r.featured_in_website?'Public':'Private' }}</span>
                                                 </td>
-                                                <td style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.updated || '—' }}</td>
+                                                <td v-if="studiesPreview.cols.updated" style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.updated || '—' }}</td>
                                             </tr>
                                             <tr v-if="!studiesPreviewRows.length"><td colspan="10" style="padding:40px;text-align:center;color:#5d6b74">No studies match the current filters.</td></tr>
                                         </tbody>
@@ -5874,6 +5887,19 @@
                                     <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid rgba(16,185,129,.35);border-radius:999px;font-size:12px;color:#0b6b4f;background:rgba(16,185,129,.07)"><span style="width:7px;height:7px;border-radius:50%;background:#10b981"></span><strong style="font-size:13px">{{ projectsPreviewRows.filter(r=>r.featured_in_website).length }}</strong> public</span>
                                     <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid #d9e1e1;border-radius:999px;font-size:12px;color:#64748b"><span style="width:7px;height:7px;border-radius:50%;background:#94a3b8"></span><strong style="font-size:13px">{{ projectsPreviewRows.filter(r=>!r.featured_in_website).length }}</strong> private</span>
                                 </div>
+                                <div style="display:flex;align-items:center;gap:7px;padding:9px 20px;border-bottom:1px solid #eef3f1;flex-wrap:wrap">
+                                    <span style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#8a979c;margin-right:2px">Stage</span>
+                                    <button v-for="s in [['','All'],['concept','Idea'],['development','Prototype'],['pilot','Pilot'],['validation','Validation'],['scaling','Scale-up'],['completed','Done']]" :key="s[0]" @click="projectsPreview.stageFilter = s[0]" :style="{padding:'4px 11px',borderRadius:'999px',border:'1px solid '+(projectsPreview.stageFilter===s[0]?'#008f8f':'#dde6e3'),background:projectsPreview.stageFilter===s[0]?'rgba(0,143,143,.08)':'#fff',color:projectsPreview.stageFilter===s[0]?'#007575':'#5d6b74',font:'inherit',fontSize:'12px',fontWeight:'600',cursor:'pointer'}">{{ s[1] }}</button>
+                                    <div style="margin-left:auto;position:relative">
+                                        <button @click="projectsPreview.showCols=!projectsPreview.showCols" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #dde6e3;border-radius:9px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">⚙ Columns</button>
+                                        <div v-if="projectsPreview.showCols" style="position:absolute;top:calc(100% + 6px);right:0;z-index:10;background:#fff;border:1px solid #dde6e3;border-radius:11px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:12px 14px;width:200px">
+                                            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5d6b74;margin-bottom:8px">Show columns</div>
+                                            <label v-for="c in [['line','Research line'],['category','Category'],['funding','Funding'],['updated','Updated']]" :key="c[0]" style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" v-model="projectsPreview.cols[c[0]]"> {{ c[1] }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div v-if="previewSelCount(projectsPreview)" style="display:flex;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,143,143,.08);border-bottom:1px solid #d6e6e6">
                                     <span style="font-size:13px;font-weight:600;color:#0f3d3d">{{ previewSelCount(projectsPreview) }} selected</span>
                                     <button @click="bulkSetVisibility('project', true)" style="padding:6px 13px;border:1px solid #10b981;border-radius:999px;background:rgba(16,185,129,.1);color:#0b6b4f;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make public</button>
@@ -5888,7 +5914,7 @@
                                         <thead>
                                             <tr style="position:sticky;top:0;background:#f4f8f8;z-index:1">
                                                 <th style="padding:11px 12px;width:36px;border-bottom:1px solid #dde6e3"><input type="checkbox" :checked="projectsPreviewRows.length && previewSelCount(projectsPreview)===projectsPreviewRows.length" @change="previewSelAll(projectsPreview, projectsPreviewRows, $event.target.checked)"></th>
-                                                <th v-for="col in [['title','Title'],['line','Research line'],['category','Category'],['stage','Stage'],['funding','Funding'],['featured_in_website','Visibility'],['updated','Updated']]" :key="col[0]" @click="projectsPreviewSort(col[0])" style="text-align:left;padding:11px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5d6b74;cursor:pointer;white-space:nowrap;border-bottom:1px solid #dde6e3;user-select:none">
+                                                <th v-for="col in [['title','Title'],['line','Research line'],['category','Category'],['stage','Stage'],['funding','Funding'],['featured_in_website','Visibility'],['updated','Updated']].filter(c => ['title','stage','featured_in_website'].includes(c[0]) || projectsPreview.cols[c[0]])" :key="col[0]" @click="projectsPreviewSort(col[0])" style="text-align:left;padding:11px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5d6b74;cursor:pointer;white-space:nowrap;border-bottom:1px solid #dde6e3;user-select:none">
                                                     {{ col[1] }}<span v-if="projectsPreview.sortKey===col[0]"> {{ projectsPreview.sortDir>0?'▲':'▼' }}</span>
                                                 </th>
                                             </tr>
@@ -5897,22 +5923,22 @@
                                             <tr v-for="r in projectsPreviewRows" :key="r.id" :style="{borderBottom:'1px solid #eef3f1', background: projectsPreview.sel[r.id] ? 'rgba(0,143,143,.06)' : ''}">
                                                 <td style="padding:10px 12px"><input type="checkbox" :checked="!!projectsPreview.sel[r.id]" @change="previewToggleSel(projectsPreview, r.id)"></td>
                                                 <td style="padding:10px 12px;max-width:320px"><div style="font-weight:600;color:#0f3d3d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div></td>
-                                                <td style="padding:10px 12px">{{ r.line || '—' }}</td>
-                                                <td style="padding:10px 12px;white-space:nowrap">{{ r.category || '—' }}</td>
+                                                <td v-if="projectsPreview.cols.line" style="padding:10px 12px">{{ r.line || '—' }}</td>
+                                                <td v-if="projectsPreview.cols.category" style="padding:10px 12px;white-space:nowrap">{{ r.category || '—' }}</td>
                                                 <td style="padding:10px 12px;white-space:nowrap">
                                                     <span style="display:inline-flex;align-items:center;gap:8px">
                                                         <span>{{ r.stage || '—' }}</span>
                                                         <button v-if="!recordIsCompleted('project', r._raw) && canEditPortfolio(r._raw)" @click="openCompletion('project', r._raw)" title="Mark this project completed" style="border:1px solid #cfe0de;border-radius:7px;background:#fff;color:#007575;font:inherit;font-size:11px;font-weight:600;padding:2px 8px;cursor:pointer">✓ Complete</button>
                                                     </span>
                                                 </td>
-                                                <td style="padding:10px 12px;white-space:nowrap">{{ r.funding || '—' }}</td>
+                                                <td v-if="projectsPreview.cols.funding" style="padding:10px 12px;white-space:nowrap">{{ r.funding || '—' }}</td>
                                                 <td style="padding:10px 12px">
                                                     <button v-if="canEditPortfolio(r._raw)" @click="toggleProjectPublic(r._raw)" :title="r.featured_in_website?'Public — click to make private':'Private — click to publish'" :style="{display:'inline-flex',alignItems:'center',gap:'6px',padding:'4px 10px',border:'1px solid '+(r.featured_in_website?'#10b981':'#cbd5d5'),borderRadius:'999px',background:r.featured_in_website?'rgba(16,185,129,.1)':'#fff',color:r.featured_in_website?'#0b6b4f':'#64748b',font:'inherit',fontSize:'12px',fontWeight:'600',cursor:'pointer',whiteSpace:'nowrap'}">
                                                         <span :style="{width:'7px',height:'7px',borderRadius:'50%',background:r.featured_in_website?'#10b981':'#94a3b8'}"></span>{{ r.featured_in_website?'Public':'Private' }}
                                                     </button>
                                                     <span v-else style="font-size:12px;color:#94a3b8">{{ r.featured_in_website?'Public':'Private' }}</span>
                                                 </td>
-                                                <td style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.updated || '—' }}</td>
+                                                <td v-if="projectsPreview.cols.updated" style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.updated || '—' }}</td>
                                             </tr>
                                             <tr v-if="!projectsPreviewRows.length"><td colspan="8" style="padding:40px;text-align:center;color:#5d6b74">No projects match the current filters.</td></tr>
                                         </tbody>
