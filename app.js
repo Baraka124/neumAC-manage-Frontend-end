@@ -6599,6 +6599,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const trialStatusKey = (t) => normalizeTrialStatusKey(t)
       const trialRecruitmentKey = (t) => normalizeRecruitmentStatusKey(t)
       const TRIAL_STATUS_LABEL = { recruiting: 'Recruiting', active: 'Active', prep: 'In preparation', done: 'Completed', other: 'Other' }
+      // Status pill palette for the portfolio preview (bg / text / dot)
+      const STUDY_STATUS_COLOR = {
+        recruiting: ['rgba(16,185,129,.12)', '#0b6b4f', '#10b981'],
+        active:     ['rgba(47,134,186,.12)', '#1f5f86', '#2f86ba'],
+        prep:       ['rgba(234,179,8,.14)',  '#8a6d0b', '#eab308'],
+        done:       ['rgba(100,116,139,.14)', '#475569', '#64748b'],
+        other:      ['rgba(100,116,139,.10)', '#64748b', '#94a3b8']
+      }
       const countTrialsByStatus = (key) => clinicalTrials.value.filter(t => trialStatusKey(t) === key).length
 
       // Recruitment health: where a trial stands vs its target, and whether it's behind pace
@@ -6989,10 +6997,59 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       }
 
+      // ── Project completion status: mark a project completed (captures the real end
+      // date) or reopen it (clears the date, returns it to an active late stage).
+      const projectStatusModal = reactive({ show: false, project: null, date: '', saving: false })
+      const projectIsCompleted = (p) => (p?.current_stage || p?.development_stage) === 'completed'
+      const openProjectCompletion = (project) => {
+        if (!project?.id) return
+        projectStatusModal.project = project
+        projectStatusModal.date = project.actual_end_date ? String(project.actual_end_date).slice(0, 10) : new Date().toISOString().slice(0, 10)
+        projectStatusModal.show = true
+      }
+      const _applyProjectPatch = (id, patch) => {
+        const idx = innovationProjects.value.findIndex(p => p.id === id)
+        if (idx !== -1) innovationProjects.value[idx] = { ...innovationProjects.value[idx], ...patch }
+        if (String(selectedProject.value?.id) === String(id)) selectedProject.value = { ...selectedProject.value, ...patch }
+      }
+      const confirmProjectCompletion = async () => {
+        const project = projectStatusModal.project
+        if (!project?.id) return
+        const date = projectStatusModal.date
+        if (!date) { showToast('Date required', 'Choose the date the project ended.', 'info'); return }
+        if (new Date(date) > new Date(new Date().toISOString().slice(0, 10))) { showToast('Check the date', 'The completion date is in the future.', 'info'); return }
+        projectStatusModal.saving = true
+        try {
+          const patch = { current_stage: 'completed', actual_end_date: date }
+          await API.updateInnovationProject(project.id, { ...project, ...patch })
+          _applyProjectPatch(project.id, patch)
+          showToast('Project completed', `Marked completed · ended ${date}`, 'success')
+          projectStatusModal.show = false
+        } catch (e) { showToast('Error', e?.message || 'Could not update the project', 'error') }
+        finally { projectStatusModal.saving = false }
+      }
+      const reopenProject = (project) => {
+        if (!project?.id) return
+        showConfirmation({
+          title: 'Reopen this project?',
+          message: 'It returns to active (Scale-up) and its completion date is cleared. You can fine-tune the stage in Edit.',
+          confirmButtonText: 'Reopen',
+          reversible: true,
+          onConfirm: async () => {
+            try {
+              const patch = { current_stage: 'scaling', actual_end_date: '' }
+              await API.updateInnovationProject(project.id, { ...project, ...patch })
+              _applyProjectPatch(project.id, { current_stage: 'scaling', actual_end_date: null })
+              showToast('Reopened', 'Project is active again (Scale-up)', 'success')
+            } catch (e) { showToast('Error', e?.message || 'Could not reopen the project', 'error') }
+          }
+        })
+      }
+
       // ── Studies preview: a read-only spreadsheet-style table over all studies, with
       // inline public/private toggling and a real .xlsx export (SheetJS is loaded).
       const STUDY_PDF_FIELDS = [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrolment'],['featured_in_website','Visibility'],['updated','Updated']]
-      const studiesPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(STUDY_PDF_FIELDS.map(f => [f[0], true])) })
+      const studiesPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(STUDY_PDF_FIELDS.map(f => [f[0], true])) })
       const openStudiesPreview = () => { studiesPreview.show = true }
       const studiesPreviewSort = (key) => {
         if (studiesPreview.sortKey === key) studiesPreview.sortDir *= -1
@@ -7008,6 +7065,7 @@ document.addEventListener('DOMContentLoaded', () => {
           study_type: t.study_type || '',
           phase: t.phase || '',
           status: TRIAL_STATUS_LABEL[trialStatusKey(t)] || t.status || '',
+          statusKey: trialStatusKey(t),
           enrolment: enr ? `${enr.actual}/${enr.target}` : '',
           featured_in_website: !!t.featured_in_website,
           updated: t.updated_at ? String(t.updated_at).slice(0, 10) : '',
@@ -7025,17 +7083,32 @@ document.addEventListener('DOMContentLoaded', () => {
           return String(av ?? '').localeCompare(String(bv ?? ''), undefined, { numeric: true }) * dir
         })
       })
-      const exportStudiesXlsx = () => {
+      const _titleCase = s => String(s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      const exportStudiesXlsx = (selectedOnly = false) => {
         try {
           if (!window.XLSX) { showToast('Export unavailable', 'Spreadsheet engine not loaded', 'error'); return }
-          const data = studiesPreviewRows.value.map(r => ({
-            Title: r.title, Protocol: r.protocol_id, 'Research line': r.line,
-            Type: r.study_type, Phase: r.phase, Status: r.status,
-            Enrolment: r.enrolment, Visibility: r.featured_in_website ? 'Public' : 'Private',
-            'Last updated': r.updated
-          }))
+          let rows = studiesPreviewRows.value
+          if (selectedOnly) rows = rows.filter(r => studiesPreview.sel[r.id])
+          if (!rows.length) { showToast('Nothing to export', selectedOnly ? 'No rows are selected.' : 'No studies to export.', 'info'); return }
+          const data = rows.map(r => {
+            const t = r._raw || {}
+            const enr = trialEnrollment(t)
+            return {
+              Title: r.title, Protocol: r.protocol_id, 'Research line': r.line,
+              Type: r.study_type, Phase: r.phase, Status: r.status,
+              Sponsor: t.sponsor_name || '',
+              Multicentre: t.is_multicentre ? 'Yes' : 'No',
+              'Ethics / CEIm': t.ethics_status ? _titleCase(t.ethics_status) : '',
+              'Protocol finalised': t.protocol_finalized ? 'Yes' : 'No',
+              Enrolled: enr ? enr.actual : (Number(t.actual_enrollment) || ''),
+              Target: enr ? enr.target : (Number(t.enrollment_target) || ''),
+              'Clinical focus': (t.target_diseases || []).join(' · '),
+              Visibility: r.featured_in_website ? 'Public' : 'Private',
+              'Last updated': r.updated
+            }
+          })
           const ws = window.XLSX.utils.json_to_sheet(data)
-          ws['!cols'] = [{wch:44},{wch:18},{wch:26},{wch:16},{wch:11},{wch:16},{wch:12},{wch:11},{wch:13}]
+          ws['!cols'] = [{wch:44},{wch:18},{wch:26},{wch:16},{wch:10},{wch:16},{wch:22},{wch:11},{wch:16},{wch:16},{wch:9},{wch:8},{wch:30},{wch:11},{wch:13}]
           const wb = window.XLSX.utils.book_new()
           window.XLSX.utils.book_append_sheet(wb, ws, 'Studies')
           window.XLSX.writeFile(wb, `neumACt-studies-${new Date().toISOString().slice(0, 10)}.xlsx`)
@@ -7043,45 +7116,102 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { showToast('Export failed', e?.message || 'Could not build the Excel file', 'error') }
       }
 
-      // Print-to-PDF of the shown studies, with the user's chosen fields. No new
-      // dependency: builds a clean print document in a new window and calls print()
-      // (the browser's "Save as PDF" does the rest). "Selected only" prints ticked rows.
-      const exportStudiesPdf = (selectedOnly = false) => {
-        const cols = STUDY_PDF_FIELDS.filter(f => studiesPreview.pdfFields[f[0]])
-        if (!cols.length) { showToast('Pick at least one field', 'Select the information to include first.', 'info'); return }
-        let rows = studiesPreviewRows.value
-        if (selectedOnly) rows = rows.filter(r => studiesPreview.sel[r.id])
-        if (!rows.length) { showToast('Nothing to print', selectedOnly ? 'No rows are selected.' : 'No studies to print.', 'info'); return }
-        const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
-        const cell = (r, k) => k === 'featured_in_website' ? (r.featured_in_website ? 'Public' : 'Private') : esc(r[k] || '—')
-        const head = cols.map(c => `<th>${esc(c[1])}</th>`).join('')
-        const body = rows.map(r => `<tr>${cols.map(c => `<td>${cell(r, c[0])}</td>`).join('')}</tr>`).join('')
-        const today = new Date().toISOString().slice(0, 10)
-        const html = `<!doctype html><html><head><meta charset="utf-8"><title>neumACt — Clinical studies ${today}</title>
-          <style>
-            @page{margin:16mm}
-            body{font:12px/1.5 Arial,Helvetica,sans-serif;color:#1c2b2b}
-            h1{font-size:18px;margin:0 0 2px}.sub{color:#5d6b74;font-size:11px;margin:0 0 16px}
-            table{border-collapse:collapse;width:100%}
-            th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#5d6b74;border-bottom:2px solid #0f3d3d;padding:7px 8px}
-            td{padding:7px 8px;border-bottom:1px solid #e3eae8;vertical-align:top}
-            tr{break-inside:avoid}
-          </style></head><body>
-          <h1>Clinical studies — neumACt</h1>
-          <p class="sub">${rows.length} record(s) · generated ${today}${selectedOnly ? ' · selected only' : ''}</p>
-          <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-          <script>window.onload=function(){window.print()}<\/script>
-          </body></html>`
-        const w = window.open('', '_blank')
-        if (!w) { showToast('Pop-up blocked', 'Allow pop-ups to download the PDF.', 'error'); return }
-        w.document.open(); w.document.write(html); w.document.close()
-        studiesPreview.showPdf = false
+      // ── Robust print-to-PDF for either preview. Builds a clean, branded landscape
+      // document and prints it through a hidden iframe so pop-up blockers never
+      // intercept it; falls back to a new window if the iframe path is blocked.
+      // The browser's own "Save as PDF" turns the print dialog into a file.
+      const _printHtmlDocument = (html) => {
+        try {
+          const frame = document.createElement('iframe')
+          frame.setAttribute('aria-hidden', 'true')
+          frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'
+          document.body.appendChild(frame)
+          const win = frame.contentWindow
+          win.document.open(); win.document.write(html); win.document.close()
+          let cleaned = false
+          const cleanup = () => { if (cleaned) return; cleaned = true; setTimeout(() => { try { document.body.removeChild(frame) } catch (e) {} }, 1200) }
+          win.onafterprint = cleanup
+          setTimeout(() => {
+            try { win.focus(); win.print() }
+            catch (e) { cleanup(); _printWindowFallback(html) }
+            setTimeout(cleanup, 60000)
+          }, 350)
+        } catch (e) { _printWindowFallback(html) }
       }
+      const _printWindowFallback = (html) => {
+        const w = window.open('', '_blank')
+        if (!w) { showToast('Pop-up blocked', 'Allow pop-ups for this site, or use Download Excel instead.', 'error'); return }
+        w.document.open(); w.document.write(html); w.document.close()
+        w.focus(); setTimeout(() => { try { w.print() } catch (e) {} }, 400)
+      }
+      const _buildPreviewPrintHtml = ({ heading, cols, rows, visLabel, selectedOnly }) => {
+        const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))
+        const cell = (r, k) => k === 'featured_in_website' ? (r.featured_in_website ? 'Public' : 'Private') : esc(r[k] || '—')
+        const cls = k => k === 'title' ? ' class="c-title"' : ''
+        const head = cols.map(c => `<th${cls(c[0])}>${esc(c[1])}</th>`).join('')
+        const body = rows.map(r => `<tr>${cols.map(c => `<td${cls(c[0])}>${cell(r, c[0])}</td>`).join('')}</tr>`).join('')
+        const today = new Date().toISOString().slice(0, 10)
+        const ctx = [`${rows.length} record${rows.length === 1 ? '' : 's'}`, visLabel, selectedOnly ? 'selected only' : ''].filter(Boolean).join(' · ')
+        const logo = (typeof window !== 'undefined' && window.NEUMACT_LOGO_SVG)
+          ? `<span class="logo">${window.NEUMACT_LOGO_SVG}</span>`
+          : `<span class="wordmark">neumACt</span>`
+        const deskMark = (typeof window !== 'undefined' && window.NEUMDESK_LOGO_SVG)
+          ? `<span class="footlogo">${window.NEUMDESK_LOGO_SVG}</span>`
+          : 'neumDESK'
+        return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>neumACt — ${esc(heading)} ${today}</title>
+          <style>
+            @page{size:A4 landscape;margin:14mm 12mm 18mm}
+            *{box-sizing:border-box}
+            html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+            body{font:11px/1.45 Arial,Helvetica,sans-serif;color:#1c2b2b;margin:0}
+            .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
+            .logo svg{height:30px;width:auto;display:block}
+            .wordmark{font-size:22px;font-weight:800;letter-spacing:-.01em;color:#2f86ba}
+            .inst{text-align:right;font-size:9px;line-height:1.35;color:#5d6b74;text-transform:uppercase;letter-spacing:.06em}
+            .rule{height:3px;margin:9px 0 10px;background:linear-gradient(90deg,#3556a8,#3088b4,#32a5ac,#39a584);border-radius:2px}
+            .docline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:11px}
+            .docline h1{font-size:16px;margin:0;color:#0f3d3d;letter-spacing:.01em}
+            .docline .ctx{font-size:10px;color:#5d6b74;white-space:nowrap}
+            table{border-collapse:collapse;width:100%;table-layout:fixed}
+            thead{display:table-header-group}
+            th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#0f3d3d;border-bottom:1.5px solid #0f3d3d;padding:6px 7px;background:#f4f8f8}
+            td{padding:6px 7px;border-bottom:1px solid #e3eae8;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
+            tbody tr:nth-child(even) td{background:#fafcfc}
+            tr{break-inside:avoid}
+            .c-title{width:30%;font-weight:600;color:#0f3d3d}
+            .foot{position:fixed;bottom:6mm;left:12mm;right:12mm;display:flex;align-items:center;justify-content:space-between;font-size:8.5px;color:#8a979c;border-top:1px solid #e3eae8;padding-top:5px}
+            .foot .src{display:inline-flex;align-items:center;gap:6px}
+            .footlogo svg{height:13px;width:auto;display:block}
+          </style></head><body>
+          <div class="topbar">${logo}<span class="inst">Servicio de Neumología · CHUAC<br>Área Sanitaria da Coruña e Cee · SERGAS<br>INIBIC · neumACt R&amp;I</span></div>
+          <div class="rule"></div>
+          <div class="docline"><h1>${esc(heading)}</h1><span class="ctx">${esc(ctx)} · generated ${today}</span></div>
+          <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+          <div class="foot"><span class="src">Generated by ${deskMark}</span><span>Confidential · internal portfolio record · ${today}</span></div>
+          </body></html>`
+      }
+      const _previewPrint = (kind, selectedOnly = false) => {
+        const pv = kind === 'study' ? studiesPreview : projectsPreview
+        const FIELDS = kind === 'study' ? STUDY_PDF_FIELDS : PROJECT_PDF_FIELDS
+        const rowsRef = kind === 'study' ? studiesPreviewRows : projectsPreviewRows
+        const cols = FIELDS.filter(f => pv.pdfFields[f[0]])
+        if (!cols.length) { showToast('Pick at least one field', 'Select the information to include first.', 'info'); return }
+        let rows = rowsRef.value
+        if (selectedOnly) rows = rows.filter(r => pv.sel[r.id])
+        if (!rows.length) { showToast('Nothing to print', selectedOnly ? 'No rows are selected.' : 'No records to print.', 'info'); return }
+        const visLabel = pv.visibility === 'public' ? 'Public only' : pv.visibility === 'private' ? 'Private only' : 'All visibility'
+        const heading = kind === 'study' ? 'Clinical studies' : 'Innovation projects'
+        _printHtmlDocument(_buildPreviewPrintHtml({ heading, cols, rows, visLabel, selectedOnly }))
+        pv.showPdf = false
+      }
+      const exportStudiesPdf = (selectedOnly = false) => _previewPrint('study', selectedOnly)
+      const exportProjectsPdf = (selectedOnly = false) => _previewPrint('project', selectedOnly)
 
       // ── Projects preview: same spreadsheet-style read-only grid, for innovation projects.
       const PROJ_STAGE_LABEL = { concept:'Idea', development:'Prototype', pilot:'Pilot', validation:'Validation', scaling:'Scale-up', completed:'Commercialisation' }
       const PROJ_CAT_LABEL = { 'Dispositivo':'Medical device', 'Salud Digital':'Digital health', 'IA / ML':'AI / ML', 'Tecnología Quirúrgica':'Surgical technology' }
-      const projectsPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {} })
+      const PROJECT_PDF_FIELDS = [['title','Title'],['line','Research line'],['category','Category'],['stage','Stage'],['funding','Funding'],['featured_in_website','Visibility'],['updated','Updated']]
+      const projectsPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(PROJECT_PDF_FIELDS.map(f => [f[0], true])) })
       const openProjectsPreview = () => { projectsPreview.show = true }
       const projectsPreviewSort = (key) => {
         if (projectsPreview.sortKey === key) projectsPreview.sortDir *= -1
@@ -7109,10 +7239,13 @@ document.addEventListener('DOMContentLoaded', () => {
           return String(av ?? '').localeCompare(String(bv ?? ''), undefined, { numeric: true }) * dir
         })
       })
-      const exportProjectsXlsx = () => {
+      const exportProjectsXlsx = (selectedOnly = false) => {
         try {
           if (!window.XLSX) { showToast('Export unavailable', 'Spreadsheet engine not loaded', 'error'); return }
-          const data = projectsPreviewRows.value.map(r => ({
+          let rows = projectsPreviewRows.value
+          if (selectedOnly) rows = rows.filter(r => projectsPreview.sel[r.id])
+          if (!rows.length) { showToast('Nothing to export', selectedOnly ? 'No rows are selected.' : 'No projects to export.', 'info'); return }
+          const data = rows.map(r => ({
             Title: r.title, 'Research line': r.line, Category: r.category, Stage: r.stage,
             Funding: r.funding, Visibility: r.featured_in_website ? 'Public' : 'Private', 'Last updated': r.updated
           }))
@@ -7325,7 +7458,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, projectStatusModal, projectIsCompleted, openProjectCompletion, confirmProjectCompletion, reopenProject, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, STUDY_STATUS_COLOR, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,

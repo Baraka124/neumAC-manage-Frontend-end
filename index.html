@@ -1083,6 +1083,8 @@
                 </template>
                 <template v-else>
                     <div class="entry46-auth-focus">
+                        <img src="neumdesk-logo.svg" alt="neumDESK — clinical platform" style="height:30px;width:auto;display:block;margin:0 0 4px" onerror="this.style.display='none'">
+                        <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a979c;margin:0 0 16px">Clinical platform · Servicio de Neumología</div>
                         <h2 id="entry-title">Sign in</h2>
                         <div v-if="maintenanceMode" role="status" style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:0 0 14px;border:1px solid #f0c36d;border-radius:11px;background:#fff8ec;color:#7a4e07">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M14.7 6.3a4 4 0 0 1-5 5L4 17v3h3l5.7-5.7a4 4 0 0 1 5-5l-3 3-2-2 3-3Z"/></svg>
@@ -5604,7 +5606,25 @@
                                         <a v-if="selectedProject.repo_url" :href="selectedProject.repo_url" target="_blank" rel="noopener">Repository ↗</a>
                                         <a v-if="selectedProject.demo_url" :href="selectedProject.demo_url" target="_blank" rel="noopener">Live system ↗</a>
                                     </section>
-                                    <section v-if="canEditPortfolio(selectedProject) || canEditPortfolio(selectedProject)" class="rv32-side-section rv32-side-section--management">
+                                    <section v-if="canEditPortfolio(selectedProject)" class="rv32-side-section rv32-side-section--management">
+                                        <span>Project status</span>
+                                        <div v-if="projectIsCompleted(selectedProject)" style="display:flex;flex-direction:column;gap:9px">
+                                            <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #cbd5d5;border-radius:10px;background:#f7f9f9;font-size:13px;color:#475569">
+                                                <span style="width:8px;height:8px;border-radius:50%;background:#64748b"></span>
+                                                <span>Completed<template v-if="selectedProject.actual_end_date"> · ended {{ String(selectedProject.actual_end_date).slice(0,10) }}</template></span>
+                                            </div>
+                                            <button class="rv32-text-link" @click="openProjectCompletion(selectedProject)">✎ Change end date</button>
+                                            <button class="rv32-text-link" @click="reopenProject(selectedProject)">↻ Reopen as active</button>
+                                        </div>
+                                        <div v-else style="display:flex;flex-direction:column;gap:9px">
+                                            <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid rgba(16,185,129,.35);border-radius:10px;background:rgba(16,185,129,.07);font-size:13px;color:#0b6b4f">
+                                                <span style="width:8px;height:8px;border-radius:50%;background:#10b981"></span>
+                                                <span>Active · {{ formatInnovationStage(selectedProject.current_stage || selectedProject.development_stage) }}</span>
+                                            </div>
+                                            <button @click="openProjectCompletion(selectedProject)" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;border:1px solid #008f8f;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">✓ Mark as completed</button>
+                                        </div>
+                                    </section>
+                                    <section v-if="canEditPortfolio(selectedProject)" class="rv32-side-section rv32-side-section--management">
                                         <span>Record management</span>
                                         <button v-if="canEditPortfolio(selectedProject)" class="rv32-text-link" @click="editProject(selectedProject)">✎ Edit clinical innovation</button>
                                         <button v-if="canEditPortfolio(selectedProject)" class="rv32-text-link rv32-text-link--danger" @click="deleteInnovationProject(selectedProject, goBackFromRecord)">Delete project</button>
@@ -5628,12 +5648,16 @@
                         </header>
 
                         <!-- Spreadsheet-style studies preview (read-only; visibility editable inline; Excel export) -->
-                        <div v-if="studiesPreview.show" @click.self="studiesPreview.show=false" style="position:fixed;inset:0;z-index:9000;background:rgba(15,30,30,.55);display:flex;align-items:stretch;justify-content:center;padding:28px">
-                            <div style="background:#fff;border-radius:16px;width:min(1180px,100%);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-                                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #e6edeb">
-                                    <div style="flex:1;min-width:0">
-                                        <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#5d6b74">Spreadsheet preview</div>
-                                        <div style="font-size:18px;font-weight:650;color:#0f3d3d">Clinical studies <span style="font-weight:400;color:#5d6b74;font-size:14px">· {{ studiesPreviewRows.length }} shown</span></div>
+                        <div v-if="studiesPreview.show" @click.self="studiesPreview.show=false" :style="{position:'fixed',inset:0,zIndex:9000,background:'rgba(15,30,30,.55)',display:'flex',alignItems:'stretch',justifyContent:'center',padding: studiesPreview.maximized ? '0' : '28px'}">
+                            <div :style="{background:'#fff',borderRadius: studiesPreview.maximized ? '0' : '16px',width: studiesPreview.maximized ? '100%' : 'min(1180px,100%)',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,.3)'}">
+                                <div style="display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid #e6edeb;background:linear-gradient(180deg,#fbfdfd,#fff)">
+                                    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:13px">
+                                        <img src="neumact-logo.svg" alt="neumACt" style="height:26px;width:auto;display:block;flex:none" onerror="this.style.display='none'">
+                                        <span style="width:1px;height:30px;background:#dce7e5;flex:none"></span>
+                                        <div style="min-width:0">
+                                            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7c8a90">Research portfolio · Clinical studies</div>
+                                            <div style="font-size:17px;font-weight:650;color:#0f3d3d;line-height:1.2">Portfolio preview <span style="font-weight:400;color:#5d6b74;font-size:13.5px">· {{ studiesPreviewRows.length }} shown</span></div>
+                                        </div>
                                     </div>
                                     <select v-model="studiesPreview.visibility" style="padding:8px 10px;border:1px solid #cedcda;border-radius:9px;font:inherit;font-size:13px">
                                         <option value="">All visibility</option><option value="public">Public only</option><option value="private">Private only</option>
@@ -5656,12 +5680,25 @@
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
                                         Download Excel
                                     </button>
+                                    <button @click="studiesPreview.maximized=!studiesPreview.maximized" :title="studiesPreview.maximized?'Restore window':'Open full screen'" :aria-label="studiesPreview.maximized?'Restore window':'Open full screen'" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;color:#5d6b74;display:inline-flex;align-items:center;justify-content:center">
+                                        <svg v-if="!studiesPreview.maximized" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                                        <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+                                    </button>
                                     <button @click="studiesPreview.show=false" aria-label="Close" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;font-size:15px;color:#5d6b74">✕</button>
+                                </div>
+                                <div style="display:flex;gap:9px;padding:11px 20px;border-bottom:1px solid #eef3f1;flex-wrap:wrap">
+                                    <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid #e1eae8;border-radius:999px;font-size:12px;color:#0f3d3d"><strong style="font-size:13px">{{ studiesPreviewRows.length }}</strong> shown</span>
+                                    <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid rgba(16,185,129,.35);border-radius:999px;font-size:12px;color:#0b6b4f;background:rgba(16,185,129,.07)"><span style="width:7px;height:7px;border-radius:50%;background:#10b981"></span><strong style="font-size:13px">{{ studiesPreviewRows.filter(r=>r.featured_in_website).length }}</strong> public</span>
+                                    <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid #d9e1e1;border-radius:999px;font-size:12px;color:#64748b"><span style="width:7px;height:7px;border-radius:50%;background:#94a3b8"></span><strong style="font-size:13px">{{ studiesPreviewRows.filter(r=>!r.featured_in_website).length }}</strong> private</span>
+                                    <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid rgba(16,185,129,.3);border-radius:999px;font-size:12px;color:#0b6b4f"><strong style="font-size:13px">{{ studiesPreviewRows.filter(r=>r.statusKey==='recruiting').length }}</strong> recruiting</span>
                                 </div>
                                 <div v-if="previewSelCount(studiesPreview)" style="display:flex;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,143,143,.08);border-bottom:1px solid #d6e6e6">
                                     <span style="font-size:13px;font-weight:600;color:#0f3d3d">{{ previewSelCount(studiesPreview) }} selected</span>
                                     <button @click="bulkSetVisibility('study', true)" style="padding:6px 13px;border:1px solid #10b981;border-radius:999px;background:rgba(16,185,129,.1);color:#0b6b4f;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make public</button>
                                     <button @click="bulkSetVisibility('study', false)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#64748b;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make private</button>
+                                    <span style="width:1px;height:18px;background:#cfe0de"></span>
+                                    <button @click="exportStudiesXlsx(true)" style="padding:6px 13px;border:1px solid #008f8f;border-radius:999px;background:#fff;color:#007575;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Export selected → Excel</button>
+                                    <button @click="exportStudiesPdf(true)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Print selected → PDF</button>
                                     <button @click="previewSelClear(studiesPreview)" style="margin-left:auto;padding:6px 11px;border:0;background:none;color:#5d6b74;font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline">Clear</button>
                                 </div>
                                 <div style="overflow:auto;flex:1">
@@ -5682,7 +5719,11 @@
                                                 <td style="padding:10px 12px">{{ r.line || '—' }}</td>
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.study_type || '—' }}</td>
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.phase || '—' }}</td>
-                                                <td style="padding:10px 12px;white-space:nowrap">{{ r.status || '—' }}</td>
+                                                <td style="padding:10px 12px;white-space:nowrap">
+                                                    <span v-if="r.status" :style="{display:'inline-flex',alignItems:'center',gap:'6px',padding:'3px 10px',borderRadius:'999px',fontSize:'12px',fontWeight:'600',background:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[0],color:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[1]}">
+                                                        <span :style="{width:'6px',height:'6px',borderRadius:'50%',background:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[2]}"></span>{{ r.status }}
+                                                    </span><span v-else style="color:#94a3b8">—</span>
+                                                </td>
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.enrolment || '—' }}</td>
                                                 <td style="padding:10px 12px">
                                                     <button v-if="canEditPortfolio(r._raw)" @click="toggleTrialPublic(r._raw)" :title="r.featured_in_website?'Public — click to make private':'Private — click to publish'" :style="{display:'inline-flex',alignItems:'center',gap:'6px',padding:'4px 10px',border:'1px solid '+(r.featured_in_website?'#10b981':'#cbd5d5'),borderRadius:'999px',background:r.featured_in_website?'rgba(16,185,129,.1)':'#fff',color:r.featured_in_website?'#0b6b4f':'#64748b',font:'inherit',fontSize:'12px',fontWeight:'600',cursor:'pointer',whiteSpace:'nowrap'}">
@@ -5697,6 +5738,28 @@
                                     </table>
                                 </div>
                                 <div style="padding:10px 20px;border-top:1px solid #e6edeb;font-size:12px;color:#5d6b74">Read-only preview · click a column header to sort · visibility is editable inline · Download exports the rows shown. Reflects the studies page's current search/filters.</div>
+                            </div>
+                        </div>
+
+                        <!-- Project completion: date-only prompt to mark a project completed -->
+                        <div v-if="projectStatusModal.show" @click.self="projectStatusModal.show=false" style="position:fixed;inset:0;z-index:9100;background:rgba(15,30,30,.55);display:flex;align-items:center;justify-content:center;padding:24px">
+                            <div style="background:#fff;border-radius:16px;width:min(420px,100%);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
+                                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #eef3f1;background:linear-gradient(180deg,#fbfdfd,#fff)">
+                                    <img src="neumact-logo.svg" alt="neumACt" style="height:22px;width:auto;display:block;flex:none" onerror="this.style.display='none'">
+                                    <div>
+                                        <div style="font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#7c8a90">Clinical innovation</div>
+                                        <div style="font-size:16px;font-weight:650;color:#0f3d3d;line-height:1.2">Mark project completed</div>
+                                    </div>
+                                </div>
+                                <div style="padding:18px 20px">
+                                    <div style="font-size:13.5px;color:#475569;margin-bottom:6px;line-height:1.5">Record the date <strong style="color:#0f3d3d">{{ projectStatusModal.project && projectStatusModal.project.title }}</strong> was completed. It moves to <em>Completed</em> and stops counting as active.</div>
+                                    <label style="display:block;font-size:12px;font-weight:600;color:#5d6b74;margin:12px 0 5px">Completion date</label>
+                                    <input type="date" v-model="projectStatusModal.date" :max="new Date().toISOString().slice(0,10)" style="width:100%;padding:10px 12px;border:1px solid #cedcda;border-radius:10px;font:inherit;font-size:14px;color:#0f3d3d">
+                                </div>
+                                <div style="display:flex;gap:10px;justify-content:flex-end;padding:0 20px 18px">
+                                    <button @click="projectStatusModal.show=false" :disabled="projectStatusModal.saving" style="padding:9px 16px;border:1px solid #dde6e3;border-radius:10px;background:#fff;color:#5d6b74;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+                                    <button @click="confirmProjectCompletion()" :disabled="projectStatusModal.saving" style="padding:9px 18px;border:0;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">{{ projectStatusModal.saving ? 'Saving…' : 'Mark completed' }}</button>
+                                </div>
                             </div>
                         </div>
 
@@ -5758,26 +5821,56 @@
                         </header>
 
                         <!-- Spreadsheet-style projects preview (read-only; visibility editable inline; Excel export) -->
-                        <div v-if="projectsPreview.show" @click.self="projectsPreview.show=false" style="position:fixed;inset:0;z-index:9000;background:rgba(15,30,30,.55);display:flex;align-items:stretch;justify-content:center;padding:28px">
-                            <div style="background:#fff;border-radius:16px;width:min(1120px,100%);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-                                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #e6edeb">
-                                    <div style="flex:1;min-width:0">
-                                        <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#5d6b74">Spreadsheet preview</div>
-                                        <div style="font-size:18px;font-weight:650;color:#0f3d3d">Innovation projects <span style="font-weight:400;color:#5d6b74;font-size:14px">· {{ projectsPreviewRows.length }} shown</span></div>
+                        <div v-if="projectsPreview.show" @click.self="projectsPreview.show=false" :style="{position:'fixed',inset:0,zIndex:9000,background:'rgba(15,30,30,.55)',display:'flex',alignItems:'stretch',justifyContent:'center',padding: projectsPreview.maximized ? '0' : '28px'}">
+                            <div :style="{background:'#fff',borderRadius: projectsPreview.maximized ? '0' : '16px',width: projectsPreview.maximized ? '100%' : 'min(1120px,100%)',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,.3)'}">
+                                <div style="display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid #e6edeb;background:linear-gradient(180deg,#fbfdfd,#fff)">
+                                    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:13px">
+                                        <img src="neumact-logo.svg" alt="neumACt" style="height:26px;width:auto;display:block;flex:none" onerror="this.style.display='none'">
+                                        <span style="width:1px;height:30px;background:#dce7e5;flex:none"></span>
+                                        <div style="min-width:0">
+                                            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7c8a90">Research portfolio · Clinical innovation</div>
+                                            <div style="font-size:17px;font-weight:650;color:#0f3d3d;line-height:1.2">Portfolio preview <span style="font-weight:400;color:#5d6b74;font-size:13.5px">· {{ projectsPreviewRows.length }} shown</span></div>
+                                        </div>
                                     </div>
                                     <select v-model="projectsPreview.visibility" style="padding:8px 10px;border:1px solid #cedcda;border-radius:9px;font:inherit;font-size:13px">
                                         <option value="">All visibility</option><option value="public">Public only</option><option value="private">Private only</option>
                                     </select>
+                                    <div style="position:relative">
+                                        <button @click="projectsPreview.showPdf = !projectsPreview.showPdf" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #cbd7d7;border-radius:9px;background:#fff;color:#0f3d3d;font:inherit;font-size:13px;font-weight:600;cursor:pointer">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                                            PDF ▾
+                                        </button>
+                                        <div v-if="projectsPreview.showPdf" style="position:absolute;top:calc(100% + 6px);right:0;z-index:10;background:#fff;border:1px solid #dde6e3;border-radius:11px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:12px 14px;width:230px">
+                                            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5d6b74;margin-bottom:8px">Fields to include</div>
+                                            <label v-for="f in PROJECT_PDF_FIELDS" :key="f[0]" style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" v-model="projectsPreview.pdfFields[f[0]]"> {{ f[1] }}
+                                            </label>
+                                            <button @click="exportProjectsPdf(false)" style="width:100%;margin-top:10px;padding:8px;border:0;border-radius:8px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Download PDF (all shown)</button>
+                                            <button v-if="previewSelCount(projectsPreview)" @click="exportProjectsPdf(true)" style="width:100%;margin-top:6px;padding:8px;border:1px solid #cbd7d7;border-radius:8px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Download selected only ({{ previewSelCount(projectsPreview) }})</button>
+                                        </div>
+                                    </div>
                                     <button @click="exportProjectsXlsx()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border:0;border-radius:9px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
                                         Download Excel
                                     </button>
+                                    <button @click="projectsPreview.maximized=!projectsPreview.maximized" :title="projectsPreview.maximized?'Restore window':'Open full screen'" :aria-label="projectsPreview.maximized?'Restore window':'Open full screen'" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;color:#5d6b74;display:inline-flex;align-items:center;justify-content:center">
+                                        <svg v-if="!projectsPreview.maximized" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                                        <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+                                    </button>
                                     <button @click="projectsPreview.show=false" aria-label="Close" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;font-size:15px;color:#5d6b74">✕</button>
+                                </div>
+                                <div style="display:flex;gap:9px;padding:11px 20px;border-bottom:1px solid #eef3f1;flex-wrap:wrap">
+                                    <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid #e1eae8;border-radius:999px;font-size:12px;color:#0f3d3d"><strong style="font-size:13px">{{ projectsPreviewRows.length }}</strong> shown</span>
+                                    <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid rgba(16,185,129,.35);border-radius:999px;font-size:12px;color:#0b6b4f;background:rgba(16,185,129,.07)"><span style="width:7px;height:7px;border-radius:50%;background:#10b981"></span><strong style="font-size:13px">{{ projectsPreviewRows.filter(r=>r.featured_in_website).length }}</strong> public</span>
+                                    <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid #d9e1e1;border-radius:999px;font-size:12px;color:#64748b"><span style="width:7px;height:7px;border-radius:50%;background:#94a3b8"></span><strong style="font-size:13px">{{ projectsPreviewRows.filter(r=>!r.featured_in_website).length }}</strong> private</span>
                                 </div>
                                 <div v-if="previewSelCount(projectsPreview)" style="display:flex;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,143,143,.08);border-bottom:1px solid #d6e6e6">
                                     <span style="font-size:13px;font-weight:600;color:#0f3d3d">{{ previewSelCount(projectsPreview) }} selected</span>
                                     <button @click="bulkSetVisibility('project', true)" style="padding:6px 13px;border:1px solid #10b981;border-radius:999px;background:rgba(16,185,129,.1);color:#0b6b4f;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make public</button>
                                     <button @click="bulkSetVisibility('project', false)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#64748b;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make private</button>
+                                    <span style="width:1px;height:18px;background:#cfe0de"></span>
+                                    <button @click="exportProjectsXlsx(true)" style="padding:6px 13px;border:1px solid #008f8f;border-radius:999px;background:#fff;color:#007575;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Export selected → Excel</button>
+                                    <button @click="exportProjectsPdf(true)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Print selected → PDF</button>
                                     <button @click="previewSelClear(projectsPreview)" style="margin-left:auto;padding:6px 11px;border:0;background:none;color:#5d6b74;font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline">Clear</button>
                                 </div>
                                 <div style="overflow:auto;flex:1">
@@ -12160,8 +12253,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
     <script src="publishing10.js?v=5.3-production.3-publishing10"></script>
-    <script src="app.js?v=5.4-production.4-20261008a"></script>
-    <!-- Cache key bumped 2026-10-08: releases #10–#17 (portfolio previews, visibility, maintenance, api.neumact.org) were live but the stale ?v= kept browsers on old app.js. Bump this on every app.js change. -->
+    <script src="brand-assets.js?v=5.4-production.5-20261008b"></script>
+    <script src="app.js?v=5.4-production.5-20261008b"></script>
+    <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
+
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
     <!-- Preserved Access Gate 4.4 cache checkpoint for regression history: app.js?v=46.14-access44-login-polish -->
 
