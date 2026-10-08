@@ -7042,6 +7042,53 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { showToast('Export failed', e?.message || 'Could not build the Excel file', 'error') }
       }
 
+      // ── Projects preview: same spreadsheet-style read-only grid, for innovation projects.
+      const PROJ_STAGE_LABEL = { concept:'Idea', development:'Prototype', pilot:'Pilot', validation:'Validation', scaling:'Scale-up', completed:'Commercialisation' }
+      const PROJ_CAT_LABEL = { 'Dispositivo':'Medical device', 'Salud Digital':'Digital health', 'IA / ML':'AI / ML', 'Tecnología Quirúrgica':'Surgical technology' }
+      const projectsPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '' })
+      const openProjectsPreview = () => { projectsPreview.show = true }
+      const projectsPreviewSort = (key) => {
+        if (projectsPreview.sortKey === key) projectsPreview.sortDir *= -1
+        else { projectsPreview.sortKey = key; projectsPreview.sortDir = 1 }
+      }
+      const _projectRow = (p) => ({
+        id: p.id,
+        title: p.title || '(untitled)',
+        line: getResearchLineName(p.research_line_id) || '',
+        category: PROJ_CAT_LABEL[p.category] || p.category || '',
+        stage: PROJ_STAGE_LABEL[p.current_stage] || p.current_stage || '',
+        funding: (p.funding_status || '').replace(/_/g, ' '),
+        featured_in_website: !!p.featured_in_website,
+        updated: p.updated_at ? String(p.updated_at).slice(0, 10) : '',
+        _raw: p
+      })
+      const projectsPreviewRows = computed(() => {
+        let rows = (filteredProjectsAll.value || innovationProjects.value || []).map(_projectRow)
+        if (projectsPreview.visibility === 'public')  rows = rows.filter(r => r.featured_in_website)
+        if (projectsPreview.visibility === 'private') rows = rows.filter(r => !r.featured_in_website)
+        const k = projectsPreview.sortKey, dir = projectsPreview.sortDir
+        return rows.slice().sort((a, b) => {
+          const av = a[k], bv = b[k]
+          if (typeof av === 'boolean') return (av === bv ? 0 : av ? -1 : 1) * dir
+          return String(av ?? '').localeCompare(String(bv ?? ''), undefined, { numeric: true }) * dir
+        })
+      })
+      const exportProjectsXlsx = () => {
+        try {
+          if (!window.XLSX) { showToast('Export unavailable', 'Spreadsheet engine not loaded', 'error'); return }
+          const data = projectsPreviewRows.value.map(r => ({
+            Title: r.title, 'Research line': r.line, Category: r.category, Stage: r.stage,
+            Funding: r.funding, Visibility: r.featured_in_website ? 'Public' : 'Private', 'Last updated': r.updated
+          }))
+          const ws = window.XLSX.utils.json_to_sheet(data)
+          ws['!cols'] = [{wch:44},{wch:26},{wch:18},{wch:16},{wch:14},{wch:11},{wch:13}]
+          const wb = window.XLSX.utils.book_new()
+          window.XLSX.utils.book_append_sheet(wb, ws, 'Projects')
+          window.XLSX.writeFile(wb, `neumACt-projects-${new Date().toISOString().slice(0, 10)}.xlsx`)
+          showToast('Exported', `${data.length} project${data.length===1?'':'s'} → Excel`, 'success')
+        } catch (e) { showToast('Export failed', e?.message || 'Could not build the Excel file', 'error') }
+      }
+
       const saveInnovationProject = async (saving) => {
         const f = innovationProjectModal.form
         if (!f.title?.trim()) { showToast('Validation Error', 'Project title is required', 'error'); return }
@@ -7206,7 +7253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
