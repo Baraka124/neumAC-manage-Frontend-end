@@ -5644,17 +5644,25 @@
                                     </button>
                                     <button @click="studiesPreview.show=false" aria-label="Close" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;font-size:15px;color:#5d6b74">✕</button>
                                 </div>
+                                <div v-if="previewSelCount(studiesPreview)" style="display:flex;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,143,143,.08);border-bottom:1px solid #d6e6e6">
+                                    <span style="font-size:13px;font-weight:600;color:#0f3d3d">{{ previewSelCount(studiesPreview) }} selected</span>
+                                    <button @click="bulkSetVisibility('study', true)" style="padding:6px 13px;border:1px solid #10b981;border-radius:999px;background:rgba(16,185,129,.1);color:#0b6b4f;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make public</button>
+                                    <button @click="bulkSetVisibility('study', false)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#64748b;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make private</button>
+                                    <button @click="previewSelClear(studiesPreview)" style="margin-left:auto;padding:6px 11px;border:0;background:none;color:#5d6b74;font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline">Clear</button>
+                                </div>
                                 <div style="overflow:auto;flex:1">
                                     <table style="border-collapse:collapse;width:100%;min-width:900px;font-size:13px">
                                         <thead>
                                             <tr style="position:sticky;top:0;background:#f4f8f8;z-index:1">
+                                                <th style="padding:11px 12px;width:36px;border-bottom:1px solid #dde6e3"><input type="checkbox" :checked="studiesPreviewRows.length && previewSelCount(studiesPreview)===studiesPreviewRows.length" @change="previewSelAll(studiesPreview, studiesPreviewRows, $event.target.checked)"></th>
                                                 <th v-for="col in [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrol.'],['featured_in_website','Visibility'],['updated','Updated']]" :key="col[0]" @click="studiesPreviewSort(col[0])" style="text-align:left;padding:11px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5d6b74;cursor:pointer;white-space:nowrap;border-bottom:1px solid #dde6e3;user-select:none">
                                                     {{ col[1] }}<span v-if="studiesPreview.sortKey===col[0]"> {{ studiesPreview.sortDir>0?'▲':'▼' }}</span>
                                                 </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="r in studiesPreviewRows" :key="r.id" style="border-bottom:1px solid #eef3f1">
+                                            <tr v-for="r in studiesPreviewRows" :key="r.id" :style="{borderBottom:'1px solid #eef3f1', background: studiesPreview.sel[r.id] ? 'rgba(0,143,143,.06)' : ''}">
+                                                <td style="padding:10px 12px"><input type="checkbox" :checked="!!studiesPreview.sel[r.id]" @change="previewToggleSel(studiesPreview, r.id)"></td>
                                                 <td style="padding:10px 12px;max-width:320px"><div style="font-weight:600;color:#0f3d3d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div></td>
                                                 <td style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.protocol_id || '—' }}</td>
                                                 <td style="padding:10px 12px">{{ r.line || '—' }}</td>
@@ -5670,7 +5678,7 @@
                                                 </td>
                                                 <td style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.updated || '—' }}</td>
                                             </tr>
-                                            <tr v-if="!studiesPreviewRows.length"><td colspan="9" style="padding:40px;text-align:center;color:#5d6b74">No studies match the current filters.</td></tr>
+                                            <tr v-if="!studiesPreviewRows.length"><td colspan="10" style="padding:40px;text-align:center;color:#5d6b74">No studies match the current filters.</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -5752,17 +5760,25 @@
                                     </button>
                                     <button @click="projectsPreview.show=false" aria-label="Close" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;font-size:15px;color:#5d6b74">✕</button>
                                 </div>
+                                <div v-if="previewSelCount(projectsPreview)" style="display:flex;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,143,143,.08);border-bottom:1px solid #d6e6e6">
+                                    <span style="font-size:13px;font-weight:600;color:#0f3d3d">{{ previewSelCount(projectsPreview) }} selected</span>
+                                    <button @click="bulkSetVisibility('project', true)" style="padding:6px 13px;border:1px solid #10b981;border-radius:999px;background:rgba(16,185,129,.1);color:#0b6b4f;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make public</button>
+                                    <button @click="bulkSetVisibility('project', false)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#64748b;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make private</button>
+                                    <button @click="previewSelClear(projectsPreview)" style="margin-left:auto;padding:6px 11px;border:0;background:none;color:#5d6b74;font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline">Clear</button>
+                                </div>
                                 <div style="overflow:auto;flex:1">
                                     <table style="border-collapse:collapse;width:100%;min-width:820px;font-size:13px">
                                         <thead>
                                             <tr style="position:sticky;top:0;background:#f4f8f8;z-index:1">
+                                                <th style="padding:11px 12px;width:36px;border-bottom:1px solid #dde6e3"><input type="checkbox" :checked="projectsPreviewRows.length && previewSelCount(projectsPreview)===projectsPreviewRows.length" @change="previewSelAll(projectsPreview, projectsPreviewRows, $event.target.checked)"></th>
                                                 <th v-for="col in [['title','Title'],['line','Research line'],['category','Category'],['stage','Stage'],['funding','Funding'],['featured_in_website','Visibility'],['updated','Updated']]" :key="col[0]" @click="projectsPreviewSort(col[0])" style="text-align:left;padding:11px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#5d6b74;cursor:pointer;white-space:nowrap;border-bottom:1px solid #dde6e3;user-select:none">
                                                     {{ col[1] }}<span v-if="projectsPreview.sortKey===col[0]"> {{ projectsPreview.sortDir>0?'▲':'▼' }}</span>
                                                 </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="r in projectsPreviewRows" :key="r.id" style="border-bottom:1px solid #eef3f1">
+                                            <tr v-for="r in projectsPreviewRows" :key="r.id" :style="{borderBottom:'1px solid #eef3f1', background: projectsPreview.sel[r.id] ? 'rgba(0,143,143,.06)' : ''}">
+                                                <td style="padding:10px 12px"><input type="checkbox" :checked="!!projectsPreview.sel[r.id]" @change="previewToggleSel(projectsPreview, r.id)"></td>
                                                 <td style="padding:10px 12px;max-width:320px"><div style="font-weight:600;color:#0f3d3d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div></td>
                                                 <td style="padding:10px 12px">{{ r.line || '—' }}</td>
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.category || '—' }}</td>
@@ -5776,7 +5792,7 @@
                                                 </td>
                                                 <td style="padding:10px 12px;color:#5d6b74;white-space:nowrap">{{ r.updated || '—' }}</td>
                                             </tr>
-                                            <tr v-if="!projectsPreviewRows.length"><td colspan="7" style="padding:40px;text-align:center;color:#5d6b74">No projects match the current filters.</td></tr>
+                                            <tr v-if="!projectsPreviewRows.length"><td colspan="8" style="padding:40px;text-align:center;color:#5d6b74">No projects match the current filters.</td></tr>
                                         </tbody>
                                     </table>
                                 </div>

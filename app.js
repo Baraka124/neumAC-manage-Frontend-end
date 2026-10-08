@@ -6991,7 +6991,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Studies preview: a read-only spreadsheet-style table over all studies, with
       // inline public/private toggling and a real .xlsx export (SheetJS is loaded).
-      const studiesPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '' })
+      const studiesPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {} })
       const openStudiesPreview = () => { studiesPreview.show = true }
       const studiesPreviewSort = (key) => {
         if (studiesPreview.sortKey === key) studiesPreview.sortDir *= -1
@@ -7045,7 +7045,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Projects preview: same spreadsheet-style read-only grid, for innovation projects.
       const PROJ_STAGE_LABEL = { concept:'Idea', development:'Prototype', pilot:'Pilot', validation:'Validation', scaling:'Scale-up', completed:'Commercialisation' }
       const PROJ_CAT_LABEL = { 'Dispositivo':'Medical device', 'Salud Digital':'Digital health', 'IA / ML':'AI / ML', 'Tecnología Quirúrgica':'Surgical technology' }
-      const projectsPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '' })
+      const projectsPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {} })
       const openProjectsPreview = () => { projectsPreview.show = true }
       const projectsPreviewSort = (key) => {
         if (projectsPreview.sortKey === key) projectsPreview.sortDir *= -1
@@ -7087,6 +7087,42 @@ document.addEventListener('DOMContentLoaded', () => {
           window.XLSX.writeFile(wb, `neumACt-projects-${new Date().toISOString().slice(0, 10)}.xlsx`)
           showToast('Exported', `${data.length} project${data.length===1?'':'s'} → Excel`, 'success')
         } catch (e) { showToast('Export failed', e?.message || 'Could not build the Excel file', 'error') }
+      }
+
+      // ── Bulk visibility: select rows in a preview and flip them public/private at once.
+      const previewSelCount = (pv) => Object.values(pv.sel || {}).filter(Boolean).length
+      const previewToggleSel = (pv, id) => { pv.sel[id] = !pv.sel[id] }
+      const previewSelAll = (pv, rows, val) => { (rows || []).forEach(r => { pv.sel[r.id] = val }) }
+      const previewSelClear = (pv) => { pv.sel = {} }
+      const bulkSetVisibility = (kind, makePublic) => {
+        const pv = kind === 'study' ? studiesPreview : projectsPreview
+        const rows = (kind === 'study' ? studiesPreviewRows : projectsPreviewRows).value
+        const chosen = rows.filter(r => pv.sel[r.id] && r.featured_in_website !== makePublic)
+        if (!chosen.length) { showToast('Nothing to change', 'No selected records would change state.', 'info'); return }
+        const api = kind === 'study' ? API.updateClinicalTrial.bind(API) : API.updateInnovationProject.bind(API)
+        const coll = kind === 'study' ? clinicalTrials : innovationProjects
+        showConfirmation({
+          title: makePublic ? `Publish ${chosen.length} to website?` : `Make ${chosen.length} private?`,
+          message: makePublic
+            ? `${chosen.length} record(s) will appear on neumact.org.`
+            : `${chosen.length} record(s) will be removed from neumact.org.`,
+          confirmButtonText: makePublic ? 'Publish all' : 'Make all private',
+          reversible: true,
+          onConfirm: async () => {
+            const results = await Promise.allSettled(chosen.map(r => api(r._raw.id, { ...r._raw, featured_in_website: makePublic })))
+            let ok = 0
+            results.forEach((res, i) => {
+              if (res.status === 'fulfilled') {
+                ok++
+                const id = chosen[i]._raw.id
+                const idx = coll.value.findIndex(x => x.id === id)
+                if (idx !== -1) coll.value[idx] = { ...coll.value[idx], featured_in_website: makePublic }
+              }
+            })
+            previewSelClear(pv)
+            showToast('Updated', `${ok} of ${chosen.length} set to ${makePublic ? 'public' : 'private'}${ok<chosen.length?' (some failed)':''}`, ok ? 'success' : 'error')
+          }
+        })
       }
 
       const saveInnovationProject = async (saving) => {
@@ -7253,7 +7289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
