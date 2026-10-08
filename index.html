@@ -5428,6 +5428,16 @@
                                         </div>
                                     </section>
 
+                                    <section class="rv32-info-section" v-if="selectedStudy.nct_number || selectedStudy.eudract_number || selectedStudy.registry_url">
+                                        <div class="rv32-section-heading"><div><span>Registry</span><h2>Registration &amp; verification</h2></div><small>Public registry identifiers a reviewer or partner can verify</small></div>
+                                        <div class="rv32-fact-grid">
+                                            <div v-if="selectedStudy.nct_number"><span>ClinicalTrials.gov</span><strong><a :href="'https://clinicaltrials.gov/study/'+encodeURIComponent(selectedStudy.nct_number)" target="_blank" rel="noopener" style="color:#007575;text-decoration:none">{{ selectedStudy.nct_number }} ↗</a></strong></div>
+                                            <div v-if="selectedStudy.eudract_number"><span>EU CTR · EudraCT</span><strong><a :href="selectedStudy.registry_url || ('https://www.clinicaltrialsregister.eu/ctr-search/search?query='+encodeURIComponent(selectedStudy.eudract_number))" target="_blank" rel="noopener" style="color:#007575;text-decoration:none">{{ selectedStudy.eudract_number }} ↗</a></strong></div>
+                                            <div v-if="selectedStudy.registry_url && !selectedStudy.eudract_number"><span>Registry record</span><strong><a :href="selectedStudy.registry_url" target="_blank" rel="noopener" style="color:#007575;text-decoration:none">Open registry ↗</a></strong></div>
+                                            <div v-if="selectedStudy.protocol_id"><span>Protocol ID</span><strong>{{ selectedStudy.protocol_id }}</strong></div>
+                                        </div>
+                                    </section>
+
                                     <section class="rv32-info-section" v-if="selectedStudy.description || selectedStudy.scope_note">
                                         <div class="rv32-section-heading"><div><span>Clinical context</span><h2>Study description</h2></div></div>
                                         <p class="rv32-prose">{{ selectedStudy.description || selectedStudy.scope_note }}</p>
@@ -10308,6 +10318,11 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div class="sm-field"><div class="sm-label">Sponsor</div><input class="sm-input" v-model="clinicalTrialModal.form.sponsor_name" placeholder="Sponsor / responsible organisation"></div>
                                 <div class="sm-field"><div class="sm-label">Sponsor type</div><select class="sm-select" v-model="clinicalTrialModal.form.sponsor_type"><option value="">Not recorded</option><option value="Industry">Industry</option><option value="Academic">Academic</option><option value="Investigator-initiated">Investigator-initiated</option><option value="Public">Public / health service</option><option value="Other">Other</option></select></div>
                             </div>
+                            <div class="sm-row">
+                                <div class="sm-field"><div class="sm-label">ClinicalTrials.gov (NCT) <span class="hint">— if registered</span></div><input class="sm-input" v-model="clinicalTrialModal.form.nct_number" placeholder="NCT12345678"></div>
+                                <div class="sm-field"><div class="sm-label">EudraCT / EU CTR <span class="hint">— if registered</span></div><input class="sm-input" v-model="clinicalTrialModal.form.eudract_number" placeholder="2026-000000-00"></div>
+                            </div>
+                            <div class="sm-field"><div class="sm-label">Registry URL <span class="hint">— optional, overrides the default registry link</span></div><input class="sm-input" v-model="clinicalTrialModal.form.registry_url" placeholder="https://…"></div>
                             <div class="rv34-toggle-cluster">
                                 <label><input type="checkbox" v-model="clinicalTrialModal.form.is_multicentre"><span><strong>Multicentre study</strong><small>Site structure is separate from study origin.</small></span></label>
                                 <div v-if="clinicalTrialModal.form.is_multicentre" class="sm-field"><div class="sm-label">Participating centres</div><input type="number" min="1" class="sm-input" v-model.number="clinicalTrialModal.form.participating_centres" placeholder="Number of centres"></div>
@@ -12358,10 +12373,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
     <script src="publishing10.js?v=5.3-production.3-publishing10"></script>
-    <script src="vendor/jspdf.umd.min.js?v=5.4-production.11-20261008h"></script>
-    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.11-20261008h"></script>
-    <script src="brand-assets.js?v=5.4-production.11-20261008h"></script>
-    <script src="app.js?v=5.4-production.11-20261008h"></script>
+    <script src="vendor/jspdf.umd.min.js?v=5.4-production.12-20261008i"></script>
+    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.12-20261008i"></script>
+    <script src="brand-assets.js?v=5.4-production.12-20261008i"></script>
+    <script src="app.js?v=5.4-production.12-20261008i"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
