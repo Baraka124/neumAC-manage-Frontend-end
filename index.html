@@ -5628,8 +5628,8 @@
                         </header>
 
                         <!-- Spreadsheet-style studies preview (read-only; visibility editable inline; Excel export) -->
-                        <div v-if="studiesPreview.show" @click.self="studiesPreview.show=false" style="position:fixed;inset:0;z-index:9000;background:rgba(15,30,30,.55);display:flex;align-items:stretch;justify-content:center;padding:28px">
-                            <div style="background:#fff;border-radius:16px;width:min(1180px,100%);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+                        <div v-if="studiesPreview.show" @click.self="studiesPreview.show=false" :style="{position:'fixed',inset:0,zIndex:9000,background:'rgba(15,30,30,.55)',display:'flex',alignItems:'stretch',justifyContent:'center',padding: studiesPreview.maximized ? '0' : '28px'}">
+                            <div :style="{background:'#fff',borderRadius: studiesPreview.maximized ? '0' : '16px',width: studiesPreview.maximized ? '100%' : 'min(1180px,100%)',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,.3)'}">
                                 <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #e6edeb">
                                     <div style="flex:1;min-width:0">
                                         <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#5d6b74">Spreadsheet preview</div>
@@ -5656,12 +5656,19 @@
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
                                         Download Excel
                                     </button>
+                                    <button @click="studiesPreview.maximized=!studiesPreview.maximized" :title="studiesPreview.maximized?'Restore window':'Open full screen'" :aria-label="studiesPreview.maximized?'Restore window':'Open full screen'" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;color:#5d6b74;display:inline-flex;align-items:center;justify-content:center">
+                                        <svg v-if="!studiesPreview.maximized" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                                        <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+                                    </button>
                                     <button @click="studiesPreview.show=false" aria-label="Close" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;font-size:15px;color:#5d6b74">✕</button>
                                 </div>
                                 <div v-if="previewSelCount(studiesPreview)" style="display:flex;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,143,143,.08);border-bottom:1px solid #d6e6e6">
                                     <span style="font-size:13px;font-weight:600;color:#0f3d3d">{{ previewSelCount(studiesPreview) }} selected</span>
                                     <button @click="bulkSetVisibility('study', true)" style="padding:6px 13px;border:1px solid #10b981;border-radius:999px;background:rgba(16,185,129,.1);color:#0b6b4f;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make public</button>
                                     <button @click="bulkSetVisibility('study', false)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#64748b;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make private</button>
+                                    <span style="width:1px;height:18px;background:#cfe0de"></span>
+                                    <button @click="exportStudiesXlsx(true)" style="padding:6px 13px;border:1px solid #008f8f;border-radius:999px;background:#fff;color:#007575;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Export selected → Excel</button>
+                                    <button @click="exportStudiesPdf(true)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Print selected → PDF</button>
                                     <button @click="previewSelClear(studiesPreview)" style="margin-left:auto;padding:6px 11px;border:0;background:none;color:#5d6b74;font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline">Clear</button>
                                 </div>
                                 <div style="overflow:auto;flex:1">
@@ -5758,8 +5765,8 @@
                         </header>
 
                         <!-- Spreadsheet-style projects preview (read-only; visibility editable inline; Excel export) -->
-                        <div v-if="projectsPreview.show" @click.self="projectsPreview.show=false" style="position:fixed;inset:0;z-index:9000;background:rgba(15,30,30,.55);display:flex;align-items:stretch;justify-content:center;padding:28px">
-                            <div style="background:#fff;border-radius:16px;width:min(1120px,100%);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+                        <div v-if="projectsPreview.show" @click.self="projectsPreview.show=false" :style="{position:'fixed',inset:0,zIndex:9000,background:'rgba(15,30,30,.55)',display:'flex',alignItems:'stretch',justifyContent:'center',padding: projectsPreview.maximized ? '0' : '28px'}">
+                            <div :style="{background:'#fff',borderRadius: projectsPreview.maximized ? '0' : '16px',width: projectsPreview.maximized ? '100%' : 'min(1120px,100%)',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,.3)'}">
                                 <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #e6edeb">
                                     <div style="flex:1;min-width:0">
                                         <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#5d6b74">Spreadsheet preview</div>
@@ -5768,9 +5775,27 @@
                                     <select v-model="projectsPreview.visibility" style="padding:8px 10px;border:1px solid #cedcda;border-radius:9px;font:inherit;font-size:13px">
                                         <option value="">All visibility</option><option value="public">Public only</option><option value="private">Private only</option>
                                     </select>
+                                    <div style="position:relative">
+                                        <button @click="projectsPreview.showPdf = !projectsPreview.showPdf" style="display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #cbd7d7;border-radius:9px;background:#fff;color:#0f3d3d;font:inherit;font-size:13px;font-weight:600;cursor:pointer">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                                            PDF ▾
+                                        </button>
+                                        <div v-if="projectsPreview.showPdf" style="position:absolute;top:calc(100% + 6px);right:0;z-index:10;background:#fff;border:1px solid #dde6e3;border-radius:11px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:12px 14px;width:230px">
+                                            <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5d6b74;margin-bottom:8px">Fields to include</div>
+                                            <label v-for="f in PROJECT_PDF_FIELDS" :key="f[0]" style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;cursor:pointer">
+                                                <input type="checkbox" v-model="projectsPreview.pdfFields[f[0]]"> {{ f[1] }}
+                                            </label>
+                                            <button @click="exportProjectsPdf(false)" style="width:100%;margin-top:10px;padding:8px;border:0;border-radius:8px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Download PDF (all shown)</button>
+                                            <button v-if="previewSelCount(projectsPreview)" @click="exportProjectsPdf(true)" style="width:100%;margin-top:6px;padding:8px;border:1px solid #cbd7d7;border-radius:8px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Download selected only ({{ previewSelCount(projectsPreview) }})</button>
+                                        </div>
+                                    </div>
                                     <button @click="exportProjectsXlsx()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border:0;border-radius:9px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
                                         Download Excel
+                                    </button>
+                                    <button @click="projectsPreview.maximized=!projectsPreview.maximized" :title="projectsPreview.maximized?'Restore window':'Open full screen'" :aria-label="projectsPreview.maximized?'Restore window':'Open full screen'" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;color:#5d6b74;display:inline-flex;align-items:center;justify-content:center">
+                                        <svg v-if="!projectsPreview.maximized" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                                        <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
                                     </button>
                                     <button @click="projectsPreview.show=false" aria-label="Close" style="width:34px;height:34px;border:1px solid #dde6e3;border-radius:9px;background:#fff;cursor:pointer;font-size:15px;color:#5d6b74">✕</button>
                                 </div>
@@ -5778,6 +5803,9 @@
                                     <span style="font-size:13px;font-weight:600;color:#0f3d3d">{{ previewSelCount(projectsPreview) }} selected</span>
                                     <button @click="bulkSetVisibility('project', true)" style="padding:6px 13px;border:1px solid #10b981;border-radius:999px;background:rgba(16,185,129,.1);color:#0b6b4f;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make public</button>
                                     <button @click="bulkSetVisibility('project', false)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#64748b;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Make private</button>
+                                    <span style="width:1px;height:18px;background:#cfe0de"></span>
+                                    <button @click="exportProjectsXlsx(true)" style="padding:6px 13px;border:1px solid #008f8f;border-radius:999px;background:#fff;color:#007575;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Export selected → Excel</button>
+                                    <button @click="exportProjectsPdf(true)" style="padding:6px 13px;border:1px solid #cbd5d5;border-radius:999px;background:#fff;color:#0f3d3d;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">Print selected → PDF</button>
                                     <button @click="previewSelClear(projectsPreview)" style="margin-left:auto;padding:6px 11px;border:0;background:none;color:#5d6b74;font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline">Clear</button>
                                 </div>
                                 <div style="overflow:auto;flex:1">
