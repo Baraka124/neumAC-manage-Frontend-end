@@ -196,3 +196,452 @@
 #neumax-topbar::before{content:"";position:absolute;top:0;left:0;height:100%;width:38%;border-radius:3px;background:linear-gradient(90deg,transparent,#00B3B3,#008f8f,transparent);animation:neumax-topbar-slide 1.1s infinite ease-in-out}
 @keyframes neumax-topbar-slide{0%{left:-38%}100%{left:100%}}
 @media(prefers-reduced-motion:reduce){#neumax-topbar::before{animation-duration:2.2s}}
+
+
+/* Settings / People & access — Overview-aligned workspace refinement.
+   Scope: existing access-center only. Do not change shared shell or other modules. */
+#app .content-area .admin-studio {
+  --ac-ink:var(--shell-ink,#173449);
+  --ac-muted:var(--shell-muted,#526b7c);
+  --ac-line:var(--shell-line,#d9e3e9);
+  --ac-navy:var(--shell-navy,#102d40);
+  --ac-accent:var(--shell-accent,#087c86);
+  --ac-soft:var(--shell-soft,#f4f7fa);
+  --ac-tint:#eaf6f7;
+  max-width:1600px;
+  font-size:15px;
+}
+#app .content-area .admin-studio .admin-masthead {
+  border-radius:16px;
+  padding:28px 30px 22px;
+}
+#app .content-area .admin-studio .admin-navigation {
+  gap:28px;
+  margin:0 0 20px;
+  padding:0 26px;
+  border-radius:0 0 12px 12px;
+}
+#app .content-area .admin-studio .admin-navigation button {
+  padding:15px 2px 13px;
+  font-size:15px;
+  font-weight:550;
+  min-height:48px;
+}
+#app .content-area .admin-studio .ac-center {
+  font-size:15px;
+  line-height:1.5;
+  border-color:var(--ac-line);
+  box-shadow:0 12px 30px rgba(16,45,64,.035);
+  border-radius:14px;
+  overflow:clip;
+}
+#app .content-area .admin-studio .ac-head {
+  padding:23px 26px 16px;
+  gap:18px;
+}
+#app .content-area .admin-studio .ac-head h2 {
+  font:600 23px/1.25 var(--shell-font,'DM Sans',sans-serif);
+  letter-spacing:-.025em;
+  margin:0 0 5px;
+}
+#app .content-area .admin-studio .ac-head p {
+  font-size:15px;
+  line-height:1.55;
+}
+#app .content-area .admin-studio .ac-directory-summary {
+  padding:0 24px 16px;
+  gap:6px;
+}
+#app .content-area .admin-studio .ac-directory-summary button {
+  font-size:14px;
+  min-height:40px;
+  padding:8px 10px;
+}
+#app .content-area .admin-studio .ac-filter-count {
+  font-size:13px;
+  font-weight:650;
+  color:var(--ac-ink);
+}
+#app .content-area .admin-studio .ac-team-workspace {
+  grid-template-columns:minmax(350px,40%) minmax(0,1fr);
+  align-items:stretch;
+}
+#app .content-area .admin-studio .ac-team-directory {
+  padding:22px 20px 24px 24px;
+  position:sticky;
+  align-self:start;
+  top:10px;
+}
+#app .content-area .admin-studio .ac-center label {
+  gap:7px;
+  font-size:14px;
+  line-height:1.4;
+  font-weight:600;
+}
+#app .content-area .admin-studio .ac-center input,
+#app .content-area .admin-studio .ac-center select,
+#app .content-area .admin-studio .ac-center textarea {
+  min-height:44px;
+  font-size:15px;
+  line-height:1.4;
+  padding:10px 12px;
+}
+#app .content-area .admin-studio .ac-team-filters {gap:12px;margin:16px 0 12px}
+#app .content-area .admin-studio .ac-meta,
+#app .content-area .admin-studio .ac-center small {
+  font-size:14px;
+  color:var(--ac-muted);
+}
+#app .content-area .admin-studio .ac-directory-result {margin:14px 2px 10px}
+#app .content-area .admin-studio .ac-team-list {
+  padding:3px;
+  margin:0 -3px;
+  max-height:min(610px,65vh);
+  scrollbar-width:thin;
+}
+#app .content-area .admin-studio .ac-team-person {
+  display:grid;
+  grid-template-columns:40px minmax(0,1fr) auto 12px;
+  gap:11px;
+  align-items:center;
+  margin:0;
+  padding:14px 11px;
+  width:100%;
+  border-bottom:1px solid var(--ac-line);
+  border-radius:7px;
+}
+#app .content-area .admin-studio .ac-team-person:last-child {border-bottom-color:transparent}
+#app .content-area .admin-studio .ac-team-person.ac-selected {
+  background:#eaf5fb;
+  border-color:#c6e0ec;
+}
+#app .content-area .admin-studio .ac-team-person .ac-avatar {
+  width:40px;height:40px;font-size:13px;
+  border:0;background:#e3f0f9;color:var(--ac-ink);
+}
+#app .content-area .admin-studio .ac-team-person-info {min-width:0}
+#app .content-area .admin-studio .ac-team-person-info strong {
+  font-size:15px;line-height:1.35;letter-spacing:-.01em;
+}
+#app .content-area .admin-studio .ac-team-person-info small {
+  display:block;font-size:13px;line-height:1.4;overflow-wrap:anywhere;margin:3px 0;
+}
+#app .content-area .admin-studio .ac-team-person-dept {
+  font-size:13px;line-height:1.35;color:var(--ac-muted);
+}
+#app .content-area .admin-studio .ac-team-person .ac-chip {
+  max-width:126px;
+  font-size:12px;
+  line-height:1.35;
+  padding:5px 8px;
+  white-space:normal;
+  text-align:center;
+}
+#app .content-area .admin-studio .ac-row-caret {
+  font-size:24px;font-weight:300;line-height:1;color:#7893a2;
+}
+#app .content-area .admin-studio .ac-workspace-detail {
+  min-width:0;
+  padding:25px 26px 28px;
+  min-height:0;
+  border-color:var(--ac-line);
+}
+#app .content-area .admin-studio .ac-person-heading {
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr) auto;
+  align-items:center;
+  gap:16px;
+  padding:0 0 20px;
+  border-bottom:1px solid var(--ac-line);
+}
+#app .content-area .admin-studio .ac-avatar-large {
+  width:58px;height:58px;font-size:19px;font-weight:650;
+  background:#e4f0f9;color:var(--ac-ink);border:0;
+}
+#app .content-area .admin-studio .ac-person-heading h3 {
+  font-size:26px;font-weight:600;line-height:1.2;
+  margin:1px 0 6px;letter-spacing:-.035em;
+}
+#app .content-area .admin-studio .ac-person-heading .ac-eyebrow {
+  font-size:12px;margin:0;color:var(--ac-muted);
+}
+#app .content-area .admin-studio .ac-person-heading .ac-meta {
+  margin:5px 0 0;
+  overflow-wrap:anywhere;
+  line-height:1.5;
+}
+#app .content-area .admin-studio .ac-person-subtitle {
+  font-size:15px;color:var(--ac-ink);margin:0;
+}
+#app .content-area .admin-studio .ac-person-status {
+  font-size:13px;padding:5px 10px;
+}
+#app .content-area .admin-studio .ac-account-status {
+  margin:12px 0 16px;
+}
+#app .content-area .admin-studio .ac-chip {
+  font-size:12px;padding:4px 8px;
+}
+#app .content-area .admin-studio .ac-account-panels {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:12px;
+  align-items:stretch;
+}
+#app .content-area .admin-studio .ac-info-panel {
+  min-width:0;
+  padding:19px 17px 17px;
+  border:1px solid var(--ac-line);
+  background:#fbfcfd;
+  border-radius:11px;
+  margin:0;
+}
+#app .content-area .admin-studio .ac-info-panel h4.ac-section-label,
+#app .content-area .admin-studio .ac-info-panel .ac-section-title h3 {
+  font-size:17px;
+  font-weight:650;
+  color:var(--ac-ink);
+  margin:0 0 12px;
+  letter-spacing:-.01em;
+}
+#app .content-area .admin-studio .ac-info-panel .ac-section-title {
+  align-items:flex-start;
+  flex-wrap:wrap;
+}
+#app .content-area .admin-studio .ac-identity-facts {
+  padding:0;margin:0;
+}
+#app .content-area .admin-studio .ac-identity-facts > div {
+  border-bottom:1px solid var(--ac-line);
+  padding:10px 0;
+  min-width:0;
+}
+#app .content-area .admin-studio .ac-identity-facts > div:last-child {border-bottom:0}
+#app .content-area .admin-studio .ac-identity-facts dt {
+  font-size:13px;color:var(--ac-muted);line-height:1.35;
+  margin:0 0 5px;
+}
+#app .content-area .admin-studio .ac-identity-facts dd {
+  font-size:15px;font-weight:550;color:var(--ac-ink);
+  line-height:1.4;margin:0;overflow-wrap:anywhere;
+}
+#app .content-area .admin-studio .ac-profile-links,
+#app .content-area .admin-studio .ac-credential-section {
+  margin-top:12px;
+}
+#app .content-area .admin-studio .ac-profile-links summary,
+#app .content-area .admin-studio .ac-credential-section summary {
+  font-size:14px;line-height:1.4;font-weight:600;
+}
+#app .content-area .admin-studio .ac-credential-admin {
+  margin:13px 0;
+  padding:13px;
+  border-radius:8px;
+}
+#app .content-area .admin-studio .ac-login-section {
+  border-top:1px solid var(--ac-line);
+  padding:19px 17px 17px;
+}
+#app .content-area .admin-studio .ac-login-card {
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap:10px;
+}
+#app .content-area .admin-studio .ac-login-card .btn {
+  max-width:100%;
+}
+#app .content-area .admin-studio .ac-role-panel {
+  border-top:1px solid var(--ac-line);
+  padding:19px 17px 17px;
+}
+#app .content-area .admin-studio .ac-role-pills {
+  gap:6px;
+}
+#app .content-area .admin-studio .ac-role-pills button {
+  flex:1 0 auto;min-height:39px;font-size:13px;
+}
+#app .content-area .admin-studio .ac-role-panel > .ac-meta {
+  line-height:1.55;
+}
+#app .content-area .admin-studio .ac-permissions {
+  margin-top:22px;
+  padding:23px 0 20px;
+}
+#app .content-area .admin-studio .ac-permissions .ac-section-title h3 {
+  font-size:21px;
+}
+#app .content-area .admin-studio .ac-module-nav {
+  gap:7px;
+  margin:18px 0 22px;
+}
+#app .content-area .admin-studio .ac-module-nav button,
+#app .content-area .admin-studio .ac-scope-pills button {
+  font-size:14px;
+  min-height:42px;
+}
+#app .content-area .admin-studio .ac-module-nav small,
+#app .content-area .admin-studio .ac-bundle-pills small {
+  font-size:13px;
+}
+#app .content-area .admin-studio .ac-bundle-pills {
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:10px;
+}
+#app .content-area .admin-studio .ac-bundle-pills button {
+  padding:14px;
+}
+#app .content-area .admin-studio .ac-bundle-pills strong {
+  font-size:15px;
+}
+#app .content-area .admin-studio .ac-center .btn {
+  font-size:14px;
+  min-height:41px;
+  padding:10px 14px;
+}
+#app .content-area .admin-studio .ac-permission-summary {
+  font-size:14px;
+}
+#app .content-area .admin-studio .ac-activity-panel {
+  border-top:1px solid var(--ac-line);
+  padding:22px 0 0;
+  margin:16px 0 0;
+}
+#app .content-area .admin-studio .ac-activity-panel h3 {
+  font-size:20px;
+}
+#app .content-area .admin-studio .ac-activity-list {
+  list-style:none;
+  padding:0;
+  margin:10px 0 0;
+}
+#app .content-area .admin-studio .ac-activity-list li {
+  display:grid;
+  grid-template-columns:minmax(140px,180px) minmax(120px,1fr) minmax(0,1.6fr);
+  gap:10px;
+  border-bottom:1px solid var(--ac-line);
+  padding:11px 2px;
+  align-items:start;
+  font-size:14px;
+  line-height:1.45;
+}
+#app .content-area .admin-studio .ac-activity-list li:last-child {border-bottom:0}
+#app .content-area .admin-studio .ac-activity-list time {
+  color:var(--ac-muted);
+  font-variant-numeric:tabular-nums;
+}
+#app .content-area .admin-studio .ac-activity-list strong {
+  font-weight:600;
+  color:var(--ac-ink);
+  overflow-wrap:anywhere;
+}
+#app .content-area .admin-studio .ac-activity-list span {
+  color:var(--ac-muted);
+  overflow-wrap:anywhere;
+}
+#app .content-area .admin-studio .ac-activity-history summary {
+  font-size:14px;
+  font-weight:600;
+}
+#app .content-area .admin-studio .ac-welcome {
+  max-width:420px;
+  margin:0;
+  padding:30px 8px;
+}
+#app .content-area .admin-studio .ac-welcome h3 {
+  font-size:23px;
+  font-weight:600;
+}
+#app .content-area .admin-studio .ac-welcome p {
+  font-size:15px;
+}
+#app .content-area .admin-studio :is(button,input,select,textarea,summary):focus-visible {
+  outline:3px solid var(--ac-accent);
+  outline-offset:2px;
+}
+@media(max-width:1250px){
+  #app .content-area .admin-studio .ac-team-workspace {
+    grid-template-columns:minmax(310px,42%) minmax(0,1fr);
+  }
+  #app .content-area .admin-studio .ac-team-person {
+    grid-template-columns:38px minmax(0,1fr) 12px;
+  }
+  #app .content-area .admin-studio .ac-team-person .ac-chip {
+    grid-column:2;
+    justify-self:start;
+    max-width:none;
+    margin-top:3px;
+  }
+  #app .content-area .admin-studio .ac-row-caret {
+    grid-column:3;grid-row:1/span 2;
+  }
+}
+@media(max-width:900px){
+  #app .content-area .admin-studio .ac-team-workspace {
+    grid-template-columns:1fr;
+  }
+  #app .content-area .admin-studio .ac-team-directory {
+    position:static;padding:18px 20px;
+  }
+  #app .content-area .admin-studio .ac-team-list {
+    max-height:330px;
+  }
+  #app .content-area .admin-studio .ac-workspace-detail {
+    border-left:0;border-top:1px solid var(--ac-line);
+    padding:22px 20px;
+  }
+}
+@media(max-width:640px){
+  #app .content-area .admin-studio .admin-masthead {
+    padding:21px 18px;
+  }
+  #app .content-area .admin-studio .admin-navigation {
+    padding:0 15px;gap:18px;
+  }
+  #app .content-area .admin-studio .admin-navigation button {
+    font-size:14px;
+  }
+  #app .content-area .admin-studio .ac-head {
+    padding:19px 17px;
+    flex-wrap:wrap;
+  }
+  #app .content-area .admin-studio .ac-head h2 {
+    font-size:21px;
+  }
+  #app .content-area .admin-studio .ac-directory-summary {
+    padding:0 14px 14px;
+  }
+  #app .content-area .admin-studio .ac-team-directory {
+    padding:16px;
+  }
+  #app .content-area .admin-studio .ac-team-filters {
+    gap:9px;
+  }
+  #app .content-area .admin-studio .ac-workspace-detail {
+    padding:19px 16px;
+  }
+  #app .content-area .admin-studio .ac-person-heading {
+    grid-template-columns:46px minmax(0,1fr);
+    gap:12px;
+  }
+  #app .content-area .admin-studio .ac-avatar-large {
+    width:46px;height:46px;font-size:16px;
+  }
+  #app .content-area .admin-studio .ac-person-heading h3 {
+    font-size:22px;
+  }
+  #app .content-area .admin-studio .ac-person-status {
+    grid-column:2;justify-self:start;
+  }
+  #app .content-area .admin-studio .ac-account-panels {
+    grid-template-columns:1fr;
+  }
+  #app .content-area .admin-studio .ac-info-panel {
+    padding:18px 16px;
+  }
+  #app .content-area .admin-studio .ac-activity-list li {
+    grid-template-columns:1fr;gap:3px;
+  }
+  #app .content-area .admin-studio .ac-bundle-pills {
+    grid-template-columns:1fr;
+  }
+}
