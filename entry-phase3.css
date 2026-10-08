@@ -108,3 +108,57 @@ html body #app .entry3-introduction:after{content:'';position:absolute;inset:0;p
 html body #app .entry3 .entry44-form{gap:16px!important}
 html body #app .entry3 .entry44-field input:-webkit-autofill,html body #app .entry3 .ac-recovery input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px #fff inset!important;box-shadow:0 0 0 1000px #fff inset!important;-webkit-text-fill-color:#173d50!important;caret-color:#173d50}
 html body #app .entry3 .entry44-field input:autofill,html body #app .entry3 .ac-recovery input:autofill{box-shadow:0 0 0 1000px #fff inset!important;color:#173d50!important;caret-color:#173d50}
+
+/* Entry refinement: one visible platform mark; compact, truthful loading feedback. */
+html body #app .entry3 h1#entry3-intro-title{
+ position:absolute!important;width:1px!important;height:1px!important;
+ padding:0!important;margin:-1px!important;overflow:hidden!important;
+ clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important;
+}
+html body #app .entry3 .entry46-auth-focus>img[src="neumdesk-logo.svg"]+div{
+ color:#526b78!important;line-height:1.6!important;letter-spacing:.055em!important;
+}
+html body #app .entry3--transition .entry44-form-area{
+ display:grid!important;grid-template-columns:36px minmax(0,1fr)!important;
+ column-gap:16px!important;max-width:520px!important;align-items:start;
+}
+html body #app .entry3--transition .entry3-loading-mark{
+ grid-column:1;grid-row:1/3;width:36px;height:36px;margin:5px 0 0;
+ border:0;background:transparent;
+}
+html body #app .entry3--transition .entry3-loading-mark span{
+ width:26px;height:26px;border-width:2px;border-color:#d1e1e3;border-top-color:#087c86;
+}
+html body #app .entry3--transition .entry44-kicker{
+ grid-column:2;margin:0!important;font-size:11px!important;letter-spacing:.09em!important;
+ color:#526b78!important;
+}
+html body #app .entry3--transition .entry44-kicker:before{display:none}
+html body #app .entry3--transition .entry44-access h2#entry-title{
+ grid-column:2;font-size:clamp(25px,2.3vw,30px)!important;line-height:1.2!important;
+ letter-spacing:-.035em!important;margin:7px 0 0!important;text-wrap:balance;
+}
+html body #app .entry3--transition .entry44-subtitle{
+ grid-column:2;font-size:14px!important;line-height:1.65!important;
+ margin:14px 0 0!important;color:#526b78!important;
+}
+html body #app .entry3--transition .entry3-live-status{
+ grid-column:2;font-size:14px;line-height:1.5;color:#126673;
+ margin:22px 0 0;padding:11px 0 11px 14px;border-left:2px solid #168b8f;
+}
+html body #app .entry3--transition .entry3-progress{
+ grid-column:2;margin-top:20px;padding-top:10px;border-color:#dce5e7;
+}
+html body #app .entry3--transition .entry3-progress>summary{
+ font-size:13px;min-height:36px;display:list-item;align-content:center;
+}
+html body #app:has(.entry3--transition) .toast-success{
+ box-shadow:0 6px 20px rgba(16,45,64,.07)!important;border-color:#dce7e5!important;
+}
+@media(max-width:480px){
+ html body #app .entry3--transition .entry44-form-area{column-gap:12px!important;grid-template-columns:28px minmax(0,1fr)!important}
+ html body #app .entry3--transition .entry3-loading-mark{width:28px;height:28px}
+ html body #app .entry3--transition .entry44-subtitle,
+ html body #app .entry3--transition .entry3-live-status,
+ html body #app .entry3--transition .entry3-progress{grid-column:1/-1}
+}
