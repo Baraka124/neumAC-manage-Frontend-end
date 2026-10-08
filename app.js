@@ -7073,7 +7073,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Studies preview: a read-only spreadsheet-style table over all studies, with
       // inline public/private toggling and a real .xlsx export (SheetJS is loaded).
       const STUDY_PDF_FIELDS = [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrolment'],['featured_in_website','Visibility'],['updated','Updated']]
-      const studiesPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(STUDY_PDF_FIELDS.map(f => [f[0], true])) })
+      const studiesPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', statusFilter: '', sel: {}, showPdf: false, showCols: false, cols: { protocol_id: true, line: true, study_type: true, phase: true, enrolment: true, updated: true }, pdfFields: Object.fromEntries(STUDY_PDF_FIELDS.map(f => [f[0], true])) })
       const openStudiesPreview = () => { studiesPreview.show = true }
       const studiesPreviewSort = (key) => {
         if (studiesPreview.sortKey === key) studiesPreview.sortDir *= -1
@@ -7100,6 +7100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let rows = (filteredTrialsAll.value || clinicalTrials.value || []).map(_studyRow)
         if (studiesPreview.visibility === 'public')  rows = rows.filter(r => r.featured_in_website)
         if (studiesPreview.visibility === 'private') rows = rows.filter(r => !r.featured_in_website)
+        if (studiesPreview.statusFilter) rows = rows.filter(r => r.statusKey === studiesPreview.statusFilter)
         const k = studiesPreview.sortKey, dir = studiesPreview.sortDir
         return rows.slice().sort((a, b) => {
           const av = a[k], bv = b[k]
@@ -7228,8 +7229,58 @@ document.addEventListener('DOMContentLoaded', () => {
         _printHtmlDocument(_buildPreviewPrintHtml({ heading, cols, rows, visLabel, selectedOnly }))
         pv.showPdf = false
       }
-      const exportStudiesPdf = (selectedOnly = false) => _previewPrint('study', selectedOnly)
-      const exportProjectsPdf = (selectedOnly = false) => _previewPrint('project', selectedOnly)
+      // ── True one-click PDF via jsPDF (no print dialog). Bundled locally so it
+      // works on the SERGAS intranet; embeds the neumACt letterhead + neumDESK footer
+      // as PNGs. Falls back to the print path if jsPDF didn't load.
+      const _previewPdfFile = (kind, selectedOnly = false) => {
+        const JS = window.jspdf && window.jspdf.jsPDF
+        if (!JS) return _previewPrint(kind, selectedOnly)
+        const pv = kind === 'study' ? studiesPreview : projectsPreview
+        const FIELDS = kind === 'study' ? STUDY_PDF_FIELDS : PROJECT_PDF_FIELDS
+        const cols = FIELDS.filter(f => pv.pdfFields[f[0]])
+        if (!cols.length) { showToast('Pick at least one field', 'Select the information to include first.', 'info'); return }
+        let rows = (kind === 'study' ? studiesPreviewRows : projectsPreviewRows).value
+        if (selectedOnly) rows = rows.filter(r => pv.sel[r.id])
+        if (!rows.length) { showToast('Nothing to export', selectedOnly ? 'No rows are selected.' : 'No records to export.', 'info'); return }
+        try {
+          const heading = kind === 'study' ? 'Clinical studies' : 'Innovation projects'
+          const visLabel = pv.visibility === 'public' ? 'Public only' : pv.visibility === 'private' ? 'Private only' : 'All visibility'
+          const today = new Date().toISOString().slice(0, 10)
+          const doc = new JS({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+          const pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight()
+          const mL = 12, mR = 12
+          const head = [cols.map(c => c[1])]
+          const body = rows.map(r => cols.map(c => c[0] === 'featured_in_website' ? (r.featured_in_website ? 'Public' : 'Private') : String(r[c[0]] || '—')))
+          const ctx = `${rows.length} record${rows.length === 1 ? '' : 's'} · ${visLabel} · generated ${today}`
+          doc.autoTable({
+            head, body, startY: 32,
+            margin: { left: mL, right: mR, top: 32, bottom: 16 },
+            styles: { font: 'helvetica', fontSize: 8, cellPadding: 2, overflow: 'linebreak', valign: 'top', textColor: [28, 43, 43], lineColor: [227, 234, 232], lineWidth: 0.1 },
+            headStyles: { fillColor: [244, 248, 248], textColor: [15, 61, 61], fontStyle: 'bold', fontSize: 8, lineColor: [15, 61, 61], lineWidth: 0.2 },
+            alternateRowStyles: { fillColor: [250, 252, 252] },
+            columnStyles: { 0: { cellWidth: (pageW - mL - mR) * 0.30, fontStyle: 'bold', textColor: [15, 61, 61] } },
+            didDrawPage: () => {
+              if (window.NEUMACT_LOGO_PNG) { const h = 9, w = h * (window.NEUMACT_LOGO_PNG_AR || 3.44); try { doc.addImage(window.NEUMACT_LOGO_PNG, 'PNG', mL, 11, w, h) } catch (e) {} }
+              doc.setFontSize(7.5); doc.setTextColor(93, 107, 116)
+              ;['Servicio de Neumología · CHUAC', 'Área Sanitaria da Coruña e Cee · SERGAS', 'INIBIC · neumACt R&I'].forEach((t, i) => doc.text(t, pageW - mR, 13 + i * 3.4, { align: 'right' }))
+              doc.setDrawColor(48, 136, 180); doc.setLineWidth(0.8); doc.line(mL, 25, pageW - mR, 25)
+              doc.setFontSize(12); doc.setTextColor(15, 61, 61); doc.text(heading, mL, 30.5)
+              doc.setFontSize(8.5); doc.setTextColor(93, 107, 116); doc.text(ctx, pageW - mR, 30.5, { align: 'right' })
+              const fy = pageH - 7
+              doc.setDrawColor(227, 234, 232); doc.setLineWidth(0.1); doc.line(mL, fy - 3.5, pageW - mR, fy - 3.5)
+              doc.setFontSize(7); doc.setTextColor(138, 151, 156); doc.text('Generated by', mL, fy)
+              if (window.NEUMDESK_LOGO_PNG) { const h = 3.6, w = h * (window.NEUMDESK_LOGO_PNG_AR || 7); try { doc.addImage(window.NEUMDESK_LOGO_PNG, 'PNG', mL + 15, fy - 3, w, h) } catch (e) {} }
+            }
+          })
+          const total = doc.internal.getNumberOfPages()
+          for (let i = 1; i <= total; i++) { doc.setPage(i); doc.setFontSize(7); doc.setTextColor(138, 151, 156); doc.text(`Confidential · internal portfolio record · page ${i} of ${total}`, pageW - mR, pageH - 7, { align: 'right' }) }
+          doc.save(`neumACt-${kind === 'study' ? 'studies' : 'projects'}-${today}.pdf`)
+          pv.showPdf = false
+          showToast('PDF ready', `${rows.length} record${rows.length === 1 ? '' : 's'} downloaded`, 'success')
+        } catch (e) { showToast('PDF failed', e?.message || 'Could not build the PDF', 'error'); _previewPrint(kind, selectedOnly) }
+      }
+      const exportStudiesPdf = (selectedOnly = false) => _previewPdfFile('study', selectedOnly)
+      const exportProjectsPdf = (selectedOnly = false) => _previewPdfFile('project', selectedOnly)
 
       // ── Projects preview: same spreadsheet-style read-only grid, for innovation projects.
       const PROJ_STAGE_LABEL = { concept:'Idea', development:'Prototype', pilot:'Pilot', validation:'Validation', scaling:'Scale-up', completed:'Commercialisation' }
@@ -7252,7 +7303,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const readyChipStyle = (ok) => ({ display: 'inline-flex', alignItems: 'center', padding: '3px 8px', borderRadius: '7px', fontSize: '10px', fontWeight: '700', border: '1px solid ' + (ok ? 'rgba(16,185,129,.4)' : '#d9e1e1'), background: ok ? 'rgba(16,185,129,.1)' : '#f4f7f7', color: ok ? '#0b6b4f' : '#7b8c96', whiteSpace: 'nowrap' })
       const PROJ_CAT_LABEL = { 'Dispositivo':'Medical device', 'Salud Digital':'Digital health', 'IA / ML':'AI / ML', 'Tecnología Quirúrgica':'Surgical technology' }
       const PROJECT_PDF_FIELDS = [['title','Title'],['line','Research line'],['category','Category'],['stage','Stage'],['funding','Funding'],['featured_in_website','Visibility'],['updated','Updated']]
-      const projectsPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(PROJECT_PDF_FIELDS.map(f => [f[0], true])) })
+      const projectsPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', stageFilter: '', sel: {}, showPdf: false, showCols: false, cols: { line: true, category: true, stage: true, funding: true, updated: true }, pdfFields: Object.fromEntries(PROJECT_PDF_FIELDS.map(f => [f[0], true])) })
       const openProjectsPreview = () => { projectsPreview.show = true }
       const projectsPreviewSort = (key) => {
         if (projectsPreview.sortKey === key) projectsPreview.sortDir *= -1
@@ -7273,6 +7324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let rows = (filteredProjectsAll.value || innovationProjects.value || []).map(_projectRow)
         if (projectsPreview.visibility === 'public')  rows = rows.filter(r => r.featured_in_website)
         if (projectsPreview.visibility === 'private') rows = rows.filter(r => !r.featured_in_website)
+        if (projectsPreview.stageFilter) rows = rows.filter(r => (r._raw.current_stage || r._raw.development_stage) === projectsPreview.stageFilter)
         const k = projectsPreview.sortKey, dir = projectsPreview.sortDir
         return rows.slice().sort((a, b) => {
           const av = a[k], bv = b[k]
