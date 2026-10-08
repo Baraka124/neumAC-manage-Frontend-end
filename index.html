@@ -5604,7 +5604,25 @@
                                         <a v-if="selectedProject.repo_url" :href="selectedProject.repo_url" target="_blank" rel="noopener">Repository ↗</a>
                                         <a v-if="selectedProject.demo_url" :href="selectedProject.demo_url" target="_blank" rel="noopener">Live system ↗</a>
                                     </section>
-                                    <section v-if="canEditPortfolio(selectedProject) || canEditPortfolio(selectedProject)" class="rv32-side-section rv32-side-section--management">
+                                    <section v-if="canEditPortfolio(selectedProject)" class="rv32-side-section rv32-side-section--management">
+                                        <span>Project status</span>
+                                        <div v-if="projectIsCompleted(selectedProject)" style="display:flex;flex-direction:column;gap:9px">
+                                            <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #cbd5d5;border-radius:10px;background:#f7f9f9;font-size:13px;color:#475569">
+                                                <span style="width:8px;height:8px;border-radius:50%;background:#64748b"></span>
+                                                <span>Completed<template v-if="selectedProject.actual_end_date"> · ended {{ String(selectedProject.actual_end_date).slice(0,10) }}</template></span>
+                                            </div>
+                                            <button class="rv32-text-link" @click="openProjectCompletion(selectedProject)">✎ Change end date</button>
+                                            <button class="rv32-text-link" @click="reopenProject(selectedProject)">↻ Reopen as active</button>
+                                        </div>
+                                        <div v-else style="display:flex;flex-direction:column;gap:9px">
+                                            <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid rgba(16,185,129,.35);border-radius:10px;background:rgba(16,185,129,.07);font-size:13px;color:#0b6b4f">
+                                                <span style="width:8px;height:8px;border-radius:50%;background:#10b981"></span>
+                                                <span>Active · {{ formatInnovationStage(selectedProject.current_stage || selectedProject.development_stage) }}</span>
+                                            </div>
+                                            <button @click="openProjectCompletion(selectedProject)" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;border:1px solid #008f8f;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">✓ Mark as completed</button>
+                                        </div>
+                                    </section>
+                                    <section v-if="canEditPortfolio(selectedProject)" class="rv32-side-section rv32-side-section--management">
                                         <span>Record management</span>
                                         <button v-if="canEditPortfolio(selectedProject)" class="rv32-text-link" @click="editProject(selectedProject)">✎ Edit clinical innovation</button>
                                         <button v-if="canEditPortfolio(selectedProject)" class="rv32-text-link rv32-text-link--danger" @click="deleteInnovationProject(selectedProject, goBackFromRecord)">Delete project</button>
@@ -5718,6 +5736,28 @@
                                     </table>
                                 </div>
                                 <div style="padding:10px 20px;border-top:1px solid #e6edeb;font-size:12px;color:#5d6b74">Read-only preview · click a column header to sort · visibility is editable inline · Download exports the rows shown. Reflects the studies page's current search/filters.</div>
+                            </div>
+                        </div>
+
+                        <!-- Project completion: date-only prompt to mark a project completed -->
+                        <div v-if="projectStatusModal.show" @click.self="projectStatusModal.show=false" style="position:fixed;inset:0;z-index:9100;background:rgba(15,30,30,.55);display:flex;align-items:center;justify-content:center;padding:24px">
+                            <div style="background:#fff;border-radius:16px;width:min(420px,100%);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
+                                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #eef3f1;background:linear-gradient(180deg,#fbfdfd,#fff)">
+                                    <img src="neumact-logo.svg" alt="neumACt" style="height:22px;width:auto;display:block;flex:none" onerror="this.style.display='none'">
+                                    <div>
+                                        <div style="font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#7c8a90">Clinical innovation</div>
+                                        <div style="font-size:16px;font-weight:650;color:#0f3d3d;line-height:1.2">Mark project completed</div>
+                                    </div>
+                                </div>
+                                <div style="padding:18px 20px">
+                                    <div style="font-size:13.5px;color:#475569;margin-bottom:6px;line-height:1.5">Record the date <strong style="color:#0f3d3d">{{ projectStatusModal.project && projectStatusModal.project.title }}</strong> was completed. It moves to <em>Completed</em> and stops counting as active.</div>
+                                    <label style="display:block;font-size:12px;font-weight:600;color:#5d6b74;margin:12px 0 5px">Completion date</label>
+                                    <input type="date" v-model="projectStatusModal.date" :max="new Date().toISOString().slice(0,10)" style="width:100%;padding:10px 12px;border:1px solid #cedcda;border-radius:10px;font:inherit;font-size:14px;color:#0f3d3d">
+                                </div>
+                                <div style="display:flex;gap:10px;justify-content:flex-end;padding:0 20px 18px">
+                                    <button @click="projectStatusModal.show=false" :disabled="projectStatusModal.saving" style="padding:9px 16px;border:1px solid #dde6e3;border-radius:10px;background:#fff;color:#5d6b74;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+                                    <button @click="confirmProjectCompletion()" :disabled="projectStatusModal.saving" style="padding:9px 18px;border:0;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">{{ projectStatusModal.saving ? 'Saving…' : 'Mark completed' }}</button>
+                                </div>
                             </div>
                         </div>
 

@@ -6997,6 +6997,55 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       }
 
+      // ── Project completion status: mark a project completed (captures the real end
+      // date) or reopen it (clears the date, returns it to an active late stage).
+      const projectStatusModal = reactive({ show: false, project: null, date: '', saving: false })
+      const projectIsCompleted = (p) => (p?.current_stage || p?.development_stage) === 'completed'
+      const openProjectCompletion = (project) => {
+        if (!project?.id) return
+        projectStatusModal.project = project
+        projectStatusModal.date = project.actual_end_date ? String(project.actual_end_date).slice(0, 10) : new Date().toISOString().slice(0, 10)
+        projectStatusModal.show = true
+      }
+      const _applyProjectPatch = (id, patch) => {
+        const idx = innovationProjects.value.findIndex(p => p.id === id)
+        if (idx !== -1) innovationProjects.value[idx] = { ...innovationProjects.value[idx], ...patch }
+        if (String(selectedProject.value?.id) === String(id)) selectedProject.value = { ...selectedProject.value, ...patch }
+      }
+      const confirmProjectCompletion = async () => {
+        const project = projectStatusModal.project
+        if (!project?.id) return
+        const date = projectStatusModal.date
+        if (!date) { showToast('Date required', 'Choose the date the project ended.', 'info'); return }
+        if (new Date(date) > new Date(new Date().toISOString().slice(0, 10))) { showToast('Check the date', 'The completion date is in the future.', 'info'); return }
+        projectStatusModal.saving = true
+        try {
+          const patch = { current_stage: 'completed', actual_end_date: date }
+          await API.updateInnovationProject(project.id, { ...project, ...patch })
+          _applyProjectPatch(project.id, patch)
+          showToast('Project completed', `Marked completed · ended ${date}`, 'success')
+          projectStatusModal.show = false
+        } catch (e) { showToast('Error', e?.message || 'Could not update the project', 'error') }
+        finally { projectStatusModal.saving = false }
+      }
+      const reopenProject = (project) => {
+        if (!project?.id) return
+        showConfirmation({
+          title: 'Reopen this project?',
+          message: 'It returns to active (Scale-up) and its completion date is cleared. You can fine-tune the stage in Edit.',
+          confirmButtonText: 'Reopen',
+          reversible: true,
+          onConfirm: async () => {
+            try {
+              const patch = { current_stage: 'scaling', actual_end_date: '' }
+              await API.updateInnovationProject(project.id, { ...project, ...patch })
+              _applyProjectPatch(project.id, { current_stage: 'scaling', actual_end_date: null })
+              showToast('Reopened', 'Project is active again (Scale-up)', 'success')
+            } catch (e) { showToast('Error', e?.message || 'Could not reopen the project', 'error') }
+          }
+        })
+      }
+
       // ── Studies preview: a read-only spreadsheet-style table over all studies, with
       // inline public/private toggling and a real .xlsx export (SheetJS is loaded).
       const STUDY_PDF_FIELDS = [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrolment'],['featured_in_website','Visibility'],['updated','Updated']]
@@ -7404,7 +7453,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, STUDY_STATUS_COLOR, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, projectStatusModal, projectIsCompleted, openProjectCompletion, confirmProjectCompletion, reopenProject, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, STUDY_STATUS_COLOR, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
