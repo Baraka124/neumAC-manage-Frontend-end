@@ -40,4 +40,6 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm i -D @playwright/test@1.47.2 http-server vue@3.4.21 && npx playwright install --with-deps chromium
+      - name: Settings component structure and Vue template compilation
+        run: node tests/settings-ui-integrity.cjs
       - run: npx playwright test
