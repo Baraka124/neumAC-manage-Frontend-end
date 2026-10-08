@@ -1,0 +1,10 @@
+# Node / test tooling (installed on demand in CI and for local test runs — never committed)
+node_modules/
+package.json
+package-lock.json
+
+# Playwright outputs
+test-results/
+playwright-report/
+.playwright/
+phase4-visual-artifacts/
