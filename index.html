@@ -1185,7 +1185,6 @@
                     <path class="grounded-mark-flow grounded-mark-flow--c" d="M19.1 38.2C23.6 40 27.1 43 30 47.2C32.4 43.5 35.6 40.2 41.4 37.2"/>
                 </svg>
             </div>
-            <div class="als-wordmark">neumDesk</div>
             <div class="als-sub">Preparing your department view</div>
             <div class="als-bar-wrap"><div class="als-bar"></div></div>
             <div class="als-tagline">Connecting staff, on-call, leave, rotations and research…</div>
@@ -5473,7 +5472,25 @@
                                         <span>Timeline</span>
                                         <div class="rv32-side-facts"><div><small>Start</small><strong>{{ selectedStudy.start_date || '—' }}</strong></div><div><small>Expected end</small><strong>{{ selectedStudy.estimated_end_date || selectedStudy.end_date || '—' }}</strong></div><div v-if="selectedStudy.actual_end_date"><small>Actual end</small><strong>{{ selectedStudy.actual_end_date }}</strong></div></div>
                                     </section>
-                                    <section v-if="canEditPortfolio(selectedStudy) || canEditPortfolio(selectedStudy)" class="rv32-side-section rv32-side-section--management">
+                                    <section v-if="canEditPortfolio(selectedStudy)" class="rv32-side-section rv32-side-section--management">
+                                        <span>Study status</span>
+                                        <div v-if="recordIsCompleted('study', selectedStudy)" style="display:flex;flex-direction:column;gap:9px">
+                                            <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #cbd5d5;border-radius:10px;background:#f7f9f9;font-size:13px;color:#475569">
+                                                <span style="width:8px;height:8px;border-radius:50%;background:#64748b"></span>
+                                                <span>Completed<template v-if="selectedStudy.end_date"> · ended {{ String(selectedStudy.end_date).slice(0,10) }}</template></span>
+                                            </div>
+                                            <button class="rv32-text-link" @click="openCompletion('study', selectedStudy)">✎ Change end date</button>
+                                            <button class="rv32-text-link" @click="reopenRecord('study', selectedStudy)">↻ Reopen as active</button>
+                                        </div>
+                                        <div v-else style="display:flex;flex-direction:column;gap:9px">
+                                            <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid rgba(16,185,129,.35);border-radius:10px;background:rgba(16,185,129,.07);font-size:13px;color:#0b6b4f">
+                                                <span style="width:8px;height:8px;border-radius:50%;background:#10b981"></span>
+                                                <span>{{ TRIAL_STATUS_LABEL[trialStatusKey(selectedStudy)] || 'Active' }}</span>
+                                            </div>
+                                            <button @click="openCompletion('study', selectedStudy)" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;border:1px solid #008f8f;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">✓ Mark as completed</button>
+                                        </div>
+                                    </section>
+                                    <section v-if="canEditPortfolio(selectedStudy)" class="rv32-side-section rv32-side-section--management">
                                         <span>Record management</span>
                                         <button v-if="canEditPortfolio(selectedStudy)" class="rv32-text-link" @click="editTrial(selectedStudy)">✎ Edit clinical study</button>
                                         <button v-if="canEditPortfolio(selectedStudy)" class="rv32-text-link rv32-text-link--danger" @click="deleteClinicalTrial(selectedStudy, goBackFromRecord)">Delete study</button>
@@ -5608,20 +5625,20 @@
                                     </section>
                                     <section v-if="canEditPortfolio(selectedProject)" class="rv32-side-section rv32-side-section--management">
                                         <span>Project status</span>
-                                        <div v-if="projectIsCompleted(selectedProject)" style="display:flex;flex-direction:column;gap:9px">
+                                        <div v-if="recordIsCompleted('project', selectedProject)" style="display:flex;flex-direction:column;gap:9px">
                                             <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #cbd5d5;border-radius:10px;background:#f7f9f9;font-size:13px;color:#475569">
                                                 <span style="width:8px;height:8px;border-radius:50%;background:#64748b"></span>
                                                 <span>Completed<template v-if="selectedProject.actual_end_date"> · ended {{ String(selectedProject.actual_end_date).slice(0,10) }}</template></span>
                                             </div>
-                                            <button class="rv32-text-link" @click="openProjectCompletion(selectedProject)">✎ Change end date</button>
-                                            <button class="rv32-text-link" @click="reopenProject(selectedProject)">↻ Reopen as active</button>
+                                            <button class="rv32-text-link" @click="openCompletion('project', selectedProject)">✎ Change end date</button>
+                                            <button class="rv32-text-link" @click="reopenRecord('project', selectedProject)">↻ Reopen as active</button>
                                         </div>
                                         <div v-else style="display:flex;flex-direction:column;gap:9px">
                                             <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid rgba(16,185,129,.35);border-radius:10px;background:rgba(16,185,129,.07);font-size:13px;color:#0b6b4f">
                                                 <span style="width:8px;height:8px;border-radius:50%;background:#10b981"></span>
                                                 <span>Active · {{ formatInnovationStage(selectedProject.current_stage || selectedProject.development_stage) }}</span>
                                             </div>
-                                            <button @click="openProjectCompletion(selectedProject)" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;border:1px solid #008f8f;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">✓ Mark as completed</button>
+                                            <button @click="openCompletion('project', selectedProject)" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 13px;border:1px solid #008f8f;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">✓ Mark as completed</button>
                                         </div>
                                     </section>
                                     <section v-if="canEditPortfolio(selectedProject)" class="rv32-side-section rv32-side-section--management">
@@ -5720,9 +5737,12 @@
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.study_type || '—' }}</td>
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.phase || '—' }}</td>
                                                 <td style="padding:10px 12px;white-space:nowrap">
-                                                    <span v-if="r.status" :style="{display:'inline-flex',alignItems:'center',gap:'6px',padding:'3px 10px',borderRadius:'999px',fontSize:'12px',fontWeight:'600',background:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[0],color:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[1]}">
-                                                        <span :style="{width:'6px',height:'6px',borderRadius:'50%',background:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[2]}"></span>{{ r.status }}
-                                                    </span><span v-else style="color:#94a3b8">—</span>
+                                                    <span style="display:inline-flex;align-items:center;gap:8px">
+                                                        <span v-if="r.status" :style="{display:'inline-flex',alignItems:'center',gap:'6px',padding:'3px 10px',borderRadius:'999px',fontSize:'12px',fontWeight:'600',background:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[0],color:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[1]}">
+                                                            <span :style="{width:'6px',height:'6px',borderRadius:'50%',background:(STUDY_STATUS_COLOR[r.statusKey]||STUDY_STATUS_COLOR.other)[2]}"></span>{{ r.status }}
+                                                        </span><span v-else style="color:#94a3b8">—</span>
+                                                        <button v-if="r.statusKey!=='done' && canEditPortfolio(r._raw)" @click="openCompletion('study', r._raw)" title="Mark this study completed" style="border:1px solid #cfe0de;border-radius:7px;background:#fff;color:#007575;font:inherit;font-size:11px;font-weight:600;padding:2px 8px;cursor:pointer">✓ Complete</button>
+                                                    </span>
                                                 </td>
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.enrolment || '—' }}</td>
                                                 <td style="padding:10px 12px">
@@ -5742,23 +5762,23 @@
                         </div>
 
                         <!-- Project completion: date-only prompt to mark a project completed -->
-                        <div v-if="projectStatusModal.show" @click.self="projectStatusModal.show=false" style="position:fixed;inset:0;z-index:9100;background:rgba(15,30,30,.55);display:flex;align-items:center;justify-content:center;padding:24px">
+                        <div v-if="completionModal.show" @click.self="completionModal.show=false" style="position:fixed;inset:0;z-index:9100;background:rgba(15,30,30,.55);display:flex;align-items:center;justify-content:center;padding:24px">
                             <div style="background:#fff;border-radius:16px;width:min(420px,100%);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
                                 <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid #eef3f1;background:linear-gradient(180deg,#fbfdfd,#fff)">
                                     <img src="neumact-logo.svg" alt="neumACt" style="height:22px;width:auto;display:block;flex:none" onerror="this.style.display='none'">
                                     <div>
-                                        <div style="font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#7c8a90">Clinical innovation</div>
-                                        <div style="font-size:16px;font-weight:650;color:#0f3d3d;line-height:1.2">Mark project completed</div>
+                                        <div style="font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#7c8a90">{{ completionModal.kind==='study' ? 'Clinical studies' : 'Clinical innovation' }}</div>
+                                        <div style="font-size:16px;font-weight:650;color:#0f3d3d;line-height:1.2">Mark {{ completionModal.kind==='study' ? 'study' : 'project' }} completed</div>
                                     </div>
                                 </div>
                                 <div style="padding:18px 20px">
-                                    <div style="font-size:13.5px;color:#475569;margin-bottom:6px;line-height:1.5">Record the date <strong style="color:#0f3d3d">{{ projectStatusModal.project && projectStatusModal.project.title }}</strong> was completed. It moves to <em>Completed</em> and stops counting as active.</div>
+                                    <div style="font-size:13.5px;color:#475569;margin-bottom:6px;line-height:1.5">Record the date <strong style="color:#0f3d3d">{{ completionModal.record && completionModal.record.title }}</strong> was completed. It moves to <em>Completed</em> and stops counting as active.</div>
                                     <label style="display:block;font-size:12px;font-weight:600;color:#5d6b74;margin:12px 0 5px">Completion date</label>
-                                    <input type="date" v-model="projectStatusModal.date" :max="new Date().toISOString().slice(0,10)" style="width:100%;padding:10px 12px;border:1px solid #cedcda;border-radius:10px;font:inherit;font-size:14px;color:#0f3d3d">
+                                    <input type="date" v-model="completionModal.date" :max="new Date().toISOString().slice(0,10)" style="width:100%;padding:10px 12px;border:1px solid #cedcda;border-radius:10px;font:inherit;font-size:14px;color:#0f3d3d">
                                 </div>
                                 <div style="display:flex;gap:10px;justify-content:flex-end;padding:0 20px 18px">
-                                    <button @click="projectStatusModal.show=false" :disabled="projectStatusModal.saving" style="padding:9px 16px;border:1px solid #dde6e3;border-radius:10px;background:#fff;color:#5d6b74;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
-                                    <button @click="confirmProjectCompletion()" :disabled="projectStatusModal.saving" style="padding:9px 18px;border:0;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">{{ projectStatusModal.saving ? 'Saving…' : 'Mark completed' }}</button>
+                                    <button @click="completionModal.show=false" :disabled="completionModal.saving" style="padding:9px 16px;border:1px solid #dde6e3;border-radius:10px;background:#fff;color:#5d6b74;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+                                    <button @click="confirmCompletion()" :disabled="completionModal.saving" style="padding:9px 18px;border:0;border-radius:10px;background:#008f8f;color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">{{ completionModal.saving ? 'Saving…' : 'Mark completed' }}</button>
                                 </div>
                             </div>
                         </div>
@@ -5889,7 +5909,12 @@
                                                 <td style="padding:10px 12px;max-width:320px"><div style="font-weight:600;color:#0f3d3d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</div></td>
                                                 <td style="padding:10px 12px">{{ r.line || '—' }}</td>
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.category || '—' }}</td>
-                                                <td style="padding:10px 12px;white-space:nowrap">{{ r.stage || '—' }}</td>
+                                                <td style="padding:10px 12px;white-space:nowrap">
+                                                    <span style="display:inline-flex;align-items:center;gap:8px">
+                                                        <span>{{ r.stage || '—' }}</span>
+                                                        <button v-if="!recordIsCompleted('project', r._raw) && canEditPortfolio(r._raw)" @click="openCompletion('project', r._raw)" title="Mark this project completed" style="border:1px solid #cfe0de;border-radius:7px;background:#fff;color:#007575;font:inherit;font-size:11px;font-weight:600;padding:2px 8px;cursor:pointer">✓ Complete</button>
+                                                    </span>
+                                                </td>
                                                 <td style="padding:10px 12px;white-space:nowrap">{{ r.funding || '—' }}</td>
                                                 <td style="padding:10px 12px">
                                                     <button v-if="canEditPortfolio(r._raw)" @click="toggleProjectPublic(r._raw)" :title="r.featured_in_website?'Public — click to make private':'Private — click to publish'" :style="{display:'inline-flex',alignItems:'center',gap:'6px',padding:'4px 10px',border:'1px solid '+(r.featured_in_website?'#10b981':'#cbd5d5'),borderRadius:'999px',background:r.featured_in_website?'rgba(16,185,129,.1)':'#fff',color:r.featured_in_website?'#0b6b4f':'#64748b',font:'inherit',fontSize:'12px',fontWeight:'600',cursor:'pointer',whiteSpace:'nowrap'}">
@@ -12253,8 +12278,8 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
     <script src="publishing10.js?v=5.3-production.3-publishing10"></script>
-    <script src="brand-assets.js?v=5.4-production.5-20261008b"></script>
-    <script src="app.js?v=5.4-production.5-20261008b"></script>
+    <script src="brand-assets.js?v=5.4-production.6-20261008c"></script>
+    <script src="app.js?v=5.4-production.6-20261008c"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
