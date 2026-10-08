@@ -7284,6 +7284,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ── Projects preview: same spreadsheet-style read-only grid, for innovation projects.
       const PROJ_STAGE_LABEL = { concept:'Idea', development:'Prototype', pilot:'Pilot', validation:'Validation', scaling:'Scale-up', completed:'Commercialisation' }
+      // Development-pathway position for an innovation project (mirrors recruitment progress on studies)
+      const PROJECT_STAGE_ORDER = ['concept','development','pilot','validation','scaling','completed']
+      const projectPathway = (p) => {
+        const key = (p && (p.current_stage || p.development_stage)) || ''
+        const total = PROJECT_STAGE_ORDER.length
+        let idx = PROJECT_STAGE_ORDER.indexOf(key)
+        if (idx < 0) idx = 0
+        return { index: idx, position: idx + 1, total, pct: Math.round(((idx + 1) / total) * 100) }
+      }
+      // Readiness signal for a project row (mirrors studyGovernance on studies)
+      const projectReadiness = (p) => {
+        const scope = !!p?.scope_finalized
+        const ethics = p?.ethics_status === 'approved' || p?.ethics_status === 'not_required' || p?.ethics_status === 'exempt'
+        const partner = !((p?.partner_needs || []).length) || !!p?.partner_found
+        return { scope, ethics, partner, gaps: [!scope, !ethics, !partner].filter(Boolean).length }
+      }
+      const readyChipStyle = (ok) => ({ display: 'inline-flex', alignItems: 'center', padding: '3px 8px', borderRadius: '7px', fontSize: '10px', fontWeight: '700', border: '1px solid ' + (ok ? 'rgba(16,185,129,.4)' : '#d9e1e1'), background: ok ? 'rgba(16,185,129,.1)' : '#f4f7f7', color: ok ? '#0b6b4f' : '#7b8c96', whiteSpace: 'nowrap' })
       const PROJ_CAT_LABEL = { 'Dispositivo':'Medical device', 'Salud Digital':'Digital health', 'IA / ML':'AI / ML', 'Tecnología Quirúrgica':'Surgical technology' }
       const PROJECT_STAGE_COLOR = { concept:'#8b5cf6', development:'#3b82f6', pilot:'#06b6d4', validation:'#2f86ba', scaling:'#10b981', completed:'#64748b' }
       // ── Research Intelligence charts: category/magnitude bars from live data.
@@ -7559,7 +7576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, completionModal, recordIsCompleted, openCompletion, confirmCompletion, reopenRecord, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, STUDY_STATUS_COLOR, studiesByStatus, projectsByStage, enrolmentByLine, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, projectPathway, projectReadiness, readyChipStyle, completionModal, recordIsCompleted, openCompletion, confirmCompletion, reopenRecord, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, STUDY_STATUS_COLOR, studiesByStatus, projectsByStage, enrolmentByLine, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,

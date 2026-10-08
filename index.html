@@ -5518,6 +5518,21 @@
                                 </button>
                             </header>
 
+                            <section class="rv32-study-command">
+                                <div class="rv32-study-command-main">
+                                    <div class="rv32-command-label">Development pathway</div>
+                                    <div class="rv32-recruitment-large">
+                                        <div><strong>{{ projectPathway(selectedProject).position }}</strong><span>/ {{ projectPathway(selectedProject).total }} stages</span></div>
+                                        <small>Currently {{ formatInnovationStage(selectedProject.current_stage || selectedProject.development_stage) }} · {{ projectPathway(selectedProject).pct }}% of pathway<template v-if="selectedProject.trl_level"> · TRL {{ selectedProject.trl_level }}</template></small>
+                                        <div class="rv32-progress"><i :style="{width: projectPathway(selectedProject).pct + '%', background: recordIsCompleted('project', selectedProject) ? '#64748b' : '#2f86ba'}"></i></div>
+                                    </div>
+                                </div>
+                                <div class="rv32-study-command-side">
+                                    <div><span>Clinical lead</span><strong>{{ selectedProject.lead?.full_name || getStaffName(selectedProject.lead_investigator_id) || 'Not assigned' }}</strong></div>
+                                    <div><span>Funding</span><strong>{{ formatFundingStatus(selectedProject.funding_status) }}</strong><small v-if="selectedProject.budget">Budget · €{{ Number(selectedProject.budget).toLocaleString('es-ES') }}</small></div>
+                                </div>
+                            </section>
+
                             <section class="rv32-innovation-need">
                                 <div><span>Clinical need / rationale</span><h2>{{ selectedProject.clinical_rationale || 'Clinical rationale has not been recorded yet.' }}</h2></div>
                                 <div class="rv32-innovation-focus"><span>Clinical focus</span><strong>{{ (selectedProject.target_diseases || []).length ? selectedProject.target_diseases.join(' · ') : (selectedProject.scope_note || 'Cross-respiratory / not recorded') }}</strong></div>
@@ -5573,6 +5588,7 @@
                                             <div><span>Partner status</span><strong>{{ selectedProject.partner_found ? (selectedProject.partner_name || 'Partner recorded') : 'No partner recorded' }}</strong></div>
                                             <div><span>IP status</span><strong>{{ selectedProject.ip_status || 'Not recorded' }}</strong></div>
                                             <div><span>Funding</span><strong>{{ formatFundingStatus(selectedProject.funding_status) }}</strong><small v-if="selectedProject.funding_source">{{ selectedProject.funding_source }}</small></div>
+                                            <div v-if="selectedProject.budget"><span>Budget</span><strong>€{{ Number(selectedProject.budget).toLocaleString('es-ES') }}</strong></div>
                                         </div>
                                     </section>
 
@@ -5594,6 +5610,11 @@
                                             <div v-for="(ext,idx) in (selectedProject.external_team||[])" :key="'ext-'+idx" class="rv32-team-row rv32-team-row--external"><span class="rv32-avatar">{{ ext.name ? ext.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase() : (ext.institution||'?').slice(0,2).toUpperCase() }}</span><span><strong>{{ ext.name || ext.institution }}</strong><small>{{ ext.role || 'Partner' }}<template v-if="ext.name && ext.institution"> · {{ ext.institution }}</template></small></span></div>
                                             <div v-if="!selectedProject.lead_investigator_id && !(selectedProject.co_investigators||[]).length && !(selectedProject.external_team||[]).length" class="rv32-not-recorded">No team members are recorded.</div>
                                         </div>
+                                    </section>
+
+                                    <section class="rv32-info-section" v-if="(selectedProject.milestones||[]).length">
+                                        <div class="rv32-section-heading"><div><span>Milestones</span><h2>Project progression</h2></div></div>
+                                        <div class="rv32-milestones"><div v-for="(ms,idx) in selectedProject.milestones" :key="ms.id||idx" class="rv32-milestone" :class="{done:ms.done}"><i></i><div><strong>{{ ms.label }}</strong><small v-if="ms.date">{{ ms.date }}</small></div><span v-if="ms.done">Done</span></div></div>
                                     </section>
                                 </main>
 
@@ -5977,8 +5998,21 @@
                                     <h2>{{ proj.title }}</h2>
                                     <p>{{ proj.clinical_rationale || proj.description || ((proj.target_diseases||[]).length ? proj.target_diseases.join(' · ') : 'No clinical rationale recorded') }}</p>
                                 </div>
-                                <div class="rv32-project-context"><span>Clinical focus</span><strong>{{ (proj.target_diseases||[]).length ? proj.target_diseases.join(' · ') : (proj.scope_note || 'Not recorded') }}</strong><small>{{ formatFundingStatus(proj.funding_status) }}<template v-if="proj.regulatory_pathway && proj.regulatory_pathway!=='none'"> · {{ formatRegulatoryPathway(proj.regulatory_pathway) }}</template></small></div>
-                                <div class="rv32-project-context"><span>Collaboration</span><strong>{{ proj.partner_found ? (proj.partner_name || 'Partner recorded') : ((proj.partner_needs||[]).length ? (proj.partner_needs.length+' partner need'+(proj.partner_needs.length===1?'':'s')) : 'No external partner need recorded') }}</strong><small>{{ proj.scope_finalized ? 'Scope confirmed' : 'Scope pending' }}</small></div>
+                                <div class="rv32-project-context">
+                                    <span>Project readiness</span>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">
+                                        <b :style="readyChipStyle(projectReadiness(proj).scope)">{{ projectReadiness(proj).scope ? 'Scope ✓' : 'Scope pending' }}</b>
+                                        <b :style="readyChipStyle(projectReadiness(proj).ethics)">{{ projectReadiness(proj).ethics ? 'Ethics ✓' : 'Ethics' }}</b>
+                                        <b :style="readyChipStyle(projectReadiness(proj).partner)">{{ projectReadiness(proj).partner ? 'Partner ✓' : 'Partner need' }}</b>
+                                    </div>
+                                    <small>{{ (proj.target_diseases||[]).length ? proj.target_diseases.join(' · ') : (proj.scope_note || formatFundingStatus(proj.funding_status)) }}</small>
+                                </div>
+                                <div class="rv32-project-context">
+                                    <span>Development</span>
+                                    <strong style="margin-top:7px;-webkit-line-clamp:1;display:block">Stage {{ projectPathway(proj).position }}/{{ projectPathway(proj).total }} · {{ projectPathway(proj).pct }}%</strong>
+                                    <div class="rv32-progress" style="margin-top:7px"><i :style="{width:projectPathway(proj).pct+'%', background: recordIsCompleted('project',proj)?'#64748b':'#2f86ba'}"></i></div>
+                                    <small>{{ proj.partner_found ? (proj.partner_name || 'Partner recorded') : (proj.scope_finalized ? 'Scope confirmed' : 'Scope pending') }}</small>
+                                </div>
                                 <div class="rv32-row-arrow">→</div>
                             </article>
                         </section>
@@ -12324,10 +12358,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
     <script src="publishing10.js?v=5.3-production.3-publishing10"></script>
-    <script src="vendor/jspdf.umd.min.js?v=5.4-production.10-20261008g"></script>
-    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.10-20261008g"></script>
-    <script src="brand-assets.js?v=5.4-production.10-20261008g"></script>
-    <script src="app.js?v=5.4-production.10-20261008g"></script>
+    <script src="vendor/jspdf.umd.min.js?v=5.4-production.11-20261008h"></script>
+    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.11-20261008h"></script>
+    <script src="brand-assets.js?v=5.4-production.11-20261008h"></script>
+    <script src="app.js?v=5.4-production.11-20261008h"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
