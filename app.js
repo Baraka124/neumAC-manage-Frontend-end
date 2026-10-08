@@ -6599,6 +6599,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const trialStatusKey = (t) => normalizeTrialStatusKey(t)
       const trialRecruitmentKey = (t) => normalizeRecruitmentStatusKey(t)
       const TRIAL_STATUS_LABEL = { recruiting: 'Recruiting', active: 'Active', prep: 'In preparation', done: 'Completed', other: 'Other' }
+      // Status pill palette for the portfolio preview (bg / text / dot)
+      const STUDY_STATUS_COLOR = {
+        recruiting: ['rgba(16,185,129,.12)', '#0b6b4f', '#10b981'],
+        active:     ['rgba(47,134,186,.12)', '#1f5f86', '#2f86ba'],
+        prep:       ['rgba(234,179,8,.14)',  '#8a6d0b', '#eab308'],
+        done:       ['rgba(100,116,139,.14)', '#475569', '#64748b'],
+        other:      ['rgba(100,116,139,.10)', '#64748b', '#94a3b8']
+      }
       const countTrialsByStatus = (key) => clinicalTrials.value.filter(t => trialStatusKey(t) === key).length
 
       // Recruitment health: where a trial stands vs its target, and whether it's behind pace
@@ -7008,6 +7016,7 @@ document.addEventListener('DOMContentLoaded', () => {
           study_type: t.study_type || '',
           phase: t.phase || '',
           status: TRIAL_STATUS_LABEL[trialStatusKey(t)] || t.status || '',
+          statusKey: trialStatusKey(t),
           enrolment: enr ? `${enr.actual}/${enr.target}` : '',
           featured_in_website: !!t.featured_in_website,
           updated: t.updated_at ? String(t.updated_at).slice(0, 10) : '',
@@ -7094,15 +7103,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = rows.map(r => `<tr>${cols.map(c => `<td${cls(c[0])}>${cell(r, c[0])}</td>`).join('')}</tr>`).join('')
         const today = new Date().toISOString().slice(0, 10)
         const ctx = [`${rows.length} record${rows.length === 1 ? '' : 's'}`, visLabel, selectedOnly ? 'selected only' : ''].filter(Boolean).join(' · ')
+        const logo = (typeof window !== 'undefined' && window.NEUMACT_LOGO_SVG)
+          ? `<span class="logo">${window.NEUMACT_LOGO_SVG}</span>`
+          : `<span class="wordmark">neumACt</span>`
         return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>neumACt — ${esc(heading)} ${today}</title>
           <style>
             @page{size:A4 landscape;margin:14mm 12mm 18mm}
             *{box-sizing:border-box}
+            html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
             body{font:11px/1.45 Arial,Helvetica,sans-serif;color:#1c2b2b;margin:0}
-            .brand{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid #0f3d3d;padding-bottom:8px}
-            .brand h1{font-size:17px;margin:0;color:#0f3d3d}
-            .brand .mark{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#008f8f}
-            .sub{color:#5d6b74;font-size:10.5px;margin:7px 0 12px}
+            .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
+            .logo svg{height:30px;width:auto;display:block}
+            .wordmark{font-size:22px;font-weight:800;letter-spacing:-.01em;color:#2f86ba}
+            .inst{text-align:right;font-size:9px;line-height:1.35;color:#5d6b74;text-transform:uppercase;letter-spacing:.06em}
+            .rule{height:3px;margin:9px 0 10px;background:linear-gradient(90deg,#3556a8,#3088b4,#32a5ac,#39a584);border-radius:2px}
+            .docline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:11px}
+            .docline h1{font-size:16px;margin:0;color:#0f3d3d;letter-spacing:.01em}
+            .docline .ctx{font-size:10px;color:#5d6b74;white-space:nowrap}
             table{border-collapse:collapse;width:100%;table-layout:fixed}
             thead{display:table-header-group}
             th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:#0f3d3d;border-bottom:1.5px solid #0f3d3d;padding:6px 7px;background:#f4f8f8}
@@ -7112,10 +7129,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .c-title{width:30%;font-weight:600;color:#0f3d3d}
             .foot{position:fixed;bottom:6mm;left:12mm;right:12mm;display:flex;justify-content:space-between;font-size:8.5px;color:#8a979c;border-top:1px solid #e3eae8;padding-top:4px}
           </style></head><body>
-          <div class="brand"><h1>${esc(heading)}</h1><span class="mark">neumACt · Pneumology R&amp;I</span></div>
-          <p class="sub">${esc(ctx)} · generated ${today}</p>
+          <div class="topbar">${logo}<span class="inst">Servicio de Neumología · CHUAC<br>Área Sanitaria da Coruña e Cee · SERGAS<br>INIBIC · neumACt R&amp;I</span></div>
+          <div class="rule"></div>
+          <div class="docline"><h1>${esc(heading)}</h1><span class="ctx">${esc(ctx)} · generated ${today}</span></div>
           <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-          <div class="foot"><span>neumACt — Servicio de Neumología · CHUAC</span><span>Generated ${today}</span></div>
+          <div class="foot"><span>neumACt — Servicio de Neumología · CHUAC · SERGAS</span><span>Confidential · internal portfolio record · ${today}</span></div>
           </body></html>`
       }
       const _previewPrint = (kind, selectedOnly = false) => {
@@ -7386,7 +7404,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, STUDY_STATUS_COLOR, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
