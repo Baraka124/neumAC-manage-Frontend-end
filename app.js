@@ -7285,6 +7285,31 @@ document.addEventListener('DOMContentLoaded', () => {
       // ── Projects preview: same spreadsheet-style read-only grid, for innovation projects.
       const PROJ_STAGE_LABEL = { concept:'Idea', development:'Prototype', pilot:'Pilot', validation:'Validation', scaling:'Scale-up', completed:'Commercialisation' }
       const PROJ_CAT_LABEL = { 'Dispositivo':'Medical device', 'Salud Digital':'Digital health', 'IA / ML':'AI / ML', 'Tecnología Quirúrgica':'Surgical technology' }
+      const PROJECT_STAGE_COLOR = { concept:'#8b5cf6', development:'#3b82f6', pilot:'#06b6d4', validation:'#2f86ba', scaling:'#10b981', completed:'#64748b' }
+      // ── Research Intelligence charts: category/magnitude bars from live data.
+      // Each row carries an entity colour + its own value label (never colour-alone),
+      // and a pct scaled to the row-set max so bars are CSS widths (no overflow).
+      const studiesByStatus = computed(() => {
+        const rows = ['recruiting','active','prep','done'].map(k => ({ key:k, label: TRIAL_STATUS_LABEL[k], count: (clinicalTrials.value||[]).filter(t=>trialStatusKey(t)===k).length, color: (STUDY_STATUS_COLOR[k]||STUDY_STATUS_COLOR.other)[2] }))
+        const max = Math.max(1, ...rows.map(r=>r.count))
+        return rows.map(r => ({ ...r, pct: Math.round(r.count/max*100) }))
+      })
+      const projectsByStage = computed(() => {
+        const rows = ['concept','development','pilot','validation','scaling','completed'].map(k => ({ key:k, label: PROJ_STAGE_LABEL[k], count: (innovationProjects.value||[]).filter(p=>(p.current_stage||p.development_stage)===k).length, color: PROJECT_STAGE_COLOR[k] }))
+        const max = Math.max(1, ...rows.map(r=>r.count))
+        return rows.map(r => ({ ...r, pct: Math.round(r.count/max*100) }))
+      })
+      const enrolmentByLine = computed(() => {
+        const rows = (researchLines.value||[]).map(line => {
+          const trials = (clinicalTrials.value||[]).filter(t=>String(t.research_line_id)===String(line.id))
+          const enrolled = trials.reduce((s,t)=>s+(Number(t.actual_enrollment)||0),0)
+          const target = trials.reduce((s,t)=>s+(Number(t.enrollment_target)||0),0)
+          return { id: line.id, num: line.line_number, name: (line.research_line_name||line.name||('Line '+line.line_number)), enrolled, target, hasTarget: target>0, pct: target ? Math.min(100, Math.round(enrolled/target*100)) : 0 }
+        }).filter(r => r.enrolled>0 || r.target>0)
+        rows.sort((a,b)=> b.enrolled - a.enrolled)
+        const max = Math.max(1, ...rows.map(r=>r.enrolled))
+        return rows.slice(0, 6).map(r => ({ ...r, barPct: Math.round(r.enrolled/max*100) }))
+      })
       const PROJECT_PDF_FIELDS = [['title','Title'],['line','Research line'],['category','Category'],['stage','Stage'],['funding','Funding'],['featured_in_website','Visibility'],['updated','Updated']]
       const projectsPreview = reactive({ show: false, maximized: false, sortKey: 'title', sortDir: 1, visibility: '', stageFilter: '', sel: {}, showPdf: false, showCols: false, cols: { line: true, category: true, stage: true, funding: true, updated: true }, pdfFields: Object.fromEntries(PROJECT_PDF_FIELDS.map(f => [f[0], true])) })
       const openProjectsPreview = () => { projectsPreview.show = true }
@@ -7534,7 +7559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, completionModal, recordIsCompleted, openCompletion, confirmCompletion, reopenRecord, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, STUDY_STATUS_COLOR, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, completionModal, recordIsCompleted, openCompletion, confirmCompletion, reopenRecord, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, STUDY_STATUS_COLOR, studiesByStatus, projectsByStage, enrolmentByLine, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, exportProjectsPdf, PROJECT_PDF_FIELDS, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,

@@ -5996,6 +5996,36 @@
                             <div :class="{'attention':clinicalTrials.filter(t=>studyGovernance(t).any).length}"><span>Study requirements</span><strong>{{ clinicalTrials.filter(t=>studyGovernance(t).any).length }}</strong><small>study records with recorded gaps</small></div>
                         </section>
 
+                        <section class="rv34-charts" aria-label="Portfolio distribution charts">
+                            <div class="rv34-chart">
+                                <header><span>Clinical evidence</span><h3>Studies by status</h3></header>
+                                <div v-for="r in studiesByStatus" :key="r.key" class="rv34-bar">
+                                    <span class="rv34-bar__label">{{ r.label }}</span>
+                                    <span class="rv34-bar__track"><span class="rv34-bar__fill" :style="{width:r.pct+'%',background:r.color}"></span></span>
+                                    <span class="rv34-bar__val">{{ r.count }}</span>
+                                </div>
+                                <div v-if="!clinicalTrials.length" class="rv34-chart__empty">No clinical studies are recorded yet.</div>
+                            </div>
+                            <div class="rv34-chart">
+                                <header><span>Clinical innovation</span><h3>Projects by stage</h3></header>
+                                <div v-for="r in projectsByStage" :key="r.key" class="rv34-bar">
+                                    <span class="rv34-bar__label">{{ r.label }}</span>
+                                    <span class="rv34-bar__track"><span class="rv34-bar__fill" :style="{width:r.pct+'%',background:r.color}"></span></span>
+                                    <span class="rv34-bar__val">{{ r.count }}</span>
+                                </div>
+                                <div v-if="!innovationProjects.length" class="rv34-chart__empty">No innovation projects are recorded yet.</div>
+                            </div>
+                            <div class="rv34-chart">
+                                <header><span>Recruitment</span><h3>Enrolment by research line</h3></header>
+                                <div v-for="r in enrolmentByLine" :key="r.id" class="rv34-bar">
+                                    <span class="rv34-bar__label" :title="r.name">{{ r.name }}</span>
+                                    <span class="rv34-bar__track"><span class="rv34-bar__fill" :style="{width:r.barPct+'%',background:'#2f86ba'}"></span></span>
+                                    <span class="rv34-bar__val">{{ r.enrolled }}<template v-if="r.hasTarget">/{{ r.target }}</template></span>
+                                </div>
+                                <div v-if="!enrolmentByLine.length" class="rv34-chart__empty">No enrolment figures are recorded yet.</div>
+                            </div>
+                        </section>
+
                         <div class="rv33-intelligence-grid">
                             <section class="rv33-intel-panel rv33-intel-panel--wide">
                                 <header><div><span>Programme comparison</span><h2>Research lines as programmes</h2></div><small>Evidence · innovation · output</small></header>
@@ -12294,10 +12324,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
     <script src="publishing10.js?v=5.3-production.3-publishing10"></script>
-    <script src="vendor/jspdf.umd.min.js?v=5.4-production.7-20261008d"></script>
-    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.7-20261008d"></script>
-    <script src="brand-assets.js?v=5.4-production.7-20261008d"></script>
-    <script src="app.js?v=5.4-production.7-20261008d"></script>
+    <script src="vendor/jspdf.umd.min.js?v=5.4-production.10-20261008g"></script>
+    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.10-20261008g"></script>
+    <script src="brand-assets.js?v=5.4-production.10-20261008g"></script>
+    <script src="app.js?v=5.4-production.10-20261008g"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
