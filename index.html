@@ -459,7 +459,6 @@
                                 <div class="askbar-proposal-body">
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">Who</span><span class="askbar-proposal-v">{{ turn.oncallProposal.subject.name }}</span></div>
                                     <div class="askbar-proposal-row"><span class="askbar-proposal-k">When</span><span class="askbar-proposal-v">{{ turn.oncallProposal.dateLabel }}</span></div>
-                                    <div class="askbar-proposal-row"><span class="askbar-proposal-k">Backup</span><span class="askbar-proposal-v">{{ turn.oncallProposal.backup ? turn.oncallProposal.backup.name : '—' }}</span></div>
                                 </div>
                                 <div v-if="turn.oncallProposal.impact && turn.oncallProposal.impact.items" class="askbar-impact-preview">
                                     <div class="askbar-impact-preview-head"><span>Impact preview</span><small>Before anything changes</small></div>
@@ -895,7 +894,6 @@
                                 <div v-for="(r,ri) in turn.visual.rows" :key="ri" class="askbar-roster-row" :class="{ 'askbar-roster-row--today': r.today }">
                                     <span class="askbar-roster-date">{{ r.today ? 'Today' : r.date }}</span>
                                     <span class="askbar-roster-name">{{ r.name }}</span>
-                                    <span v-if="r.backup" class="askbar-roster-backup">backup {{ r.backup }}</span>
                                     <span v-if="r.today" class="askbar-roster-pill">on call</span>
                                 </div>
                             </div>
@@ -1923,7 +1921,6 @@
                                                         <div class="db-oc-flags">
                                                             <span v-if="area.primary._onAbsence" class="db-oc-flag db-oc-flag--absence" title="This physician has an absence recorded for this date">⚠ On leave</span>
                                                             <span v-else-if="area.primary._consecutive >= 2" class="db-oc-flag db-oc-flag--fatigue" :title="area.primary._consecutive + ' consecutive nights before this shift'">{{ area.primary._consecutive + 1 }} nights</span>
-                                                            <span v-if="!area.backup" class="db-oc-flag db-oc-flag--nobackup">No backup</span>
                                                         </div>
                                                     </div>
                                                     <!-- Gap row — no primary assigned -->
@@ -1933,18 +1930,12 @@
                                                         <span class="db-oc-gap-label">Unassigned</span>
                                                         <span v-if="hasPermission('oncall_schedule','create')" class="db-oc-assign-btn">＋ Assign</span>
                                                     </div>
-                                                    <!-- Backup row -->
-                                                    <div class="db-oc-slot-row db-oc-slot-row--backup" v-if="area.backup">
-                                                        <div class="db-oc-av db-oc-av--backup">{{ (getPhysicianName(area.backup.primary_physician_id)||'??').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() }}</div>
-                                                        <span class="db-oc-name nd-v142" >{{ formatDrName(getPhysicianName(area.backup.primary_physician_id)) }}</span>
-                                                        <span class="db-oc-flag db-oc-flag--backup">Backup</span>
-                                                    </div>
                                                 </div>
                                             </div>
                                         </template>
 
                                         <!-- No-area slot (legacy / no area assigned) -->
-                                        <template v-if="day.noArea && (day.noArea.primary || day.noArea.backup || day.areas.length === 0)">
+                                        <template v-if="day.noArea && (day.noArea.primary || day.areas.length === 0)">
                                             <div class="db-oc-slot-row" :class="day.noArea.primary ? 'db-oc-slot-row--ok' : 'db-oc-slot-row--gap'"
                                                  @click="!day.noArea.primary && hasPermission('oncall_schedule','create') ? showAddOnCallModal(null, day.date) : null">
                                                 <template v-if="day.noArea.primary">
@@ -1959,7 +1950,6 @@
                                                     <div class="db-oc-flags">
                                                         <span v-if="day.noArea.primary._onAbsence" class="db-oc-flag db-oc-flag--absence">⚠ On leave</span>
                                                         <span v-else-if="day.noArea.primary._consecutive >= 2" class="db-oc-flag db-oc-flag--fatigue">{{ day.noArea.primary._consecutive + 1 }} nights</span>
-                                                        <span v-if="!day.noArea.backup" class="db-oc-flag db-oc-flag--nobackup">No backup</span>
                                                     </div>
                                                 </template>
                                                 <template v-else-if="day.areas.length === 0">
@@ -1967,11 +1957,6 @@
                                                     <span class="db-oc-gap-label">No primary assigned</span>
                                                     <span v-if="hasPermission('oncall_schedule','create')" class="db-oc-assign-btn" @click.stop="showAddOnCallModal(null, day.date)">＋ Assign</span>
                                                 </template>
-                                            </div>
-                                            <div class="db-oc-slot-row db-oc-slot-row--backup" v-if="day.noArea.backup">
-                                                <div class="db-oc-av db-oc-av--backup">{{ (getPhysicianName(day.noArea.backup.primary_physician_id)||'??').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() }}</div>
-                                                <span class="db-oc-name nd-v142" >{{ formatDrName(getPhysicianName(day.noArea.backup.primary_physician_id)) }}</span>
-                                                <span class="db-oc-flag db-oc-flag--backup">Backup</span>
                                             </div>
                                         </template>
 
@@ -2437,7 +2422,6 @@
                             <!-- Legend -->
                             <div class="rot-legend">
                                 <span class="rot-legend-item"><span class="rot-legend-dot nd-v320" ></span> Primary Call</span>
-                                <span class="rot-legend-item"><span class="rot-legend-dot nd-v319" ></span> Backup Call</span>
                                 <span class="rot-legend-item"><span class="rot-legend-dot nd-v318" ></span> Today</span>
                                 <span class="rot-legend-item"><span class="rot-legend-dot nd-v317" ></span> Past</span>
                                 <span class="rot-legend-item rot-legend-item--note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2v10M8 9c-2 1-3 3-3 5v3a5 5 0 0 0 10 0v-3c0-2-1-4-3-5M4 19h16"/></svg> Hover for details · Click to edit</span>
@@ -2463,14 +2447,13 @@
                                          :class="{
                                              'rot-orb--active':    shift.isToday,
                                              'rot-orb--scheduled': !shift.isToday && !shift.isPast && shift.shift_type === 'primary_call',
-                                             'rot-orb--backup-oc': !shift.isToday && !shift.isPast && shift.shift_type === 'backup_call',
                                              'rot-orb--float':      !shift.isToday && !shift.isPast && shift.shift_type === 'float_physician',
                                              'rot-orb--done':       shift.isPast && !shift.isToday,
                                          }"
                                          @click.stop="editOnCallSchedule(shift)">
                                         <span class="rot-orb-label">{{ shift.dayNum || (shift.dateLabel || '').replace(/[^0-9]/g,'') || shift.dayLabel }}</span>
                                         <div class="rot-orb-tooltip">
-                                            <div class="rot-tt-unit">{{ shift.shift_type === 'float_physician' ? 'Float Physician' : shift.shift_type === 'primary_call' ? 'Primary Call' : 'Backup Call' }}</div>
+                                            <div class="rot-tt-unit">{{ {'primary_call':'Primary Call','float_physician':'Float Physician','weekend_coverage':'Weekend','on_call_home':'Localizada','on_call_mixed':'Mixta','on_call_present':'Presencial'}[shift.shift_type] || shift.shift_type }}</div>
                                             <div v-if="shift.coverage_area_id || shift.coverage_area"
                                                  class="rot-tt-dates"
                                                  :style="{ color: shift.coverage_area?.color || coverageAreas.find(a=>a.id===shift.coverage_area_id)?.color || 'var(--nm-teal)' }">
@@ -2479,7 +2462,6 @@
                                             </div>
                                             <div class="rot-tt-dates"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> {{ shift.start_time }} – {{ shift.end_time }}</div>
                                             <div v-if="shift.coverage_notes" class="rot-tt-dates"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> {{ shift.coverage_notes }}</div>
-                                            <div v-if="shift.backupName" class="rot-tt-dates"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M18 8l2 1v4c0 2-2 4-2 4s-2-2-2-4V9l2-1z" stroke-linejoin="round"/></svg> Backup: {{ shift.backupName }}</div>
                                             <div v-if="shift.isToday"  class="rot-tt-tag rot-tt-tag--active">● On call today</div>
                                             <div v-else-if="shift.isPast" class="rot-tt-tag rot-tt-tag--done">Completed</div>
                                             <div v-else class="rot-tt-tag rot-tt-tag--scheduled">Upcoming</div>
@@ -2591,7 +2573,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td :data-label="'Type'"><span class="oc-type-badge" :class="'oc-type-badge--' + schedule.shift_type">{{ {'primary_call':'Primary','backup_call':'Backup','weekend_coverage':'Weekend','float_physician':'Float'}[schedule.shift_type] || schedule.shift_type }}</span></td>
+                                        <td :data-label="'Type'"><span class="oc-type-badge" :class="'oc-type-badge--' + schedule.shift_type">{{ {'primary_call':'Primary','weekend_coverage':'Weekend','float_physician':'Float'}[schedule.shift_type] || schedule.shift_type }}</span></td>
                                         <td :data-label="'Status'">
                                             <span :class="[
                                               'oc-status-pill',
@@ -4455,7 +4437,7 @@
                             <div class="ops-pv">
                                 <div class="ops-pv-n">{{ commsPulse.onCall }}</div>
                                 <div class="ops-pv-l">On-call today</div>
-                                <div class="ops-pv-s">primary + backup</div>
+                                <div class="ops-pv-s">primary coverage</div>
                             </div>
                             <div class="ops-pv">
                                 <div class="ops-pv-n" :class="{ 'ops-pv-n--warn': commsPulse.absent > 0 }">{{ commsPulse.absent }}</div>
@@ -4690,7 +4672,7 @@
                                     <tr v-if="!oncallSyncVisible.length"><td colspan="5" class="sync-empty">No assignments match this view. Adjust the period or filters.</td></tr>
                                   </tbody></table>
                                 </div>
-                                <p class="ac-meta">New shifts use the current default hours, 15:00–08:00. Existing times, coverage areas and backup assignments are preserved. Blank source assignments do not delete records.</p>
+                                <p class="ac-meta">New shifts use the current default hours, 15:00–08:00. Existing times and coverage areas are preserved. Blank source assignments do not delete records.</p>
                                 <label><input type="checkbox" v-model="oncallSync.historyAccepted" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed"> Include historical assignments from this file (requires exception-approval permission)</label>
                                 <div class="sync-preflight"><div><p class="admin-kicker">03 / CHECK BEFORE APPLYING</p><p>{{oncallSyncReady?'Selected assignments passed the current checks.':oncallSyncChecked?'Some selected assignments need attention. Resolve or deselect those rows, then check again.':'Check your selection for permissions, leave conflicts and overlapping duties.'}}</p><small>Checks do not save assignments. The server checks again when you apply.</small></div><button class="btn btn-secondary" :disabled="oncallSync.checking||oncallSync.committing||oncallSync.committed||!oncallSyncSelected.length||currentUser?.access?.decisions?.['sync.oncall.commit']?.all?.decision!=='ALLOW'" @click="oncallSyncCheck">{{oncallSync.checking?'Checking…':'Check selected assignments'}}</button></div>
                                 <p v-if="oncallSync.checkError" class="ac-alert" role="alert">{{oncallSync.checkError}}</p>
@@ -6826,7 +6808,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div v-if="getUpcomingOnCall(staffProfileModal.staff.id).length" class="pp2-list nd-record-list">
                                     <article v-for="shift in getUpcomingOnCall(staffProfileModal.staff.id).slice(0,10)" :key="shift.id" class="pp2-list-row nd-record-row">
                                         <div><strong>{{ formatDate(shift.duty_date) }}</strong><small>{{ shift.start_time }}–{{ shift.end_time }}</small></div>
-                                        <div class="pp2-row-meta nd-record-meta"><em>{{ shift.shift_type === 'primary_call' ? 'Primary' : shift.shift_type === 'backup_call' ? 'Backup' : String(shift.shift_type||'Duty').replace(/_/g,' ') }}</em></div>
+                                        <div class="pp2-row-meta nd-record-meta"><em>{{ shift.shift_type === 'primary_call' ? 'Primary' : String(shift.shift_type||'Duty').replace(/_/g,' ') }}</em></div>
                                     </article>
                                 </div>
                                 <div v-else class="pp2-empty nd-empty-state">No upcoming on-call duty is recorded.</div>
@@ -6994,7 +6976,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <template v-if="getUpcomingOnCall(popover.staff.id).slice(0,2).length">
                             <div v-for="shift in getUpcomingOnCall(popover.staff.id).slice(0,2)" :key="shift.id" class="spop-row">
                                 <span class="spop-badge" :class="shift.shift_type==='primary_call'?'purple':'blue'">
-                                    {{ shift.shift_type==='primary_call' ? 'Primary' : 'Backup' }}
+                                    {{ shift.shift_type==='primary_call' ? 'Primary' : String(shift.shift_type||'Duty').replace(/_/g,' ') }}
                                 </span>
                                 <span>{{ shift.duty_date ? new Date(shift.duty_date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) : '—' }}</span>
                             </div>
@@ -7954,7 +7936,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             {{ onCallModal.form.start_time }} — {{ onCallModal.form.end_time }}
                         </div>
                         <div class="sm-preview-chips" v-if="onCallModal.form.shift_type">
-                            <span class="sm-preview-chip">{{ {'primary_call':'Primary Call','backup_call':'Backup Call','float_physician':'Float Physician'}[onCallModal.form.shift_type] || onCallModal.form.shift_type }}</span>
+                            <span class="sm-preview-chip">{{ {'primary_call':'Primary Call','float_physician':'Float Physician'}[onCallModal.form.shift_type] || onCallModal.form.shift_type }}</span>
                             <span class="sm-preview-chip sm-preview-chip--resident" v-if="onCallModal.form.coverage_area_id">
                                 {{ coverageAreas.find(a=>a.id===onCallModal.form.coverage_area_id)?.name || '' }}
                             </span>
@@ -8078,7 +8060,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                                 <div>
                                     <span class="odi-review-kicker">Operational decision intelligence</span>
                                     <div class="odi-review-title">Duty review</div>
-                                    <div class="odi-review-sub">Checks this exact duty against recorded leave, existing assignments, coverage ownership and backup resilience.</div>
+                                    <div class="odi-review-sub">Checks this exact duty against recorded leave, existing assignments, coverage ownership.</div>
                                 </div>
                                 <span v-if="onCallModal.decision" class="odi-state" :class="'odi-state--'+onCallModal.decision.decision">{{ onCallModal.decision.decision }}</span>
                                 <span v-else class="odi-state">pending</span>
@@ -10573,7 +10555,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                             </div>
                             <div v-for="shift in reassignmentModal.affectedShifts" :key="'s'+shift.id" class="rsm-row">
                                 <span class="rsm-cell-date"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/></svg> {{ formatDate(shift.duty_date) }}</span>
-                                <span class="rsm-cell-meta">{{ shift.shift_type === 'primary_call' ? 'Primary' : 'Backup' }}</span>
+                                <span class="rsm-cell-meta">{{ shift.shift_type === 'primary_call' ? 'Primary' : String(shift.shift_type||'Duty').replace(/_/g,' ') }}</span>
                                 <span class="rsm-cell-meta">{{ shift.coverage_notes || '—' }}</span>
                                 <span><span class="rsm-role-badge" :class="shift.role === 'primary' ? 'rsm-role--primary' : 'rsm-role--backup'">{{ shift.role }}</span></span>
                                 <span>
@@ -11560,7 +11542,6 @@ Use Section heading to structure longer clinical or research articles."></textar
                                   <div class="db-oc-flags">
                                       <span v-if="area.primary._onAbsence" class="db-oc-flag db-oc-flag--absence">⚠ On leave</span>
                                       <span v-else-if="area.primary._consecutive >= 2" class="db-oc-flag db-oc-flag--fatigue">{{ area.primary._consecutive + 1 }} nights</span>
-                                      <span v-if="!area.backup" class="db-oc-flag db-oc-flag--nobackup">No backup</span>
                                   </div>
                               </div>
                               <div v-else class="db-oc-slot-row db-oc-slot-row--gap nd-l011"
@@ -11570,11 +11551,6 @@ Use Section heading to structure longer clinical or research articles."></textar
                                   <div class="db-oc-av db-oc-av--empty"></div>
                                   <span class="db-oc-gap-label">Unassigned</span>
                                   <span v-if="hasPermission('oncall_schedule','create')" class="db-oc-assign-btn">＋ Assign</span>
-                              </div>
-                              <div v-if="area.backup" class="db-oc-slot-row db-oc-slot-row--backup nd-l010" >
-                                  <div class="db-oc-av db-oc-av--backup">{{ (getPhysicianName(area.backup.primary_physician_id)||'??').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() }}</div>
-                                  <span class="db-oc-name nd-v015" >{{ formatDrName(getPhysicianName(area.backup.primary_physician_id)) }}</span>
-                                  <span class="db-oc-flag db-oc-flag--backup">Backup</span>
                               </div>
                           </div>
                       </div>
@@ -11700,7 +11676,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                 <div class="boc-q-body">
                   <div class="boc-q-name">{{ allStaffLookup.find(s=>s.id===block.physician_id)?.full_name?.split(' ').slice(0,2).join(' ') }}</div>
                   <div class="boc-q-meta">
-                    {{ block.shift_type === 'primary_call' ? 'Primary' : block.shift_type === 'backup_call' ? 'Backup' : 'Float' }}
+                    {{ block.shift_type === 'primary_call' ? 'Primary' : block.shift_type === 'float_physician' ? 'Float' : String(block.shift_type||'Duty').replace(/_/g,' ') }}
                     <span v-if="block.coverage_area_id"> · {{ coverageAreas.find(a=>a.id===block.coverage_area_id)?.name }}</span>
                   </div>
                 </div>
@@ -11896,7 +11872,7 @@ Use Section heading to structure longer clinical or research articles."></textar
                       {{ (allStaffLookup.find(s=>s.id===block.physician_id)?.full_name||'?').split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('').toUpperCase() }}
                     </div>
                     <span>{{ allStaffLookup.find(s=>s.id===block.physician_id)?.full_name }}</span>
-                    <span class="boc-review-role">{{ block.shift_type === 'primary_call' ? 'Primary' : block.shift_type === 'backup_call' ? 'Backup' : 'Float' }}</span>
+                    <span class="boc-review-role">{{ block.shift_type === 'primary_call' ? 'Primary' : block.shift_type === 'float_physician' ? 'Float' : String(block.shift_type||'Duty').replace(/_/g,' ') }}</span>
                     <span v-if="block.coverage_area_id" class="boc-area-chip"
                           :style="{ background: (coverageAreas.find(a=>a.id===block.coverage_area_id)?.color||'#00b3b3') + '18', color: coverageAreas.find(a=>a.id===block.coverage_area_id)?.color||'#00b3b3' }">
                       {{ coverageAreas.find(a=>a.id===block.coverage_area_id)?.name }}
