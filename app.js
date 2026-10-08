@@ -6989,6 +6989,178 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       }
 
+      // ── Studies preview: a read-only spreadsheet-style table over all studies, with
+      // inline public/private toggling and a real .xlsx export (SheetJS is loaded).
+      const STUDY_PDF_FIELDS = [['title','Title'],['protocol_id','Protocol'],['line','Research line'],['study_type','Type'],['phase','Phase'],['status','Status'],['enrolment','Enrolment'],['featured_in_website','Visibility'],['updated','Updated']]
+      const studiesPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {}, showPdf: false, pdfFields: Object.fromEntries(STUDY_PDF_FIELDS.map(f => [f[0], true])) })
+      const openStudiesPreview = () => { studiesPreview.show = true }
+      const studiesPreviewSort = (key) => {
+        if (studiesPreview.sortKey === key) studiesPreview.sortDir *= -1
+        else { studiesPreview.sortKey = key; studiesPreview.sortDir = 1 }
+      }
+      const _studyRow = (t) => {
+        const enr = trialEnrollment(t)
+        return {
+          id: t.id,
+          title: t.title || '(untitled)',
+          protocol_id: t.protocol_id || '',
+          line: getResearchLineName(t.research_line_id) || '',
+          study_type: t.study_type || '',
+          phase: t.phase || '',
+          status: TRIAL_STATUS_LABEL[trialStatusKey(t)] || t.status || '',
+          enrolment: enr ? `${enr.actual}/${enr.target}` : '',
+          featured_in_website: !!t.featured_in_website,
+          updated: t.updated_at ? String(t.updated_at).slice(0, 10) : '',
+          _raw: t
+        }
+      }
+      const studiesPreviewRows = computed(() => {
+        let rows = (filteredTrialsAll.value || clinicalTrials.value || []).map(_studyRow)
+        if (studiesPreview.visibility === 'public')  rows = rows.filter(r => r.featured_in_website)
+        if (studiesPreview.visibility === 'private') rows = rows.filter(r => !r.featured_in_website)
+        const k = studiesPreview.sortKey, dir = studiesPreview.sortDir
+        return rows.slice().sort((a, b) => {
+          const av = a[k], bv = b[k]
+          if (typeof av === 'boolean') return (av === bv ? 0 : av ? -1 : 1) * dir
+          return String(av ?? '').localeCompare(String(bv ?? ''), undefined, { numeric: true }) * dir
+        })
+      })
+      const exportStudiesXlsx = () => {
+        try {
+          if (!window.XLSX) { showToast('Export unavailable', 'Spreadsheet engine not loaded', 'error'); return }
+          const data = studiesPreviewRows.value.map(r => ({
+            Title: r.title, Protocol: r.protocol_id, 'Research line': r.line,
+            Type: r.study_type, Phase: r.phase, Status: r.status,
+            Enrolment: r.enrolment, Visibility: r.featured_in_website ? 'Public' : 'Private',
+            'Last updated': r.updated
+          }))
+          const ws = window.XLSX.utils.json_to_sheet(data)
+          ws['!cols'] = [{wch:44},{wch:18},{wch:26},{wch:16},{wch:11},{wch:16},{wch:12},{wch:11},{wch:13}]
+          const wb = window.XLSX.utils.book_new()
+          window.XLSX.utils.book_append_sheet(wb, ws, 'Studies')
+          window.XLSX.writeFile(wb, `neumACt-studies-${new Date().toISOString().slice(0, 10)}.xlsx`)
+          showToast('Exported', `${data.length} stud${data.length===1?'y':'ies'} → Excel`, 'success')
+        } catch (e) { showToast('Export failed', e?.message || 'Could not build the Excel file', 'error') }
+      }
+
+      // Print-to-PDF of the shown studies, with the user's chosen fields. No new
+      // dependency: builds a clean print document in a new window and calls print()
+      // (the browser's "Save as PDF" does the rest). "Selected only" prints ticked rows.
+      const exportStudiesPdf = (selectedOnly = false) => {
+        const cols = STUDY_PDF_FIELDS.filter(f => studiesPreview.pdfFields[f[0]])
+        if (!cols.length) { showToast('Pick at least one field', 'Select the information to include first.', 'info'); return }
+        let rows = studiesPreviewRows.value
+        if (selectedOnly) rows = rows.filter(r => studiesPreview.sel[r.id])
+        if (!rows.length) { showToast('Nothing to print', selectedOnly ? 'No rows are selected.' : 'No studies to print.', 'info'); return }
+        const esc = s => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+        const cell = (r, k) => k === 'featured_in_website' ? (r.featured_in_website ? 'Public' : 'Private') : esc(r[k] || '—')
+        const head = cols.map(c => `<th>${esc(c[1])}</th>`).join('')
+        const body = rows.map(r => `<tr>${cols.map(c => `<td>${cell(r, c[0])}</td>`).join('')}</tr>`).join('')
+        const today = new Date().toISOString().slice(0, 10)
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>neumACt — Clinical studies ${today}</title>
+          <style>
+            @page{margin:16mm}
+            body{font:12px/1.5 Arial,Helvetica,sans-serif;color:#1c2b2b}
+            h1{font-size:18px;margin:0 0 2px}.sub{color:#5d6b74;font-size:11px;margin:0 0 16px}
+            table{border-collapse:collapse;width:100%}
+            th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#5d6b74;border-bottom:2px solid #0f3d3d;padding:7px 8px}
+            td{padding:7px 8px;border-bottom:1px solid #e3eae8;vertical-align:top}
+            tr{break-inside:avoid}
+          </style></head><body>
+          <h1>Clinical studies — neumACt</h1>
+          <p class="sub">${rows.length} record(s) · generated ${today}${selectedOnly ? ' · selected only' : ''}</p>
+          <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+          <script>window.onload=function(){window.print()}<\/script>
+          </body></html>`
+        const w = window.open('', '_blank')
+        if (!w) { showToast('Pop-up blocked', 'Allow pop-ups to download the PDF.', 'error'); return }
+        w.document.open(); w.document.write(html); w.document.close()
+        studiesPreview.showPdf = false
+      }
+
+      // ── Projects preview: same spreadsheet-style read-only grid, for innovation projects.
+      const PROJ_STAGE_LABEL = { concept:'Idea', development:'Prototype', pilot:'Pilot', validation:'Validation', scaling:'Scale-up', completed:'Commercialisation' }
+      const PROJ_CAT_LABEL = { 'Dispositivo':'Medical device', 'Salud Digital':'Digital health', 'IA / ML':'AI / ML', 'Tecnología Quirúrgica':'Surgical technology' }
+      const projectsPreview = reactive({ show: false, sortKey: 'title', sortDir: 1, visibility: '', sel: {} })
+      const openProjectsPreview = () => { projectsPreview.show = true }
+      const projectsPreviewSort = (key) => {
+        if (projectsPreview.sortKey === key) projectsPreview.sortDir *= -1
+        else { projectsPreview.sortKey = key; projectsPreview.sortDir = 1 }
+      }
+      const _projectRow = (p) => ({
+        id: p.id,
+        title: p.title || '(untitled)',
+        line: getResearchLineName(p.research_line_id) || '',
+        category: PROJ_CAT_LABEL[p.category] || p.category || '',
+        stage: PROJ_STAGE_LABEL[p.current_stage] || p.current_stage || '',
+        funding: (p.funding_status || '').replace(/_/g, ' '),
+        featured_in_website: !!p.featured_in_website,
+        updated: p.updated_at ? String(p.updated_at).slice(0, 10) : '',
+        _raw: p
+      })
+      const projectsPreviewRows = computed(() => {
+        let rows = (filteredProjectsAll.value || innovationProjects.value || []).map(_projectRow)
+        if (projectsPreview.visibility === 'public')  rows = rows.filter(r => r.featured_in_website)
+        if (projectsPreview.visibility === 'private') rows = rows.filter(r => !r.featured_in_website)
+        const k = projectsPreview.sortKey, dir = projectsPreview.sortDir
+        return rows.slice().sort((a, b) => {
+          const av = a[k], bv = b[k]
+          if (typeof av === 'boolean') return (av === bv ? 0 : av ? -1 : 1) * dir
+          return String(av ?? '').localeCompare(String(bv ?? ''), undefined, { numeric: true }) * dir
+        })
+      })
+      const exportProjectsXlsx = () => {
+        try {
+          if (!window.XLSX) { showToast('Export unavailable', 'Spreadsheet engine not loaded', 'error'); return }
+          const data = projectsPreviewRows.value.map(r => ({
+            Title: r.title, 'Research line': r.line, Category: r.category, Stage: r.stage,
+            Funding: r.funding, Visibility: r.featured_in_website ? 'Public' : 'Private', 'Last updated': r.updated
+          }))
+          const ws = window.XLSX.utils.json_to_sheet(data)
+          ws['!cols'] = [{wch:44},{wch:26},{wch:18},{wch:16},{wch:14},{wch:11},{wch:13}]
+          const wb = window.XLSX.utils.book_new()
+          window.XLSX.utils.book_append_sheet(wb, ws, 'Projects')
+          window.XLSX.writeFile(wb, `neumACt-projects-${new Date().toISOString().slice(0, 10)}.xlsx`)
+          showToast('Exported', `${data.length} project${data.length===1?'':'s'} → Excel`, 'success')
+        } catch (e) { showToast('Export failed', e?.message || 'Could not build the Excel file', 'error') }
+      }
+
+      // ── Bulk visibility: select rows in a preview and flip them public/private at once.
+      const previewSelCount = (pv) => Object.values(pv.sel || {}).filter(Boolean).length
+      const previewToggleSel = (pv, id) => { pv.sel[id] = !pv.sel[id] }
+      const previewSelAll = (pv, rows, val) => { (rows || []).forEach(r => { pv.sel[r.id] = val }) }
+      const previewSelClear = (pv) => { pv.sel = {} }
+      const bulkSetVisibility = (kind, makePublic) => {
+        const pv = kind === 'study' ? studiesPreview : projectsPreview
+        const rows = (kind === 'study' ? studiesPreviewRows : projectsPreviewRows).value
+        const chosen = rows.filter(r => pv.sel[r.id] && r.featured_in_website !== makePublic)
+        if (!chosen.length) { showToast('Nothing to change', 'No selected records would change state.', 'info'); return }
+        const api = kind === 'study' ? API.updateClinicalTrial.bind(API) : API.updateInnovationProject.bind(API)
+        const coll = kind === 'study' ? clinicalTrials : innovationProjects
+        showConfirmation({
+          title: makePublic ? `Publish ${chosen.length} to website?` : `Make ${chosen.length} private?`,
+          message: makePublic
+            ? `${chosen.length} record(s) will appear on neumact.org.`
+            : `${chosen.length} record(s) will be removed from neumact.org.`,
+          confirmButtonText: makePublic ? 'Publish all' : 'Make all private',
+          reversible: true,
+          onConfirm: async () => {
+            const results = await Promise.allSettled(chosen.map(r => api(r._raw.id, { ...r._raw, featured_in_website: makePublic })))
+            let ok = 0
+            results.forEach((res, i) => {
+              if (res.status === 'fulfilled') {
+                ok++
+                const id = chosen[i]._raw.id
+                const idx = coll.value.findIndex(x => x.id === id)
+                if (idx !== -1) coll.value[idx] = { ...coll.value[idx], featured_in_website: makePublic }
+              }
+            })
+            previewSelClear(pv)
+            showToast('Updated', `${ok} of ${chosen.length} set to ${makePublic ? 'public' : 'private'}${ok<chosen.length?' (some failed)':''}`, ok ? 'success' : 'error')
+          }
+        })
+      }
+
       const saveInnovationProject = async (saving) => {
         const f = innovationProjectModal.form
         if (!f.title?.trim()) { showToast('Validation Error', 'Project title is required', 'error'); return }
@@ -7153,7 +7325,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
+      return { researchLines, clinicalTrials, innovationProjects, researchSources, researchLoading, researchLineFilters, trialFilters, projectFilters, researchLineModal, clinicalTrialModal, trialPhaseApplies, innovationProjectModal, assignCoordinatorModal, trialDetailModal, filteredResearchLines, filteredTrials, filteredTrialsAll, filteredProjects, filteredProjectsAll, trialTotalPages, projectTotalPages, getResearchLineName, getClinicianResearchLines, trialStatusKey, trialRecruitmentKey, TRIAL_STATUS_LABEL, countTrialsByStatus, trialEnrollment, loadResearchLines, loadClinicalTrials, loadInnovationProjects, loadAllResearch, showAddResearchLineModal, showAddTrialModal, showAddProjectModal, openAssignCoordinatorModal, editResearchLine, editTrial, editProject, viewTrial, saveResearchLine, saveClinicalTrial, saveInnovationProject, toggleTrialPublic, toggleProjectPublic, studiesPreview, openStudiesPreview, studiesPreviewSort, studiesPreviewRows, exportStudiesXlsx, exportStudiesPdf, STUDY_PDF_FIELDS, projectsPreview, openProjectsPreview, projectsPreviewSort, projectsPreviewRows, exportProjectsXlsx, previewSelCount, previewToggleSel, previewSelAll, previewSelClear, bulkSetVisibility, saveCoordinatorAssignment, deleteResearchLine, deleteClinicalTrial, deleteInnovationProject, addKeyword, removeKeyword, handleKeywordKey, getStaffResearchQuick,
         // Page navigation
         researchHubPage, selectedLine, selectedStudy, selectedProject, researchRecordReturnPage, researchRecordBackLabel,
         openResearchPage, openLine, openStudy, openProject, goToOverview, goToLine, goBackFromRecord, resetResearchScroll,
