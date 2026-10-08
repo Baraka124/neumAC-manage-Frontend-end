@@ -1,0 +1,43 @@
+name: Frontend integrity
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Referenced scripts exist + cache key present
+        run: python3 scripts/integrity_check.py
+      - name: JS syntax (all root scripts)
+        run: |
+          find . -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Cache-key bump guard
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" --quiet
+          if git diff --quiet "$BASE" -- app.js; then
+            echo "app.js unchanged vs $BASE — cache-key guard not applicable."
+          else
+            old=$(git show "$BASE:index.html" | grep -oE 'app\.js\?v=[^"]+' | head -1)
+            new=$(grep -oE 'app\.js\?v=[^"]+' index.html | head -1)
+            echo "app.js changed. cache key: '$old' -> '$new'"
+            if [ "$old" = "$new" ]; then
+              echo "::error::app.js was modified but its ?v= cache key was not bumped in index.html. Browsers would keep serving the old bundle."
+              exit 1
+            fi
+          fi
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm i -D @playwright/test@1.47.2 http-server vue@3.4.21 && npx playwright install --with-deps chromium
+      - run: npx playwright test
