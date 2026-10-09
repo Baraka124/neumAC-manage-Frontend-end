@@ -10,7 +10,7 @@ test('Settings renders account and access at laptop, workstation and phone sizes
   await page.goto('/tests/settings-visual.html',{waitUntil:'domcontentloaded'});
   await expect(page.locator('.ac-team-person')).toHaveCount(7,{timeout:10000});
   await expect(page.locator('.ac-welcome h3')).toHaveText('Select a person');
-  const person=page.locator('.ac-team-person').first();
+  const person=page.locator('.ac-team-person').filter({hasText:'Elena García'});
   await person.click();
   await expect(page.locator('.ac-person-heading h3')).toHaveText('Elena García');
   await expect(page.locator('.ac-info-panel')).toHaveCount(3);
@@ -31,7 +31,7 @@ test('Settings renders account and access at laptop, workstation and phone sizes
   }
   if(width===1440){
    const jpg=await page.locator('.admin-studio').screenshot({type:'jpeg',quality:62});
-   console.log('SETTINGS_VISUAL_PREVIEW_JPEG_BASE64:'+jpg.toString('base64'));
+   console.log('SETTINGS_VISUAL_SCREENSHOT_BYTES:'+jpg.length);
    console.log('SETTINGS_VISUAL_METRICS:'+JSON.stringify(metrics));
   }
   await page.close();
