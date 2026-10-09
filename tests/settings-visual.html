@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings visual regression fixture</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../access.css">
+<link rel="stylesheet" href="../foundation-phase2.css">
+<link rel="stylesheet" href="../dashboard-phase4.css">
+<link rel="stylesheet" href="../module-headers.css">
+<link rel="stylesheet" href="../settings-recovery.css">
+<style>
+  html,body {margin:0; min-width:0; background:#f0f2f3;}
+  #app { min-height:100vh; }
+  #app .content-area {margin:0 !important; padding:20px 22px !important;width:100% !important;max-width:none !important; box-sizing:border-box;}
+</style>
+<script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
+<script src="../access.js"></script>
+</head><body>
+<div id="app">
+ <main class="content-area"><div class="admin-studio">
+  <header class="admin-masthead nd-hero module-header"><div class="nd-hero__copy"><p class="admin-kicker">WORKSPACE ADMINISTRATION</p><h1>Settings</h1><p>Manage the people and structure of your department.</p></div><div class="admin-header-note">neumAC<span>Department workspace</span></div></header>
+  <nav class="admin-navigation" aria-label="Settings sections"><button class="active" type="button">People &amp; access</button><button type="button">Department</button><button type="button">Schedule import</button><button type="button">Preferences</button></nav>
+  <section aria-label="People and access"><access-center :access="access" :current-id="'admin-1'" :active="true" :staff="staff" :departments="departments"></access-center></section>
+ </div></main>
+</div>
+<script>
+(()=>{
+const Vue = window.Vue;
+const names=['Elena García','Lucía Fernández','Daniel López','Marta Varela','Pablo Castro','Ana García','Paula Blanco'];
+const statuses=['active','active','invited','active','suspended','active','active'];
+const staff=names.map((full_name,i)=>({id:'s'+i,full_name,professional_email:'staff'+i+'@example.org',employment_status:'active',department_id:i%2===0?'d1':'d2',staff_type:'clinician'}));
+const users=names.map((full_name,i)=>({id:'u'+i,medical_staff_id:staff[i].id,full_name,email:staff[i].professional_email,account_status:statuses[i],user_role:i===0?'clinician':i%2===0?'coordinator':'resident',department_id:staff[i].department_id,job_title:i===0?'Consultant pulmonologist':'Clinician',last_login_at:i%3===0?'2026-10-09T07:05:00Z':null,password_reset_required:false}));
+const permissions=['staff.directory.view','staff.profile.view','staff.profile.edit','leave.view','leave.create','research.catalog.view','grounded.ask'].map(k=>({key:k,domain:k.split('.')[0],label:k.replaceAll('.',' ')}));
+const decisions={};
+for(const p of permissions)decisions[p.key]={own:{decision:'ALLOW',source:'role'},department:{decision:'ALLOW',source:'role'},all:{decision:'DENY'}};
+const access={decisions:Object.fromEntries(['identity.users.view','identity.users.manage','identity.users.security','identity.users.lifecycle','identity.users.invite','identity.overrides.manage'].map(k=>[k,{all:{decision:'ALLOW'}}]))};
+const API={request:async url=>{
+ if(url==='/api/identity/users')return {data:users};
+ if(url==='/api/authority/catalog')return {permissions};
+ if(url==='/api/identity/config')return {invitations_enabled:false,production_credentials_enabled:false,development_test_sessions_enabled:false};
+ if(url==='/api/identity/staff')return {data:staff};
+ if(/\/api\/authority\/users\//.test(url))return {capabilities:{decisions},overrides:[]};
+ if(/\/events$/.test(url))return {data:[{id:'e1',event_type:'sign_in',created_at:'2026-10-09T07:05:00Z',actor_user_id:'u0'},{id:'e2',event_type:'password_changed',created_at:'2026-10-08T12:30:00Z',actor_user_id:'u0'},{id:'e3',event_type:'access_updated',created_at:'2026-10-01T13:00:00Z',actor_user_id:'admin-1'}]};
+ throw Error('Unexpected fixture URL: '+url);
+}};
+const app=Vue.createApp({data:()=>({access,staff,departments:[{id:'d1',name:'Department of Pulmonology'},{id:'d2',name:'Clinical Research'}]})});
+app.component('access-center',window.NeumAccess.createCenter({Vue,API}));
+app.mount('#app');
+})();
+</script></body></html>
