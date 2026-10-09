@@ -28,4 +28,4 @@ console.log('SETTINGS UI INTEGRITY: OK (Vue template, existing actions, responsi
 
 const recovery = fs.readFileSync(path.join(ROOT,'settings-recovery.css'),'utf8');
 for(const name of ['admin-preferences','admin-import','nm-deg-name','ac-no-selection','ac-account-panels','admin-config']) assert.ok(recovery.includes(name),'Scoped recovery: '+name);
-assert.match(index,/settings-recovery\.css\?v=20261009-settings-recovery-2/);
+assert.match(index,/settings-recovery\.css\?v=20261009-settings-composition-3/);

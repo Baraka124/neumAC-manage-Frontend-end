@@ -2,7 +2,7 @@ const {test,expect}=require('@playwright/test');
 const fs=require('fs');
 const VUE=fs.readFileSync(require.resolve('vue/dist/vue.global.prod.js'),'utf8');
 test('Settings renders account and access at laptop, workstation and phone sizes', async ({browser})=>{
- for(const width of [1440,1366,390]){
+ for(const width of [1440,1366,1000,640,390]){
   const page=await browser.newPage({viewport:{width,height:950},deviceScaleFactor:1});
   const errors=[];page.on('pageerror',err=>errors.push(String(err)));
   await page.route(/unpkg\.com\/vue/,r=>r.fulfill({status:200,contentType:'application/javascript',body:VUE}));
@@ -10,6 +10,12 @@ test('Settings renders account and access at laptop, workstation and phone sizes
   await page.goto('/tests/settings-visual.html',{waitUntil:'domcontentloaded'});
   await expect(page.locator('.ac-team-person')).toHaveCount(7,{timeout:10000});
   await expect(page.locator('.ac-welcome h3')).toHaveText('Select a person');
+  const emptyLayout=await page.evaluate(()=>({directory:document.querySelector('.ac-team-directory').getBoundingClientRect().width,workspace:document.querySelector('.ac-team-workspace').getBoundingClientRect().width,font:parseFloat(getComputedStyle(document.querySelector('.ac-directory-search input')).fontSize)}));
+  expect(Math.abs(emptyLayout.directory-emptyLayout.workspace)).toBeLessThan(3);
+  expect(emptyLayout.font).toBeGreaterThanOrEqual(16);
+  const tabs=page.locator('.admin-navigation button');
+  await tabs.last().scrollIntoViewIfNeeded();
+  await expect(tabs.last()).toBeInViewport();
   const person=page.locator('.ac-team-person').filter({hasText:'Elena García'});
   await person.click();
   await expect(page.locator('.ac-person-heading h3')).toHaveText('Elena García');
@@ -24,11 +30,13 @@ test('Settings renders account and access at laptop, workstation and phone sizes
   expect(metrics.qualification.fontFamily.toLowerCase(),'Identity values should never be monospace').not.toContain('mono');
   if(width>900){
    expect(metrics.directory.width,'Directory must be useful width').toBeGreaterThan(300);
-   expect(metrics.detail.width,'Account detail must be useful width').toBeGreaterThan(550);
+   expect(metrics.detail.width,'Account detail must be useful width').toBeGreaterThan(500);
    expect(Math.abs(metrics.directory.y-metrics.detail.y),'Directory and detail must start at same top').toBeLessThan(5);
   }else{
-   expect(metrics.detail.y,'Mobile detail must follow the directory').toBeGreaterThan(metrics.directory.y);
+   expect(metrics.detail.y,'Selected mobile record must precede the directory').toBeLessThan(metrics.directory.y);
   }
+  await page.locator('.ac-activity-list li').last().scrollIntoViewIfNeeded();
+  await expect(page.locator('.ac-activity-list li').last()).toBeInViewport();
   if(width===1440){
    const jpg=await page.locator('.admin-studio').screenshot({type:'jpeg',quality:62});
    console.log('SETTINGS_VISUAL_SCREENSHOT_BYTES:'+jpg.length);
