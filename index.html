@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="entry46.css?v=5.3-production.2-entry3">
 
     
-<link rel="stylesheet" href="access.css?v=20261009-settings-overview-1">
+<link rel="stylesheet" href="access.css?v=20261009-settings-recovery-2">
 <link rel="stylesheet" href="sidebar-phase1.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="foundation-phase2.css?v=5.3-production.2-entry3">
 <link rel="stylesheet" href="entry-phase3.css?v=entry-refinement-20261006-5.3-production.2-entry3">
@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="publishing10.css?v=5.3-production.3-publishing10">
 <link rel="stylesheet" href="module-headers.css?v=20261006-1">
 <link rel="stylesheet" href="research-visibility.css?v=20261006-1">
+<link rel="stylesheet" href="settings-recovery.css?v=20261009-settings-recovery-2">
 </head>
 <body>
     <div id="neumax-topbar" aria-hidden="true"></div>
@@ -4608,7 +4609,7 @@
                     <header class="admin-masthead nd-hero module-header"><div class="nd-hero__copy"><p class="admin-kicker">WORKSPACE ADMINISTRATION</p><h1>Settings</h1><p>Manage the people and structure of your department.</p></div><div class="admin-header-note">Neumact<span>Department workspace</span></div></header>
                     <nav class="admin-navigation" aria-label="Settings sections"><button v-for="section in [{id:'people',name:'People & access'},{id:'department',name:'Department'},{id:'import',name:'Schedule import'},{id:'preferences',name:'Preferences'}]" :key="section.id" :aria-pressed="adminSection===section.id" :class="{active:adminSection===section.id}" @click="adminSection=section.id">{{section.name}}</button></nav>
                     <section v-show="adminSection==='people'" aria-label="People and access"><access-center @test-user="startUserTest" :active="adminSection==='people'&&currentView==='system_settings'" :access="currentUser?.access" :current-id="currentUser?.id" :staff="medicalStaff" :departments="departments"></access-center></section>
-                    <section v-show="adminSection==='import'" class="admin-config" aria-label="Schedule import"><div class="admin-section-intro"><p class="admin-kicker">SCHEDULE IMPORT</p><h2>Schedule import</h2><p>Match the spreadsheet to your team and inspect the proposed changes.</p></div>
+                    <section v-show="adminSection==='import'" class="admin-config admin-import" aria-label="Schedule import"><div class="admin-section-intro"><p class="admin-kicker">SCHEDULE IMPORT</p><h2>Schedule import</h2><p>Match the spreadsheet to your team and inspect the proposed changes.</p></div>
                     <!-- Reviewed on-call import -->
                     <div class="card mb-6">
                         <div class="card-header"><span class="section-title">Sync on-call from Excel <span class="nd-l216 nd-v243">review before applying</span></span></div>
@@ -4686,7 +4687,7 @@
                     </div>
 
                     </section>
-                    <section v-show="adminSection==='department'" class="admin-config" aria-label="Department setup"><div class="admin-section-intro"><p class="admin-kicker">DEPARTMENT SETUP</p><h2>Department</h2><p>Maintain staff categories, qualifications, rotation services and coverage areas.</p></div>
+                    <section v-show="adminSection==='department'" class="admin-config admin-department" aria-label="Department setup"><div class="admin-section-intro"><p class="admin-kicker">DEPARTMENT SETUP</p><h2>Department</h2><p>Maintain staff categories, qualifications, rotation services and coverage areas.</p></div>
                     <nav class="admin-subnav" aria-label="Department configuration"><button v-for="item in [{id:'staff',name:'Staff categories'},{id:'degrees',name:'Qualifications'},{id:'services',name:'Services'},{id:'coverage',name:'On-call coverage'}]" :key="item.id" :class="{active:adminDepartmentSection===item.id}" :aria-pressed="adminDepartmentSection===item.id" @click="adminDepartmentSection=item.id">{{item.name}}</button></nav>
                     <!-- STAFF TYPES ══════════════════════════════════════════ -->
                     <div v-show="adminDepartmentSection==='staff'" class="card mb-6">
@@ -4840,7 +4841,7 @@
                     </div>
 
                     </section>
-                    <section v-show="adminSection==='preferences'" class="admin-config" aria-label="Workspace preferences"><div class="admin-section-intro"><p class="admin-kicker">PREFERENCES</p><h2>Preferences</h2><p>Department details and platform behaviour in one place.</p></div>
+                    <section v-show="adminSection==='preferences'" class="admin-config admin-preferences" aria-label="Workspace preferences"><div class="admin-section-intro"><p class="admin-kicker">PREFERENCES</p><h2>Preferences</h2><p>Department details and platform behaviour in one place.</p></div>
                     <!-- CORE SETTINGS ══════════════════════════════════ -->
                     <div class="card mb-6 nd-l093"  v-if="hasPermission('system_settings','read')">
                         <div class="card-header">
@@ -4928,7 +4929,7 @@
 
 
                     </section>
-                    <section v-show="adminSection==='department'&&adminDepartmentSection==='coverage'" class="admin-config" aria-label="Coverage areas">
+                    <section v-show="adminSection==='department'&&adminDepartmentSection==='coverage'" class="admin-config admin-coverage" aria-label="Coverage areas">
                     <!-- ══ COVERAGE AREAS ══════════════════════════════════════════ -->
                     <div class="card mb-6 nd-l093" v-if="hasPermission('system_settings','read')" >
                         <div class="card-header">
@@ -12368,7 +12369,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="temporal50.js?v=5.3-production.2-entry3"></script>
     <script src="oncall-sync.js?v=5.3-production.2-entry3"></script>
     <script src="test-session.js?v=5.3-production.2-entry3"></script>
-    <script src="access.js?v=20261009-settings-overview-1"></script>
+    <script src="access.js?v=20261009-settings-recovery-2"></script>
     <script src="review53.js?v=5.3-production.2-dashboard4"></script>
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
