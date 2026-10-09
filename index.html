@@ -7684,7 +7684,15 @@ Use Section heading to structure longer clinical or research articles."></textar
                                     </select>
                                     <small class="hint">Honorific shown before the name (e.g. public team page). Leave “— none —” for non-clinical staff · manage the list in Settings.</small>
                                 </div>
-                                <div class="sm-field"></div>
+                                <div class="sm-field">
+                                    <div class="sm-label">Gender</div>
+                                    <select class="sm-select" :class="{ filled: medicalStaffModal.form.gender }" v-model="medicalStaffModal.form.gender">
+                                        <option value="">— not specified —</option>
+                                        <option value="female">Female</option>
+                                        <option value="male">Male</option>
+                                    </select>
+                                    <small class="hint">Sets Spanish role-label agreement (Médico / Médica) on the public site. Leave unspecified to keep the neutral form.</small>
+                                </div>
                             </div>
                             <div class="sm-row">
                                 <div class="sm-field" :class="{ 'has-error': fieldErrors.staff?.full_name }">
@@ -12459,10 +12467,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
     <script src="publishing10.js?v=5.3-production.3-publishing10"></script>
-    <script src="vendor/jspdf.umd.min.js?v=5.4-production.13-20261009a"></script>
-    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.13-20261009a"></script>
-    <script src="brand-assets.js?v=5.4-production.13-20261009a"></script>
-    <script src="app.js?v=5.4-production.13-20261009a"></script>
+    <script src="vendor/jspdf.umd.min.js?v=5.4-production.14-20261009b"></script>
+    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.14-20261009b"></script>
+    <script src="brand-assets.js?v=5.4-production.14-20261009b"></script>
+    <script src="app.js?v=5.4-production.14-20261009b"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

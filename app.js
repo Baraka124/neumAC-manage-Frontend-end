@@ -2417,7 +2417,7 @@ document.addEventListener('DOMContentLoaded', () => {
           can_be_pi: false, can_be_coi: false, other_certificate: '',
           resident_category: null, home_department: null, external_institution: null,
           home_department_id: null, external_contact_name: null, external_contact_email: null, external_contact_phone: null,
-          academic_degree_id: null, has_medical_license: false, title: '',
+          academic_degree_id: null, has_medical_license: false, title: '', gender: '',
           residency_start_date: null, residency_year_override: null,
           is_chief_of_department: false, is_research_coordinator: false,
           is_resident_manager: false, is_oncall_manager: false, clinical_study_certificates: [],
@@ -2674,7 +2674,7 @@ document.addEventListener('DOMContentLoaded', () => {
           can_be_pi: false, can_be_coi: false, other_certificate: '',
           resident_category: null, home_department: null, external_institution: null,
           home_department_id: null, external_contact_name: null, external_contact_email: null, external_contact_phone: null,
-          academic_degree_id: null, has_medical_license: false, title: '',
+          academic_degree_id: null, has_medical_license: false, title: '', gender: '',
           residency_start_date: null, residency_year_override: null,
           is_chief_of_department: false, is_research_coordinator: false,
           is_resident_manager: false, is_oncall_manager: false, clinical_study_certificates: [],
@@ -2720,6 +2720,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ...staff,
           full_name: staff.full_name || '',
           title: staff.title || '', // null from DB → '' so the "— none —" option matches
+          gender: staff.gender || '', // null from DB → '' so "— not specified —" matches
           professional_email: staff.professional_email || '', // empty string for the input field — null from DB becomes ''
           mobile_phone: staff.mobile_phone || '',
           department_id: staff.department_id || '',
