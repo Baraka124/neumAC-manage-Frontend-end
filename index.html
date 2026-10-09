@@ -31,7 +31,7 @@
 <link rel="stylesheet" href="research9.css?v=5.3-production.2-research9">
 <link rel="stylesheet" href="publishing10.css?v=5.3-production.3-publishing10">
 <link rel="stylesheet" href="module-headers.css?v=20261006-1">
-<link rel="stylesheet" href="research-visibility.css?v=20261006-1">
+<link rel="stylesheet" href="research-visibility.css?v=20261009-preview-header-1">
 <link rel="stylesheet" href="settings-recovery.css?v=20261009-settings-composition-3">
 </head>
 <body>
@@ -5689,7 +5689,7 @@
                         <!-- Spreadsheet-style studies preview (read-only; visibility editable inline; Excel export) -->
                         <div v-if="studiesPreview.show" @click.self="studiesPreview.show=false" :style="{position:'fixed',inset:0,zIndex:9000,background:'rgba(15,30,30,.55)',display:'flex',alignItems:'stretch',justifyContent:'center',padding: studiesPreview.maximized ? '0' : '28px'}">
                             <div :style="{background:'#fff',borderRadius: studiesPreview.maximized ? '0' : '16px',width: studiesPreview.maximized ? '100%' : 'min(1180px,100%)',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,.3)'}">
-                                <div style="display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid #e6edeb;background:linear-gradient(180deg,#fbfdfd,#fff)">
+                                <div class="research-preview-toolbar" style="display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid #e6edeb;background:linear-gradient(180deg,#fbfdfd,#fff)">
                                     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:13px">
                                         <img src="neumact-logo.svg" alt="neumACt" style="height:26px;width:auto;display:block;flex:none" onerror="this.style.display='none'">
                                         <span style="width:1px;height:30px;background:#dce7e5;flex:none"></span>
@@ -5878,7 +5878,7 @@
                         <!-- Spreadsheet-style projects preview (read-only; visibility editable inline; Excel export) -->
                         <div v-if="projectsPreview.show" @click.self="projectsPreview.show=false" :style="{position:'fixed',inset:0,zIndex:9000,background:'rgba(15,30,30,.55)',display:'flex',alignItems:'stretch',justifyContent:'center',padding: projectsPreview.maximized ? '0' : '28px'}">
                             <div :style="{background:'#fff',borderRadius: projectsPreview.maximized ? '0' : '16px',width: projectsPreview.maximized ? '100%' : 'min(1120px,100%)',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 20px 60px rgba(0,0,0,.3)'}">
-                                <div style="display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid #e6edeb;background:linear-gradient(180deg,#fbfdfd,#fff)">
+                                <div class="research-preview-toolbar" style="display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid #e6edeb;background:linear-gradient(180deg,#fbfdfd,#fff)">
                                     <div style="flex:1;min-width:0;display:flex;align-items:center;gap:13px">
                                         <img src="neumact-logo.svg" alt="neumACt" style="height:26px;width:auto;display:block;flex:none" onerror="this.style.display='none'">
                                         <span style="width:1px;height:30px;background:#dce7e5;flex:none"></span>
