@@ -1,0 +1,57 @@
+/* Settings visual recovery: override legacy !important card rules exclusively inside Settings. */
+html body #app .content-area .admin-studio{--rec-ink:#173449;--rec-muted:#526b7c;--rec-line:#d9e3e9;--rec-accent:#087c86;max-width:1600px;font-family:var(--shell-font,'DM Sans',sans-serif)}
+html body #app .content-area .admin-studio .admin-config{max-width:none;width:100%;padding:0 24px 28px;margin:0}
+html body #app .content-area .admin-studio .admin-section-intro{padding:5px 0 16px}
+html body #app .content-area .admin-studio .admin-section-intro h2{font:600 23px/1.25 var(--shell-font,'DM Sans',sans-serif);color:var(--rec-ink)}
+html body #app .content-area .admin-studio .admin-section-intro>p:last-child{font-size:15px;line-height:1.55}
+html body #app .content-area .admin-studio .admin-subnav{margin:0 0 15px;gap:8px}
+html body #app .content-area .admin-studio .admin-subnav button{font-size:15px;min-height:42px;padding:9px 14px}
+html body #app .content-area .admin-studio .admin-config>.card{width:100%;max-width:none;margin:0 0 22px!important;background:#fff!important;border:1px solid var(--rec-line)!important;border-radius:14px!important;box-shadow:0 10px 30px #102d400a!important}
+html body #app .content-area .admin-studio .admin-config>.card>.card-header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;min-height:68px!important;padding:16px 24px!important;background:#fff!important;border:0!important;border-bottom:1px solid var(--rec-line)!important;box-shadow:none!important}
+html body #app .content-area .admin-studio .admin-config>.card>.card-header .card-title{display:flex!important;align-items:center!important;gap:11px!important;color:var(--rec-ink)!important;font:600 19px/1.35 var(--shell-font,'DM Sans',sans-serif)!important;opacity:1!important;visibility:visible!important}
+html body #app .content-area .admin-studio .admin-config>.card>.card-header .card-title svg{color:var(--rec-accent)!important;width:19px!important;height:19px!important;opacity:1!important}
+html body #app .content-area .admin-studio .admin-config>.card>.card-header .btn{background:#e4f4f5!important;color:#075f68!important;border:1px solid #a3dcde!important;min-height:42px!important;font-size:14px!important}
+html body #app .content-area .admin-studio .admin-config .stype-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,275px),1fr))!important;gap:12px;padding:22px}
+html body #app .content-area .admin-studio .admin-config .stype-chip,html body #app .content-area .admin-studio .admin-config .nm-cov-chip{min-height:88px;padding:16px!important;border:1px solid var(--rec-line)!important;background:#fbfcfd!important;gap:12px}
+html body #app .content-area .admin-studio .admin-config .stype-chip-name,html body #app .content-area .admin-studio .admin-config .nm-cov-name{font:600 15px/1.4 var(--shell-font,'DM Sans',sans-serif)!important;white-space:normal!important;overflow-wrap:anywhere}
+html body #app .content-area .admin-studio .admin-config .stype-chip-key,html body #app .content-area .admin-studio .admin-config .nm-cov-code{font-size:12px!important;overflow-wrap:anywhere}
+html body #app .content-area .admin-studio .admin-config .stype-chip-actions{opacity:1!important}
+html body #app .content-area .admin-studio .admin-config .nd-l237{grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr))!important;gap:12px!important}
+html body #app .content-area .admin-studio .admin-config .nm-deg-card{display:flex!important;align-items:center!important;gap:13px!important;min-height:86px;padding:16px!important;overflow:visible!important}
+html body #app .content-area .admin-studio .admin-config .nm-deg-body{min-width:0;flex:1}
+html body #app .content-area .admin-studio .admin-config .nm-deg-name{font:600 15px/1.4 var(--shell-font,'DM Sans',sans-serif)!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;max-width:none!important}
+html body #app .content-area .admin-studio .admin-config .nm-svc-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr))!important;gap:12px!important;padding:22px!important}
+html body #app .content-area .admin-studio .admin-config .nm-svc-top{min-height:82px;padding:16px;gap:12px;align-items:flex-start}
+html body #app .content-area .admin-studio .admin-config .nm-svc-name{font:600 15px/1.4 var(--shell-font,'DM Sans',sans-serif)!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important}
+html body #app .content-area .admin-studio .admin-config .nm-cov-meta{flex-wrap:wrap;gap:6px}
+html body #app .content-area .admin-studio .admin-config .nm-cov-tag{font-size:12px!important}
+html body #app .content-area .admin-studio .admin-import>.card .nd-l252{padding:22px 25px 26px!important}
+html body #app .content-area .admin-studio .admin-import>.card .nd-l222{font-size:15px!important;line-height:1.65!important;max-width:85ch;margin-bottom:20px}
+html body #app .content-area .admin-studio .admin-import>.card .nd-l251{font:600 15px/1.5 var(--shell-font,'DM Sans',sans-serif)!important;min-height:46px!important;padding:12px 18px!important}
+html body #app .content-area .admin-studio .admin-preferences .card-body{background:#fff!important;padding:0 0 6px!important}
+html body #app .content-area .admin-studio .admin-preferences .nd-l232{margin:20px 24px 0;padding:14px 17px;background:#f2f7f8;border-radius:8px;font-size:14px}
+html body #app .content-area .admin-studio .admin-preferences .nd-l231{grid-template-columns:minmax(240px,2fr) minmax(150px,1fr) minmax(150px,1fr);gap:20px;padding:25px 24px 21px}
+html body #app .content-area .admin-studio .admin-preferences .form-label{font:600 14px/1.4 var(--shell-font,'DM Sans',sans-serif)!important;letter-spacing:0!important}
+html body #app .content-area .admin-studio .admin-preferences .form-control{min-height:45px;font-size:15px!important}
+html body #app .content-area .admin-studio .admin-preferences .settings-toggles{margin:0 24px}
+html body #app .content-area .admin-studio .admin-preferences .settings-toggle-row{padding:17px 0!important;min-height:72px}
+html body #app .content-area .admin-studio .admin-preferences .stl-label{font-size:16px!important;font-weight:600!important}
+html body #app .content-area .admin-studio .admin-preferences .stl-sub{font-size:14px!important;line-height:1.5!important}
+html body #app .content-area .admin-studio .ac-team-workspace.ac-no-selection{grid-template-columns:minmax(340px,58%) minmax(0,1fr)}
+html body #app .content-area .admin-studio .ac-no-selection .ac-workspace-detail{background:#f8fafb;min-height:270px}
+html body #app .content-area .admin-studio .ac-no-selection .ac-welcome{margin:0;padding:14px 0;max-width:440px}
+html body #app .content-area .admin-studio .ac-no-selection .ac-welcome h3{font-size:21px}
+html body #app .content-area .admin-studio .ac-account-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+html body #app .content-area .admin-studio .ac-account-panels .ac-identity-panel{grid-column:1}
+html body #app .content-area .admin-studio .ac-account-panels .ac-login-section{grid-column:2}
+html body #app .content-area .admin-studio .ac-account-panels .ac-role-panel{grid-column:1/-1}
+html body #app .content-area .admin-studio .ac-info-panel{min-width:0;background:#fff;padding:20px!important}
+html body #app .content-area .admin-studio .ac-info-panel .ac-identity-facts dt{font:500 13px/1.4 var(--shell-font,'DM Sans',sans-serif)!important}
+html body #app .content-area .admin-studio .ac-info-panel .ac-identity-facts dd{font:600 15px/1.5 var(--shell-font,'DM Sans',sans-serif)!important;white-space:normal!important;overflow-wrap:anywhere}
+html body #app .content-area .admin-studio .ac-role-pills button{flex:0 1 auto;min-width:135px;min-height:43px;white-space:normal}
+html body #app .content-area .admin-studio .ac-info-panel details summary{font:600 14px/1.4 var(--shell-font,'DM Sans',sans-serif)!important;overflow-wrap:anywhere}
+html body #app .content-area .admin-studio .ac-filter-context{padding:12px 14px;background:#f1f8f8;border-left:3px solid var(--rec-accent);font-size:14px}
+html body #app .content-area .admin-studio .ac-clear-filters,html body #app .content-area .admin-studio .ac-filter-context button{border:0;background:transparent;color:#087c86;font:600 13px/1.4 var(--shell-font,'DM Sans',sans-serif);text-decoration:underline;margin-left:10px;cursor:pointer}
+@media(max-width:1100px){html body #app .content-area .admin-studio .ac-account-panels{grid-template-columns:1fr}html body #app .content-area .admin-studio .ac-account-panels .ac-info-panel{grid-column:1}}
+@media(max-width:900px){html body #app .content-area .admin-studio .ac-team-workspace.ac-no-selection{grid-template-columns:1fr}html body #app .content-area .admin-studio .admin-config{padding:0 16px 24px}html body #app .content-area .admin-studio .admin-preferences .nd-l231{grid-template-columns:1fr 1fr}html body #app .content-area .admin-studio .admin-preferences .nd-l231>.form-group:first-child{grid-column:1/-1}}
+@media(max-width:640px){html body #app .content-area .admin-studio .admin-config{padding:0 12px 20px}html body #app .content-area .admin-studio .admin-config>.card>.card-header{padding:15px!important;flex-wrap:wrap}html body #app .content-area .admin-studio .admin-config .stype-grid,html body #app .content-area .admin-studio .admin-config .nm-svc-grid{grid-template-columns:1fr!important;padding:15px!important}html body #app .content-area .admin-studio .admin-config .nd-l237{grid-template-columns:1fr!important}html body #app .content-area .admin-studio .admin-preferences .nd-l231{grid-template-columns:1fr;padding:17px}html body #app .content-area .admin-studio .admin-preferences .nd-l231>.form-group:first-child{grid-column:auto}html body #app .content-area .admin-studio .admin-preferences .settings-toggles{margin:0 17px}}
