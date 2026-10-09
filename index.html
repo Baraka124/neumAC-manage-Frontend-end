@@ -31,7 +31,7 @@
 <link rel="stylesheet" href="research9.css?v=5.3-production.2-research9">
 <link rel="stylesheet" href="publishing10.css?v=5.3-production.3-publishing10">
 <link rel="stylesheet" href="module-headers.css?v=20261006-1">
-<link rel="stylesheet" href="research-visibility.css?v=20261009-research-phase1">
+<link rel="stylesheet" href="research-visibility.css?v=20261009-research-phase2">
 <link rel="stylesheet" href="settings-recovery.css?v=20261009-settings-composition-3">
 </head>
 <body>
@@ -5214,7 +5214,7 @@
                             <span v-if="selectedLine">L{{ selectedLine.line_number }} · programme</span>
                         </div>
 
-                        <header v-if="selectedLine" class="rv31-line-hero">
+                        <header v-if="selectedLine" class="rv31-line-hero module-header">
                             <div class="rv31-line-mark" :style="{color:getLineAccent(selectedLine.line_number).color}">L{{ selectedLine.line_number }}</div>
                             <div class="rv31-line-copy">
                                 <div class="rv31-eyebrow">RESEARCH LINE · PROGRAMME</div>
@@ -5375,7 +5375,7 @@
                                 <span>Clinical study</span>
                             </div>
 
-                            <header class="rv32-record-hero rv32-record-hero--study">
+                            <header class="rv32-record-hero rv32-record-hero--study module-header">
                                 <div class="rv32-record-copy">
                                     <div class="rv32-eyebrow">CLINICAL EVIDENCE</div>
                                     <h1>{{ selectedStudy.title }}</h1>
@@ -5548,7 +5548,7 @@
                                 <span>Clinical innovation</span>
                             </div>
 
-                            <header class="rv32-record-hero rv32-record-hero--innovation">
+                            <header class="rv32-record-hero rv32-record-hero--innovation module-header">
                                 <div class="rv32-record-copy">
                                     <div class="rv32-eyebrow">CLINICAL INNOVATION</div>
                                     <h1>{{ selectedProject.title }}</h1>
@@ -5715,7 +5715,7 @@
                     <!-- ══ V32 · CLINICAL STUDIES PORTFOLIO ════════════════════════ -->
                     <div v-if="researchHubPage === 'allstudies'" class="rv32-page rv32-collection rv32-studies" >
                         <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Clinical evidence</span></div>
-                        <header class="rv32-collection-hero">
+                        <header class="rv32-collection-hero module-header">
                             <div><div class="rv32-eyebrow">CLINICAL EVIDENCE</div><h1>Clinical studies</h1><p>Track study status, enrolment, protocol readiness and ethics / CEIm clearance across Pneumology.</p></div>
                             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                                 <button @click="openStudiesPreview()" title="Open a spreadsheet-style preview of all studies" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border:1px solid #cbd7d7;border-radius:10px;background:#fff;color:#0f3d3d;font:inherit;font-size:13px;font-weight:600;cursor:pointer">
@@ -5904,7 +5904,7 @@
                     <!-- ══ V32 · CLINICAL INNOVATION PORTFOLIO ═══════════════════ -->
                     <div v-if="researchHubPage === 'allprojects'" class="rv32-page rv32-collection rv32-innovation" >
                         <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Clinical innovation</span></div>
-                        <header class="rv32-collection-hero">
+                        <header class="rv32-collection-hero module-header">
                             <div><div class="rv32-eyebrow">CLINICAL INNOVATION</div><h1>Clinical innovation</h1><p>From clinical need to validation, implementation and scale.</p></div>
                             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                                 <button @click="openProjectsPreview()" title="Open a spreadsheet-style preview of all projects" style="display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border:1px solid #cbd7d7;border-radius:10px;background:#fff;color:#0f3d3d;font:inherit;font-size:13px;font-weight:600;cursor:pointer">
@@ -6072,7 +6072,7 @@
                     <!-- ══ V33 · RESEARCH INTELLIGENCE ═════════════════════════════ -->
                     <div v-if="researchHubPage === 'analytics'" class="rv33-intelligence rv32-page">
                         <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Research intelligence</span></div>
-                        <header class="rv32-collection-hero rv33-intelligence-hero"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>Portfolio signals across enrolment, study requirements, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
+                        <header class="rv32-collection-hero rv33-intelligence-hero module-header"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>Portfolio signals across enrolment, study requirements, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
 
                         <section class="rv32-pulse-row rv33-intel-pulse">
                             <div><span>Clinical studies</span><strong>{{ researchSources.studies.status==='ready' ? clinicalTrials.length : '—' }}</strong><small>{{ countTrialsByStatus('recruiting') }} recruiting</small></div>
