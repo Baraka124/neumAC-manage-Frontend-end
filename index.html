@@ -31,7 +31,7 @@
 <link rel="stylesheet" href="research9.css?v=5.3-production.2-research9">
 <link rel="stylesheet" href="publishing10.css?v=5.3-production.3-publishing10">
 <link rel="stylesheet" href="module-headers.css?v=20261006-1">
-<link rel="stylesheet" href="research-visibility.css?v=20261009-preview-header-1">
+<link rel="stylesheet" href="research-visibility.css?v=20261009-research-phase1">
 <link rel="stylesheet" href="settings-recovery.css?v=20261009-settings-composition-3">
 </head>
 <body>
@@ -6297,7 +6297,7 @@
                     <div v-if="newsLibraryFiltersOpen" class="news-v25-filter-panel">
                         <label><span>Status</span><select v-model="newsFilters.status"><option value="">Any status</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></label>
                         <label><span>Visibility</span><select v-model="newsFilters.scope"><option value="">Any visibility</option><option value="public">Public</option><option value="internal">Internal</option></select></label>
-                        <button v-if="newsFilters.status || newsFilters.scope || newsFilters.search" @click="newsFilters.status=''; newsFilters.scope=''; newsFilters.search=''; newsFilters.line=''; newsFilters.author=''; newsFilters.year=''" class="news-v25-clear">Clear filters</button>
+                        <button v-if="newsFilters.status || newsFilters.scope || newsFilters.search || newsFilters.line || newsFilters.author || newsFilters.year" @click="newsFilters.status=''; newsFilters.scope=''; newsFilters.search=''; newsFilters.line=''; newsFilters.author=''; newsFilters.year=''" class="news-v25-clear">Clear filters</button>
                     </div>
 
                     <div class="news-list news-list--studio news-list--v23" v-show="newsShowRecordList && (!newsLoading || newsPosts.length > 0)">
@@ -12470,7 +12470,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="vendor/jspdf.umd.min.js?v=5.4-production.14-20261009b"></script>
     <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.14-20261009b"></script>
     <script src="brand-assets.js?v=5.4-production.14-20261009b"></script>
-    <script src="app.js?v=5.4-production.14-20261009b"></script>
+    <script src="app.js?v=5.4-production.14-20261009-research-phase1"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
