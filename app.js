@@ -262,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const staffTypesList = ref([])
     const staffTypeMap   = ref({})
     const academicDegrees = ref([])   // loaded from /api/academic-degrees
+    const honorifics = ref([])        // loaded from /api/honorifics — title dropdown vocabulary
     const rotationServices = ref([])  // loaded from /api/rotation-services (departments with service_type='rotation_service')
 
     // Fallbacks for display while loading or for unknown keys
@@ -1829,6 +1830,12 @@ document.addEventListener('DOMContentLoaded', () => {
       async updateAcademicDegree(id, d) { this.invalidate('/api/academic-degrees'); return this.request(`/api/academic-degrees/${id}`, { method: 'PUT', body: d }) }
       async deleteAcademicDegree(id) { this.invalidate('/api/academic-degrees'); return this.request(`/api/academic-degrees/${id}`, { method: 'DELETE' }) }
 
+      // ── Honorifics (title dropdown vocabulary) ──────────────────────────
+      async getHonorifics() { return this.getList('/api/honorifics') }
+      async createHonorific(d) { this.invalidate('/api/honorifics'); return this.request('/api/honorifics', { method: 'POST', body: d }) }
+      async updateHonorific(id, d) { this.invalidate('/api/honorifics'); return this.request(`/api/honorifics/${id}`, { method: 'PUT', body: d }) }
+      async deleteHonorific(id) { this.invalidate('/api/honorifics'); return this.request(`/api/honorifics/${id}`, { method: 'DELETE' }) }
+
       // ── Staff Certificates ───────────────────────────────────────────────
       async getStaffCertificates(staffId) { return this.getList(`/api/medical-staff/${staffId}/certificates`) }
       async createStaffCertificate(staffId, d) { return this.request(`/api/medical-staff/${staffId}/certificates`, { method: 'POST', body: d }) }
@@ -2410,9 +2417,9 @@ document.addEventListener('DOMContentLoaded', () => {
           can_be_pi: false, can_be_coi: false, other_certificate: '',
           resident_category: null, home_department: null, external_institution: null,
           home_department_id: null, external_contact_name: null, external_contact_email: null, external_contact_phone: null,
-          academic_degree_id: null, has_medical_license: false,
+          academic_degree_id: null, has_medical_license: false, title: '',
           residency_start_date: null, residency_year_override: null,
-          is_chief_of_department: false, is_research_coordinator: false, 
+          is_chief_of_department: false, is_research_coordinator: false,
           is_resident_manager: false, is_oncall_manager: false, clinical_study_certificates: [],
           hospital_id: null, _networkHint: null,
           // Affiliation fields
@@ -2667,9 +2674,9 @@ document.addEventListener('DOMContentLoaded', () => {
           can_be_pi: false, can_be_coi: false, other_certificate: '',
           resident_category: null, home_department: null, external_institution: null,
           home_department_id: null, external_contact_name: null, external_contact_email: null, external_contact_phone: null,
-          academic_degree_id: null, has_medical_license: false,
+          academic_degree_id: null, has_medical_license: false, title: '',
           residency_start_date: null, residency_year_override: null,
-          is_chief_of_department: false, is_research_coordinator: false, 
+          is_chief_of_department: false, is_research_coordinator: false,
           is_resident_manager: false, is_oncall_manager: false, clinical_study_certificates: [],
           hospital_id: null, _networkHint: null
         })
@@ -2712,6 +2719,7 @@ document.addEventListener('DOMContentLoaded', () => {
         medicalStaffModal.form = {
           ...staff,
           full_name: staff.full_name || '',
+          title: staff.title || '', // null from DB → '' so the "— none —" option matches
           professional_email: staff.professional_email || '', // empty string for the input field — null from DB becomes ''
           mobile_phone: staff.mobile_phone || '',
           department_id: staff.department_id || '',
@@ -11270,6 +11278,54 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         }
 
+        // ── Honorifics Management ──────────────────────────────────────────────
+        const honorificModal = reactive({
+          show: false, mode: 'add',
+          form: { id: null, value: '', display_order: 0, is_active: true }
+        })
+        const openAddHonorific = () => {
+          Object.assign(honorificModal.form, { id: null, value: '', display_order: (honorifics.value.length + 1) * 10, is_active: true })
+          honorificModal.mode = 'add'
+          honorificModal.show = true
+        }
+        const openEditHonorific = (h) => {
+          Object.assign(honorificModal.form, { id: h.id, value: h.value, display_order: h.display_order || 0, is_active: h.is_active !== false })
+          honorificModal.mode = 'edit'
+          honorificModal.show = true
+        }
+        const saveHonorific = async () => {
+          const f = honorificModal.form
+          if (!f.value?.trim()) { showToast('Validation', 'Honorific text is required (e.g. Dr.)', 'warn'); return }
+          try {
+            if (honorificModal.mode === 'add') {
+              const created = await API.createHonorific({ value: f.value.trim(), display_order: f.display_order, is_active: f.is_active })
+              honorifics.value.push(created)
+              showToast('Success', 'Honorific added', 'success')
+            } else {
+              const updated = await API.updateHonorific(f.id, { value: f.value.trim(), display_order: f.display_order, is_active: f.is_active })
+              const idx = honorifics.value.findIndex(d => d.id === f.id)
+              if (idx !== -1) honorifics.value[idx] = updated
+              showToast('Success', 'Honorific updated', 'success')
+            }
+            honorificModal.show = false
+            await loadHonorifics()
+          } catch (e) { showToast('Error', e?.message || 'Failed to save honorific', 'error') }
+        }
+        const deleteHonorific = (h) => {
+          showConfirmation({
+            title: 'Remove Honorific',
+            message: `Remove "${h.value}" from the list? Staff who already have this title keep it — it just won't be offered for new entries.`,
+            confirmText: 'Remove', confirmButtonClass: 'btn-danger',
+            onConfirm: async () => {
+              try {
+                await API.deleteHonorific(h.id)
+                honorifics.value = honorifics.value.filter(d => d.id !== h.id)
+                showToast('Success', 'Honorific removed', 'success')
+              } catch (e) { showToast('Error', e?.message || 'Failed to remove', 'error') }
+            }
+          })
+        }
+
         // ── Staff Types Management ─────────────────────────────────────────────
         // Loads dynamic staff types from DB and builds the reactive lookup map
         // ── Rotation Services ────────────────────────────────────────────
@@ -11366,6 +11422,15 @@ document.addEventListener('DOMContentLoaded', () => {
             academicDegrees.value = sorted
           } catch {
             academicDegrees.value = ACADEMIC_DEGREES_FALLBACK
+          }
+        }
+
+        const loadHonorifics = async () => {
+          try {
+            const data = await API.getHonorifics()
+            honorifics.value = (data || []).slice().sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+          } catch {
+            honorifics.value = []
           }
         }
 
@@ -12091,6 +12156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const primaryLoads = await Promise.allSettled([
               loadStaffTypes(),
               loadAcademicDegrees(),
+              loadHonorifics(),
               loadRotationServices(),
               onCallOps.loadCoverageAreas(),
               loadSystemSettings(),
@@ -19137,6 +19203,7 @@ document.addEventListener('DOMContentLoaded', () => {
           rotationServices, rotationServicesLoading, rotationServiceModal,
           loadRotationServices, openAddRotationService, openEditRotationService, saveRotationService, deleteRotationService,
           academicDegreeModal, openAddAcademicDegree, openEditAcademicDegree, saveAcademicDegree, deleteAcademicDegree,
+          honorifics, loadHonorifics, honorificModal, openAddHonorific, openEditHonorific, saveHonorific, deleteHonorific,
           searchResultsOpen: ui.searchResultsOpen,
           sortState, sortBy, sortIcon, pagination,
           goToPage: (view, page) => {

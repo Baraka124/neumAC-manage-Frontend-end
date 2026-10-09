@@ -4688,7 +4688,7 @@
 
                     </section>
                     <section v-show="adminSection==='department'" class="admin-config admin-department" aria-label="Department setup"><div class="admin-section-intro"><p class="admin-kicker">DEPARTMENT SETUP</p><h2>Department</h2><p>Maintain staff categories, qualifications, rotation services and coverage areas.</p></div>
-                    <nav class="admin-subnav" aria-label="Department configuration"><button v-for="item in [{id:'staff',name:'Staff categories'},{id:'degrees',name:'Qualifications'},{id:'services',name:'Services'},{id:'coverage',name:'On-call coverage'}]" :key="item.id" :class="{active:adminDepartmentSection===item.id}" :aria-pressed="adminDepartmentSection===item.id" @click="adminDepartmentSection=item.id">{{item.name}}</button></nav>
+                    <nav class="admin-subnav" aria-label="Department configuration"><button v-for="item in [{id:'staff',name:'Staff categories'},{id:'degrees',name:'Qualifications'},{id:'honorifics',name:'Titles'},{id:'services',name:'Services'},{id:'coverage',name:'On-call coverage'}]" :key="item.id" :class="{active:adminDepartmentSection===item.id}" :aria-pressed="adminDepartmentSection===item.id" @click="adminDepartmentSection=item.id">{{item.name}}</button></nav>
                     <!-- STAFF TYPES ══════════════════════════════════════════ -->
                     <div v-show="adminDepartmentSection==='staff'" class="card mb-6">
                         <div class="card-header">
@@ -4764,6 +4764,46 @@
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
                                         </button>
                                         <button class="nm-deg-btn nm-deg-btn--del" @click.stop="deleteAcademicDegree(deg)" v-if="hasPermission('system_settings','delete')" title="Remove">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HONORIFICS (TITLES) ═════════════════════════════════ -->
+                    <div v-show="adminDepartmentSection==='honorifics'" class="card mb-6 nd-l093" >
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 7V5a1 1 0 011-1h14a1 1 0 011 1v2"/><path d="M9 20h6M12 4v16"/></svg>
+                                Titles
+                            </div>
+                            <button class="btn btn-primary btn-sm" @click="openAddHonorific" v-if="hasPermission('system_settings','create')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add Title
+                            </button>
+                        </div>
+                        <div  class="nd-l238">
+                            <p class="hint nd-l141" style="margin:0 0 .75rem;">Honorifics offered in the staff form (Dr., Dra., Prof., …). The chosen value is shown before the name on the public team page. Removing one here keeps it on anyone who already has it.</p>
+                            <div v-if="!honorifics.length" class="nm-empty nd-l141" >
+                                <div class="nm-empty-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 7V5a1 1 0 011-1h14a1 1 0 011 1v2"/><path d="M9 20h6M12 4v16"/></svg></div>
+                                <div class="nm-empty-title">No titles defined</div>
+                                <div class="nm-empty-sub">Add honorifics such as Dr., Dra., Prof.</div>
+                            </div>
+                            <div v-else  class="nd-l237">
+                                <div v-for="h in honorifics" :key="h.id"
+                                     class="nm-deg-card"
+                                     :class="{ 'nm-deg-card--inactive': !h.is_active }">
+                                    <div class="nm-deg-abbr">{{ h.value }}</div>
+                                    <div class="nm-deg-body">
+                                        <div class="nm-deg-name" :title="h.value">{{ h.value }}</div>
+                                        <div v-if="!h.is_active" class="nm-deg-inactive">inactive</div>
+                                    </div>
+                                    <div class="nm-deg-actions">
+                                        <button class="nm-deg-btn" @click.stop="openEditHonorific(h)" v-if="hasPermission('system_settings','update')" title="Edit">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20H8L18 10L14 6L4 16V20Z"/></svg>
+                                        </button>
+                                        <button class="nm-deg-btn nm-deg-btn--del" @click.stop="deleteHonorific(h)" v-if="hasPermission('system_settings','delete')" title="Remove">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                                         </button>
                                     </div>
@@ -6644,6 +6684,40 @@ Use Section heading to structure longer clinical or research articles."></textar
             </div>
         </div>
 
+        <!-- HONORIFIC (TITLE) ADD / EDIT MODAL -->
+        <div class="modal-overlay" v-if="honorificModal?.show" @click.self="honorificModal.show = false">
+            <div class="modal-container nd-l153" >
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 7V5a1 1 0 011-1h14a1 1 0 011 1v2"/><path d="M9 20h6M12 4v16"/></svg>
+                        {{ honorificModal?.mode === 'add' ? 'Add Title' : 'Edit Title' }}
+                    </div>
+                    <button class="modal-close" @click="honorificModal.show = false" aria-label="Close" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 7L17 17M17 7L7 17"/></svg></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Honorific <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" v-model="honorificModal.form.value" placeholder="e.g. Dr." @keyup.enter="saveHonorific">
+                        <small class="hint">Saved and shown exactly as typed, including the dot — e.g. “Dr.”, “Dra.”, “Prof.”</small>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Display Order</label>
+                        <input type="number" class="form-control nd-l151" v-model="honorificModal.form.display_order" min="0" >
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" :id="'hon-active'" v-model="honorificModal.form.is_active">
+                        <label class="form-check-label" for="hon-active">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @click="honorificModal.show = false">Cancel</button>
+                    <button class="btn btn-primary" @click="saveHonorific">
+                        {{ honorificModal?.mode === 'add' ? 'Add Title' : 'Save changes' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ============ ROTATION SERVICE ADD/EDIT MODAL ============ -->
         <div class="modal-overlay" v-if="rotationServiceModal.show" @click.self="rotationServiceModal.show = false">
             <div class="modal-container nd-l147" >
@@ -7602,10 +7676,21 @@ Use Section heading to structure longer clinical or research articles."></textar
                         <!-- ══ STEP 1: IDENTITY ══ -->
                         <template v-if="medicalStaffModal.activeTab === 'basic'">
                             <div class="sm-row">
+                                <div class="sm-field">
+                                    <div class="sm-label">Title</div>
+                                    <select class="sm-select" :class="{ filled: medicalStaffModal.form.title }" v-model="medicalStaffModal.form.title">
+                                        <option value="">— none —</option>
+                                        <option v-for="h in honorifics" :key="h.id" :value="h.value">{{ h.value }}</option>
+                                    </select>
+                                    <small class="hint">Honorific shown before the name (e.g. public team page). Leave “— none —” for non-clinical staff · manage the list in Settings.</small>
+                                </div>
+                                <div class="sm-field"></div>
+                            </div>
+                            <div class="sm-row">
                                 <div class="sm-field" :class="{ 'has-error': fieldErrors.staff?.full_name }">
                                     <div class="sm-label">Full Name <span class="req">·</span></div>
                                     <input class="sm-input" :class="{ filled: medicalStaffModal.form.full_name, 'is-invalid': fieldErrors.staff?.full_name }"
-                                           type="text" v-model="medicalStaffModal.form.full_name" placeholder="Dr. / Dra. First Last"
+                                           type="text" v-model="medicalStaffModal.form.full_name" placeholder="First Last (no honorific)"
                                            @input="clearFieldError('staff','full_name')">
                                     <small v-if="fieldErrors.staff?.full_name" class="error-text">{{ fieldErrors.staff.full_name }}</small>
                                 </div>
@@ -12374,10 +12459,10 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="production-ui.js?v=5.3-production.3-entry3"></script>
     <script src="workflow7.js?v=5.3-production.2-workflow7"></script>
     <script src="publishing10.js?v=5.3-production.3-publishing10"></script>
-    <script src="vendor/jspdf.umd.min.js?v=5.4-production.12-20261008i"></script>
-    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.12-20261008i"></script>
-    <script src="brand-assets.js?v=5.4-production.12-20261008i"></script>
-    <script src="app.js?v=5.4-production.12-20261008i"></script>
+    <script src="vendor/jspdf.umd.min.js?v=5.4-production.13-20261009a"></script>
+    <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.13-20261009a"></script>
+    <script src="brand-assets.js?v=5.4-production.13-20261009a"></script>
+    <script src="app.js?v=5.4-production.13-20261009a"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
