@@ -103,3 +103,9 @@ html body #app .research-preview-toolbar>div:not(:first-child)>button{white-spac
  html body #app .research-preview-toolbar>select{flex-basis:100%!important;width:100%!important;font-size:16px!important}
  html body #app .research-preview-toolbar>div:not(:first-child)>div{left:0;right:auto!important;max-width:calc(100vw - 100px);box-sizing:border-box}
 }
+
+/* Research and Library only: allow search results to extend beyond the toolbar.
+   The legacy navbar overflow rules clipped both painting and pointer access. */
+html body #app:has(.research-hub,.news-view) .shell2.top-navbar{
+ overflow:visible!important;max-height:none!important;
+}

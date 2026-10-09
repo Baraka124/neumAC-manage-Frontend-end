@@ -2313,6 +2313,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('keydown', (e) => {
           // ⌘K / Ctrl+K — command palette
           if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            // Research Library owns this shortcut; do not open two palettes.
+            if (currentView.value === 'news') return
             e.preventDefault()
             cmdPaletteOpen.value = !cmdPaletteOpen.value
             return
