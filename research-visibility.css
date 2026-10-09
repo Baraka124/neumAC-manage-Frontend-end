@@ -158,3 +158,17 @@ html body #app .news-v27-inspector-fields :is(input,select){font-size:16px!impor
 }
 
 html body #app .research-hub .rv32-record-hero.module-header>button:not(.rv32-circle-action){background:#eef6f3!important}
+
+/* Phase 3: the Library command palette must fit short viewports as well as
+   narrow ones. Keep search and keyboard hints fixed; scroll only results.
+   This surface is teleported to body, so it must not be scoped under #app. */
+html body .news-v28-command-layer{padding:clamp(12px,8dvh,80px) 16px 16px;box-sizing:border-box;overflow:hidden}
+html body .news-v28-command{display:flex;flex-direction:column;min-height:0;max-height:100%;width:min(680px,100%)}
+html body .news-v28-command>header,
+html body .news-v28-command>label,
+html body .news-v28-command>footer{flex-shrink:0}
+html body .news-v28-command-results{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+html body .news-v28-command>label input{min-width:0}
+html body .news-v28-command-results button{min-width:0}
+html body .news-v28-command-results button span{overflow-wrap:anywhere;font-size:15px;line-height:1.4}
+html body .news-v28-command-results button small{font-size:13px;line-height:1.4}
