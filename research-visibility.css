@@ -109,3 +109,52 @@ html body #app .research-preview-toolbar>div:not(:first-child)>button{white-spac
 html body #app:has(.research-hub,.news-view) .shell2.top-navbar{
  overflow:visible!important;max-height:none!important;
 }
+
+/* Phase 2: shared introductions and readable Research / Library controls. */
+html body #app :is(.research-hub,.news-view) .module-header p:not(.admin-kicker){font-size:16px!important;line-height:1.55!important}
+html body #app :is(.research-hub,.news-view) .module-header :is(.rv31-eyebrow,.rv32-eyebrow,.news-editorial-kicker){font-size:12px!important;color:#a8c9cf!important}
+html body #app .research-hub :is(.rv31-line-hero,.rv32-collection-hero,.rv32-record-hero).module-header{display:flex!important;align-items:flex-start!important;flex-wrap:wrap!important;gap:16px 24px!important}
+html body #app .research-hub .rv32-collection-hero>div:first-child{flex:1 1 360px;min-width:0}
+html body #app .research-hub .rv31-line-copy{flex:1 1 340px;min-width:0}
+html body #app .research-hub .rv31-line-actions{display:flex;flex-wrap:wrap;gap:8px;align-self:flex-start}
+html body #app .research-hub .rv32-record-copy{flex:1 0 100%;min-width:0}
+html body #app .research-hub .rv32-record-hero.module-header>p.ac-notice{flex:1 0 100%;color:#173449!important;background:#eef6f7!important;padding:12px 16px;max-width:none!important;margin:0!important}
+html body #app .research-hub .module-header :is(.rv32-record-meta>span,.rv31-person-link b,.rv31-person-link--empty){color:#d6e6ee!important;font-size:14px!important;line-height:1.5}
+html body #app .research-hub .module-header .rv31-person-link{color:#e5f0f4!important;font-size:15px}
+html body #app .research-hub .module-header .rv31-line-keywords span{background:#203f52;color:#d6e6ee;border-color:#567080;font-size:13px}
+html body #app .research-hub .module-header :is(button,.rv31-round-action span){font-size:14px!important}
+html body #app .research-hub .module-header button{min-height:42px!important;height:auto!important;max-width:100%;white-space:normal}
+html body #app .research-hub .module-header :is(.rv32-circle-action,.rv31-round-action){background:#203f52!important;color:#f3f8fa!important;border-color:#567080!important;min-width:42px}
+html body #app .research-hub .module-header .rv32-add-action{color:#d5f3f2!important}
+html body #app .research-hub .module-header :is(button,a):focus-visible{outline-color:#97e1e2!important}
+html body #app .research-hub :is(.rv31-nav-item,.rv31-line-tabs button,.rv32-state-rail button,.rv32-stage-rail button,.rv32-back,.rv31-back){font-size:15px!important;line-height:1.4!important;min-height:42px}
+html body #app .research-hub :is(.rv31-nav-item span,.rv31-line-tabs button span,.rv32-state-rail button span,.rv36-filter-count){font-size:14px!important}
+html body #app .research-hub :is(.rv31-search,.rv32-search){min-height:44px;height:auto;min-width:0}
+html body #app .research-hub :is(.rv31-search,.rv32-search) input{font-size:16px!important;line-height:1.5!important;min-width:0}
+html body #app .research-hub :is(.rv31-line-tabs,.rv32-state-rail,.rv32-stage-rail){overflow-x:auto;max-width:100%;gap:18px}
+html body #app .research-hub :is(.rv31-line-tabs,.rv32-state-rail,.rv32-stage-rail)>button{flex:0 0 auto;white-space:nowrap}
+html body #app .news-view :is(.news-v25-tabs button,.news-v28-lensbar button,.news-v25-filter-toggle){font-size:15px!important;line-height:1.4!important}
+html body #app .news-view :is(.news-v25-tabs button span,.news-v28-lensbar button span,.news-v28-lens-label,.news-v25-shown,.news-v25-index){font-size:14px!important}
+html body #app .news-view .news-v25-search{min-height:44px;height:auto!important;min-width:0}
+html body #app .news-view .news-v25-search input{font-size:16px!important;line-height:1.5!important;min-height:44px}
+html body #app .news-view .news-v25-filter-panel{display:flex;flex-wrap:wrap;gap:16px}
+html body #app .news-view .news-v25-filter-panel label{flex:1 1 180px;min-width:0}
+html body #app .news-view .news-v25-filter-panel label>span{font-size:14px!important}
+html body #app .news-view .news-v25-filter-panel select{font-size:16px!important;min-height:44px;width:100%}
+/* Editor is mounted outside .news-view; use its Library-specific classes. */
+html body #app .news-v27-record-inspector>header strong,
+html body #app .news-v27-inspector-fields label>span{font-size:14px!important;line-height:1.4!important;letter-spacing:0!important}
+html body #app .news-v27-inspector-fields :is(input,select){font-size:16px!important;min-height:44px!important;min-width:0}
+@media(max-width:900px){
+ html body #app .news-view .news-v25-commandbar{display:flex!important;flex-wrap:wrap!important;gap:12px!important}
+ html body #app .news-view .news-v25-tabs{flex:1 0 100%!important}
+ html body #app .news-view .news-v25-search{flex:1 1 200px!important}
+}
+@media(max-width:640px){
+ html body #app .research-hub .module-header :is(.rv31-line-copy,.rv32-record-copy),
+ html body #app .research-hub .rv32-collection-hero>div:first-child{flex:0 1 auto;width:100%}
+ html body #app .research-hub .rv32-record-hero.module-header>p.ac-notice{flex-basis:auto;width:100%}
+ html body #app .research-hub .rv32-record-hero.module-header{flex-direction:row!important}
+}
+
+html body #app .research-hub .rv32-record-hero.module-header>button:not(.rv32-circle-action){background:#eef6f3!important}
