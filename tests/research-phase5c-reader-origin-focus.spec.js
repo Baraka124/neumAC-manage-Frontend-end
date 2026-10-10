@@ -57,7 +57,7 @@ async function runReaderSequence(page, removeOrigin) {
       closed:newsDrawer.show === false,
       originCleared:newsDrawer.returnFocusId === null,
       highlighted:newsReturnFocusId.value,
-      focusedRecord:focused?.dataset?.record || null,
+      focusedRecord:focused?.dataset?.newsRecordId || null,
       fallbackFocused:focused?.matches('.news-v25-search input') || false
     };
   }, {source:app.slice(start,end),removeOrigin});
