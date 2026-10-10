@@ -10055,7 +10055,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!newsDrawer.post) return null
           const list = newsOps.filteredNews.value
           const idx = list.findIndex(p => p.id === newsDrawer.post.id)
-          return idx < list.length - 1 ? list[idx + 1] : null
+          return idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null
         })
         const parseResearchBody = (body='') => {
           const chunks=String(body||'').split(/\n{2,}/).map(v=>v.trim()).filter(Boolean)
