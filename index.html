@@ -6315,6 +6315,7 @@
                         <div class="news-body news-body--studio news-body--v23" :class="'news-body--' + (newsFilters.type || 'all')">
                             <article v-for="post in newsDisplayPosts" :key="post.id"
                                      class="knowledge-card knowledge-card--v23"
+                                     :data-news-record-id="post.id"
                                      :class="['knowledge-card--' + post.post_type, post.is_featured ? 'is-featured' : '', post.status !== 'published' ? 'is-' + post.status : '', newsReturnFocusId === post.id ? 'is-return-focus' : '']"
                                      role="button" tabindex="0"
                                      @click.stop="openNewsDrawer(post, null)"
@@ -12470,7 +12471,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="vendor/jspdf.umd.min.js?v=5.4-production.14-20261009b"></script>
     <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.14-20261009b"></script>
     <script src="brand-assets.js?v=5.4-production.14-20261009b"></script>
-    <script src="app.js?v=5.4-production.17-20261010-library-pager-boundary"></script>
+    <script src="app.js?v=5.4-production.18-20261010-reader-origin-focus"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
