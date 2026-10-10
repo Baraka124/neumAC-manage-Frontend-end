@@ -19,6 +19,8 @@ jobs:
           find . -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Mi espacio identity and shell contract
         run: node --test tests/mi-espacio-phase1.test.cjs
+      - name: Clinician access to Mi espacio
+        run: node --test tests/mi-espacio-clinician-access.test.cjs
       - name: Access script cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
