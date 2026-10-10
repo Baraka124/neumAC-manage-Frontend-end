@@ -9898,7 +9898,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const newsDrawer = reactive({
           show: false, post: null, manageOpen: false, detailsOpen: false, publicPreview: false, connectionMode: '',
-          sourceRect: null, returnWindowY: 0, returnContentY: 0
+          sourceRect: null, returnWindowY: 0, returnContentY: 0, returnFocusId: null
         })
         const newsDrawerPositionStyle = computed(() => {
           if (!newsDrawer.post || newsDrawer.post.post_type !== 'update') return {}
@@ -9920,6 +9920,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!newsDrawer.show) {
             newsDrawer.returnWindowY = window.scrollY || 0
             newsDrawer.returnContentY = content?.scrollTop || 0
+            newsDrawer.returnFocusId = post.id ?? null
           }
           // Never inherit geometry from a different record. That caused compact Update
           // readers to anchor to the previous card after related-record navigation.
@@ -9947,7 +9948,7 @@ document.addEventListener('DOMContentLoaded', () => {
           })
         }
         const closeNewsDrawer = () => {
-          const returnId = newsDrawer.post?.id || null
+          const returnId = newsDrawer.returnFocusId ?? newsDrawer.post?.id ?? null
           const winY = newsDrawer.returnWindowY || 0
           const contentY = newsDrawer.returnContentY || 0
           newsDrawer.show = false
@@ -9957,14 +9958,22 @@ document.addEventListener('DOMContentLoaded', () => {
           newsDrawer.publicPreview = false
           newsDrawer.connectionMode = ''
           newsDrawer.sourceRect = null
+          newsDrawer.returnFocusId = null
           newsReadingProgress.value = 0
           newsReaderCompact.value = false
           Vue.nextTick(() => {
             const content = getNewsScroller()
             if (content && Number.isFinite(contentY)) content.scrollTop = contentY
             if (Number.isFinite(winY) && winY > 0) window.scrollTo({ top: winY, behavior: 'auto' })
-            if (returnId) {
+            if (returnId != null) {
               newsReturnFocusId.value = returnId
+              uiAfterPaint(() => {
+                const origin = [...document.querySelectorAll('.news-view .knowledge-card[data-news-record-id]')]
+                  .find(card => card.getAttribute('data-news-record-id') === String(returnId))
+                const fallback = document.querySelector('.news-view .news-v25-search input') ||
+                  document.querySelector('.news-view .news-v25-tabs button')
+                uiFocusWithoutScroll(origin || fallback)
+              })
               setTimeout(() => { if (newsReturnFocusId.value === returnId) newsReturnFocusId.value = null }, 1500)
             }
           })
