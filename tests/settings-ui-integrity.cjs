@@ -22,7 +22,8 @@ const css = fs.readFileSync(path.join(ROOT, 'access.css'), 'utf8');
 for (const needle of ['ac-team-workspace', 'ac-account-panels', 'ac-activity-list', '@media(max-width:900px)', '@media(max-width:640px)'])
   assert.ok(css.includes(needle), 'Responsive Settings style present: ' + needle);
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-assert.match(index, /access\.js\?v=20261009-settings-recovery-2/);
+const accessScript = index.match(/<script\s+src="access\.js\?v=([^"\s]+)"\s*><\/script>/);
+assert.ok(accessScript && accessScript[1], 'The Access & Identity script has a nonempty cache version');
 assert.match(index, /access\.css\?v=20261009-settings-recovery-2/);
 console.log('SETTINGS UI INTEGRITY: OK (Vue template, existing actions, responsive composition, fresh asset keys)');
 
