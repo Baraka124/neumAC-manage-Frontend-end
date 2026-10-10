@@ -23,7 +23,6 @@ test('Research collections explain filtered zero results and offer complete rese
   },c);
   await expect(page.getByRole('button',{name:c.reset})).toBeVisible();
   await page.getByRole('button',{name:c.reset}).click();
-  const reset=await page.evaluate(fields=>fields.every(k=>window.fixture[c.filters]?.[k]===''),c.fields).catch(()=>false);
   // Read component state without depending on the DOM of the larger app.
   const values=await page.evaluate(({filters,fields})=>fields.map(k=>window.fixture[filters][k]),c);
   expect(values).toEqual(c.fields.map(()=>''));
