@@ -5893,12 +5893,13 @@
                                     <p>{{ (trial.target_diseases||[]).length ? trial.target_diseases.join(' · ') : getResearchLineName(trial.research_line_id) }}</p>
                                 </div>
                                 <div class="rv32-row-governance">
-                                    <span>Study requirements</span>
-                                    <div><b :class="{ok:trial.protocol_finalized}">{{ trial.protocol_finalized ? 'Protocol ✓' : 'Protocol pending' }}</b><b :class="{ok:trial.ethics_status==='approved'}">{{ trial.ethics_status==='approved' ? 'Ethics ✓' : (trial.ethics_status ? 'Ethics · '+formatEthicsStatus(trial.ethics_status) : 'Ethics not recorded') }}</b><b :class="{ok:trial.principal_investigator_id}">{{ trial.principal_investigator_id ? 'PI assigned' : 'PI missing' }}</b></div>
+                                    <span>{{ trialStatusKey(trial)==='done' ? 'Study record' : 'Study requirements' }}</span>
+                                    <div v-if="trialStatusKey(trial)==='done'" class="rv32-completed-context"><span>Completed · requirements retained in study details</span></div>
+                                    <div v-else><b :class="{ok:trial.protocol_finalized}">{{ trial.protocol_finalized ? 'Protocol ✓' : 'Protocol pending' }}</b><b :class="{ok:trial.ethics_status==='approved'}">{{ trial.ethics_status==='approved' ? 'Ethics ✓' : (trial.ethics_status ? 'Ethics · '+formatEthicsStatus(trial.ethics_status) : 'Ethics not recorded') }}</b><b :class="{ok:trial.principal_investigator_id}">{{ trial.principal_investigator_id ? 'PI assigned' : 'PI missing' }}</b></div>
                                     <small v-if="trial.sponsor_name">{{ trial.sponsor_name }}<template v-if="trial.is_multicentre"> · Multicentre</template></small><small v-else-if="trial.is_multicentre">Multicentre · {{ trial.participating_centres || '?' }} centres</small>
                                 </div>
-                                <div class="rv32-row-recruitment" v-if="trialEnrollment(trial)"><div><strong>{{ trialEnrollment(trial).actual }}</strong><span>/ {{ trialEnrollment(trial).target }}</span></div><small>{{ trialEnrollment(trial).remaining }} to target</small><div class="rv32-progress"><i :class="'is-'+trialEnrollment(trial).health" :style="{width:trialEnrollment(trial).pct+'%'}"></i></div></div>
-                                <div class="rv32-row-recruitment rv32-row-recruitment--empty" v-else><span>Recruitment</span><small>Target not recorded</small></div>
+                                <div class="rv32-row-recruitment" v-if="trialStatusKey(trial)!=='done' && trialEnrollment(trial)"><div><strong>{{ trialEnrollment(trial).actual }}</strong><span>/ {{ trialEnrollment(trial).target }}</span></div><small>{{ trialEnrollment(trial).remaining }} to target</small><div class="rv32-progress"><i :class="'is-'+trialEnrollment(trial).health" :style="{width:trialEnrollment(trial).pct+'%'}"></i></div></div>
+                                <div class="rv32-row-recruitment rv32-row-recruitment--empty" v-else-if="trialStatusKey(trial)!=='done'"><span>Recruitment</span><small>Target not recorded</small></div><div class="rv32-row-recruitment rv32-row-recruitment--empty" v-else><span>Study lifecycle</span><small>Completed</small></div>
                                 <div class="rv32-row-arrow">→</div>
                             </article>
                         </section>
