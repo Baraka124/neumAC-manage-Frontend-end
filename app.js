@@ -833,6 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const VIEW_TITLES = {
       dashboard:             'Overview',
+      mi_espacio:            'Mi espacio',
       medical_staff:         'Clinical Staff',
       oncall_schedule:       'On-call Schedule',
       resident_rotations:    'Rotations',
@@ -19411,6 +19412,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showOnScreenError('Render error' + (viewName ? ' (' + viewName + ' view)' : ''), err, info) 
     }
 
+    app.component('mi-espacio-view', window.NeumMiEspacio.createView({Vue,API}))
     app.component('access-center', window.NeumAccess.createCenter({Vue,API}))
     app.component('self-profile', window.NeumAccess.createSelfProfile({Vue,API}))
     app.component('dashboard-summary',window.NeumReview53.createSummary({Vue}))
