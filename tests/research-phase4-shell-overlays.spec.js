@@ -19,28 +19,17 @@ const expressions = [
 ];
 const title = 'Research record with an extended clinical and scientific title';
 
-function extract(vif) {
-  // Parse the real template rather than recreating component HTML.
-  // Missing selectors should fail the test instead of silently skipping it.
-  const source = new DOMParser().parseFromString(html, 'text/html');
-  const element = [...source.querySelectorAll('[v-if]')]
-    .find(candidate => candidate.getAttribute('v-if') === vif);
-  if (!element) throw new Error('Missing overlay: ' + vif);
-  return element.outerHTML.replace(/\{\{[\s\S]*?\}\}/g, title);
-}
-
 test('Research and Library dialogs stay above the shell at phone and short-laptop sizes', async ({ page }) => {
   for (const [width, height] of [[390, 600], [640, 720], [800, 450], [1366, 768]]) {
     await page.setViewportSize({ width, height });
     for (const expression of expressions) {
-      const surface = await page.evaluate(extract.toString().startsWith('function') ?
-        ({ html, expression, title }) => {
+      const surface = await page.evaluate(({ html, expression, title }) => {
           const source = new DOMParser().parseFromString(html, 'text/html');
           const element = [...source.querySelectorAll('[v-if]')]
             .find(candidate => candidate.getAttribute('v-if') === expression);
           if (!element) throw new Error('Missing overlay: ' + expression);
           return element.outerHTML.replace(/\{\{[\s\S]*?\}\}/g, title);
-        } : null, { html, expression, title });
+        }, { html, expression, title });
       await page.setContent(`<style>${css}</style><div id="app"><div class="app-layout"><main class="main-content"><header class="top-navbar shell2">neumDESK</header><div class="content-area"><div class="research-hub"><header class="module-header">Research</header></div><div class="news-view">Library</div></div></main></div>${surface}</div>`);
       const overlay = page.locator('.modal-overlay,.news-v27-editor-overlay').first();
       await expect(overlay, expression).toBeVisible();
