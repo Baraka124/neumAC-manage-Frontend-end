@@ -35,7 +35,8 @@
             state.error=err?.message||'No se ha podido verificar tu identidad.';
           } finally {if(requestSeq===seq)state.busy=false;}
         }
-        Vue.watch(()=>[props.active,props.user?.id],([active,id],[wasActive,oldId])=>{
+        Vue.watch(()=>[props.active,props.user?.id],([active,id],previous)=>{
+          const [wasActive,oldId]=Array.isArray(previous)?previous:[];
           if(!active||!id){clear();return;}
           if(!wasActive||id!==oldId)load();
         },{immediate:true});
