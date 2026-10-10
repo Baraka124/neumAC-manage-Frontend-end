@@ -15,7 +15,8 @@ test('Library command palette restores focus after dismissal', async ({ page }) 
   await page.locator('#opener').focus();
   const outcome = await page.evaluate(async source => {
     const newsCommand = { show:false, query:'', selected:0 };
-    const Vue = { nextTick: callback => Promise.resolve().then(callback) };\n    const newsModal = {show:false}, newsDrawer={show:false};
+    const Vue = { nextTick: callback => Promise.resolve().then(callback) };
+    const newsModal = {show:false}, newsDrawer={show:false};
     const run = new Function('newsCommand', 'Vue', 'newsModal', 'newsDrawer', source + ';return {openNewsCommand,closeNewsCommand}');
     const { openNewsCommand, closeNewsCommand } = run(newsCommand, Vue, newsModal, newsDrawer);
     openNewsCommand();
