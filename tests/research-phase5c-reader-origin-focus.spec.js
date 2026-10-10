@@ -12,8 +12,8 @@ async function runReaderSequence(page, removeOrigin) {
       <input class="library-search" aria-label="Search Research Library">
       <div class="news-v25-search"><input aria-label="Library filters"></div>
       <nav class="news-v25-tabs"><button type="button">All</button></nav>
-      <article class="knowledge-card" data-record="A" tabindex="0">Record A</article>
-      <article class="knowledge-card" data-record="B" tabindex="0">Record B</article>
+      <article class="knowledge-card" data-news-record-id="A" tabindex="0">Record A</article>
+      <article class="knowledge-card" data-news-record-id="B" tabindex="0">Record B</article>
     </main>
     <section class="nrd-drawer" tabindex="-1"><div class="nrd-v27-scroll"></div></section>`);
   return page.evaluate(({source, removeOrigin}) => {
@@ -49,7 +49,7 @@ async function runReaderSequence(page, removeOrigin) {
     openNewsDrawer(B,null);
     const preserved = newsDrawer.returnFocusId;
     const selectedBeforeClose = newsDrawer.post?.id;
-    if (removeOrigin) document.querySelector('[data-record="A"]').remove();
+    if (removeOrigin) document.querySelector('[data-news-record-id="A"]').remove();
     closeNewsDrawer();
     const focused = document.activeElement;
     return {
