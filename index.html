@@ -36,6 +36,7 @@
 <link rel="stylesheet" href="research-library-controls-pass1.css?v=20261010-video-pass1-1">
 <link rel="stylesheet" href="research-persistent-navigation.css?v=20261011-1">
 <link rel="stylesheet" href="settings-recovery.css?v=20261009-settings-composition-3">
+    <link rel="stylesheet" href="mi-espacio/mi-espacio.css?v=20261011-phase1">
 </head>
 <body>
     <div id="neumax-topbar" aria-hidden="true"></div>
@@ -1315,6 +1316,7 @@
                             
                         </span>
                     </a></div>
+<div class="nmsb-section"><a href="#" class="nmsb-item" aria-label="Mi espacio" :aria-current="currentView === 'mi_espacio' ? 'page' : null" :class="{ active: currentView === 'mi_espacio' }" @click.prevent="switchView('mi_espacio'); mobileMenuOpen = false" :title="(sidebarCollapsed && !mobileMenuOpen) ? 'Mi espacio' : null"><span class="nmsb-icon nmsb-icon--green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c0-4 2.8-6 6.5-6s6.5 2 6.5 6"/></svg></span><span class="nmsb-label" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Mi espacio</span></a></div>
 <div class="nmsb-section" v-if="['medical_staff','training_units','resident_rotations','oncall_schedule','staff_absence','communications'].some(m => hasPermission(m, 'read'))"><div class="nmsb-section-lbl" v-if="!(sidebarCollapsed && !mobileMenuOpen)">Department</div>
 <a href="#" class="nmsb-item" aria-label="Medical Staff" :aria-current="currentView === 'medical_staff' ? 'page' : null" :class="{ active: currentView === 'medical_staff' }"
                        @click.prevent="switchView('medical_staff'); mobileMenuOpen = false"
@@ -1783,11 +1785,14 @@
                 <aside v-if="workflowReturn" class="workflow7-return" role="status"><div><strong>{{ workflowReturn.label }}</strong><span v-if="workflowReturn.recordId">Record {{ workflowReturn.recordId }}</span><span>Your {{ workflowReturn.domain }} draft remains open in this session.</span></div><button type="button" @click="workflowResume">Return to draft</button></aside>
                 <!-- Breadcrumb — hidden on dashboard and fullscreen modules -->
                 <nav class="breadcrumb" aria-label="Breadcrumb"
-                     v-if="!['dashboard','medical_staff','resident_rotations','training_units','staff_absence','research_hub','news'].includes(currentView)">
+                     v-if="!['dashboard','mi_espacio','medical_staff','resident_rotations','training_units','staff_absence','research_hub','news'].includes(currentView)">
                     <button @click="switchView('dashboard')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 21H21M5 21V8L12 4L19 8V21M9 21V15H15V21"/></svg><span>Dashboard</span></button>
                     <span class="bc-sep">/</span>
                     <span class="bc-current">{{ getCurrentViewTitle() }}</span>
                 </nav>
+
+                <!-- Mi espacio: authenticated personal view, not another app -->
+                <mi-espacio-view v-if="currentView === 'mi_espacio'" :active="currentView === 'mi_espacio'" :user="currentUser" :can-open-view="canOpenView" @navigate="switchView"></mi-espacio-view>
 
                 <!-- ============ DASHBOARD VIEW ============ -->
                 <div v-if="currentView === 'dashboard'" class="view-dashboard dashboard4 nd-l295" >
@@ -12483,7 +12488,9 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="vendor/jspdf.umd.min.js?v=5.4-production.14-20261009b"></script>
     <script src="vendor/jspdf.plugin.autotable.min.js?v=5.4-production.14-20261009b"></script>
     <script src="brand-assets.js?v=5.4-production.14-20261009b"></script>
-    <script src="app.js?v=5.4-production.18-20261010-reader-origin-focus"></script>
+    <script src="mi-espacio/mi-espacio-data.js?v=20261011-phase1"></script>
+    <script src="mi-espacio/mi-espacio.js?v=20261011-phase1"></script>
+    <script src="app.js?v=5.4-production.19-20261011-mi-espacio-phase1"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->
