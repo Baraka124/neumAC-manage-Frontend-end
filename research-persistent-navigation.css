@@ -1,0 +1,23 @@
+/* Persistent Research navigation across collection and record depths. */
+html body #app .research-hub .rv31-nav--persistent{
+ display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+ margin:0 0 18px;padding:10px 12px;
+ border-bottom:1px solid #d5e3e8;
+ background:#f5f9fa;
+}
+html body #app .research-hub .rv31-nav--persistent .rv31-nav-item{
+ min-height:42px;white-space:normal;text-align:left;
+ border-radius:5px;
+}
+html body #app .research-hub .rv31-nav--persistent .rv31-nav-item:focus-visible{
+ outline:2px solid #087c86;outline-offset:2px;
+}
+@media(max-width:640px){
+ html body #app .research-hub .rv31-nav--persistent{
+  flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;
+  scroll-padding-inline:12px;padding:9px 12px;
+ }
+ html body #app .research-hub .rv31-nav--persistent .rv31-nav-item{
+  flex:0 0 auto;white-space:nowrap;
+ }
+}

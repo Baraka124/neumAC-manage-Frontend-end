@@ -34,6 +34,7 @@
 <link rel="stylesheet" href="research-visibility.css?v=20261010-research-phase5b-highlight-geometry">
 <link rel="stylesheet" href="research-header-refinement.css?v=20261010-phase5d-masthead-1">
 <link rel="stylesheet" href="research-library-controls-pass1.css?v=20261010-video-pass1-1">
+<link rel="stylesheet" href="research-persistent-navigation.css?v=20261011-1">
 <link rel="stylesheet" href="settings-recovery.css?v=20261009-settings-composition-3">
 </head>
 <body>
@@ -5083,6 +5084,14 @@
                         </div>
                     </div>
 
+
+                    <!-- Persistent Research navigation outside individual nested page branches. -->
+                    <nav v-if="researchHubPage !== 'overview'" class="rv31-nav rv31-nav--persistent" aria-label="Research sections">
+                        <button type="button" class="rv31-nav-item" :class="{on:researchHubPage==='line'}" :aria-current="researchHubPage==='line' ? 'page' : null" @click="openResearchPage('overview')">Research lines</button>
+                        <button type="button" class="rv31-nav-item" :class="{on:researchHubPage==='allstudies'||researchHubPage==='study'}" :aria-current="researchHubPage==='allstudies'||researchHubPage==='study' ? 'page' : null" @click="openResearchPage('allstudies')">Clinical studies</button>
+                        <button type="button" class="rv31-nav-item" :class="{on:researchHubPage==='allprojects'||researchHubPage==='project'}" :aria-current="researchHubPage==='allprojects'||researchHubPage==='project' ? 'page' : null" @click="openResearchPage('allprojects')">Clinical innovation</button>
+                        <button type="button" class="rv31-nav-item" :class="{on:researchHubPage==='analytics'}" :aria-current="researchHubPage==='analytics' ? 'page' : null" @click="openResearchPage('analytics')">Intelligence</button>
+                    </nav>
 
                     <!-- ══ V31 · RESEARCH PORTFOLIO / PROGRAMME VIEW ═════════════════════ -->
                     <div v-if="researchHubPage === 'overview'" class="rv31-page rv31-overview">
