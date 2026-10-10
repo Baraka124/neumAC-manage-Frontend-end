@@ -16,7 +16,7 @@ const hasPermission=(access,module,action='read')=>{
 const VIEW_MODULES=Object.freeze({medical_staff:'medical_staff',staff_absence:'staff_absence',resident_rotations:'resident_rotations',oncall_schedule:'oncall_schedule',training_units:'training_units',communications:'communications',research_lines:'research_lines',research_hub:'research_lines',clinical_trials:'clinical_trials',innovation_projects:'innovation_projects',news:'news_posts',analytics_dashboard:'analytics',analytics_performance:'analytics',analytics_partners:'analytics',research_intelligence:'analytics'});
 function canOpenView(access,view){
  if(!access)return false;
- if(view==='dashboard')return true;
+ if(view==='dashboard'||view==='mi_espacio')return true;
  if(view==='settings'||view==='system_settings')return allowed(access,'identity.users.view')||allowed(access,'system.settings.view');
  return !!VIEW_MODULES[view]&&hasPermission(access,VIEW_MODULES[view],'read');
 }
