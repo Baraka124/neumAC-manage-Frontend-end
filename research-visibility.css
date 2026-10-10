@@ -189,3 +189,32 @@ html body #app .nrd-v27.nrd--highlight .nrd-v28-connections>header strong{
  html body #app .nrd-v27 .nrd-v28-connections>header{align-items:flex-start;flex-wrap:wrap;gap:8px 18px}
  html body #app .nrd-v27 .nrd-v28-connections>header span{font-size:clamp(23px,7vw,28px);line-height:1.16}
 }
+
+/* Phase 5B: a short Highlight must not reserve almost the entire viewport.
+   Preserve a spacious editorial stage while allowing text to determine height.
+   Narrow screens stack the image/fallback and copy instead of keeping the
+   desktop's 420px minimum column. */
+html body #app .nrd-v27-highlight{
+ min-height:clamp(360px,62dvh,620px)!important;
+}
+@media(max-width:700px){
+ html body #app .nrd-v27-highlight,
+ html body #app .nrd-v27-highlight.has-fallback,
+ html body #app .nrd-v27-highlight.is-copy-right{
+  grid-template-columns:minmax(0,1fr)!important;
+  min-height:0!important;
+ }
+ html body #app .nrd-v27-highlight .nrd-v23-highlight-copy{
+  grid-column:1!important;grid-row:auto!important;
+  min-width:0;padding:28px 22px 42px!important;text-align:left!important;
+  align-items:flex-start!important;
+ }
+ html body #app .nrd-v27-highlight .nrd-v23-highlight-media,
+ html body #app .nrd-v27-highlight .nrd-v26-highlight-fallback{
+  grid-column:1!important;grid-row:auto!important;
+  min-width:0;min-height:180px;max-height:34dvh;
+ }
+ html body #app .nrd-v27-highlight .nrd-v23-highlight-copy h1{
+  font-size:clamp(34px,8vw,50px)!important;overflow-wrap:anywhere;
+ }
+}
