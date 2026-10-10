@@ -33,6 +33,7 @@
 <link rel="stylesheet" href="module-headers.css?v=20261006-1">
 <link rel="stylesheet" href="research-visibility.css?v=20261010-research-phase5b-highlight-geometry">
 <link rel="stylesheet" href="research-header-refinement.css?v=20261010-phase5d-masthead-1">
+<link rel="stylesheet" href="research-library-controls-pass1.css?v=20261010-video-pass1-1">
 <link rel="stylesheet" href="settings-recovery.css?v=20261009-settings-composition-3">
 </head>
 <body>
@@ -5867,11 +5868,11 @@
                         </section>
 
                         <section class="rv32-control-rail">
-                            <label class="rv32-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input v-model="trialFilters.search" placeholder="Search title, protocol, sponsor or clinical focus…"></label>
+                            <label class="rv32-search" aria-label="Search clinical studies"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input v-model="trialFilters.search" placeholder="Search title, protocol, sponsor or clinical focus…"></label>
                             <select v-model="trialFilters.line"><option value="">All research lines</option><option v-for="line in researchLines" :key="line.id" :value="line.id">L{{ line.line_number }} · {{ line.research_line_name || line.name }}</option></select>
                             <select v-model="trialFilters.phase"><option value="">All phases</option><option value="Phase I">Phase I</option><option value="Phase II">Phase II</option><option value="Phase III">Phase III</option><option value="Phase IV">Phase IV</option></select>
                             <button v-if="trialFilters.search || trialFilters.line || trialFilters.phase || trialFilters.status" class="rv32-clear" @click="trialFilters.search='';trialFilters.line='';trialFilters.phase='';trialFilters.status=''">Clear</button>
-                            <span class="rv36-filter-count" aria-live="polite">{{ filteredTrialsAll.length }} shown</span>
+                            <span class="rv36-filter-count" aria-live="polite">{{ filteredTrialsAll.length }} shown <small v-if="trialFilters.search || trialFilters.line || trialFilters.phase || trialFilters.status" class="rv32-active-filter-note">· filtered</small></span>
                         </section>
 
                         <nav class="rv32-state-rail" aria-label="Study status filters">
@@ -6037,8 +6038,8 @@
                             <label class="rv32-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input v-model="projectFilters.search" placeholder="Search projects, clinical needs or keywords…"></label>
                             <select v-model="projectFilters.research_line_id"><option value="">All research lines</option><option v-for="line in researchLines" :key="line.id" :value="line.id">L{{ line.line_number }} · {{ line.research_line_name || line.name }}</option></select>
                             <select v-model="projectFilters.funding_status"><option value="">All funding states</option><option value="funded">Funded</option><option value="seeking">Seeking funding</option><option value="applied">Applied</option><option value="not_applicable">Not applicable</option><option value="completed">Completed</option></select>
-                            <button v-if="projectFilters.search || projectFilters.research_line_id || projectFilters.funding_status || projectFilters.stage" class="rv32-clear" @click="projectFilters.search='';projectFilters.research_line_id='';projectFilters.funding_status='';projectFilters.stage=''">Clear</button>
-                            <span class="rv36-filter-count" aria-live="polite">{{ filteredProjectsAll.length }} shown</span>
+                            <button v-if="projectFilters.search || projectFilters.research_line_id || projectFilters.funding_status || projectFilters.stage || projectFilters.category" class="rv32-clear" @click="projectFilters.search='';projectFilters.research_line_id='';projectFilters.funding_status='';projectFilters.stage='';projectFilters.category=''">Clear</button>
+                            <span class="rv36-filter-count" aria-live="polite">{{ filteredProjectsAll.length }} shown <small v-if="projectFilters.search || projectFilters.research_line_id || projectFilters.funding_status || projectFilters.stage || projectFilters.category" class="rv32-active-filter-note">· filtered</small></span>
                         </section>
 
                         <section class="rv32-record-list">
