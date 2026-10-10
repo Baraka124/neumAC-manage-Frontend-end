@@ -1,0 +1,221 @@
+/* neumDESK · Research + Library · video audit / Pass 1
+   Controls remain scoped to Research study/innovation collections and Library.
+   Institutional hierarchy; keep search usable and filters legible without pills. */
+
+/* Study and innovation lists: give search explicit working room, cap selectors. */
+html body #app .research-hub .rv32-page .rv32-control-rail{
+  display:grid!important;
+  grid-template-columns:minmax(240px,1fr) minmax(165px,220px) minmax(140px,190px) auto auto!important;
+  align-items:center!important;
+  gap:10px 12px!important;
+  min-height:0!important;
+}
+html body #app .research-hub .rv32-page .rv32-control-rail .rv32-search{
+  display:flex!important;
+  flex:none!important;
+  min-width:0!important;
+  width:100%!important;
+  max-width:none!important;
+  min-height:44px!important;
+  height:44px!important;
+  box-sizing:border-box;
+  padding:0 12px!important;
+  border:1px solid #b9ccd5!important;
+  border-radius:5px!important;
+  background:#fff!important;
+  color:#4d6678!important;
+}
+html body #app .research-hub .rv32-page .rv32-control-rail .rv32-search:focus-within{
+  outline:2px solid #087c86!important;
+  outline-offset:2px!important;
+  border-color:#087c86!important;
+}
+html body #app .research-hub .rv32-page .rv32-control-rail .rv32-search input{
+  min-width:0!important;
+  width:100%!important;
+  font-size:15px!important;
+  line-height:1.45!important;
+  height:40px!important;
+  box-sizing:border-box;
+  padding:0!important;
+  background:transparent!important;
+}
+html body #app .research-hub .rv32-page .rv32-control-rail select{
+  min-width:0!important;
+  max-width:100%!important;
+  width:100%!important;
+  height:44px!important;
+  min-height:44px!important;
+  box-sizing:border-box;
+  border:1px solid #cbd9df!important;
+  border-radius:5px!important;
+  padding:0 30px 0 12px!important;
+  background-color:#fff!important;
+  color:#29475b!important;
+  font-size:14px!important;
+  line-height:1.4!important;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+html body #app .research-hub .rv32-page .rv32-control-rail select:focus-visible{
+  outline:2px solid #087c86!important;outline-offset:2px!important;
+}
+html body #app .research-hub .rv32-page .rv32-control-rail .rv32-clear{
+  min-height:44px!important;
+  padding:0 12px!important;
+  border:1px solid #aac7cc!important;
+  border-radius:5px!important;
+  background:#f2f7f8!important;
+  color:#165d68!important;
+  font-size:14px!important;
+  white-space:nowrap;
+}
+html body #app .research-hub .rv32-page .rv32-control-rail .rv36-filter-count{
+  justify-self:end;
+  min-width:max-content;
+  text-align:right;
+  color:#3a5869!important;
+  font-size:13px!important;
+  line-height:1.45!important;
+  white-space:nowrap;
+}
+html body #app .research-hub .rv32-page .rv32-control-rail .rv32-active-filter-note{
+  display:inline;
+  color:#116c73!important;
+  font-size:12px!important;
+  font-weight:600;
+}
+
+/* Library: a bounded type rail and genuine search field, even when scrolled. */
+html body #app .news-view .news-v25-commandbar,
+html body #app .news-view .news-v25-commandbar:has(.news-v27-command-context){
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(210px,300px) max-content max-content!important;
+  align-items:center!important;
+  min-height:58px!important;
+  height:auto!important;
+  padding:5px 24px!important;
+  gap:10px 14px!important;
+  box-sizing:border-box;
+}
+html body #app .news-view .news-v27-command-context{
+  display:none!important; /* selection already identified in the adjacent lens rail */
+}
+html body #app .news-view .news-v25-tabs{
+  min-width:0!important;
+  max-width:100%!important;
+  width:100%!important;
+  gap:18px!important;
+  flex-wrap:nowrap!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:#a7bac2 transparent;
+}
+html body #app .news-view .news-v25-tabs::-webkit-scrollbar,
+html body #app .news-view .news-v28-lensbar::-webkit-scrollbar{
+  display:block!important;height:3px!important;
+}
+html body #app .news-view .news-v25-tabs::-webkit-scrollbar-thumb,
+html body #app .news-view .news-v28-lensbar::-webkit-scrollbar-thumb{
+  background:#a7bac2;border-radius:2px;
+}
+html body #app .news-view .news-v25-tabs button{
+  flex:0 0 auto!important;
+  height:48px!important;
+  min-height:48px!important;
+  white-space:nowrap!important;
+}
+html body #app .news-view .news-v25-search{
+  display:flex!important;
+  align-items:center!important;
+  grid-column:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  width:100%!important;
+  min-height:44px!important;
+  height:44px!important;
+  margin:0!important;
+  box-sizing:border-box;
+}
+html body #app .news-view .news-v25-search input{
+  display:block!important;
+  min-width:0!important;
+  width:100%!important;
+  font-size:16px!important;
+  line-height:1.4!important;
+}
+html body #app .news-view .news-v25-filter-toggle{
+  min-height:44px!important;
+  height:44px!important;
+  grid-column:auto!important;
+  margin:0!important;
+  white-space:nowrap;
+}
+html body #app .news-view .news-v25-shown{
+  display:block!important;
+  font-size:13px!important;
+  line-height:1.35!important;
+  justify-self:end;
+  white-space:nowrap!important;
+  grid-column:auto!important;
+}
+html body #app .news-view .news-v28-lensbar{
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:#a7bac2 transparent;
+  gap:10px!important;
+  min-height:42px!important;
+  padding:0 24px!important;
+  box-sizing:border-box;
+}
+html body #app .news-view .news-v28-lensbar>button{
+  flex:0 0 auto!important;
+}
+
+/* Narrow workstations: two controlled toolbar rows, never squeezed text. */
+@media(max-width:1180px){
+  html body #app .research-hub .rv32-page .rv32-control-rail{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  }
+  html body #app .research-hub .rv32-page .rv32-control-rail .rv32-search{
+    grid-column:1/-1!important;
+  }
+  html body #app .research-hub .rv32-page .rv32-control-rail .rv32-clear{
+    justify-self:start;
+  }
+  html body #app .news-view .news-v25-commandbar,
+  html body #app .news-view .news-v25-commandbar:has(.news-v27-command-context){
+    grid-template-columns:minmax(0,1fr) max-content max-content!important;
+    padding:6px 18px!important;
+    gap:7px 12px!important;
+  }
+  html body #app .news-view .news-v25-tabs{
+    grid-column:1/-1!important;
+    grid-row:1!important;
+  }
+  html body #app .news-view .news-v25-search{grid-column:1!important;grid-row:2!important}
+  html body #app .news-view .news-v25-filter-toggle{grid-column:2!important;grid-row:2!important}
+  html body #app .news-view .news-v25-shown{grid-column:3!important;grid-row:2!important}
+  html body #app .news-view .news-v28-lensbar{padding:0 18px!important}
+}
+@media(max-width:640px){
+  html body #app .news-view .news-v25-commandbar,
+  html body #app .news-view .news-v25-commandbar:has(.news-v27-command-context){
+    grid-template-columns:minmax(0,1fr) max-content!important;
+    padding:5px 18px 10px!important;
+  }
+  html body #app .news-view .news-v25-search{
+    grid-column:1!important;grid-row:2!important;
+  }
+  html body #app .news-view .news-v25-filter-toggle{
+    grid-column:2!important;grid-row:2!important;
+  }
+  html body #app .news-view .news-v25-shown{
+    grid-column:1/-1!important;grid-row:3!important;
+    justify-self:start!important;
+  }
+}
