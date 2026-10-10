@@ -26,7 +26,9 @@ function contrast(foreground, background) {
 test('highlight reader keeps Institutional connections accessible and scrollable', async ({ page }) => {
   const section = await page.evaluate(source => {
     const parsed = new DOMParser().parseFromString(source, 'text/html');
-    const original = parsed.querySelector('.nrd-v28-connections');
+    const original = [...parsed.querySelectorAll('template')]
+      .map(element => element.content.querySelector('.nrd-v28-connections'))
+      .find(Boolean);
     if (!original) throw new Error('Research Library connections markup missing');
     return original.outerHTML.replace(/\{\{[\s\S]*?\}\}/g, 'Clinical research');
   }, html);
