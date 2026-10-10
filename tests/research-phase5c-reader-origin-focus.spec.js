@@ -27,7 +27,7 @@ async function runReaderSequence(page, removeOrigin) {
     scroller.scrollTop = 125;
     const render = () => {
       for (const card of document.querySelectorAll('.knowledge-card')) {
-        card.classList.toggle('is-return-focus',card.dataset.record === newsReturnFocusId.value);
+        card.classList.toggle('is-return-focus',card.dataset.newsRecordId === newsReturnFocusId.value);
       }
     };
     const Vue = {nextTick(fn){render(); if(fn)fn();}};
