@@ -35,7 +35,8 @@
             state.error=err?.message||'No se ha podido verificar tu identidad.';
           } finally {if(requestSeq===seq)state.busy=false;}
         }
-        Vue.watch(()=>[props.active,props.user?.id],([active,id],[wasActive,oldId])=>{
+        Vue.watch(()=>[props.active,props.user?.id],([active,id],previous)=>{
+          const [wasActive,oldId]=Array.isArray(previous)?previous:[];
           if(!active||!id){clear();return;}
           if(!wasActive||id!==oldId)load();
         },{immediate:true});
@@ -67,7 +68,7 @@
               '<p>{{state.context.staff?.specialization || state.context.staff?.staffType || state.context.account.role || "Cuenta institucional"}}</p>' +
               '<p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>' +
             '</div>' +
-            '<span class="mi-espacio-link-state" :class="linked?\"is-linked\":\"is-unlinked\"">{{linked?"Perfil vinculado":state.context.linkState==="unlinked"?"Vinculación pendiente":"Vinculación no disponible"}}</span>' +
+            '<span class="mi-espacio-link-state" :class="linked ? &quot;is-linked&quot; : &quot;is-unlinked&quot;">{{linked?"Perfil vinculado":state.context.linkState==="unlinked"?"Vinculación pendiente":"Vinculación no disponible"}}</span>' +
           '</section>' +
           '<div v-if="!linked" class="mi-espacio-notice" role="status"><strong>Tu cuenta está activa, pero no podemos verificar su vínculo con la ficha profesional.</strong><p>La actividad personal no se mostrará hasta que se confirme la vinculación. Contacta con la persona responsable de accesos; no se asignarán datos por coincidencias de nombres.</p></div>' +
           '<div v-if="linked" class="mi-espacio-guidance"><h3>Tu actividad, en un solo lugar</h3><p>La agenda, las participaciones en investigación y las publicaciones personales se integrarán progresivamente mediante relaciones verificadas. Hasta entonces, utiliza los módulos institucionales para consultar sus registros.</p></div>' +
