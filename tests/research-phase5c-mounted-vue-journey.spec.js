@@ -37,6 +37,10 @@ async function mountSyntheticLibrary(page, width) {
   await page.waitForFunction(()=>Boolean(document.querySelector('#app')?.__vue_app__));
   await page.evaluate(data=>{
     const app=document.querySelector('#app').__vue_app__._container._vnode.component.proxy;
+    // Open the application shell in this synthetic DOM-only fixture.
+    // This does NOT simulate a successful login or test server authorization.
+    app.currentUser={id:'phase5c-fixture-user',full_name:'Research QA Fixture',user_role:'attending_physician'};
+    app.entry.state='ready';
     app.newsPosts=data;
     app.newsLoaded=true;
     app.newsLoading=false;
