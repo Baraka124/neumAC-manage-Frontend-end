@@ -269,3 +269,28 @@ html body #app .research-hub .rv32-study-row:focus-visible{
 @media(prefers-reduced-motion:reduce){
   html body #app .research-hub .rv32-study-row{transition:none}
 }
+
+
+/* Video Pass 2C: existing clinical-study governance and recruitment
+   metadata remain distinguishable; no inference of readiness. */
+html body #app .research-hub .rv32-study-row :is(.rv32-row-governance,.rv32-row-recruitment){
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  line-height:1.45;
+}
+html body #app .research-hub .rv32-study-row :is(.rv32-row-governance,.rv32-row-recruitment) > span{
+  color:#38596a!important;
+  font-size:13px;
+  line-height:1.45;
+}
+html body #app .research-hub .rv32-study-row .rv32-row-recruitment small{
+  color:#4c6576!important;
+  font-size:12px;
+  line-height:1.5;
+}
+@media(max-width:640px){
+ html body #app .research-hub .rv32-study-row :is(.rv32-row-governance,.rv32-row-recruitment){
+  width:100%;
+ }
+}
