@@ -1,0 +1,50 @@
+/* neumDESK · Phase 5D: Research / Research Library institutional mastheads.
+   Remove the over-rounded card silhouette; preserve the established navy/teal
+   system, type hierarchy and functional controls. Scoped: no global shell impact. */
+html body #app .content-area :is(.research-hub,.news-view) .module-header{
+  border-radius:5px!important;
+  box-shadow:none!important;
+}
+html body #app .content-area .research-hub .rv31-masthead.module-header,
+html body #app .content-area .news-view .news-v25-masthead.module-header{
+  border-bottom:2px solid #348e93!important;
+}
+html body #app .content-area .research-hub .rv31-masthead{
+  align-items:flex-start!important;
+  gap:20px 30px!important;
+}
+html body #app .content-area .research-hub .rv31-masthead-copy,
+html body #app .content-area .news-view .news-v25-ident{
+  min-width:0;
+}
+html body #app .content-area .research-hub .rv31-masthead-copy p,
+html body #app .content-area .news-view .news-v25-ident p{
+  max-width:68ch!important;
+  text-wrap:pretty;
+}
+html body #app .content-area .news-view .news-v25-masthead:not(.is-collapsed) .news-v25-index{
+  border-top:1px solid rgba(213,231,236,.20)!important;
+  margin-top:20px!important;
+  padding-top:15px!important;
+}
+html body #app .content-area .news-view .news-v25-record-count{
+  border-left:1px solid rgba(213,231,236,.22);
+  padding-left:16px!important;
+}
+html body #app .content-area .news-view .news-v25-mast-actions{
+  align-self:flex-start;
+}
+@media(max-width:640px){
+  html body #app .content-area :is(.research-hub,.news-view) .module-header{
+    border-radius:4px!important;
+  }
+  html body #app .content-area .news-view .news-v25-masthead:not(.is-collapsed) .news-v25-index{
+    margin-top:16px!important;
+    padding-top:12px!important;
+    gap:10px 16px!important;
+  }
+  html body #app .content-area .research-hub .rv31-masthead-actions,
+  html body #app .content-area .news-view .news-v25-mast-actions{
+    max-width:100%;
+  }
+}
