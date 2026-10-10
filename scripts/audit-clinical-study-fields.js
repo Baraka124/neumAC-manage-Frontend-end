@@ -7,7 +7,7 @@ function collect(source){
  const lines=source.split(/\r?\n/);
  const tokens=['clinicalTrials','filteredTrialsAll','openStudy(','trialStatusKey(','researchSources.studies','rv32-row-governance','rv32-row-recruitment','selectedTrial','study.ethics','trial.ethics'];
  const locate=token=>{const i=source.indexOf(token);return i<0?null:{line:source.slice(0,i).split('\n').length,offset:i}};
- const referencedStudyProperties=[...new Set([...source.matchAll(/\b(?:trial|selectedTrial)(?:\?\.)?\.([A-Za-z_$][\w$]*)/g)].map(m=>m[1]))].sort();
+ const referencedStudyProperties=[...new Set([...source.matchAll(/\b(?:trial|selectedTrial)(?:\?\.|\.)([A-Za-z_$][\w$]*)/g)].map(m=>m[1]))].sort();
  const evidenceTerms=['protocol','ethic','approval','recruit','investigator','sponsor','consent','governance'];
  const evidenceReferences=Object.fromEntries(evidenceTerms.map(term=>[term,lines.flatMap((line,i)=>line.toLowerCase().includes(term)?[i+1]:[]).slice(0,40)]));
  const references=tokens.map(token=>({token,location:locate(token)}));
