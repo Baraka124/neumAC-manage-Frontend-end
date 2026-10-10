@@ -17,6 +17,8 @@ jobs:
       - name: JS syntax (all root scripts)
         run: |
           find . -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Mi espacio identity and shell contract
+        run: node --test tests/mi-espacio-phase1.test.cjs
       - name: Cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
