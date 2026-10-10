@@ -172,3 +172,20 @@ html body .news-v28-command>label input{min-width:0}
 html body .news-v28-command-results button{min-width:0}
 html body .news-v28-command-results button span{overflow-wrap:anywhere;font-size:15px;line-height:1.4}
 html body .news-v28-command-results button small{font-size:13px;line-height:1.4}
+
+/* Phase 5B: Highlight readers use navy chrome. Connection metadata belongs to
+   the same dark reading context, while relationship tiles remain light. */
+html body #app .nrd-v27.nrd--highlight .nrd-v28-connections{
+  border-top-color:rgba(223,240,242,.24);
+}
+html body #app .nrd-v27.nrd--highlight .nrd-v28-connections>header span{
+  color:#edf7f8;
+}
+html body #app .nrd-v27.nrd--highlight .nrd-v28-connections>header strong{
+  color:#c8dade;
+}
+@media(max-width:640px){
+ html body #app .nrd-v27 .nrd-v28-connections{padding-left:18px!important;padding-right:18px!important}
+ html body #app .nrd-v27 .nrd-v28-connections>header{align-items:flex-start;flex-wrap:wrap;gap:8px 18px}
+ html body #app .nrd-v27 .nrd-v28-connections>header span{font-size:clamp(23px,7vw,28px);line-height:1.16}
+}
