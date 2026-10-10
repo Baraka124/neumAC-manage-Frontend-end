@@ -10005,8 +10005,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (y > 120) newsLibraryHeaderOpen.value = false
           else if (y < 22 && !newsLibraryHeaderUserCollapsed.value) newsLibraryHeaderOpen.value = true
         }
-        const openNewsCommand = () => { newsCommand.show=true; newsCommand.query=''; newsCommand.selected=0; Vue.nextTick(()=>document.querySelector('.news-v28-command input')?.focus()) }
-        const closeNewsCommand = () => { newsCommand.show=false; newsCommand.query=''; newsCommand.selected=0 }
+        let newsCommandReturnFocus = null
+        const openNewsCommand = () => { newsCommandReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null; newsCommand.show=true; newsCommand.query=''; newsCommand.selected=0; Vue.nextTick(()=>document.querySelector('.news-v28-command input')?.focus()) }
+        const closeNewsCommand = () => { newsCommand.show=false; newsCommand.query=''; newsCommand.selected=0; const target = newsCommandReturnFocus; newsCommandReturnFocus = null; Vue.nextTick(()=>{ if (target?.isConnected && typeof target.focus === 'function') target.focus() }) }
         const newsCommandResults = computed(() => {
           const q=(newsCommand.query||'').trim().toLowerCase()
           const items=[]
