@@ -10307,7 +10307,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           return saved
         }
-        const closeNewsEditorToReader = () => {
+        const _returnNewsEditorToReaderNow = () => {
           const id = newsModal.form.id
           newsModal.show = false
           newsPublishReview.value = false
@@ -10317,6 +10317,16 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!fresh) return
           if (newsDrawer.show) newsDrawer.post = fresh
           else openNewsDrawer(fresh, null)
+        }
+        const closeNewsEditorToReader = () => {
+          const dirty = newsModal.stage === 'compose' && (newsModal.saveState === 'Unsaved changes' || (newsModal.mode === 'add' && _newsEditorHasMeaningfulContent()))
+          if (!dirty) { _returnNewsEditorToReaderNow(); return }
+          showConfirmation({
+            title: 'Discard unsaved Research Library changes?',
+            message: 'This record contains changes that have not been saved.',
+            confirmButtonText: 'Discard changes', confirmButtonClass: 'btn-danger',
+            onConfirm: _returnNewsEditorToReaderNow
+          })
         }
 
         const openAssignRotationFromUnit = (unit, startDate) => {
