@@ -219,3 +219,53 @@ html body #app .news-view .news-v28-lensbar>button{
     justify-self:start!important;
   }
 }
+
+
+/* Video Pass 2B / Clinical Studies only.
+   Establish hierarchy within existing study rows without changing content,
+   status calculations, navigation or any backend contract. */
+html body #app .research-hub .rv32-record-list .rv32-study-row{
+  min-width:0;
+  border-radius:5px;
+  transition:border-color .16s ease,background-color .16s ease;
+}
+html body #app .research-hub .rv32-study-row .rv32-row-main{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+html body #app .research-hub .rv32-study-row .rv32-row-main h2,
+html body #app .research-hub .rv32-study-row .rv32-row-main h3{
+  max-width:72ch;
+  font-size:clamp(15px,1.16vw,18px);
+  line-height:1.42;
+  letter-spacing:-.012em;
+  text-wrap:pretty;
+}
+html body #app .research-hub .rv32-study-row .rv32-row-state{
+  min-width:0;
+  font-size:12px;
+  line-height:1.4;
+  white-space:normal;
+}
+html body #app .research-hub .rv32-study-row:focus-visible{
+  outline:3px solid #087c86;
+  outline-offset:3px;
+}
+@media(hover:hover){
+  html body #app .research-hub .rv32-study-row:hover{
+    background-color:#f4f8f9;
+  }
+}
+@media(max-width:640px){
+  html body #app .research-hub .rv32-study-row{
+    max-width:100%;
+  }
+  html body #app .research-hub .rv32-study-row .rv32-row-main h2,
+  html body #app .research-hub .rv32-study-row .rv32-row-main h3{
+    font-size:16px;
+    line-height:1.46;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  html body #app .research-hub .rv32-study-row{transition:none}
+}
