@@ -21,6 +21,22 @@ jobs:
         run: node --test tests/mi-espacio-phase1.test.cjs
       - name: Clinician access to Mi espacio
         run: node --test tests/mi-espacio-clinician-access.test.cjs
+      - name: Mi espacio activity adapter (phase 2)
+        run: node --test tests/mi-espacio-phase2.test.cjs
+      - name: Mi espacio cache-key bump guard
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" --quiet
+          if ! git diff --quiet "$BASE" -- mi-espacio/; then
+            old=$(git show "$BASE:index.html" | grep -oE 'mi-espacio/mi-espacio\.js\?v=[^"]+' | head -1)
+            new=$(grep -oE 'mi-espacio/mi-espacio\.js\?v=[^"]+' index.html | head -1)
+            echo "mi-espacio/ changed. cache key: '$old' -> '$new'"
+            if [ "$old" = "$new" ]; then
+              echo "::error::mi-espacio/ was modified but its ?v= cache key in index.html was not bumped."
+              exit 1
+            fi
+          fi
       - name: Access script cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
@@ -59,4 +75,6 @@ jobs:
       - run: npm i -D @playwright/test@1.47.2 http-server vue@3.4.21 && npx playwright install --with-deps chromium
       - name: Settings component structure and Vue template compilation
         run: node tests/settings-ui-integrity.cjs
+      - name: Mi espacio template compiles
+        run: node tests/mi-espacio-template.cjs
       - run: npx playwright test

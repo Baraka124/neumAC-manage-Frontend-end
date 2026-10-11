@@ -43,5 +43,55 @@
     return normalizeContext(raw, expectedUserId);
   }
 
-  return Object.freeze({ normalizeContext, loadContext });
+  // ── Phase 2: verified personal activity from the server-side resolver ──
+  // Identity/verification stays with normalizeContext above; this only shapes
+  // the activity the resolver already scoped to this person. Purely defensive:
+  // unknown fields are dropped, nothing is inferred, empty is a valid answer.
+  const arr = value => Array.isArray(value) ? value : [];
+  const num = value => (typeof value === 'number' && isFinite(value)) ? value : null;
+
+  function normalizeActivity(raw) {
+    const data = raw && typeof raw === 'object' ? raw : {};
+    const agenda = data.agenda && typeof data.agenda === 'object' ? data.agenda : {};
+    const research = data.research && typeof data.research === 'object' ? data.research : {};
+    const pub = data.publications && typeof data.publications === 'object' ? data.publications : {};
+
+    const guardias = arr(agenda.guardias).map(g => ({
+      id: id(g && g.id), date: safe(g && g.date), shift: safe(g && g.shift), role: safe(g && g.role)
+    })).filter(g => g.date);
+    const rotations = arr(agenda.rotations).map(r => ({
+      id: id(r && r.id), unit: safe(r && r.unit), resident: safe(r && r.resident),
+      start: safe(r && r.start), end: safe(r && r.end), status: safe(r && r.status), role: safe(r && r.role)
+    }));
+    const absences = arr(agenda.absences).map(a => ({
+      id: id(a && a.id), type: safe(a && a.type), start: safe(a && a.start), end: safe(a && a.end), status: safe(a && a.status)
+    }));
+    const lines = arr(research.lines).map(l => ({
+      id: id(l && l.id), number: num(l && l.line_number), name: safe(l && l.name), role: safe(l && l.role)
+    }));
+    const studies = arr(research.studies).map(s => ({
+      id: id(s && s.id), title: safe(s && s.title), code: safe(s && s.protocol_id), status: safe(s && s.status), role: safe(s && s.role)
+    }));
+    const projects = arr(research.projects).map(p => ({
+      id: id(p && p.id), title: safe(p && p.title), stage: safe(p && p.stage), category: safe(p && p.category), role: safe(p && p.role)
+    }));
+
+    return Object.freeze({
+      agenda: Object.freeze({ guardias: Object.freeze(guardias), rotations: Object.freeze(rotations), absences: Object.freeze(absences) }),
+      research: Object.freeze({ lines: Object.freeze(lines), studies: Object.freeze(studies), projects: Object.freeze(projects) }),
+      publications: Object.freeze({ available: !!pub.available, note: safe(pub.note) }),
+      counts: Object.freeze({
+        guardias: guardias.length, rotations: rotations.length, absences: absences.length,
+        lines: lines.length, studies: studies.length, projects: projects.length
+      })
+    });
+  }
+
+  async function loadActivity(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/me/context', { skipCache: true, timeoutMs: 15000, signal });
+    return normalizeActivity(raw);
+  }
+
+  return Object.freeze({ normalizeContext, loadContext, normalizeActivity, loadActivity });
 });
