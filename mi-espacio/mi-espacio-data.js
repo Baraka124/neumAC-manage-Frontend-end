@@ -93,5 +93,46 @@
     return normalizeActivity(raw);
   }
 
-  return Object.freeze({ normalizeContext, loadContext, normalizeActivity, loadActivity });
+  // ── Claim/verify: a person flags that something on their space is missing or
+  // wrong. A request, never a direct edit; the server attributes the reporter. ──
+  const SUBJECTS = ['guardia','rotation','absence','line','study','project','publication','profile','other'];
+  const KINDS = ['missing','incorrect','authorship','schedule','other'];
+
+  function buildReport(input) {
+    const i = input && typeof input === 'object' ? input : {};
+    const out = {
+      subject_type: SUBJECTS.indexOf(i.subject_type) !== -1 ? i.subject_type : 'other',
+      kind: KINDS.indexOf(i.kind) !== -1 ? i.kind : 'other'
+    };
+    const subjectId = safe(i.subject_id), subjectLabel = safe(i.subject_label), message = safe(i.message);
+    if (subjectId) out.subject_id = subjectId;
+    if (subjectLabel) out.subject_label = subjectLabel;
+    if (message) out.message = message;
+    return out;
+  }
+
+  async function submitDiscrepancy(request, input, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    return request('/api/me/discrepancies', { method: 'POST', body: buildReport(input), timeoutMs: 15000, signal });
+  }
+
+  function normalizeReport(raw) {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    return {
+      id: id(r.id), subjectType: safe(r.subject_type), subjectLabel: safe(r.subject_label),
+      kind: safe(r.kind), message: safe(r.message), status: safe(r.status) || 'open',
+      resolutionNote: safe(r.resolution_note), createdAt: safe(r.created_at)
+    };
+  }
+
+  async function loadMyReports(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/me/discrepancies', { skipCache: true, timeoutMs: 15000, signal });
+    return (Array.isArray(raw) ? raw : []).map(normalizeReport);
+  }
+
+  return Object.freeze({
+    normalizeContext, loadContext, normalizeActivity, loadActivity,
+    buildReport, submitDiscrepancy, normalizeReport, loadMyReports
+  });
 });

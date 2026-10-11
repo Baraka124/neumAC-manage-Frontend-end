@@ -14,6 +14,11 @@
   const LINE = { coordinator:'Coordinación', member:'Miembro' };
   const PROJECT = { lead:'Responsable', 'co-investigator':'Co-investigador' };
   const ABSENCE = { pending:'Pendiente', active:'En curso', approved:'Aprobada' };
+  const SUBJECT_LABELS = { guardia:'Guardia', rotation:'Rotación', absence:'Ausencia', line:'Línea', study:'Estudio', project:'Proyecto', publication:'Publicación', profile:'Perfil', other:'Otro' };
+  const KIND_LABELS = { missing:'Falta algo', incorrect:'Dato incorrecto', authorship:'Autoría', schedule:'Discrepancia de horario', other:'Otro' };
+  const REPORT_STATUS = { open:'Abierta', in_review:'En revisión', accepted:'Aceptada', rejected:'Rechazada' };
+  const SUBJECT_OPTIONS = Object.keys(SUBJECT_LABELS).map(k => ({ value:k, label:SUBJECT_LABELS[k] }));
+  const KIND_OPTIONS = Object.keys(KIND_LABELS).map(k => ({ value:k, label:KIND_LABELS[k] }));
   const label = (map, key) => map[key] || (key || '');
 
   function createView({Vue,API}) {
@@ -21,7 +26,8 @@
       props: { active: Boolean, user: Object, canOpenView: Function },
       emits: ['navigate'],
       setup(props,{emit}) {
-        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null});
+        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,
+          reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:''}});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -33,6 +39,28 @@
           controller=null;
           state.context=null;state.error='';state.busy=false;
           state.activity=null;state.activityError='';state.activityBusy=false;
+          state.reports=[];
+          Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:''});
+        }
+        async function loadReports(requestSeq, identity){
+          try {
+            const rows=await root.NeumMiEspacioData.loadMyReports((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
+            state.reports=rows;
+          } catch(err){ if(err?.name!=='AbortError'){/* non-fatal: the list simply stays empty */} }
+        }
+        function openReportForm(){ state.report.open=true;state.report.done=false;state.report.error=''; }
+        async function submitReport(){
+          const f=state.report;
+          if(!f.subject_type||!f.kind){ f.error='Indica sobre qué y qué ocurre.'; return; }
+          f.busy=true;f.error='';
+          try {
+            await root.NeumMiEspacioData.submitDiscrepancy(
+              (p,o)=>API.request(p,o),{subject_type:f.subject_type,kind:f.kind,message:f.message},controller&&controller.signal);
+            f.done=true;f.open=false;f.subject_type='';f.kind='';f.message='';
+            loadReports(seq, String(props.user?.id||''));
+          } catch(err){ f.error=err?.message||'No se ha podido enviar la comunicación.'; }
+          finally { f.busy=false; }
         }
         async function loadActivity(requestSeq, identity){
           state.activityBusy=true;state.activityError='';
@@ -58,7 +86,7 @@
               (path,options)=>API.request(path,options),identity,controller.signal);
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             state.context=result;
-            if(result.linkState==='linked') loadActivity(requestSeq, identity);
+            if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); }
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             if(err?.name==='AbortError')return;
@@ -83,7 +111,10 @@
           fmtDate,
           guardiaRole:k=>label(GUARDIA,k), rotationRole:k=>label(ROTATION,k),
           studyRole:k=>label(STUDY,k), lineRole:k=>label(LINE,k), projectRole:k=>label(PROJECT,k),
-          absenceStatus:k=>label(ABSENCE,k)
+          absenceStatus:k=>label(ABSENCE,k),
+          subjectLabel:k=>label(SUBJECT_LABELS,k), kindLabel:k=>label(KIND_LABELS,k), reportStatus:k=>label(REPORT_STATUS,k),
+          subjectOptions:SUBJECT_OPTIONS, kindOptions:KIND_OPTIONS,
+          openReportForm, submitReport
         };
       },
       template: `
@@ -190,6 +221,30 @@
                 <p class="mi-espacio-empty me-note">Tus publicaciones se mostrarán aquí cuando la autoría esté estructurada y verificada.</p>
               </section>
             </template>
+
+            <section class="me-report" aria-label="Comunicar una discrepancia">
+              <div class="mi-espacio-section-heading"><h3>¿Falta algo o hay un error?</h3><p>Comunícalo y lo revisará la persona responsable. No se modifica ningún registro directamente.</p></div>
+              <div v-if="state.report.done" class="mi-espacio-notice" role="status"><strong>Gracias, tu comunicación se ha registrado.</strong><p>La revisará la persona responsable de accesos o coordinación.</p><button type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar otra</button></div>
+              <template v-else>
+                <button v-if="!state.report.open" type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar una discrepancia</button>
+                <form v-else class="me-report-form" @submit.prevent="submitReport">
+                  <div class="me-field"><label>¿Sobre qué?</label><select v-model="state.report.subject_type"><option value="">Selecciona…</option><option v-for="o in subjectOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
+                  <div class="me-field"><label>¿Qué ocurre?</label><select v-model="state.report.kind"><option value="">Selecciona…</option><option v-for="o in kindOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
+                  <div class="me-field me-field-wide"><label>Detalles (opcional)</label><textarea v-model="state.report.message" rows="3" maxlength="2000" placeholder="Describe brevemente qué debería corregirse."></textarea></div>
+                  <p v-if="state.report.error" class="me-form-error" role="alert">{{state.report.error}}</p>
+                  <div class="me-form-actions"><button type="button" class="mi-espacio-refresh" @click="state.report.open=false">Cancelar</button><button type="submit" class="me-btn-primary" :disabled="state.report.busy">{{state.report.busy?'Enviando…':'Enviar'}}</button></div>
+                </form>
+              </template>
+              <div v-if="state.reports.length" class="me-myreports">
+                <h4>Mis comunicaciones</h4>
+                <ul class="me-list">
+                  <li v-for="r in state.reports.slice(0,5)" :key="r.id">
+                    <span class="me-item-main">{{subjectLabel(r.subjectType)}} · {{kindLabel(r.kind)}}<small v-if="r.subjectLabel"> · {{r.subjectLabel}}</small></span>
+                    <span class="me-chip" :data-tone="r.status">{{reportStatus(r.status)}}</span>
+                  </li>
+                </ul>
+              </div>
+            </section>
           </template>
 
           <section class="mi-espacio-links" aria-labelledby="mi-espacio-shortcuts">
