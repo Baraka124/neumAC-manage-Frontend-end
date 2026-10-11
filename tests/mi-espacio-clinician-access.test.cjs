@@ -17,6 +17,6 @@ test('access policy script version reflects personal-space rollout',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const match=html.match(/<script src="access\.js\?v=([^"]+)"><\/script>/);
  assert.ok(match,'access.js needs explicit cache version');
- assert.match(match[1],/mi-espacio-clinician-policy/);
+ assert.match(match[1],/^20\d{6}-/,'access.js cache version should be a dated, bumped token');
  assert.match(html,/currentView === 'mi_espacio'/);
 });
