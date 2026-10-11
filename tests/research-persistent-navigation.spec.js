@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'..','research-persistent-navigation.css'),'utf8');
 test('Research navigation exists outside individual nested page branches',()=>{
- const pos=html.indexOf('class="rv31-nav rv31-nav--persistent"');
+ const pos=html.indexOf('class="rv31-nav rv31-nav--persistent rv31-nav--workspace"');
  expect(pos).toBeGreaterThan(-1);
  expect(pos).toBeLessThan(html.indexOf("researchHubPage === 'overview'"));
  for(const name of ['allstudies','allprojects','analytics'])expect(html.slice(pos,pos+2100)).toContain("openResearchPage('"+name+"')");

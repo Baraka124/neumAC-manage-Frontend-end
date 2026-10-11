@@ -6449,15 +6449,15 @@ document.addEventListener('DOMContentLoaded', () => {
       // Research is a full-height workspace, so it owns its scroll container.
       // Reset position after page changes; otherwise a detail view can inherit a
       // deep scroll offset from the previous collection and appear "stuck".
-      const resetResearchScroll = (behavior = 'auto') => {
-        uiAfterPaint(() => {
+      const resetResearchScroll = () => {
+        // The Research surface owns scrolling. Reset during the Vue patch cycle
+        // before the browser paints the next page, avoiding a visible late jump.
+        Vue.nextTick(() => {
           const scroller = document.querySelector('.content-area--fullheight > .research-hub') || document.querySelector('.research-hub')
           if (!scroller) return
-          try { scroller.scrollTo({ top: 0, left: 0, behavior }) }
+          try { scroller.scrollTo({ top: 0, left: 0, behavior: 'instant' }) }
           catch (_) { scroller.scrollTop = 0 }
-          // The newly selected research page is rendered inside the same scroller.
-          // Focus it after layout settles so keyboard/screen-reader position follows
-          // the record the user just opened instead of remaining on the old row.
+          // Focus without causing a second scroll or cross-module entrance motion.
           const page = scroller.querySelector('.rv32-study-detail, .rv32-project-detail, .rv31-line-page, .rv32-collection, .rv33-intelligence, .rv31-overview')
           const target = page?.querySelector('h1, h2, .rv32-context-bar, .rv31-line-context') || page
           if (target) uiFocusWithoutScroll(target)

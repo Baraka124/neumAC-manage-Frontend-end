@@ -35,6 +35,7 @@
 <link rel="stylesheet" href="research-header-refinement.css?v=20261010-phase5d-masthead-1">
 <link rel="stylesheet" href="research-library-controls-pass1.css?v=20261010-video-pass1-1">
 <link rel="stylesheet" href="research-persistent-navigation.css?v=20261011-1">
+<link rel="stylesheet" href="research-workspace-hierarchy.css?v=20261011-unified-motion-1">
 <link rel="stylesheet" href="settings-recovery.css?v=20261009-settings-composition-3">
     <link rel="stylesheet" href="mi-espacio/mi-espacio.css?v=20261011-phase1">
 </head>
@@ -5090,12 +5091,12 @@
                     </div>
 
 
-                    <!-- Persistent Research navigation outside individual nested page branches. -->
-                    <nav v-if="researchHubPage !== 'overview'" class="rv31-nav rv31-nav--persistent" aria-label="Research sections">
-                        <button type="button" class="rv31-nav-item" :class="{on:researchHubPage==='line'}" :aria-current="researchHubPage==='line' ? 'page' : null" @click="openResearchPage('overview')">Research lines</button>
-                        <button type="button" class="rv31-nav-item" :class="{on:researchHubPage==='allstudies'||researchHubPage==='study'}" :aria-current="researchHubPage==='allstudies'||researchHubPage==='study' ? 'page' : null" @click="openResearchPage('allstudies')">Clinical studies</button>
-                        <button type="button" class="rv31-nav-item" :class="{on:researchHubPage==='allprojects'||researchHubPage==='project'}" :aria-current="researchHubPage==='allprojects'||researchHubPage==='project' ? 'page' : null" @click="openResearchPage('allprojects')">Clinical innovation</button>
-                        <button type="button" class="rv31-nav-item" :class="{on:researchHubPage==='analytics'}" :aria-current="researchHubPage==='analytics' ? 'page' : null" @click="openResearchPage('analytics')">Intelligence</button>
+                    <!-- Single Research section navigation: one DOM instance and position at every depth. -->
+                    <nav class="rv31-nav rv31-nav--persistent rv31-nav--workspace" aria-label="Research sections">
+                        <button type="button" class="rv31-nav-item" aria-label="Research lines" :class="{on:researchHubPage==='overview'||researchHubPage==='line'}" :aria-current="researchHubPage==='overview'||researchHubPage==='line' ? 'page' : null" @click="openResearchPage('overview')">Research lines <span aria-hidden="true">{{ researchSources.lines.status==='ready' ? researchLines.length : '—' }}</span></button>
+                        <button type="button" class="rv31-nav-item" aria-label="Clinical studies" :class="{on:researchHubPage==='allstudies'||researchHubPage==='study'}" :aria-current="researchHubPage==='allstudies'||researchHubPage==='study' ? 'page' : null" @click="openResearchPage('allstudies')">Clinical studies <span aria-hidden="true">{{ researchSources.studies.status==='ready' ? clinicalTrials.length : '—' }}</span></button>
+                        <button type="button" class="rv31-nav-item" aria-label="Clinical innovation" :class="{on:researchHubPage==='allprojects'||researchHubPage==='project'}" :aria-current="researchHubPage==='allprojects'||researchHubPage==='project' ? 'page' : null" @click="openResearchPage('allprojects')">Clinical innovation <span aria-hidden="true">{{ researchSources.projects.status==='ready' ? innovationProjects.length : '—' }}</span></button>
+                        <button type="button" class="rv31-nav-item" aria-label="Intelligence" :class="{on:researchHubPage==='analytics'}" :aria-current="researchHubPage==='analytics' ? 'page' : null" @click="openResearchPage('analytics')">Intelligence</button>
                     </nav>
 
                     <!-- ══ V31 · RESEARCH PORTFOLIO / PROGRAMME VIEW ═════════════════════ -->
@@ -5116,12 +5117,6 @@
                             </div>
                         </header>
 
-                        <nav class="rv31-nav" aria-label="Research sections">
-                            <button class="rv31-nav-item on" @click="openResearchPage('overview')">Research lines <span>{{ researchSources.lines.status==='ready' ? researchLines.length : '—' }}</span></button>
-                            <button class="rv31-nav-item" @click="openResearchPage('allstudies')">Clinical studies <span>{{ researchSources.studies.status==='ready' ? clinicalTrials.length : '—' }}</span></button>
-                            <button class="rv31-nav-item" @click="openResearchPage('allprojects')">Clinical innovation <span>{{ researchSources.projects.status==='ready' ? innovationProjects.length : '—' }}</span></button>
-                            <button class="rv31-nav-item" @click="openResearchPage('analytics')">Intelligence</button>
-                        </nav>
 
                         <section v-if="Object.values(researchSources).every(s=>s.status==='ready')" class="rv31-pulse" aria-label="Research portfolio summary">
                             <div class="rv31-pulse-cell rv31-pulse-cell--lead">
@@ -5730,7 +5725,6 @@
                     </div><!-- /project -->
                     <!-- ══ V32 · CLINICAL STUDIES PORTFOLIO ════════════════════════ -->
                     <div v-if="researchHubPage === 'allstudies'" class="rv32-page rv32-collection rv32-studies" >
-                        <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Clinical evidence</span></div>
                         <header class="rv32-collection-hero module-header">
                             <div><div class="rv32-eyebrow">CLINICAL EVIDENCE</div><h1>Clinical studies</h1><p>Track study status, enrolment, protocol readiness and ethics / CEIm clearance across Pneumology.</p></div>
                             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -5920,7 +5914,6 @@
                     </div><!-- /allstudies -->
                     <!-- ══ V32 · CLINICAL INNOVATION PORTFOLIO ═══════════════════ -->
                     <div v-if="researchHubPage === 'allprojects'" class="rv32-page rv32-collection rv32-innovation" >
-                        <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Clinical innovation</span></div>
                         <header class="rv32-collection-hero module-header">
                             <div><div class="rv32-eyebrow">CLINICAL INNOVATION</div><h1>Clinical innovation</h1><p>From clinical need to validation, implementation and scale.</p></div>
                             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -6088,7 +6081,6 @@
 
                     <!-- ══ V33 · RESEARCH INTELLIGENCE ═════════════════════════════ -->
                     <div v-if="researchHubPage === 'analytics'" class="rv33-intelligence rv32-page">
-                        <div class="rv32-context-bar"><button class="rv32-back" @click="goToOverview">← <span>Research</span></button><span>Research intelligence</span></div>
                         <header class="rv32-collection-hero rv33-intelligence-hero module-header"><div><div class="rv32-eyebrow">RESEARCH INTELLIGENCE</div><h1>Research intelligence</h1><p>Portfolio signals across enrolment, study requirements, programme activity and innovation readiness.</p></div><button v-if="hasPermission('analytics','export')" class="rv32-add-action" @click="showExportModal"><span>↓</span> Export</button></header>
 
                         <section class="rv32-pulse-row rv33-intel-pulse">
@@ -12490,7 +12482,7 @@ Use Section heading to structure longer clinical or research articles."></textar
     <script src="brand-assets.js?v=5.4-production.14-20261009b"></script>
     <script src="mi-espacio/mi-espacio-data.js?v=20261011-phase1"></script>
     <script src="mi-espacio/mi-espacio.js?v=20261011-phase1"></script>
-    <script src="app.js?v=5.4-production.19-20261011-mi-espacio-phase1"></script>
+    <script src="app.js?v=5.4-production.20-20261011-research-unified-motion"></script>
     <!-- Cache key bumped 2026-10-08 (supersedes #19's ...a): must be bumped on every app.js change. -->
 
     <!-- Preserved Phase 5.1.1 startup cache checkpoint: app.js?v=46.14-phase51.1-startup-integrity -->

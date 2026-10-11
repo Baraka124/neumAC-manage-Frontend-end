@@ -1,0 +1,75 @@
+/* Research pilot: stable section hierarchy and a consistent header footprint.
+   The global application shell, Mi espacio, Library, and backend are unchanged. */
+html body #app .research-hub{
+  overflow-anchor:none;
+}
+html body #app .research-hub > .rv31-nav--workspace{
+  order:0;
+  flex:0 0 auto;
+  width:100%;
+  min-height:58px;
+  margin:0!important;
+  padding:0 clamp(20px,3vw,42px)!important;
+  gap:clamp(16px,2vw,30px)!important;
+  align-items:center;
+  background:#f7f9fa!important;
+  border-bottom:1px solid #dce5e8!important;
+  border-radius:0!important;
+  position:static!important;
+  top:auto!important;
+  z-index:auto!important;
+  backdrop-filter:none!important;
+}
+html body #app .research-hub > .rv31-nav--workspace .rv31-nav-item{
+  box-sizing:border-box;
+  min-height:54px!important;
+  padding:16px 0 14px!important;
+  font-size:15px!important;
+  line-height:22px!important;
+  white-space:nowrap;
+  transition:color .12s ease;
+}
+html body #app .research-hub > .rv31-nav--workspace .rv31-nav-item.on::after{
+  bottom:0!important;
+  height:2px!important;
+}
+html body #app .research-hub :is(.rv31-overview,.rv32-collection,.rv33-intelligence){
+  min-width:0;
+}
+html body #app .research-hub :is(.rv31-masthead,.rv32-collection-hero,.rv33-intelligence-hero).module-header{
+  box-sizing:border-box;
+  min-height:220px;
+  padding:30px clamp(20px,3vw,42px)!important;
+  margin:0 0 20px!important;
+  align-items:center!important;
+  border-radius:4px!important;
+}
+html body #app .research-hub :is(.rv31-masthead,.rv32-collection-hero,.rv33-intelligence-hero).module-header :is(h1,h2){
+  font-size:clamp(28px,2.2vw,34px)!important;
+  line-height:1.15!important;
+}
+html body #app .research-hub :is(.rv31-masthead,.rv32-collection-hero,.rv33-intelligence-hero).module-header p{
+  font-size:14px!important;
+  line-height:1.55!important;
+}
+@media(max-width:640px){
+ html body #app .research-hub > .rv31-nav--workspace{
+   gap:22px!important;
+   min-height:56px;
+   overflow-x:auto!important;
+   flex-wrap:nowrap!important;
+   overscroll-behavior-x:contain;
+   padding-inline:18px!important;
+ }
+ html body #app .research-hub > .rv31-nav--workspace .rv31-nav-item{
+   min-height:52px!important;
+   flex:0 0 auto;
+ }
+ html body #app .research-hub :is(.rv31-masthead,.rv32-collection-hero,.rv33-intelligence-hero).module-header{
+   min-height:0;
+   padding:23px 18px!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ html body #app .research-hub > .rv31-nav--workspace .rv31-nav-item{transition:none!important}
+}
