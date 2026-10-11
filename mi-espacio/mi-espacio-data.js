@@ -76,13 +76,18 @@
       id: id(p && p.id), title: safe(p && p.title), stage: safe(p && p.stage), category: safe(p && p.category), role: safe(p && p.role)
     }));
 
+    const publications = arr(pub.items).map(p => ({
+      id: id(p && p.id), title: safe(p && p.title), byline: safe(p && p.byline),
+      order: num(p && p.author_order), corresponding: !!(p && p.corresponding)
+    })).filter(p => p.title);
+
     return Object.freeze({
       agenda: Object.freeze({ guardias: Object.freeze(guardias), rotations: Object.freeze(rotations), absences: Object.freeze(absences) }),
       research: Object.freeze({ lines: Object.freeze(lines), studies: Object.freeze(studies), projects: Object.freeze(projects) }),
-      publications: Object.freeze({ available: !!pub.available, note: safe(pub.note) }),
+      publications: Object.freeze({ available: !!pub.available, note: safe(pub.note), items: Object.freeze(publications) }),
       counts: Object.freeze({
         guardias: guardias.length, rotations: rotations.length, absences: absences.length,
-        lines: lines.length, studies: studies.length, projects: projects.length
+        lines: lines.length, studies: studies.length, projects: projects.length, publications: publications.length
       })
     });
   }
@@ -173,9 +178,30 @@
     return request('/api/discrepancies/' + encodeURIComponent(reportId), { method: 'PUT', body: patch, timeoutMs: 15000, signal });
   }
 
+  // ── Subject options for a claim: the few lines and the publications a person
+  // can point at, so a report carries a real subject_id and the server can
+  // auto-link on accept. Both tolerate either {data:[…]} or a bare array. ──
+  const rows = raw => raw && Array.isArray(raw.data) ? raw.data : (Array.isArray(raw) ? raw : []);
+
+  async function loadLineOptions(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/research-lines', { skipCache: true, timeoutMs: 15000, signal });
+    return rows(raw).map(l => ({
+      id: id(l && l.id),
+      label: ((l && (typeof l.line_number === 'number')) ? 'L' + l.line_number + ' · ' : '') + safe(l && (l.short_name || l.research_line_name || l.name))
+    })).filter(o => o.id && o.label);
+  }
+
+  async function loadPublicationOptions(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/news?type=publication', { skipCache: true, timeoutMs: 15000, signal });
+    return rows(raw).map(p => ({ id: id(p && p.id), label: safe(p && p.title) })).filter(o => o.id && o.label);
+  }
+
   return Object.freeze({
     normalizeContext, loadContext, normalizeActivity, loadActivity,
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
-    normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport
+    normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport,
+    loadLineOptions, loadPublicationOptions
   });
 });
