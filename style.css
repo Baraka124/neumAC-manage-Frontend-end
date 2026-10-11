@@ -23431,3 +23431,15 @@ html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-pi
 @media(max-width:560px){
   html body #app .nd-intelligence-shell .askbar-turn--collection .askbar-roster-row{padding:8px 10px !important;}
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Fix: global search dropdown clipped by the top bar in non-research views.
+   Three earlier rules mis-set a scrollable-flex-child pattern on .top-navbar
+   (flex:1; min-height:0; overflow-y:auto; overflow-x:hidden) — meant for a
+   different element. The flex part is overridden downstream, but the overflow
+   survived and clipped .search-results-dropdown at the 76px bar edge, so it
+   rendered behind the module header. The research-context variant already
+   forces overflow:visible; apply the same to every view. The bar is a
+   fixed-height horizontal header and never needs to scroll or clip. */
+html body #app .top-navbar,
+html body #app.sidebar-collapsed .top-navbar{overflow:visible !important;}
