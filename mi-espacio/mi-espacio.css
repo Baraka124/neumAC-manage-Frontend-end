@@ -90,3 +90,10 @@
 .me-review-resolved small{color:var(--me-muted);font-weight:650;margin-right:4px}
 @media(max-width:700px){.mi-espacio{padding:22px 16px 70px}.mi-espacio-head{display:block;padding-bottom:21px}.mi-espacio-refresh{margin-top:17px}.mi-espacio-person{align-items:flex-start;flex-wrap:wrap;gap:14px}.mi-espacio-avatar{width:56px;height:56px;border-radius:16px;font-size:18px}.mi-espacio-link-state{margin-left:0}.mi-espacio-link-list{grid-template-columns:1fr}.mi-espacio-link{padding:17px}.me-cards{grid-template-columns:1fr}.me-report-form{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.mi-espacio-link{transition:none}.me-skel-line{animation:none}}
+/* Publications card + claim action */
+.me-pubs-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.me-pubs-head h4{font-size:14px;font-weight:650;color:var(--me-ink);margin:0;display:flex;align-items:center;gap:8px}
+.me-pubs-claim{background:transparent;border:1px solid #bbcbd0;border-radius:9px;padding:7px 12px;font:600 12.5px/1.3 inherit;color:#1f6b53;cursor:pointer;white-space:nowrap}
+.me-pubs-claim:hover{background:#f2f7f5;border-color:#9dbfba}
+.me-pubs-claim:focus-visible{outline:3px solid #158a89;outline-offset:2px}
+.me-pubs-list li{align-items:flex-start}

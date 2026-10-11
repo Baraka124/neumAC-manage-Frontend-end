@@ -29,7 +29,8 @@
       emits: ['navigate'],
       setup(props,{emit}) {
         const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,
-          reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:''},
+          reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
+          picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}}});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
@@ -43,7 +44,8 @@
           state.context=null;state.error='';state.busy=false;
           state.activity=null;state.activityError='';state.activityBusy=false;
           state.reports=[];
-          Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:''});
+          Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
+          Object.assign(state.picker,{busy:false,items:[],forType:''});
           Object.assign(state.review,{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}});
         }
         async function loadReports(requestSeq, identity){
@@ -54,14 +56,40 @@
           } catch(err){ if(err?.name!=='AbortError'){/* non-fatal: the list simply stays empty */} }
         }
         function openReportForm(){ state.report.open=true;state.report.done=false;state.report.error=''; }
+        // When the subject is a line or a publication, load the pickable options
+        // so the claim carries a real subject_id (the server then auto-links on accept).
+        async function onSubjectTypeChange(){
+          const t=state.report.subject_type;
+          state.report.subject_id='';state.report.subject_label='';
+          if(t!=='line'&&t!=='publication'){ state.picker.items=[];state.picker.forType=''; return; }
+          if(state.picker.forType===t&&state.picker.items.length) return;
+          state.picker.busy=true;state.picker.forType=t;state.picker.items=[];
+          try {
+            const loader=t==='line'?root.NeumMiEspacioData.loadLineOptions:root.NeumMiEspacioData.loadPublicationOptions;
+            const items=await loader((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(state.report.subject_type===t) state.picker.items=items;
+          } catch(err){ if(state.report.subject_type===t) state.picker.items=[]; }
+          finally { if(state.report.subject_type===t) state.picker.busy=false; }
+        }
+        function onSubjectPick(){
+          const opt=state.picker.items.find(o=>o.id===state.report.subject_id);
+          state.report.subject_label=opt?opt.label:'';
+        }
+        function claimPublication(){
+          openReportForm();
+          state.report.subject_type='publication';state.report.kind='authorship';
+          onSubjectTypeChange();
+        }
         async function submitReport(){
           const f=state.report;
           if(!f.subject_type||!f.kind){ f.error='Indica sobre qué y qué ocurre.'; return; }
+          if((f.subject_type==='line'||f.subject_type==='publication')&&!f.subject_id){ f.error='Elige cuál de la lista.'; return; }
           f.busy=true;f.error='';
           try {
             await root.NeumMiEspacioData.submitDiscrepancy(
-              (p,o)=>API.request(p,o),{subject_type:f.subject_type,kind:f.kind,message:f.message},controller&&controller.signal);
-            f.done=true;f.open=false;f.subject_type='';f.kind='';f.message='';
+              (p,o)=>API.request(p,o),{subject_type:f.subject_type,kind:f.kind,message:f.message,subject_id:f.subject_id,subject_label:f.subject_label},controller&&controller.signal);
+            f.done=true;f.open=false;f.subject_type='';f.kind='';f.message='';f.subject_id='';f.subject_label='';
+            state.picker.items=[];state.picker.forType='';
             loadReports(seq, String(props.user?.id||''));
           } catch(err){ f.error=err?.message||'No se ha podido enviar la comunicación.'; }
           finally { f.busy=false; }
@@ -154,7 +182,7 @@
           absenceStatus:k=>label(ABSENCE,k),
           subjectLabel:k=>label(SUBJECT_LABELS,k), kindLabel:k=>label(KIND_LABELS,k), reportStatus:k=>label(REPORT_STATUS,k),
           subjectOptions:SUBJECT_OPTIONS, kindOptions:KIND_OPTIONS,
-          openReportForm, submitReport,
+          openReportForm, submitReport, onSubjectTypeChange, onSubjectPick, claimPublication,
           reviewFilters:REVIEW_FILTERS, setReviewFilter, resolveItem,
           emptyLabel:f=>EMPTY_BY_FILTER[f]||'por revisar'
         };
@@ -260,7 +288,19 @@
                     <p v-else class="mi-espacio-empty">Sin proyectos asignados.</p>
                   </article>
                 </div>
-                <p class="mi-espacio-empty me-note">Tus publicaciones se mostrarán aquí cuando la autoría esté estructurada y verificada.</p>
+                <div class="me-note me-pubs">
+                  <div class="me-pubs-head">
+                    <h4>Publicaciones <span v-if="state.activity.publications.items.length" class="me-count">{{state.activity.publications.items.length}}</span></h4>
+                    <button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button>
+                  </div>
+                  <ul v-if="state.activity.publications.items.length" class="me-list me-pubs-list">
+                    <li v-for="p in state.activity.publications.items" :key="p.id">
+                      <span class="me-item-main">{{p.title}}<small v-if="p.byline"> · {{p.byline}}</small></span>
+                      <span v-if="p.corresponding" class="me-chip" data-tone="primary">Correspondencia</span>
+                    </li>
+                  </ul>
+                  <p v-else class="mi-espacio-empty">Aún no se te ha vinculado ninguna publicación. Si falta alguna que sea tuya, reivindícala y la revisará la coordinación.</p>
+                </div>
               </section>
             </template>
 
@@ -270,8 +310,15 @@
               <template v-else>
                 <button v-if="!state.report.open" type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar una discrepancia</button>
                 <form v-else class="me-report-form" @submit.prevent="submitReport">
-                  <div class="me-field"><label>¿Sobre qué?</label><select v-model="state.report.subject_type"><option value="">Selecciona…</option><option v-for="o in subjectOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
+                  <div class="me-field"><label>¿Sobre qué?</label><select v-model="state.report.subject_type" @change="onSubjectTypeChange"><option value="">Selecciona…</option><option v-for="o in subjectOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
                   <div class="me-field"><label>¿Qué ocurre?</label><select v-model="state.report.kind"><option value="">Selecciona…</option><option v-for="o in kindOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
+                  <div v-if="state.report.subject_type==='line'||state.report.subject_type==='publication'" class="me-field me-field-wide">
+                    <label>{{state.report.subject_type==='line'?'¿Cuál línea?':'¿Cuál publicación?'}}</label>
+                    <select v-model="state.report.subject_id" @change="onSubjectPick" :disabled="state.picker.busy">
+                      <option value="">{{state.picker.busy?'Cargando…':'Selecciona…'}}</option>
+                      <option v-for="o in state.picker.items" :key="o.id" :value="o.id">{{o.label}}</option>
+                    </select>
+                  </div>
                   <div class="me-field me-field-wide"><label>Detalles (opcional)</label><textarea v-model="state.report.message" rows="3" maxlength="2000" placeholder="Describe brevemente qué debería corregirse."></textarea></div>
                   <p v-if="state.report.error" class="me-form-error" role="alert">{{state.report.error}}</p>
                   <div class="me-form-actions"><button type="button" class="mi-espacio-refresh" @click="state.report.open=false">Cancelar</button><button type="submit" class="me-btn-primary" :disabled="state.report.busy">{{state.report.busy?'Enviando…':'Enviar'}}</button></div>
