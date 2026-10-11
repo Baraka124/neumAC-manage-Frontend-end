@@ -69,5 +69,24 @@
 .me-btn-primary:focus-visible{outline:3px solid #0c5a59;outline-offset:2px}
 .me-myreports{margin-top:22px;max-width:640px}
 .me-myreports h4{font-size:13px;font-weight:650;color:var(--me-ink);margin:0 0 10px}
+/* Reviewer queue — the coordinator/head side of the claim/verify loop */
+.me-review{padding-top:34px;border-top:1px solid rgba(34,78,88,.12);margin-top:34px}
+.me-review-filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.me-review-tab{border:1px solid #cdd9da;background:#fff;color:#3a5a60;border-radius:999px;padding:7px 14px;font:600 12.5px/1.3 inherit;cursor:pointer}
+.me-review-tab:hover{border-color:#9dbfba;background:#f2f7f5}
+.me-review-tab.is-active{background:#158a89;border-color:#158a89;color:#fff}
+.me-review-tab:focus-visible{outline:3px solid #0c5a59;outline-offset:2px}
+.me-review-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;max-width:720px}
+.me-review-item{border:1px solid #d9e2e3;border-radius:14px;background:rgba(255,255,255,.86);padding:16px 18px}
+.me-review-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.me-review-meta{min-width:0;overflow-wrap:anywhere;font-size:14px;color:var(--me-ink)}
+.me-review-meta small{color:var(--me-muted);font-weight:400}
+.me-review-msg{margin:4px 0 8px;font-size:13.5px;line-height:1.55;color:#355260;overflow-wrap:anywhere}
+.me-review-by{margin:0;font-size:12px;color:var(--me-muted)}
+.me-review-note{margin-top:12px;width:100%;border:1px solid #cdd9da;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;color:var(--me-ink);background:#fff}
+.me-review-note:focus-visible{outline:2px solid #158a89;outline-offset:1px;border-color:#158a89}
+.me-review-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+.me-review-resolved{margin:10px 0 0;padding-top:10px;border-top:1px dashed rgba(34,78,88,.18);font-size:13px;color:#355260;overflow-wrap:anywhere}
+.me-review-resolved small{color:var(--me-muted);font-weight:650;margin-right:4px}
 @media(max-width:700px){.mi-espacio{padding:22px 16px 70px}.mi-espacio-head{display:block;padding-bottom:21px}.mi-espacio-refresh{margin-top:17px}.mi-espacio-person{align-items:flex-start;flex-wrap:wrap;gap:14px}.mi-espacio-avatar{width:56px;height:56px;border-radius:16px;font-size:18px}.mi-espacio-link-state{margin-left:0}.mi-espacio-link-list{grid-template-columns:1fr}.mi-espacio-link{padding:17px}.me-cards{grid-template-columns:1fr}.me-report-form{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.mi-espacio-link{transition:none}.me-skel-line{animation:none}}
