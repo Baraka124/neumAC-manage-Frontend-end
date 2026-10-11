@@ -57,7 +57,7 @@ for(const width of [390,1366]){
   await navigation.getByRole('button',{name:'Clinical studies'}).click();
   await expect(page.locator('.rv32-studies .rv32-study-row')).toHaveCount(studies.length);
   const before=await page.evaluate(()=>{
-    const bar=document.querySelector('.rv32-studies .rv32-context-bar');
+    const bar=document.querySelector('.rv32-studies .rv32-collection-hero');
     const nav=document.querySelector('.rv31-nav--persistent');
     const states={nav:getComputedStyle(nav).position,context:getComputedStyle(bar).position};
     let target=bar.parentElement;
