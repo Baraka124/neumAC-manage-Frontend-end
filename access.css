@@ -645,3 +645,31 @@
     grid-template-columns:1fr;
   }
 }
+
+/* ── Beautiful invite / activation entry page ──────────────────────────── */
+.ac-setup.ac-invite{background:linear-gradient(160deg,#0a1f33 0%,#0d2a44 45%,#10364f 100%)}
+.ac-invite-card{width:min(468px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;background:#fff;border-radius:20px;padding:40px 38px 24px;box-shadow:0 30px 80px rgba(4,16,30,.45);border:0;text-align:left}
+.ac-invite-brand{margin-bottom:26px}
+.ac-invite-logo{height:32px;width:auto;display:block}
+.ac-invite-eyebrow{font:700 10.5px/1.5 inherit;letter-spacing:.14em;color:#2f7e86;margin:0 0 12px}
+.ac-invite-card h1{font-size:clamp(25px,3.4vw,31px);line-height:1.16;letter-spacing:-.02em;color:#10303a;margin:0 0 12px;font-weight:650}
+.ac-invite-sub{font-size:14.5px;line-height:1.65;color:#5a6f74;margin:0 0 18px}
+.ac-invite-email{font-size:13px;color:#5a6f74;background:#f1f6f5;border:1px solid #dfeae8;border-radius:9px;padding:9px 12px;margin:0 0 20px;overflow-wrap:anywhere}
+.ac-invite-email strong{color:#1f5a56}
+.ac-invite-form{display:flex;flex-direction:column;gap:14px}
+.ac-invite-form label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:600;color:#30474c}
+.ac-invite-form input{border:1px solid #cdd9da;border-radius:10px;padding:12px 13px;font:inherit;font-size:15px;color:#13343c;background:#fff}
+.ac-invite-form input:focus-visible{outline:2px solid #158a89;outline-offset:1px;border-color:#158a89}
+.ac-invite-hint{font-size:11.5px;color:#809799;margin:-2px 0 4px}
+.ac-invite-btn{margin-top:6px;background:linear-gradient(135deg,#158a89,#0f6f6d);color:#fff;border:0;border-radius:10px;padding:13px 20px;font:700 14px/1.2 inherit;cursor:pointer;transition:filter .15s}
+.ac-invite-btn:hover{filter:brightness(1.08)}
+.ac-invite-btn:disabled{opacity:.6;cursor:default}
+.ac-invite-btn:focus-visible{outline:3px solid #0c5a59;outline-offset:2px}
+.ac-invite-done{text-align:center;padding:8px 0 2px}
+.ac-invite-done h1{margin-bottom:8px}
+.ac-invite-check{width:58px;height:58px;border-radius:50%;background:#e2efe9;color:#1f6b53;font-size:28px;font-weight:700;display:grid;place-items:center;margin:0 auto 18px}
+.ac-invite-done p{color:#5a6f74;font-size:14.5px;margin:0 0 20px}
+.ac-invite-done .ac-invite-btn{min-width:180px}
+.ac-invite-foot{margin:24px 0 0;padding-top:16px;border-top:1px solid #eef2f2;font-size:11px;color:#9aabac;text-align:center;letter-spacing:.02em}
+.ac-invite .ac-alert{background:#fdeceb;border:1px solid #f3c9c4;color:#9a3b2f;border-radius:9px;padding:10px 12px;font-size:13px;margin:0}
+@media(max-width:520px){.ac-invite-card{padding:30px 22px 20px;border-radius:16px}}
