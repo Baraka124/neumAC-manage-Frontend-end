@@ -19,6 +19,8 @@
   const REPORT_STATUS = { open:'Abierta', in_review:'En revisión', accepted:'Aceptada', rejected:'Rechazada' };
   const SUBJECT_OPTIONS = Object.keys(SUBJECT_LABELS).map(k => ({ value:k, label:SUBJECT_LABELS[k] }));
   const KIND_OPTIONS = Object.keys(KIND_LABELS).map(k => ({ value:k, label:KIND_LABELS[k] }));
+  const REVIEW_FILTERS = [{ value:'open', label:'Abiertas' }, { value:'in_review', label:'En revisión' }, { value:'accepted', label:'Aceptadas' }, { value:'rejected', label:'Rechazadas' }];
+  const EMPTY_BY_FILTER = { open:'abiertas', in_review:'en revisión', accepted:'aceptadas', rejected:'rechazadas' };
   const label = (map, key) => map[key] || (key || '');
 
   function createView({Vue,API}) {
@@ -27,7 +29,8 @@
       emits: ['navigate'],
       setup(props,{emit}) {
         const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,
-          reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:''}});
+          reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:''},
+          review:{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}}});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -41,6 +44,7 @@
           state.activity=null;state.activityError='';state.activityBusy=false;
           state.reports=[];
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:''});
+          Object.assign(state.review,{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}});
         }
         async function loadReports(requestSeq, identity){
           try {
@@ -61,6 +65,41 @@
             loadReports(seq, String(props.user?.id||''));
           } catch(err){ f.error=err?.message||'No se ha podido enviar la comunicación.'; }
           finally { f.busy=false; }
+        }
+        // Reviewer queue — only probed when the account carries review authority
+        // (admin_level ≥ 1, the same threshold the server enforces). A 403 means
+        // "not a reviewer": the section stays hidden. The server remains the sole
+        // arbiter; this hint only avoids a needless request for every clinician.
+        async function loadReviewQueue(requestSeq, identity){
+          if(!(Number(props.user&&props.user.admin_level) >= 1)) return;
+          state.review.busy=true;state.review.error='';
+          try {
+            const items=await root.NeumMiEspacioData.loadReviewQueue(
+              (p,o)=>API.request(p,o), state.review.filter, controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
+            state.review.can=true;state.review.items=items;
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
+            if(err?.name==='AbortError')return;
+            if(err?.status===403){ state.review.can=false;state.review.items=[]; return; }
+            state.review.can=true;state.review.error=err?.message||'No se ha podido cargar la cola de revisión.';
+          } finally { if(requestSeq===seq)state.review.busy=false; }
+        }
+        function setReviewFilter(value){
+          if(state.review.filter===value)return;
+          state.review.filter=value;
+          loadReviewQueue(seq, String(props.user?.id||''));
+        }
+        async function resolveItem(reportId, status){
+          if(state.review.acting)return;
+          state.review.acting=reportId;state.review.error='';
+          try {
+            await root.NeumMiEspacioData.resolveReport(
+              (p,o)=>API.request(p,o), reportId, {status, resolution_note:state.review.notes[reportId]||''}, controller&&controller.signal);
+            delete state.review.notes[reportId];
+            await loadReviewQueue(seq, String(props.user?.id||''));
+          } catch(err){ if(err?.name!=='AbortError')state.review.error=err?.message||'No se ha podido actualizar la comunicación.'; }
+          finally { state.review.acting=''; }
         }
         async function loadActivity(requestSeq, identity){
           state.activityBusy=true;state.activityError='';
@@ -87,6 +126,7 @@
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             state.context=result;
             if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); }
+            loadReviewQueue(requestSeq, identity);
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             if(err?.name==='AbortError')return;
@@ -114,7 +154,9 @@
           absenceStatus:k=>label(ABSENCE,k),
           subjectLabel:k=>label(SUBJECT_LABELS,k), kindLabel:k=>label(KIND_LABELS,k), reportStatus:k=>label(REPORT_STATUS,k),
           subjectOptions:SUBJECT_OPTIONS, kindOptions:KIND_OPTIONS,
-          openReportForm, submitReport
+          openReportForm, submitReport,
+          reviewFilters:REVIEW_FILTERS, setReviewFilter, resolveItem,
+          emptyLabel:f=>EMPTY_BY_FILTER[f]||'por revisar'
         };
       },
       template: `
@@ -246,6 +288,34 @@
               </div>
             </section>
           </template>
+
+          <section v-if="state.review.can" class="me-review" aria-label="Comunicaciones del equipo por revisar">
+            <div class="mi-espacio-section-heading"><h3>Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar uno, la corrección se gestiona en el módulo correspondiente; nada se modifica automáticamente.</p></div>
+            <div class="me-review-filters" role="tablist" aria-label="Estado de las comunicaciones">
+              <button v-for="f in reviewFilters" :key="f.value" type="button" role="tab" class="me-review-tab" :class="{'is-active':state.review.filter===f.value}" :aria-selected="state.review.filter===f.value" @click="setReviewFilter(f.value)">{{f.label}}</button>
+            </div>
+            <p v-if="state.review.error" class="me-form-error" role="alert">{{state.review.error}}</p>
+            <p v-if="state.review.busy" class="mi-espacio-empty" role="status">Cargando la cola…</p>
+            <ul v-else-if="state.review.items.length" class="me-review-list">
+              <li v-for="it in state.review.items" :key="it.id" class="me-review-item">
+                <div class="me-review-top">
+                  <span class="me-review-meta"><strong>{{kindLabel(it.kind)}}</strong><small> · {{subjectLabel(it.subjectType)}}</small><small v-if="it.subjectLabel"> · {{it.subjectLabel}}</small></span>
+                  <span class="me-chip" :data-tone="it.status">{{reportStatus(it.status)}}</span>
+                </div>
+                <p v-if="it.message" class="me-review-msg">{{it.message}}</p>
+                <p class="me-review-by"><span v-if="it.reporterName">{{it.reporterName}}</span><small v-if="it.createdAt"> · {{fmtDate(it.createdAt)}}</small></p>
+                <template v-if="it.status==='open'||it.status==='in_review'">
+                  <input class="me-review-note" type="text" maxlength="2000" v-model="state.review.notes[it.id]" :aria-label="'Nota de resolución para '+kindLabel(it.kind)" placeholder="Nota de resolución (opcional)">
+                  <div class="me-review-actions">
+                    <button type="button" class="mi-espacio-refresh" :disabled="state.review.acting===it.id" @click="resolveItem(it.id,'rejected')">Rechazar</button>
+                    <button type="button" class="me-btn-primary" :disabled="state.review.acting===it.id" @click="resolveItem(it.id,'accepted')">{{state.review.acting===it.id?'Guardando…':'Aceptar'}}</button>
+                  </div>
+                </template>
+                <p v-else-if="it.resolutionNote" class="me-review-resolved"><small>Resolución:</small> {{it.resolutionNote}}</p>
+              </li>
+            </ul>
+            <p v-else class="mi-espacio-empty">No hay comunicaciones {{emptyLabel(state.review.filter)}}.</p>
+          </section>
 
           <section class="mi-espacio-links" aria-labelledby="mi-espacio-shortcuts">
             <div class="mi-espacio-section-heading"><h3 id="mi-espacio-shortcuts">Acceso a módulos</h3><p>Las mismas herramientas institucionales, según tus permisos.</p></div>

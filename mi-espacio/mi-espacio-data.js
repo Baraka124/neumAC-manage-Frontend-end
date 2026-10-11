@@ -131,8 +131,51 @@
     return (Array.isArray(raw) ? raw : []).map(normalizeReport);
   }
 
+  // ── Reviewer queue: the other half of the loop. A coordinator/head sees the
+  // reports addressed to them and accepts or rejects each one. Authority is the
+  // server's (admin_level ≥ 1): this adapter only shapes the queue and the
+  // resolution patch, and never decides who may review. ──
+  const QUEUE_STATUS = ['open','in_review','accepted','rejected'];
+
+  function normalizeReviewItem(raw) {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    const reporter = r.reporter && typeof r.reporter === 'object' ? r.reporter : {};
+    return {
+      id: id(r.id), reporterName: safe(reporter.full_name),
+      subjectType: safe(r.subject_type), subjectId: safe(r.subject_id), subjectLabel: safe(r.subject_label),
+      kind: safe(r.kind), message: safe(r.message), status: safe(r.status) || 'open',
+      resolutionNote: safe(r.resolution_note), createdAt: safe(r.created_at), resolvedAt: safe(r.resolved_at)
+    };
+  }
+
+  async function loadReviewQueue(request, status, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const s = QUEUE_STATUS.indexOf(status) !== -1 ? status : '';
+    const path = s ? '/api/discrepancies?status=' + encodeURIComponent(s) : '/api/discrepancies';
+    const raw = await request(path, { skipCache: true, timeoutMs: 15000, signal });
+    return (Array.isArray(raw) ? raw : []).map(normalizeReviewItem);
+  }
+
+  function buildResolve(input) {
+    const i = input && typeof input === 'object' ? input : {};
+    const out = {};
+    if (QUEUE_STATUS.indexOf(i.status) !== -1) out.status = i.status;
+    const note = safe(i.resolution_note);
+    if (note) out.resolution_note = note;
+    return out;
+  }
+
+  async function resolveReport(request, reportId, input, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    if (!id(reportId)) throw new Error('A report id is required to resolve a discrepancy.');
+    const patch = buildResolve(input);
+    if (!Object.keys(patch).length) throw new Error('Nothing to update on this report.');
+    return request('/api/discrepancies/' + encodeURIComponent(reportId), { method: 'PUT', body: patch, timeoutMs: 15000, signal });
+  }
+
   return Object.freeze({
     normalizeContext, loadContext, normalizeActivity, loadActivity,
-    buildReport, submitDiscrepancy, normalizeReport, loadMyReports
+    buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
+    normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport
   });
 });
