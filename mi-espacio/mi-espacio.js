@@ -62,7 +62,10 @@
             state.reports=rows;
           } catch(err){ if(err?.name!=='AbortError'){/* non-fatal: the list simply stays empty */} }
         }
-        function openReportForm(){ state.report.open=true;state.report.done=false;state.report.error=''; }
+        function openReportForm(){
+          state.report.open=true;state.report.done=false;state.report.error='';
+          focusDuty('#me-report-subject');
+        }
         // When the subject is a line or a publication, load the pickable options
         // so the claim carries a real subject_id (the server then auto-links on accept).
         async function onSubjectTypeChange(){
@@ -189,7 +192,11 @@
             const node=document.querySelector('.mi-espacio '+selector);
             if(!node)return;
             try {node.focus({preventScroll:true});} catch(_){node.focus();}
-            node.scrollIntoView({block:'nearest',behavior:'auto'});
+            // Avoid scrolling content that is already visible.
+            const rect=node.getBoundingClientRect();
+            if(rect.top<96 || rect.bottom>window.innerHeight-18){
+              node.scrollIntoView({block:'nearest',behavior:'instant'});
+            }
           });
         }
         function openDuties(index) {
@@ -203,7 +210,10 @@
           if(!Number.isInteger(index)||index<0||index>=entries.length)return;
           state.dutyIndex=index;focusDuty('.me-duty-detail-title');
         }
-        function closeDutyDetail(){state.dutyIndex=null;focusDuty('.me-duty-heading');}
+        function closeDutyDetail(){
+          const index=state.dutyIndex;state.dutyIndex=null;
+          focusDuty('.me-duty-row[data-index="'+index+'"]');
+        }
         function backToAgenda(){state.dutyMode='overview';state.dutyIndex=null;focusDuty('.me-duty-open');}
         // Phase 6B: personal, read-only portfolio; never navigates out of Mi espacio.
         const researchGroups=Object.freeze([
@@ -252,10 +262,15 @@
         }
         function closePublication(){
           const index=state.publicationIndex;state.publicationIndex=null;
-          Vue.nextTick(()=>{
-            const node=document.querySelector('.mi-espacio .me-publication-entry[data-index="'+index+'"]');
-            if(node)node.focus({preventScroll:true});
-          });
+          focusDuty('.me-publication-entry[data-index="'+index+'"]');
+        }
+        function onEscape(event){
+          // Only close personal detail panels. Leave shell and form Escape alone.
+          const target=event.target;
+          if(!target || typeof target.closest!=='function')return;
+          if(target.closest('.me-duty-detail') && selectedDuty.value){closeDutyDetail();event.stopPropagation();}
+          else if(target.closest('.me-publication-layout .me-portfolio-detail') && selectedPublication.value){closePublication();event.stopPropagation();}
+          else if(target.closest('.me-portfolio:not(.me-publications) .me-portfolio-detail') && selectedResearch.value){closeResearch();event.stopPropagation();}
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
@@ -263,7 +278,7 @@
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
           researchRecordTitle,researchRecordMeta,researchRecordRole,
-          changeResearchGroup,selectResearch,closeResearch,selectPublication,closePublication,
+          changeResearchGroup,selectResearch,closeResearch,selectPublication,closePublication,onEscape,
           navigate:view=>can(view)&&emit('navigate',view),
           fmtDate,
           guardiaRole:k=>label(GUARDIA,k), rotationRole:k=>label(ROTATION,k),
@@ -277,7 +292,7 @@
         };
       },
       template: `
-      <section class="mi-espacio" aria-labelledby="mi-espacio-title">
+      <section class="mi-espacio" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape">
         <header class="mi-espacio-head">
           <div><p class="mi-espacio-eyebrow">ÁREA PERSONAL · neumDESK</p>
           <h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2>
@@ -338,7 +353,7 @@
                   <div class="me-duty-workspace-head"><button type="button" class="me-duty-back" @click="backToAgenda">← Mi agenda</button><h4 class="me-duty-heading" tabindex="-1">Mis guardias</h4><p>Tu lista personal de asignaciones próximas.</p></div>
                   <div class="me-duty-master-detail" :class="{'has-selection':!!selectedDuty}">
                     <div class="me-duty-list" aria-label="Asignaciones próximas">
-                      <ol v-if="state.activity.agenda.guardias.length"><li v-for="(g,index) in state.activity.agenda.guardias" :key="g.id || index"><button type="button" class="me-duty-row" :class="{'is-selected':state.dutyIndex===index}" :aria-current="state.dutyIndex===index?'true':null" @click="selectDuty(index)"><span class="me-duty-row-main"><strong>{{fmtDutyDate(g.date)}}</strong><small>{{dutyShift(g.shift)}}</small></span><span class="me-chip" :data-tone="g.role">{{guardiaRole(g.role)}}</span><span aria-hidden="true">›</span></button></li></ol>
+                      <ol v-if="state.activity.agenda.guardias.length"><li v-for="(g,index) in state.activity.agenda.guardias" :key="g.id || index"><button type="button" class="me-duty-row" :data-index="index" :class="{'is-selected':state.dutyIndex===index}" :aria-current="state.dutyIndex===index?'true':null" @click="selectDuty(index)"><span class="me-duty-row-main"><strong>{{fmtDutyDate(g.date)}}</strong><small>{{dutyShift(g.shift)}}</small></span><span class="me-chip" :data-tone="g.role">{{guardiaRole(g.role)}}</span><span aria-hidden="true">›</span></button></li></ol>
                       <p v-else class="mi-espacio-empty">No tienes guardias próximas registradas.</p>
                     </div>
                     <section v-if="selectedDuty" class="me-duty-detail" aria-labelledby="me-duty-detail-title">
@@ -390,6 +405,7 @@
                         <span class="me-portfolio-entry-copy"><strong>{{p.title}}</strong><small v-if="p.byline">{{p.byline}}</small><span v-if="p.corresponding">Autoría de correspondencia</span></span><span aria-hidden="true">›</span>
                       </button>
                     </li></ol>
+                    <p v-else-if="!state.activity.publications.available" class="mi-espacio-empty" role="status">La información de autorías no está disponible en este momento.</p>
                     <p v-else class="mi-espacio-empty">Aún no hay publicaciones vinculadas a tu perfil. Puedes comunicar una autoría pendiente de verificación.</p>
                   </div>
                   <section v-if="selectedPublication" class="me-portfolio-detail" aria-label="Autoría verificada">
@@ -413,16 +429,16 @@
               <template v-else>
                 <button v-if="!state.report.open" type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar una discrepancia</button>
                 <form v-else class="me-report-form" @submit.prevent="submitReport">
-                  <div class="me-field"><label>¿Sobre qué?</label><select v-model="state.report.subject_type" @change="onSubjectTypeChange"><option value="">Selecciona…</option><option v-for="o in subjectOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
-                  <div class="me-field"><label>¿Qué ocurre?</label><select v-model="state.report.kind"><option value="">Selecciona…</option><option v-for="o in kindOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
+                  <div class="me-field"><label for="me-report-subject">¿Sobre qué?</label><select id="me-report-subject" v-model="state.report.subject_type" @change="onSubjectTypeChange"><option value="">Selecciona…</option><option v-for="o in subjectOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
+                  <div class="me-field"><label for="me-report-kind">¿Qué ocurre?</label><select id="me-report-kind" v-model="state.report.kind"><option value="">Selecciona…</option><option v-for="o in kindOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
                   <div v-if="state.report.subject_type==='line'||state.report.subject_type==='publication'" class="me-field me-field-wide">
-                    <label>{{state.report.subject_type==='line'?'¿Cuál línea?':'¿Cuál publicación?'}}</label>
-                    <select v-model="state.report.subject_id" @change="onSubjectPick" :disabled="state.picker.busy">
+                    <label for="me-report-target">{{state.report.subject_type==='line'?'¿Cuál línea?':'¿Cuál publicación?'}}</label>
+                    <select id="me-report-target" v-model="state.report.subject_id" @change="onSubjectPick" :disabled="state.picker.busy">
                       <option value="">{{state.picker.busy?'Cargando…':'Selecciona…'}}</option>
                       <option v-for="o in state.picker.items" :key="o.id" :value="o.id">{{o.label}}</option>
                     </select>
                   </div>
-                  <div class="me-field me-field-wide"><label>Detalles (opcional)</label><textarea v-model="state.report.message" rows="3" maxlength="2000" placeholder="Describe brevemente qué debería corregirse."></textarea></div>
+                  <div class="me-field me-field-wide"><label for="me-report-details">Detalles (opcional)</label><textarea id="me-report-details" v-model="state.report.message" rows="3" maxlength="2000" placeholder="Describe brevemente qué debería corregirse."></textarea></div>
                   <p v-if="state.report.error" class="me-form-error" role="alert">{{state.report.error}}</p>
                   <div class="me-form-actions"><button type="button" class="mi-espacio-refresh" @click="state.report.open=false">Cancelar</button><button type="submit" class="me-btn-primary" :disabled="state.report.busy">{{state.report.busy?'Enviando…':'Enviar'}}</button></div>
                 </form>

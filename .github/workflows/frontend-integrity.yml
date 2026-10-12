@@ -35,6 +35,8 @@ jobs:
         run: node --test tests/mi-espacio-phase6b.test.cjs
       - name: Mi espacio Phase 6C verified review outcomes
         run: node --test tests/mi-espacio-phase6c.test.cjs
+      - name: Mi espacio Phase 6D interaction integrity
+        run: node --test tests/mi-espacio-phase6d.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
