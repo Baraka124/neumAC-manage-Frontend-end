@@ -45,6 +45,8 @@ jobs:
         run: node --test tests/mi-espacio-phase9.test.cjs
       - name: Mi espacio Phase 10A cross-profile relevance
         run: node --test tests/mi-espacio-phase10a.test.cjs
+      - name: Mi espacio Phase 10B scholarly hierarchy
+        run: node --test tests/mi-espacio-phase10b.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
