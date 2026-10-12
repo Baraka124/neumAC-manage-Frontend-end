@@ -348,21 +348,20 @@
                 <ol class="me-v8-timeline"><li v-for="g in state.activity.agenda.guardias" :key="g.id"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
                 <button v-if="can('oncall_schedule')" type="button" class="me-duty-institutional" @click="navigate('oncall_schedule')">Abrir cuadrante departamental ↗</button>
               </section>
-              <section v-if="state.dutyMode==='overview' && state.activity.publications.items.length" class="me-v8-publications" aria-label="Mis publicaciones">
-                <div class="mi-espacio-section-heading"><p class="mi-espacio-eyebrow">PRODUCCIÓN CIENTÍFICA</p><h3>Mis publicaciones</h3></div>
-                <ol class="me-v8-publication-list"><li v-for="p in state.activity.publications.items" :key="p.id">
-                  <strong>{{p.title}}</strong>
-                  <span v-if="p.byline">{{p.byline}}</span>
-                  <small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small>
-                  <small v-else-if="p.corresponding">Autoría de correspondencia</small>
-                </li></ol>
-              </section>
-              <p v-else-if="state.dutyMode==='overview' && !state.activity.publications.available" class="me-v8-data-status" role="status">La información de publicaciones no está disponible.</p>
-              <section v-if="state.dutyMode==='overview'" class="me-v8-tools">
-                <button type="button" class="me-v8-tools-toggle" :aria-expanded="state.toolsOpen" aria-controls="me-v8-administration" @click="state.toolsOpen=!state.toolsOpen">{{state.toolsOpen?'Cerrar gestiones':'Comunicaciones y gestiones'}} <span v-if="state.reports.length">· {{state.reports.length}} enviadas</span><span aria-hidden="true"> {{state.toolsOpen?'−':'+'}}</span></button>
-                <div v-if="state.toolsOpen" id="me-v8-administration">
-                  <button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button>
-                              <section v-if="state.toolsOpen && state.activity && state.dutyMode==='overview'" class="me-report" aria-label="Comunicar una discrepancia">
+              <div v-if="state.dutyMode==='overview'" class="me-v9-lower-grid">
+                <section class="me-v9-publications" aria-label="Mis publicaciones">
+                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">PRODUCCIÓN CIENTÍFICA</p><h3>Mis publicaciones <span v-if="state.activity.counts.publications" class="me-v9-verified-count">{{state.activity.counts.publications}}</span></h3></div><button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button></div>
+                  <ol v-if="state.activity.publications.items.length" class="me-v8-publication-list"><li v-for="p in state.activity.publications.items" :key="p.id"><strong>{{p.title}}</strong><span v-if="p.byline">{{p.byline}}</span><small v-if="p.order!==null">Posición de autoría: {{p.order}}<template v-if="p.corresponding"> · Autoría de correspondencia</template></small><small v-else-if="p.corresponding">Autoría de correspondencia</small></li></ol>
+                  <p v-else-if="!state.activity.publications.available" class="me-v8-quiet" role="status">La información de publicaciones no está disponible actualmente.</p><p v-else class="me-v8-quiet">No hay publicaciones vinculadas a tu perfil.</p>
+                </section>
+                <section class="me-v9-services" aria-label="Comunicaciones y gestiones">
+                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">GESTIÓN PERSONAL</p><h3>Comunicaciones</h3></div></div>
+                  <p>Consultas y correcciones de tu información profesional.</p><p v-if="state.reports.length" class="me-v9-service-meta">Comunicaciones enviadas · {{state.reports.length}}</p>
+                  <button type="button" class="me-v8-tools-toggle" :aria-expanded="state.toolsOpen" aria-controls="me-v8-administration" @click="state.toolsOpen=!state.toolsOpen">{{state.toolsOpen?'Cerrar gestiones':'Comunicaciones y gestiones'}} <span aria-hidden="true">{{state.toolsOpen?'−':'→'}}</span></button>
+                </section>
+              </div>
+              <div v-if="state.dutyMode==='overview' && state.toolsOpen" id="me-v8-administration" class="me-v9-administration">
+                <section v-if="state.toolsOpen && state.activity && state.dutyMode==='overview'" class="me-report" aria-label="Comunicar una discrepancia">
               <div class="mi-espacio-section-heading"><h3>¿Falta algo o hay un error?</h3><p>Comunícalo y lo revisará la persona responsable. No se modifica ningún registro directamente.</p></div>
               <div v-if="state.report.done" class="mi-espacio-notice" role="status"><strong>Gracias, tu comunicación se ha registrado.</strong><p>La revisará la persona responsable de accesos o coordinación.</p><button type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar otra</button></div>
               <template v-else>
@@ -392,7 +391,8 @@
                 </ul>
               </div>
             </section>
-                            <section v-if="state.toolsOpen && state.review.can && state.dutyMode==='overview'" class="me-review" aria-label="Comunicaciones del equipo por revisar">
+                            
+                <section v-if="state.toolsOpen && state.review.can && state.dutyMode==='overview'" class="me-review" aria-label="Comunicaciones del equipo por revisar">
             <div class="mi-espacio-section-heading"><h3>Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar una reivindicación de línea o autoría, se intentará registrar automáticamente la vinculación. Otros casos pueden necesitar una corrección manual.</p></div>
             <div class="me-review-filters" role="tablist" aria-label="Estado de las comunicaciones">
               <button v-for="f in reviewFilters" :key="f.value" type="button" role="tab" class="me-review-tab" :class="{'is-active':state.review.filter===f.value}" :aria-selected="state.review.filter===f.value" @click="setReviewFilter(f.value)">{{f.label}}</button>
@@ -419,6 +419,8 @@
             </ul>
             <p v-else class="mi-espacio-empty">No hay comunicaciones {{emptyLabel(state.review.filter)}}.</p>
           </section>
+
+              </div>
                 </div>
               </section>
             </template>
