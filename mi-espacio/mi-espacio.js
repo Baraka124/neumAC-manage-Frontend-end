@@ -421,8 +421,6 @@
           </section>
 
               </div>
-                </div>
-              </section>
             </template>
           </template>
         </template>
