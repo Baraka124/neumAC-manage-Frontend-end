@@ -252,39 +252,50 @@
             <div v-else-if="state.activityError" class="mi-espacio-notice" role="status"><strong>No se ha podido cargar tu actividad ahora mismo.</strong><p>Tu identidad está verificada; vuelve a intentarlo en un momento.</p><button type="button" class="mi-espacio-refresh" @click="refresh">Reintentar</button></div>
 
             <template v-else-if="state.activity">
-              <section class="me-activity" aria-label="Mi agenda">
-                <div class="mi-espacio-section-heading"><h3>Mi agenda</h3><p>Tus próximos compromisos asistenciales.</p></div>
-                <div class="me-cards">
-                  <article class="me-card">
+              <section class="me-activity me-agenda" aria-label="Mi agenda">
+                <div class="mi-espacio-section-heading"><p class="mi-espacio-eyebrow">ACTIVIDAD ASISTENCIAL</p><h3>Mi agenda</h3><p>Las asignaciones vinculadas a tu perfil institucional.</p></div>
+                <div v-if="state.dutyMode==='overview'" class="me-agenda-layout">
+                  <article class="me-agenda-feature">
                     <header class="me-card-head"><h4>Próximas guardias</h4><span class="me-count">{{state.activity.counts.guardias}}</span></header>
-                    <ul v-if="state.activity.agenda.guardias.length" class="me-list">
-                      <li v-for="g in state.activity.agenda.guardias.slice(0,6)" :key="g.id || g.date">
-                        <span class="me-item-main">{{fmtDate(g.date)}}<small v-if="g.shift"> · {{g.shift}}</small></span>
-                        <span class="me-chip" :data-tone="g.role">{{guardiaRole(g.role)}}</span>
-                      </li>
-                    </ul>
-                    <p v-else class="mi-espacio-empty">Sin guardias próximas.</p>
+                    <button v-if="state.activity.agenda.guardias.length" type="button" class="me-duty-next" @click="openDuties(0)">
+                      <span class="me-duty-next-label">PRÓXIMA ASIGNACIÓN</span>
+                      <strong>{{fmtDutyDate(state.activity.agenda.guardias[0].date)}}</strong>
+                      <span>{{dutyShift(state.activity.agenda.guardias[0].shift)}} · {{guardiaRole(state.activity.agenda.guardias[0].role)}}</span>
+                      <span class="me-duty-next-arrow" aria-hidden="true">↗</span>
+                    </button>
+                    <p v-else class="mi-espacio-empty">Sin guardias próximas registradas.</p>
+                    <button class="me-duty-open" type="button" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
                   </article>
-                  <article class="me-card">
-                    <header class="me-card-head"><h4>Rotaciones</h4><span class="me-count">{{state.activity.counts.rotations}}</span></header>
-                    <ul v-if="state.activity.agenda.rotations.length" class="me-list">
-                      <li v-for="r in state.activity.agenda.rotations" :key="r.id">
-                        <span class="me-item-main">{{r.unit || r.resident || 'Rotación'}}<small v-if="r.start"> · {{fmtDate(r.start)}}–{{fmtDate(r.end)}}</small></span>
-                        <span class="me-chip" :data-tone="r.role">{{rotationRole(r.role)}}</span>
-                      </li>
-                    </ul>
-                    <p v-else class="mi-espacio-empty">Sin rotaciones activas.</p>
-                  </article>
-                  <article class="me-card">
-                    <header class="me-card-head"><h4>Ausencias</h4><span class="me-count">{{state.activity.counts.absences}}</span></header>
-                    <ul v-if="state.activity.agenda.absences.length" class="me-list">
-                      <li v-for="a in state.activity.agenda.absences" :key="a.id">
-                        <span class="me-item-main">{{a.type || 'Ausencia'}}<small v-if="a.start"> · {{fmtDate(a.start)}}–{{fmtDate(a.end)}}</small></span>
-                        <span class="me-chip" :data-tone="a.status">{{absenceStatus(a.status)}}</span>
-                      </li>
-                    </ul>
-                    <p v-else class="mi-espacio-empty">Sin ausencias registradas.</p>
-                  </article>
+                  <div class="me-agenda-secondary">
+                    <article class="me-card">
+                      <header class="me-card-head"><h4>Rotaciones</h4><span class="me-count">{{state.activity.counts.rotations}}</span></header>
+                      <ul v-if="state.activity.agenda.rotations.length" class="me-list"><li v-for="r in state.activity.agenda.rotations" :key="r.id"><span class="me-item-main">{{r.unit || r.resident || 'Rotación'}}<small v-if="r.start"> · {{fmtDate(r.start)}}–{{fmtDate(r.end)}}</small></span><span class="me-chip" :data-tone="r.role">{{rotationRole(r.role)}}</span></li></ul>
+                      <p v-else class="mi-espacio-empty">Sin rotaciones activas.</p>
+                    </article>
+                    <article class="me-card">
+                      <header class="me-card-head"><h4>Ausencias</h4><span class="me-count">{{state.activity.counts.absences}}</span></header>
+                      <ul v-if="state.activity.agenda.absences.length" class="me-list"><li v-for="a in state.activity.agenda.absences" :key="a.id"><span class="me-item-main">{{a.type || 'Ausencia'}}<small v-if="a.start"> · {{fmtDate(a.start)}}–{{fmtDate(a.end)}}</small></span><span class="me-chip" :data-tone="a.status">{{absenceStatus(a.status)}}</span></li></ul>
+                      <p v-else class="mi-espacio-empty">Sin ausencias registradas.</p>
+                    </article>
+                  </div>
+                </div>
+                <div v-else class="me-duty-workspace" aria-label="Mis guardias">
+                  <div class="me-duty-workspace-head"><button type="button" class="me-duty-back" @click="backToAgenda">← Mi agenda</button><h4 class="me-duty-heading" tabindex="-1">Mis guardias</h4><p>Tu lista personal de asignaciones próximas.</p></div>
+                  <div class="me-duty-master-detail" :class="{'has-selection':!!selectedDuty}">
+                    <div class="me-duty-list" aria-label="Asignaciones próximas">
+                      <ol v-if="state.activity.agenda.guardias.length"><li v-for="(g,index) in state.activity.agenda.guardias" :key="g.id || index"><button type="button" class="me-duty-row" :class="{'is-selected':state.dutyIndex===index}" :aria-current="state.dutyIndex===index?'true':null" @click="selectDuty(index)"><span class="me-duty-row-main"><strong>{{fmtDutyDate(g.date)}}</strong><small>{{dutyShift(g.shift)}}</small></span><span class="me-chip" :data-tone="g.role">{{guardiaRole(g.role)}}</span><span aria-hidden="true">›</span></button></li></ol>
+                      <p v-else class="mi-espacio-empty">No tienes guardias próximas registradas.</p>
+                    </div>
+                    <section v-if="selectedDuty" class="me-duty-detail" aria-labelledby="me-duty-detail-title">
+                      <button type="button" class="me-duty-detail-back" @click="closeDutyDetail">← Volver a la lista</button>
+                      <p class="mi-espacio-eyebrow">ASIGNACIÓN PERSONAL</p>
+                      <h5 id="me-duty-detail-title" class="me-duty-detail-title" tabindex="-1">{{fmtDutyDate(selectedDuty.date)}}</h5>
+                      <dl class="me-duty-facts"><div><dt>Modalidad</dt><dd>{{dutyShift(selectedDuty.shift)}}</dd></div><div><dt>Tu función</dt><dd>{{guardiaRole(selectedDuty.role)}}</dd></div></dl>
+                      <p class="me-duty-provenance">Información del registro institucional vinculada a tu perfil. Esta vista no incluye horas ni ubicación porque no las proporciona el contexto personal.</p>
+                    </section>
+                    <div v-else class="me-duty-unselected" aria-hidden="true"><p>Selecciona una guardia para consultar sus detalles.</p></div>
+                  </div>
+                  <button v-if="can('oncall_schedule')" type="button" class="me-duty-institutional" @click="navigate('oncall_schedule')">Abrir cuadrante departamental <span aria-hidden="true">↗</span></button>
                 </div>
               </section>
 
