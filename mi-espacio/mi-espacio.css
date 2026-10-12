@@ -393,3 +393,10 @@
  .mi-espacio--v9 .me-v9-services .me-v9-panel-heading,.mi-espacio--v9 .me-v9-services>.me-v8-tools-toggle{grid-column:1;grid-row:auto;justify-self:start}
  .mi-espacio--v9 .me-v9-services>p{grid-column:1}
 }
+
+/* Phase 12B — allocate space by verified workload, not professional title.
+   Mixed clinical/research profiles with several research records and minimal guardias
+   grant more reading measure to research without hiding their agenda. */
+@media(min-width:851px){
+ .mi-espacio--v9 .me-v9-overview.me-v12-research-priority{grid-template-columns:minmax(0,0.78fr) minmax(0,1.22fr)}
+}
