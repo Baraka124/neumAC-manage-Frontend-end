@@ -50,5 +50,50 @@
 .me-skel-line.short{width:60%}
 .me-skel-line+.me-skel-line{margin-top:9px}
 @keyframes me-shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
-@media(max-width:700px){.mi-espacio{padding:22px 16px 70px}.mi-espacio-head{display:block;padding-bottom:21px}.mi-espacio-refresh{margin-top:17px}.mi-espacio-person{align-items:flex-start;flex-wrap:wrap;gap:14px}.mi-espacio-avatar{width:56px;height:56px;border-radius:16px;font-size:18px}.mi-espacio-link-state{margin-left:0}.mi-espacio-link-list{grid-template-columns:1fr}.mi-espacio-link{padding:17px}.me-cards{grid-template-columns:1fr}}
+/* Claim/verify — report status chips + reporter form */
+.me-chip[data-tone="open"]{background:#fff1df;color:#835820}
+.me-chip[data-tone="accepted"]{background:#e2efe9;color:#1f6b53}
+.me-chip[data-tone="rejected"]{background:#eef1f1;color:#6a7a7e}
+.me-report{padding-top:30px}
+.me-report-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:640px;margin-top:4px}
+.me-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.me-field-wide{grid-column:1/-1}
+.me-field label{font-size:12px;font-weight:600;color:var(--me-ink)}
+.me-field select,.me-field textarea{border:1px solid #cdd9da;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;color:var(--me-ink);background:#fff;width:100%}
+.me-field select:focus-visible,.me-field textarea:focus-visible{outline:2px solid #158a89;outline-offset:1px;border-color:#158a89}
+.me-field textarea{resize:vertical;min-height:70px}
+.me-form-error{grid-column:1/-1;color:#9a3b2f;font-size:13px;margin:0}
+.me-form-actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
+.me-btn-primary{background:#158a89;color:#fff;border:1px solid #158a89;border-radius:9px;padding:10px 18px;font:600 13px/1.4 inherit;cursor:pointer}
+.me-btn-primary:disabled{opacity:.6;cursor:default}
+.me-btn-primary:focus-visible{outline:3px solid #0c5a59;outline-offset:2px}
+.me-myreports{margin-top:22px;max-width:640px}
+.me-myreports h4{font-size:13px;font-weight:650;color:var(--me-ink);margin:0 0 10px}
+/* Reviewer queue — the coordinator/head side of the claim/verify loop */
+.me-review{padding-top:34px;border-top:1px solid rgba(34,78,88,.12);margin-top:34px}
+.me-review-filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.me-review-tab{border:1px solid #cdd9da;background:#fff;color:#3a5a60;border-radius:999px;padding:7px 14px;font:600 12.5px/1.3 inherit;cursor:pointer}
+.me-review-tab:hover{border-color:#9dbfba;background:#f2f7f5}
+.me-review-tab.is-active{background:#158a89;border-color:#158a89;color:#fff}
+.me-review-tab:focus-visible{outline:3px solid #0c5a59;outline-offset:2px}
+.me-review-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;max-width:720px}
+.me-review-item{border:1px solid #d9e2e3;border-radius:14px;background:rgba(255,255,255,.86);padding:16px 18px}
+.me-review-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.me-review-meta{min-width:0;overflow-wrap:anywhere;font-size:14px;color:var(--me-ink)}
+.me-review-meta small{color:var(--me-muted);font-weight:400}
+.me-review-msg{margin:4px 0 8px;font-size:13.5px;line-height:1.55;color:#355260;overflow-wrap:anywhere}
+.me-review-by{margin:0;font-size:12px;color:var(--me-muted)}
+.me-review-note{margin-top:12px;width:100%;border:1px solid #cdd9da;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;color:var(--me-ink);background:#fff}
+.me-review-note:focus-visible{outline:2px solid #158a89;outline-offset:1px;border-color:#158a89}
+.me-review-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+.me-review-resolved{margin:10px 0 0;padding-top:10px;border-top:1px dashed rgba(34,78,88,.18);font-size:13px;color:#355260;overflow-wrap:anywhere}
+.me-review-resolved small{color:var(--me-muted);font-weight:650;margin-right:4px}
+@media(max-width:700px){.mi-espacio{padding:22px 16px 70px}.mi-espacio-head{display:block;padding-bottom:21px}.mi-espacio-refresh{margin-top:17px}.mi-espacio-person{align-items:flex-start;flex-wrap:wrap;gap:14px}.mi-espacio-avatar{width:56px;height:56px;border-radius:16px;font-size:18px}.mi-espacio-link-state{margin-left:0}.mi-espacio-link-list{grid-template-columns:1fr}.mi-espacio-link{padding:17px}.me-cards{grid-template-columns:1fr}.me-report-form{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.mi-espacio-link{transition:none}.me-skel-line{animation:none}}
+/* Publications card + claim action */
+.me-pubs-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.me-pubs-head h4{font-size:14px;font-weight:650;color:var(--me-ink);margin:0;display:flex;align-items:center;gap:8px}
+.me-pubs-claim{background:transparent;border:1px solid #bbcbd0;border-radius:9px;padding:7px 12px;font:600 12.5px/1.3 inherit;color:#1f6b53;cursor:pointer;white-space:nowrap}
+.me-pubs-claim:hover{background:#f2f7f5;border-color:#9dbfba}
+.me-pubs-claim:focus-visible{outline:3px solid #158a89;outline-offset:2px}
+.me-pubs-list li{align-items:flex-start}
