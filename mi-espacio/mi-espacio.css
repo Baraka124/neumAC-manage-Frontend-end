@@ -368,3 +368,13 @@
 .mi-espacio--v9 .me-v10-review-indicator{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #dce7e3;color:#315d57}
 .mi-espacio--v9 .me-v10-review-indicator strong{background:#e6f3ee;color:#276c5d;border-radius:5px;padding:3px 8px;font-size:12px}
 .mi-espacio--v9 .me-v10-publications-toggle:focus-visible{outline:3px solid #158a89;outline-offset:3px}
+
+/* Phase 10D: stable loading geometry and typographic containment for five profiles. */
+.mi-espacio--v9 .me-v10d-loading{padding-top:23px}
+.mi-espacio--v9 .me-v10d-loading-label{display:block;font-size:13px;color:var(--me-muted);margin-bottom:19px}
+.mi-espacio--v9 .me-v10d-loading-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:19px}
+.mi-espacio--v9 .me-v10d-loading-block{min-height:168px;border:1px solid #e1e9e6;border-radius:10px;background:linear-gradient(90deg,#f5f8f7 0%,#ecf3f0 50%,#f5f8f7 100%)}
+.mi-espacio--v9 .me-v9-panel,.mi-espacio--v9 .me-v9-publications,.mi-espacio--v9 .me-v9-services{overflow-wrap:anywhere}
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list{min-width:0}
+@media(max-width:850px){.mi-espacio--v9 .me-v10d-loading-grid{grid-template-columns:1fr}.mi-espacio--v9 .me-v10d-loading-block{min-height:100px}}
+@media(prefers-reduced-motion:reduce){.mi-espacio--v9 .me-v10d-loading-block{animation:none;transition:none}}
