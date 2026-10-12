@@ -13,3 +13,12 @@ test('review and activity continue to require session and identity checks',()=>{
  assert.match(src,/requestSeq!==seq\|\|!props.active\|\|String\(props.user\?\.id\)!==identity/);
  assert.match(src,/state.review.can && state.review.filter==='open'/);
 });
+test('claim-picker async results are rejected after a session transition',()=>{
+ const start=src.indexOf('async function onSubjectTypeChange()');
+ const end=src.indexOf('function onSubjectPick()',start);
+ assert.ok(start>=0&&end>start);
+ const picker=src.slice(start,end);
+ assert.match(picker,/const requestSeq=seq, identity=String\(props\.user\?\.id\|\|''\)/);
+ assert.match(picker,/requestSeq===seq && props\.active && String\(props\.user\?\.id\|\|''\)===identity/);
+ assert.match(picker,/if\(stillCurrent\(\)&&state\.report\.subject_type===t\) state\.picker\.items=items/);
+});
