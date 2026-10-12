@@ -33,6 +33,8 @@ jobs:
         run: node --test tests/mi-espacio-phase6a.test.cjs
       - name: Mi espacio Phase 6B personal portfolio
         run: node --test tests/mi-espacio-phase6b.test.cjs
+      - name: Mi espacio Phase 6C verified review outcomes
+        run: node --test tests/mi-espacio-phase6c.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |

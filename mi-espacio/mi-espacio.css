@@ -165,3 +165,6 @@
 .mi-espacio .me-publications{padding-top:38px}
 .mi-espacio :is(.me-portfolio-entry,.me-portfolio-group,.me-portfolio-back):focus-visible{outline:3px solid #158a89;outline-offset:3px}
 @media(max-width:800px){.mi-espacio .me-portfolio-layout{grid-template-columns:1fr}.mi-espacio .me-portfolio-layout.has-selection .me-portfolio-entries{display:none}.mi-espacio .me-portfolio-layout.has-selection .me-portfolio-back{display:inline-flex}.mi-espacio .me-portfolio-layout:not(.has-selection) .me-portfolio-prompt{display:none}}
+
+/* Phase 6C — reviewer feedback remains in context and readable. */
+.mi-espacio .me-review-feedback{border-left:3px solid #478a7c;padding:11px 14px;background:#eff6f3;color:#214f46;font-size:14px;line-height:1.55;margin:8px 0 16px}
