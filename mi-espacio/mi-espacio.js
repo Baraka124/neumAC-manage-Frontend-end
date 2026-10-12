@@ -431,7 +431,7 @@
             </template>
           </template>
         </template>
-      
+      </section>`
     };
   }
   root.NeumMiEspacio={createView};
