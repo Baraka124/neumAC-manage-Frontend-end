@@ -101,6 +101,8 @@
         // When the subject is a line or a publication, load the pickable options
         // so the claim carries a real subject_id (the server then auto-links on accept).
         async function onSubjectTypeChange(){
+          const requestSeq=seq, identity=String(props.user?.id||'');
+          const stillCurrent=()=>requestSeq===seq && props.active && String(props.user?.id||'')===identity;
           const t=state.report.subject_type;
           state.report.subject_id='';state.report.subject_label='';
           if(t!=='line'&&t!=='publication'){ state.picker.items=[];state.picker.forType=''; return; }
@@ -109,9 +111,9 @@
           try {
             const loader=t==='line'?root.NeumMiEspacioData.loadLineOptions:root.NeumMiEspacioData.loadPublicationOptions;
             const items=await loader((p,o)=>API.request(p,o),controller&&controller.signal);
-            if(state.report.subject_type===t) state.picker.items=items;
-          } catch(err){ if(state.report.subject_type===t) state.picker.items=[]; }
-          finally { if(state.report.subject_type===t) state.picker.busy=false; }
+            if(stillCurrent()&&state.report.subject_type===t) state.picker.items=items;
+          } catch(err){ if(stillCurrent()&&state.report.subject_type===t) state.picker.items=[]; }
+          finally { if(stillCurrent()&&state.report.subject_type===t) state.picker.busy=false; }
         }
         function onSubjectPick(){
           const opt=state.picker.items.find(o=>o.id===state.report.subject_id);
