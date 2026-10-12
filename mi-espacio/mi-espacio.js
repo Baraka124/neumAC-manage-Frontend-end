@@ -15,6 +15,26 @@
     if (d.getFullYear() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1 || d.getDate() !== Number(m[3])) return '';
     return new Intl.DateTimeFormat('es-ES', {weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(d);
   }
+  const PROFESSIONAL_TYPE = Object.freeze({
+    medical_resident:'Médico/a residente', attending_physician:'Personal médico adjunto',
+    biomedical_engineer:'Ingeniería biomédica', clinician:'Personal clínico',
+    medical_staff:'Personal sanitario', resident:'Médico/a residente'
+  });
+  function professionalType(value) {
+    const key=String(value||'').trim();
+    return PROFESSIONAL_TYPE[key] || key.replace(/_/g,' ');
+  }
+  function fmtPeriod(from,to) {
+    const format=(value)=>{
+      const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(value||''));
+      if(!m)return '';
+      const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));
+      if(d.getFullYear()!==Number(m[1])||d.getMonth()!==Number(m[2])-1||d.getDate()!==Number(m[3]))return '';
+      return new Intl.DateTimeFormat('es-ES',{day:'numeric',month:'short',year:'numeric'}).format(d);
+    };
+    const start=format(from),end=format(to);
+    return start&&end ? (start===end?start:start+' – '+end) : start||end;
+  }
   const GUARDIA = { primary:'Principal', backup:'Refuerzo', resident:'Residente' };
   const ROTATION = { resident:'Residente', supervisor:'Supervisión' };
   const STUDY = { PI:'IP', 'co-investigator':'Co-investigador', 'sub-investigator':'Sub-investigador' };
@@ -35,7 +55,7 @@
       props: { active: Boolean, user: Object, canOpenView: Function },
       emits: ['navigate'],
       setup(props,{emit}) {
-        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,
+        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,researchExpanded:false,
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}}});
@@ -44,12 +64,23 @@
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
         const initials=Vue.computed(()=>String(state.context?.staff?.name||state.context?.account?.name||'')
           .split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase()||'·');
+        const professionalDesignation=Vue.computed(()=>{
+          const staff=state.context?.staff;
+          return staff?.specialization || professionalType(staff?.staffType || state.context?.account?.role || '') || 'Cuenta institucional';
+        });
+        const personalRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role==='resident'));
+        const supervisedRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role==='supervisor'));
+        const otherRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role!=='resident'&&r.role!=='supervisor'));
+        const hasAgenda=Vue.computed(()=>!!((state.activity?.agenda?.guardias?.length||0)+(state.activity?.agenda?.rotations?.length||0)+(state.activity?.agenda?.absences?.length||0)));
+        const hasResearch=Vue.computed(()=>!!((state.activity?.research?.lines?.length||0)+(state.activity?.research?.studies?.length||0)+(state.activity?.research?.projects?.length||0)));
+        const hasResearchOverflow=Vue.computed(()=>['lines','studies','projects'].some(k=>(state.activity?.research?.[k]?.length||0)>2));
+        const showAgenda=Vue.computed(()=>hasAgenda.value || (!hasResearch.value && !(state.activity?.publications?.items?.length||0)));
         function clear(){
           ++seq;
           if(controller)controller.abort();
           controller=null;
           state.context=null;state.error='';state.busy=false;
-          state.activity=null;state.activityError='';state.activityBusy=false;state.toolsOpen=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
+          state.activity=null;state.activityError='';state.activityBusy=false;state.toolsOpen=false;state.researchExpanded=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
           state.reports=[];
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
           Object.assign(state.picker,{busy:false,items:[],forType:''});
@@ -277,6 +308,7 @@
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
+          professionalDesignation,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,showAgenda,fmtPeriod,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
@@ -308,7 +340,7 @@
                 <h3>{{state.context.staff?.name || state.context.account.name}}</h3>
                 <span class="mi-espacio-link-state" :class="linked?'is-linked':'is-unlinked'"><span v-if="linked" aria-hidden="true">✓</span> {{linked?'Perfil vinculado':state.context.linkState==='unlinked'?'Vinculación pendiente':'Vinculación no disponible'}}</span>
               </div>
-              <p>{{state.context.staff?.specialization || state.context.staff?.staffType || state.context.account.role || 'Cuenta institucional'}}</p>
+              <p>{{professionalDesignation}}</p>
               <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
             </div>
             <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
@@ -318,28 +350,45 @@
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder" role="status">Cargando actividad vinculada…</div>
             <div v-else-if="state.activityError" class="mi-espacio-notice" role="alert">{{state.activityError}} <button type="button" @click="refresh">Reintentar</button></div>
             <template v-else-if="state.activity">
-              <div v-if="state.dutyMode==='overview'" class="me-v8-overview me-v9-overview">
-                <section class="me-v8-column me-v8-agenda me-v9-panel" aria-labelledby="me-v9-agenda-title">
-                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">AGENDA PERSONAL</p><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">Mi agenda</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} próximas</span></div>
+              <div v-if="state.dutyMode==='overview'" class="me-v8-overview me-v9-overview" :class="{'me-v10-research-first':!showAgenda,'me-v10-sparse':!hasAgenda && !hasResearch}">
+                <section v-if="showAgenda" class="me-v8-column me-v8-agenda me-v9-panel" :class="{'me-v10-agenda-sparse':!hasAgenda}" aria-labelledby="me-v9-agenda-title">
+                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">AGENDA PERSONAL</p><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">Mi agenda</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} guardias</span></div>
                   <div v-if="state.activity.agenda.guardias.length" class="me-v8-commitments">
                     <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">PRÓXIMA GUARDIA</span><strong>{{fmtDutyDate(state.activity.agenda.guardias[0].date)}}</strong><span>{{dutyShift(state.activity.agenda.guardias[0].shift)}} · {{guardiaRole(state.activity.agenda.guardias[0].role)}}</span></div>
                     <ol v-if="state.activity.agenda.guardias.length>1" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in state.activity.agenda.guardias.slice(1,3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
-                    <button v-if="state.activity.agenda.guardias.length>3" type="button" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver todas mis guardias <span aria-hidden="true">→</span></button>
+                    <button type="button" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
                   </div>
-                  <p v-else class="me-v8-quiet me-v9-empty">No tienes próximas guardias registradas.</p>
+                  <div v-else-if="personalRotations.length" class="me-v8-upnext me-v9-feature me-v10-rotation-feature">
+                    <span class="me-v8-kicker">MI ROTACIÓN REGISTRADA</span>
+                    <strong>{{personalRotations[0].unit || 'Rotación asignada'}}</strong>
+                    <span v-if="fmtPeriod(personalRotations[0].start,personalRotations[0].end)">{{fmtPeriod(personalRotations[0].start,personalRotations[0].end)}}</span>
+                  </div>
+                  <div v-else-if="supervisedRotations.length" class="me-v8-upnext me-v9-feature me-v10-supervision-feature">
+                    <span class="me-v8-kicker">ROTACIÓN BAJO MI SUPERVISIÓN</span>
+                    <strong>{{supervisedRotations[0].resident || supervisedRotations[0].unit || 'Asignación supervisada'}}</strong>
+                    <span v-if="supervisedRotations[0].unit">{{supervisedRotations[0].unit}}</span>
+                    <span v-if="fmtPeriod(supervisedRotations[0].start,supervisedRotations[0].end)">{{fmtPeriod(supervisedRotations[0].start,supervisedRotations[0].end)}}</span>
+                  </div>
+                  <p v-else-if="!hasAgenda" class="me-v8-quiet me-v9-empty">No constan asignaciones próximas vinculadas a tu perfil.</p>
                   <div v-if="state.activity.agenda.rotations.length || state.activity.agenda.absences.length" class="me-v8-secondary-agenda">
-                    <div v-if="state.activity.agenda.rotations.length"><h4>Rotaciones</h4><ul><li v-for="r in state.activity.agenda.rotations" :key="r.id">{{r.unit||r.resident||'Rotación'}} <small>{{fmtDate(r.start)}}–{{fmtDate(r.end)}}</small></li></ul></div>
-                    <div v-if="state.activity.agenda.absences.length"><h4>Ausencias</h4><ul><li v-for="a in state.activity.agenda.absences" :key="a.id">{{a.type||'Ausencia'}} <small>{{fmtDate(a.start)}}–{{fmtDate(a.end)}}</small></li></ul></div>
+                    <div v-if="personalRotations.length> (state.activity.agenda.guardias.length?0:1)">
+                      <h4>Mis rotaciones</h4><ul><li v-for="r in personalRotations.slice(state.activity.agenda.guardias.length?0:1)" :key="r.id">{{r.unit||'Rotación asignada'}} <small>{{fmtPeriod(r.start,r.end)}}</small></li></ul>
+                    </div>
+                    <div v-if="supervisedRotations.length> (state.activity.agenda.guardias.length||personalRotations.length?0:1)">
+                      <h4>Rotaciones que superviso</h4><ul><li v-for="r in supervisedRotations.slice(state.activity.agenda.guardias.length||personalRotations.length?0:1)" :key="r.id">{{r.resident||r.unit||'Rotación supervisada'}} <small>{{r.resident&&r.unit?r.unit+' · ':''}}{{fmtPeriod(r.start,r.end)}}</small></li></ul>
+                    </div>
+                    <div v-if="otherRotations.length"><h4>Otras rotaciones vinculadas</h4><ul><li v-for="r in otherRotations" :key="r.id">{{r.unit||r.resident||'Rotación'}} <small>{{fmtPeriod(r.start,r.end)}}</small></li></ul></div>
+                    <div v-if="state.activity.agenda.absences.length"><h4>Ausencias</h4><ul><li v-for="a in state.activity.agenda.absences" :key="a.id">{{a.type||'Ausencia'}} <small>{{fmtPeriod(a.start,a.end)}}</small></li></ul></div>
                   </div>
                 </section>
-                <section class="me-v8-column me-v8-research me-v9-panel" aria-labelledby="me-v9-research-title">
+                <section v-if="hasResearch" class="me-v8-column me-v8-research me-v9-panel" aria-labelledby="me-v9-research-title">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">PARTICIPACIÓN VERIFICADA</p><h3 id="me-v9-research-title">Mi investigación</h3></div></div>
                   <div v-if="state.activity.counts.lines+state.activity.counts.studies+state.activity.counts.projects" class="me-v8-research-groups">
-                    <div v-if="state.activity.research.lines.length"><h4>Líneas de investigación <span>{{state.activity.counts.lines}}</span></h4><ul><li v-for="l in state.activity.research.lines" :key="l.id"><span>{{l.name}}</span><small>{{lineRole(l.role)}}</small></li></ul></div>
-                    <div v-if="state.activity.research.studies.length"><h4>Estudios <span>{{state.activity.counts.studies}}</span></h4><ul><li v-for="s in state.activity.research.studies" :key="s.id"><span>{{s.title}}</span><small>{{studyRole(s.role)}}<template v-if="s.code"> · {{s.code}}</template></small></li></ul></div>
-                    <div v-if="state.activity.research.projects.length"><h4>Proyectos <span>{{state.activity.counts.projects}}</span></h4><ul><li v-for="p in state.activity.research.projects" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul></div>
+                    <div v-if="state.activity.research.lines.length"><h4>Líneas de investigación <span>{{state.activity.counts.lines}}</span></h4><ul><li v-for="l in state.activity.research.lines.slice(0,state.researchExpanded?state.activity.research.lines.length:2)" :key="l.id"><span>{{l.name}}</span><small>{{lineRole(l.role)}}</small></li></ul></div>
+                    <div v-if="state.activity.research.studies.length"><h4>Estudios <span>{{state.activity.counts.studies}}</span></h4><ul><li v-for="s in state.activity.research.studies.slice(0,state.researchExpanded?state.activity.research.studies.length:2)" :key="s.id"><span>{{s.title}}</span><small>{{studyRole(s.role)}}<template v-if="s.code"> · {{s.code}}</template></small></li></ul></div>
+                    <div v-if="state.activity.research.projects.length"><h4>Proyectos <span>{{state.activity.counts.projects}}</span></h4><ul><li v-for="p in state.activity.research.projects.slice(0,state.researchExpanded?state.activity.research.projects.length:2)" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul></div>
                   </div>
-                  <p v-else class="me-v8-quiet me-v9-empty">No hay líneas, estudios o proyectos vinculados a tu perfil.</p>
+                  <button v-if="hasResearchOverflow" type="button" class="me-v10-research-toggle" :aria-expanded="state.researchExpanded" @click="state.researchExpanded=!state.researchExpanded">{{state.researchExpanded?'Ver resumen':'Ver toda mi investigación'}} <span aria-hidden="true">{{state.researchExpanded?'↑':'→'}}</span></button>
                 </section>
               </div>
               <section v-else class="me-v8-all-duties" aria-label="Mis guardias">
