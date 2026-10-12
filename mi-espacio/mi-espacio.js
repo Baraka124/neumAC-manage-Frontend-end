@@ -35,7 +35,7 @@
       props: { active: Boolean, user: Object, canOpenView: Function },
       emits: ['navigate'],
       setup(props,{emit}) {
-        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,
+        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}}});
@@ -49,7 +49,7 @@
           if(controller)controller.abort();
           controller=null;
           state.context=null;state.error='';state.busy=false;
-          state.activity=null;state.activityError='';state.activityBusy=false;state.dutyMode='overview';state.dutyIndex=null;
+          state.activity=null;state.activityError='';state.activityBusy=false;state.dutyMode='overview';state.dutyIndex=null;state.researchGroup='lines';state.researchIndex=null;state.publicationIndex=null;
           state.reports=[];
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
           Object.assign(state.picker,{busy:false,items:[],forType:''});
@@ -200,15 +200,65 @@
         }
         function closeDutyDetail(){state.dutyIndex=null;focusDuty('.me-duty-heading');}
         function backToAgenda(){state.dutyMode='overview';state.dutyIndex=null;focusDuty('.me-duty-open');}
-        const destinations=[
-          {id:'resident_rotations',label:'Rotaciones',desc:'Consultar las asignaciones registradas'},
-          {id:'research_hub',label:'Investigación',desc:'Acceder a estudios y proyectos'},
-          {id:'news',label:'Biblioteca',desc:'Consultar el registro de publicaciones'}
-        ];
+        // Phase 6B: personal, read-only portfolio; never navigates out of Mi espacio.
+        const researchGroups=Object.freeze([
+          {id:'lines',label:'Líneas'}, {id:'studies',label:'Estudios'}, {id:'projects',label:'Proyectos'}
+        ]);
+        const researchItems=Vue.computed(()=>state.activity?.research?.[state.researchGroup] || []);
+        const selectedResearch=Vue.computed(()=>{
+          const items=researchItems.value;
+          return Number.isInteger(state.researchIndex)?items[state.researchIndex] || null:null;
+        });
+        const selectedPublication=Vue.computed(()=>{
+          const items=state.activity?.publications?.items || [];
+          return Number.isInteger(state.publicationIndex)?items[state.publicationIndex] || null:null;
+        });
+        const researchRecordTitle=r=>String(r?.name || r?.title || '');
+        const researchRecordMeta=r=>{
+          if(!r)return '';
+          if(state.researchGroup==='lines')return r.number?'L'+r.number:'';
+          if(state.researchGroup==='studies')return r.code || '';
+          return r.stage || '';
+        };
+        const researchRecordRole=r=>{
+          if(!r)return '';
+          const dict=state.researchGroup==='lines'?LINE:state.researchGroup==='studies'?STUDY:PROJECT;
+          return label(dict,r.role);
+        };
+        function changeResearchGroup(group){
+          if(!researchGroups.some(g=>g.id===group))return;
+          state.researchGroup=group;state.researchIndex=null;
+        }
+        function selectResearch(index){
+          if(!Number.isInteger(index)||index<0||index>=researchItems.value.length)return;
+          state.researchIndex=index;focusDuty('.me-portfolio-detail-title');
+        }
+        function closeResearch(){
+          const index=state.researchIndex;state.researchIndex=null;
+          Vue.nextTick(()=>{
+            const node=document.querySelector('.mi-espacio .me-portfolio-entry[data-index="'+index+'"]');
+            if(node)node.focus({preventScroll:true});
+          });
+        }
+        function selectPublication(index){
+          const items=state.activity?.publications?.items || [];
+          if(!Number.isInteger(index)||index<0||index>=items.length)return;
+          state.publicationIndex=index;focusDuty('.me-publication-detail-title');
+        }
+        function closePublication(){
+          const index=state.publicationIndex;state.publicationIndex=null;
+          Vue.nextTick(()=>{
+            const node=document.querySelector('.mi-espacio .me-publication-entry[data-index="'+index+'"]');
+            if(node)node.focus({preventScroll:true});
+          });
+        }
         return {
-          state,linked,initials,destinations,can,refresh:load,selectedDuty,
+          state,linked,initials,can,refresh:load,selectedDuty,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
+          researchGroups,researchItems,selectedResearch,selectedPublication,
+          researchRecordTitle,researchRecordMeta,researchRecordRole,
+          changeResearchGroup,selectResearch,closeResearch,selectPublication,closePublication,
           navigate:view=>can(view)&&emit('navigate',view),
           fmtDate,
           guardiaRole:k=>label(GUARDIA,k), rotationRole:k=>label(ROTATION,k),
@@ -409,13 +459,7 @@
             <p v-else class="mi-espacio-empty">No hay comunicaciones {{emptyLabel(state.review.filter)}}.</p>
           </section>
 
-          <section v-if="state.dutyMode==='overview'" class="mi-espacio-links" aria-labelledby="mi-espacio-shortcuts">
-            <div class="mi-espacio-section-heading"><h3 id="mi-espacio-shortcuts">Acceso a módulos</h3><p>Las mismas herramientas institucionales, según tus permisos.</p></div>
-            <div class="mi-espacio-link-list">
-              <button v-for="item in destinations.filter(d=>can(d.id))" :key="item.id" type="button" class="mi-espacio-link" @click="navigate(item.id)"><span><strong>{{item.label}}</strong><small>{{item.desc}}</small></span><span aria-hidden="true">↗</span></button>
-              <p v-if="!destinations.some(d=>can(d.id))" class="mi-espacio-empty">No hay otros módulos disponibles para esta cuenta.</p>
-            </div>
-          </section>
+
         </template>
       </section>`
     };
