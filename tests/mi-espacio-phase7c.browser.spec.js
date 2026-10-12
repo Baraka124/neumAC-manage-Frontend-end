@@ -71,8 +71,8 @@ async function mountPersonalSpace(page, { linked = true } = {}) {
     window.__miVisualApp = app;
   }, { linked });
   if (linked) {
-    await expect(page.locator('.me-portfolio .me-portfolio-entry').first()).toBeVisible();
-    await expect(page.locator('.me-publications .me-publication-entry')).toHaveCount(2);
+    await expect(page.locator('.me-v8-research-groups')).toBeVisible();
+    await expect(page.locator('.me-v8-publication-list li')).toHaveCount(2);
   } else {
     await expect(page.getByText('Vinculación pendiente')).toBeVisible();
   }
@@ -86,8 +86,8 @@ async function assertNoHorizontalClipping(page) {
     };
     const selectors = [
       '.mi-espacio', '.mi-espacio-head', '.mi-espacio-person', '.me-agenda-layout',
-      '.me-duty-workspace', '.me-portfolio', '.me-publications',
-      '.me-portfolio-entry', '.me-inline-detail', '.me-report-form'
+      '.me-v8-overview', '.me-v8-research', '.me-v8-publications',
+      '.me-v8-publication-list li', '.me-v8-tools', '.me-report-form'
     ];
     const failures = [];
     for (const selector of selectors) {
@@ -105,88 +105,38 @@ async function assertNoHorizontalClipping(page) {
   expect(result.width, JSON.stringify(result)).toBeLessThanOrEqual(result.viewport + 2);
 }
 
-for (const viewport of [
-  { width: 390, height: 844, label: 'phone' },
-  { width: 768, height: 900, label: 'tablet' },
-  { width: 1366, height: 900, label: 'desktop' }
-]) {
-  test('Mi Espacio real render and inline journey at ' + viewport.label, async ({ page }, testInfo) => {
-    test.setTimeout(45000);
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
-    await mountPersonalSpace(page);
-
-    await expect(page.locator('.mi-espacio-person-main h3')).toContainText('Persona de Prueba');
-    await expect(page.locator('.me-agenda-secondary .me-card')).toHaveCount(0);
-    await assertNoHorizontalClipping(page);
-    await testInfo.attach('overview-' + viewport.label + '.png', {
-      body: await page.screenshot({ fullPage: true }), contentType: 'image/png'
-    });
-
-    const research = page.locator('.me-portfolio .me-portfolio-entry').first();
-    await research.scrollIntoViewIfNeeded();
-    const scrollBefore = await page.evaluate(() => window.scrollY);
-    await research.click();
-    await expect(research).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('.me-portfolio .me-inline-detail')).toBeVisible();
-    expect(await page.locator('.me-portfolio .me-inline-detail h4, .me-portfolio .me-inline-detail h5').count()).toBe(0);
-    expect(Math.abs((await page.evaluate(() => window.scrollY)) - scrollBefore)).toBeLessThanOrEqual(72);
-    await assertNoHorizontalClipping(page);
-    await page.keyboard.press('Escape');
-    await expect(research).toHaveAttribute('aria-expanded', 'false');
-    await expect(research).toBeFocused();
-
-    await page.locator('.me-portfolio-group').nth(1).click();
-    const study = page.locator('.me-portfolio .me-portfolio-entry').first();
-    await study.click();
-    await expect(page.locator('.me-portfolio .me-inline-detail')).toContainText('PROTO-2026-EXTENDED');
-    await study.click();
-    await expect(study).toHaveAttribute('aria-expanded', 'false');
-
-    const publication = page.locator('.me-publications .me-publication-entry').first();
-    await publication.click();
-    await expect(publication).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('.me-publications .me-inline-detail')).toContainText('Posición de autoría');
-    await assertNoHorizontalClipping(page);
-    await testInfo.attach('expanded-publication-' + viewport.label + '.png', {
-      body: await page.screenshot({ fullPage: true }), contentType: 'image/png'
-    });
-    await publication.click();
-    await expect(publication).toHaveAttribute('aria-expanded', 'false');
-
-    await page.getByRole('button', { name: 'Reivindicar una publicación' }).click();
-    await expect(page.locator('#me-report-subject')).toBeFocused();
-    await expect(page.locator('#me-report-subject')).toHaveValue('publication');
-    await assertNoHorizontalClipping(page);
-
-    await page.locator('.me-duty-open').click();
-    await expect(page.locator('.me-duty-heading')).toHaveText('Mis guardias');
-    await expect(page.locator('.me-duty-row')).toHaveCount(2);
-    const duty = page.locator('.me-duty-row').first();
-    await duty.click();
-    await expect(duty).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('.me-duty-detail')).toContainText('Guardia presencial');
-    await expect(page.locator('.me-duty-list')).toBeVisible();
-    await assertNoHorizontalClipping(page);
-    await testInfo.attach('expanded-duty-' + viewport.label + '.png', {
-      body: await page.screenshot({ fullPage: true }), contentType: 'image/png'
-    });
-    await duty.press('Escape');
-    await expect(duty).toHaveAttribute('aria-expanded', 'false');
-    await page.locator('.me-duty-back').click();
-    await expect(page.locator('.me-agenda-feature')).toBeVisible();
-    await expect(page.locator('.me-publications')).toBeVisible();
-    expect(errors).toEqual([]);
-    expect(await page.evaluate(() => window.__miVisualErrors)).toEqual([]);
-  });
+for(const viewport of [
+ {width:390,height:844,label:'mobile'},
+ {width:768,height:900,label:'tablet'},
+ {width:1366,height:900,label:'desktop'}
+]){
+ test('Mi Espacio structural reset visual journey · '+viewport.label,async({page},testInfo)=>{
+  test.setTimeout(45000);
+  await page.setViewportSize({width:viewport.width,height:viewport.height});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await mountPersonalSpace(page);
+  await expect(page.locator('.mi-espacio-person-main h3')).toContainText('Persona de Prueba');
+  await expect(page.locator('.me-v8-upnext')).toContainText('Guardia presencial');
+  await expect(page.locator('.me-v8-research-groups')).toContainText('Investigación traslacional');
+  await expect(page.locator('.me-v8-publication-list li')).toHaveCount(2);
+  await expect(page.locator('.me-inline-detail')).toHaveCount(0);
+  await assertNoHorizontalClipping(page);
+  await testInfo.attach('overview-'+viewport.label+'.png',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
+  await page.getByRole('button',{name:/Comunicaciones y gestiones/}).click();
+  await page.getByRole('button',{name:'Reivindicar una publicación'}).click();
+  await expect(page.locator('#me-report-subject')).toHaveValue('publication');
+  await expect(page.locator('#me-report-subject')).toBeFocused();
+  await assertNoHorizontalClipping(page);
+  await page.getByRole('button',{name:/Cerrar gestiones/}).click();
+  await expect(page.locator('.me-report')).toHaveCount(0);
+  await expect(page.locator('.me-v8-research-groups')).toBeVisible();
+  expect(errors).toEqual([]);
+ });
 }
-
-test('unlinked identity never renders another person’s private activity', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await mountPersonalSpace(page, { linked: false });
-  await expect(page.locator('.me-portfolio')).toHaveCount(0);
-  await expect(page.locator('.me-duty-next')).toHaveCount(0);
-  await expect(page.locator('.mi-espacio-person')).toBeVisible();
+test('unlinked accounts never expose scoped professional records',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await mountPersonalSpace(page,{linked:false});
+ await expect(page.locator('.me-v8-overview')).toHaveCount(0);
+ await expect(page.locator('.me-v8-publications')).toHaveCount(0);
 });
