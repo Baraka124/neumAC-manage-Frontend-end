@@ -39,6 +39,8 @@ jobs:
         run: node --test tests/mi-espacio-phase6d.test.cjs
       - name: Mi espacio Phase 7A composition contract
         run: node --test tests/mi-espacio-phase7a.test.cjs
+      - name: Mi espacio Phase 7B inline detail contract
+        run: node --test tests/mi-espacio-phase7b.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |

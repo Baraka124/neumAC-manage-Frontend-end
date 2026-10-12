@@ -225,3 +225,32 @@
  .mi-espacio .mi-espacio-link-state{font-size:11px}
  .mi-espacio .me-portfolio-group{padding:9px 8px}
 }
+
+/* Phase 7B — inline disclosure; no secondary content pane or page-like headings. */
+.mi-espacio .me-duty-master-detail,.mi-espacio .me-portfolio-layout,
+.mi-espacio .me-portfolio-layout.has-selection{display:block;grid-template-columns:none}
+.mi-espacio .me-duty-list,.mi-espacio .me-portfolio-entries{width:100%;min-width:0}
+.mi-espacio .me-duty-list ol,.mi-espacio .me-portfolio-list{display:block}
+.mi-espacio .me-duty-list-item,.mi-espacio .me-portfolio-list-item{list-style:none;margin:0}
+.mi-espacio .me-duty-row{border:0;border-bottom:1px solid #d9e2e3;border-radius:0;background:transparent;padding:16px 8px}
+.mi-espacio .me-duty-row.is-selected{background:#f1f7f5;border-bottom-color:#86b5aa}
+.mi-espacio .me-disclosure-chevron{font-size:20px;line-height:1;flex:none;color:#497973;transition:transform .14s ease}
+.mi-espacio [aria-expanded="true"]>.me-disclosure-chevron{transform:rotate(180deg)}
+.mi-espacio .me-inline-detail{display:block;margin:0 0 12px;padding:16px 20px 19px;border:0;border-left:2px solid #76afa1;border-bottom:1px solid #dbe8e5;background:#f6f9f8;border-radius:0}
+.mi-espacio .me-inline-detail .mi-espacio-eyebrow{margin:0 0 11px}
+.mi-espacio .me-inline-detail .me-duty-facts,.mi-espacio .me-inline-detail .me-portfolio-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px 22px}
+.mi-espacio .me-inline-detail .me-duty-facts div,.mi-espacio .me-inline-detail .me-portfolio-facts div{border-top:0;padding:0}
+.mi-espacio .me-inline-detail dt{font-size:12px;line-height:1.45;color:var(--me-muted)}
+.mi-espacio .me-inline-detail dd{font-size:14px;line-height:1.55;margin:4px 0 0}
+.mi-espacio .me-inline-detail .me-duty-provenance{margin:13px 0 0;font-size:12px}
+.mi-espacio .me-duty-workspace-head{padding-bottom:13px}
+.mi-espacio .me-duty-workspace-head h4{font-size:clamp(21px,2vw,26px);margin:5px 0}
+.mi-espacio .me-duty-master-detail{margin-top:9px}
+.mi-espacio .me-duty-institutional{margin-top:14px}
+.mi-espacio .me-portfolio-entry.is-active{background:#f1f7f5}
+@media(max-width:800px){
+ .mi-espacio .me-duty-master-detail.has-selection .me-duty-list,
+ .mi-espacio .me-portfolio-layout.has-selection .me-portfolio-entries{display:block}
+ .mi-espacio .me-inline-detail{padding:14px 15px}
+}
+@media(prefers-reduced-motion:reduce){.mi-espacio .me-disclosure-chevron{transition:none}}
