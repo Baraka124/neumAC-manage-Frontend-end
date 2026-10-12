@@ -125,6 +125,8 @@
           onSubjectTypeChange();
         }
         async function submitReport(){
+          const requestSeq=seq, identity=String(props.user?.id||'');
+          const stillCurrent=()=>requestSeq===seq && props.active && String(props.user?.id||'')===identity;
           const f=state.report;
           if(!f.subject_type||!f.kind){ f.error='Indica sobre qué y qué ocurre.'; return; }
           if((f.subject_type==='line'||f.subject_type==='publication')&&!f.subject_id){ f.error='Elige cuál de la lista.'; return; }
@@ -132,11 +134,12 @@
           try {
             await root.NeumMiEspacioData.submitDiscrepancy(
               (p,o)=>API.request(p,o),{subject_type:f.subject_type,kind:f.kind,message:f.message,subject_id:f.subject_id,subject_label:f.subject_label},controller&&controller.signal);
+            if(!stillCurrent())return;
             f.done=true;f.open=false;f.subject_type='';f.kind='';f.message='';f.subject_id='';f.subject_label='';
             state.picker.items=[];state.picker.forType='';
             loadReports(seq, String(props.user?.id||''));
-          } catch(err){ f.error=err?.message||'No se ha podido enviar la comunicación.'; }
-          finally { f.busy=false; }
+          } catch(err){ if(stillCurrent()&&err?.name!=='AbortError')f.error=err?.message||'No se ha podido enviar la comunicación.'; }
+          finally { if(stillCurrent())f.busy=false; }
         }
         // Reviewer queue — only probed when the account carries review authority
         // (admin_level ≥ 1, the same threshold the server enforces). A 403 means
@@ -163,11 +166,14 @@
           loadReviewQueue(seq, String(props.user?.id||''));
         }
         async function resolveItem(reportId, status){
+          const requestSeq=seq, identity=String(props.user?.id||'');
+          const stillCurrent=()=>requestSeq===seq && props.active && String(props.user?.id||'')===identity;
           if(state.review.acting)return;
           state.review.acting=reportId;state.review.error='';state.review.notice='';
           try {
             const result=await root.NeumMiEspacioData.resolveReport(
               (p,o)=>API.request(p,o), reportId, {status, resolution_note:state.review.notes[reportId]||''}, controller&&controller.signal);
+            if(!stillCurrent())return;
             const outcome=root.NeumMiEspacioData.reviewOutcome(result,status);
             state.review.notice=outcome.message;
             delete state.review.notes[reportId];
@@ -175,8 +181,8 @@
             if(status==='accepted' && !outcome.needsAttention && (result.linked==='line_member' || result.linked==='publication_author')){
               await loadActivity(seq, String(props.user?.id||''));
             }
-          } catch(err){ if(err?.name!=='AbortError')state.review.error=err?.message||'No se ha podido actualizar la comunicación.'; }
-          finally { state.review.acting=''; }
+          } catch(err){ if(stillCurrent()&&err?.name!=='AbortError')state.review.error=err?.message||'No se ha podido actualizar la comunicación.'; }
+          finally { if(stillCurrent())state.review.acting=''; }
         }
         async function loadActivity(requestSeq, identity){
           state.activityBusy=true;state.activityError='';
