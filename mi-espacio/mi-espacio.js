@@ -349,52 +349,55 @@
                 </div>
               </section>
 
-              <section v-if="state.dutyMode==='overview'" class="me-activity" aria-label="Mi investigación">
-                <div class="mi-espacio-section-heading"><h3>Mi investigación</h3><p>Tu participación verificada en la actividad científica.</p></div>
-                <div class="me-cards">
-                  <article class="me-card">
-                    <header class="me-card-head"><h4>Líneas</h4><span class="me-count">{{state.activity.counts.lines}}</span></header>
-                    <ul v-if="state.activity.research.lines.length" class="me-list">
-                      <li v-for="l in state.activity.research.lines" :key="l.id || l.name">
-                        <span class="me-item-main"><small v-if="l.number" class="me-ord">L{{l.number}}</small> {{l.name}}</span>
-                        <span class="me-chip" :data-tone="l.role">{{lineRole(l.role)}}</span>
-                      </li>
-                    </ul>
-                    <p v-else class="mi-espacio-empty">Sin líneas asignadas.</p>
-                  </article>
-                  <article class="me-card">
-                    <header class="me-card-head"><h4>Estudios</h4><span class="me-count">{{state.activity.counts.studies}}</span></header>
-                    <ul v-if="state.activity.research.studies.length" class="me-list">
-                      <li v-for="s in state.activity.research.studies" :key="s.id">
-                        <span class="me-item-main">{{s.title}}<small v-if="s.code"> · {{s.code}}</small></span>
-                        <span class="me-chip" :data-tone="s.role">{{studyRole(s.role)}}</span>
-                      </li>
-                    </ul>
-                    <p v-else class="mi-espacio-empty">Sin estudios asignados.</p>
-                  </article>
-                  <article class="me-card">
-                    <header class="me-card-head"><h4>Proyectos</h4><span class="me-count">{{state.activity.counts.projects}}</span></header>
-                    <ul v-if="state.activity.research.projects.length" class="me-list">
-                      <li v-for="p in state.activity.research.projects" :key="p.id">
-                        <span class="me-item-main">{{p.title}}<small v-if="p.stage"> · {{p.stage}}</small></span>
-                        <span class="me-chip" :data-tone="p.role">{{projectRole(p.role)}}</span>
-                      </li>
-                    </ul>
-                    <p v-else class="mi-espacio-empty">Sin proyectos asignados.</p>
-                  </article>
+              <section v-if="state.dutyMode==='overview'" class="me-activity me-portfolio" aria-label="Mi investigación">
+                <div class="mi-espacio-section-heading"><h3>Mi investigación</h3><p>Participación vinculada a tu perfil. Selecciona un registro para consultar tu función.</p></div>
+                <div class="me-portfolio-groups" role="group" aria-label="Tipo de actividad científica">
+                  <button v-for="g in researchGroups" :key="g.id" type="button" class="me-portfolio-group" :class="{'is-active':state.researchGroup===g.id}" :aria-pressed="state.researchGroup===g.id" @click="changeResearchGroup(g.id)">{{g.label}} <span>{{state.activity.research[g.id].length}}</span></button>
                 </div>
-                <div class="me-note me-pubs">
-                  <div class="me-pubs-head">
-                    <h4>Publicaciones <span v-if="state.activity.publications.items.length" class="me-count">{{state.activity.publications.items.length}}</span></h4>
-                    <button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button>
+                <div class="me-portfolio-layout" :class="{'has-selection':!!selectedResearch}">
+                  <div class="me-portfolio-entries">
+                    <ul v-if="researchItems.length" class="me-portfolio-list"><li v-for="(r,i) in researchItems" :key="r.id || i">
+                      <button type="button" class="me-portfolio-entry" :data-index="i" :class="{'is-active':state.researchIndex===i}" @click="selectResearch(i)">
+                        <span class="me-portfolio-entry-copy"><small v-if="researchRecordMeta(r)">{{researchRecordMeta(r)}}</small><strong>{{researchRecordTitle(r)}}</strong><span>{{researchRecordRole(r)}}</span></span><span aria-hidden="true">›</span>
+                      </button>
+                    </li></ul>
+                    <p v-else class="mi-espacio-empty">No tienes {{state.researchGroup==='lines'?'líneas':state.researchGroup==='studies'?'estudios':'proyectos'}} vinculados.</p>
                   </div>
-                  <ul v-if="state.activity.publications.items.length" class="me-list me-pubs-list">
-                    <li v-for="p in state.activity.publications.items" :key="p.id">
-                      <span class="me-item-main">{{p.title}}<small v-if="p.byline"> · {{p.byline}}</small></span>
-                      <span v-if="p.corresponding" class="me-chip" data-tone="primary">Correspondencia</span>
-                    </li>
-                  </ul>
-                  <p v-else class="mi-espacio-empty">Aún no se te ha vinculado ninguna publicación. Si falta alguna que sea tuya, reivindícala y la revisará la coordinación.</p>
+                  <section v-if="selectedResearch" class="me-portfolio-detail" aria-label="Participación personal">
+                    <button type="button" class="me-portfolio-back" @click="closeResearch">← Volver a mis registros</button>
+                    <p class="mi-espacio-eyebrow">MI PARTICIPACIÓN VERIFICADA</p>
+                    <h4 class="me-portfolio-detail-title" tabindex="-1">{{researchRecordTitle(selectedResearch)}}</h4>
+                    <dl class="me-portfolio-facts"><div><dt>Mi función</dt><dd>{{researchRecordRole(selectedResearch)}}</dd></div>
+                      <div v-if="researchRecordMeta(selectedResearch)"><dt>{{state.researchGroup==='lines'?'Identificador':state.researchGroup==='studies'?'Protocolo':'Etapa registrada'}}</dt><dd>{{researchRecordMeta(selectedResearch)}}</dd></div>
+                      <div v-if="state.researchGroup==='studies' && selectedResearch.status"><dt>Estado</dt><dd>{{selectedResearch.status}}</dd></div>
+                      <div v-if="state.researchGroup==='projects' && selectedResearch.category"><dt>Categoría</dt><dd>{{selectedResearch.category}}</dd></div>
+                    </dl>
+                  </section>
+                  <div v-else class="me-portfolio-prompt" aria-hidden="true">Selecciona un registro para consultar tu participación.</div>
+                </div>
+              </section>
+              <section v-if="state.dutyMode==='overview'" class="me-activity me-publications" aria-label="Mis publicaciones">
+                <div class="mi-espacio-section-heading me-publications-heading"><div><h3>Mis publicaciones</h3><p>Autoría asociada a tu identidad profesional.</p></div><button class="me-pubs-claim" type="button" @click="claimPublication">Reivindicar una publicación</button></div>
+                <div class="me-portfolio-layout me-publication-layout" :class="{'has-selection':!!selectedPublication}">
+                  <div class="me-portfolio-entries">
+                    <ol v-if="state.activity.publications.items.length" class="me-portfolio-list"><li v-for="(p,i) in state.activity.publications.items" :key="p.id || i">
+                      <button type="button" class="me-portfolio-entry me-publication-entry" :data-index="i" :class="{'is-active':state.publicationIndex===i}" @click="selectPublication(i)">
+                        <span class="me-portfolio-entry-copy"><strong>{{p.title}}</strong><small v-if="p.byline">{{p.byline}}</small><span v-if="p.corresponding">Autoría de correspondencia</span></span><span aria-hidden="true">›</span>
+                      </button>
+                    </li></ol>
+                    <p v-else class="mi-espacio-empty">Aún no hay publicaciones vinculadas a tu perfil. Puedes comunicar una autoría pendiente de verificación.</p>
+                  </div>
+                  <section v-if="selectedPublication" class="me-portfolio-detail" aria-label="Autoría verificada">
+                    <button type="button" class="me-portfolio-back" @click="closePublication">← Volver a mis publicaciones</button>
+                    <p class="mi-espacio-eyebrow">REGISTRO DE AUTORÍA</p>
+                    <h4 class="me-publication-detail-title" tabindex="-1">{{selectedPublication.title}}</h4>
+                    <dl class="me-portfolio-facts">
+                      <div v-if="selectedPublication.byline"><dt>Firma publicada</dt><dd>{{selectedPublication.byline}}</dd></div>
+                      <div v-if="selectedPublication.order!==null"><dt>Posición de autoría</dt><dd>{{selectedPublication.order}}</dd></div>
+                      <div><dt>Autoría de correspondencia</dt><dd>{{selectedPublication.corresponding?'Sí':'No consta'}}</dd></div>
+                    </dl>
+                  </section>
+                  <div v-else class="me-portfolio-prompt" aria-hidden="true">Selecciona una publicación para consultar tu autoría.</div>
                 </div>
               </section>
             </template>
