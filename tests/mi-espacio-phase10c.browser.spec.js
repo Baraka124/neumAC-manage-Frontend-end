@@ -11,6 +11,7 @@ const cases={
  resident:()=>{const a=base();a.agenda.rotations=[{id:'r1',role:'resident',unit:'UCI',start:'2026-11-01',end:'2027-01-03'}];return {a,staffType:'medical_resident'};},
  clinician:()=>({a:base(),staffType:'clinician'}),
  supervisor:()=>{const a=base();a.agenda.rotations=[{id:'r2',role:'supervisor',resident:'Persona residente',unit:'Neumología',start:'2026-11-01',end:'2026-11-01'}];return {a,staffType:'clinician'};},
+ mixed:()=>{const a=base();a.agenda.guardias=[duty(0)];a.research.lines=[{id:'l1',name:'Fisiología respiratoria',role:'member'}];a.research.studies=[0,1].map(i=>({id:'s'+i,title:long+' '+i,role:'co-investigator'}));a.research.projects=[{id:'p1',title:'Programa de innovación respiratoria',role:'lead'}];a.publications.items=[1,2,3,4].map(pub);return {a,staffType:'clinician'};},
  engineer:()=>{const a=base();a.research.studies=[{id:'s1',title:long,role:'co-investigator',protocol_id:'ST-001'}];return {a,staffType:'biomedical_engineer'};},
  head:()=>{const a=base();a.agenda.guardias=[duty(0),duty(1),duty(2),duty(3)];a.research.lines=[{id:'l1',name:long,role:'coordinator'}];a.research.studies=[0,1,2,3].map(i=>({id:'s'+i,title:long+' '+i,role:'PI'}));a.research.projects=[0,1,2].map(i=>({id:'i'+i,title:long+' '+i,role:'lead',stage:'pilot'}));a.publications.items=[1,2,3,4].map(pub);return {a,staffType:'clinician'};}
 };
@@ -50,6 +51,23 @@ for(const [name,scenario] of Object.entries(cases)){
    if(name==='supervisor')await expect(page.locator('.me-v10-supervision-feature')).toContainText('Persona residente');
    if(name==='engineer'){await expect(page.locator('.me-v8-agenda')).toHaveCount(0);await expect(page.locator('.me-v8-research')).toBeVisible();await expect(page.locator('.me-v9-identity')).toContainText('Ingeniería biomédica');}
    if(name==='clinician'){await expect(page.locator('.me-v8-research')).toHaveCount(0);await expect(page.locator('.me-v8-agenda')).toBeVisible();}
+   if(name==='mixed'){
+    await expect(page.locator('.me-v9-overview')).toHaveClass(/me-v12-research-priority/);
+    const measurements=await page.evaluate(()=>{
+      const agenda=document.querySelector('.me-v8-agenda').getBoundingClientRect();
+      const research=document.querySelector('.me-v8-research').getBoundingClientRect();
+      const publications=document.querySelector('.me-v9-publications').getBoundingClientRect();
+      const communications=document.querySelector('.me-v9-services').getBoundingClientRect();
+      return {agenda:agenda.width,research:research.width,publications:publications.width,communications:communications.width};
+    });
+    if(viewport.width>850){
+      expect(measurements.research).toBeGreaterThan(measurements.agenda);
+      expect(Math.abs(measurements.publications-measurements.communications)).toBeLessThanOrEqual(2);
+    }else{
+      expect(Math.abs(measurements.research-measurements.agenda)).toBeLessThanOrEqual(2);
+      expect(Math.abs(measurements.publications-measurements.communications)).toBeLessThanOrEqual(2);
+    }
+   }
    if(name==='head'){
     await expect(page.locator('.me-v8-research-groups li')).toHaveCount(5);
     await page.getByRole('button',{name:/Ver toda mi investigación/}).click();
