@@ -8,6 +8,13 @@
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
     return m ? Number(m[3]) + ' ' + (MONTHS[Number(m[2]) - 1] || '') : '';
   }
+  function fmtDutyDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    if (!m) return '';
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (d.getFullYear() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1 || d.getDate() !== Number(m[3])) return '';
+    return new Intl.DateTimeFormat('es-ES', {weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(d);
+  }
   const GUARDIA = { primary:'Principal', backup:'Refuerzo', resident:'Residente' };
   const ROTATION = { resident:'Residente', supervisor:'Supervisión' };
   const STUDY = { PI:'IP', 'co-investigator':'Co-investigador', 'sub-investigator':'Sub-investigador' };
@@ -28,7 +35,7 @@
       props: { active: Boolean, user: Object, canOpenView: Function },
       emits: ['navigate'],
       setup(props,{emit}) {
-        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,
+        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}}});
@@ -42,7 +49,7 @@
           if(controller)controller.abort();
           controller=null;
           state.context=null;state.error='';state.busy=false;
-          state.activity=null;state.activityError='';state.activityBusy=false;
+          state.activity=null;state.activityError='';state.activityBusy=false;state.dutyMode='overview';state.dutyIndex=null;
           state.reports=[];
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
           Object.assign(state.picker,{busy:false,items:[],forType:''});
@@ -167,14 +174,41 @@
           if(!wasActive||id!==oldId)load();
         },{immediate:true});
         Vue.onUnmounted(clear);
+        // Phase 6A: read-only duty details always stay in Mi espacio.
+        const selectedDuty=Vue.computed(()=>{
+          const entries=state.activity?.agenda?.guardias || [];
+          return Number.isInteger(state.dutyIndex) ? (entries[state.dutyIndex] || null) : null;
+        });
+        function focusDuty(selector) {
+          Vue.nextTick(()=>{
+            const node=document.querySelector('.mi-espacio '+selector);
+            if(!node)return;
+            try {node.focus({preventScroll:true});} catch(_){node.focus();}
+            node.scrollIntoView({block:'nearest',behavior:'auto'});
+          });
+        }
+        function openDuties(index) {
+          state.dutyMode='duties';
+          const entries=state.activity?.agenda?.guardias || [];
+          state.dutyIndex=Number.isInteger(index)&&index>=0&&index<entries.length ? index : null;
+          focusDuty(state.dutyIndex===null ? '.me-duty-heading' : '.me-duty-detail-title');
+        }
+        function selectDuty(index) {
+          const entries=state.activity?.agenda?.guardias || [];
+          if(!Number.isInteger(index)||index<0||index>=entries.length)return;
+          state.dutyIndex=index;focusDuty('.me-duty-detail-title');
+        }
+        function closeDutyDetail(){state.dutyIndex=null;focusDuty('.me-duty-heading');}
+        function backToAgenda(){state.dutyMode='overview';state.dutyIndex=null;focusDuty('.me-duty-open');}
         const destinations=[
-          {id:'oncall_schedule',label:'Guardias',desc:'Consultar el cuadrante institucional'},
           {id:'resident_rotations',label:'Rotaciones',desc:'Consultar las asignaciones registradas'},
           {id:'research_hub',label:'Investigación',desc:'Acceder a estudios y proyectos'},
           {id:'news',label:'Biblioteca',desc:'Consultar el registro de publicaciones'}
         ];
         return {
-          state,linked,initials,destinations,can,refresh:load,
+          state,linked,initials,destinations,can,refresh:load,selectedDuty,
+          openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
+          dutyShift:root.NeumMiEspacioData.formatDutyShift,
           navigate:view=>can(view)&&emit('navigate',view),
           fmtDate,
           guardiaRole:k=>label(GUARDIA,k), rotationRole:k=>label(ROTATION,k),
@@ -191,8 +225,8 @@
       <section class="mi-espacio" aria-labelledby="mi-espacio-title">
         <header class="mi-espacio-head">
           <div><p class="mi-espacio-eyebrow">ÁREA PERSONAL · neumDESK</p>
-          <h2 id="mi-espacio-title" tabindex="-1">Mi actividad profesional</h2>
-          <p>Tu perfil institucional y tu actividad verificada, reunidos en un solo lugar.</p></div>
+          <h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2>
+          <p>Tu actividad asistencial y científica, vinculada a tu identidad institucional.</p></div>
           <button v-if="state.context||state.error" type="button" class="mi-espacio-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
         </header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu cuenta y vinculación profesional…</p>
@@ -254,7 +288,7 @@
                 </div>
               </section>
 
-              <section class="me-activity" aria-label="Mi investigación">
+              <section v-if="state.dutyMode==='overview'" class="me-activity" aria-label="Mi investigación">
                 <div class="mi-espacio-section-heading"><h3>Mi investigación</h3><p>Tu participación verificada en la actividad científica.</p></div>
                 <div class="me-cards">
                   <article class="me-card">
@@ -304,7 +338,7 @@
               </section>
             </template>
 
-            <section class="me-report" aria-label="Comunicar una discrepancia">
+            <section v-if="state.dutyMode==='overview'" class="me-report" aria-label="Comunicar una discrepancia">
               <div class="mi-espacio-section-heading"><h3>¿Falta algo o hay un error?</h3><p>Comunícalo y lo revisará la persona responsable. No se modifica ningún registro directamente.</p></div>
               <div v-if="state.report.done" class="mi-espacio-notice" role="status"><strong>Gracias, tu comunicación se ha registrado.</strong><p>La revisará la persona responsable de accesos o coordinación.</p><button type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar otra</button></div>
               <template v-else>
@@ -336,7 +370,7 @@
             </section>
           </template>
 
-          <section v-if="state.review.can" class="me-review" aria-label="Comunicaciones del equipo por revisar">
+          <section v-if="state.review.can && state.dutyMode==='overview'" class="me-review" aria-label="Comunicaciones del equipo por revisar">
             <div class="mi-espacio-section-heading"><h3>Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar uno, la corrección se gestiona en el módulo correspondiente; nada se modifica automáticamente.</p></div>
             <div class="me-review-filters" role="tablist" aria-label="Estado de las comunicaciones">
               <button v-for="f in reviewFilters" :key="f.value" type="button" role="tab" class="me-review-tab" :class="{'is-active':state.review.filter===f.value}" :aria-selected="state.review.filter===f.value" @click="setReviewFilter(f.value)">{{f.label}}</button>
@@ -364,7 +398,7 @@
             <p v-else class="mi-espacio-empty">No hay comunicaciones {{emptyLabel(state.review.filter)}}.</p>
           </section>
 
-          <section class="mi-espacio-links" aria-labelledby="mi-espacio-shortcuts">
+          <section v-if="state.dutyMode==='overview'" class="mi-espacio-links" aria-labelledby="mi-espacio-shortcuts">
             <div class="mi-espacio-section-heading"><h3 id="mi-espacio-shortcuts">Acceso a módulos</h3><p>Las mismas herramientas institucionales, según tus permisos.</p></div>
             <div class="mi-espacio-link-list">
               <button v-for="item in destinations.filter(d=>can(d.id))" :key="item.id" type="button" class="mi-espacio-link" @click="navigate(item.id)"><span><strong>{{item.label}}</strong><small>{{item.desc}}</small></span><span aria-hidden="true">↗</span></button>
