@@ -203,12 +203,13 @@
           state.dutyMode='duties';
           const entries=state.activity?.agenda?.guardias || [];
           state.dutyIndex=Number.isInteger(index)&&index>=0&&index<entries.length ? index : null;
-          focusDuty(state.dutyIndex===null ? '.me-duty-heading' : '.me-duty-detail-title');
+          focusDuty(state.dutyIndex===null ? '.me-duty-heading' : '.me-duty-row[data-index="'+state.dutyIndex+'"]');
         }
         function selectDuty(index) {
           const entries=state.activity?.agenda?.guardias || [];
           if(!Number.isInteger(index)||index<0||index>=entries.length)return;
-          state.dutyIndex=index;focusDuty('.me-duty-detail-title');
+          if(state.dutyIndex===index){closeDutyDetail();return;}
+          state.dutyIndex=index; // Keep the clicked record in place.
         }
         function closeDutyDetail(){
           const index=state.dutyIndex;state.dutyIndex=null;
@@ -246,7 +247,8 @@
         }
         function selectResearch(index){
           if(!Number.isInteger(index)||index<0||index>=researchItems.value.length)return;
-          state.researchIndex=index;focusDuty('.me-portfolio-detail-title');
+          if(state.researchIndex===index){closeResearch();return;}
+          state.researchIndex=index; // Reveal contextual metadata below the selected record.
         }
         function closeResearch(){
           const index=state.researchIndex;state.researchIndex=null;
@@ -258,19 +260,20 @@
         function selectPublication(index){
           const items=state.activity?.publications?.items || [];
           if(!Number.isInteger(index)||index<0||index>=items.length)return;
-          state.publicationIndex=index;focusDuty('.me-publication-detail-title');
+          if(state.publicationIndex===index){closePublication();return;}
+          state.publicationIndex=index;
         }
         function closePublication(){
           const index=state.publicationIndex;state.publicationIndex=null;
           focusDuty('.me-publication-entry[data-index="'+index+'"]');
         }
         function onEscape(event){
-          // Only close personal detail panels. Leave shell and form Escape alone.
+          // Only nested personal disclosures; keep global shell shortcuts untouched.
           const target=event.target;
           if(!target || typeof target.closest!=='function')return;
-          if(target.closest('.me-duty-detail') && selectedDuty.value){closeDutyDetail();event.stopPropagation();}
-          else if(target.closest('.me-publication-layout .me-portfolio-detail') && selectedPublication.value){closePublication();event.stopPropagation();}
-          else if(target.closest('.me-portfolio:not(.me-publications) .me-portfolio-detail') && selectedResearch.value){closeResearch();event.stopPropagation();}
+          if(target.closest('.me-duty-list') && selectedDuty.value){closeDutyDetail();event.stopPropagation();}
+          else if(target.closest('.me-publication-layout') && selectedPublication.value){closePublication();event.stopPropagation();}
+          else if(target.closest('.me-portfolio:not(.me-publications)') && selectedResearch.value){closeResearch();event.stopPropagation();}
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
@@ -327,7 +330,7 @@
 
             <template v-else-if="state.activity">
               <section class="me-activity me-agenda" aria-label="Mi agenda">
-                <div class="mi-espacio-section-heading"><p class="mi-espacio-eyebrow">ACTIVIDAD ASISTENCIAL</p><h3>Mi agenda</h3><p>Las asignaciones vinculadas a tu perfil institucional.</p></div>
+                <div v-if="state.dutyMode==='overview'" class="mi-espacio-section-heading"><p class="mi-espacio-eyebrow">ACTIVIDAD ASISTENCIAL</p><h3>Mi agenda</h3><p>Las asignaciones vinculadas a tu perfil institucional.</p></div>
                 <div v-if="state.dutyMode==='overview'" class="me-agenda-layout">
                   <article class="me-agenda-feature">
                     <header class="me-card-head"><h4>Próximas guardias</h4><span class="me-count">{{state.activity.counts.guardias}}</span></header>
@@ -358,17 +361,22 @@
                   <div class="me-duty-workspace-head"><button type="button" class="me-duty-back" @click="backToAgenda">← Mi agenda</button><h4 class="me-duty-heading" tabindex="-1">Mis guardias</h4><p>Tu lista personal de asignaciones próximas.</p></div>
                   <div class="me-duty-master-detail" :class="{'has-selection':!!selectedDuty}">
                     <div class="me-duty-list" aria-label="Asignaciones próximas">
-                      <ol v-if="state.activity.agenda.guardias.length"><li v-for="(g,index) in state.activity.agenda.guardias" :key="g.id || index"><button type="button" class="me-duty-row" :data-index="index" :class="{'is-selected':state.dutyIndex===index}" :aria-current="state.dutyIndex===index?'true':null" @click="selectDuty(index)"><span class="me-duty-row-main"><strong>{{fmtDutyDate(g.date)}}</strong><small>{{dutyShift(g.shift)}}</small></span><span class="me-chip" :data-tone="g.role">{{guardiaRole(g.role)}}</span><span aria-hidden="true">›</span></button></li></ol>
+                      <ol v-if="state.activity.agenda.guardias.length">
+                        <li v-for="(g,index) in state.activity.agenda.guardias" :key="g.id || index" class="me-duty-list-item">
+                          <button type="button" class="me-duty-row" :data-index="index" :class="{'is-selected':state.dutyIndex===index}" :aria-expanded="state.dutyIndex===index" :aria-controls="'me-duty-detail-'+index" @click="selectDuty(index)">
+                            <span class="me-duty-row-main"><strong>{{fmtDutyDate(g.date)}}</strong><small>{{dutyShift(g.shift)}}</small></span>
+                            <span class="me-chip" :data-tone="g.role">{{guardiaRole(g.role)}}</span>
+                            <span class="me-disclosure-chevron" aria-hidden="true">⌄</span>
+                          </button>
+                          <section v-if="selectedDuty && state.dutyIndex===index" class="me-duty-detail me-inline-detail" :id="'me-duty-detail-'+index" :aria-label="'Detalle de guardia del '+fmtDutyDate(selectedDuty.date)">
+                            <p class="mi-espacio-eyebrow">DATOS DE TU ASIGNACIÓN</p>
+                            <dl class="me-duty-facts"><div><dt>Modalidad</dt><dd>{{dutyShift(selectedDuty.shift)}}</dd></div><div><dt>Tu función</dt><dd>{{guardiaRole(selectedDuty.role)}}</dd></div></dl>
+                            <p class="me-duty-provenance">Asignación registrada y vinculada a tu perfil institucional.</p>
+                          </section>
+                        </li>
+                      </ol>
                       <p v-else class="mi-espacio-empty">No tienes guardias próximas registradas.</p>
                     </div>
-                    <section v-if="selectedDuty" class="me-duty-detail" aria-labelledby="me-duty-detail-title">
-                      <button type="button" class="me-duty-detail-back" @click="closeDutyDetail">← Volver a la lista</button>
-                      <p class="mi-espacio-eyebrow">ASIGNACIÓN PERSONAL</p>
-                      <h5 id="me-duty-detail-title" class="me-duty-detail-title" tabindex="-1">{{fmtDutyDate(selectedDuty.date)}}</h5>
-                      <dl class="me-duty-facts"><div><dt>Modalidad</dt><dd>{{dutyShift(selectedDuty.shift)}}</dd></div><div><dt>Tu función</dt><dd>{{guardiaRole(selectedDuty.role)}}</dd></div></dl>
-                      <p class="me-duty-provenance">Información del registro institucional vinculada a tu perfil. Esta vista no incluye horas ni ubicación porque no las proporciona el contexto personal.</p>
-                    </section>
-                    <div v-else class="me-duty-unselected" aria-hidden="true"><p>Selecciona una guardia para consultar sus detalles.</p></div>
                   </div>
                   <button v-if="can('oncall_schedule')" type="button" class="me-duty-institutional" @click="navigate('oncall_schedule')">Abrir cuadrante departamental <span aria-hidden="true">↗</span></button>
                 </div>
@@ -381,49 +389,48 @@
                 </div>
                 <div class="me-portfolio-layout" :class="{'has-selection':!!selectedResearch}">
                   <div class="me-portfolio-entries">
-                    <ul v-if="researchItems.length" class="me-portfolio-list"><li v-for="(r,i) in researchItems" :key="r.id || i">
-                      <button type="button" class="me-portfolio-entry" :data-index="i" :class="{'is-active':state.researchIndex===i}" @click="selectResearch(i)">
-                        <span class="me-portfolio-entry-copy"><small v-if="researchRecordMeta(r)">{{researchRecordMeta(r)}}</small><strong>{{researchRecordTitle(r)}}</strong><span>{{researchRecordRole(r)}}</span></span><span aria-hidden="true">›</span>
-                      </button>
-                    </li></ul>
+                    <ul v-if="researchItems.length" class="me-portfolio-list">
+                      <li v-for="(r,i) in researchItems" :key="r.id || i" class="me-portfolio-list-item">
+                        <button type="button" class="me-portfolio-entry" :data-index="i" :class="{'is-active':state.researchIndex===i}" :aria-expanded="state.researchIndex===i" :aria-controls="'me-research-detail-'+i" @click="selectResearch(i)">
+                          <span class="me-portfolio-entry-copy"><small v-if="researchRecordMeta(r)">{{researchRecordMeta(r)}}</small><strong>{{researchRecordTitle(r)}}</strong><span>{{researchRecordRole(r)}}</span></span><span class="me-disclosure-chevron" aria-hidden="true">⌄</span>
+                        </button>
+                        <section v-if="selectedResearch && state.researchIndex===i" class="me-portfolio-detail me-inline-detail" :id="'me-research-detail-'+i" :aria-label="'Mi participación: '+researchRecordTitle(selectedResearch)">
+                          <p class="mi-espacio-eyebrow">MI PARTICIPACIÓN</p>
+                          <dl class="me-portfolio-facts">
+                            <div><dt>Función verificada</dt><dd>{{researchRecordRole(selectedResearch)}}</dd></div>
+                            <div v-if="researchRecordMeta(selectedResearch)"><dt>{{state.researchGroup==='lines'?'Línea':state.researchGroup==='studies'?'Protocolo':'Etapa'}}</dt><dd>{{researchRecordMeta(selectedResearch)}}</dd></div>
+                            <div v-if="state.researchGroup==='studies' && selectedResearch.status"><dt>Estado registrado</dt><dd>{{selectedResearch.status}}</dd></div>
+                            <div v-if="state.researchGroup==='projects' && selectedResearch.category"><dt>Categoría</dt><dd>{{selectedResearch.category}}</dd></div>
+                          </dl>
+                        </section>
+                      </li>
+                    </ul>
                     <p v-else class="mi-espacio-empty">No tienes {{state.researchGroup==='lines'?'líneas':state.researchGroup==='studies'?'estudios':'proyectos'}} vinculados.</p>
                   </div>
-                  <section v-if="selectedResearch" class="me-portfolio-detail" aria-label="Participación personal">
-                    <button type="button" class="me-portfolio-back" @click="closeResearch">← Volver a mis registros</button>
-                    <p class="mi-espacio-eyebrow">MI PARTICIPACIÓN VERIFICADA</p>
-                    <h4 class="me-portfolio-detail-title" tabindex="-1">{{researchRecordTitle(selectedResearch)}}</h4>
-                    <dl class="me-portfolio-facts"><div><dt>Mi función</dt><dd>{{researchRecordRole(selectedResearch)}}</dd></div>
-                      <div v-if="researchRecordMeta(selectedResearch)"><dt>{{state.researchGroup==='lines'?'Identificador':state.researchGroup==='studies'?'Protocolo':'Etapa registrada'}}</dt><dd>{{researchRecordMeta(selectedResearch)}}</dd></div>
-                      <div v-if="state.researchGroup==='studies' && selectedResearch.status"><dt>Estado</dt><dd>{{selectedResearch.status}}</dd></div>
-                      <div v-if="state.researchGroup==='projects' && selectedResearch.category"><dt>Categoría</dt><dd>{{selectedResearch.category}}</dd></div>
-                    </dl>
-                  </section>
-                  
                 </div>
               </section>
               <section v-if="state.dutyMode==='overview'" class="me-activity me-publications" aria-label="Mis publicaciones">
                 <div class="mi-espacio-section-heading me-publications-heading"><div><h3>Mis publicaciones</h3><p>Autoría asociada a tu identidad profesional.</p></div><button class="me-pubs-claim" type="button" @click="claimPublication">Reivindicar una publicación</button></div>
                 <div class="me-portfolio-layout me-publication-layout" :class="{'has-selection':!!selectedPublication}">
                   <div class="me-portfolio-entries">
-                    <ol v-if="state.activity.publications.items.length" class="me-portfolio-list"><li v-for="(p,i) in state.activity.publications.items" :key="p.id || i">
-                      <button type="button" class="me-portfolio-entry me-publication-entry" :data-index="i" :class="{'is-active':state.publicationIndex===i}" @click="selectPublication(i)">
-                        <span class="me-portfolio-entry-copy"><strong>{{p.title}}</strong><small v-if="p.byline">{{p.byline}}</small><span v-if="p.corresponding">Autoría de correspondencia</span></span><span aria-hidden="true">›</span>
-                      </button>
-                    </li></ol>
+                    <ol v-if="state.activity.publications.items.length" class="me-portfolio-list">
+                      <li v-for="(p,i) in state.activity.publications.items" :key="p.id || i" class="me-portfolio-list-item">
+                        <button type="button" class="me-portfolio-entry me-publication-entry" :data-index="i" :class="{'is-active':state.publicationIndex===i}" :aria-expanded="state.publicationIndex===i" :aria-controls="'me-publication-detail-'+i" @click="selectPublication(i)">
+                          <span class="me-portfolio-entry-copy"><strong>{{p.title}}</strong><small v-if="p.byline">{{p.byline}}</small><span v-if="p.corresponding">Autoría de correspondencia</span></span><span class="me-disclosure-chevron" aria-hidden="true">⌄</span>
+                        </button>
+                        <section v-if="selectedPublication && state.publicationIndex===i" class="me-portfolio-detail me-inline-detail" :id="'me-publication-detail-'+i" :aria-label="'Mi autoría: '+selectedPublication.title">
+                          <p class="mi-espacio-eyebrow">DATOS DE AUTORÍA</p>
+                          <dl class="me-portfolio-facts">
+                            <div v-if="selectedPublication.byline"><dt>Autores</dt><dd>{{selectedPublication.byline}}</dd></div>
+                            <div v-if="selectedPublication.order!==null"><dt>Posición de autoría</dt><dd>{{selectedPublication.order}}</dd></div>
+                            <div><dt>Autoría de correspondencia</dt><dd>{{selectedPublication.corresponding?'Sí':'No consta'}}</dd></div>
+                          </dl>
+                        </section>
+                      </li>
+                    </ol>
                     <p v-else-if="!state.activity.publications.available" class="mi-espacio-empty" role="status">La información de autorías no está disponible en este momento.</p>
                     <p v-else class="mi-espacio-empty">Aún no hay publicaciones vinculadas a tu perfil. Puedes comunicar una autoría pendiente de verificación.</p>
                   </div>
-                  <section v-if="selectedPublication" class="me-portfolio-detail" aria-label="Autoría verificada">
-                    <button type="button" class="me-portfolio-back" @click="closePublication">← Volver a mis publicaciones</button>
-                    <p class="mi-espacio-eyebrow">REGISTRO DE AUTORÍA</p>
-                    <h4 class="me-publication-detail-title" tabindex="-1">{{selectedPublication.title}}</h4>
-                    <dl class="me-portfolio-facts">
-                      <div v-if="selectedPublication.byline"><dt>Firma publicada</dt><dd>{{selectedPublication.byline}}</dd></div>
-                      <div v-if="selectedPublication.order!==null"><dt>Posición de autoría</dt><dd>{{selectedPublication.order}}</dd></div>
-                      <div><dt>Autoría de correspondencia</dt><dd>{{selectedPublication.corresponding?'Sí':'No consta'}}</dd></div>
-                    </dl>
-                  </section>
-                  
                 </div>
               </section>
             </template>
