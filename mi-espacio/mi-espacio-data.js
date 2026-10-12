@@ -188,6 +188,26 @@
     return request('/api/discrepancies/' + encodeURIComponent(reportId), { method: 'PUT', body: patch, timeoutMs: 15000, signal });
   }
 
+  // The resolver can accept a report while its best-effort structured link fails.
+  // Keep resolution and linkage distinct; never claim the authorship/membership
+  // was created unless the backend explicitly confirms it.
+  function reviewOutcome(response, requestedStatus) {
+    const result = response && typeof response === 'object' ? response : {};
+    if (result.status !== requestedStatus) {
+      throw new Error('La resolución no ha sido confirmada. Actualiza la cola antes de intentarlo de nuevo.');
+    }
+    if (requestedStatus === 'rejected') return { message: 'Comunicación rechazada.', needsAttention: false };
+    if (requestedStatus === 'accepted') {
+      if (result.linked === 'failed') {
+        return { message: 'Comunicación aceptada, pero la vinculación automática ha fallado. Es necesaria una revisión manual.', needsAttention: true };
+      }
+      if (result.linked === 'line_member') return { message: 'Comunicación aceptada y pertenencia a la línea vinculada.', needsAttention: false };
+      if (result.linked === 'publication_author') return { message: 'Comunicación aceptada y autoría vinculada.', needsAttention: false };
+      return { message: 'Comunicación aceptada. Comprueba si requiere una corrección manual.', needsAttention: false };
+    }
+    return { message: 'Estado de la comunicación actualizado.', needsAttention: false };
+  }
+
   // ── Subject options for a claim: the few lines and the publications a person
   // can point at, so a report carries a real subject_id and the server can
   // auto-link on accept. Both tolerate either {data:[…]} or a bare array. ──
@@ -211,7 +231,7 @@
   return Object.freeze({
     normalizeContext, loadContext, normalizeActivity, loadActivity, formatDutyShift,
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
-    normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport,
+    normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport, reviewOutcome,
     loadLineOptions, loadPublicationOptions
   });
 });
