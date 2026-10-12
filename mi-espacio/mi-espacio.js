@@ -14,6 +14,13 @@
   const LINE = { coordinator:'Coordinación', member:'Miembro' };
   const PROJECT = { lead:'Responsable', 'co-investigator':'Co-investigador' };
   const ABSENCE = { pending:'Pendiente', active:'En curso', approved:'Aprobada' };
+  const SUBJECT_LABELS = { guardia:'Guardia', rotation:'Rotación', absence:'Ausencia', line:'Línea', study:'Estudio', project:'Proyecto', publication:'Publicación', profile:'Perfil', other:'Otro' };
+  const KIND_LABELS = { missing:'Falta algo', incorrect:'Dato incorrecto', authorship:'Autoría', schedule:'Discrepancia de horario', other:'Otro' };
+  const REPORT_STATUS = { open:'Abierta', in_review:'En revisión', accepted:'Aceptada', rejected:'Rechazada' };
+  const SUBJECT_OPTIONS = Object.keys(SUBJECT_LABELS).map(k => ({ value:k, label:SUBJECT_LABELS[k] }));
+  const KIND_OPTIONS = Object.keys(KIND_LABELS).map(k => ({ value:k, label:KIND_LABELS[k] }));
+  const REVIEW_FILTERS = [{ value:'open', label:'Abiertas' }, { value:'in_review', label:'En revisión' }, { value:'accepted', label:'Aceptadas' }, { value:'rejected', label:'Rechazadas' }];
+  const EMPTY_BY_FILTER = { open:'abiertas', in_review:'en revisión', accepted:'aceptadas', rejected:'rechazadas' };
   const label = (map, key) => map[key] || (key || '');
 
   function createView({Vue,API}) {
@@ -21,7 +28,10 @@
       props: { active: Boolean, user: Object, canOpenView: Function },
       emits: ['navigate'],
       setup(props,{emit}) {
-        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null});
+        const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,
+          reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
+          picker:{busy:false,items:[],forType:''},
+          review:{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}}});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -33,6 +43,91 @@
           controller=null;
           state.context=null;state.error='';state.busy=false;
           state.activity=null;state.activityError='';state.activityBusy=false;
+          state.reports=[];
+          Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
+          Object.assign(state.picker,{busy:false,items:[],forType:''});
+          Object.assign(state.review,{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}});
+        }
+        async function loadReports(requestSeq, identity){
+          try {
+            const rows=await root.NeumMiEspacioData.loadMyReports((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
+            state.reports=rows;
+          } catch(err){ if(err?.name!=='AbortError'){/* non-fatal: the list simply stays empty */} }
+        }
+        function openReportForm(){ state.report.open=true;state.report.done=false;state.report.error=''; }
+        // When the subject is a line or a publication, load the pickable options
+        // so the claim carries a real subject_id (the server then auto-links on accept).
+        async function onSubjectTypeChange(){
+          const t=state.report.subject_type;
+          state.report.subject_id='';state.report.subject_label='';
+          if(t!=='line'&&t!=='publication'){ state.picker.items=[];state.picker.forType=''; return; }
+          if(state.picker.forType===t&&state.picker.items.length) return;
+          state.picker.busy=true;state.picker.forType=t;state.picker.items=[];
+          try {
+            const loader=t==='line'?root.NeumMiEspacioData.loadLineOptions:root.NeumMiEspacioData.loadPublicationOptions;
+            const items=await loader((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(state.report.subject_type===t) state.picker.items=items;
+          } catch(err){ if(state.report.subject_type===t) state.picker.items=[]; }
+          finally { if(state.report.subject_type===t) state.picker.busy=false; }
+        }
+        function onSubjectPick(){
+          const opt=state.picker.items.find(o=>o.id===state.report.subject_id);
+          state.report.subject_label=opt?opt.label:'';
+        }
+        function claimPublication(){
+          openReportForm();
+          state.report.subject_type='publication';state.report.kind='authorship';
+          onSubjectTypeChange();
+        }
+        async function submitReport(){
+          const f=state.report;
+          if(!f.subject_type||!f.kind){ f.error='Indica sobre qué y qué ocurre.'; return; }
+          if((f.subject_type==='line'||f.subject_type==='publication')&&!f.subject_id){ f.error='Elige cuál de la lista.'; return; }
+          f.busy=true;f.error='';
+          try {
+            await root.NeumMiEspacioData.submitDiscrepancy(
+              (p,o)=>API.request(p,o),{subject_type:f.subject_type,kind:f.kind,message:f.message,subject_id:f.subject_id,subject_label:f.subject_label},controller&&controller.signal);
+            f.done=true;f.open=false;f.subject_type='';f.kind='';f.message='';f.subject_id='';f.subject_label='';
+            state.picker.items=[];state.picker.forType='';
+            loadReports(seq, String(props.user?.id||''));
+          } catch(err){ f.error=err?.message||'No se ha podido enviar la comunicación.'; }
+          finally { f.busy=false; }
+        }
+        // Reviewer queue — only probed when the account carries review authority
+        // (admin_level ≥ 1, the same threshold the server enforces). A 403 means
+        // "not a reviewer": the section stays hidden. The server remains the sole
+        // arbiter; this hint only avoids a needless request for every clinician.
+        async function loadReviewQueue(requestSeq, identity){
+          if(!(Number(props.user&&props.user.admin_level) >= 1)) return;
+          state.review.busy=true;state.review.error='';
+          try {
+            const items=await root.NeumMiEspacioData.loadReviewQueue(
+              (p,o)=>API.request(p,o), state.review.filter, controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
+            state.review.can=true;state.review.items=items;
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
+            if(err?.name==='AbortError')return;
+            if(err?.status===403){ state.review.can=false;state.review.items=[]; return; }
+            state.review.can=true;state.review.error=err?.message||'No se ha podido cargar la cola de revisión.';
+          } finally { if(requestSeq===seq)state.review.busy=false; }
+        }
+        function setReviewFilter(value){
+          if(state.review.filter===value)return;
+          state.review.filter=value;
+          loadReviewQueue(seq, String(props.user?.id||''));
+        }
+        async function resolveItem(reportId, status){
+          if(state.review.acting)return;
+          state.review.acting=reportId;state.review.error='';
+          try {
+            await root.NeumMiEspacioData.resolveReport(
+              (p,o)=>API.request(p,o), reportId, {status, resolution_note:state.review.notes[reportId]||''}, controller&&controller.signal);
+            delete state.review.notes[reportId];
+            await loadReviewQueue(seq, String(props.user?.id||''));
+          } catch(err){ if(err?.name!=='AbortError')state.review.error=err?.message||'No se ha podido actualizar la comunicación.'; }
+          finally { state.review.acting=''; }
         }
         async function loadActivity(requestSeq, identity){
           state.activityBusy=true;state.activityError='';
@@ -58,7 +153,8 @@
               (path,options)=>API.request(path,options),identity,controller.signal);
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             state.context=result;
-            if(result.linkState==='linked') loadActivity(requestSeq, identity);
+            if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); }
+            loadReviewQueue(requestSeq, identity);
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             if(err?.name==='AbortError')return;
@@ -83,7 +179,12 @@
           fmtDate,
           guardiaRole:k=>label(GUARDIA,k), rotationRole:k=>label(ROTATION,k),
           studyRole:k=>label(STUDY,k), lineRole:k=>label(LINE,k), projectRole:k=>label(PROJECT,k),
-          absenceStatus:k=>label(ABSENCE,k)
+          absenceStatus:k=>label(ABSENCE,k),
+          subjectLabel:k=>label(SUBJECT_LABELS,k), kindLabel:k=>label(KIND_LABELS,k), reportStatus:k=>label(REPORT_STATUS,k),
+          subjectOptions:SUBJECT_OPTIONS, kindOptions:KIND_OPTIONS,
+          openReportForm, submitReport, onSubjectTypeChange, onSubjectPick, claimPublication,
+          reviewFilters:REVIEW_FILTERS, setReviewFilter, resolveItem,
+          emptyLabel:f=>EMPTY_BY_FILTER[f]||'por revisar'
         };
       },
       template: `
@@ -187,10 +288,81 @@
                     <p v-else class="mi-espacio-empty">Sin proyectos asignados.</p>
                   </article>
                 </div>
-                <p class="mi-espacio-empty me-note">Tus publicaciones se mostrarán aquí cuando la autoría esté estructurada y verificada.</p>
+                <div class="me-note me-pubs">
+                  <div class="me-pubs-head">
+                    <h4>Publicaciones <span v-if="state.activity.publications.items.length" class="me-count">{{state.activity.publications.items.length}}</span></h4>
+                    <button type="button" class="me-pubs-claim" @click="claimPublication">Reivindicar una publicación</button>
+                  </div>
+                  <ul v-if="state.activity.publications.items.length" class="me-list me-pubs-list">
+                    <li v-for="p in state.activity.publications.items" :key="p.id">
+                      <span class="me-item-main">{{p.title}}<small v-if="p.byline"> · {{p.byline}}</small></span>
+                      <span v-if="p.corresponding" class="me-chip" data-tone="primary">Correspondencia</span>
+                    </li>
+                  </ul>
+                  <p v-else class="mi-espacio-empty">Aún no se te ha vinculado ninguna publicación. Si falta alguna que sea tuya, reivindícala y la revisará la coordinación.</p>
+                </div>
               </section>
             </template>
+
+            <section class="me-report" aria-label="Comunicar una discrepancia">
+              <div class="mi-espacio-section-heading"><h3>¿Falta algo o hay un error?</h3><p>Comunícalo y lo revisará la persona responsable. No se modifica ningún registro directamente.</p></div>
+              <div v-if="state.report.done" class="mi-espacio-notice" role="status"><strong>Gracias, tu comunicación se ha registrado.</strong><p>La revisará la persona responsable de accesos o coordinación.</p><button type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar otra</button></div>
+              <template v-else>
+                <button v-if="!state.report.open" type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar una discrepancia</button>
+                <form v-else class="me-report-form" @submit.prevent="submitReport">
+                  <div class="me-field"><label>¿Sobre qué?</label><select v-model="state.report.subject_type" @change="onSubjectTypeChange"><option value="">Selecciona…</option><option v-for="o in subjectOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
+                  <div class="me-field"><label>¿Qué ocurre?</label><select v-model="state.report.kind"><option value="">Selecciona…</option><option v-for="o in kindOptions" :key="o.value" :value="o.value">{{o.label}}</option></select></div>
+                  <div v-if="state.report.subject_type==='line'||state.report.subject_type==='publication'" class="me-field me-field-wide">
+                    <label>{{state.report.subject_type==='line'?'¿Cuál línea?':'¿Cuál publicación?'}}</label>
+                    <select v-model="state.report.subject_id" @change="onSubjectPick" :disabled="state.picker.busy">
+                      <option value="">{{state.picker.busy?'Cargando…':'Selecciona…'}}</option>
+                      <option v-for="o in state.picker.items" :key="o.id" :value="o.id">{{o.label}}</option>
+                    </select>
+                  </div>
+                  <div class="me-field me-field-wide"><label>Detalles (opcional)</label><textarea v-model="state.report.message" rows="3" maxlength="2000" placeholder="Describe brevemente qué debería corregirse."></textarea></div>
+                  <p v-if="state.report.error" class="me-form-error" role="alert">{{state.report.error}}</p>
+                  <div class="me-form-actions"><button type="button" class="mi-espacio-refresh" @click="state.report.open=false">Cancelar</button><button type="submit" class="me-btn-primary" :disabled="state.report.busy">{{state.report.busy?'Enviando…':'Enviar'}}</button></div>
+                </form>
+              </template>
+              <div v-if="state.reports.length" class="me-myreports">
+                <h4>Mis comunicaciones</h4>
+                <ul class="me-list">
+                  <li v-for="r in state.reports.slice(0,5)" :key="r.id">
+                    <span class="me-item-main">{{subjectLabel(r.subjectType)}} · {{kindLabel(r.kind)}}<small v-if="r.subjectLabel"> · {{r.subjectLabel}}</small></span>
+                    <span class="me-chip" :data-tone="r.status">{{reportStatus(r.status)}}</span>
+                  </li>
+                </ul>
+              </div>
+            </section>
           </template>
+
+          <section v-if="state.review.can" class="me-review" aria-label="Comunicaciones del equipo por revisar">
+            <div class="mi-espacio-section-heading"><h3>Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar uno, la corrección se gestiona en el módulo correspondiente; nada se modifica automáticamente.</p></div>
+            <div class="me-review-filters" role="tablist" aria-label="Estado de las comunicaciones">
+              <button v-for="f in reviewFilters" :key="f.value" type="button" role="tab" class="me-review-tab" :class="{'is-active':state.review.filter===f.value}" :aria-selected="state.review.filter===f.value" @click="setReviewFilter(f.value)">{{f.label}}</button>
+            </div>
+            <p v-if="state.review.error" class="me-form-error" role="alert">{{state.review.error}}</p>
+            <p v-if="state.review.busy" class="mi-espacio-empty" role="status">Cargando la cola…</p>
+            <ul v-else-if="state.review.items.length" class="me-review-list">
+              <li v-for="it in state.review.items" :key="it.id" class="me-review-item">
+                <div class="me-review-top">
+                  <span class="me-review-meta"><strong>{{kindLabel(it.kind)}}</strong><small> · {{subjectLabel(it.subjectType)}}</small><small v-if="it.subjectLabel"> · {{it.subjectLabel}}</small></span>
+                  <span class="me-chip" :data-tone="it.status">{{reportStatus(it.status)}}</span>
+                </div>
+                <p v-if="it.message" class="me-review-msg">{{it.message}}</p>
+                <p class="me-review-by"><span v-if="it.reporterName">{{it.reporterName}}</span><small v-if="it.createdAt"> · {{fmtDate(it.createdAt)}}</small></p>
+                <template v-if="it.status==='open'||it.status==='in_review'">
+                  <input class="me-review-note" type="text" maxlength="2000" v-model="state.review.notes[it.id]" :aria-label="'Nota de resolución para '+kindLabel(it.kind)" placeholder="Nota de resolución (opcional)">
+                  <div class="me-review-actions">
+                    <button type="button" class="mi-espacio-refresh" :disabled="state.review.acting===it.id" @click="resolveItem(it.id,'rejected')">Rechazar</button>
+                    <button type="button" class="me-btn-primary" :disabled="state.review.acting===it.id" @click="resolveItem(it.id,'accepted')">{{state.review.acting===it.id?'Guardando…':'Aceptar'}}</button>
+                  </div>
+                </template>
+                <p v-else-if="it.resolutionNote" class="me-review-resolved"><small>Resolución:</small> {{it.resolutionNote}}</p>
+              </li>
+            </ul>
+            <p v-else class="mi-espacio-empty">No hay comunicaciones {{emptyLabel(state.review.filter)}}.</p>
+          </section>
 
           <section class="mi-espacio-links" aria-labelledby="mi-espacio-shortcuts">
             <div class="mi-espacio-section-heading"><h3 id="mi-espacio-shortcuts">Acceso a módulos</h3><p>Las mismas herramientas institucionales, según tus permisos.</p></div>
