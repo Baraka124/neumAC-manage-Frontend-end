@@ -22,3 +22,14 @@ test('claim-picker async results are rejected after a session transition',()=>{
  assert.match(picker,/requestSeq===seq && props\.active && String\(props\.user\?\.id\|\|''\)===identity/);
  assert.match(picker,/if\(stillCurrent\(\)&&state\.report\.subject_type===t\) state\.picker\.items=items/);
 });
+
+test('discrepancy and review mutations ignore stale account responses',()=>{
+ for(const name of ['submitReport','resolveItem']){
+  const start=src.indexOf('async function '+name+'(');
+  const end=src.indexOf(name==='submitReport'?'// Reviewer queue':'async function loadActivity(',start);
+  const section=src.slice(start,end);
+  assert.match(section,/const requestSeq=seq, identity=String\(props\.user\?\.id\|\|''\)/);
+  assert.match(section,/if\(!stillCurrent\(\)\)return/);
+  assert.match(section,/if\(stillCurrent\(\)\)/);
+ }
+});
