@@ -92,6 +92,16 @@
     });
   }
 
+  const DUTY_SHIFT_LABELS = Object.freeze({
+    on_call_present:'Guardia presencial', primary_call:'Guardia presencial', presencial:'Guardia presencial',
+    on_call_mixed:'Guardia mixta', mixta:'Guardia mixta',
+    on_call_home:'Guardia localizada', localizada:'Guardia localizada'
+  });
+  function formatDutyShift(raw) {
+    const value = safe(raw);
+    return DUTY_SHIFT_LABELS[value.toLowerCase()] || value.replace(/_/g,' ') || 'Modalidad no indicada';
+  }
+
   async function loadActivity(request, signal) {
     if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
     const raw = await request('/api/me/context', { skipCache: true, timeoutMs: 15000, signal });
@@ -199,7 +209,7 @@
   }
 
   return Object.freeze({
-    normalizeContext, loadContext, normalizeActivity, loadActivity,
+    normalizeContext, loadContext, normalizeActivity, loadActivity, formatDutyShift,
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
     normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport,
     loadLineOptions, loadPublicationOptions

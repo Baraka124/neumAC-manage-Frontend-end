@@ -4,6 +4,7 @@ const source=fs.readFileSync(path.join(__dirname,'..','mi-espacio','mi-espacio.j
 test('Mi espacio immediate watcher mounts without an iterable previous value',async({page})=>{
  await page.setContent('<div id="app"></div>');
  await page.addScriptTag({content:fs.readFileSync(require.resolve('vue/dist/vue.global.prod.js'),'utf8')});
+ await page.addScriptTag({content:fs.readFileSync(path.join(__dirname,'..','mi-espacio','mi-espacio-data.js'),'utf8')});
  await page.addScriptTag({content:source});
  const result=await page.evaluate(()=>{
   const errors=[];window.addEventListener('error',e=>errors.push(e.message));
@@ -14,5 +15,5 @@ test('Mi espacio immediate watcher mounts without an iterable previous value',as
   return {errors,heading:document.querySelector('#mi-espacio-title')?.textContent};
  });
  expect(result.errors).toEqual([]);
- expect(result.heading).toBe('Mi actividad profesional');
+ expect(result.heading).toBe('Mi espacio');
 });

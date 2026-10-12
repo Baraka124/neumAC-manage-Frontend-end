@@ -29,6 +29,8 @@ jobs:
         run: node --test tests/mi-espacio-phase4.test.cjs
       - name: Mi espacio Phase 5 regression
         run: node --test tests/mi-espacio-phase5.test.cjs
+      - name: Mi espacio Phase 6A personal guardias contract
+        run: node --test tests/mi-espacio-phase6a.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
