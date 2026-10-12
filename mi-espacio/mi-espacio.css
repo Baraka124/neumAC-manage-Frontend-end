@@ -355,3 +355,16 @@
 .mi-espacio--v9 .me-v10-research-toggle:focus-visible{outline:3px solid #158a89;outline-offset:3px}
 .mi-espacio--v9 .me-v8-secondary-agenda small{display:inline-block;overflow-wrap:anywhere}
 @media(max-width:850px){.mi-espacio--v9 .me-v9-overview{grid-template-columns:minmax(0,1fr)}}
+
+/* Phase 10B: scholarly reading and contextual reviewer responsibility. */
+.mi-espacio--v9 .me-v8-research-groups{gap:20px}
+.mi-espacio--v9 .me-v8-research-groups li{padding:11px 0;gap:7px}
+.mi-espacio--v9 .me-v8-research-groups li span{font-size:14px;line-height:1.55;font-weight:620;max-width:76ch}
+.mi-espacio--v9 .me-v8-research-groups li small{font-size:12px;line-height:1.5;color:#62767a}
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list li{padding:17px 0;gap:8px}
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list strong{font-size:15px;line-height:1.52;letter-spacing:-.008em;font-weight:650;max-width:78ch}
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list span{font-size:13px;line-height:1.55;max-width:82ch}
+.mi-espacio--v9 .me-v10-publications-toggle{border:0;background:none;color:#276e64;padding:13px 0;font-size:13px;font-weight:650;cursor:pointer}
+.mi-espacio--v9 .me-v10-review-indicator{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #dce7e3;color:#315d57}
+.mi-espacio--v9 .me-v10-review-indicator strong{background:#e6f3ee;color:#276c5d;border-radius:5px;padding:3px 8px;font-size:12px}
+.mi-espacio--v9 .me-v10-publications-toggle:focus-visible{outline:3px solid #158a89;outline-offset:3px}
