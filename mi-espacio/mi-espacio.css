@@ -378,3 +378,18 @@
 .mi-espacio--v9 .me-v9-publications .me-v8-publication-list{min-width:0}
 @media(max-width:850px){.mi-espacio--v9 .me-v10d-loading-grid{grid-template-columns:1fr}.mi-espacio--v9 .me-v10d-loading-block{min-height:100px}}
 @media(prefers-reduced-motion:reduce){.mi-espacio--v9 .me-v10d-loading-block{animation:none;transition:none}}
+
+/* Phase 12A — give verified scholarly output a readable editorial measure.
+   Communications remains accessible, but no longer compresses publication records. */
+.mi-espacio--v9 .me-v9-lower-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+.mi-espacio--v9 .me-v9-publications{padding:25px clamp(20px,3vw,36px)}
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list li{max-width:90ch}
+.mi-espacio--v9 .me-v9-services{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:18px;row-gap:8px;padding:15px clamp(20px,3vw,36px);background:#f8faf9}
+.mi-espacio--v9 .me-v9-services .me-v9-panel-heading{grid-column:1;grid-row:1;margin:0}
+.mi-espacio--v9 .me-v9-services>.me-v8-tools-toggle{grid-column:2;grid-row:1;justify-self:end}
+.mi-espacio--v9 .me-v9-services>p{grid-column:1/-1;margin:0}
+@media(max-width:640px){
+ .mi-espacio--v9 .me-v9-services{grid-template-columns:minmax(0,1fr);padding:17px 16px}
+ .mi-espacio--v9 .me-v9-services .me-v9-panel-heading,.mi-espacio--v9 .me-v9-services>.me-v8-tools-toggle{grid-column:1;grid-row:auto;justify-self:start}
+ .mi-espacio--v9 .me-v9-services>p{grid-column:1}
+}
