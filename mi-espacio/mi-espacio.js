@@ -38,7 +38,7 @@
         const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
-          review:{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}}});
+          review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}}});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -53,7 +53,7 @@
           state.reports=[];
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
           Object.assign(state.picker,{busy:false,items:[],forType:''});
-          Object.assign(state.review,{can:false,busy:false,error:'',filter:'open',items:[],acting:'',notes:{}});
+          Object.assign(state.review,{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}});
         }
         async function loadReports(requestSeq, identity){
           try {
@@ -122,17 +122,22 @@
         }
         function setReviewFilter(value){
           if(state.review.filter===value)return;
-          state.review.filter=value;
+          state.review.filter=value;state.review.notice='';
           loadReviewQueue(seq, String(props.user?.id||''));
         }
         async function resolveItem(reportId, status){
           if(state.review.acting)return;
-          state.review.acting=reportId;state.review.error='';
+          state.review.acting=reportId;state.review.error='';state.review.notice='';
           try {
-            await root.NeumMiEspacioData.resolveReport(
+            const result=await root.NeumMiEspacioData.resolveReport(
               (p,o)=>API.request(p,o), reportId, {status, resolution_note:state.review.notes[reportId]||''}, controller&&controller.signal);
+            const outcome=root.NeumMiEspacioData.reviewOutcome(result,status);
+            state.review.notice=outcome.message;
             delete state.review.notes[reportId];
             await loadReviewQueue(seq, String(props.user?.id||''));
+            if(status==='accepted' && !outcome.needsAttention && (result.linked==='line_member' || result.linked==='publication_author')){
+              await loadActivity(seq, String(props.user?.id||''));
+            }
           } catch(err){ if(err?.name!=='AbortError')state.review.error=err?.message||'No se ha podido actualizar la comunicación.'; }
           finally { state.review.acting=''; }
         }
@@ -435,11 +440,11 @@
           </template>
 
           <section v-if="state.review.can && state.dutyMode==='overview'" class="me-review" aria-label="Comunicaciones del equipo por revisar">
-            <div class="mi-espacio-section-heading"><h3>Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar uno, la corrección se gestiona en el módulo correspondiente; nada se modifica automáticamente.</p></div>
+            <div class="mi-espacio-section-heading"><h3>Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar una reivindicación de línea o autoría, se intentará registrar automáticamente la vinculación. Otros casos pueden necesitar una corrección manual.</p></div>
             <div class="me-review-filters" role="tablist" aria-label="Estado de las comunicaciones">
               <button v-for="f in reviewFilters" :key="f.value" type="button" role="tab" class="me-review-tab" :class="{'is-active':state.review.filter===f.value}" :aria-selected="state.review.filter===f.value" @click="setReviewFilter(f.value)">{{f.label}}</button>
             </div>
-            <p v-if="state.review.error" class="me-form-error" role="alert">{{state.review.error}}</p>
+            <p v-if="state.review.error" class="me-form-error" role="alert">{{state.review.error}}</p><p v-if="state.review.notice" class="me-review-feedback" role="status">{{state.review.notice}}</p>
             <p v-if="state.review.busy" class="mi-espacio-empty" role="status">Cargando la cola…</p>
             <ul v-else-if="state.review.items.length" class="me-review-list">
               <li v-for="it in state.review.items" :key="it.id" class="me-review-item">
