@@ -294,9 +294,9 @@
       template: `
       <section class="mi-espacio" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape">
         <header class="mi-espacio-head">
-          <div><p class="mi-espacio-eyebrow">ÁREA PERSONAL · neumDESK</p>
+          <div><p class="mi-espacio-eyebrow">ACTIVIDAD PERSONAL</p>
           <h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2>
-          <p>Tu actividad asistencial y científica, vinculada a tu identidad institucional.</p></div>
+          <p>Agenda, investigación y publicaciones vinculadas a tu perfil.</p></div>
           <button v-if="state.context||state.error" type="button" class="mi-espacio-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
         </header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu cuenta y vinculación profesional…</p>
@@ -305,7 +305,7 @@
           <div v-if="state.context.testSession" class="mi-espacio-notice" role="status">Sesión de prueba. Comprueba que la identidad y los permisos corresponden a la cuenta seleccionada.</div>
           <section class="mi-espacio-person" aria-label="Identidad institucional verificada">
             <span class="mi-espacio-avatar" aria-hidden="true">{{initials}}</span>
-            <div class="mi-espacio-person-main"><p class="mi-espacio-eyebrow">IDENTIDAD DE LA CUENTA</p>
+            <div class="mi-espacio-person-main"><p class="mi-espacio-eyebrow">PERFIL PROFESIONAL</p>
               <h3>{{state.context.staff?.name || state.context.account.name}}</h3>
               <p>{{state.context.staff?.specialization || state.context.staff?.staffType || state.context.account.role || "Cuenta institucional"}}</p>
               <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
@@ -315,9 +315,13 @@
           <div v-if="!linked" class="mi-espacio-notice" role="status"><strong>Tu cuenta está activa, pero no podemos verificar su vínculo con la ficha profesional.</strong><p>La actividad personal no se mostrará hasta que se confirme la vinculación. Contacta con la persona responsable de accesos; no se asignarán datos por coincidencias de nombres.</p></div>
 
           <template v-if="linked">
-            <div v-if="state.activityBusy" class="me-activity" aria-hidden="true">
-              <div class="me-skel-head"></div>
-              <div class="me-cards"><div class="me-card me-skel" v-for="n in 3" :key="n"><div class="me-skel-line"></div><div class="me-skel-line short"></div><div class="me-skel-line short"></div></div></div>
+            <div v-if="state.activityBusy" class="me-activity me-activity-placeholder" role="status" aria-label="Cargando tu actividad personal">
+              <div class="me-skel-head" aria-hidden="true"></div>
+              <div class="me-loading-agenda" aria-hidden="true">
+                <div class="me-loading-primary"><div class="me-skel-line"></div><div class="me-skel-line short"></div><div class="me-skel-line"></div></div>
+                <div class="me-loading-secondary"><div class="me-skel-line"></div><div class="me-skel-line short"></div></div>
+              </div>
+              <div class="me-loading-research" aria-hidden="true"><div class="me-skel-line"></div><div class="me-skel-line short"></div></div>
             </div>
             <div v-else-if="state.activityError" class="mi-espacio-notice" role="status"><strong>No se ha podido cargar tu actividad ahora mismo.</strong><p>Tu identidad está verificada; vuelve a intentarlo en un momento.</p><button type="button" class="mi-espacio-refresh" @click="refresh">Reintentar</button></div>
 
@@ -336,17 +340,18 @@
                     <p v-else class="mi-espacio-empty">Sin guardias próximas registradas.</p>
                     <button class="me-duty-open" type="button" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
                   </article>
-                  <div class="me-agenda-secondary">
-                    <article class="me-card">
+                  <div class="me-agenda-secondary" aria-label="Otras asignaciones personales">
+                    <article v-if="state.activity.agenda.rotations.length" class="me-card">
                       <header class="me-card-head"><h4>Rotaciones</h4><span class="me-count">{{state.activity.counts.rotations}}</span></header>
-                      <ul v-if="state.activity.agenda.rotations.length" class="me-list"><li v-for="r in state.activity.agenda.rotations" :key="r.id"><span class="me-item-main">{{r.unit || r.resident || 'Rotación'}}<small v-if="r.start"> · {{fmtDate(r.start)}}–{{fmtDate(r.end)}}</small></span><span class="me-chip" :data-tone="r.role">{{rotationRole(r.role)}}</span></li></ul>
-                      <p v-else class="mi-espacio-empty">Sin rotaciones activas.</p>
+                      <ul class="me-list"><li v-for="r in state.activity.agenda.rotations" :key="r.id"><span class="me-item-main">{{r.unit || r.resident || 'Rotación'}}<small v-if="r.start"> · {{fmtDate(r.start)}}–{{fmtDate(r.end)}}</small></span><span class="me-chip" :data-tone="r.role">{{rotationRole(r.role)}}</span></li></ul>
                     </article>
-                    <article class="me-card">
+                    <article v-if="state.activity.agenda.absences.length" class="me-card">
                       <header class="me-card-head"><h4>Ausencias</h4><span class="me-count">{{state.activity.counts.absences}}</span></header>
-                      <ul v-if="state.activity.agenda.absences.length" class="me-list"><li v-for="a in state.activity.agenda.absences" :key="a.id"><span class="me-item-main">{{a.type || 'Ausencia'}}<small v-if="a.start"> · {{fmtDate(a.start)}}–{{fmtDate(a.end)}}</small></span><span class="me-chip" :data-tone="a.status">{{absenceStatus(a.status)}}</span></li></ul>
-                      <p v-else class="mi-espacio-empty">Sin ausencias registradas.</p>
+                      <ul class="me-list"><li v-for="a in state.activity.agenda.absences" :key="a.id"><span class="me-item-main">{{a.type || 'Ausencia'}}<small v-if="a.start"> · {{fmtDate(a.start)}}–{{fmtDate(a.end)}}</small></span><span class="me-chip" :data-tone="a.status">{{absenceStatus(a.status)}}</span></li></ul>
                     </article>
+                    <p v-if="!state.activity.counts.rotations && !state.activity.counts.absences" class="me-agenda-status">No hay rotaciones ni ausencias activas registradas.</p>
+                    <p v-else-if="!state.activity.counts.rotations" class="me-agenda-status">Sin rotaciones activas.</p>
+                    <p v-else-if="!state.activity.counts.absences" class="me-agenda-status">Sin ausencias registradas.</p>
                   </div>
                 </div>
                 <div v-else class="me-duty-workspace" aria-label="Mis guardias">
@@ -370,7 +375,7 @@
               </section>
 
               <section v-if="state.dutyMode==='overview'" class="me-activity me-portfolio" aria-label="Mi investigación">
-                <div class="mi-espacio-section-heading"><h3>Mi investigación</h3><p>Participación vinculada a tu perfil. Selecciona un registro para consultar tu función.</p></div>
+                <div class="mi-espacio-section-heading"><h3>Mi investigación</h3><p>Líneas, estudios y proyectos en los que participas.</p></div>
                 <div class="me-portfolio-groups" role="group" aria-label="Tipo de actividad científica">
                   <button v-for="g in researchGroups" :key="g.id" type="button" class="me-portfolio-group" :class="{'is-active':state.researchGroup===g.id}" :aria-pressed="state.researchGroup===g.id" @click="changeResearchGroup(g.id)">{{g.label}} <span>{{state.activity.research[g.id].length}}</span></button>
                 </div>
@@ -393,7 +398,7 @@
                       <div v-if="state.researchGroup==='projects' && selectedResearch.category"><dt>Categoría</dt><dd>{{selectedResearch.category}}</dd></div>
                     </dl>
                   </section>
-                  <div v-else class="me-portfolio-prompt" aria-hidden="true">Selecciona un registro para consultar tu participación.</div>
+                  
                 </div>
               </section>
               <section v-if="state.dutyMode==='overview'" class="me-activity me-publications" aria-label="Mis publicaciones">
@@ -418,12 +423,12 @@
                       <div><dt>Autoría de correspondencia</dt><dd>{{selectedPublication.corresponding?'Sí':'No consta'}}</dd></div>
                     </dl>
                   </section>
-                  <div v-else class="me-portfolio-prompt" aria-hidden="true">Selecciona una publicación para consultar tu autoría.</div>
+                  
                 </div>
               </section>
             </template>
 
-            <section v-if="state.dutyMode==='overview'" class="me-report" aria-label="Comunicar una discrepancia">
+            <section v-if="state.dutyMode==='overview' && !state.activityBusy && !!state.activity" class="me-report" aria-label="Comunicar una discrepancia">
               <div class="mi-espacio-section-heading"><h3>¿Falta algo o hay un error?</h3><p>Comunícalo y lo revisará la persona responsable. No se modifica ningún registro directamente.</p></div>
               <div v-if="state.report.done" class="mi-espacio-notice" role="status"><strong>Gracias, tu comunicación se ha registrado.</strong><p>La revisará la persona responsable de accesos o coordinación.</p><button type="button" class="mi-espacio-refresh" @click="openReportForm">Comunicar otra</button></div>
               <template v-else>
@@ -455,7 +460,7 @@
             </section>
           </template>
 
-          <section v-if="state.review.can && state.dutyMode==='overview'" class="me-review" aria-label="Comunicaciones del equipo por revisar">
+          <section v-if="state.review.can && !state.activityBusy && state.dutyMode==='overview'" class="me-review" aria-label="Comunicaciones del equipo por revisar">
             <div class="mi-espacio-section-heading"><h3>Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar una reivindicación de línea o autoría, se intentará registrar automáticamente la vinculación. Otros casos pueden necesitar una corrección manual.</p></div>
             <div class="me-review-filters" role="tablist" aria-label="Estado de las comunicaciones">
               <button v-for="f in reviewFilters" :key="f.value" type="button" role="tab" class="me-review-tab" :class="{'is-active':state.review.filter===f.value}" :aria-selected="state.review.filter===f.value" @click="setReviewFilter(f.value)">{{f.label}}</button>
