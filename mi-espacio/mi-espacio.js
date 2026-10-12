@@ -63,7 +63,7 @@
           } catch(err){ if(err?.name!=='AbortError'){/* non-fatal: the list simply stays empty */} }
         }
         function openReportForm(){
-          state.report.open=true;state.report.done=false;state.report.error='';
+          state.toolsOpen=true;state.report.open=true;state.report.done=false;state.report.error='';
           focusDuty('#me-report-subject');
         }
         // When the subject is a line or a publication, load the pickable options
@@ -215,7 +215,7 @@
           const index=state.dutyIndex;state.dutyIndex=null;
           focusDuty('.me-duty-row[data-index="'+index+'"]');
         }
-        function backToAgenda(){state.dutyMode='overview';state.dutyIndex=null;focusDuty('.me-duty-open');}
+        function backToAgenda(){state.dutyMode='overview';state.dutyIndex=null;focusDuty('.me-v9-agenda-title');}
         // Phase 6B: personal, read-only portfolio; never navigates out of Mi espacio.
         const researchGroups=Object.freeze([
           {id:'lines',label:'Líneas'}, {id:'studies',label:'Estudios'}, {id:'projects',label:'Proyectos'}
@@ -295,58 +295,51 @@
         };
       },
       template: `
-      <section class="mi-espacio mi-espacio--v8" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape">
-        <header class="mi-espacio-head">
-          <div><p class="mi-espacio-eyebrow">ESPACIO PROFESIONAL</p><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></div>
-          <button v-if="state.context||state.error" type="button" class="mi-espacio-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
-        </header>
+      <section class="mi-espacio mi-espacio--v8 mi-espacio--v9" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape">
+        <header class="mi-espacio-head me-v9-accessible-head"><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu perfil…</p>
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
         <template v-else-if="state.context">
           <div v-if="state.context.testSession" class="mi-espacio-notice" role="status">Sesión de prueba. Verifica la identidad de esta cuenta.</div>
-          <section class="mi-espacio-person" aria-label="Identidad institucional verificada">
+          <section class="mi-espacio-person me-v9-identity" aria-label="Identidad institucional verificada">
             <span class="mi-espacio-avatar" aria-hidden="true">{{initials}}</span>
-            <div class="mi-espacio-person-main"><h3>{{state.context.staff?.name || state.context.account.name}}</h3>
-              <p>{{state.context.staff?.specialization || state.context.staff?.staffType || state.context.account.role || "Cuenta institucional"}}</p>
+            <div class="mi-espacio-person-main">
+              <div class="me-v9-name-line">
+                <h3>{{state.context.staff?.name || state.context.account.name}}</h3>
+                <span class="mi-espacio-link-state" :class="linked?'is-linked':'is-unlinked'"><span v-if="linked" aria-hidden="true">✓</span> {{linked?'Perfil vinculado':state.context.linkState==='unlinked'?'Vinculación pendiente':'Vinculación no disponible'}}</span>
+              </div>
+              <p>{{state.context.staff?.specialization || state.context.staff?.staffType || state.context.account.role || 'Cuenta institucional'}}</p>
               <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
             </div>
-            <span class="mi-espacio-link-state" :class="linked?'is-linked':'is-unlinked'">{{linked?'Perfil vinculado':state.context.linkState==='unlinked'?'Vinculación pendiente':'Vinculación no disponible'}}</span>
+            <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
           </section>
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
           <template v-if="linked">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder" role="status">Cargando actividad vinculada…</div>
             <div v-else-if="state.activityError" class="mi-espacio-notice" role="alert">{{state.activityError}} <button type="button" @click="refresh">Reintentar</button></div>
             <template v-else-if="state.activity">
-              <div v-if="state.dutyMode==='overview'" class="me-v8-overview">
-                <section class="me-v8-column me-v8-agenda" aria-label="Mi agenda">
-                  <div class="mi-espacio-section-heading"><p class="mi-espacio-eyebrow">ACTIVIDAD ASISTENCIAL</p><h3>Mi agenda</h3></div>
+              <div v-if="state.dutyMode==='overview'" class="me-v8-overview me-v9-overview">
+                <section class="me-v8-column me-v8-agenda me-v9-panel" aria-labelledby="me-v9-agenda-title">
+                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">AGENDA PERSONAL</p><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">Mi agenda</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} próximas</span></div>
                   <div v-if="state.activity.agenda.guardias.length" class="me-v8-commitments">
-                    <div class="me-v8-upnext">
-                      <span class="me-v8-kicker">PRÓXIMA GUARDIA</span>
-                      <strong>{{fmtDutyDate(state.activity.agenda.guardias[0].date)}}</strong>
-                      <span>{{dutyShift(state.activity.agenda.guardias[0].shift)}} · {{guardiaRole(state.activity.agenda.guardias[0].role)}}</span>
-                    </div>
-                    <ol v-if="state.activity.agenda.guardias.length>1" class="me-v8-timeline">
-                      <li v-for="(g,index) in state.activity.agenda.guardias.slice(1,4)" :key="g.id||index">
-                        <span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small>
-                      </li>
-                    </ol>
-                    <button v-if="state.activity.agenda.guardias.length>4" type="button" class="me-duty-open" @click="openDuties()">Ver todas mis guardias ({{state.activity.counts.guardias}}) <span aria-hidden="true">→</span></button>
+                    <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">PRÓXIMA GUARDIA</span><strong>{{fmtDutyDate(state.activity.agenda.guardias[0].date)}}</strong><span>{{dutyShift(state.activity.agenda.guardias[0].shift)}} · {{guardiaRole(state.activity.agenda.guardias[0].role)}}</span></div>
+                    <ol v-if="state.activity.agenda.guardias.length>1" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in state.activity.agenda.guardias.slice(1,3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
+                    <button v-if="state.activity.agenda.guardias.length>3" type="button" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver todas mis guardias <span aria-hidden="true">→</span></button>
                   </div>
-                  <p v-else class="me-v8-quiet">Sin próximas guardias registradas.</p>
+                  <p v-else class="me-v8-quiet me-v9-empty">No tienes próximas guardias registradas.</p>
                   <div v-if="state.activity.agenda.rotations.length || state.activity.agenda.absences.length" class="me-v8-secondary-agenda">
                     <div v-if="state.activity.agenda.rotations.length"><h4>Rotaciones</h4><ul><li v-for="r in state.activity.agenda.rotations" :key="r.id">{{r.unit||r.resident||'Rotación'}} <small>{{fmtDate(r.start)}}–{{fmtDate(r.end)}}</small></li></ul></div>
                     <div v-if="state.activity.agenda.absences.length"><h4>Ausencias</h4><ul><li v-for="a in state.activity.agenda.absences" :key="a.id">{{a.type||'Ausencia'}} <small>{{fmtDate(a.start)}}–{{fmtDate(a.end)}}</small></li></ul></div>
                   </div>
                 </section>
-                <section class="me-v8-column me-v8-research" aria-label="Mi investigación">
-                  <div class="mi-espacio-section-heading"><p class="mi-espacio-eyebrow">ACTIVIDAD CIENTÍFICA</p><h3>Mi investigación</h3></div>
+                <section class="me-v8-column me-v8-research me-v9-panel" aria-labelledby="me-v9-research-title">
+                  <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">PARTICIPACIÓN VERIFICADA</p><h3 id="me-v9-research-title">Mi investigación</h3></div></div>
                   <div v-if="state.activity.counts.lines+state.activity.counts.studies+state.activity.counts.projects" class="me-v8-research-groups">
-                    <div v-if="state.activity.research.lines.length"><h4>Líneas de investigación</h4><ul><li v-for="l in state.activity.research.lines" :key="l.id"><span>{{l.name}}</span><small>{{lineRole(l.role)}}</small></li></ul></div>
-                    <div v-if="state.activity.research.studies.length"><h4>Estudios</h4><ul><li v-for="s in state.activity.research.studies" :key="s.id"><span>{{s.title}}</span><small>{{studyRole(s.role)}}<template v-if="s.code"> · {{s.code}}</template></small></li></ul></div>
-                    <div v-if="state.activity.research.projects.length"><h4>Proyectos</h4><ul><li v-for="p in state.activity.research.projects" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul></div>
+                    <div v-if="state.activity.research.lines.length"><h4>Líneas de investigación <span>{{state.activity.counts.lines}}</span></h4><ul><li v-for="l in state.activity.research.lines" :key="l.id"><span>{{l.name}}</span><small>{{lineRole(l.role)}}</small></li></ul></div>
+                    <div v-if="state.activity.research.studies.length"><h4>Estudios <span>{{state.activity.counts.studies}}</span></h4><ul><li v-for="s in state.activity.research.studies" :key="s.id"><span>{{s.title}}</span><small>{{studyRole(s.role)}}<template v-if="s.code"> · {{s.code}}</template></small></li></ul></div>
+                    <div v-if="state.activity.research.projects.length"><h4>Proyectos <span>{{state.activity.counts.projects}}</span></h4><ul><li v-for="p in state.activity.research.projects" :key="p.id"><span>{{p.title}}</span><small>{{projectRole(p.role)}}<template v-if="p.stage"> · {{p.stage}}</template></small></li></ul></div>
                   </div>
-                  <p v-else class="me-v8-quiet">Aún no se ha vinculado actividad científica a tu perfil.</p>
+                  <p v-else class="me-v8-quiet me-v9-empty">No hay líneas, estudios o proyectos vinculados a tu perfil.</p>
                 </section>
               </div>
               <section v-else class="me-v8-all-duties" aria-label="Mis guardias">
