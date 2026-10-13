@@ -11,7 +11,7 @@ test('loading geometry follows overview shape without exposing old data',()=>{
 });
 test('review and activity continue to require session and identity checks',()=>{
  assert.match(src,/requestSeq!==seq\|\|!props.active\|\|String\(props.user\?\.id\)!==identity/);
- assert.match(src,/state.review.can && state.review.filter==='open'/);
+ assert.match(src,/state.review.can && !state.review.busy && !state.review.error && state.review.filter==='open' && state.review.items.length/);
 });
 test('claim-picker async results are rejected after a session transition',()=>{
  const start=src.indexOf('async function onSubjectTypeChange()');

@@ -403,3 +403,11 @@
 
 /* Phase 12C — quiet, server-derived context under verified identity. */
 .mi-espacio--v9 .me-v12c-context{font-size:12px;line-height:1.6;color:#456b68;margin:9px 0 0;max-width:95ch;overflow-wrap:anywhere}
+
+/* Phase 13B: a single actionable review signal, not a second dashboard. */
+.mi-espacio--v9 .me-v13b-attention{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0;padding:13px 20px;border:1px solid #d6e5df;border-left:3px solid #58867b;border-radius:7px;background:#f8fbf9;margin-top:18px}
+.mi-espacio--v9 .me-v13b-attention .mi-espacio-eyebrow{font-size:10px;letter-spacing:.08em;margin:0 0 4px;color:#4c7168}
+.mi-espacio--v9 .me-v13b-attention p{margin:0;color:#395a54;font-size:13px;line-height:1.5}
+.mi-espacio--v9 .me-v13b-attention-action{border:0;background:transparent;color:#276e64;font-size:13px;font-weight:650;cursor:pointer;white-space:nowrap;padding:7px 0}
+.mi-espacio--v9 .me-v13b-attention-action:focus-visible{outline:3px solid #158a89;outline-offset:3px}
+@media(max-width:640px){.mi-espacio--v9 .me-v13b-attention{align-items:flex-start;flex-direction:column;padding:14px 16px;gap:6px}.mi-espacio--v9 .me-v13b-attention-action{white-space:normal;text-align:left}}
