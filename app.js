@@ -1534,13 +1534,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         mark('loading')
         __neumaxFlight.inc()
-        const config = { method, headers: this.headers(), mode: 'cors', cache: 'no-cache', credentials: 'include', ...(options.signal ? { signal: options.signal } : {}) }
+        const isRaw = !!(options.raw && options.body instanceof FormData)
+        const hdrs = this.headers()
+        if (isRaw) delete hdrs['Content-Type'] // let browser set multipart boundary
+        const config = { method, headers: hdrs, mode: 'cors', cache: 'no-cache', credentials: 'include', ...(options.signal ? { signal: options.signal } : {}) }
         const timeoutMs = options.timeoutMs ?? (isGet ? 30000 : 60000)
         const timeoutController = !options.signal ? new AbortController() : null
         const timeoutId = timeoutController ? setTimeout(() => timeoutController.abort(), timeoutMs) : null
         let responseStatus = null
         if (timeoutController) config.signal = timeoutController.signal
-        if (options.body) config.body = JSON.stringify(options.body)
+        if (options.body) config.body = isRaw ? options.body : JSON.stringify(options.body)
 
         try {
           const res = await fetch(`${CONFIG.API_BASE_URL}${endpoint}`, config)
