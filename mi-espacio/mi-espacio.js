@@ -80,7 +80,10 @@
           picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}},
           profile:{open:false,busy:false,saving:false,error:'',data:null,edit:null,photoUploading:false,certificates:[],certBusy:false},
-          timeline:{busy:false,error:'',entries:[],expanded:false}});
+          timeline:{busy:false,error:'',entries:[],expanded:false,filter:'all'},
+          colleagues:{busy:false,error:'',items:[],search:'',open:false},
+          dashboard:{busy:false,error:'',data:null},
+          quickActions:false});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -132,7 +135,10 @@
           Object.assign(state.picker,{busy:false,items:[],forType:''});
           Object.assign(state.review,{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}});
           Object.assign(state.profile,{open:false,busy:false,saving:false,error:'',data:null,edit:null,photoUploading:false,certificates:[],certBusy:false});
-          Object.assign(state.timeline,{busy:false,error:'',entries:[],expanded:false});
+          Object.assign(state.timeline,{busy:false,error:'',entries:[],expanded:false,filter:'all'});
+          Object.assign(state.colleagues,{busy:false,error:'',items:[],search:'',open:false});
+          Object.assign(state.dashboard,{busy:false,error:'',data:null});
+          state.quickActions=false;
         }
         // ── Phase 15: profile panel ──
         const profileCompleteness=Vue.computed(()=>state.profile.data?.profileCompleteness ?? 0);
@@ -241,6 +247,93 @@
           if(!d) return null;
           return {name:d.fullName,title:d.title,department:d.department?.name,specialization:d.specialization,bio:d.publicBio,orcid:d.orcidId,scholar:d.scholarUrl,researchgate:d.researchgateUrl,photo:d.publicPhotoUrl};
         });
+        // ── Phase 20: completeness wizard — missing fields with scroll-to hints ──
+        const missingFields=Vue.computed(()=>state.profile.data?.missingFields || []);
+        const completenessHint=Vue.computed(()=>{
+          const m=missingFields.value;
+          if(!m.length) return '';
+          if(m.length===1) return 'Solo falta: '+m[0].label;
+          return 'Faltan '+m.length+' datos: '+m.slice(0,3).map(f=>f.label).join(', ')+(m.length>3?'…':'');
+        });
+        function scrollToField(key){
+          const map={photo:'.me-v15-photo-upload-label',bio:'#me-profile-bio',phone:'#me-profile-phone',orcid:'#me-profile-orcid',scholar:'#me-profile-scholar',researchgate:'#me-profile-rg'};
+          const sel=map[key];
+          if(!sel)return;
+          if(!state.profile.open) openProfile();
+          Vue.nextTick(()=>{
+            const el=document.querySelector('.mi-espacio '+sel);
+            if(el){el.scrollIntoView({block:'center',behavior:'smooth'});try{el.focus();}catch(_){}}
+          });
+        }
+        // ── Phase 20: activity timeline filtering ──
+        const TIMELINE_FILTERS=Object.freeze([
+          {value:'all',label:'Todo'},
+          {value:'research',label:'Investigación'},
+          {value:'clinical',label:'Clínico'},
+          {value:'training',label:'Formación'}
+        ]);
+        const RESEARCH_RESOURCES=new Set(['clinical_trials','studies','innovation_projects','projects','research_lines','publications','publication_authors']);
+        const CLINICAL_RESOURCES=new Set(['medical_staff','on_call','rotations','absence_records','staff_certificates']);
+        const TRAINING_RESOURCES=new Set(['staff_certificates']);
+        const filteredTimeline=Vue.computed(()=>{
+          const f=state.timeline.filter;
+          if(f==='all') return state.timeline.entries;
+          const set=f==='research'?RESEARCH_RESOURCES:f==='clinical'?CLINICAL_RESOURCES:TRAINING_RESOURCES;
+          return state.timeline.entries.filter(e=>set.has(e.resource)||set.has(e.resourceId));
+        });
+        // ── Phase 20: quick actions ──
+        const quickActionItems=Vue.computed(()=>{
+          const items=[];
+          if(linked.value){
+            items.push({id:'profile',label:'Editar mi perfil',icon:'✏️'});
+            items.push({id:'report',label:'Comunicar discrepancia',icon:'📋'});
+            items.push({id:'claim',label:'Reivindicar publicación',icon:'📄'});
+          }
+          if(can('absence_management')) items.push({id:'absence',label:'Solicitar ausencia',icon:'🗓️'});
+          if(can('certificates_management')) items.push({id:'certs',label:'Mis certificados',icon:'📜'});
+          if(can('oncall_schedule')) items.push({id:'oncall',label:'Cuadrante de guardias',icon:'🏥'});
+          return items;
+        });
+        function doQuickAction(id){
+          state.quickActions=false;
+          if(id==='profile') openProfile();
+          else if(id==='report') openReportForm();
+          else if(id==='claim') claimPublication();
+          else if(id==='absence') emit('navigate','absence_management');
+          else if(id==='certs') openProfile();
+          else if(id==='oncall') emit('navigate','oncall_schedule');
+        }
+        // ── Phase 20: colleague directory ──
+        async function loadColleagues(){
+          if(state.colleagues.items.length) { state.colleagues.open=true; return; }
+          state.colleagues.open=true;state.colleagues.busy=true;state.colleagues.error='';
+          const requestSeq=seq, identity=String(props.user?.id||'');
+          try {
+            const items=await root.NeumMiEspacioData.loadColleagues((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            state.colleagues.items=items;
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(err?.name!=='AbortError') state.colleagues.error=err?.message||'No se ha podido cargar el directorio.';
+          } finally { if(requestSeq===seq) state.colleagues.busy=false; }
+        }
+        const filteredColleagues=Vue.computed(()=>{
+          const q=state.colleagues.search.toLowerCase().trim();
+          if(!q) return state.colleagues.items;
+          return state.colleagues.items.filter(c=>(c.name+' '+c.department+' '+c.specialization).toLowerCase().includes(q));
+        });
+        // ── Phase 20: personal dashboard ──
+        async function loadDashboardData(requestSeq, identity){
+          state.dashboard.busy=true;state.dashboard.error='';
+          try {
+            const data=await root.NeumMiEspacioData.loadDashboard((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            state.dashboard.data=data;
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(err?.name!=='AbortError') state.dashboard.error=err?.message||'No se han podido cargar las métricas.';
+          } finally { if(requestSeq===seq) state.dashboard.busy=false; }
+        }
         // ── Phase 18: research summary from activity data ──
         const researchSummary=Vue.computed(()=>{
           const items=[];
@@ -414,7 +507,7 @@
               (path,options)=>API.request(path,options),identity,controller.signal);
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             state.context=result;
-            if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); loadTimeline(requestSeq, identity); }
+            if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); loadTimeline(requestSeq, identity); loadDashboardData(requestSeq, identity); }
             loadReviewQueue(requestSeq, identity);
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
@@ -527,6 +620,10 @@
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           researchSummary,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
           toggleNotifPref,leadershipRoles,publicPreview,
+          missingFields,completenessHint,scrollToField,
+          TIMELINE_FILTERS,filteredTimeline,
+          quickActionItems,doQuickAction,
+          loadColleagues,filteredColleagues,
           urgentCertificates,certUrgencyLabel,fmtRelative,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
@@ -577,9 +674,16 @@
             <p v-if="state.profile.busy" class="mi-espacio-state" role="status">Cargando perfil…</p>
             <p v-else-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
             <template v-else-if="state.profile.data && state.profile.edit">
-              <div class="me-v15-completeness" role="meter" :aria-valuenow="profileCompleteness" aria-valuemin="0" aria-valuemax="100" :aria-label="'Perfil completo al '+profileCompleteness+'%'">
-                <div class="me-v15-completeness-bar"><div class="me-v15-completeness-fill" :style="{width:profileCompleteness+'%'}"></div></div>
+              <div class="me-v15-completeness me-v20-completeness" role="meter" :aria-valuenow="profileCompleteness" aria-valuemin="0" aria-valuemax="100" :aria-label="'Perfil completo al '+profileCompleteness+'%'">
+                <div class="me-v15-completeness-bar"><div class="me-v15-completeness-fill" :style="{width:profileCompleteness+'%'}" :class="{'me-v20-complete':profileCompleteness>=100}"></div></div>
                 <span class="me-v15-completeness-label">{{profileCompleteness}}% completo</span>
+                <p v-if="profileCompleteness>=100" class="me-v20-completeness-done">¡Perfil completo!</p>
+                <div v-else-if="missingFields.length" class="me-v20-missing-hints">
+                  <p class="me-v20-missing-title">{{completenessHint}}</p>
+                  <div class="me-v20-missing-tags">
+                    <button v-for="f in missingFields" :key="f.key" type="button" class="me-v20-missing-tag" @click="scrollToField(f.key)">{{f.label}} <span aria-hidden="true">→</span></button>
+                  </div>
+                </div>
               </div>
               <div class="me-v15-photo-section me-v19-photo-section">
                 <div class="me-v15-photo-preview me-v19-photo-preview">
@@ -694,6 +798,20 @@
               </div>
             </template>
           </section>
+          <div v-if="linked && state.dashboard.data && !state.profile.open" class="me-v20-dashboard" aria-label="Métricas personales">
+            <div class="me-v20-stat" v-if="state.dashboard.data.activeStudies"><span class="me-v20-stat-value">{{state.dashboard.data.activeStudies}}</span><span class="me-v20-stat-label">Estudios</span></div>
+            <div class="me-v20-stat" v-if="state.dashboard.data.activeProjects"><span class="me-v20-stat-value">{{state.dashboard.data.activeProjects}}</span><span class="me-v20-stat-label">Proyectos</span></div>
+            <div class="me-v20-stat" v-if="state.dashboard.data.publications"><span class="me-v20-stat-value">{{state.dashboard.data.publications}}</span><span class="me-v20-stat-label">Publicaciones</span></div>
+            <div class="me-v20-stat" v-if="state.dashboard.data.totalCertificates"><span class="me-v20-stat-value" :class="{'me-v20-stat-warn':state.dashboard.data.expiredCertificates||state.dashboard.data.expiringCertificates}">{{state.dashboard.data.totalCertificates}}</span><span class="me-v20-stat-label">Certificados<template v-if="state.dashboard.data.expiredCertificates"> · {{state.dashboard.data.expiredCertificates}} cad.</template></span></div>
+            <div class="me-v20-stat" v-if="state.dashboard.data.absenceDaysThisYear"><span class="me-v20-stat-value">{{state.dashboard.data.absenceDaysThisYear}}</span><span class="me-v20-stat-label">Días ausencia {{new Date().getFullYear()}}</span></div>
+          </div>
+          <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
+            <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
+            <button type="button" class="me-v20-directory-btn" @click="loadColleagues">Directorio <span aria-hidden="true">→</span></button>
+          </div>
+          <div v-if="state.quickActions && linked" class="me-v20-quick-actions">
+            <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
+          </div>
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
           <template v-if="linked">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
@@ -773,16 +891,20 @@
               </div>
               <section v-if="state.dutyMode==='overview' && state.timeline.entries.length" class="me-v16-timeline" aria-label="Actividad reciente">
                 <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">ACTIVIDAD RECIENTE</p><h3>Mi actividad</h3></div></div>
+                <div v-if="state.timeline.entries.length>3" class="me-v20-timeline-filters" role="tablist" aria-label="Filtrar actividad">
+                  <button v-for="f in TIMELINE_FILTERS" :key="f.value" type="button" role="tab" class="me-v20-tl-filter" :class="{'is-active':state.timeline.filter===f.value}" :aria-selected="state.timeline.filter===f.value" @click="state.timeline.filter=f.value">{{f.label}}</button>
+                </div>
                 <p v-if="state.timeline.busy" class="mi-espacio-state" role="status">Cargando…</p>
                 <p v-else-if="state.timeline.error" class="me-form-error" role="alert">{{state.timeline.error}}</p>
                 <ul v-else class="me-v16-timeline-list">
-                  <li v-for="e in state.timeline.entries.slice(0,state.timeline.expanded?25:5)" :key="e.id" class="me-v16-timeline-entry">
+                  <li v-for="e in filteredTimeline.slice(0,state.timeline.expanded?25:5)" :key="e.id" class="me-v16-timeline-entry">
                     <span class="me-v16-timeline-action">{{e.actionLabel}}</span>
                     <span class="me-v16-timeline-resource">{{e.resourceLabel}}</span>
                     <time class="me-v16-timeline-time">{{fmtRelative(e.createdAt)}}</time>
                   </li>
                 </ul>
-                <button v-if="state.timeline.entries.length>5" type="button" class="me-v16-timeline-toggle" :aria-expanded="state.timeline.expanded" @click="state.timeline.expanded=!state.timeline.expanded">{{state.timeline.expanded?'Ver menos':'Ver toda mi actividad'}} <span aria-hidden="true">{{state.timeline.expanded?'↑':'→'}}</span></button>
+                <p v-if="!filteredTimeline.length && state.timeline.filter!=='all'" class="me-v8-quiet">No hay actividad de tipo «{{TIMELINE_FILTERS.find(f=>f.value===state.timeline.filter)?.label}}».</p>
+                <button v-if="filteredTimeline.length>5" type="button" class="me-v16-timeline-toggle" :aria-expanded="state.timeline.expanded" @click="state.timeline.expanded=!state.timeline.expanded">{{state.timeline.expanded?'Ver menos':'Ver toda mi actividad'}} <span aria-hidden="true">{{state.timeline.expanded?'↑':'→'}}</span></button>
               </section>
               <section v-if="state.dutyMode==='overview' && urgentCertificates.length && !state.profile.open" class="me-v16-cert-alert" aria-label="Certificados que requieren atención" role="alert">
                 <p class="mi-espacio-eyebrow">CERTIFICADOS</p>
@@ -857,6 +979,35 @@
               </div>
             </template>
           </template>
+          <section v-if="state.colleagues.open" class="me-v20-colleagues" aria-label="Directorio de compañeros">
+            <div class="me-v20-colleagues-head">
+              <h3>Directorio del equipo</h3>
+              <button type="button" class="me-v15-profile-close" @click="state.colleagues.open=false" aria-label="Cerrar directorio">✕</button>
+            </div>
+            <input type="search" class="me-v20-colleagues-search" v-model="state.colleagues.search" placeholder="Buscar por nombre, departamento o especialidad…" aria-label="Buscar compañeros">
+            <p v-if="state.colleagues.busy" class="mi-espacio-state" role="status">Cargando directorio…</p>
+            <p v-else-if="state.colleagues.error" class="me-form-error" role="alert">{{state.colleagues.error}}</p>
+            <p v-else-if="!filteredColleagues.length && state.colleagues.search" class="me-v8-quiet">No se encontraron resultados para «{{state.colleagues.search}}».</p>
+            <p v-else-if="!state.colleagues.items.length" class="me-v8-quiet">Ningún compañero tiene un perfil público activo.</p>
+            <ul v-else class="me-v20-colleagues-list">
+              <li v-for="c in filteredColleagues" :key="c.id" class="me-v20-colleague-card">
+                <div class="me-v20-colleague-avatar">
+                  <img v-if="c.photo" :src="c.photo" alt="" class="me-v20-colleague-photo">
+                  <span v-else class="me-v20-colleague-initials">{{c.name.split(/\\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}}</span>
+                </div>
+                <div class="me-v20-colleague-info">
+                  <strong>{{c.name}}</strong>
+                  <span v-if="c.title || c.specialization" class="me-v20-colleague-role">{{c.title || c.specialization}}</span>
+                  <span v-if="c.department" class="me-v20-colleague-dept">{{c.department}}</span>
+                </div>
+                <div v-if="c.orcid || c.scholar || c.researchgate" class="me-v20-colleague-links">
+                  <span v-if="c.orcid" class="me-v20-link-chip">ORCID</span>
+                  <span v-if="c.scholar" class="me-v20-link-chip">Scholar</span>
+                  <span v-if="c.researchgate" class="me-v20-link-chip">RG</span>
+                </div>
+              </li>
+            </ul>
+          </section>
         </template>
       </section>`
     };

@@ -588,3 +588,63 @@
  .mi-espacio .me-v19-photo-preview{width:80px;height:80px}
  .mi-espacio .me-v19-absence-item{flex-direction:column;align-items:flex-start;gap:4px}
 }
+
+/* ── Phase 20 – Experience: dashboard, quick actions, wizard, directory, filters ── */
+
+/* Dashboard stats row */
+.mi-espacio .me-v20-dashboard{display:flex;gap:8px;flex-wrap:wrap;padding:0 4px;margin:-4px 0 8px}
+.mi-espacio .me-v20-stat{flex:1 1 80px;min-width:80px;background:rgba(34,78,88,.03);border:1px solid rgba(34,78,88,.08);border-radius:10px;padding:10px 12px;text-align:center}
+.mi-espacio .me-v20-stat-value{display:block;font-size:22px;font-weight:700;color:var(--me-ink,#183c49);line-height:1.2}
+.mi-espacio .me-v20-stat-warn{color:#c44}
+.mi-espacio .me-v20-stat-label{display:block;font-size:11px;color:var(--me-muted,#60747d);margin-top:2px;line-height:1.3}
+
+/* Quick actions bar */
+.mi-espacio .me-v20-quick-bar{display:flex;gap:8px;margin-bottom:8px}
+.mi-espacio .me-v20-quick-toggle{flex:1;padding:8px 14px;font-size:13px;font-weight:600;border:1px solid rgba(34,78,88,.12);border-radius:8px;background:#fff;color:var(--me-ink,#183c49);cursor:pointer;text-align:left}
+.mi-espacio .me-v20-quick-toggle:hover{background:rgba(34,78,88,.03)}
+.mi-espacio .me-v20-directory-btn{padding:8px 14px;font-size:13px;font-weight:600;border:1px solid rgba(21,138,137,.2);border-radius:8px;background:rgba(21,138,137,.04);color:#158a89;cursor:pointer;white-space:nowrap}
+.mi-espacio .me-v20-directory-btn:hover{background:rgba(21,138,137,.1)}
+.mi-espacio .me-v20-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.mi-espacio .me-v20-quick-item{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;border:1px solid rgba(34,78,88,.1);border-radius:8px;background:#fff;color:var(--me-ink,#183c49);cursor:pointer;transition:background .15s}
+.mi-espacio .me-v20-quick-item:hover{background:rgba(21,138,137,.06);border-color:rgba(21,138,137,.2)}
+.mi-espacio .me-v20-quick-icon{font-size:16px}
+
+/* Completeness wizard enhancements */
+.mi-espacio .me-v20-completeness-done{font-size:13px;color:#158a89;font-weight:600;margin:6px 0 0}
+.mi-espacio .me-v20-complete{background:linear-gradient(135deg,#158a89,#1a6b6a)!important}
+.mi-espacio .me-v20-missing-hints{margin-top:6px}
+.mi-espacio .me-v20-missing-title{font-size:12px;color:var(--me-muted,#60747d);margin:0 0 6px}
+.mi-espacio .me-v20-missing-tags{display:flex;gap:6px;flex-wrap:wrap}
+.mi-espacio .me-v20-missing-tag{font-size:11px;font-weight:600;color:#158a89;background:rgba(21,138,137,.08);border:1px solid rgba(21,138,137,.15);padding:4px 10px;border-radius:6px;cursor:pointer;transition:background .15s}
+.mi-espacio .me-v20-missing-tag:hover{background:rgba(21,138,137,.15)}
+
+/* Timeline filters */
+.mi-espacio .me-v20-timeline-filters{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.mi-espacio .me-v20-tl-filter{font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid rgba(34,78,88,.1);background:#fff;color:var(--me-muted,#60747d);cursor:pointer;transition:all .15s}
+.mi-espacio .me-v20-tl-filter.is-active{background:#158a89;color:#fff;border-color:#158a89}
+
+/* Colleague directory */
+.mi-espacio .me-v20-colleagues{background:#fff;border:1px solid rgba(34,78,88,.1);border-radius:12px;padding:16px;margin-top:12px}
+.mi-espacio .me-v20-colleagues-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.mi-espacio .me-v20-colleagues-head h3{font-size:16px;margin:0;color:var(--me-ink,#183c49)}
+.mi-espacio .me-v20-colleagues-search{width:100%;padding:8px 12px;font-size:13px;border:1px solid rgba(34,78,88,.15);border-radius:8px;margin-bottom:12px;outline:none}
+.mi-espacio .me-v20-colleagues-search:focus{border-color:#158a89;box-shadow:0 0 0 2px rgba(21,138,137,.12)}
+.mi-espacio .me-v20-colleagues-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto}
+.mi-espacio .me-v20-colleague-card{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid rgba(34,78,88,.06);border-radius:10px;transition:background .15s}
+.mi-espacio .me-v20-colleague-card:hover{background:rgba(34,78,88,.02)}
+.mi-espacio .me-v20-colleague-avatar{flex-shrink:0}
+.mi-espacio .me-v20-colleague-photo{width:42px;height:42px;border-radius:50%;object-fit:cover}
+.mi-espacio .me-v20-colleague-initials{width:42px;height:42px;border-radius:50%;background:linear-gradient(145deg,#dcebe7,#b7d1cd);display:grid;place-items:center;color:#245b58;font-size:14px;font-weight:650}
+.mi-espacio .me-v20-colleague-info{flex:1;min-width:0}
+.mi-espacio .me-v20-colleague-info strong{display:block;font-size:14px;color:var(--me-ink,#183c49)}
+.mi-espacio .me-v20-colleague-role{display:block;font-size:12px;color:var(--me-muted,#60747d)}
+.mi-espacio .me-v20-colleague-dept{display:block;font-size:11px;color:var(--me-muted,#60747d);opacity:.8}
+.mi-espacio .me-v20-colleague-links{display:flex;gap:4px;flex-shrink:0}
+.mi-espacio .me-v20-link-chip{font-size:10px;font-weight:600;color:#158a89;background:rgba(21,138,137,.08);padding:2px 6px;border-radius:4px}
+@media(max-width:640px){
+ .mi-espacio .me-v20-dashboard{gap:6px}
+ .mi-espacio .me-v20-stat{min-width:65px;padding:8px}
+ .mi-espacio .me-v20-stat-value{font-size:18px}
+ .mi-espacio .me-v20-quick-bar{flex-direction:column}
+ .mi-espacio .me-v20-quick-actions{flex-direction:column}
+}
