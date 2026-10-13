@@ -890,3 +890,23 @@
 .mi-espacio .me-v23-dashboard{margin-top:16px}
 .mi-espacio .me-v23-photo-nudge{margin-top:14px}
 @media(max-width:850px){.mi-espacio.me-v25-leadership .me-v9-overview{grid-template-columns:minmax(0,1fr);gap:15px}.mi-espacio.me-v25-leadership .me-v8-research,.mi-espacio.me-v25-leadership .me-v8-agenda{grid-column:auto;grid-row:auto}}
+
+/* Phase 25C — institutional continuity, limited to the two approved profiles.
+   Shared, low-contrast surfaces; tools remain subordinate to clinical/scientific work. */
+.mi-espacio{--me25-stroke:#dfe8e5;--me25-secondary:#57716e;--me25-focus:#158a89}
+.mi-espacio .me-v22-identity{background:#f6f9f8;box-shadow:none;border-color:var(--me25-stroke);border-radius:10px}
+.mi-espacio .me-v22-avatar-btn{box-shadow:0 0 0 2px #fff,0 0 0 3px #cadbd6}
+.mi-espacio .me-v22-avatar-btn.has-photo{box-shadow:0 0 0 2px #fff,0 0 0 3px #cadbd6}
+.mi-espacio .me-v22-role-badge{background:#e7f0ed;color:#28645b;letter-spacing:.035em}
+.mi-espacio .me-v22-leadership-summary{background:transparent;border-color:#dce5df;color:#5a715e}
+.mi-espacio .me-v22-context-pill{background:transparent;border-color:var(--me25-stroke);color:var(--me25-secondary);font-weight:500}
+.mi-espacio .me-v23-impact-stat{background:#f7f9f8;border-color:var(--me25-stroke);border-radius:8px}
+.mi-espacio .me-v20-stat{border-color:var(--me25-stroke);background:transparent;border-radius:8px}
+.mi-espacio :is(.me-v9-panel,.me-v9-publications,.me-v9-services){border-color:var(--me25-stroke)}
+.mi-espacio :is(.me-v20-quick-toggle,.me-v20-directory-btn,.me-v21-notif-btn,.me-v21-cal-btn,.me-v23-dossier-btn){background:#fff;border-color:var(--me25-stroke);box-shadow:none}
+.mi-espacio :is(.me-v20-quick-toggle,.me-v20-directory-btn,.me-v21-notif-btn,.me-v21-cal-btn,.me-v23-dossier-btn,.me-v21-extras-btn):focus-visible{outline:3px solid var(--me25-focus);outline-offset:2px}
+.mi-espacio :is(.me-v20-colleagues,.me-v21-notifications,.me-v21-calendar,.me-v21-digest){scroll-margin-top:90px;border-color:var(--me25-stroke);box-shadow:0 8px 24px rgba(24,60,73,.045)}
+.mi-espacio .me-v20-quick-bar{flex-wrap:wrap}
+.mi-espacio .me-v20-quick-toggle{flex:1 1 180px}
+@media(max-width:640px){.mi-espacio .me-v22-identity-top{gap:12px}.mi-espacio .me-v20-quick-bar{flex-direction:row}.mi-espacio .me-v20-quick-toggle{flex-basis:100%}.mi-espacio :is(.me-v20-colleagues,.me-v21-notifications,.me-v21-calendar,.me-v21-digest){scroll-margin-top:75px}}
+@media(prefers-reduced-motion:reduce){.mi-espacio :is(.me-v22-avatar-btn,.me-v23-event,.me-v20-quick-item){transition:none;animation:none}}
