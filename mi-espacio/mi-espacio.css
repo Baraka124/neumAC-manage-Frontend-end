@@ -765,3 +765,49 @@
  .mi-espacio .me-v22-identity-meta{padding:0 16px 12px;flex-direction:column;align-items:flex-start;gap:8px}
  .mi-espacio .me-v22-identity-footer{padding:8px 16px}
 }
+
+/* ── Phase 23A: Impact metrics panel ── */
+.mi-espacio .me-v23-dashboard{flex-direction:column;gap:0}
+.mi-espacio .me-v23-impact-row{display:flex;gap:10px;padding:0 0 10px;border-bottom:1px solid rgba(21,138,137,.1);margin-bottom:10px}
+.mi-espacio .me-v23-impact-stat{flex:1 1 120px;background:linear-gradient(135deg,rgba(21,138,137,.06),rgba(21,138,137,.02));border:1px solid rgba(21,138,137,.15);border-radius:12px;padding:14px 16px;text-align:center}
+.mi-espacio .me-v23-impact-value{display:block;font-size:28px;font-weight:800;color:#158a89;line-height:1.1}
+.mi-espacio .me-v23-impact-label{display:block;font-size:11px;font-weight:500;color:var(--me-muted,#60747d);margin-top:4px;line-height:1.3}
+.mi-espacio .me-v23-ops-row{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:640px){
+ .mi-espacio .me-v23-impact-row{gap:8px;padding-bottom:8px;margin-bottom:8px}
+ .mi-espacio .me-v23-impact-stat{padding:10px 12px}
+ .mi-espacio .me-v23-impact-value{font-size:22px}
+}
+
+/* ── Phase 23B: 7-day events strip ── */
+.mi-espacio .me-v23-upcoming{display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;padding:2px 0 8px;margin:-2px 0 8px}
+.mi-espacio .me-v23-upcoming::-webkit-scrollbar{height:4px}
+.mi-espacio .me-v23-upcoming::-webkit-scrollbar-thumb{background:rgba(21,138,137,.15);border-radius:2px}
+.mi-espacio .me-v23-event{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;border:1px solid rgba(34,78,88,.1);background:#fff;font-size:12px;color:var(--me-ink,#183c49);white-space:nowrap;transition:border-color .15s,box-shadow .15s}
+.mi-espacio .me-v23-event:hover{border-color:rgba(21,138,137,.25);box-shadow:0 2px 6px rgba(21,138,137,.08)}
+.mi-espacio .me-v23-event-icon{font-size:16px;flex-shrink:0}
+.mi-espacio .me-v23-event-text{display:flex;flex-direction:column;gap:1px}
+.mi-espacio .me-v23-event-title{font-weight:600;font-size:12px}
+.mi-espacio .me-v23-event-date{font-size:11px;color:var(--me-muted,#60747d)}
+.mi-espacio .me-v23-event[data-urgency="warning"]{border-color:rgba(196,68,68,.2);background:rgba(196,68,68,.03)}
+.mi-espacio .me-v23-event[data-urgency="warning"] .me-v23-event-title{color:#c44}
+
+/* ── Phase 23C: Photo onboarding nudge ── */
+.mi-espacio .me-v23-photo-nudge{display:flex;align-items:center;gap:14px;padding:12px 16px;margin:0 0 10px;border-radius:12px;background:linear-gradient(135deg,rgba(21,138,137,.04),rgba(21,138,137,.01));border:1px dashed rgba(21,138,137,.2)}
+.mi-espacio .me-v23-photo-nudge-avatar{width:48px;height:48px;border-radius:50%;background:rgba(21,138,137,.08);display:flex;align-items:center;justify-content:center;font-size:20px;color:#158a89;flex-shrink:0}
+.mi-espacio .me-v23-photo-nudge-body{flex:1;min-width:0}
+.mi-espacio .me-v23-photo-nudge-body p{font-size:13px;color:var(--me-ink,#183c49);margin:0 0 6px;line-height:1.4}
+.mi-espacio .me-v23-photo-nudge-actions{display:flex;gap:8px;align-items:center}
+.mi-espacio .me-v23-photo-nudge-btn{font-size:12px;font-weight:600;color:#fff;background:#158a89;border:0;border-radius:6px;padding:6px 14px;cursor:pointer;transition:background .15s}
+.mi-espacio .me-v23-photo-nudge-btn:hover{background:#0d6b6a}
+.mi-espacio .me-v23-photo-nudge-dismiss{font-size:12px;color:var(--me-muted,#60747d);background:none;border:0;cursor:pointer;padding:4px 8px}
+.mi-espacio .me-v23-photo-nudge-dismiss:hover{color:var(--me-ink,#183c49)}
+@media(max-width:640px){
+ .mi-espacio .me-v23-photo-nudge{flex-direction:column;text-align:center;gap:10px}
+ .mi-espacio .me-v23-photo-nudge-actions{justify-content:center}
+}
+
+/* ── Phase 23D: PDF dossier button ── */
+.mi-espacio .me-v23-dossier-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;font-weight:600;border:1px solid rgba(21,138,137,.2);border-radius:8px;background:linear-gradient(135deg,rgba(21,138,137,.05),rgba(21,138,137,.01));color:#158a89;cursor:pointer;transition:background .15s,border-color .15s}
+.mi-espacio .me-v23-dossier-btn:hover{background:rgba(21,138,137,.1);border-color:rgba(21,138,137,.3)}
+.mi-espacio .me-v23-dossier-btn:disabled{opacity:.5;cursor:default}

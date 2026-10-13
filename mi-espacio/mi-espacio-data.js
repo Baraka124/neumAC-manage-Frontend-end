@@ -344,7 +344,11 @@
       totalCertificates: num(d.totalCertificates) ?? 0,
       expiredCertificates: num(d.expiredCertificates) ?? 0,
       expiringCertificates: num(d.expiringCertificates) ?? 0,
-      absenceDaysThisYear: num(d.absenceDaysThisYear) ?? 0
+      absenceDaysThisYear: num(d.absenceDaysThisYear) ?? 0,
+      piStudies: num(d.piStudies) ?? 0,
+      piProjects: num(d.piProjects) ?? 0,
+      hIndex: num(d.hIndex),
+      indexedPublications: num(d.indexedPublications)
     };
   }
 

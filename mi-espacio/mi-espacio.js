@@ -87,7 +87,7 @@
           notifications:{busy:false,error:'',items:[],open:false},
           calendar:{busy:false,error:'',month:'',events:[],open:false},
           digest:{busy:false,error:'',data:null,period:'week',open:false},
-          cvExport:{busy:false}});
+          cvExport:{busy:false},photoNudgeDismissed:false,dossierBusy:false});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -352,6 +352,39 @@
         // ── Phase 21: Notifications, Calendar, CV Export, Digest ──
         const notificationBadge=Vue.computed(()=>(state.notifications.items||[]).filter(n=>n.severity==='error'||n.severity==='warning').length);
 
+        // ── Phase 23B: 7-day upcoming events strip ──
+        const upcomingEvents=Vue.computed(()=>{
+          const events=[];
+          const now=new Date();
+          const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+          const in7=new Date(now.getTime()+7*86400000);
+          const in7str=[in7.getFullYear(),String(in7.getMonth()+1).padStart(2,'0'),String(in7.getDate()).padStart(2,'0')].join('-');
+          // Next guardia
+          const guardias=(state.activity?.agenda?.guardias||[]).filter(g=>/^\d{4}-\d{2}-\d{2}$/.test(g.date)&&g.date>=today&&g.date<=in7str).sort((a,b)=>a.date.localeCompare(b.date));
+          if(guardias.length){
+            events.push({icon:'🩺',title:'Guardia',date:guardias[0].date,urgency:guardias[0].date===today?'warning':''});
+          }
+          // Next absence
+          const absences=(state.activity?.agenda?.absences||[]).filter(a=>a.start&&a.start>=today&&a.start<=in7str).sort((a,b)=>a.start.localeCompare(b.start));
+          if(absences.length){
+            events.push({icon:'🏖️',title:absences[0].reason||'Ausencia',date:absences[0].start,urgency:''});
+          }
+          // Cert expiring soon (within 7 days)
+          const urgentCerts=(state.notifications.items||[]).filter(n=>(n.type==='cert_expired'||n.type==='cert_expiring')&&n.date&&n.date>=today&&n.date<=in7str);
+          if(urgentCerts.length){
+            events.push({icon:'📜',title:urgentCerts[0].message||'Certificado',date:urgentCerts[0].date,urgency:'warning'});
+          }
+          // Next oncall from notifications
+          const oncalls=(state.notifications.items||[]).filter(n=>n.type==='oncall_upcoming'&&n.date&&n.date>=today&&n.date<=in7str).sort((a,b)=>a.date.localeCompare(b.date));
+          if(oncalls.length && !guardias.length){
+            events.push({icon:'🔔',title:'Guardia programada',date:oncalls[0].date,urgency:oncalls[0].date===today?'warning':''});
+          }
+          events.sort((a,b)=>a.date.localeCompare(b.date));
+          return events;
+        });
+        // ── Phase 23C: Photo onboarding nudge ──
+        const showPhotoNudge=Vue.computed(()=>linked.value && !profilePhotoUrl.value && !state.profile.open && !state.photoNudgeDismissed);
+
         async function loadNotifications(requestSeq, identity){
           state.notifications.busy=true;state.notifications.error='';
           try {
@@ -472,6 +505,81 @@
           } catch(err){
             console.error('CV export failed:',err);
           } finally { state.cvExport.busy=false; }
+        }
+
+        // ── Phase 23D: PDF institutional dossier export ──
+        async function exportDossier(){
+          state.dossierBusy=true;
+          try {
+            const profile=state.profile.data;
+            const activity=state.activity;
+            const dash=state.dashboard.data;
+            const certs=state.profile.certificates||[];
+            const name=profile?.fullName||'Profesional';
+            const now=new Date();
+            const dateStr=now.toLocaleDateString('es-ES',{year:'numeric',month:'long',day:'numeric'});
+            // Build HTML for PDF
+            const photoHtml=profile?.publicPhotoUrl?'<img src="'+profile.publicPhotoUrl+'" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid #158a89">':'<div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#158a89,#0d6b6a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700">'+initials.value+'</div>';
+            let html='<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Dossier — '+name+'</title>';
+            html+='<style>@page{size:A4;margin:20mm 18mm}body{font-family:Helvetica,Arial,sans-serif;color:#183c49;font-size:11pt;line-height:1.5;margin:0;padding:0}';
+            html+='.header{display:flex;align-items:center;gap:20px;padding-bottom:16px;border-bottom:3px solid #158a89;margin-bottom:20px}';
+            html+='.header-info h1{font-size:22pt;margin:0 0 2px;color:#183c49}.header-info p{margin:2px 0;font-size:10pt;color:#60747d}';
+            html+='.badge{display:inline-block;background:#158a89;color:#fff;padding:2px 10px;border-radius:4px;font-size:9pt;font-weight:600;margin-top:4px}';
+            html+='.section{margin-bottom:18px}.section h2{font-size:13pt;color:#158a89;border-bottom:1px solid #e0e8eb;padding-bottom:4px;margin:0 0 8px}';
+            html+='.metrics{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}.metric{flex:1 1 100px;text-align:center;background:#f0f7f7;border-radius:8px;padding:10px 8px}';
+            html+='.metric .val{font-size:22pt;font-weight:800;color:#158a89;display:block}.metric .lbl{font-size:8pt;color:#60747d}';
+            html+='ul{margin:4px 0;padding-left:18px}li{margin-bottom:3px}';
+            html+='.footer{text-align:center;font-size:8pt;color:#999;margin-top:30px;border-top:1px solid #e0e8eb;padding-top:8px}';
+            html+='</style></head><body>';
+            // Header
+            html+='<div class="header">'+photoHtml+'<div class="header-info"><h1>'+name+'</h1>';
+            if(profile?.title) html+='<p><strong>'+profile.title+'</strong></p>';
+            if(profile?.specialization) html+='<p>'+profile.specialization+'</p>';
+            if(profile?.department?.name) html+='<p>'+profile.department.name+' — CHUAC</p>';
+            if(roleBadge.value) html+='<span class="badge">'+roleBadge.value+'</span>';
+            html+='</div></div>';
+            // Metrics
+            const metrics=[];
+            if(dash?.piStudies||dash?.piProjects) metrics.push({val:(dash.piStudies||0)+(dash.piProjects||0),lbl:'IP / Responsable'});
+            if(dash?.hIndex) metrics.push({val:dash.hIndex,lbl:'Índice h'});
+            if(dash?.publications) metrics.push({val:dash.publications,lbl:'Publicaciones'});
+            if(dash?.activeStudies) metrics.push({val:dash.activeStudies,lbl:'Estudios activos'});
+            if(dash?.activeProjects) metrics.push({val:dash.activeProjects,lbl:'Proyectos activos'});
+            if(metrics.length){
+              html+='<div class="metrics">';
+              metrics.forEach(m=>{html+='<div class="metric"><span class="val">'+m.val+'</span><span class="lbl">'+m.lbl+'</span></div>';});
+              html+='</div>';
+            }
+            // Bio
+            if(profile?.publicBio){html+='<div class="section"><h2>Perfil profesional</h2><p>'+profile.publicBio+'</p></div>';}
+            // Research identifiers
+            const ids=[];
+            if(profile?.orcidId) ids.push('ORCID: '+profile.orcidId);
+            if(profile?.scholarUrl) ids.push('Google Scholar: '+profile.scholarUrl);
+            if(profile?.researchgateUrl) ids.push('ResearchGate: '+profile.researchgateUrl);
+            if(ids.length){html+='<div class="section"><h2>Identificadores de investigación</h2><ul>'+ids.map(i=>'<li>'+i+'</li>').join('')+'</ul></div>';}
+            // Leadership roles
+            const lr=leadershipRoles.value;
+            if(lr.length){html+='<div class="section"><h2>Roles de liderazgo</h2><ul>'+lr.map(r=>'<li><strong>'+r.label+'</strong> — '+r.name+'</li>').join('')+'</ul></div>';}
+            // Research lines
+            if(activity?.research?.lines?.length){html+='<div class="section"><h2>Líneas de investigación</h2><ul>'+activity.research.lines.map(l=>'<li>'+l.name+(l.subArea?' ('+l.subArea+')':'')+(l.role?' — '+l.role:'')+'</li>').join('')+'</ul></div>';}
+            // Studies
+            if(activity?.research?.studies?.length){html+='<div class="section"><h2>Estudios clínicos</h2><ul>'+activity.research.studies.map(s=>'<li>'+s.title+(s.role?' — '+s.role:'')+(s.code?' · '+s.code:'')+'</li>').join('')+'</ul></div>';}
+            // Projects
+            if(activity?.research?.projects?.length){html+='<div class="section"><h2>Proyectos de innovación</h2><ul>'+activity.research.projects.map(p=>'<li>'+p.title+(p.role?' — '+p.role:'')+(p.stage?' · '+p.stage:'')+'</li>').join('')+'</ul></div>';}
+            // Publications
+            if(activity?.publications?.items?.length){html+='<div class="section"><h2>Publicaciones</h2><ul>'+activity.publications.items.map(p=>'<li>'+p.title+(p.byline?' <small>'+p.byline+'</small>':'')+'</li>').join('')+'</ul></div>';}
+            // Certificates
+            if(certs.length){html+='<div class="section"><h2>Certificaciones</h2><ul>'+certs.map(c=>'<li>'+c.name+(c.expiryDate?' — Expira: '+c.expiryDate:'')+'</li>').join('')+'</ul></div>';}
+            // Footer
+            html+='<div class="footer">Dossier generado desde neumDESK — Mi Espacio · '+dateStr+'</div>';
+            html+='</body></html>';
+            // Print to PDF via new window
+            const w=window.open('','_blank','width=800,height=1000');
+            if(w){w.document.write(html);w.document.close();setTimeout(()=>{w.print();},400);}
+          } catch(err){
+            console.error('Dossier export failed:',err);
+          } finally { state.dossierBusy=false; }
         }
 
         // ── Phase 18: research summary from activity data ──
@@ -764,8 +872,8 @@
           TIMELINE_FILTERS,filteredTimeline,
           quickActionItems,doQuickAction,
           loadColleagues,filteredColleagues,
-          notificationBadge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,
-          openDigest,digestResourceLabel,exportCV,
+          notificationBadge,upcomingEvents,showPhotoNudge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,
+          openDigest,digestResourceLabel,exportCV,exportDossier,
           urgentCertificates,certUrgencyLabel,fmtRelative,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
@@ -955,18 +1063,41 @@
               </div>
             </template>
           </section>
-          <div v-if="linked && state.dashboard.data && !state.profile.open" class="me-v20-dashboard" aria-label="Métricas personales">
-            <div class="me-v20-stat" v-if="state.dashboard.data.activeStudies"><span class="me-v20-stat-value">{{state.dashboard.data.activeStudies}}</span><span class="me-v20-stat-label">Estudios</span></div>
-            <div class="me-v20-stat" v-if="state.dashboard.data.activeProjects"><span class="me-v20-stat-value">{{state.dashboard.data.activeProjects}}</span><span class="me-v20-stat-label">Proyectos</span></div>
-            <div class="me-v20-stat" v-if="state.dashboard.data.publications"><span class="me-v20-stat-value">{{state.dashboard.data.publications}}</span><span class="me-v20-stat-label">Publicaciones</span></div>
-            <div class="me-v20-stat" v-if="state.dashboard.data.totalCertificates"><span class="me-v20-stat-value" :class="{'me-v20-stat-warn':state.dashboard.data.expiredCertificates||state.dashboard.data.expiringCertificates}">{{state.dashboard.data.totalCertificates}}</span><span class="me-v20-stat-label">Certificados<template v-if="state.dashboard.data.expiredCertificates"> · {{state.dashboard.data.expiredCertificates}} cad.</template></span></div>
-            <div class="me-v20-stat" v-if="state.dashboard.data.absenceDaysThisYear"><span class="me-v20-stat-value">{{state.dashboard.data.absenceDaysThisYear}}</span><span class="me-v20-stat-label">Días ausencia {{new Date().getFullYear()}}</span></div>
+          <div v-if="showPhotoNudge" class="me-v23-photo-nudge" role="status">
+            <div class="me-v23-photo-nudge-avatar" aria-hidden="true">📷</div>
+            <div class="me-v23-photo-nudge-body">
+              <p>Tu perfil institucional no tiene foto. Una foto profesional mejora tu visibilidad en el directorio y en tus publicaciones.</p>
+              <div class="me-v23-photo-nudge-actions">
+                <button type="button" class="me-v23-photo-nudge-btn" @click="openProfile()">Subir foto</button>
+                <button type="button" class="me-v23-photo-nudge-dismiss" @click="state.photoNudgeDismissed=true">Ahora no</button>
+              </div>
+            </div>
+          </div>
+          <div v-if="linked && state.dashboard.data && !state.profile.open" class="me-v20-dashboard me-v23-dashboard" aria-label="Métricas personales">
+            <div v-if="state.dashboard.data.piStudies || state.dashboard.data.piProjects || state.dashboard.data.hIndex" class="me-v23-impact-row">
+              <div class="me-v23-impact-stat" v-if="state.dashboard.data.piStudies || state.dashboard.data.piProjects"><span class="me-v23-impact-value">{{(state.dashboard.data.piStudies||0)+(state.dashboard.data.piProjects||0)}}</span><span class="me-v23-impact-label">IP en {{[state.dashboard.data.piStudies?state.dashboard.data.piStudies+' estudio'+(state.dashboard.data.piStudies!==1?'s':''):'',state.dashboard.data.piProjects?state.dashboard.data.piProjects+' proyecto'+(state.dashboard.data.piProjects!==1?'s':''):''].filter(Boolean).join(', ')}}</span></div>
+              <div class="me-v23-impact-stat" v-if="state.dashboard.data.hIndex"><span class="me-v23-impact-value">{{state.dashboard.data.hIndex}}</span><span class="me-v23-impact-label">Índice h</span></div>
+            </div>
+            <div class="me-v23-ops-row">
+              <div class="me-v20-stat" v-if="state.dashboard.data.activeStudies"><span class="me-v20-stat-value">{{state.dashboard.data.activeStudies}}</span><span class="me-v20-stat-label">Estudios</span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.activeProjects"><span class="me-v20-stat-value">{{state.dashboard.data.activeProjects}}</span><span class="me-v20-stat-label">Proyectos</span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.publications"><span class="me-v20-stat-value">{{state.dashboard.data.publications}}</span><span class="me-v20-stat-label">Publicaciones</span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.totalCertificates"><span class="me-v20-stat-value" :class="{'me-v20-stat-warn':state.dashboard.data.expiredCertificates||state.dashboard.data.expiringCertificates}">{{state.dashboard.data.totalCertificates}}</span><span class="me-v20-stat-label">Certificados<template v-if="state.dashboard.data.expiredCertificates"> · {{state.dashboard.data.expiredCertificates}} cad.</template></span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.absenceDaysThisYear"><span class="me-v20-stat-value">{{state.dashboard.data.absenceDaysThisYear}}</span><span class="me-v20-stat-label">Días ausencia {{new Date().getFullYear()}}</span></div>
+            </div>
+          </div>
+          <div v-if="linked && upcomingEvents.length && !state.profile.open" class="me-v23-upcoming" aria-label="Próximos 7 días">
+            <div v-for="(ev,i) in upcomingEvents" :key="i" class="me-v23-event" :data-urgency="ev.urgency">
+              <span class="me-v23-event-icon">{{ev.icon}}</span>
+              <div class="me-v23-event-text"><span class="me-v23-event-title">{{ev.title}}</span><span class="me-v23-event-date">{{fmtDate(ev.date)}}</span></div>
+            </div>
           </div>
           <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
             <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
             <button type="button" class="me-v21-notif-btn" @click="state.notifications.open=!state.notifications.open" :aria-expanded="state.notifications.open" aria-label="Notificaciones">🔔<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
             <button type="button" class="me-v20-directory-btn" @click="loadColleagues">Directorio</button>
             <button type="button" class="me-v21-cal-btn" @click="openCalendar()">📅</button>
+            <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">📄 {{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
           </div>
           <div v-if="state.quickActions && linked" class="me-v20-quick-actions">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>

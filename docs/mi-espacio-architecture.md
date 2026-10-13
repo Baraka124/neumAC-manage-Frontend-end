@@ -1,8 +1,8 @@
 # neumDESK — Mi espacio
-## Product and technical architecture · v0.2 (design contract)
+## Product and technical architecture · v0.3 (design contract + implementation log)
 
-**Status:** Architecture proposal; not implemented  
-**Date:** 2026-10-11  
+**Status:** Architecture proposal with partial implementation through Phase 23  
+**Date:** 2026-10-13 (updated)  
 **Application:** neumDESK (internal departmental platform)  
 **Owner of record:** To be agreed by the department  
 **Scope:** One authenticated, personalized **view inside the existing Vue application**  
@@ -604,4 +604,113 @@ A bounded Guardias pilot is ready for supervised use only when:
 **STEP B MAY NEVER BE NEEDED. THIS IS AN ACCEPTABLE LONG-TERM ARCHITECTURE, NOT A FAILURE TO COMPLETE THE PLAN.**
 
 No connected Google/Microsoft API, scheduler, registry table, approval UI, bidirectional protocol, or conflict resolver is claimed to exist merely because this specification is now documented.
+
+---
+
+## 18. Implementation log
+
+This section documents implemented phases. Each entry records what was built, where the code lives, and relevant PRs. The architecture sections above (§1–§17) remain the design contract; this log records delivery against it.
+
+### Phase 1–10: Foundation (summarized)
+
+Mi espacio view shell, navigation integration, `GET /api/me/dashboard` and `GET /api/me/profile` endpoints, `mi-espacio.js` / `mi-espacio-data.js` / `mi-espacio.css` three-file modular architecture, AbortController-based request cancellation, profile editing, research/publications/certificates display, absence tracking, and context pills.
+
+### Phase 22: Identity upgrade
+
+Upgraded the dashboard layout to a two-column identity card (`me-v22-dashboard`) with photo, context pills for role/unit/service, and improved responsive behavior. Added structured profile sections and refined the visual hierarchy.
+
+### Phase 23: Pedro demo polish — 2026-10-13
+
+**Goal:** Prepare Mi espacio for the Pedro demo with impact visibility, operational awareness, and institutional export.
+
+**Backend PR:** [#27](https://github.com/Baraka124/neumAC-manage-back-end/pull/27) — branch `phase23/dashboard-impact`  
+**Frontend PR:** [#112](https://github.com/Baraka124/neumAC-manage-Frontend-end/pull/112) — branch `phase23/mi-espacio-polish`
+
+#### 23A — Impact metrics panel
+
+**What:** A dedicated impact row in the dashboard showing PI (principal investigator) study/project count and h-index with teal accent styling.
+
+**Backend (`index.js` — `GET /api/me/dashboard`):**
+- Added parallel queries for `piStudies` (clinical_trials where `pi_id` matches staff), `piProjects` (innovation_projects where `pi_id` matches staff), and staff-level `hIndex` / `indexedPublications` from `medical_staff`.
+- Response now includes `piStudies`, `piProjects`, `hIndex`, `indexedPublications`.
+
+**Frontend (`mi-espacio.js`):**
+- Dashboard template upgraded from `me-v20-dashboard` to `me-v23-dashboard` with two tiers:
+  - **Impact row** (`.me-v23-impact-row`): PI count (combined piStudies + piProjects) and h-index.
+  - **Ops row** (`.me-v23-ops-row`): existing stats (studies, projects, publications, certificates, absence days).
+
+**Frontend (`mi-espacio-data.js`):**
+- `normalizeDashboard()` extended to include `piStudies`, `piProjects`, `hIndex`, `indexedPublications`.
+
+**CSS (`.me-v23-impact-*`):** Teal-accented stat cards with large value display and responsive breakpoints.
+
+**Design decision:** h-index remains self-reported (entered via profile editing). Automated citation tracing is out of scope.
+
+#### 23B — 7-day upcoming events strip
+
+**What:** A horizontally scrollable strip between the dashboard and quick bar showing the next 7 days of upcoming duties/events.
+
+**Frontend (`mi-espacio.js`):**
+- `upcomingEvents` computed property aggregates from three sources:
+  - Activity guardias (on-call assignments)
+  - Activity absences (approved leave)
+  - Notification items (certificate expiries, other time-sensitive items)
+- Events within 7 days are sorted by date, tagged with urgency (≤2 days = urgent).
+- Each event card shows an icon, description text, and formatted date.
+
+**CSS (`.me-v23-upcoming`, `.me-v23-event`):** Horizontal scroll container, urgency-based border color via `data-urgency` attribute, responsive layout.
+
+#### 23C — Photo onboarding nudge
+
+**What:** A dismissable prompt encouraging linked users without a profile photo to upload one.
+
+**Frontend (`mi-espacio.js`):**
+- `showPhotoNudge` computed: visible when user is linked to staff, has no photo, profile section is not already open, and nudge has not been dismissed this session.
+- State: `photoNudgeDismissed` (session-only, resets on reload).
+- Actions: "Subir foto" opens profile section; "Ahora no" dismisses.
+
+**CSS (`.me-v23-photo-nudge`):** Card with avatar placeholder, body text, and action buttons; responsive column layout on narrow screens.
+
+**Note:** Photo onboarding was deferred from the Pedro demo scope per product decision but the code is in place and functional.
+
+#### 23D — PDF institutional dossier export
+
+**What:** A branded A4 dossier that opens in the browser's print dialog for PDF export.
+
+**Frontend (`mi-espacio.js`):**
+- `exportDossier()` function generates a complete HTML document with:
+  - CHUAC branding header and department identification
+  - Profile photo (if available) and professional identity
+  - Impact metrics (PI count, h-index, indexed publications)
+  - Leadership roles from clinical studies and innovation projects
+  - Research line affiliations
+  - Publication list
+  - Certificate inventory
+- Opens via `window.open()` + `window.print()` — no external PDF library needed.
+- State: `dossierBusy` prevents double-click.
+
+**CSS (`.me-v23-dossier-btn`):** Styled button in the quick bar.
+
+**Design decision:** Uses browser print-to-PDF rather than a server-side PDF generator. This keeps the stack dependency-free and works in all modern browsers.
+
+#### Cache busting
+
+`index.html` version keys updated from `20261013-phase22-identity-upgrade` to `20261013-phase23-polish` on all three mi-espacio file references.
+
+#### File manifest (Phase 23 changes)
+
+| File | Changes |
+| --- | --- |
+| `backend/index.js` | `GET /api/me/dashboard` — 3 new parallel queries (PI studies, PI projects, staff metrics) |
+| `mi-espacio/mi-espacio.js` | Dashboard template v23, upcomingEvents computed, showPhotoNudge computed, exportDossier function, dossier button in quick bar |
+| `mi-espacio/mi-espacio-data.js` | `normalizeDashboard()` extended with piStudies, piProjects, hIndex, indexedPublications |
+| `mi-espacio/mi-espacio.css` | Phase 23A–D styles appended (~120 lines) |
+| `index.html` | Cache bust version key updated |
+| `docs/mi-espacio-architecture.md` | This implementation log (§18) |
+
+#### Testing
+
+- All 56 contract tests (`node --test tests/*.cjs`) pass.
+- JavaScript files parse cleanly via `vm.Script`.
+- Playwright browser tests require CI environment (pre-installed Chromium version incompatibility in dev container).
 
