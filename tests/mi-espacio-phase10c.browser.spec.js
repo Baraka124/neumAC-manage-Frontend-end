@@ -87,8 +87,19 @@ for(const [name,scenario] of Object.entries(cases)){
    }
    if(name==='head' || name==='clinician'){
      const app=page.locator('.mi-espacio');
-     const js=await app.evaluate(el=>({toolbar:el.querySelector('.me-v20-quick-bar')?.compareDocumentPosition(el.querySelector('.me-v21-calendar'))}));
-     expect(js.toolbar).toBeTruthy();
+     await page.getByRole('button',{name:'📅'}).click();
+     await expect(app.locator('.me-v21-calendar')).toBeVisible();
+     const placement=await app.evaluate(el=>{
+       const toolbar=el.querySelector('.me-v20-quick-bar'),panel=el.querySelector('.me-v21-calendar'),agenda=el.querySelector('.me-v9-overview');
+       return !!(toolbar && panel && agenda && (toolbar.compareDocumentPosition(panel)&Node.DOCUMENT_POSITION_FOLLOWING) && (panel.compareDocumentPosition(agenda)&Node.DOCUMENT_POSITION_FOLLOWING));
+     });
+     expect(placement).toBe(true);
+     await page.getByRole('button',{name:'Directorio',exact:true}).click();
+     await expect(app.locator('.me-v20-colleagues')).toBeVisible();
+     await expect(app.locator('.me-v21-calendar')).toHaveCount(0);
+     await page.getByRole('button',{name:'Notificaciones'}).click();
+     await expect(app.locator('.me-v21-notifications')).toBeVisible();
+     await expect(app.locator('.me-v20-colleagues')).toHaveCount(0);
    }
    if(name==='head' && viewport.width>850){
      await expect(page.locator('.mi-espacio')).toHaveClass(/me-v25-leadership/);
