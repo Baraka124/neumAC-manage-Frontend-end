@@ -68,6 +68,11 @@
           const staff=state.context?.staff;
           return staff?.specialization || professionalType(staff?.staffType || state.context?.account?.role || '') || 'Cuenta institucional';
         });
+        const upcomingGuardias=Vue.computed(()=>{
+          const today=new Date();
+          const localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
+          return (state.activity?.agenda?.guardias||[]).filter(g=>/^\d{4}-\d{2}-\d{2}$/.test(g.date)&&g.date>=localDate).slice().sort((a,b)=>a.date.localeCompare(b.date));
+        });
         const personalRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role==='resident'));
         const supervisedRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role==='supervisor'));
         const otherRotations=Vue.computed(()=>(state.activity?.agenda?.rotations||[]).filter(r=>r.role!=='resident'&&r.role!=='supervisor'));
@@ -335,7 +340,7 @@
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
-          professionalDesignation,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
+          professionalDesignation,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
@@ -384,9 +389,13 @@
               <div v-if="state.dutyMode==='overview'" class="me-v8-overview me-v9-overview" :class="{'me-v10-research-first':!showAgenda,'me-v10-sparse':!hasAgenda && !hasResearch,'me-v12-research-priority':researchPriority}">
                 <section v-if="showAgenda" class="me-v8-column me-v8-agenda me-v9-panel" :class="{'me-v10-agenda-sparse':!hasAgenda}" aria-labelledby="me-v9-agenda-title">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">AGENDA PERSONAL</p><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">Mi agenda</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} guardias</span></div>
-                  <div v-if="state.activity.agenda.guardias.length" class="me-v8-commitments">
-                    <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">PRÓXIMA GUARDIA</span><strong>{{fmtDutyDate(state.activity.agenda.guardias[0].date)}}</strong><span>{{dutyShift(state.activity.agenda.guardias[0].shift)}} · {{guardiaRole(state.activity.agenda.guardias[0].role)}}</span></div>
-                    <ol v-if="state.activity.agenda.guardias.length>1" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in state.activity.agenda.guardias.slice(1,3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
+                  <div v-if="upcomingGuardias.length" class="me-v8-commitments">
+                    <div class="me-v8-upnext me-v9-feature"><span class="me-v8-kicker">PRÓXIMA GUARDIA</span><strong>{{fmtDutyDate(upcomingGuardias[0].date)}}</strong><span>{{dutyShift(upcomingGuardias[0].shift)}} · {{guardiaRole(upcomingGuardias[0].role)}}</span></div>
+                    <ol v-if="upcomingGuardias.length>1" class="me-v8-timeline me-v9-timeline"><li v-for="(g,index) in upcomingGuardias.slice(1,3)" :key="g.id||index"><span>{{fmtDutyDate(g.date)}}</span><small>{{dutyShift(g.shift)}} · {{guardiaRole(g.role)}}</small></li></ol>
+                    <button type="button" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
+                  </div>
+                  <div v-else-if="state.activity.agenda.guardias.length && !personalRotations.length && !supervisedRotations.length" class="me-v8-commitments">
+                    <p class="me-v8-quiet">No constan guardias próximas. Puedes consultar tu historial de guardias.</p>
                     <button type="button" class="me-duty-open me-v9-inline-action" @click="openDuties()">Ver mis guardias <span aria-hidden="true">→</span></button>
                   </div>
                   <div v-else-if="personalRotations.length" class="me-v8-upnext me-v9-feature me-v10-rotation-feature">
