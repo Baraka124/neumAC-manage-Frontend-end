@@ -97,6 +97,12 @@
           const staff=state.context?.staff;
           return staff?.specialization || professionalType(staff?.staffType || state.context?.account?.role || '') || 'Cuenta institucional';
         });
+        // ── Phase 22: identity visual upgrade — role badge + leadership summary ──
+        const ROLE_LABELS=Object.freeze({department_head:'Jefe de servicio','Department Head':'Jefe de servicio',head_of_department:'Jefe de servicio',section_chief:'Jefe de sección',coordinator:'Coordinador/a',director:'Director/a',chief:'Jefe/a',supervisor:'Supervisor/a'});
+        const roleBadge=Vue.computed(()=>{
+          const role=state.context?.account?.role||'';
+          return ROLE_LABELS[role]||'';
+        });
         const upcomingGuardias=Vue.computed(()=>{
           const today=new Date();
           const localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
@@ -249,6 +255,7 @@
           });
           return roles;
         });
+        const leadershipCount=Vue.computed(()=>leadershipRoles.value.length);
         // ── Phase 19: public profile preview ──
         const publicPreview=Vue.computed(()=>{
           const d=state.profile.data;
@@ -749,7 +756,7 @@
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
-          professionalDesignation,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
+          professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           researchSummary,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
           toggleNotifPref,leadershipRoles,publicPreview,
@@ -784,22 +791,37 @@
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
         <template v-else-if="state.context">
           <div v-if="state.context.testSession" class="mi-espacio-notice" role="status">Sesión de prueba. Verifica la identidad de esta cuenta.</div>
-          <section class="mi-espacio-person me-v9-identity me-v15-identity me-v19-identity" aria-label="Identidad institucional verificada">
-            <button type="button" class="me-v15-avatar-btn me-v19-avatar-btn" :class="{'has-photo':profilePhotoUrl}" @click="linked && openProfile()" :aria-label="linked?'Ver y editar mi perfil':''" :disabled="!linked">
-              <img v-if="profilePhotoUrl" :src="profilePhotoUrl" alt="" class="me-v15-avatar-img me-v19-avatar-img">
-              <span v-else class="mi-espacio-avatar me-v19-avatar" aria-hidden="true">{{initials}}</span>
-            </button>
-            <div class="mi-espacio-person-main">
-              <div class="me-v9-name-line">
-                <h3>{{state.context.staff?.name || state.context.account.name}}</h3>
-                <span class="mi-espacio-link-state" :class="linked?'is-linked':'is-unlinked'"><span v-if="linked" aria-hidden="true">✓</span> {{linked?'Perfil vinculado':state.context.linkState==='unlinked'?'Vinculación pendiente':'Vinculación no disponible'}}</span>
+          <section class="mi-espacio-person me-v9-identity me-v15-identity me-v19-identity me-v22-identity" aria-label="Identidad institucional verificada">
+            <div class="me-v22-identity-top">
+              <button type="button" class="me-v15-avatar-btn me-v19-avatar-btn me-v22-avatar-btn" :class="{'has-photo':profilePhotoUrl}" @click="linked && openProfile()" :aria-label="linked?'Ver y editar mi perfil':''" :disabled="!linked">
+                <img v-if="profilePhotoUrl" :src="profilePhotoUrl" alt="" class="me-v15-avatar-img me-v19-avatar-img me-v22-avatar-img">
+                <span v-else class="mi-espacio-avatar me-v19-avatar me-v22-avatar" aria-hidden="true">{{initials}}</span>
+              </button>
+              <div class="mi-espacio-person-main">
+                <div class="me-v9-name-line me-v22-name-line">
+                  <h3>{{state.context.staff?.name || state.context.account.name}}</h3>
+                  <span class="mi-espacio-link-state" :class="linked?'is-linked':'is-unlinked'"><span v-if="linked" aria-hidden="true">✓</span> {{linked?'Perfil vinculado':state.context.linkState==='unlinked'?'Vinculación pendiente':'Vinculación no disponible'}}</span>
+                </div>
+                <div class="me-v22-role-line">
+                  <span v-if="roleBadge" class="me-v22-role-badge">{{roleBadge}}</span>
+                  <span class="me-v22-designation">{{professionalDesignation}}</span>
+                </div>
+                <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
               </div>
-              <p>{{professionalDesignation}}</p>
-              <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
-              <p v-if="state.activity && personalContext.length" class="me-v12c-context" aria-label="Actividad profesional vinculada">{{personalContextPreview.join(' · ')}}<template v-if="personalContextRemaining"> · {{personalContextRemaining}} áreas más</template></p>
-              <button v-if="linked && !state.profile.open" type="button" class="me-v15-profile-link" @click="openProfile">Mi perfil completo <span aria-hidden="true">→</span></button>
+              <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
             </div>
-            <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
+            <div v-if="(state.activity && personalContext.length) || leadershipCount" class="me-v22-identity-meta">
+              <div v-if="state.activity && personalContext.length" class="me-v22-context-pills" aria-label="Actividad profesional vinculada">
+                <span v-for="(item,i) in personalContext" :key="i" class="me-v22-context-pill">{{item}}</span>
+              </div>
+              <div v-if="leadershipCount" class="me-v22-leadership-summary">
+                <span class="me-v22-leadership-icon" aria-hidden="true">★</span>
+                <span>{{leadershipCount}} {{leadershipCount===1?'rol de liderazgo':'roles de liderazgo'}}</span>
+              </div>
+            </div>
+            <div class="me-v22-identity-footer">
+              <button v-if="linked && !state.profile.open" type="button" class="me-v15-profile-link me-v22-profile-link" @click="openProfile">Mi perfil completo <span aria-hidden="true">→</span></button>
+            </div>
           </section>
           <section v-if="state.profile.open && linked" class="me-v15-profile-panel" aria-label="Mi perfil profesional">
             <div class="me-v15-profile-head">

@@ -720,3 +720,48 @@
  .mi-espacio .me-v21-cal-cell{min-height:32px}
  .mi-espacio .me-v21-extras-bar{flex-direction:column}
 }
+
+/* ── Phase 22 – Visual Identity Upgrade ── */
+
+/* Elevated identity card */
+.mi-espacio .me-v22-identity{display:flex;flex-direction:column;gap:0;padding:0;background:linear-gradient(135deg,#f7faf9 0%,#eef6f4 50%,#f0f5f8 100%);border:1px solid rgba(21,138,137,.12);border-radius:14px;margin-top:12px;overflow:hidden;box-shadow:0 1px 3px rgba(34,78,88,.06),0 4px 16px rgba(34,78,88,.04)}
+.mi-espacio .me-v22-identity-top{display:flex;align-items:center;gap:20px;padding:24px 26px 18px}
+
+/* Larger avatar with refined ring */
+.mi-espacio .me-v22-avatar-btn{width:82px;height:82px;border-radius:50%;box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(21,138,137,.18);transition:box-shadow .2s,transform .2s}
+.mi-espacio .me-v22-avatar-btn:hover:not(:disabled){box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(21,138,137,.35);transform:scale(1.03)}
+.mi-espacio .me-v22-avatar-btn.has-photo{box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(21,138,137,.3)}
+.mi-espacio .me-v22-avatar{width:82px;height:82px;border-radius:50%;font-size:28px;font-weight:700;background:linear-gradient(145deg,#c8e0db,#9bc5bd);color:#1a4a46;letter-spacing:.04em}
+.mi-espacio .me-v22-avatar-img{width:82px;height:82px;border-radius:50%;object-fit:cover}
+
+/* Name line refinement */
+.mi-espacio .me-v22-name-line h3{font-size:clamp(21px,2.1vw,28px);letter-spacing:-.025em;font-weight:720;color:#1a3c42}
+
+/* Role badge + designation line */
+.mi-espacio .me-v22-role-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px}
+.mi-espacio .me-v22-role-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#158a89,#0f6e6d);padding:3px 10px;border-radius:4px;white-space:nowrap}
+.mi-espacio .me-v22-designation{font-size:14px;color:#4a6e73;font-weight:500}
+
+/* Meta section — context pills + leadership */
+.mi-espacio .me-v22-identity-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 26px 14px;flex-wrap:wrap}
+.mi-espacio .me-v22-context-pills{display:flex;flex-wrap:wrap;gap:6px}
+.mi-espacio .me-v22-context-pill{display:inline-block;font-size:12px;font-weight:600;color:#2b6863;background:rgba(21,138,137,.08);border:1px solid rgba(21,138,137,.12);padding:3px 10px;border-radius:20px;white-space:nowrap}
+
+/* Leadership summary chip */
+.mi-espacio .me-v22-leadership-summary{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;color:#8a6d0b;background:rgba(218,185,50,.1);border:1px solid rgba(218,185,50,.2);padding:3px 11px;border-radius:20px;white-space:nowrap}
+.mi-espacio .me-v22-leadership-icon{font-size:13px;color:#b8960f}
+
+/* Footer with profile link */
+.mi-espacio .me-v22-identity-footer{border-top:1px solid rgba(21,138,137,.08);padding:10px 26px}
+.mi-espacio .me-v22-profile-link{font-size:13px;font-weight:650;color:#158a89;background:none;border:0;padding:4px 0;cursor:pointer;transition:color .15s}
+.mi-espacio .me-v22-profile-link:hover{color:#0d6b6a}
+
+/* Responsive */
+@media(max-width:640px){
+ .mi-espacio .me-v22-identity-top{padding:18px 16px 14px;gap:14px}
+ .mi-espacio .me-v22-avatar-btn{width:64px;height:64px}
+ .mi-espacio .me-v22-avatar{width:64px;height:64px;font-size:22px}
+ .mi-espacio .me-v22-avatar-img{width:64px;height:64px}
+ .mi-espacio .me-v22-identity-meta{padding:0 16px 12px;flex-direction:column;align-items:flex-start;gap:8px}
+ .mi-espacio .me-v22-identity-footer{padding:8px 16px}
+}
