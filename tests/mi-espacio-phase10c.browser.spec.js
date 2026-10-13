@@ -85,6 +85,11 @@ for(const [name,scenario] of Object.entries(cases)){
      if(nonempty>3)await expect(overflow).toContainText('+'+(nonempty-3)+' áreas vinculadas');
      else await expect(overflow).toHaveCount(0);
    }
+   if(name==='head' || name==='clinician'){
+     const app=page.locator('.mi-espacio');
+     const js=await app.evaluate(el=>({toolbar:el.querySelector('.me-v20-quick-bar')?.compareDocumentPosition(el.querySelector('.me-v21-calendar'))}));
+     expect(js.toolbar).toBeTruthy();
+   }
    if(name==='head' && viewport.width>850){
      await expect(page.locator('.mi-espacio')).toHaveClass(/me-v25-leadership/);
      const sizes=await page.evaluate(()=>({
