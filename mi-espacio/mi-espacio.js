@@ -138,6 +138,7 @@
           (['head_of_department','department_head'].includes(state.context?.account?.role) || leadershipRoles.value.length>=2));
         const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
         function clear(){
+          workspaceNav?.reset();
           ++seq;
           if(controller)controller.abort();
           controller=null;
@@ -160,8 +161,39 @@
         // ── Phase 15: profile panel ──
         const profileCompleteness=Vue.computed(()=>state.profile.data?.profileCompleteness ?? 0);
         const profilePhotoUrl=Vue.computed(()=>state.profile.data?.publicPhotoUrl || '');
+        // Exactly one secondary workspace at a time; core activity stays authoritative.
+        const workspaceNav=root.NeumMiEspacioWorkspace?.create?.() || null;
+        function closeSecondary(which){
+          if(workspaceNav?.get().workspace===which)workspaceNav.dispatch({type:'CLOSE'});
+          if(which==='profile')state.profile.open=false;
+          else if(which==='directory')state.colleagues.open=false;
+          else if(which==='calendar')state.calendar.open=false;
+          else if(which==='digest')state.digest.open=false;
+          else if(which==='notifications')state.notifications.open=false;
+        }
+        function activateSecondary(which){
+          const before=workspaceNav?.get();
+          const next=workspaceNav?.dispatch({type:'OPEN_WORKSPACE',workspace:which});
+          if(before?.dirty&&next===before)return false;
+          if(which!=='profile')state.profile.open=false;
+          if(which!=='directory')state.colleagues.open=false;
+          if(which!=='calendar')state.calendar.open=false;
+          if(which!=='digest')state.digest.open=false;
+          if(which!=='notifications')state.notifications.open=false;
+          Vue.nextTick(()=>{
+            const selector={profile:'.me-v15-profile-panel',directory:'.me-v20-colleagues',calendar:'.me-v21-calendar',digest:'.me-v21-digest',notifications:'.me-v21-notifications'}[which];
+            const element=selector && document.querySelector('.mi-espacio '+selector);
+            if(element)element.scrollIntoView({behavior:'auto',block:'start'});
+          });
+          return true;
+        }
+        function toggleNotifications(){
+          if(state.notifications.open){closeSecondary('notifications');return;}
+          if(!activateSecondary('notifications'))return;state.notifications.open=true;
+        }
         async function openProfile(){
           if(state.profile.open && state.profile.data) return;
+          if(!activateSecondary('profile'))return;
           state.profile.open=true;state.profile.busy=true;state.profile.error='';
           const requestSeq=seq, identity=String(props.user?.id||'');
           try {
@@ -188,7 +220,7 @@
             if(err?.name!=='AbortError') state.profile.error=err?.message||'No se ha podido cargar tu perfil.';
           } finally { if(requestSeq===seq) state.profile.busy=false; }
         }
-        function closeProfile(){ state.profile.open=false; }
+        function closeProfile(){ closeSecondary('profile'); }
         async function saveProfile(){
           if(!state.profile.edit || !state.profile.data?.id) return;
           state.profile.saving=true;state.profile.error='';
@@ -322,6 +354,7 @@
         }
         // ── Phase 20: colleague directory ──
         async function loadColleagues(){
+          if(!activateSecondary('directory'))return;
           if(state.colleagues.items.length) { state.colleagues.open=true; return; }
           state.colleagues.open=true;state.colleagues.busy=true;state.colleagues.error='';
           const requestSeq=seq, identity=String(props.user?.id||'');
@@ -403,6 +436,7 @@
           const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
         }
         async function openCalendar(month){
+          if(!state.calendar.open&&!activateSecondary('calendar'))return;
           const m=month||state.calendar.month||currentMonth();
           state.calendar.open=true;state.calendar.busy=true;state.calendar.error='';state.calendar.month=m;
           try {
@@ -420,6 +454,7 @@
           const names=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
           return names[m-1]+' '+y;
         });
+        const localToday=Vue.computed(()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');});
         const calendarDays=Vue.computed(()=>{
           if(!state.calendar.month)return [];
           const [y,m]=state.calendar.month.split('-').map(Number);
@@ -435,6 +470,7 @@
         });
 
         async function openDigest(period){
+          if(!state.digest.open&&!activateSecondary('digest'))return;
           const p=period||state.digest.period||'week';
           state.digest.open=true;state.digest.busy=true;state.digest.error='';state.digest.period=p;
           try {
@@ -873,8 +909,8 @@
           missingFields,completenessHint,scrollToField,
           TIMELINE_FILTERS,filteredTimeline,
           quickActionItems,doQuickAction,
-          loadColleagues,filteredColleagues,
-          notificationBadge,upcomingEvents,showPhotoNudge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,
+          loadColleagues,filteredColleagues,toggleNotifications,closeSecondary,
+          notificationBadge,upcomingEvents,showPhotoNudge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,localToday,
           openDigest,digestResourceLabel,exportCV,exportDossier,
           urgentCertificates,certUrgencyLabel,fmtRelative,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
@@ -1074,7 +1110,7 @@
           </div>
           <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
             <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
-            <button type="button" class="me-v21-notif-btn" @click="state.notifications.open=!state.notifications.open" :aria-expanded="state.notifications.open" aria-label="Notificaciones">🔔<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
+            <button type="button" class="me-v21-notif-btn" @click="toggleNotifications" :aria-expanded="state.notifications.open" aria-label="Notificaciones">🔔<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
             <button type="button" class="me-v20-directory-btn" @click="loadColleagues">Directorio</button>
             <button type="button" class="me-v21-cal-btn" @click="openCalendar()">📅</button>
             <button type="button" class="me-v23-dossier-btn" @click="exportDossier()" :disabled="state.dossierBusy">📄 {{state.dossierBusy?'Generando…':'Dossier PDF'}}</button>
@@ -1082,6 +1118,123 @@
           <div v-if="state.quickActions && linked" class="me-v20-quick-actions">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
           </div>
+          <!-- Secondary workspaces stay adjacent to their toolbar, not below the full activity page. -->
+          <section v-if="state.colleagues.open" class="me-v20-colleagues" aria-label="Directorio de compañeros">
+            <div class="me-v20-colleagues-head">
+              <h3>Directorio del equipo</h3>
+              <button type="button" class="me-v15-profile-close" @click="closeSecondary('directory')" aria-label="Cerrar directorio">✕</button>
+            </div>
+            <input type="search" class="me-v20-colleagues-search" v-model="state.colleagues.search" placeholder="Buscar por nombre, departamento o especialidad…" aria-label="Buscar compañeros">
+            <p v-if="state.colleagues.busy" class="mi-espacio-state" role="status">Cargando directorio…</p>
+            <p v-else-if="state.colleagues.error" class="me-form-error" role="alert">{{state.colleagues.error}}</p>
+            <p v-else-if="!filteredColleagues.length && state.colleagues.search" class="me-v8-quiet">No se encontraron resultados para «{{state.colleagues.search}}».</p>
+            <p v-else-if="!state.colleagues.items.length" class="me-v8-quiet">Ningún compañero tiene un perfil público activo.</p>
+            <ul v-else class="me-v20-colleagues-list">
+              <li v-for="c in filteredColleagues" :key="c.id" class="me-v20-colleague-card">
+                <div class="me-v20-colleague-avatar">
+                  <img v-if="c.photo" :src="c.photo" alt="" class="me-v20-colleague-photo">
+                  <span v-else class="me-v20-colleague-initials">{{c.name.split(/\\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}}</span>
+                </div>
+                <div class="me-v20-colleague-info">
+                  <strong>{{c.name}}</strong>
+                  <span v-if="c.title || c.specialization" class="me-v20-colleague-role">{{c.title || c.specialization}}</span>
+                  <span v-if="c.department" class="me-v20-colleague-dept">{{c.department}}</span>
+                </div>
+                <div v-if="c.orcid || c.scholar || c.researchgate" class="me-v20-colleague-links">
+                  <span v-if="c.orcid" class="me-v20-link-chip">ORCID</span>
+                  <span v-if="c.scholar" class="me-v20-link-chip">Scholar</span>
+                  <span v-if="c.researchgate" class="me-v20-link-chip">RG</span>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Phase 21: Notification center -->
+          <section v-if="state.notifications.open" class="me-v21-notifications" aria-label="Notificaciones">
+            <div class="me-v21-notif-head">
+              <h3>Notificaciones</h3>
+              <button type="button" class="me-v15-profile-close" @click="closeSecondary('notifications')" aria-label="Cerrar">✕</button>
+            </div>
+            <p v-if="state.notifications.busy" class="mi-espacio-state" role="status">Cargando notificaciones…</p>
+            <p v-else-if="state.notifications.error" class="me-form-error" role="alert">{{state.notifications.error}}</p>
+            <p v-else-if="!state.notifications.items.length" class="me-v8-quiet">Sin notificaciones pendientes — ¡todo en orden!</p>
+            <ul v-else class="me-v21-notif-list">
+              <li v-for="n in state.notifications.items" :key="n.id" class="me-v21-notif-item" :class="'me-v21-sev-'+n.severity">
+                <span class="me-v21-notif-icon" aria-hidden="true">{{n.severity==='error'?'🔴':n.severity==='warning'?'🟡':n.severity==='success'?'🟢':'🔵'}}</span>
+                <div class="me-v21-notif-body">
+                  <strong>{{n.title}}</strong>
+                  <span class="me-v21-notif-msg">{{n.message}}</span>
+                  <span v-if="n.detail" class="me-v21-notif-detail">{{n.detail}}</span>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Phase 21: Availability calendar -->
+          <section v-if="state.calendar.open" class="me-v21-calendar" aria-label="Calendario de disponibilidad">
+            <div class="me-v21-cal-head">
+              <h3>Calendario</h3>
+              <button type="button" class="me-v15-profile-close" @click="closeSecondary('calendar')" aria-label="Cerrar">✕</button>
+            </div>
+            <div class="me-v21-cal-nav">
+              <button type="button" @click="calendarPrev" aria-label="Mes anterior">◀</button>
+              <span class="me-v21-cal-month">{{calendarMonthLabel}}</span>
+              <button type="button" @click="calendarNext" aria-label="Mes siguiente">▶</button>
+            </div>
+            <p v-if="state.calendar.busy" class="mi-espacio-state" role="status">Cargando calendario…</p>
+            <p v-else-if="state.calendar.error" class="me-form-error" role="alert">{{state.calendar.error}}</p>
+            <template v-else>
+              <div class="me-v21-cal-weekdays"><span v-for="d in ['L','M','X','J','V','S','D']" :key="d">{{d}}</span></div>
+              <div class="me-v21-cal-grid">
+                <div v-for="(cell,i) in calendarDays" :key="i" class="me-v21-cal-cell" :class="{'me-v21-cal-empty':!cell.day,'me-v21-cal-today':cell.date===localToday}">
+                  <span v-if="cell.day" class="me-v21-cal-day">{{cell.day}}</span>
+                  <div v-if="cell.events.length" class="me-v21-cal-dots">
+                    <span v-for="ev in cell.events.slice(0,3)" :key="ev.id" class="me-v21-cal-dot" :style="{background:ev.color||'#158a89'}" :title="ev.title"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="me-v21-cal-legend">
+                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#158a89"></span> Guardia</span>
+                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#e8913a"></span> Ausencia</span>
+                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#6366f1"></span> Formación</span>
+              </div>
+            </template>
+          </section>
+
+          <!-- Phase 21: Activity digest -->
+          <section v-if="state.digest.open" class="me-v21-digest" aria-label="Resumen de actividad">
+            <div class="me-v21-digest-head">
+              <h3>Resumen de actividad</h3>
+              <button type="button" class="me-v15-profile-close" @click="closeSecondary('digest')" aria-label="Cerrar">✕</button>
+            </div>
+            <div class="me-v21-digest-tabs">
+              <button type="button" :class="{'is-active':state.digest.period==='week'}" @click="openDigest('week')">Última semana</button>
+              <button type="button" :class="{'is-active':state.digest.period==='month'}" @click="openDigest('month')">Último mes</button>
+            </div>
+            <p v-if="state.digest.busy" class="mi-espacio-state" role="status">Cargando resumen…</p>
+            <p v-else-if="state.digest.error" class="me-form-error" role="alert">{{state.digest.error}}</p>
+            <template v-else-if="state.digest.data">
+              <div class="me-v21-digest-total">
+                <span class="me-v20-stat-value">{{state.digest.data.totalActions}}</span>
+                <span class="me-v20-stat-label">acciones registradas desde {{state.digest.data.since}}</span>
+              </div>
+              <ul v-if="state.digest.data.byResource.length" class="me-v21-digest-breakdown">
+                <li v-for="r in state.digest.data.byResource" :key="r.resource" class="me-v21-digest-row">
+                  <span class="me-v21-digest-res">{{digestResourceLabel(r.resource)}}</span>
+                  <span class="me-v21-digest-count">{{r.actions}}</span>
+                </li>
+              </ul>
+              <div v-if="state.digest.data.recentCerts.length" class="me-v21-digest-section">
+                <p class="mi-espacio-eyebrow">CERTIFICADOS RECIENTES</p>
+                <p v-for="c in state.digest.data.recentCerts" :key="c.name">{{c.name}} <small>({{c.date}})</small></p>
+              </div>
+              <div v-if="state.digest.data.recentPublications.length" class="me-v21-digest-section">
+                <p class="mi-espacio-eyebrow">PUBLICACIONES RECIENTES</p>
+                <p v-for="p in state.digest.data.recentPublications" :key="p.title">{{p.title}} <small>({{p.date}})</small></p>
+              </div>
+            </template>
+          </section>
+
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
           <template v-if="linked">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
@@ -1277,122 +1430,6 @@
               </div>
             </template>
           </template>
-          <section v-if="state.colleagues.open" class="me-v20-colleagues" aria-label="Directorio de compañeros">
-            <div class="me-v20-colleagues-head">
-              <h3>Directorio del equipo</h3>
-              <button type="button" class="me-v15-profile-close" @click="state.colleagues.open=false" aria-label="Cerrar directorio">✕</button>
-            </div>
-            <input type="search" class="me-v20-colleagues-search" v-model="state.colleagues.search" placeholder="Buscar por nombre, departamento o especialidad…" aria-label="Buscar compañeros">
-            <p v-if="state.colleagues.busy" class="mi-espacio-state" role="status">Cargando directorio…</p>
-            <p v-else-if="state.colleagues.error" class="me-form-error" role="alert">{{state.colleagues.error}}</p>
-            <p v-else-if="!filteredColleagues.length && state.colleagues.search" class="me-v8-quiet">No se encontraron resultados para «{{state.colleagues.search}}».</p>
-            <p v-else-if="!state.colleagues.items.length" class="me-v8-quiet">Ningún compañero tiene un perfil público activo.</p>
-            <ul v-else class="me-v20-colleagues-list">
-              <li v-for="c in filteredColleagues" :key="c.id" class="me-v20-colleague-card">
-                <div class="me-v20-colleague-avatar">
-                  <img v-if="c.photo" :src="c.photo" alt="" class="me-v20-colleague-photo">
-                  <span v-else class="me-v20-colleague-initials">{{c.name.split(/\\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase()}}</span>
-                </div>
-                <div class="me-v20-colleague-info">
-                  <strong>{{c.name}}</strong>
-                  <span v-if="c.title || c.specialization" class="me-v20-colleague-role">{{c.title || c.specialization}}</span>
-                  <span v-if="c.department" class="me-v20-colleague-dept">{{c.department}}</span>
-                </div>
-                <div v-if="c.orcid || c.scholar || c.researchgate" class="me-v20-colleague-links">
-                  <span v-if="c.orcid" class="me-v20-link-chip">ORCID</span>
-                  <span v-if="c.scholar" class="me-v20-link-chip">Scholar</span>
-                  <span v-if="c.researchgate" class="me-v20-link-chip">RG</span>
-                </div>
-              </li>
-            </ul>
-          </section>
-
-          <!-- Phase 21: Notification center -->
-          <section v-if="state.notifications.open" class="me-v21-notifications" aria-label="Notificaciones">
-            <div class="me-v21-notif-head">
-              <h3>Notificaciones</h3>
-              <button type="button" class="me-v15-profile-close" @click="state.notifications.open=false" aria-label="Cerrar">✕</button>
-            </div>
-            <p v-if="state.notifications.busy" class="mi-espacio-state" role="status">Cargando notificaciones…</p>
-            <p v-else-if="state.notifications.error" class="me-form-error" role="alert">{{state.notifications.error}}</p>
-            <p v-else-if="!state.notifications.items.length" class="me-v8-quiet">Sin notificaciones pendientes — ¡todo en orden!</p>
-            <ul v-else class="me-v21-notif-list">
-              <li v-for="n in state.notifications.items" :key="n.id" class="me-v21-notif-item" :class="'me-v21-sev-'+n.severity">
-                <span class="me-v21-notif-icon" aria-hidden="true">{{n.severity==='error'?'🔴':n.severity==='warning'?'🟡':n.severity==='success'?'🟢':'🔵'}}</span>
-                <div class="me-v21-notif-body">
-                  <strong>{{n.title}}</strong>
-                  <span class="me-v21-notif-msg">{{n.message}}</span>
-                  <span v-if="n.detail" class="me-v21-notif-detail">{{n.detail}}</span>
-                </div>
-              </li>
-            </ul>
-          </section>
-
-          <!-- Phase 21: Availability calendar -->
-          <section v-if="state.calendar.open" class="me-v21-calendar" aria-label="Calendario de disponibilidad">
-            <div class="me-v21-cal-head">
-              <h3>Calendario</h3>
-              <button type="button" class="me-v15-profile-close" @click="state.calendar.open=false" aria-label="Cerrar">✕</button>
-            </div>
-            <div class="me-v21-cal-nav">
-              <button type="button" @click="calendarPrev" aria-label="Mes anterior">◀</button>
-              <span class="me-v21-cal-month">{{calendarMonthLabel}}</span>
-              <button type="button" @click="calendarNext" aria-label="Mes siguiente">▶</button>
-            </div>
-            <p v-if="state.calendar.busy" class="mi-espacio-state" role="status">Cargando calendario…</p>
-            <p v-else-if="state.calendar.error" class="me-form-error" role="alert">{{state.calendar.error}}</p>
-            <template v-else>
-              <div class="me-v21-cal-weekdays"><span v-for="d in ['L','M','X','J','V','S','D']" :key="d">{{d}}</span></div>
-              <div class="me-v21-cal-grid">
-                <div v-for="(cell,i) in calendarDays" :key="i" class="me-v21-cal-cell" :class="{'me-v21-cal-empty':!cell.day,'me-v21-cal-today':cell.date===new Date().toISOString().slice(0,10)}">
-                  <span v-if="cell.day" class="me-v21-cal-day">{{cell.day}}</span>
-                  <div v-if="cell.events.length" class="me-v21-cal-dots">
-                    <span v-for="ev in cell.events.slice(0,3)" :key="ev.id" class="me-v21-cal-dot" :style="{background:ev.color||'#158a89'}" :title="ev.title"></span>
-                  </div>
-                </div>
-              </div>
-              <div class="me-v21-cal-legend">
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#158a89"></span> Guardia</span>
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#e8913a"></span> Ausencia</span>
-                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#6366f1"></span> Formación</span>
-              </div>
-            </template>
-          </section>
-
-          <!-- Phase 21: Activity digest -->
-          <section v-if="state.digest.open" class="me-v21-digest" aria-label="Resumen de actividad">
-            <div class="me-v21-digest-head">
-              <h3>Resumen de actividad</h3>
-              <button type="button" class="me-v15-profile-close" @click="state.digest.open=false" aria-label="Cerrar">✕</button>
-            </div>
-            <div class="me-v21-digest-tabs">
-              <button type="button" :class="{'is-active':state.digest.period==='week'}" @click="openDigest('week')">Última semana</button>
-              <button type="button" :class="{'is-active':state.digest.period==='month'}" @click="openDigest('month')">Último mes</button>
-            </div>
-            <p v-if="state.digest.busy" class="mi-espacio-state" role="status">Cargando resumen…</p>
-            <p v-else-if="state.digest.error" class="me-form-error" role="alert">{{state.digest.error}}</p>
-            <template v-else-if="state.digest.data">
-              <div class="me-v21-digest-total">
-                <span class="me-v20-stat-value">{{state.digest.data.totalActions}}</span>
-                <span class="me-v20-stat-label">acciones registradas desde {{state.digest.data.since}}</span>
-              </div>
-              <ul v-if="state.digest.data.byResource.length" class="me-v21-digest-breakdown">
-                <li v-for="r in state.digest.data.byResource" :key="r.resource" class="me-v21-digest-row">
-                  <span class="me-v21-digest-res">{{digestResourceLabel(r.resource)}}</span>
-                  <span class="me-v21-digest-count">{{r.actions}}</span>
-                </li>
-              </ul>
-              <div v-if="state.digest.data.recentCerts.length" class="me-v21-digest-section">
-                <p class="mi-espacio-eyebrow">CERTIFICADOS RECIENTES</p>
-                <p v-for="c in state.digest.data.recentCerts" :key="c.name">{{c.name}} <small>({{c.date}})</small></p>
-              </div>
-              <div v-if="state.digest.data.recentPublications.length" class="me-v21-digest-section">
-                <p class="mi-espacio-eyebrow">PUBLICACIONES RECIENTES</p>
-                <p v-for="p in state.digest.data.recentPublications" :key="p.title">{{p.title}} <small>({{p.date}})</small></p>
-              </div>
-            </template>
-          </section>
-
           <!-- Phase 21: Quick bar — digest + CV export -->
           <div v-if="linked && !state.profile.open" class="me-v21-extras-bar">
             <button type="button" class="me-v21-extras-btn" @click="openDigest()">📊 Resumen</button>
