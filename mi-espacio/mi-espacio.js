@@ -91,6 +91,8 @@
           add((pubs.items||[]).length,'publicación','publicaciones');
           return items;
         });
+        const personalContextPreview=Vue.computed(()=>personalContext.value.slice(0,3));
+        const personalContextRemaining=Vue.computed(()=>Math.max(0,personalContext.value.length-3));
         const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
         function clear(){
           ++seq;
@@ -333,7 +335,7 @@
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
-          professionalDesignation,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,fmtPeriod,
+          professionalDesignation,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
@@ -367,7 +369,7 @@
               </div>
               <p>{{professionalDesignation}}</p>
               <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
-              <p v-if="state.activity && personalContext.length" class="me-v12c-context" aria-label="Actividad profesional vinculada">{{personalContext.join(' · ')}}</p>
+              <p v-if="state.activity && personalContext.length" class="me-v12c-context" aria-label="Actividad profesional vinculada">{{personalContextPreview.join(' · ')}}<template v-if="personalContextRemaining"> · {{personalContextRemaining}} áreas más</template></p>
             </div>
             <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
           </section>
