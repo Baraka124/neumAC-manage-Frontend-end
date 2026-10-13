@@ -561,6 +561,27 @@
             </template>
           </section>
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
+          <nav v-if="linked && state.activity && state.dutyMode==='overview'" class="me-v17-stats" aria-label="Resumen de actividad">
+            <div class="me-v17-stat" :class="{'me-v17-stat--accent':upcomingGuardias.length}">
+              <span class="me-v17-stat-value">{{upcomingGuardias.length}}</span>
+              <span class="me-v17-stat-label">Guardias</span>
+              <span v-if="upcomingGuardias.length" class="me-v17-stat-sub">próximas</span>
+            </div>
+            <div class="me-v17-stat">
+              <span class="me-v17-stat-value">{{(state.activity.counts.studies||0)+(state.activity.counts.projects||0)}}</span>
+              <span class="me-v17-stat-label">Investigación</span>
+              <span v-if="state.activity.counts.lines" class="me-v17-stat-sub">{{state.activity.counts.lines}} línea{{state.activity.counts.lines!==1?'s':''}}</span>
+            </div>
+            <div class="me-v17-stat">
+              <span class="me-v17-stat-value">{{state.activity.counts.publications||0}}</span>
+              <span class="me-v17-stat-label">Publicaciones</span>
+            </div>
+            <div class="me-v17-stat" :class="{'me-v17-stat--warn':urgentCertificates.length}">
+              <span class="me-v17-stat-value">{{state.profile.certificates.length||'—'}}</span>
+              <span class="me-v17-stat-label">Certificados</span>
+              <span v-if="urgentCertificates.length" class="me-v17-stat-sub">{{urgentCertificates.length}} requiere{{urgentCertificates.length!==1?'n':''}} atención</span>
+            </div>
+          </nav>
           <template v-if="linked">
             <div v-if="state.activityBusy" class="me-activity me-activity-placeholder me-v10d-loading" role="status" aria-label="Cargando actividad profesional">
               <span class="me-v10d-loading-label">Cargando actividad vinculada…</span>

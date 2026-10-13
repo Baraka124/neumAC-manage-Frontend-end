@@ -515,3 +515,215 @@
  .mi-espacio .me-v16-timeline-time{width:100%;text-align:left}
  .mi-espacio .me-v16-cert-item{flex-wrap:wrap}
 }
+
+/* Phase 17 — visual elevation: depth hierarchy, refined typography, polished surfaces.
+   Purely additive — all selectors scoped under .mi-espacio--v9, no existing overrides. */
+
+/* ── 17.1  Identity card: subtle lift, refined avatar ring ── */
+.mi-espacio--v9 .me-v9-identity{
+  background:linear-gradient(135deg,#f8fbfa 0%,#f2f7f5 100%);
+  border:1px solid rgba(34,78,88,.1);
+  box-shadow:0 1px 3px rgba(34,78,88,.06),0 6px 16px rgba(34,78,88,.04);
+  border-radius:14px;padding:24px 26px;gap:18px
+}
+.mi-espacio--v9 .me-v9-identity .mi-espacio-avatar{
+  background:linear-gradient(145deg,#c8ddd8,#9fc4bc);
+  box-shadow:0 0 0 3px #f8fbfa,0 0 0 5px rgba(21,138,137,.15);
+  color:#1a4a46;font-weight:700
+}
+.mi-espacio--v9 .me-v9-identity .me-v15-avatar-img{
+  box-shadow:0 0 0 3px #f8fbfa,0 0 0 5px rgba(21,138,137,.15)
+}
+.mi-espacio--v9 .me-v9-name-line h3{
+  font-weight:720;letter-spacing:-.03em
+}
+.mi-espacio--v9 .me-v9-identity .mi-espacio-link-state.is-linked{
+  background:rgba(21,138,137,.1);color:#0f6b5f;font-weight:700;letter-spacing:.01em
+}
+
+/* ── 17.2  Panel cards: lifted surfaces with subtle depth ── */
+.mi-espacio--v9 .me-v9-panel{
+  border:1px solid rgba(34,78,88,.08);
+  box-shadow:0 1px 2px rgba(34,78,88,.04),0 4px 12px rgba(34,78,88,.03);
+  border-radius:14px;background:#fff
+}
+.mi-espacio--v9 .me-v9-panel:hover{
+  box-shadow:0 1px 3px rgba(34,78,88,.06),0 6px 18px rgba(34,78,88,.05)
+}
+.mi-espacio--v9 .me-v9-publications{
+  border:1px solid rgba(34,78,88,.08);
+  box-shadow:0 1px 2px rgba(34,78,88,.04),0 4px 12px rgba(34,78,88,.03);
+  border-radius:14px
+}
+.mi-espacio--v9 .me-v9-services{
+  border:1px solid rgba(34,78,88,.08);
+  box-shadow:0 1px 2px rgba(34,78,88,.04),0 4px 12px rgba(34,78,88,.03);
+  border-radius:14px;background:#fafcfb
+}
+
+/* ── 17.3  Typography sharpening ── */
+.mi-espacio--v9 .me-v9-panel-heading h3{
+  font-weight:720;letter-spacing:-.025em
+}
+.mi-espacio--v9 .mi-espacio-eyebrow{
+  font-size:10px;letter-spacing:.12em;font-weight:750;
+  color:#3d706b;opacity:.85
+}
+.mi-espacio--v9 .me-v8-kicker{
+  font-weight:750;letter-spacing:.12em;color:#3d706b
+}
+
+/* ── 17.4  Feature block: the "next guardia" / rotation hero ── */
+.mi-espacio--v9 .me-v9-feature{
+  border-top:1px solid rgba(34,78,88,.08);border-bottom:1px solid rgba(34,78,88,.08);
+  background:linear-gradient(180deg,rgba(21,138,137,.025) 0%,transparent 100%)
+}
+.mi-espacio--v9 .me-v9-feature strong{
+  font-weight:720;letter-spacing:-.02em;color:#183c49
+}
+.mi-espacio--v9 .me-v8-upnext>span:last-child{
+  color:#4a6b73;font-weight:500
+}
+
+/* ── 17.5  Timeline entries: better rhythm and subtle left accent ── */
+.mi-espacio--v9 .me-v8-timeline li{
+  border-bottom-color:rgba(34,78,88,.06)
+}
+.mi-espacio--v9 .me-v8-timeline li span{
+  font-weight:620;color:#1e4148
+}
+
+/* ── 17.6  Research groups: refined entry spacing ── */
+.mi-espacio--v9 .me-v8-research-groups li{
+  border-bottom-color:rgba(34,78,88,.06);transition:background .12s ease
+}
+.mi-espacio--v9 .me-v8-research-groups li:hover{
+  background:rgba(21,138,137,.03);border-radius:6px;margin:0 -6px;padding-left:6px;padding-right:6px
+}
+
+/* ── 17.7  Publication list: better typographic measure ── */
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list li{
+  border-bottom-color:rgba(34,78,88,.06);transition:background .12s ease
+}
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list li:hover{
+  background:rgba(34,78,88,.02)
+}
+.mi-espacio--v9 .me-v9-publications .me-v8-publication-list strong{
+  font-weight:660;letter-spacing:-.01em;color:#1a3e44
+}
+
+/* ── 17.8  Certificate alert: refined from warning-yellow to warm amber ── */
+.mi-espacio .me-v16-cert-alert{
+  background:linear-gradient(135deg,#fffcf0 0%,#fef9e7 100%);
+  border:1px solid rgba(214,158,46,.2);
+  box-shadow:0 1px 3px rgba(214,158,46,.06);
+  border-radius:14px
+}
+
+/* ── 17.9  Activity timeline: visual rhythm ── */
+.mi-espacio .me-v16-timeline{
+  background:#fff;border:1px solid rgba(34,78,88,.08);
+  box-shadow:0 1px 2px rgba(34,78,88,.04),0 4px 12px rgba(34,78,88,.03);
+  border-radius:14px;padding:22px 24px;margin:0 0 12px
+}
+.mi-espacio .me-v16-timeline-entry{
+  border-bottom-color:rgba(34,78,88,.06)
+}
+.mi-espacio .me-v16-timeline-action{
+  font-weight:650;letter-spacing:-.005em
+}
+
+/* ── 17.10  Profile panel: lifted card ── */
+.mi-espacio .me-v15-profile-panel{
+  border:1px solid rgba(34,78,88,.1);
+  box-shadow:0 2px 6px rgba(34,78,88,.06),0 8px 24px rgba(34,78,88,.04);
+  border-radius:16px
+}
+.mi-espacio .me-v15-completeness-fill{
+  background:linear-gradient(90deg,#158a89 0%,#1da89e 60%,#2bc4a8 100%)
+}
+
+/* ── 17.11  Attention banner: refined depth ── */
+.mi-espacio--v9 .me-v13b-attention{
+  border:1px solid rgba(34,78,88,.1);border-left:3px solid #3d8a7e;
+  box-shadow:0 1px 3px rgba(34,78,88,.05);
+  background:linear-gradient(135deg,#f8fbf9 0%,#f0f7f4 100%);
+  border-radius:10px
+}
+
+/* ── 17.12  Buttons: refined interactive states ── */
+.mi-espacio .me-btn-primary{
+  background:linear-gradient(180deg,#1a9b9a 0%,#148281 100%);
+  border-color:#128079;
+  box-shadow:0 1px 2px rgba(18,128,121,.2);
+  border-radius:10px;font-weight:650;letter-spacing:.01em
+}
+.mi-espacio .me-btn-primary:hover:not(:disabled){
+  background:linear-gradient(180deg,#1daba9 0%,#168f8e 100%);
+  box-shadow:0 1px 3px rgba(18,128,121,.3)
+}
+.mi-espacio .mi-espacio-refresh{
+  border-color:rgba(34,78,88,.15);border-radius:10px;
+  box-shadow:0 1px 2px rgba(34,78,88,.04);
+  font-weight:650;transition:all .15s ease
+}
+.mi-espacio .mi-espacio-refresh:hover:not(:disabled){
+  background:#f0f5f3;border-color:rgba(34,78,88,.2);
+  box-shadow:0 1px 3px rgba(34,78,88,.08)
+}
+
+/* ── 17.13  Stats strip (structure in JS) ── */
+.mi-espacio--v9 .me-v17-stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:12px;padding:18px 0 6px
+}
+.mi-espacio--v9 .me-v17-stat{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:16px 12px;
+  background:#fff;border:1px solid rgba(34,78,88,.08);
+  box-shadow:0 1px 2px rgba(34,78,88,.04);
+  border-radius:12px;text-align:center;
+  transition:box-shadow .15s ease,transform .15s ease
+}
+.mi-espacio--v9 .me-v17-stat:hover{
+  box-shadow:0 2px 6px rgba(34,78,88,.08);transform:translateY(-1px)
+}
+.mi-espacio--v9 .me-v17-stat-value{
+  font-size:clamp(22px,2.2vw,30px);font-weight:750;
+  letter-spacing:-.03em;color:#183c49;line-height:1.1
+}
+.mi-espacio--v9 .me-v17-stat-label{
+  font-size:11px;font-weight:650;letter-spacing:.04em;
+  color:#5a7a7e;text-transform:uppercase;line-height:1.4
+}
+.mi-espacio--v9 .me-v17-stat-sub{
+  font-size:12px;color:#6d8a8e;font-weight:500;margin-top:2px
+}
+.mi-espacio--v9 .me-v17-stat--accent .me-v17-stat-value{
+  color:#148281
+}
+.mi-espacio--v9 .me-v17-stat--warn .me-v17-stat-value{
+  color:#b45309
+}
+
+/* ── 17.14  Loading state polish ── */
+.mi-espacio--v9 .me-v10d-loading-block{
+  background:linear-gradient(90deg,#f0f5f4 0%,#e6efed 40%,#f0f5f4 80%);
+  background-size:200% 100%;
+  animation:me-shimmer 1.6s ease-in-out infinite;
+  border-radius:14px
+}
+
+/* ── 17.15  Responsive adjustments ── */
+@media(max-width:640px){
+  .mi-espacio--v9 .me-v17-stats{grid-template-columns:repeat(2,1fr);gap:8px}
+  .mi-espacio--v9 .me-v17-stat{padding:12px 8px}
+  .mi-espacio--v9 .me-v17-stat-value{font-size:20px}
+  .mi-espacio--v9 .me-v9-identity{padding:18px 16px}
+  .mi-espacio .me-v16-timeline{padding:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .mi-espacio--v9 .me-v9-panel:hover{box-shadow:0 1px 2px rgba(34,78,88,.04),0 4px 12px rgba(34,78,88,.03)}
+  .mi-espacio--v9 .me-v17-stat:hover{transform:none}
+  .mi-espacio--v9 .me-v8-research-groups li,.mi-espacio--v9 .me-v9-publications .me-v8-publication-list li{transition:none}
+}
