@@ -138,6 +138,7 @@
           (['head_of_department','department_head'].includes(state.context?.account?.role) || leadershipRoles.value.length>=2));
         const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
         function clear(){
+          workspaceNav?.reset();
           ++seq;
           if(controller)controller.abort();
           controller=null;
@@ -161,7 +162,19 @@
         const profileCompleteness=Vue.computed(()=>state.profile.data?.profileCompleteness ?? 0);
         const profilePhotoUrl=Vue.computed(()=>state.profile.data?.publicPhotoUrl || '');
         // Exactly one secondary workspace at a time; core activity stays authoritative.
+        const workspaceNav=root.NeumMiEspacioWorkspace?.create?.() || null;
+        function closeSecondary(which){
+          if(workspaceNav?.get().workspace===which)workspaceNav.dispatch({type:'CLOSE'});
+          if(which==='profile')state.profile.open=false;
+          else if(which==='directory')state.colleagues.open=false;
+          else if(which==='calendar')state.calendar.open=false;
+          else if(which==='digest')state.digest.open=false;
+          else if(which==='notifications')state.notifications.open=false;
+        }
         function activateSecondary(which){
+          const before=workspaceNav?.get();
+          const next=workspaceNav?.dispatch({type:'OPEN_WORKSPACE',workspace:which});
+          if(before?.dirty&&next===before)return false;
           if(which!=='profile')state.profile.open=false;
           if(which!=='directory')state.colleagues.open=false;
           if(which!=='calendar')state.calendar.open=false;
@@ -172,14 +185,15 @@
             const element=selector && document.querySelector('.mi-espacio '+selector);
             if(element)element.scrollIntoView({behavior:'auto',block:'start'});
           });
+          return true;
         }
         function toggleNotifications(){
-          if(state.notifications.open){state.notifications.open=false;return;}
-          activateSecondary('notifications');state.notifications.open=true;
+          if(state.notifications.open){closeSecondary('notifications');return;}
+          if(!activateSecondary('notifications'))return;state.notifications.open=true;
         }
         async function openProfile(){
           if(state.profile.open && state.profile.data) return;
-          activateSecondary('profile');
+          if(!activateSecondary('profile'))return;
           state.profile.open=true;state.profile.busy=true;state.profile.error='';
           const requestSeq=seq, identity=String(props.user?.id||'');
           try {
@@ -206,7 +220,7 @@
             if(err?.name!=='AbortError') state.profile.error=err?.message||'No se ha podido cargar tu perfil.';
           } finally { if(requestSeq===seq) state.profile.busy=false; }
         }
-        function closeProfile(){ state.profile.open=false; }
+        function closeProfile(){ closeSecondary('profile'); }
         async function saveProfile(){
           if(!state.profile.edit || !state.profile.data?.id) return;
           state.profile.saving=true;state.profile.error='';
@@ -340,7 +354,7 @@
         }
         // ── Phase 20: colleague directory ──
         async function loadColleagues(){
-          activateSecondary('directory');
+          if(!activateSecondary('directory'))return;
           if(state.colleagues.items.length) { state.colleagues.open=true; return; }
           state.colleagues.open=true;state.colleagues.busy=true;state.colleagues.error='';
           const requestSeq=seq, identity=String(props.user?.id||'');
@@ -422,7 +436,7 @@
           const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
         }
         async function openCalendar(month){
-          if(!state.calendar.open)activateSecondary('calendar');
+          if(!state.calendar.open&&!activateSecondary('calendar'))return;
           const m=month||state.calendar.month||currentMonth();
           state.calendar.open=true;state.calendar.busy=true;state.calendar.error='';state.calendar.month=m;
           try {
@@ -456,7 +470,7 @@
         });
 
         async function openDigest(period){
-          if(!state.digest.open)activateSecondary('digest');
+          if(!state.digest.open&&!activateSecondary('digest'))return;
           const p=period||state.digest.period||'week';
           state.digest.open=true;state.digest.busy=true;state.digest.error='';state.digest.period=p;
           try {
@@ -895,7 +909,7 @@
           missingFields,completenessHint,scrollToField,
           TIMELINE_FILTERS,filteredTimeline,
           quickActionItems,doQuickAction,
-          loadColleagues,filteredColleagues,toggleNotifications,
+          loadColleagues,filteredColleagues,toggleNotifications,closeSecondary,
           notificationBadge,upcomingEvents,showPhotoNudge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,localToday,
           openDigest,digestResourceLabel,exportCV,exportDossier,
           urgentCertificates,certUrgencyLabel,fmtRelative,
@@ -1108,7 +1122,7 @@
           <section v-if="state.colleagues.open" class="me-v20-colleagues" aria-label="Directorio de compañeros">
             <div class="me-v20-colleagues-head">
               <h3>Directorio del equipo</h3>
-              <button type="button" class="me-v15-profile-close" @click="state.colleagues.open=false" aria-label="Cerrar directorio">✕</button>
+              <button type="button" class="me-v15-profile-close" @click="closeSecondary('directory')" aria-label="Cerrar directorio">✕</button>
             </div>
             <input type="search" class="me-v20-colleagues-search" v-model="state.colleagues.search" placeholder="Buscar por nombre, departamento o especialidad…" aria-label="Buscar compañeros">
             <p v-if="state.colleagues.busy" class="mi-espacio-state" role="status">Cargando directorio…</p>
@@ -1139,7 +1153,7 @@
           <section v-if="state.notifications.open" class="me-v21-notifications" aria-label="Notificaciones">
             <div class="me-v21-notif-head">
               <h3>Notificaciones</h3>
-              <button type="button" class="me-v15-profile-close" @click="state.notifications.open=false" aria-label="Cerrar">✕</button>
+              <button type="button" class="me-v15-profile-close" @click="closeSecondary('notifications')" aria-label="Cerrar">✕</button>
             </div>
             <p v-if="state.notifications.busy" class="mi-espacio-state" role="status">Cargando notificaciones…</p>
             <p v-else-if="state.notifications.error" class="me-form-error" role="alert">{{state.notifications.error}}</p>
@@ -1160,7 +1174,7 @@
           <section v-if="state.calendar.open" class="me-v21-calendar" aria-label="Calendario de disponibilidad">
             <div class="me-v21-cal-head">
               <h3>Calendario</h3>
-              <button type="button" class="me-v15-profile-close" @click="state.calendar.open=false" aria-label="Cerrar">✕</button>
+              <button type="button" class="me-v15-profile-close" @click="closeSecondary('calendar')" aria-label="Cerrar">✕</button>
             </div>
             <div class="me-v21-cal-nav">
               <button type="button" @click="calendarPrev" aria-label="Mes anterior">◀</button>
@@ -1191,7 +1205,7 @@
           <section v-if="state.digest.open" class="me-v21-digest" aria-label="Resumen de actividad">
             <div class="me-v21-digest-head">
               <h3>Resumen de actividad</h3>
-              <button type="button" class="me-v15-profile-close" @click="state.digest.open=false" aria-label="Cerrar">✕</button>
+              <button type="button" class="me-v15-profile-close" @click="closeSecondary('digest')" aria-label="Cerrar">✕</button>
             </div>
             <div class="me-v21-digest-tabs">
               <button type="button" :class="{'is-active':state.digest.period==='week'}" @click="openDigest('week')">Última semana</button>
