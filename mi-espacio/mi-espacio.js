@@ -170,7 +170,6 @@
             state.profile.data=profile;
             state.profile.certificates=certs;
             state.profile.edit={
-              professional_email:profile.professionalEmail,
               mobile_phone:profile.mobilePhone,
               public_bio:profile.publicBio,
               orcid_id:profile.orcidId,
@@ -200,7 +199,7 @@
             if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
             state.profile.data=profile;
             state.profile.edit={
-              professional_email:profile.professionalEmail,mobile_phone:profile.mobilePhone,
+              mobile_phone:profile.mobilePhone,
               public_bio:profile.publicBio,orcid_id:profile.orcidId,scholar_url:profile.scholarUrl,
               researchgate_url:profile.researchgateUrl,pubmed_query:profile.pubmedQuery,is_public:profile.isPublic,
               indexed_publications_count:profile.indexedPublicationsCount,h_index:profile.hIndex
@@ -1010,7 +1009,7 @@
               </div>
               <form class="me-v15-edit-section" @submit.prevent="saveProfile">
                 <h4>Datos editables</h4>
-                <div class="me-field"><label for="me-profile-email">Correo profesional</label><input id="me-profile-email" type="email" v-model="state.profile.edit.professional_email" maxlength="255"></div>
+                <div class="me-field me-field-readonly"><label>Correo profesional</label><span class="me-readonly-value">{{state.profile.data?.professionalEmail || '—'}}</span><small class="me-readonly-hint">Solo modificable por administración</small></div>
                 <div class="me-field"><label for="me-profile-phone">Teléfono móvil</label><input id="me-profile-phone" type="tel" v-model="state.profile.edit.mobile_phone" maxlength="40"></div>
                 <div class="me-field me-field-wide"><label for="me-profile-bio">Biografía pública</label><textarea id="me-profile-bio" v-model="state.profile.edit.public_bio" rows="3" maxlength="2000" placeholder="Presentación profesional breve."></textarea></div>
                 <h4>Perfil de investigación</h4>
