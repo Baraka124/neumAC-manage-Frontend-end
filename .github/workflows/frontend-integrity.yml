@@ -51,6 +51,8 @@ jobs:
         run: node --test tests/mi-espacio-phase10d.test.cjs
       - name: Mi espacio Phase 12B adaptive role-neutral priority
         run: node --test tests/mi-espacio-phase12b.test.cjs
+      - name: Mi espacio Phase 13B review attention contract
+        run: node --test tests/mi-espacio-phase13b.test.cjs
       - name: Mi espacio cache-key bump guard
         if: github.event_name == 'pull_request'
         run: |
