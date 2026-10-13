@@ -133,6 +133,9 @@
         });
         const personalContextPreview=Vue.computed(()=>personalContext.value.slice(0,3));
         const personalContextRemaining=Vue.computed(()=>Math.max(0,personalContext.value.length-3));
+        // Evidence-led leadership lens: never determined from a name or an arbitrary KPI.
+        const leadershipFocus=Vue.computed(()=>linked.value && hasResearch.value &&
+          (['head_of_department','department_head'].includes(state.context?.account?.role) || leadershipRoles.value.length>=2));
         const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
         function clear(){
           ++seq;
@@ -863,7 +866,7 @@
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
-          professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
+          professionalDesignation,roleBadge,leadershipCount,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,leadershipFocus,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           researchSummary,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
           toggleNotifPref,leadershipRoles,publicPreview,
@@ -892,7 +895,7 @@
         };
       },
       template: `
-      <section class="mi-espacio mi-espacio--v8 mi-espacio--v9" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape">
+      <section class="mi-espacio mi-espacio--v8 mi-espacio--v9" :class="{'me-v25-leadership':leadershipFocus}" aria-labelledby="mi-espacio-title" @keydown.esc="onEscape">
         <header class="mi-espacio-head me-v9-accessible-head"><h2 id="mi-espacio-title" tabindex="-1">Mi espacio</h2></header>
         <p v-if="state.busy" class="mi-espacio-state" role="status">Verificando tu perfil…</p>
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
@@ -919,7 +922,8 @@
             </div>
             <div v-if="(state.activity && personalContext.length) || leadershipCount" class="me-v22-identity-meta">
               <div v-if="state.activity && personalContext.length" class="me-v22-context-pills" aria-label="Actividad profesional vinculada">
-                <span v-for="(item,i) in personalContext" :key="i" class="me-v22-context-pill">{{item}}</span>
+                <span v-for="(item,i) in personalContextPreview" :key="i" class="me-v22-context-pill">{{item}}</span>
+                <span v-if="personalContextRemaining" class="me-v22-context-more">+{{personalContextRemaining}} áreas vinculadas</span>
               </div>
               <div v-if="leadershipCount" class="me-v22-leadership-summary">
                 <span class="me-v22-leadership-icon" aria-hidden="true">★</span>
@@ -1062,29 +1066,6 @@
               </div>
             </template>
           </section>
-          <div v-if="showPhotoNudge" class="me-v23-photo-nudge" role="status">
-            <div class="me-v23-photo-nudge-avatar" aria-hidden="true">📷</div>
-            <div class="me-v23-photo-nudge-body">
-              <p>Tu perfil institucional no tiene foto. Una foto profesional mejora tu visibilidad en el directorio y en tus publicaciones.</p>
-              <div class="me-v23-photo-nudge-actions">
-                <button type="button" class="me-v23-photo-nudge-btn" @click="openProfile()">Subir foto</button>
-                <button type="button" class="me-v23-photo-nudge-dismiss" @click="state.photoNudgeDismissed=true">Ahora no</button>
-              </div>
-            </div>
-          </div>
-          <div v-if="linked && state.dashboard.data && !state.profile.open" class="me-v20-dashboard me-v23-dashboard" aria-label="Métricas personales">
-            <div v-if="state.dashboard.data.piStudies || state.dashboard.data.piProjects || state.dashboard.data.hIndex" class="me-v23-impact-row">
-              <div class="me-v23-impact-stat" v-if="state.dashboard.data.piStudies || state.dashboard.data.piProjects"><span class="me-v23-impact-value">{{(state.dashboard.data.piStudies||0)+(state.dashboard.data.piProjects||0)}}</span><span class="me-v23-impact-label">IP en {{[state.dashboard.data.piStudies?state.dashboard.data.piStudies+' estudio'+(state.dashboard.data.piStudies!==1?'s':''):'',state.dashboard.data.piProjects?state.dashboard.data.piProjects+' proyecto'+(state.dashboard.data.piProjects!==1?'s':''):''].filter(Boolean).join(', ')}}</span></div>
-              <div class="me-v23-impact-stat" v-if="state.dashboard.data.hIndex"><span class="me-v23-impact-value">{{state.dashboard.data.hIndex}}</span><span class="me-v23-impact-label">Índice h</span></div>
-            </div>
-            <div class="me-v23-ops-row">
-              <div class="me-v20-stat" v-if="state.dashboard.data.activeStudies"><span class="me-v20-stat-value">{{state.dashboard.data.activeStudies}}</span><span class="me-v20-stat-label">Estudios</span></div>
-              <div class="me-v20-stat" v-if="state.dashboard.data.activeProjects"><span class="me-v20-stat-value">{{state.dashboard.data.activeProjects}}</span><span class="me-v20-stat-label">Proyectos</span></div>
-              <div class="me-v20-stat" v-if="state.dashboard.data.publications"><span class="me-v20-stat-value">{{state.dashboard.data.publications}}</span><span class="me-v20-stat-label">Publicaciones</span></div>
-              <div class="me-v20-stat" v-if="state.dashboard.data.totalCertificates"><span class="me-v20-stat-value" :class="{'me-v20-stat-warn':state.dashboard.data.expiredCertificates||state.dashboard.data.expiringCertificates}">{{state.dashboard.data.totalCertificates}}</span><span class="me-v20-stat-label">Certificados<template v-if="state.dashboard.data.expiredCertificates"> · {{state.dashboard.data.expiredCertificates}} cad.</template></span></div>
-              <div class="me-v20-stat" v-if="state.dashboard.data.absenceDaysThisYear"><span class="me-v20-stat-value">{{state.dashboard.data.absenceDaysThisYear}}</span><span class="me-v20-stat-label">Días ausencia {{new Date().getFullYear()}}</span></div>
-            </div>
-          </div>
           <div v-if="linked && upcomingEvents.length && !state.profile.open" class="me-v23-upcoming" aria-label="Próximos 7 días">
             <div v-for="(ev,i) in upcomingEvents" :key="i" class="me-v23-event" :data-urgency="ev.urgency">
               <span class="me-v23-event-icon">{{ev.icon}}</span>
@@ -1112,6 +1093,10 @@
               <div v-if="state.dutyMode==='overview' && state.review.can && !state.review.busy && !state.review.error && state.review.filter==='open' && state.review.items.length" class="me-v13b-attention">
                 <div><p class="mi-espacio-eyebrow">REQUIERE TU ATENCIÓN</p><p><strong>{{state.review.items.length}} {{state.review.items.length===1?'comunicación pendiente':'comunicaciones pendientes'}}</strong> de revisión</p></div>
                 <button type="button" class="me-v13b-attention-action" aria-controls="me-v8-administration" @click="openPendingReviews">Revisar comunicaciones <span aria-hidden="true">→</span></button>
+              </div>
+              <div v-if="state.dutyMode==='overview' && leadershipFocus" class="me-v25-section-intro" aria-label="Ámbito de mis responsabilidades">
+                <span class="me-v25-eyebrow">RESPONSABILIDADES VINCULADAS</span>
+                <p>Mi actividad clínica y científica, según los registros del servicio.</p>
               </div>
               <div v-if="state.dutyMode==='overview'" class="me-v8-overview me-v9-overview" :class="{'me-v10-research-first':!showAgenda,'me-v10-sparse':!hasAgenda && !hasResearch,'me-v12-research-priority':researchPriority}">
                 <section v-if="showAgenda" class="me-v8-column me-v8-agenda me-v9-panel" :class="{'me-v10-agenda-sparse':!hasAgenda}" aria-labelledby="me-v9-agenda-title">
@@ -1178,6 +1163,30 @@
                   <button type="button" class="me-v8-tools-toggle" :aria-expanded="state.toolsOpen" aria-controls="me-v8-administration" @click="state.toolsOpen=!state.toolsOpen">{{state.toolsOpen?'Cerrar gestiones':'Comunicaciones y gestiones'}} <span aria-hidden="true">{{state.toolsOpen?'−':'→'}}</span></button>
                 </section>
               </div>
+              <!-- Secondary personal metrics/onboarding follow core responsibilities. -->
+          <div v-if="showPhotoNudge" class="me-v23-photo-nudge" role="status">
+            <div class="me-v23-photo-nudge-avatar" aria-hidden="true">📷</div>
+            <div class="me-v23-photo-nudge-body">
+              <p>Tu perfil institucional no tiene foto. Una foto profesional mejora tu visibilidad en el directorio y en tus publicaciones.</p>
+              <div class="me-v23-photo-nudge-actions">
+                <button type="button" class="me-v23-photo-nudge-btn" @click="openProfile()">Subir foto</button>
+                <button type="button" class="me-v23-photo-nudge-dismiss" @click="state.photoNudgeDismissed=true">Ahora no</button>
+              </div>
+            </div>
+          </div>
+          <div v-if="linked && state.dashboard.data && !state.profile.open" class="me-v20-dashboard me-v23-dashboard" aria-label="Métricas personales">
+            <div v-if="state.dashboard.data.piStudies || state.dashboard.data.piProjects || state.dashboard.data.hIndex" class="me-v23-impact-row">
+              <div class="me-v23-impact-stat" v-if="state.dashboard.data.piStudies || state.dashboard.data.piProjects"><span class="me-v23-impact-value">{{(state.dashboard.data.piStudies||0)+(state.dashboard.data.piProjects||0)}}</span><span class="me-v23-impact-label">IP en {{[state.dashboard.data.piStudies?state.dashboard.data.piStudies+' estudio'+(state.dashboard.data.piStudies!==1?'s':''):'',state.dashboard.data.piProjects?state.dashboard.data.piProjects+' proyecto'+(state.dashboard.data.piProjects!==1?'s':''):''].filter(Boolean).join(', ')}}</span></div>
+              <div class="me-v23-impact-stat" v-if="state.dashboard.data.hIndex"><span class="me-v23-impact-value">{{state.dashboard.data.hIndex}}</span><span class="me-v23-impact-label">Índice h</span></div>
+            </div>
+            <div class="me-v23-ops-row">
+              <div class="me-v20-stat" v-if="state.dashboard.data.activeStudies"><span class="me-v20-stat-value">{{state.dashboard.data.activeStudies}}</span><span class="me-v20-stat-label">Estudios</span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.activeProjects"><span class="me-v20-stat-value">{{state.dashboard.data.activeProjects}}</span><span class="me-v20-stat-label">Proyectos</span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.publications"><span class="me-v20-stat-value">{{state.dashboard.data.publications}}</span><span class="me-v20-stat-label">Publicaciones</span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.totalCertificates"><span class="me-v20-stat-value" :class="{'me-v20-stat-warn':state.dashboard.data.expiredCertificates||state.dashboard.data.expiringCertificates}">{{state.dashboard.data.totalCertificates}}</span><span class="me-v20-stat-label">Certificados<template v-if="state.dashboard.data.expiredCertificates"> · {{state.dashboard.data.expiredCertificates}} cad.</template></span></div>
+              <div class="me-v20-stat" v-if="state.dashboard.data.absenceDaysThisYear"><span class="me-v20-stat-value">{{state.dashboard.data.absenceDaysThisYear}}</span><span class="me-v20-stat-label">Días ausencia {{new Date().getFullYear()}}</span></div>
+            </div>
+          </div>
               <section v-if="state.dutyMode==='overview' && state.timeline.entries.length" class="me-v16-timeline" aria-label="Actividad reciente">
                 <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">ACTIVIDAD RECIENTE</p><h3>Mi actividad</h3></div></div>
                 <div v-if="state.timeline.entries.length>3" class="me-v20-timeline-filters" role="tablist" aria-label="Filtrar actividad">

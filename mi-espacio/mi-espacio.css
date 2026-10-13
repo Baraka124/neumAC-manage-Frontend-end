@@ -878,3 +878,15 @@
 .mi-espacio .me-v23-dossier-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;font-weight:600;border:1px solid rgba(21,138,137,.2);border-radius:8px;background:linear-gradient(135deg,rgba(21,138,137,.05),rgba(21,138,137,.01));color:#158a89;cursor:pointer;transition:background .15s,border-color .15s}
 .mi-espacio .me-v23-dossier-btn:hover{background:rgba(21,138,137,.1);border-color:rgba(21,138,137,.3)}
 .mi-espacio .me-v23-dossier-btn:disabled{opacity:.5;cursor:default}
+
+/* Phase 25A — evidence-led first-fold hierarchy; no new dashboard or role fork. */
+.mi-espacio.me-v25-leadership .me-v9-overview{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);align-items:start;gap:20px;padding-top:12px}
+.mi-espacio.me-v25-leadership .me-v8-research{grid-column:2;grid-row:1}
+.mi-espacio.me-v25-leadership .me-v8-agenda{grid-column:1;grid-row:1}
+.mi-espacio .me-v25-section-intro{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:22px}
+.mi-espacio .me-v25-eyebrow{font-size:10px;font-weight:750;letter-spacing:.13em;color:#47736d}
+.mi-espacio .me-v25-section-intro p{font-size:12px;color:#687b7c;margin:0}
+.mi-espacio .me-v22-context-more{align-self:center;font-size:12px;color:#567772;font-weight:500}
+.mi-espacio .me-v23-dashboard{margin-top:16px}
+.mi-espacio .me-v23-photo-nudge{margin-top:14px}
+@media(max-width:850px){.mi-espacio.me-v25-leadership .me-v9-overview{grid-template-columns:minmax(0,1fr);gap:15px}.mi-espacio.me-v25-leadership .me-v8-research,.mi-espacio.me-v25-leadership .me-v8-agenda{grid-column:auto;grid-row:auto}}
