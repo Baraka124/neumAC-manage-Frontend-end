@@ -76,6 +76,21 @@
         const hasPublicationOverflow=Vue.computed(()=>(state.activity?.publications?.items?.length||0)>3);
         const hasResearchOverflow=Vue.computed(()=>['lines','studies','projects'].some(k=>(state.activity?.research?.[k]?.length||0)>2));
         const showAgenda=Vue.computed(()=>hasAgenda.value || (!hasResearch.value && !(state.activity?.publications?.items?.length||0)));
+        const personalContext=Vue.computed(()=>{
+          const activity=state.activity;
+          if(!activity)return [];
+          const agenda=activity.agenda||{}, research=activity.research||{}, pubs=activity.publications||{};
+          const items=[];
+          const add=(n,singular,plural)=>{if(n>0)items.push(n+' '+(n===1?singular:plural));};
+          add((agenda.guardias||[]).length,'guardia','guardias');
+          add((agenda.rotations||[]).filter(r=>r.role==='resident').length,'rotación','rotaciones');
+          add((agenda.rotations||[]).filter(r=>r.role==='supervisor').length,'supervisión','supervisiones');
+          add((research.studies||[]).length,'estudio','estudios');
+          add((research.projects||[]).length,'proyecto','proyectos');
+          add((research.lines||[]).length,'línea de investigación','líneas de investigación');
+          add((pubs.items||[]).length,'publicación','publicaciones');
+          return items;
+        });
         const researchPriority=Vue.computed(()=>hasResearch.value && hasAgenda.value && ((state.activity?.counts?.studies||0)+(state.activity?.counts?.projects||0)+(state.activity?.counts?.lines||0))>=4 && (state.activity?.counts?.guardias||0)<=1);
         function clear(){
           ++seq;
@@ -318,7 +333,7 @@
         }
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
-          professionalDesignation,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,fmtPeriod,
+          professionalDesignation,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,fmtPeriod,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
@@ -352,6 +367,7 @@
               </div>
               <p>{{professionalDesignation}}</p>
               <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
+              <p v-if="state.activity && personalContext.length" class="me-v12c-context" aria-label="Actividad profesional vinculada">{{personalContext.join(' · ')}}</p>
             </div>
             <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
           </section>
