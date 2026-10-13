@@ -807,6 +807,68 @@
  .mi-espacio .me-v23-photo-nudge-actions{justify-content:center}
 }
 
+/* ── Phase 24: Layout breathing room & density fix ── */
+
+/* Dashboard: restore gap between impact row and ops row */
+.mi-espacio .me-v23-dashboard{gap:10px}
+
+/* Ops row: slightly larger stat cards on desktop */
+.mi-espacio .me-v20-stat{flex:1 1 95px;min-width:90px;padding:12px 14px}
+.mi-espacio .me-v20-stat-label{font-size:11.5px;margin-top:3px;line-height:1.35}
+
+/* Quick bar: more breathing room between buttons */
+.mi-espacio .me-v20-quick-bar{gap:10px;margin-bottom:12px}
+.mi-espacio .me-v20-quick-toggle{padding:10px 16px;font-size:13.5px}
+.mi-espacio .me-v21-notif-btn,.mi-espacio .me-v21-cal-btn{padding:9px 12px}
+.mi-espacio .me-v20-directory-btn{padding:9px 16px}
+.mi-espacio .me-v23-dossier-btn{padding:9px 16px}
+
+/* Quick actions row: more gap */
+.mi-espacio .me-v20-quick-actions{gap:10px;margin-bottom:14px}
+
+/* Events strip: a bit more room */
+.mi-espacio .me-v23-upcoming{gap:10px;padding:4px 0 10px;margin:-2px 0 10px}
+
+/* Overview grid (agenda + research panels): more gap */
+.mi-espacio--v9 .me-v9-overview{gap:24px;padding:28px 0 24px}
+
+/* Panels: slightly more padding */
+.mi-espacio--v9 .me-v9-panel{padding:24px 26px}
+
+/* Space between overview panels and lower grid */
+.mi-espacio--v9 .me-v9-lower-grid{gap:16px;margin-top:6px}
+
+/* Publications and communications panels: more padding */
+.mi-espacio--v9 .me-v9-publications{padding:26px clamp(22px,3vw,38px)}
+.mi-espacio--v9 .me-v9-services{padding:18px clamp(22px,3vw,38px)}
+
+/* Research items: more room between entries */
+.mi-espacio--v9 .me-v8-research-groups li{padding:12px 0;gap:8px}
+
+/* Identity card: more bottom margin before dashboard */
+.mi-espacio .me-v22-identity{margin-bottom:16px}
+
+/* Photo nudge: more margin */
+.mi-espacio .me-v23-photo-nudge{margin:0 0 14px}
+
+/* Profile panel: more spacing */
+.mi-espacio .me-v15-profile-panel{padding:22px 24px;margin:0 0 16px}
+
+/* Notification/Calendar/Digest panels: more spacing */
+.mi-espacio .me-v21-notifications,.mi-espacio .me-v21-calendar,.mi-espacio .me-v21-digest{margin-top:14px;padding:18px 20px}
+
+/* Colleagues panel spacing */
+.mi-espacio .me-v20-colleagues{margin-top:14px;padding:18px 20px}
+
+/* Mobile: keep proportional improvements */
+@media(max-width:640px){
+ .mi-espacio .me-v20-stat{min-width:72px;padding:10px}
+ .mi-espacio .me-v20-quick-bar{gap:8px}
+ .mi-espacio--v9 .me-v9-overview{padding:20px 0 18px}
+ .mi-espacio--v9 .me-v9-panel{padding:18px 16px}
+ .mi-espacio .me-v22-identity{margin-bottom:12px}
+}
+
 /* ── Phase 23D: PDF dossier button ── */
 .mi-espacio .me-v23-dossier-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;font-weight:600;border:1px solid rgba(21,138,137,.2);border-radius:8px;background:linear-gradient(135deg,rgba(21,138,137,.05),rgba(21,138,137,.01));color:#158a89;cursor:pointer;transition:background .15s,border-color .15s}
 .mi-espacio .me-v23-dossier-btn:hover{background:rgba(21,138,137,.1);border-color:rgba(21,138,137,.3)}
