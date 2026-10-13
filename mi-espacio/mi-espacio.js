@@ -188,6 +188,11 @@
           state.review.filter=value;state.review.notice='';
           loadReviewQueue(seq, String(props.user?.id||''));
         }
+        function openPendingReviews(){
+          if(!state.review.can || state.review.filter!=='open' || !state.review.items.length)return;
+          state.toolsOpen=true;
+          focusDuty('.me-review h3');
+        }
         async function resolveItem(reportId, status){
           const requestSeq=seq, identity=String(props.user?.id||'');
           const stillCurrent=()=>requestSeq===seq && props.active && String(props.user?.id||'')===identity;
@@ -354,7 +359,7 @@
           subjectLabel:k=>label(SUBJECT_LABELS,k), kindLabel:k=>label(KIND_LABELS,k), reportStatus:k=>label(REPORT_STATUS,k),
           subjectOptions:SUBJECT_OPTIONS, kindOptions:KIND_OPTIONS,
           openReportForm, submitReport, onSubjectTypeChange, onSubjectPick, claimPublication,
-          reviewFilters:REVIEW_FILTERS, setReviewFilter, resolveItem,
+          reviewFilters:REVIEW_FILTERS, setReviewFilter, resolveItem, openPendingReviews,
           emptyLabel:f=>EMPTY_BY_FILTER[f]||'por revisar'
         };
       },
@@ -386,6 +391,10 @@
             </div>
             <div v-else-if="state.activityError" class="mi-espacio-notice" role="alert">{{state.activityError}} <button type="button" @click="refresh">Reintentar</button></div>
             <template v-else-if="state.activity">
+              <div v-if="state.dutyMode==='overview' && state.review.can && !state.review.busy && !state.review.error && state.review.filter==='open' && state.review.items.length" class="me-v13b-attention">
+                <div><p class="mi-espacio-eyebrow">REQUIERE TU ATENCIÓN</p><p><strong>{{state.review.items.length}} {{state.review.items.length===1?'comunicación pendiente':'comunicaciones pendientes'}}</strong> de revisión</p></div>
+                <button type="button" class="me-v13b-attention-action" aria-controls="me-v8-administration" @click="openPendingReviews">Revisar comunicaciones <span aria-hidden="true">→</span></button>
+              </div>
               <div v-if="state.dutyMode==='overview'" class="me-v8-overview me-v9-overview" :class="{'me-v10-research-first':!showAgenda,'me-v10-sparse':!hasAgenda && !hasResearch,'me-v12-research-priority':researchPriority}">
                 <section v-if="showAgenda" class="me-v8-column me-v8-agenda me-v9-panel" :class="{'me-v10-agenda-sparse':!hasAgenda}" aria-labelledby="me-v9-agenda-title">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">AGENDA PERSONAL</p><h3 id="me-v9-agenda-title" class="me-v9-agenda-title" tabindex="-1">Mi agenda</h3></div><span v-if="state.activity.counts.guardias" class="me-v9-verified-count">{{state.activity.counts.guardias}} guardias</span></div>
@@ -447,7 +456,7 @@
                 </section>
                 <section class="me-v9-services" aria-label="Comunicaciones y gestiones">
                   <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">GESTIÓN PERSONAL</p><h3>Comunicaciones</h3></div></div>
-                  <p>Consultas y correcciones de tu información profesional.</p><p v-if="state.review.can && state.review.filter==='open' && state.review.items.length" class="me-v10-review-indicator">Pendientes por revisar <strong>{{state.review.items.length}}</strong></p><p v-if="state.reports.length" class="me-v9-service-meta">Comunicaciones enviadas · {{state.reports.length}}</p>
+                  <p>Consultas y correcciones de tu información profesional.</p><p v-if="state.reports.length" class="me-v9-service-meta">Comunicaciones enviadas · {{state.reports.length}}</p>
                   <button type="button" class="me-v8-tools-toggle" :aria-expanded="state.toolsOpen" aria-controls="me-v8-administration" @click="state.toolsOpen=!state.toolsOpen">{{state.toolsOpen?'Cerrar gestiones':'Comunicaciones y gestiones'}} <span aria-hidden="true">{{state.toolsOpen?'−':'→'}}</span></button>
                 </section>
               </div>
@@ -484,7 +493,7 @@
             </section>
                             
                 <section v-if="state.toolsOpen && state.review.can && state.dutyMode==='overview'" class="me-review" aria-label="Comunicaciones del equipo por revisar">
-            <div class="mi-espacio-section-heading"><h3>Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar una reivindicación de línea o autoría, se intentará registrar automáticamente la vinculación. Otros casos pueden necesitar una corrección manual.</p></div>
+            <div class="mi-espacio-section-heading"><h3 tabindex="-1">Comunicaciones por revisar</h3><p>Reportes de discrepancias del equipo. Al aceptar una reivindicación de línea o autoría, se intentará registrar automáticamente la vinculación. Otros casos pueden necesitar una corrección manual.</p></div>
             <div class="me-review-filters" role="tablist" aria-label="Estado de las comunicaciones">
               <button v-for="f in reviewFilters" :key="f.value" type="button" role="tab" class="me-review-tab" :class="{'is-active':state.review.filter===f.value}" :aria-selected="state.review.filter===f.value" @click="setReviewFilter(f.value)">{{f.label}}</button>
             </div>
