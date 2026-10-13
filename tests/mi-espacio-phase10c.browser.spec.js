@@ -80,7 +80,18 @@ for(const [name,scenario] of Object.entries(cases)){
    else {
      await expect(contextPills).toBeVisible();
      const pills=await page.locator('.me-v22-context-pill').count();
-     expect(pills).toBe(nonempty);
+     expect(pills).toBe(Math.min(nonempty,3));
+     const overflow=page.locator('.me-v22-context-more');
+     if(nonempty>3)await expect(overflow).toContainText('+'+(nonempty-3)+' áreas vinculadas');
+     else await expect(overflow).toHaveCount(0);
+   }
+   if(name==='head' && viewport.width>850){
+     await expect(page.locator('.mi-espacio')).toHaveClass(/me-v25-leadership/);
+     const sizes=await page.evaluate(()=>({
+       agenda:document.querySelector('.me-v8-agenda').getBoundingClientRect().width,
+       research:document.querySelector('.me-v8-research').getBoundingClientRect().width
+     }));
+     expect(sizes.research).toBeGreaterThan(sizes.agenda);
    }
    if(name==='head'){
     await expect(page.locator('.me-v8-research-groups li')).toHaveCount(5);
