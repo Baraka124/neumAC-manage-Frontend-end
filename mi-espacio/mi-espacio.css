@@ -411,3 +411,18 @@
 .mi-espacio--v9 .me-v13b-attention-action{border:0;background:transparent;color:#276e64;font-size:13px;font-weight:650;cursor:pointer;white-space:nowrap;padding:7px 0}
 .mi-espacio--v9 .me-v13b-attention-action:focus-visible{outline:3px solid #158a89;outline-offset:3px}
 @media(max-width:640px){.mi-espacio--v9 .me-v13b-attention{align-items:flex-start;flex-direction:column;padding:14px 16px;gap:6px}.mi-espacio--v9 .me-v13b-attention-action{white-space:normal;text-align:left}}
+
+/* Phase 14B — interaction polish: consistent targets and stable narrow layouts.
+   No new surfaces, navigation layers or animation on primary workflows. */
+.mi-espacio--v9 :is(.me-duty-open,.me-v10-research-toggle,.me-v10-publications-toggle,.me-v8-tools-toggle,.me-v13b-attention-action){min-height:44px;display:inline-flex;align-items:center;gap:8px;max-width:100%;white-space:normal;text-align:left;line-height:1.45}
+.mi-espacio--v9 :is(.me-v9-overview,.me-v9-lower-grid,.me-v9-panel,.me-v9-publications,.me-v9-services){min-width:0}
+.mi-espacio--v9 .me-v9-panel-heading{min-width:0}
+.mi-espacio--v9 .me-v9-panel-heading>div{min-width:0}
+@media(max-width:640px){
+ .mi-espacio--v9 .me-v9-panel-heading{align-items:flex-start;flex-wrap:wrap}
+ .mi-espacio--v9 .me-v9-services>.me-v8-tools-toggle{justify-self:start}
+ .mi-espacio--v9 .me-v13b-attention-action{width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .mi-espacio--v9 :is(.me-duty-open,.me-v10-research-toggle,.me-v10-publications-toggle,.me-v8-tools-toggle,.me-v13b-attention-action){transition:none!important;animation:none!important}
+}
