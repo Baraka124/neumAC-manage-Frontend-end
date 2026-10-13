@@ -515,3 +515,17 @@
  .mi-espacio .me-v16-timeline-time{width:100%;text-align:left}
  .mi-espacio .me-v16-cert-item{flex-wrap:wrap}
 }
+
+/* ── Phase 18 – Profile data surface ── */
+.mi-espacio .me-v18-capabilities{margin-top:4px}
+.mi-espacio .me-v18-cap-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.mi-espacio .me-v18-cap-list li{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--me-ink,#183c49);background:rgba(21,138,137,.08);border-radius:6px;padding:4px 10px}
+.mi-espacio .me-v18-cap-check{color:#158a89;font-weight:700;font-size:14px}
+.mi-espacio .me-v18-research-summary{margin-top:4px}
+.mi-espacio .me-v18-metrics-row{display:flex;gap:16px}
+.mi-espacio .me-v18-metrics-row .me-field{flex:1;min-width:0}
+.mi-espacio .me-v18-metrics-row input[type="number"]{width:100%;padding:8px 10px;border:1px solid rgba(34,78,88,.18);border-radius:8px;font:inherit;font-size:14px;color:var(--me-ink,#183c49);background:var(--me-surface,#ffffff);transition:border-color .15s}
+.mi-espacio .me-v18-metrics-row input[type="number"]:focus{border-color:#158a89;outline:none;box-shadow:0 0 0 3px rgba(21,138,137,.12)}
+@media(max-width:640px){
+ .mi-espacio .me-v18-metrics-row{flex-direction:column;gap:12px}
+}

@@ -20,6 +20,17 @@
     biomedical_engineer:'Ingeniería biomédica', clinician:'Personal clínico',
     medical_staff:'Personal sanitario', resident:'Médico/a residente'
   });
+  const EMPLOYMENT_STATUS = Object.freeze({
+    active:'Activo/a', on_leave:'En excedencia', inactive:'Inactivo/a',
+    sabbatical:'Sabático/a', retired:'Jubilado/a'
+  });
+  const AFFILIATION_TYPE = Object.freeze({
+    primary:'Adscripción primaria', secondary:'Adscripción secundaria',
+    external:'Personal externo', visiting:'Visitante'
+  });
+  function employmentLabel(v){return EMPLOYMENT_STATUS[v]||v||'';}
+  function affiliationLabel(v){return AFFILIATION_TYPE[v]||v||'';}
+
   function professionalType(value) {
     const key=String(value||'').trim();
     return PROFESSIONAL_TYPE[key] || key.replace(/_/g,' ');
@@ -137,7 +148,9 @@
               scholar_url:profile.scholarUrl,
               researchgate_url:profile.researchgateUrl,
               pubmed_query:profile.pubmedQuery,
-              is_public:profile.isPublic
+              is_public:profile.isPublic,
+              indexed_publications_count:profile.indexedPublicationsCount,
+              h_index:profile.hIndex
             };
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
@@ -160,7 +173,8 @@
             state.profile.edit={
               professional_email:profile.professionalEmail,mobile_phone:profile.mobilePhone,
               public_bio:profile.publicBio,orcid_id:profile.orcidId,scholar_url:profile.scholarUrl,
-              researchgate_url:profile.researchgateUrl,pubmed_query:profile.pubmedQuery,is_public:profile.isPublic
+              researchgate_url:profile.researchgateUrl,pubmed_query:profile.pubmedQuery,is_public:profile.isPublic,
+              indexed_publications_count:profile.indexedPublicationsCount,h_index:profile.hIndex
             };
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
@@ -185,6 +199,18 @@
             if(event?.target) event.target.value='';
           }
         }
+        // ── Phase 18: research summary from activity data ──
+        const researchSummary=Vue.computed(()=>{
+          const items=[];
+          const activity=state.activity;
+          if(!activity)return items;
+          const c=activity.counts||{};
+          if(c.lines) items.push({label:'Líneas de investigación',value:c.lines});
+          if(c.studies) items.push({label:'Estudios',value:c.studies});
+          if(c.projects) items.push({label:'Proyectos',value:c.projects});
+          if(c.publications) items.push({label:'Publicaciones registradas',value:c.publications});
+          return items;
+        });
         // ── Phase 16: certificate urgency helpers ──
         const urgentCertificates=Vue.computed(()=>(state.profile.certificates||[]).filter(c=>c.urgency==='expired'||c.urgency==='expiring_soon'));
         const certUrgencyLabel=c=>{
@@ -457,6 +483,7 @@
           state,linked,initials,can,refresh:load,selectedDuty,
           professionalDesignation,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
+          researchSummary,employmentLabel,affiliationLabel,
           urgentCertificates,certUrgencyLabel,fmtRelative,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
@@ -531,9 +558,34 @@
                   <div v-if="state.profile.data.title"><dt>Título</dt><dd>{{state.profile.data.title}}</dd></div>
                   <div><dt>Categoría</dt><dd>{{professionalDesignation}}</dd></div>
                   <div v-if="state.profile.data.department"><dt>Departamento</dt><dd>{{state.profile.data.department.name}}</dd></div>
+                  <div v-if="state.profile.data.specialization"><dt>Especialización</dt><dd>{{state.profile.data.specialization}}</dd></div>
+                  <div v-if="state.profile.data.primaryClinic"><dt>Consulta principal</dt><dd>{{state.profile.data.primaryClinic}}</dd></div>
+                  <div v-if="state.profile.data.yearsExperience !== null"><dt>Años de experiencia</dt><dd>{{state.profile.data.yearsExperience}}</dd></div>
                   <div v-if="state.profile.data.trainingYear"><dt>Año formativo</dt><dd>{{state.profile.data.trainingYear}}</dd></div>
+                  <div v-if="state.profile.data.trainingLevel"><dt>Nivel formativo</dt><dd>{{state.profile.data.trainingLevel}}</dd></div>
+                  <div v-if="state.profile.data.residencyStartDate"><dt>Inicio residencia</dt><dd>{{fmtDate(state.profile.data.residencyStartDate)}}</dd></div>
+                  <div v-if="state.profile.data.residentCategory"><dt>Categoría MIR</dt><dd>{{state.profile.data.residentCategory}}</dd></div>
+                  <div v-if="state.profile.data.residentType"><dt>Tipo residente</dt><dd>{{state.profile.data.residentType}}</dd></div>
                   <div v-if="state.profile.data.academicDegree"><dt>Titulación</dt><dd>{{state.profile.data.academicDegree}}</dd></div>
                   <div v-if="state.profile.data.hasPhd"><dt>Doctorado</dt><dd>{{state.profile.data.phdField || 'Sí'}}</dd></div>
+                  <div v-if="state.profile.data.hasMedicalLicense"><dt>Licencia médica</dt><dd>{{state.profile.data.medicalLicense || 'Sí'}}</dd></div>
+                  <div v-if="state.profile.data.employmentStatus && state.profile.data.employmentStatus !== 'active'"><dt>Estado laboral</dt><dd>{{employmentLabel(state.profile.data.employmentStatus)}}</dd></div>
+                  <div v-if="state.profile.data.affiliationType && state.profile.data.affiliationType !== 'primary'"><dt>Adscripción</dt><dd>{{affiliationLabel(state.profile.data.affiliationType)}}</dd></div>
+                  <div v-if="state.profile.data.primaryDeptName"><dt>Servicio de origen</dt><dd>{{state.profile.data.primaryDeptName}}</dd></div>
+                </dl>
+              </div>
+              <div v-if="state.profile.data.canBePi || state.profile.data.canBeCoi || state.profile.data.canSuperviseResidents" class="me-v15-readonly-section me-v18-capabilities">
+                <h4>Capacidades reconocidas</h4>
+                <ul class="me-v18-cap-list">
+                  <li v-if="state.profile.data.canBePi"><span class="me-v18-cap-check" aria-hidden="true">✓</span> Puede ser IP</li>
+                  <li v-if="state.profile.data.canBeCoi"><span class="me-v18-cap-check" aria-hidden="true">✓</span> Puede ser Co-IP</li>
+                  <li v-if="state.profile.data.canSuperviseResidents"><span class="me-v18-cap-check" aria-hidden="true">✓</span> Puede supervisar residentes</li>
+                </ul>
+              </div>
+              <div v-if="researchSummary.length" class="me-v15-readonly-section me-v18-research-summary">
+                <h4>Actividad investigadora vinculada</h4>
+                <dl class="me-v15-dl">
+                  <div v-for="item in researchSummary" :key="item.label"><dt>{{item.label}}</dt><dd>{{item.value}}</dd></div>
                 </dl>
               </div>
               <form class="me-v15-edit-section" @submit.prevent="saveProfile">
@@ -546,6 +598,11 @@
                 <div class="me-field"><label for="me-profile-scholar">Google Scholar</label><input id="me-profile-scholar" type="url" v-model="state.profile.edit.scholar_url" maxlength="500" placeholder="https://scholar.google.com/…"></div>
                 <div class="me-field"><label for="me-profile-rg">ResearchGate</label><input id="me-profile-rg" type="url" v-model="state.profile.edit.researchgate_url" maxlength="500" placeholder="https://www.researchgate.net/…"></div>
                 <div class="me-field"><label for="me-profile-pubmed">PubMed query</label><input id="me-profile-pubmed" type="text" v-model="state.profile.edit.pubmed_query" maxlength="500" placeholder="Apellido Nombre[Author]"></div>
+                <h4>Métricas académicas</h4>
+                <div class="me-v18-metrics-row">
+                  <div class="me-field"><label for="me-profile-pubcount">Publicaciones indexadas</label><input id="me-profile-pubcount" type="number" v-model.number="state.profile.edit.indexed_publications_count" min="0" max="9999" step="1" placeholder="—"></div>
+                  <div class="me-field"><label for="me-profile-hindex">Índice h</label><input id="me-profile-hindex" type="number" v-model.number="state.profile.edit.h_index" min="0" max="999" step="1" placeholder="—"></div>
+                </div>
                 <div class="me-field me-field-check"><label><input type="checkbox" v-model="state.profile.edit.is_public"> Visible en la web pública del equipo</label></div>
                 <p v-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
                 <div class="me-form-actions"><button type="submit" class="me-btn-primary" :disabled="state.profile.saving">{{state.profile.saving?'Guardando…':'Guardar cambios'}}</button></div>
