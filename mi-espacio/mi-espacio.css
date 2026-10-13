@@ -648,3 +648,75 @@
  .mi-espacio .me-v20-quick-bar{flex-direction:column}
  .mi-espacio .me-v20-quick-actions{flex-direction:column}
 }
+
+/* ── Phase 21 – Notifications, Calendar, Digest, CV Export ── */
+
+/* Notification bell button */
+.mi-espacio .me-v21-notif-btn{position:relative;padding:8px 10px;font-size:16px;border:1px solid rgba(34,78,88,.12);border-radius:8px;background:#fff;cursor:pointer;line-height:1}
+.mi-espacio .me-v21-notif-btn:hover{background:rgba(34,78,88,.04)}
+.mi-espacio .me-v21-notif-badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#c44;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px;line-height:1}
+
+/* Calendar button */
+.mi-espacio .me-v21-cal-btn{padding:8px 10px;font-size:16px;border:1px solid rgba(34,78,88,.12);border-radius:8px;background:#fff;cursor:pointer;line-height:1}
+.mi-espacio .me-v21-cal-btn:hover{background:rgba(34,78,88,.04)}
+
+/* Notification panel */
+.mi-espacio .me-v21-notifications{background:#fff;border:1px solid rgba(34,78,88,.1);border-radius:12px;padding:16px;margin-top:12px}
+.mi-espacio .me-v21-notif-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.mi-espacio .me-v21-notif-head h3{font-size:16px;margin:0;color:var(--me-ink,#183c49)}
+.mi-espacio .me-v21-notif-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto}
+.mi-espacio .me-v21-notif-item{display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:8px;border:1px solid rgba(34,78,88,.06)}
+.mi-espacio .me-v21-sev-error{background:rgba(204,68,68,.04);border-color:rgba(204,68,68,.12)}
+.mi-espacio .me-v21-sev-warning{background:rgba(232,145,58,.04);border-color:rgba(232,145,58,.12)}
+.mi-espacio .me-v21-sev-success{background:rgba(21,138,137,.04);border-color:rgba(21,138,137,.12)}
+.mi-espacio .me-v21-notif-icon{font-size:14px;flex-shrink:0;margin-top:2px}
+.mi-espacio .me-v21-notif-body{flex:1;min-width:0}
+.mi-espacio .me-v21-notif-body strong{display:block;font-size:13px;color:var(--me-ink,#183c49)}
+.mi-espacio .me-v21-notif-msg{display:block;font-size:12px;color:var(--me-muted,#60747d);margin-top:1px}
+.mi-espacio .me-v21-notif-detail{display:block;font-size:11px;color:var(--me-muted,#60747d);opacity:.75;margin-top:2px}
+
+/* Calendar panel */
+.mi-espacio .me-v21-calendar{background:#fff;border:1px solid rgba(34,78,88,.1);border-radius:12px;padding:16px;margin-top:12px}
+.mi-espacio .me-v21-cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mi-espacio .me-v21-cal-head h3{font-size:16px;margin:0;color:var(--me-ink,#183c49)}
+.mi-espacio .me-v21-cal-nav{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:12px}
+.mi-espacio .me-v21-cal-nav button{border:1px solid rgba(34,78,88,.12);border-radius:6px;background:#fff;padding:4px 10px;cursor:pointer;font-size:13px}
+.mi-espacio .me-v21-cal-nav button:hover{background:rgba(34,78,88,.04)}
+.mi-espacio .me-v21-cal-month{font-size:14px;font-weight:600;color:var(--me-ink,#183c49);min-width:140px;text-align:center}
+.mi-espacio .me-v21-cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;font-weight:600;color:var(--me-muted,#60747d);margin-bottom:4px}
+.mi-espacio .me-v21-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mi-espacio .me-v21-cal-cell{min-height:38px;padding:4px;text-align:center;border-radius:6px;position:relative}
+.mi-espacio .me-v21-cal-empty{background:transparent}
+.mi-espacio .me-v21-cal-today{background:rgba(21,138,137,.06);font-weight:700}
+.mi-espacio .me-v21-cal-day{font-size:12px;color:var(--me-ink,#183c49)}
+.mi-espacio .me-v21-cal-dots{display:flex;gap:3px;justify-content:center;margin-top:2px}
+.mi-espacio .me-v21-cal-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.mi-espacio .me-v21-cal-legend{display:flex;gap:12px;justify-content:center;margin-top:10px;font-size:11px;color:var(--me-muted,#60747d)}
+.mi-espacio .me-v21-legend-item{display:flex;align-items:center;gap:4px}
+
+/* Digest panel */
+.mi-espacio .me-v21-digest{background:#fff;border:1px solid rgba(34,78,88,.1);border-radius:12px;padding:16px;margin-top:12px}
+.mi-espacio .me-v21-digest-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mi-espacio .me-v21-digest-head h3{font-size:16px;margin:0;color:var(--me-ink,#183c49)}
+.mi-espacio .me-v21-digest-tabs{display:flex;gap:4px;margin-bottom:12px}
+.mi-espacio .me-v21-digest-tabs button{font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid rgba(34,78,88,.1);background:#fff;color:var(--me-muted,#60747d);cursor:pointer}
+.mi-espacio .me-v21-digest-tabs button.is-active{background:#158a89;color:#fff;border-color:#158a89}
+.mi-espacio .me-v21-digest-total{text-align:center;padding:12px 0;border-bottom:1px solid rgba(34,78,88,.06);margin-bottom:12px}
+.mi-espacio .me-v21-digest-breakdown{list-style:none;margin:0 0 12px;padding:0}
+.mi-espacio .me-v21-digest-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(34,78,88,.04);font-size:13px}
+.mi-espacio .me-v21-digest-res{color:var(--me-ink,#183c49)}
+.mi-espacio .me-v21-digest-count{font-weight:700;color:#158a89;font-size:14px}
+.mi-espacio .me-v21-digest-section{margin-top:10px}
+.mi-espacio .me-v21-digest-section p{font-size:13px;margin:2px 0;color:var(--me-ink,#183c49)}
+.mi-espacio .me-v21-digest-section small{color:var(--me-muted,#60747d)}
+
+/* Extras bar (digest + CV export) */
+.mi-espacio .me-v21-extras-bar{display:flex;gap:8px;margin-top:8px}
+.mi-espacio .me-v21-extras-btn{flex:1;padding:8px 14px;font-size:13px;font-weight:600;border:1px solid rgba(34,78,88,.1);border-radius:8px;background:#fff;color:var(--me-ink,#183c49);cursor:pointer;text-align:center}
+.mi-espacio .me-v21-extras-btn:hover{background:rgba(34,78,88,.04)}
+.mi-espacio .me-v21-extras-btn:disabled{opacity:.5;cursor:not-allowed}
+
+@media(max-width:640px){
+ .mi-espacio .me-v21-cal-cell{min-height:32px}
+ .mi-espacio .me-v21-extras-bar{flex-direction:column}
+}

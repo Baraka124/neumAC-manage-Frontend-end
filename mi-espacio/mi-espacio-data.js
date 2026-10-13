@@ -392,6 +392,64 @@
     return (Array.isArray(raw) ? raw : []).map(normalizeActivityEntry);
   }
 
+  // ── Phase 21: Notifications, Calendar, Digest ──
+
+  function normalizeNotification(raw) {
+    const n = raw && typeof raw === 'object' ? raw : {};
+    return {
+      id: safe(n.id), type: safe(n.type), severity: safe(n.severity),
+      title: safe(n.title), message: safe(n.message), detail: safe(n.detail),
+      date: safe(n.date), refId: safe(n.refId)
+    };
+  }
+  async function loadNotifications(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/me/notifications', { skipCache: true, timeoutMs: 15000, signal });
+    return (Array.isArray(raw) ? raw : []).map(normalizeNotification);
+  }
+
+  function normalizeCalendarEvent(raw) {
+    const e = raw && typeof raw === 'object' ? raw : {};
+    return {
+      id: safe(e.id), type: safe(e.type), date: safe(e.date),
+      title: safe(e.title), color: safe(e.color), status: safe(e.status)
+    };
+  }
+  async function loadCalendar(request, signal, month) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const q = month ? '?month=' + encodeURIComponent(month) : '';
+    const raw = await request('/api/me/calendar' + q, { skipCache: true, timeoutMs: 15000, signal });
+    const obj = raw && typeof raw === 'object' ? raw : {};
+    return {
+      month: safe(obj.month),
+      events: (Array.isArray(obj.events) ? obj.events : []).map(normalizeCalendarEvent)
+    };
+  }
+
+  function normalizeDigest(raw) {
+    const d = raw && typeof raw === 'object' ? raw : {};
+    return {
+      period: safe(d.period), since: safe(d.since),
+      totalActions: Number(d.totalActions) || 0,
+      byResource: Array.isArray(d.byResource) ? d.byResource.map(r => ({
+        resource: safe(r && r.resource), actions: Number(r && r.actions) || 0,
+        lastAction: safe(r && r.lastAction), lastDate: safe(r && r.lastDate)
+      })) : [],
+      recentCerts: Array.isArray(d.recentCerts) ? d.recentCerts.map(c => ({
+        name: safe(c && c.name), date: safe(c && c.date)
+      })) : [],
+      recentPublications: Array.isArray(d.recentPublications) ? d.recentPublications.map(p => ({
+        title: safe(p && p.title), date: safe(p && p.date)
+      })) : []
+    };
+  }
+  async function loadDigest(request, signal, period) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const q = period ? '?period=' + encodeURIComponent(period) : '';
+    const raw = await request('/api/me/digest' + q, { skipCache: true, timeoutMs: 15000, signal });
+    return normalizeDigest(raw);
+  }
+
   return Object.freeze({
     normalizeContext, loadContext, normalizeActivity, loadActivity, formatDutyShift,
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
@@ -399,6 +457,7 @@
     loadLineOptions, loadPublicationOptions,
     normalizeProfile, loadProfile, updateProfile, updateNotificationPrefs, uploadPhoto, loadMyCertificates,
     normalizeColleague, loadColleagues, normalizeDashboard, loadDashboard,
-    normalizeActivityEntry, loadMyActivity
+    normalizeActivityEntry, loadMyActivity,
+    normalizeNotification, loadNotifications, normalizeCalendarEvent, loadCalendar, normalizeDigest, loadDigest
   });
 });

@@ -83,7 +83,11 @@
           timeline:{busy:false,error:'',entries:[],expanded:false,filter:'all'},
           colleagues:{busy:false,error:'',items:[],search:'',open:false},
           dashboard:{busy:false,error:'',data:null},
-          quickActions:false});
+          quickActions:false,
+          notifications:{busy:false,error:'',items:[],open:false},
+          calendar:{busy:false,error:'',month:'',events:[],open:false},
+          digest:{busy:false,error:'',data:null,period:'week',open:false},
+          cvExport:{busy:false}});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -139,6 +143,10 @@
           Object.assign(state.colleagues,{busy:false,error:'',items:[],search:'',open:false});
           Object.assign(state.dashboard,{busy:false,error:'',data:null});
           state.quickActions=false;
+          Object.assign(state.notifications,{busy:false,error:'',items:[],open:false});
+          Object.assign(state.calendar,{busy:false,error:'',month:'',events:[],open:false});
+          Object.assign(state.digest,{busy:false,error:'',data:null,period:'week',open:false});
+          Object.assign(state.cvExport,{busy:false});
         }
         // ── Phase 15: profile panel ──
         const profileCompleteness=Vue.computed(()=>state.profile.data?.profileCompleteness ?? 0);
@@ -334,6 +342,131 @@
             if(err?.name!=='AbortError') state.dashboard.error=err?.message||'No se han podido cargar las métricas.';
           } finally { if(requestSeq===seq) state.dashboard.busy=false; }
         }
+        // ── Phase 21: Notifications, Calendar, CV Export, Digest ──
+        const notificationBadge=Vue.computed(()=>(state.notifications.items||[]).filter(n=>n.severity==='error'||n.severity==='warning').length);
+
+        async function loadNotifications(requestSeq, identity){
+          state.notifications.busy=true;state.notifications.error='';
+          try {
+            const items=await root.NeumMiEspacioData.loadNotifications((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            state.notifications.items=items;
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(err?.name!=='AbortError') state.notifications.error=err?.message||'Error cargando notificaciones.';
+          } finally { if(requestSeq===seq) state.notifications.busy=false; }
+        }
+
+        function currentMonth(){
+          const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
+        }
+        async function openCalendar(month){
+          const m=month||state.calendar.month||currentMonth();
+          state.calendar.open=true;state.calendar.busy=true;state.calendar.error='';state.calendar.month=m;
+          try {
+            const result=await root.NeumMiEspacioData.loadCalendar((p,o)=>API.request(p,o),controller&&controller.signal,m);
+            state.calendar.events=result.events;
+          } catch(err){
+            if(err?.name!=='AbortError') state.calendar.error=err?.message||'Error cargando calendario.';
+          } finally { state.calendar.busy=false; }
+        }
+        function calendarPrev(){ const [y,m]=state.calendar.month.split('-').map(Number); const pm=m===1?12:m-1; const py=m===1?y-1:y; openCalendar(py+'-'+String(pm).padStart(2,'0')); }
+        function calendarNext(){ const [y,m]=state.calendar.month.split('-').map(Number); const nm=m===12?1:m+1; const ny=m===12?y+1:y; openCalendar(ny+'-'+String(nm).padStart(2,'0')); }
+        const calendarMonthLabel=Vue.computed(()=>{
+          if(!state.calendar.month)return '';
+          const [y,m]=state.calendar.month.split('-').map(Number);
+          const names=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+          return names[m-1]+' '+y;
+        });
+        const calendarDays=Vue.computed(()=>{
+          if(!state.calendar.month)return [];
+          const [y,m]=state.calendar.month.split('-').map(Number);
+          const daysInMonth=new Date(y,m,0).getDate();
+          const firstDow=(new Date(y,m-1,1).getDay()+6)%7; // Mon=0
+          const grid=[];
+          for(let i=0;i<firstDow;i++) grid.push({day:0,date:'',events:[]});
+          for(let d=1;d<=daysInMonth;d++){
+            const ds=state.calendar.month+'-'+String(d).padStart(2,'0');
+            grid.push({day:d,date:ds,events:state.calendar.events.filter(e=>e.date===ds)});
+          }
+          return grid;
+        });
+
+        async function openDigest(period){
+          const p=period||state.digest.period||'week';
+          state.digest.open=true;state.digest.busy=true;state.digest.error='';state.digest.period=p;
+          try {
+            const data=await root.NeumMiEspacioData.loadDigest((p2,o)=>API.request(p2,o),controller&&controller.signal,p);
+            state.digest.data=data;
+          } catch(err){
+            if(err?.name!=='AbortError') state.digest.error=err?.message||'Error cargando resumen.';
+          } finally { state.digest.busy=false; }
+        }
+
+        const RESOURCE_LABELS_DIGEST=Object.freeze({
+          medical_staff:'Perfil',staff_certificates:'Certificados',discrepancy_reports:'Comunicaciones',
+          absence_records:'Ausencias',on_call:'Guardias',rotations:'Rotaciones',
+          research_lines:'Líneas I+D',studies:'Estudios',projects:'Proyectos',publications:'Publicaciones',app_users:'Cuenta'
+        });
+        function digestResourceLabel(r){ return RESOURCE_LABELS_DIGEST[r]||r.replace(/_/g,' '); }
+
+        async function exportCV(){
+          state.cvExport.busy=true;
+          try {
+            const profile=state.profile.data;
+            const activity=state.activity;
+            const certs=state.profile.certificates||[];
+            const dash=state.dashboard.data;
+            let lines=[];
+            lines.push('CURRÍCULUM VITAE');
+            lines.push('═'.repeat(40));
+            if(profile){
+              lines.push('');
+              lines.push('NOMBRE: '+(profile.fullName||''));
+              if(profile.title) lines.push('TÍTULO: '+profile.title);
+              if(profile.specialization) lines.push('ESPECIALIDAD: '+profile.specialization);
+              if(profile.department) lines.push('DEPARTAMENTO: '+profile.department);
+              if(profile.publicBio) { lines.push(''); lines.push('BIOGRAFÍA:'); lines.push(profile.publicBio); }
+              if(profile.orcidId) lines.push('ORCID: '+profile.orcidId);
+              if(profile.scholarUrl) lines.push('Google Scholar: '+profile.scholarUrl);
+              if(profile.researchgateUrl) lines.push('ResearchGate: '+profile.researchgateUrl);
+            }
+            if(dash){
+              lines.push('');lines.push('MÉTRICAS ACTUALES');lines.push('─'.repeat(30));
+              if(dash.activeStudies) lines.push('Estudios activos: '+dash.activeStudies);
+              if(dash.activeProjects) lines.push('Proyectos activos: '+dash.activeProjects);
+              if(dash.publications) lines.push('Publicaciones: '+dash.publications);
+              if(dash.totalCertificates) lines.push('Certificados: '+dash.totalCertificates);
+            }
+            if(activity?.research?.lines?.length){
+              lines.push('');lines.push('LÍNEAS DE INVESTIGACIÓN');lines.push('─'.repeat(30));
+              activity.research.lines.forEach(l=>lines.push('• '+l.name+(l.subArea?' ('+l.subArea+')':'')));
+            }
+            if(activity?.research?.studies?.length){
+              lines.push('');lines.push('ESTUDIOS CLÍNICOS');lines.push('─'.repeat(30));
+              activity.research.studies.forEach(s=>lines.push('• '+s.title+(s.role?' — '+s.role:'')));
+            }
+            if(activity?.research?.publications?.length){
+              lines.push('');lines.push('PUBLICACIONES');lines.push('─'.repeat(30));
+              activity.research.publications.forEach(p=>lines.push('• '+p.title+(p.year?' ('+p.year+')':'')));
+            }
+            if(certs.length){
+              lines.push('');lines.push('CERTIFICACIONES');lines.push('─'.repeat(30));
+              certs.forEach(c=>lines.push('• '+c.name+(c.expiryDate?' — Expira: '+c.expiryDate:'')));
+            }
+            lines.push('');lines.push('Generado desde Mi Espacio — '+new Date().toLocaleDateString('es-ES'));
+            const text=lines.join('\n');
+            const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement('a');
+            a.href=url;a.download='cv-'+(profile?.fullName||'profesional').toLowerCase().replace(/\s+/g,'-')+'.txt';
+            document.body.appendChild(a);a.click();document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          } catch(err){
+            console.error('CV export failed:',err);
+          } finally { state.cvExport.busy=false; }
+        }
+
         // ── Phase 18: research summary from activity data ──
         const researchSummary=Vue.computed(()=>{
           const items=[];
@@ -507,7 +640,7 @@
               (path,options)=>API.request(path,options),identity,controller.signal);
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             state.context=result;
-            if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); loadTimeline(requestSeq, identity); loadDashboardData(requestSeq, identity); }
+            if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); loadTimeline(requestSeq, identity); loadDashboardData(requestSeq, identity); loadNotifications(requestSeq, identity); }
             loadReviewQueue(requestSeq, identity);
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
@@ -624,6 +757,8 @@
           TIMELINE_FILTERS,filteredTimeline,
           quickActionItems,doQuickAction,
           loadColleagues,filteredColleagues,
+          notificationBadge,openCalendar,calendarPrev,calendarNext,calendarMonthLabel,calendarDays,
+          openDigest,digestResourceLabel,exportCV,
           urgentCertificates,certUrgencyLabel,fmtRelative,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
@@ -807,7 +942,9 @@
           </div>
           <div v-if="linked && !state.profile.open" class="me-v20-quick-bar">
             <button type="button" class="me-v20-quick-toggle" @click="state.quickActions=!state.quickActions" :aria-expanded="state.quickActions">Acciones rápidas <span aria-hidden="true">{{state.quickActions?'−':'+'}}</span></button>
-            <button type="button" class="me-v20-directory-btn" @click="loadColleagues">Directorio <span aria-hidden="true">→</span></button>
+            <button type="button" class="me-v21-notif-btn" @click="state.notifications.open=!state.notifications.open" :aria-expanded="state.notifications.open" aria-label="Notificaciones">🔔<span v-if="notificationBadge" class="me-v21-notif-badge">{{notificationBadge}}</span></button>
+            <button type="button" class="me-v20-directory-btn" @click="loadColleagues">Directorio</button>
+            <button type="button" class="me-v21-cal-btn" @click="openCalendar()">📅</button>
           </div>
           <div v-if="state.quickActions && linked" class="me-v20-quick-actions">
             <button v-for="a in quickActionItems" :key="a.id" type="button" class="me-v20-quick-item" @click="doQuickAction(a.id)"><span class="me-v20-quick-icon" aria-hidden="true">{{a.icon}}</span> {{a.label}}</button>
@@ -1008,6 +1145,98 @@
               </li>
             </ul>
           </section>
+
+          <!-- Phase 21: Notification center -->
+          <section v-if="state.notifications.open" class="me-v21-notifications" aria-label="Notificaciones">
+            <div class="me-v21-notif-head">
+              <h3>Notificaciones</h3>
+              <button type="button" class="me-v15-profile-close" @click="state.notifications.open=false" aria-label="Cerrar">✕</button>
+            </div>
+            <p v-if="state.notifications.busy" class="mi-espacio-state" role="status">Cargando notificaciones…</p>
+            <p v-else-if="state.notifications.error" class="me-form-error" role="alert">{{state.notifications.error}}</p>
+            <p v-else-if="!state.notifications.items.length" class="me-v8-quiet">Sin notificaciones pendientes — ¡todo en orden!</p>
+            <ul v-else class="me-v21-notif-list">
+              <li v-for="n in state.notifications.items" :key="n.id" class="me-v21-notif-item" :class="'me-v21-sev-'+n.severity">
+                <span class="me-v21-notif-icon" aria-hidden="true">{{n.severity==='error'?'🔴':n.severity==='warning'?'🟡':n.severity==='success'?'🟢':'🔵'}}</span>
+                <div class="me-v21-notif-body">
+                  <strong>{{n.title}}</strong>
+                  <span class="me-v21-notif-msg">{{n.message}}</span>
+                  <span v-if="n.detail" class="me-v21-notif-detail">{{n.detail}}</span>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Phase 21: Availability calendar -->
+          <section v-if="state.calendar.open" class="me-v21-calendar" aria-label="Calendario de disponibilidad">
+            <div class="me-v21-cal-head">
+              <h3>Calendario</h3>
+              <button type="button" class="me-v15-profile-close" @click="state.calendar.open=false" aria-label="Cerrar">✕</button>
+            </div>
+            <div class="me-v21-cal-nav">
+              <button type="button" @click="calendarPrev" aria-label="Mes anterior">◀</button>
+              <span class="me-v21-cal-month">{{calendarMonthLabel}}</span>
+              <button type="button" @click="calendarNext" aria-label="Mes siguiente">▶</button>
+            </div>
+            <p v-if="state.calendar.busy" class="mi-espacio-state" role="status">Cargando calendario…</p>
+            <p v-else-if="state.calendar.error" class="me-form-error" role="alert">{{state.calendar.error}}</p>
+            <template v-else>
+              <div class="me-v21-cal-weekdays"><span v-for="d in ['L','M','X','J','V','S','D']" :key="d">{{d}}</span></div>
+              <div class="me-v21-cal-grid">
+                <div v-for="(cell,i) in calendarDays" :key="i" class="me-v21-cal-cell" :class="{'me-v21-cal-empty':!cell.day,'me-v21-cal-today':cell.date===new Date().toISOString().slice(0,10)}">
+                  <span v-if="cell.day" class="me-v21-cal-day">{{cell.day}}</span>
+                  <div v-if="cell.events.length" class="me-v21-cal-dots">
+                    <span v-for="ev in cell.events.slice(0,3)" :key="ev.id" class="me-v21-cal-dot" :style="{background:ev.color||'#158a89'}" :title="ev.title"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="me-v21-cal-legend">
+                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#158a89"></span> Guardia</span>
+                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#e8913a"></span> Ausencia</span>
+                <span class="me-v21-legend-item"><span class="me-v21-cal-dot" style="background:#6366f1"></span> Formación</span>
+              </div>
+            </template>
+          </section>
+
+          <!-- Phase 21: Activity digest -->
+          <section v-if="state.digest.open" class="me-v21-digest" aria-label="Resumen de actividad">
+            <div class="me-v21-digest-head">
+              <h3>Resumen de actividad</h3>
+              <button type="button" class="me-v15-profile-close" @click="state.digest.open=false" aria-label="Cerrar">✕</button>
+            </div>
+            <div class="me-v21-digest-tabs">
+              <button type="button" :class="{'is-active':state.digest.period==='week'}" @click="openDigest('week')">Última semana</button>
+              <button type="button" :class="{'is-active':state.digest.period==='month'}" @click="openDigest('month')">Último mes</button>
+            </div>
+            <p v-if="state.digest.busy" class="mi-espacio-state" role="status">Cargando resumen…</p>
+            <p v-else-if="state.digest.error" class="me-form-error" role="alert">{{state.digest.error}}</p>
+            <template v-else-if="state.digest.data">
+              <div class="me-v21-digest-total">
+                <span class="me-v20-stat-value">{{state.digest.data.totalActions}}</span>
+                <span class="me-v20-stat-label">acciones registradas desde {{state.digest.data.since}}</span>
+              </div>
+              <ul v-if="state.digest.data.byResource.length" class="me-v21-digest-breakdown">
+                <li v-for="r in state.digest.data.byResource" :key="r.resource" class="me-v21-digest-row">
+                  <span class="me-v21-digest-res">{{digestResourceLabel(r.resource)}}</span>
+                  <span class="me-v21-digest-count">{{r.actions}}</span>
+                </li>
+              </ul>
+              <div v-if="state.digest.data.recentCerts.length" class="me-v21-digest-section">
+                <p class="mi-espacio-eyebrow">CERTIFICADOS RECIENTES</p>
+                <p v-for="c in state.digest.data.recentCerts" :key="c.name">{{c.name}} <small>({{c.date}})</small></p>
+              </div>
+              <div v-if="state.digest.data.recentPublications.length" class="me-v21-digest-section">
+                <p class="mi-espacio-eyebrow">PUBLICACIONES RECIENTES</p>
+                <p v-for="p in state.digest.data.recentPublications" :key="p.title">{{p.title}} <small>({{p.date}})</small></p>
+              </div>
+            </template>
+          </section>
+
+          <!-- Phase 21: Quick bar — digest + CV export -->
+          <div v-if="linked && !state.profile.open" class="me-v21-extras-bar">
+            <button type="button" class="me-v21-extras-btn" @click="openDigest()">📊 Resumen</button>
+            <button type="button" class="me-v21-extras-btn" @click="exportCV()" :disabled="state.cvExport.busy">{{state.cvExport.busy?'Exportando…':'📄 Exportar CV'}}</button>
+          </div>
         </template>
       </section>`
     };
