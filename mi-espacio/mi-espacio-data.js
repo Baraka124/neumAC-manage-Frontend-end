@@ -64,7 +64,7 @@
       start: safe(r && r.start), end: safe(r && r.end), status: safe(r && r.status), role: safe(r && r.role)
     }));
     const absences = arr(agenda.absences).map(a => ({
-      id: id(a && a.id), type: safe(a && a.type), start: safe(a && a.start), end: safe(a && a.end), status: safe(a && a.status)
+      id: id(a && a.id), type: safe(a && a.type), reason: safe(a && a.reason), start: safe(a && a.start), end: safe(a && a.end), status: safe(a && a.status), days: num(a && a.days)
     }));
     const lines = arr(research.lines).map(l => ({
       id: id(l && l.id), number: num(l && l.line_number), name: safe(l && l.name), role: safe(l && l.role)
@@ -273,7 +273,10 @@
       hIndex: num(d.h_index),
       department: d.department && typeof d.department === 'object'
         ? { id: id(d.department.id), name: safe(d.department.name) } : null,
-      profileCompleteness: num(d.profile_completeness) ?? 0
+      profileCompleteness: num(d.profile_completeness) ?? 0,
+      notificationPrefs: d.notification_prefs && typeof d.notification_prefs === 'object'
+        ? { notificationsEnabled: d.notification_prefs.notifications_enabled !== false, absenceNotifications: d.notification_prefs.absence_notifications !== false, announcementNotifications: d.notification_prefs.announcement_notifications !== false }
+        : { notificationsEnabled: true, absenceNotifications: true, announcementNotifications: true }
     };
   }
 
@@ -296,6 +299,11 @@
     const form = new FormData();
     form.append('file', file);
     return request('/api/me/photo', { method: 'POST', body: form, raw: true, timeoutMs: 30000, signal });
+  }
+
+  async function updateNotificationPrefs(request, prefs, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    return request('/api/users/profile', { method: 'PUT', body: prefs, timeoutMs: 15000, signal });
   }
 
   async function loadMyCertificates(request, signal) {
@@ -352,7 +360,7 @@
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
     normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport, reviewOutcome,
     loadLineOptions, loadPublicationOptions,
-    normalizeProfile, loadProfile, updateProfile, uploadPhoto, loadMyCertificates,
+    normalizeProfile, loadProfile, updateProfile, updateNotificationPrefs, uploadPhoto, loadMyCertificates,
     normalizeActivityEntry, loadMyActivity
   });
 });

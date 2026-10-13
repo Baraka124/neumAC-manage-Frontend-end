@@ -28,8 +28,17 @@
     primary:'Adscripción primaria', secondary:'Adscripción secundaria',
     external:'Personal externo', visiting:'Visitante'
   });
+  const ABSENCE_REASON = Object.freeze({
+    vacation:'Vacaciones', conference:'Congreso/Conferencia', sick_leave:'Baja médica',
+    training:'Formación', personal:'Personal', other:'Otro'
+  });
+  const ABSENCE_STATUS = Object.freeze({
+    pending:'Pendiente', active:'En curso', approved:'Aprobada'
+  });
   function employmentLabel(v){return EMPLOYMENT_STATUS[v]||v||'';}
   function affiliationLabel(v){return AFFILIATION_TYPE[v]||v||'';}
+  function absenceReasonLabel(v){return ABSENCE_REASON[v]||v||'';}
+  function absenceStatusLabel(v){return ABSENCE_STATUS[v]||v||'';}
 
   function professionalType(value) {
     const key=String(value||'').trim();
@@ -199,6 +208,39 @@
             if(event?.target) event.target.value='';
           }
         }
+        // ── Phase 19: notification preferences ──
+        async function toggleNotifPref(key){
+          if(!state.profile.data) return;
+          const prefs=state.profile.data.notificationPrefs;
+          const newVal=!prefs[key];
+          prefs[key]=newVal;
+          const apiKey=key==='notificationsEnabled'?'notifications_enabled':key==='absenceNotifications'?'absence_notifications':'announcement_notifications';
+          try { await root.NeumMiEspacioData.updateNotificationPrefs((p,o)=>API.request(p,o),{[apiKey]:newVal},controller&&controller.signal); }
+          catch(err){ prefs[key]=!newVal; }
+        }
+        // ── Phase 19: IP/leadership roles from research data ──
+        const leadershipRoles=Vue.computed(()=>{
+          const roles=[];
+          const a=state.activity;
+          if(!a)return roles;
+          (a.research?.studies||[]).forEach(s=>{
+            if(s.role==='PI') roles.push({type:'study',label:'IP',name:s.title});
+            else if(s.role==='co-investigator') roles.push({type:'study',label:'Co-IP',name:s.title});
+          });
+          (a.research?.projects||[]).forEach(p=>{
+            if(p.role==='lead') roles.push({type:'project',label:'Responsable',name:p.title});
+          });
+          (a.research?.lines||[]).forEach(l=>{
+            if(l.role==='coordinator') roles.push({type:'line',label:'Coordinador/a',name:l.name});
+          });
+          return roles;
+        });
+        // ── Phase 19: public profile preview ──
+        const publicPreview=Vue.computed(()=>{
+          const d=state.profile.data;
+          if(!d) return null;
+          return {name:d.fullName,title:d.title,department:d.department?.name,specialization:d.specialization,bio:d.publicBio,orcid:d.orcidId,scholar:d.scholarUrl,researchgate:d.researchgateUrl,photo:d.publicPhotoUrl};
+        });
         // ── Phase 18: research summary from activity data ──
         const researchSummary=Vue.computed(()=>{
           const items=[];
@@ -483,7 +525,8 @@
           state,linked,initials,can,refresh:load,selectedDuty,
           professionalDesignation,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
-          researchSummary,employmentLabel,affiliationLabel,
+          researchSummary,employmentLabel,affiliationLabel,absenceReasonLabel,absenceStatusLabel,
+          toggleNotifPref,leadershipRoles,publicPreview,
           urgentCertificates,certUrgencyLabel,fmtRelative,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
@@ -509,10 +552,10 @@
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
         <template v-else-if="state.context">
           <div v-if="state.context.testSession" class="mi-espacio-notice" role="status">Sesión de prueba. Verifica la identidad de esta cuenta.</div>
-          <section class="mi-espacio-person me-v9-identity me-v15-identity" aria-label="Identidad institucional verificada">
-            <button type="button" class="me-v15-avatar-btn" :class="{'has-photo':profilePhotoUrl}" @click="linked && openProfile()" :aria-label="linked?'Ver y editar mi perfil':''" :disabled="!linked">
-              <img v-if="profilePhotoUrl" :src="profilePhotoUrl" alt="" class="me-v15-avatar-img">
-              <span v-else class="mi-espacio-avatar" aria-hidden="true">{{initials}}</span>
+          <section class="mi-espacio-person me-v9-identity me-v15-identity me-v19-identity" aria-label="Identidad institucional verificada">
+            <button type="button" class="me-v15-avatar-btn me-v19-avatar-btn" :class="{'has-photo':profilePhotoUrl}" @click="linked && openProfile()" :aria-label="linked?'Ver y editar mi perfil':''" :disabled="!linked">
+              <img v-if="profilePhotoUrl" :src="profilePhotoUrl" alt="" class="me-v15-avatar-img me-v19-avatar-img">
+              <span v-else class="mi-espacio-avatar me-v19-avatar" aria-hidden="true">{{initials}}</span>
             </button>
             <div class="mi-espacio-person-main">
               <div class="me-v9-name-line">
@@ -538,12 +581,14 @@
                 <div class="me-v15-completeness-bar"><div class="me-v15-completeness-fill" :style="{width:profileCompleteness+'%'}"></div></div>
                 <span class="me-v15-completeness-label">{{profileCompleteness}}% completo</span>
               </div>
-              <div class="me-v15-photo-section">
-                <div class="me-v15-photo-preview">
+              <div class="me-v15-photo-section me-v19-photo-section">
+                <div class="me-v15-photo-preview me-v19-photo-preview">
                   <img v-if="state.profile.data.publicPhotoUrl" :src="state.profile.data.publicPhotoUrl" alt="Foto de perfil" class="me-v15-photo-img">
-                  <span v-else class="me-v15-photo-placeholder">{{initials}}</span>
+                  <span v-else class="me-v15-photo-placeholder me-v19-photo-placeholder">{{initials}}</span>
                 </div>
                 <div class="me-v15-photo-actions">
+                  <strong class="me-v19-photo-name">{{state.profile.data.fullName}}</strong>
+                  <span v-if="state.profile.data.title" class="me-v19-photo-title">{{state.profile.data.title}}</span>
                   <label class="me-v15-photo-upload-label" :class="{disabled:state.profile.photoUploading}">
                     {{state.profile.photoUploading?'Subiendo…':'Cambiar foto'}}
                     <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="me-v15-photo-input" @change="onPhotoSelect" :disabled="state.profile.photoUploading">
@@ -588,6 +633,12 @@
                   <div v-for="item in researchSummary" :key="item.label"><dt>{{item.label}}</dt><dd>{{item.value}}</dd></div>
                 </dl>
               </div>
+              <div v-if="leadershipRoles.length" class="me-v15-readonly-section me-v19-leadership">
+                <h4>Roles de liderazgo activos</h4>
+                <ul class="me-v19-leadership-list">
+                  <li v-for="(r,i) in leadershipRoles" :key="i"><span class="me-v19-role-badge">{{r.label}}</span> <span class="me-v19-role-name">{{r.name}}</span></li>
+                </ul>
+              </div>
               <form class="me-v15-edit-section" @submit.prevent="saveProfile">
                 <h4>Datos editables</h4>
                 <div class="me-field"><label for="me-profile-email">Correo profesional</label><input id="me-profile-email" type="email" v-model="state.profile.edit.professional_email" maxlength="255"></div>
@@ -614,6 +665,32 @@
                   <span v-if="c.urgency==='expired'" class="me-v16-cert-badge me-v16-cert-badge--expired">Caducado</span>
                   <span v-else-if="c.urgency==='expiring_soon'" class="me-v16-cert-badge me-v16-cert-badge--expiring">{{certUrgencyLabel(c)}}</span>
                 </li></ul>
+              </div>
+              <div v-if="state.profile.data.notificationPrefs" class="me-v15-readonly-section me-v19-notif-prefs">
+                <h4>Preferencias de notificación</h4>
+                <div class="me-v19-toggle-group">
+                  <label class="me-v19-toggle"><input type="checkbox" :checked="state.profile.data.notificationPrefs.notificationsEnabled" @change="toggleNotifPref('notificationsEnabled')"><span class="me-v19-toggle-label">Notificaciones generales</span></label>
+                  <label class="me-v19-toggle"><input type="checkbox" :checked="state.profile.data.notificationPrefs.absenceNotifications" @change="toggleNotifPref('absenceNotifications')"><span class="me-v19-toggle-label">Avisos de ausencias</span></label>
+                  <label class="me-v19-toggle"><input type="checkbox" :checked="state.profile.data.notificationPrefs.announcementNotifications" @change="toggleNotifPref('announcementNotifications')"><span class="me-v19-toggle-label">Comunicaciones y anuncios</span></label>
+                </div>
+              </div>
+              <div v-if="state.profile.edit && state.profile.edit.is_public && publicPreview" class="me-v19-public-preview">
+                <h4>Vista previa pública</h4>
+                <p class="me-v19-preview-hint">Así se verá tu perfil para otros miembros del equipo.</p>
+                <div class="me-v19-preview-card">
+                  <div class="me-v19-preview-header">
+                    <div v-if="publicPreview.photo" class="me-v19-preview-photo"><img :src="publicPreview.photo" alt=""></div>
+                    <span v-else class="me-v19-preview-initials">{{initials}}</span>
+                    <div><strong>{{publicPreview.name}}</strong><span v-if="publicPreview.title" class="me-v19-preview-title">{{publicPreview.title}}</span></div>
+                  </div>
+                  <p v-if="publicPreview.department || publicPreview.specialization" class="me-v19-preview-dept">{{[publicPreview.department,publicPreview.specialization].filter(Boolean).join(' · ')}}</p>
+                  <p v-if="publicPreview.bio" class="me-v19-preview-bio">{{publicPreview.bio}}</p>
+                  <div v-if="publicPreview.orcid || publicPreview.scholar || publicPreview.researchgate" class="me-v19-preview-links">
+                    <span v-if="publicPreview.orcid">ORCID</span>
+                    <span v-if="publicPreview.scholar">Scholar</span>
+                    <span v-if="publicPreview.researchgate">ResearchGate</span>
+                  </div>
+                </div>
               </div>
             </template>
           </section>
@@ -661,7 +738,7 @@
                       <h4>Rotaciones que superviso</h4><ul><li v-for="r in supervisedRotations.slice(state.activity.agenda.guardias.length||personalRotations.length?0:1)" :key="r.id">{{r.resident||r.unit||'Rotación supervisada'}} <small>{{r.resident&&r.unit?r.unit+' · ':''}}{{fmtPeriod(r.start,r.end)}}</small></li></ul>
                     </div>
                     <div v-if="otherRotations.length"><h4>Otras rotaciones vinculadas</h4><ul><li v-for="r in otherRotations" :key="r.id">{{r.unit||r.resident||'Rotación'}} <small>{{fmtPeriod(r.start,r.end)}}</small></li></ul></div>
-                    <div v-if="state.activity.agenda.absences.length"><h4>Ausencias</h4><ul><li v-for="a in state.activity.agenda.absences" :key="a.id">{{a.type||'Ausencia'}} <small>{{fmtPeriod(a.start,a.end)}}</small></li></ul></div>
+                    <div v-if="state.activity.agenda.absences.length"><h4>Ausencias</h4><ul class="me-v19-absence-list"><li v-for="a in state.activity.agenda.absences" :key="a.id" class="me-v19-absence-item"><span class="me-v19-absence-reason">{{absenceReasonLabel(a.reason)||a.type||'Ausencia'}}</span><span class="me-v19-absence-dates">{{fmtPeriod(a.start,a.end)}}<template v-if="a.days"> · {{a.days}} día{{a.days!==1?'s':''}}</template></span><span class="me-chip me-v19-absence-status" :data-tone="a.status">{{absenceStatusLabel(a.status)}}</span></li></ul></div>
                   </div>
                 </section>
                 <section v-if="hasResearch" class="me-v8-column me-v8-research me-v9-panel" aria-labelledby="me-v9-research-title">
