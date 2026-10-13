@@ -228,10 +228,89 @@
     return rows(raw).map(p => ({ id: id(p && p.id), label: safe(p && p.title) })).filter(o => o.id && o.label);
   }
 
+  // ── Phase 15: self-service profile — read the full staff record, update
+  // editable fields, and upload a profile photo. All scoped to /api/me/*,
+  // never touches another person's record. ──
+  function normalizeProfile(raw) {
+    const d = raw && typeof raw === 'object' ? raw : {};
+    return {
+      id: id(d.id),
+      fullName: safe(d.full_name),
+      title: safe(d.title),
+      gender: safe(d.gender),
+      staffType: safe(d.staff_type),
+      specialization: safe(d.specialization),
+      professionalEmail: safe(d.professional_email),
+      mobilePhone: safe(d.mobile_phone),
+      workPhone: safe(d.work_phone),
+      officePhone: safe(d.office_phone),
+      publicBio: safe(d.public_bio),
+      publicPhotoUrl: safe(d.public_photo_url),
+      isPublic: !!d.is_public,
+      orcidId: safe(d.orcid_id),
+      scholarUrl: safe(d.scholar_url),
+      researchgateUrl: safe(d.researchgate_url),
+      pubmedQuery: safe(d.pubmed_query),
+      affiliationType: safe(d.affiliation_type),
+      primaryDeptName: safe(d.primary_dept_name),
+      academicDegree: safe(d.academic_degree),
+      hasPhd: !!d.has_phd,
+      phdField: safe(d.phd_field),
+      employmentStatus: safe(d.employment_status),
+      trainingYear: safe(d.training_year),
+      trainingLevel: safe(d.training_level),
+      residencyStartDate: safe(d.residency_start_date),
+      residentCategory: safe(d.resident_category),
+      residentType: safe(d.resident_type),
+      hasMedicalLicense: !!d.has_medical_license,
+      medicalLicense: safe(d.medical_license),
+      canBePi: !!d.can_be_pi,
+      canBeCoi: !!d.can_be_coi,
+      canSuperviseResidents: !!d.can_supervise_residents,
+      yearsExperience: num(d.years_experience),
+      primaryClinic: safe(d.primary_clinic),
+      department: d.department && typeof d.department === 'object'
+        ? { id: id(d.department.id), name: safe(d.department.name) } : null,
+      profileCompleteness: num(d.profile_completeness) ?? 0
+    };
+  }
+
+  async function loadProfile(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/me/profile', { skipCache: true, timeoutMs: 15000, signal });
+    return normalizeProfile(raw);
+  }
+
+  async function updateProfile(request, fields, staffId, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    if (!id(staffId)) throw new Error('No staff profile linked.');
+    return request('/api/medical-staff/' + encodeURIComponent(staffId), {
+      method: 'PUT', body: fields, timeoutMs: 15000, signal
+    });
+  }
+
+  async function uploadPhoto(request, file, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const form = new FormData();
+    form.append('file', file);
+    return request('/api/me/photo', { method: 'POST', body: form, raw: true, timeoutMs: 30000, signal });
+  }
+
+  async function loadMyCertificates(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/me/certificates', { skipCache: true, timeoutMs: 15000, signal });
+    return (Array.isArray(raw) ? raw : []).map(c => ({
+      id: id(c.id), name: safe(c.certificate_name),
+      issuedDate: safe(c.issued_date), expiryDate: safe(c.expiry_date),
+      renewalMonths: num(c.renewal_months), notes: safe(c.notes)
+    }));
+  }
+
   return Object.freeze({
     normalizeContext, loadContext, normalizeActivity, loadActivity, formatDutyShift,
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
     normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport, reviewOutcome,
-    loadLineOptions, loadPublicationOptions
+    loadLineOptions, loadPublicationOptions,
+    normalizeProfile, loadProfile, updateProfile, uploadPhoto, loadMyCertificates
   });
 });
