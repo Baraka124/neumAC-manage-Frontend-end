@@ -68,6 +68,16 @@ for(const [name,scenario] of Object.entries(cases)){
       expect(Math.abs(measurements.publications-measurements.communications)).toBeLessThanOrEqual(2);
     }
    }
+   const context=page.locator('.me-v12c-context');
+   const categories=['guardias','rotaciones','supervisiones','estudios','proyectos','líneas de investigación','publicaciones'];
+   const nonempty=(a.agenda.guardias.length?1:0)+(a.agenda.rotations.filter(r=>r.role==='resident').length?1:0)+(a.agenda.rotations.filter(r=>r.role==='supervisor').length?1:0)+(a.research.studies.length?1:0)+(a.research.projects.length?1:0)+(a.research.lines.length?1:0)+(a.publications.items.length?1:0);
+   if(nonempty===0)await expect(context).toHaveCount(0);
+   else {
+     await expect(context).toBeVisible();
+     const txt=await context.innerText();
+     if(nonempty>3)expect(txt).toContain((nonempty-3)+' áreas más');
+     else expect(txt).not.toContain('áreas más');
+   }
    if(name==='head'){
     await expect(page.locator('.me-v8-research-groups li')).toHaveCount(5);
     await page.getByRole('button',{name:/Ver toda mi investigación/}).click();
