@@ -58,7 +58,8 @@
         const state=Vue.reactive({busy:false,error:'',context:null,activityBusy:false,activityError:'',activity:null,dutyMode:'overview',dutyIndex:null,researchGroup:'lines',researchIndex:null,publicationIndex:null,toolsOpen:false,researchExpanded:false,publicationsExpanded:false,
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
-          review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}}});
+          review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}},
+          profile:{open:false,busy:false,saving:false,error:'',data:null,edit:null,photoUploading:false,certificates:[],certBusy:false}});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -109,6 +110,78 @@
           Object.assign(state.report,{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''});
           Object.assign(state.picker,{busy:false,items:[],forType:''});
           Object.assign(state.review,{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}});
+          Object.assign(state.profile,{open:false,busy:false,saving:false,error:'',data:null,edit:null,photoUploading:false,certificates:[],certBusy:false});
+        }
+        // ── Phase 15: profile panel ──
+        const profileCompleteness=Vue.computed(()=>state.profile.data?.profileCompleteness ?? 0);
+        const profilePhotoUrl=Vue.computed(()=>state.profile.data?.publicPhotoUrl || '');
+        async function openProfile(){
+          if(state.profile.open && state.profile.data) return;
+          state.profile.open=true;state.profile.busy=true;state.profile.error='';
+          const requestSeq=seq, identity=String(props.user?.id||'');
+          try {
+            const [profile, certs]=await Promise.all([
+              root.NeumMiEspacioData.loadProfile((p,o)=>API.request(p,o),controller&&controller.signal),
+              root.NeumMiEspacioData.loadMyCertificates((p,o)=>API.request(p,o),controller&&controller.signal)
+            ]);
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            state.profile.data=profile;
+            state.profile.certificates=certs;
+            state.profile.edit={
+              professional_email:profile.professionalEmail,
+              mobile_phone:profile.mobilePhone,
+              public_bio:profile.publicBio,
+              orcid_id:profile.orcidId,
+              scholar_url:profile.scholarUrl,
+              researchgate_url:profile.researchgateUrl,
+              pubmed_query:profile.pubmedQuery,
+              is_public:profile.isPublic
+            };
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(err?.name!=='AbortError') state.profile.error=err?.message||'No se ha podido cargar tu perfil.';
+          } finally { if(requestSeq===seq) state.profile.busy=false; }
+        }
+        function closeProfile(){ state.profile.open=false; }
+        async function saveProfile(){
+          if(!state.profile.edit || !state.profile.data?.id) return;
+          state.profile.saving=true;state.profile.error='';
+          const requestSeq=seq, identity=String(props.user?.id||'');
+          try {
+            await root.NeumMiEspacioData.updateProfile(
+              (p,o)=>API.request(p,o), state.profile.edit, state.profile.data.id, controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            // Reload profile to get fresh data
+            const profile=await root.NeumMiEspacioData.loadProfile((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            state.profile.data=profile;
+            state.profile.edit={
+              professional_email:profile.professionalEmail,mobile_phone:profile.mobilePhone,
+              public_bio:profile.publicBio,orcid_id:profile.orcidId,scholar_url:profile.scholarUrl,
+              researchgate_url:profile.researchgateUrl,pubmed_query:profile.pubmedQuery,is_public:profile.isPublic
+            };
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(err?.name!=='AbortError') state.profile.error=err?.message||'No se ha podido guardar.';
+          } finally { if(requestSeq===seq) state.profile.saving=false; }
+        }
+        async function onPhotoSelect(event){
+          const file=event?.target?.files?.[0];
+          if(!file) return;
+          state.profile.photoUploading=true;state.profile.error='';
+          const requestSeq=seq, identity=String(props.user?.id||'');
+          try {
+            const result=await root.NeumMiEspacioData.uploadPhoto(
+              (p,o)=>API.request(p,o), file, controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(result?.url && state.profile.data) state.profile.data.publicPhotoUrl=result.url;
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id||'')!==identity)return;
+            if(err?.name!=='AbortError') state.profile.error=err?.message||'No se ha podido subir la foto.';
+          } finally {
+            if(requestSeq===seq) state.profile.photoUploading=false;
+            if(event?.target) event.target.value='';
+          }
         }
         async function loadReports(requestSeq, identity){
           try {
@@ -346,6 +419,7 @@
         return {
           state,linked,initials,can,refresh:load,selectedDuty,
           professionalDesignation,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
+          profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
@@ -370,8 +444,11 @@
         <div v-else-if="state.error" class="mi-espacio-notice" role="alert">{{state.error}} <button type="button" @click="refresh">Reintentar</button></div>
         <template v-else-if="state.context">
           <div v-if="state.context.testSession" class="mi-espacio-notice" role="status">Sesión de prueba. Verifica la identidad de esta cuenta.</div>
-          <section class="mi-espacio-person me-v9-identity" aria-label="Identidad institucional verificada">
-            <span class="mi-espacio-avatar" aria-hidden="true">{{initials}}</span>
+          <section class="mi-espacio-person me-v9-identity me-v15-identity" aria-label="Identidad institucional verificada">
+            <button type="button" class="me-v15-avatar-btn" :class="{'has-photo':profilePhotoUrl}" @click="linked && openProfile()" :aria-label="linked?'Ver y editar mi perfil':''" :disabled="!linked">
+              <img v-if="profilePhotoUrl" :src="profilePhotoUrl" alt="" class="me-v15-avatar-img">
+              <span v-else class="mi-espacio-avatar" aria-hidden="true">{{initials}}</span>
+            </button>
             <div class="mi-espacio-person-main">
               <div class="me-v9-name-line">
                 <h3>{{state.context.staff?.name || state.context.account.name}}</h3>
@@ -380,8 +457,66 @@
               <p>{{professionalDesignation}}</p>
               <p class="mi-espacio-person-email">{{state.context.staff?.professionalEmail || state.context.account.email}}</p>
               <p v-if="state.activity && personalContext.length" class="me-v12c-context" aria-label="Actividad profesional vinculada">{{personalContextPreview.join(' · ')}}<template v-if="personalContextRemaining"> · {{personalContextRemaining}} áreas más</template></p>
+              <button v-if="linked && !state.profile.open" type="button" class="me-v15-profile-link" @click="openProfile">Mi perfil completo <span aria-hidden="true">→</span></button>
             </div>
             <button type="button" class="mi-espacio-refresh me-v9-refresh" :disabled="state.busy" @click="refresh">Actualizar</button>
+          </section>
+          <section v-if="state.profile.open && linked" class="me-v15-profile-panel" aria-label="Mi perfil profesional">
+            <div class="me-v15-profile-head">
+              <h3>Mi perfil</h3>
+              <button type="button" class="me-v15-profile-close" @click="closeProfile" aria-label="Cerrar perfil">✕</button>
+            </div>
+            <p v-if="state.profile.busy" class="mi-espacio-state" role="status">Cargando perfil…</p>
+            <p v-else-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
+            <template v-else-if="state.profile.data && state.profile.edit">
+              <div class="me-v15-completeness" role="meter" :aria-valuenow="profileCompleteness" aria-valuemin="0" aria-valuemax="100" :aria-label="'Perfil completo al '+profileCompleteness+'%'">
+                <div class="me-v15-completeness-bar"><div class="me-v15-completeness-fill" :style="{width:profileCompleteness+'%'}"></div></div>
+                <span class="me-v15-completeness-label">{{profileCompleteness}}% completo</span>
+              </div>
+              <div class="me-v15-photo-section">
+                <div class="me-v15-photo-preview">
+                  <img v-if="state.profile.data.publicPhotoUrl" :src="state.profile.data.publicPhotoUrl" alt="Foto de perfil" class="me-v15-photo-img">
+                  <span v-else class="me-v15-photo-placeholder">{{initials}}</span>
+                </div>
+                <div class="me-v15-photo-actions">
+                  <label class="me-v15-photo-upload-label" :class="{disabled:state.profile.photoUploading}">
+                    {{state.profile.photoUploading?'Subiendo…':'Cambiar foto'}}
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="me-v15-photo-input" @change="onPhotoSelect" :disabled="state.profile.photoUploading">
+                  </label>
+                  <small>JPEG, PNG, WEBP o GIF. Máx. 8 MB.</small>
+                </div>
+              </div>
+              <div class="me-v15-readonly-section">
+                <h4>Datos institucionales</h4>
+                <dl class="me-v15-dl">
+                  <div><dt>Nombre</dt><dd>{{state.profile.data.fullName}}</dd></div>
+                  <div v-if="state.profile.data.title"><dt>Título</dt><dd>{{state.profile.data.title}}</dd></div>
+                  <div><dt>Categoría</dt><dd>{{professionalDesignation}}</dd></div>
+                  <div v-if="state.profile.data.department"><dt>Departamento</dt><dd>{{state.profile.data.department.name}}</dd></div>
+                  <div v-if="state.profile.data.trainingYear"><dt>Año formativo</dt><dd>{{state.profile.data.trainingYear}}</dd></div>
+                  <div v-if="state.profile.data.academicDegree"><dt>Titulación</dt><dd>{{state.profile.data.academicDegree}}</dd></div>
+                  <div v-if="state.profile.data.hasPhd"><dt>Doctorado</dt><dd>{{state.profile.data.phdField || 'Sí'}}</dd></div>
+                </dl>
+              </div>
+              <form class="me-v15-edit-section" @submit.prevent="saveProfile">
+                <h4>Datos editables</h4>
+                <div class="me-field"><label for="me-profile-email">Correo profesional</label><input id="me-profile-email" type="email" v-model="state.profile.edit.professional_email" maxlength="255"></div>
+                <div class="me-field"><label for="me-profile-phone">Teléfono móvil</label><input id="me-profile-phone" type="tel" v-model="state.profile.edit.mobile_phone" maxlength="40"></div>
+                <div class="me-field me-field-wide"><label for="me-profile-bio">Biografía pública</label><textarea id="me-profile-bio" v-model="state.profile.edit.public_bio" rows="3" maxlength="2000" placeholder="Presentación profesional breve."></textarea></div>
+                <h4>Perfil de investigación</h4>
+                <div class="me-field"><label for="me-profile-orcid">ORCID</label><input id="me-profile-orcid" type="text" v-model="state.profile.edit.orcid_id" maxlength="40" placeholder="0000-0000-0000-0000"></div>
+                <div class="me-field"><label for="me-profile-scholar">Google Scholar</label><input id="me-profile-scholar" type="url" v-model="state.profile.edit.scholar_url" maxlength="500" placeholder="https://scholar.google.com/…"></div>
+                <div class="me-field"><label for="me-profile-rg">ResearchGate</label><input id="me-profile-rg" type="url" v-model="state.profile.edit.researchgate_url" maxlength="500" placeholder="https://www.researchgate.net/…"></div>
+                <div class="me-field"><label for="me-profile-pubmed">PubMed query</label><input id="me-profile-pubmed" type="text" v-model="state.profile.edit.pubmed_query" maxlength="500" placeholder="Apellido Nombre[Author]"></div>
+                <div class="me-field me-field-check"><label><input type="checkbox" v-model="state.profile.edit.is_public"> Visible en la web pública del equipo</label></div>
+                <p v-if="state.profile.error" class="me-form-error" role="alert">{{state.profile.error}}</p>
+                <div class="me-form-actions"><button type="submit" class="me-btn-primary" :disabled="state.profile.saving">{{state.profile.saving?'Guardando…':'Guardar cambios'}}</button></div>
+              </form>
+              <div v-if="state.profile.certificates.length" class="me-v15-certificates">
+                <h4>Mis certificados</h4>
+                <ul class="me-list"><li v-for="c in state.profile.certificates" :key="c.id"><span class="me-item-main">{{c.name}}<small v-if="c.expiryDate"> · Caduca: {{fmtDate(c.expiryDate)}}</small></span></li></ul>
+              </div>
+            </template>
           </section>
           <div v-if="!linked" class="mi-espacio-notice" role="status">La actividad personal no se muestra hasta verificar la vinculación de esta cuenta con una ficha profesional. Contacta con la persona responsable de accesos.</div>
           <template v-if="linked">
