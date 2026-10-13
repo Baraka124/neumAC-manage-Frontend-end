@@ -269,6 +269,8 @@
       canSuperviseResidents: !!d.can_supervise_residents,
       yearsExperience: num(d.years_experience),
       primaryClinic: safe(d.primary_clinic),
+      indexedPublicationsCount: num(d.indexed_publications_count),
+      hIndex: num(d.h_index),
       department: d.department && typeof d.department === 'object'
         ? { id: id(d.department.id), name: safe(d.department.name) } : null,
       profileCompleteness: num(d.profile_completeness) ?? 0
