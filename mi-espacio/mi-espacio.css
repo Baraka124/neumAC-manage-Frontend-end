@@ -478,3 +478,40 @@
  .mi-espacio .me-v15-dl>div{flex-direction:column;gap:2px}
  .mi-espacio .me-v15-dl dt{min-width:0}
 }
+
+/* Phase 16 — certificate expiry alerts and personal activity timeline.
+   Purely additive — all selectors scoped under .mi-espacio, no overrides of existing classes. */
+
+/* Certificate urgency badges */
+.mi-espacio .me-v16-cert-item{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mi-espacio .me-v16-cert-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0}
+.mi-espacio .me-v16-cert-badge--expired{background:#fde8e8;color:#9b1c1c}
+.mi-espacio .me-v16-cert-badge--expiring{background:#fff3cd;color:#856404}
+.mi-espacio .me-v16-cert-expired{border-left:3px solid #e53e3e}
+.mi-espacio .me-v16-cert-expiring{border-left:3px solid #d69e2e}
+
+/* Certificate alert banner on dashboard */
+.mi-espacio .me-v16-cert-alert{background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:16px 20px;margin:0 0 12px}
+.mi-espacio .me-v16-cert-alert-list{list-style:none;margin:8px 0;padding:0}
+.mi-espacio .me-v16-cert-alert-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;padding:6px 0;border-bottom:1px solid rgba(253,230,138,.5)}
+.mi-espacio .me-v16-cert-alert-list li:last-child{border-bottom:0}
+.mi-espacio .me-v16-cert-alert-list .me-v16-cert-expired{color:#9b1c1c}
+.mi-espacio .me-v16-cert-alert-list .me-v16-cert-expired strong{color:#9b1c1c}
+.mi-espacio .me-v16-cert-alert-list .me-v16-cert-expiring span{color:#856404;font-weight:600}
+
+/* Activity timeline */
+.mi-espacio .me-v16-timeline{margin:0 0 12px}
+.mi-espacio .me-v16-timeline-list{list-style:none;margin:8px 0 0;padding:0}
+.mi-espacio .me-v16-timeline-entry{display:flex;align-items:baseline;gap:8px;font-size:14px;padding:8px 0;border-bottom:1px solid rgba(34,78,88,.08)}
+.mi-espacio .me-v16-timeline-entry:last-child{border-bottom:0}
+.mi-espacio .me-v16-timeline-action{font-weight:600;color:var(--me-ink,#183c49);flex-shrink:0}
+.mi-espacio .me-v16-timeline-resource{color:var(--me-muted,#60747d);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mi-espacio .me-v16-timeline-time{font-size:12px;color:var(--me-muted,#60747d);white-space:nowrap;flex-shrink:0}
+.mi-espacio .me-v16-timeline-toggle{border:0;background:transparent;color:var(--me-ink,#183c49);font:600 13px/1.4 inherit;cursor:pointer;padding:8px 0;display:inline-flex;align-items:center;gap:4px;min-height:44px}
+.mi-espacio .me-v16-timeline-toggle:hover{color:#158a89}
+.mi-espacio .me-v16-timeline-toggle:focus-visible{outline:3px solid #158a89;outline-offset:3px}
+@media(max-width:640px){
+ .mi-espacio .me-v16-timeline-entry{flex-wrap:wrap;gap:4px}
+ .mi-espacio .me-v16-timeline-time{width:100%;text-align:left}
+ .mi-espacio .me-v16-cert-item{flex-wrap:wrap}
+}

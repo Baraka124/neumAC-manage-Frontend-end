@@ -302,8 +302,47 @@
     return (Array.isArray(raw) ? raw : []).map(c => ({
       id: id(c.id), name: safe(c.certificate_name),
       issuedDate: safe(c.issued_date), expiryDate: safe(c.expiry_date),
-      renewalMonths: num(c.renewal_months), notes: safe(c.notes)
+      renewalMonths: num(c.renewal_months), notes: safe(c.notes),
+      daysUntilExpiry: num(c.days_until_expiry), urgency: safe(c.urgency) || 'ok'
     }));
+  }
+
+  // ── Phase 16: personal activity timeline from audit logs ──
+  const ACTION_LABELS = Object.freeze({
+    'login':'Inicio de sesión', 'update':'Actualización', 'create':'Creación',
+    'delete':'Eliminación', 'upload':'Subida', 'view':'Consulta',
+    'approve':'Aprobación', 'reject':'Rechazo', 'export':'Exportación'
+  });
+  const RESOURCE_LABELS = Object.freeze({
+    'medical_staff':'Perfil profesional', 'staff_certificates':'Certificado',
+    'staff-photos':'Foto de perfil', 'discrepancy_reports':'Comunicación',
+    'absence_records':'Ausencia', 'on_call':'Guardia', 'rotations':'Rotación',
+    'research_lines':'Línea de investigación', 'studies':'Estudio',
+    'projects':'Proyecto', 'publications':'Publicación', 'app_users':'Cuenta'
+  });
+
+  function normalizeActivityEntry(raw) {
+    const e = raw && typeof raw === 'object' ? raw : {};
+    const action = safe(e.action);
+    const resource = safe(e.resource);
+    let details = null;
+    try { details = typeof e.details === 'string' ? JSON.parse(e.details) : e.details; } catch(_){}
+    return {
+      id: id(e.id),
+      action,
+      actionLabel: ACTION_LABELS[action] || action.replace(/_/g, ' '),
+      resource,
+      resourceLabel: RESOURCE_LABELS[resource] || resource.replace(/_/g, ' '),
+      resourceId: safe(e.resource_id),
+      details,
+      createdAt: safe(e.created_at)
+    };
+  }
+
+  async function loadMyActivity(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/me/activity', { skipCache: true, timeoutMs: 15000, signal });
+    return (Array.isArray(raw) ? raw : []).map(normalizeActivityEntry);
   }
 
   return Object.freeze({
@@ -311,6 +350,7 @@
     buildReport, submitDiscrepancy, normalizeReport, loadMyReports,
     normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport, reviewOutcome,
     loadLineOptions, loadPublicationOptions,
-    normalizeProfile, loadProfile, updateProfile, uploadPhoto, loadMyCertificates
+    normalizeProfile, loadProfile, updateProfile, uploadPhoto, loadMyCertificates,
+    normalizeActivityEntry, loadMyActivity
   });
 });

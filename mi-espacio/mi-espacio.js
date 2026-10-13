@@ -59,7 +59,8 @@
           reports:[],report:{open:false,busy:false,error:'',done:false,subject_type:'',kind:'',message:'',subject_id:'',subject_label:''},
           picker:{busy:false,items:[],forType:''},
           review:{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}},
-          profile:{open:false,busy:false,saving:false,error:'',data:null,edit:null,photoUploading:false,certificates:[],certBusy:false}});
+          profile:{open:false,busy:false,saving:false,error:'',data:null,edit:null,photoUploading:false,certificates:[],certBusy:false},
+          timeline:{busy:false,error:'',entries:[],expanded:false}});
         let seq=0, controller=null;
         const can = view => typeof props.canOpenView === 'function' && props.canOpenView(view);
         const linked=Vue.computed(()=>state.context?.linkState==='linked');
@@ -111,6 +112,7 @@
           Object.assign(state.picker,{busy:false,items:[],forType:''});
           Object.assign(state.review,{can:false,busy:false,error:'',notice:'',filter:'open',items:[],acting:'',notes:{}});
           Object.assign(state.profile,{open:false,busy:false,saving:false,error:'',data:null,edit:null,photoUploading:false,certificates:[],certBusy:false});
+          Object.assign(state.timeline,{busy:false,error:'',entries:[],expanded:false});
         }
         // ── Phase 15: profile panel ──
         const profileCompleteness=Vue.computed(()=>state.profile.data?.profileCompleteness ?? 0);
@@ -182,6 +184,41 @@
             if(requestSeq===seq) state.profile.photoUploading=false;
             if(event?.target) event.target.value='';
           }
+        }
+        // ── Phase 16: certificate urgency helpers ──
+        const urgentCertificates=Vue.computed(()=>(state.profile.certificates||[]).filter(c=>c.urgency==='expired'||c.urgency==='expiring_soon'));
+        const certUrgencyLabel=c=>{
+          if(c.urgency==='expired') return 'Caducado';
+          if(c.urgency==='expiring_soon'){
+            const d=c.daysUntilExpiry;
+            return d<=0?'Caduca hoy':d===1?'Caduca mañana':'Caduca en '+d+' días';
+          }
+          return '';
+        };
+        // ── Phase 16: personal activity timeline ──
+        async function loadTimeline(requestSeq, identity){
+          state.timeline.busy=true;state.timeline.error='';
+          try {
+            const entries=await root.NeumMiEspacioData.loadMyActivity((p,o)=>API.request(p,o),controller&&controller.signal);
+            if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
+            state.timeline.entries=entries;
+          } catch(err){
+            if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
+            if(err?.name!=='AbortError') state.timeline.error=err?.message||'No se ha podido cargar tu actividad reciente.';
+          } finally { if(requestSeq===seq) state.timeline.busy=false; }
+        }
+        function fmtRelative(iso){
+          if(!iso)return '';
+          const d=new Date(iso), now=new Date(), diffMs=now-d;
+          if(isNaN(d.getTime()))return '';
+          const mins=Math.floor(diffMs/60000);
+          if(mins<1)return 'Ahora mismo';
+          if(mins<60)return 'Hace '+mins+' min';
+          const hours=Math.floor(mins/60);
+          if(hours<24)return 'Hace '+hours+(hours===1?' hora':' horas');
+          const days=Math.floor(hours/24);
+          if(days<7)return 'Hace '+days+(days===1?' día':' días');
+          return fmtDate(iso);
         }
         async function loadReports(requestSeq, identity){
           try {
@@ -309,7 +346,7 @@
               (path,options)=>API.request(path,options),identity,controller.signal);
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
             state.context=result;
-            if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); }
+            if(result.linkState==='linked'){ loadActivity(requestSeq, identity); loadReports(requestSeq, identity); loadTimeline(requestSeq, identity); }
             loadReviewQueue(requestSeq, identity);
           } catch(err){
             if(requestSeq!==seq||!props.active||String(props.user?.id)!==identity)return;
@@ -420,6 +457,7 @@
           state,linked,initials,can,refresh:load,selectedDuty,
           professionalDesignation,upcomingGuardias,personalRotations,supervisedRotations,otherRotations,hasAgenda,hasResearch,hasResearchOverflow,hasPublicationOverflow,showAgenda,researchPriority,personalContext,personalContextPreview,personalContextRemaining,fmtPeriod,
           profileCompleteness,profilePhotoUrl,openProfile,closeProfile,saveProfile,onPhotoSelect,
+          urgentCertificates,certUrgencyLabel,fmtRelative,
           openDuties,selectDuty,closeDutyDetail,backToAgenda,fmtDutyDate,
           dutyShift:root.NeumMiEspacioData.formatDutyShift,
           researchGroups,researchItems,selectedResearch,selectedPublication,
@@ -514,7 +552,11 @@
               </form>
               <div v-if="state.profile.certificates.length" class="me-v15-certificates">
                 <h4>Mis certificados</h4>
-                <ul class="me-list"><li v-for="c in state.profile.certificates" :key="c.id"><span class="me-item-main">{{c.name}}<small v-if="c.expiryDate"> · Caduca: {{fmtDate(c.expiryDate)}}</small></span></li></ul>
+                <ul class="me-list"><li v-for="c in state.profile.certificates" :key="c.id" class="me-v16-cert-item" :class="{'me-v16-cert-expired':c.urgency==='expired','me-v16-cert-expiring':c.urgency==='expiring_soon'}">
+                  <span class="me-item-main">{{c.name}}<small v-if="c.expiryDate"> · {{fmtDate(c.expiryDate)}}</small></span>
+                  <span v-if="c.urgency==='expired'" class="me-v16-cert-badge me-v16-cert-badge--expired">Caducado</span>
+                  <span v-else-if="c.urgency==='expiring_soon'" class="me-v16-cert-badge me-v16-cert-badge--expiring">{{certUrgencyLabel(c)}}</span>
+                </li></ul>
               </div>
             </template>
           </section>
@@ -595,6 +637,29 @@
                   <button type="button" class="me-v8-tools-toggle" :aria-expanded="state.toolsOpen" aria-controls="me-v8-administration" @click="state.toolsOpen=!state.toolsOpen">{{state.toolsOpen?'Cerrar gestiones':'Comunicaciones y gestiones'}} <span aria-hidden="true">{{state.toolsOpen?'−':'→'}}</span></button>
                 </section>
               </div>
+              <section v-if="state.dutyMode==='overview' && state.timeline.entries.length" class="me-v16-timeline" aria-label="Actividad reciente">
+                <div class="me-v9-panel-heading"><div><p class="mi-espacio-eyebrow">ACTIVIDAD RECIENTE</p><h3>Mi actividad</h3></div></div>
+                <p v-if="state.timeline.busy" class="mi-espacio-state" role="status">Cargando…</p>
+                <p v-else-if="state.timeline.error" class="me-form-error" role="alert">{{state.timeline.error}}</p>
+                <ul v-else class="me-v16-timeline-list">
+                  <li v-for="e in state.timeline.entries.slice(0,state.timeline.expanded?25:5)" :key="e.id" class="me-v16-timeline-entry">
+                    <span class="me-v16-timeline-action">{{e.actionLabel}}</span>
+                    <span class="me-v16-timeline-resource">{{e.resourceLabel}}</span>
+                    <time class="me-v16-timeline-time">{{fmtRelative(e.createdAt)}}</time>
+                  </li>
+                </ul>
+                <button v-if="state.timeline.entries.length>5" type="button" class="me-v16-timeline-toggle" :aria-expanded="state.timeline.expanded" @click="state.timeline.expanded=!state.timeline.expanded">{{state.timeline.expanded?'Ver menos':'Ver toda mi actividad'}} <span aria-hidden="true">{{state.timeline.expanded?'↑':'→'}}</span></button>
+              </section>
+              <section v-if="state.dutyMode==='overview' && urgentCertificates.length && !state.profile.open" class="me-v16-cert-alert" aria-label="Certificados que requieren atención" role="alert">
+                <p class="mi-espacio-eyebrow">CERTIFICADOS</p>
+                <ul class="me-v16-cert-alert-list">
+                  <li v-for="c in urgentCertificates" :key="c.id" :class="{'me-v16-cert-expired':c.urgency==='expired','me-v16-cert-expiring':c.urgency==='expiring_soon'}">
+                    <strong>{{c.name}}</strong>
+                    <span>{{certUrgencyLabel(c)}}</span>
+                  </li>
+                </ul>
+                <button type="button" class="me-v15-profile-link" @click="openProfile">Revisar en mi perfil <span aria-hidden="true">→</span></button>
+              </section>
               <div v-if="state.dutyMode==='overview' && state.toolsOpen" id="me-v8-administration" class="me-v9-administration">
                 <section v-if="state.toolsOpen && state.activity && state.dutyMode==='overview'" class="me-report" aria-label="Comunicar una discrepancia">
               <div class="mi-espacio-section-heading"><h3>¿Falta algo o hay un error?</h3><p>Comunícalo y lo revisará la persona responsable. No se modifica ningún registro directamente.</p></div>
