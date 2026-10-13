@@ -9,7 +9,9 @@ test('scholarly preview retains verified record details and a personal expansion
  assert.match(src,/p\.order/);
 });
 test('review indicator requires verified reviewer permission and actually returned open records',()=>{
- assert.match(src,/state.review.can && state.review.filter==='open' && state.review.items.length/);
- assert.match(src,/Pendientes por revisar/);
+ assert.match(src,/state.review.can && !state.review.busy && !state.review.error && state.review.filter==='open' && state.review.items.length/);
+ assert.match(src,/REQUIERE TU ATENCIÓN/);
+ assert.match(src,/function openPendingReviews\(\)/);
+ assert.match(src,/Revisar comunicaciones/);
  assert.match(src,/function resolveItem\(reportId, status\)/);
 });
