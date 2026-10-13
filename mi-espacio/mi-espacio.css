@@ -869,6 +869,11 @@
  .mi-espacio .me-v22-identity{margin-bottom:12px}
 }
 
+/* Read-only profile field (e.g. professional email — admin-only) */
+.mi-espacio .me-field-readonly{display:flex;flex-direction:column;gap:2px}
+.mi-espacio .me-readonly-value{font-size:14px;color:#1e293b;padding:8px 10px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px}
+.mi-espacio .me-readonly-hint{font-size:11px;color:#94a3b8;margin-top:2px}
+
 /* ── Phase 23D: PDF dossier button ── */
 .mi-espacio .me-v23-dossier-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;font-weight:600;border:1px solid rgba(21,138,137,.2);border-radius:8px;background:linear-gradient(135deg,rgba(21,138,137,.05),rgba(21,138,137,.01));color:#158a89;cursor:pointer;transition:background .15s,border-color .15s}
 .mi-espacio .me-v23-dossier-btn:hover{background:rgba(21,138,137,.1);border-color:rgba(21,138,137,.3)}
