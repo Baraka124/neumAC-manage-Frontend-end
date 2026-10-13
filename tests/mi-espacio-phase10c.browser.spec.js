@@ -41,7 +41,7 @@ async function mount(page,kind){
  await expect(page.locator('.me-activity-placeholder')).toHaveCount(0);
 }
 for(const [name,scenario] of Object.entries(cases)){
- for(const viewport of [{width:390,height:844,label:'phone'},{width:1366,height:900,label:'desktop'}]){
+ for(const viewport of [{width:390,height:844,label:'phone'},{width:768,height:1024,label:'tablet'},{width:1366,height:900,label:'desktop'}]){
   test(name+' personal role display '+viewport.label,async({page},info)=>{
    test.setTimeout(45000);
    await page.setViewportSize({width:viewport.width,height:viewport.height});
