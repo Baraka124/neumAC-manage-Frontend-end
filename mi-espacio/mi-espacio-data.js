@@ -274,6 +274,7 @@
       department: d.department && typeof d.department === 'object'
         ? { id: id(d.department.id), name: safe(d.department.name) } : null,
       profileCompleteness: num(d.profile_completeness) ?? 0,
+      missingFields: Array.isArray(d.missing_fields) ? d.missing_fields.map(f => ({ key: safe(f && f.key), label: safe(f && f.label) })).filter(f => f.key) : [],
       notificationPrefs: d.notification_prefs && typeof d.notification_prefs === 'object'
         ? { notificationsEnabled: d.notification_prefs.notifications_enabled !== false, absenceNotifications: d.notification_prefs.absence_notifications !== false, announcementNotifications: d.notification_prefs.announcement_notifications !== false }
         : { notificationsEnabled: true, absenceNotifications: true, announcementNotifications: true }
@@ -315,6 +316,42 @@
       renewalMonths: num(c.renewal_months), notes: safe(c.notes),
       daysUntilExpiry: num(c.days_until_expiry), urgency: safe(c.urgency) || 'ok'
     }));
+  }
+
+  // ── Phase 20: colleague directory ──
+  function normalizeColleague(raw) {
+    const c = raw && typeof raw === 'object' ? raw : {};
+    return {
+      id: id(c.id), name: safe(c.name), title: safe(c.title), staffType: safe(c.staffType),
+      specialization: safe(c.specialization), photo: safe(c.photo), bio: safe(c.bio),
+      department: safe(c.department), orcid: safe(c.orcid), scholar: safe(c.scholar), researchgate: safe(c.researchgate)
+    };
+  }
+
+  async function loadColleagues(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/me/colleagues', { skipCache: true, timeoutMs: 15000, signal });
+    return (Array.isArray(raw) ? raw : []).map(normalizeColleague);
+  }
+
+  // ── Phase 20: personal dashboard stats ──
+  function normalizeDashboard(raw) {
+    const d = raw && typeof raw === 'object' ? raw : {};
+    return {
+      activeStudies: num(d.activeStudies) ?? 0,
+      activeProjects: num(d.activeProjects) ?? 0,
+      publications: num(d.publications) ?? 0,
+      totalCertificates: num(d.totalCertificates) ?? 0,
+      expiredCertificates: num(d.expiredCertificates) ?? 0,
+      expiringCertificates: num(d.expiringCertificates) ?? 0,
+      absenceDaysThisYear: num(d.absenceDaysThisYear) ?? 0
+    };
+  }
+
+  async function loadDashboard(request, signal) {
+    if (typeof request !== 'function') throw new Error('An authenticated request service is required.');
+    const raw = await request('/api/me/dashboard', { skipCache: true, timeoutMs: 15000, signal });
+    return normalizeDashboard(raw);
   }
 
   // ── Phase 16: personal activity timeline from audit logs ──
@@ -361,6 +398,7 @@
     normalizeReviewItem, loadReviewQueue, buildResolve, resolveReport, reviewOutcome,
     loadLineOptions, loadPublicationOptions,
     normalizeProfile, loadProfile, updateProfile, updateNotificationPrefs, uploadPhoto, loadMyCertificates,
+    normalizeColleague, loadColleagues, normalizeDashboard, loadDashboard,
     normalizeActivityEntry, loadMyActivity
   });
 });
