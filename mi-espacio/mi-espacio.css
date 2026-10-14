@@ -970,3 +970,42 @@
 .mi-espacio .me-v26d-workspace button{cursor:pointer;min-height:42px}
 .mi-espacio .me-v26d-workspace button:focus-visible{outline:3px solid #158a89;outline-offset:3px}
 @media(max-width:640px){.mi-espacio .me-v26d-workspace{padding:16px}}
+
+/* Phase 26E · Shared professional-workspace rhythm. Scope exclusively to Mi Espacio. */
+.mi-espacio{
+  --me26-surface:#fff;--me26-stroke:#dce6e3;--me26-muted:#60747d;
+  --me26-focus:#158a89;--me26-radius:10px;--me26-content-gap:clamp(16px,2.3vw,28px);
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace,.me-v8-all-duties){
+  min-width:0;max-width:100%;overflow-wrap:break-word;scroll-margin-top:92px;
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace){
+  border-color:var(--me26-stroke);border-radius:var(--me26-radius);
+  background:var(--me26-surface);
+}
+.mi-espacio :is(.me-v26b-workspace-title,.me-v26c-title,.me-v26d-title,.me-duty-heading){
+  color:var(--me-ink);line-height:1.22;letter-spacing:-.012em;
+  text-wrap:balance;scroll-margin-top:100px;
+}
+.mi-espacio :is(.me-v26b-split,.me-v26d-workspace,.me-v26c-profile) :is(p,li,dd){
+  overflow-wrap:anywhere;
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace) :is(button,a,input,textarea,select):focus-visible{
+  outline:3px solid var(--me26-focus);outline-offset:3px;
+}
+.mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace) button{
+  min-height:40px;
+}
+.mi-espacio :is(.me-v26b-detail,.me-v26d-list,.me-v15-dl){min-width:0}
+@media(max-width:768px){
+  .mi-espacio :is(.me-v26b-split,.me-duty-master-detail,.me-portfolio-layout){grid-template-columns:minmax(0,1fr)}
+  .mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace){scroll-margin-top:78px}
+}
+@media(max-width:390px){
+  .mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace){padding:16px}
+  .mi-espacio .me-v26b-day{min-width:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace) *,
+  .mi-espacio :is(.me-v26b-workspace,.me-v26c-profile,.me-v26d-workspace){animation-duration:0.01ms!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
+}
