@@ -1,7 +1,7 @@
 # Phase 30A–30C — Mi Espacio institutional visual acceptance
 
 ## Scope and baseline
-Based on Phase 29's unmerged branch. This is a **UI-only**, role-aware refinement. No backend calls, clinical calculations, authorization, adapter shape, persisted data, or personal records are changed. Design follows the real component and existing role-aware display logic rather than adding synthetic production content.
+Based on Phase 29, which merged into main during Phase 30 development. This is a **UI-only**, role-aware refinement. No backend calls, clinical calculations, authorization, adapter shape, persisted data, or personal records are changed. Design follows the real component and existing role-aware display logic rather than adding synthetic production content.
 
 ## 30A · Reading hierarchy
 - Restrained title scale, typographic measure, heading spacing and accessible reading line height.
@@ -25,5 +25,5 @@ Based on Phase 29's unmerged branch. This is a **UI-only**, role-aware refinemen
 - CI completion and test artifacts need checking on the PR; tests passing cannot substitute for authenticated real-role visual review.
 - Confirm real supervisor/rotation presentation and clinically authoritative duty information without inferred values.
 - Browser PDF pagination remains a separate authenticated/manual acceptance task.
-- Phase 29 is not merged. The Phase 30 PR is intentionally stacked onto the Phase 29 branch; do not merge to main before prerequisite review and successful CI.
+- Phase 29 is merged. The Phase 30 branch descends from its tip; target main, and require successful CI and visual acceptance before merging.
 - Production cache invalidation for mi-espacio.css requires changing the stylesheet version query in index.html before release (the connector cannot currently retrieve index.html as a full UTF-8 file through the contents API). Avoid release until this is addressed.
